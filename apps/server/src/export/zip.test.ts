@@ -98,5 +98,13 @@ describe('zip', () => {
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
-  });
+    // 30s, not vitest's default 5s. Spawning PowerShell costs seconds of
+    // cold start before `Expand-Archive` does any work, and under the full
+    // suite's parallel load it reliably overran — this test failed twice in
+    // three runs while passing every time in isolation, which reads as a
+    // broken archive writer and is actually a slow subprocess.
+    //
+    // Raised rather than skipped or mocked: the whole point of this test is
+    // that something OTHER than our own writer agrees the bytes are a zip.
+  }, 30_000);
 });

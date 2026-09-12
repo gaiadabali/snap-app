@@ -6,9 +6,12 @@ import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fa
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 import { AppModule } from './app.module.js';
+import { PREFLIGHT_ROLE_SQL, evaluatePreflight } from './preflight.js';
 import { ErrorsFilter } from './common/errors.filter.js';
-import { closeDb } from './db.js';
+import { closeDb, getDb } from './db.js';
 import { config } from './config.js';
+import { sql } from 'drizzle-orm';
+
 import cors from '@fastify/cors';
 import { IdempotencyInterceptor } from './common/idempotency.interceptor.js';
 
@@ -130,7 +133,20 @@ export async function bootstrap(): Promise<NestFastifyApplication> {
     // the app sees a network error, indistinguishable from being offline —
     // which is precisely how the offline outbox came to queue a write and
     // then never be able to send it.
-    allowedHeaders: ['Authorization', 'Content-Type', 'X-Workspace-Id', 'Idempotency-Key'],
+    // `X-Impersonation-Token` is here for the same reason the others are: a
+    // header missing from this list is refused by the browser at PREFLIGHT,
+    // and the client sees a network error indistinguishable from being
+    // offline. That is precisely how the offline outbox once queued a write it
+    // could never send. The web console talks to this API server-side, so it
+    // is not subject to CORS today — this costs nothing and removes a trap for
+    // whoever first calls it from a browser.
+    allowedHeaders: [
+      'Authorization',
+      'Content-Type',
+      'X-Workspace-Id',
+      'Idempotency-Key',
+      'X-Impersonation-Token',
+    ],
     credentials: false,
     maxAge: 600,
   });
@@ -148,6 +164,41 @@ export async function bootstrap(): Promise<NestFastifyApplication> {
         .catch(() => process.exit(1));
     });
   }
+
+  /**
+   * Production preflight.
+   *
+   * Deliberately AFTER the app is wired and BEFORE it accepts a connection:
+   * the database probe needs the pool, and a server that fails this must never
+   * have served a request. Configuration that is individually valid can still
+   * be collectively unsafe — see `preflight.ts` for what each check is for and
+   * which of them correspond to bugs this project has already shipped.
+   */
+  let probe = { databaseRole: 'unknown', bypassesRls: false };
+  try {
+    const who = await getDb().execute<{ role: string; bypasses: boolean }>(
+      sql.raw(PREFLIGHT_ROLE_SQL),
+    );
+    probe = {
+      databaseRole: who.rows[0]?.role ?? 'unknown',
+      bypassesRls: who.rows[0]?.bypasses === true,
+    };
+  } catch (error) {
+    // A database that cannot be reached is a startup failure in its own right.
+    logger.error(`preflight could not reach the database: ${String(error)}`);
+    throw error;
+  }
+
+  const preflight = evaluatePreflight(settings, probe);
+  for (const warning of preflight.warnings) logger.warn(`preflight: ${warning}`);
+  if (!preflight.ok) {
+    for (const failure of preflight.failures) logger.error(`preflight: ${failure}`);
+    throw new Error(
+      `Refusing to start: ${preflight.failures.length} production preflight check(s) failed. ` +
+        'See the errors above.',
+    );
+  }
+  logger.log(`preflight ok · database role ${probe.databaseRole} · rls ${probe.bypassesRls ? 'BYPASSED' : 'enforced'}`);
 
   await app.listen({ port: settings.PORT, host: '0.0.0.0' });
   logger.log(`listening on ${settings.PORT} · docs at /v1/docs · env ${settings.NODE_ENV}`);

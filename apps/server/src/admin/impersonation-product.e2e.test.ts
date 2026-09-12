@@ -92,7 +92,22 @@ describeIfDb('impersonation on the product API', () => {
     process.env.TOKEN_SECRET ??= 'test-only-secret-at-least-32-characters-long';
     process.env.ADMIN_KMS_MASTER_KEY ??= '11'.repeat(32);
 
-    admin = new Client({ connectionString: process.env.ADMIN_DATABASE_URL ?? url });
+    // This suite PROVISIONS fixtures — users, tenants, staff rows — which the
+    // application role deliberately cannot do: `app_rw` has no grant on
+    // `platform_staff` and RLS refuses an insert into `tenants`. Falling back
+    // to DATABASE_URL therefore fails deep inside setup with a confusing
+    // "permission denied", which is what happened the first time this ran.
+    // Say so up front instead.
+    const adminUrl = process.env.ADMIN_DATABASE_URL;
+    if (!adminUrl) {
+      throw new Error(
+        'ADMIN_DATABASE_URL is required to run this suite: it provisions staff and tenant ' +
+          'fixtures that the application role is correctly forbidden from creating. ' +
+          'Point it at a superuser connection (test provisioning only) — see docs/WEB.md §8.',
+      );
+    }
+
+    admin = new Client({ connectionString: adminUrl });
     await admin.connect();
     await cleanup();
 
