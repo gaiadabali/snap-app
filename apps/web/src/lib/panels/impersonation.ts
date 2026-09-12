@@ -16,7 +16,9 @@ import { getImpersonation, ImpersonationEndedError, type ImpersonationCookiePayl
 export type ImpersonationBannerInfo = {
   staffName: string;
   subjectName: string;
-  subjectEmail: string;
+  /** Nullable: `users.email` is optional server-side, so the banner must
+   *  render without it rather than printing "null" or "undefined". */
+  subjectEmail: string | null;
   tenantId: string;
   tenantName: string;
   /** ISO 8601 — the client-side countdown computes its own remaining time from this, not a server-computed "seconds left" that goes stale the instant it's rendered. */

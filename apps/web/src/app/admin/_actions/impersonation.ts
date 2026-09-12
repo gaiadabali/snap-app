@@ -47,10 +47,14 @@ export async function startImpersonationAction(
     sessionId: started.sessionId,
     token: started.token,
     staffId: session.data.staffId,
+    // `AdminSession` carries no display name for the signed-in staff member
+    // (it is `{staffId, role, capabilities}`), so the banner names the role
+    // and id rather than inventing a person. Recorded as an API gap.
+    staffName: `${session.data.role} · ${session.data.staffId.slice(0, 8)}`,
     subjectUserId,
-    subjectTenantId,
-    subjectLabel,
+    subjectName: subjectLabel,
     subjectEmail: subjectEmailRaw || null,
+    tenantId: subjectTenantId,
     tenantName,
     reason: reason.trim(),
     startedAt: new Date().toISOString(),

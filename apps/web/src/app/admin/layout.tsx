@@ -73,7 +73,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <div className="flex min-w-0 flex-1 flex-col">
         {activeSession ? (
           <ImpersonationBanner
-            subjectName={activeSession.subjectLabel}
+            subjectName={activeSession.subjectName}
             subjectEmail={activeSession.subjectEmail}
             tenantName={activeSession.tenantName}
             expiresAt={activeSession.expiresAt}

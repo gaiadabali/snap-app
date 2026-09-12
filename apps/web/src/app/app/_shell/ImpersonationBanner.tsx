@@ -81,7 +81,10 @@ export function ImpersonationBanner({ staffName, subjectName, subjectEmail, tena
           <p className="min-w-0 text-[13px] text-[var(--color-ink)]">
             <strong className="font-bold">{staffName}</strong> is viewing this panel as{' '}
             <strong className="font-bold">{subjectName}</strong>
-            <span className="text-[var(--color-ink-muted)]"> ({subjectEmail})</span> —{' '}
+            {subjectEmail ? (
+              <span className="text-[var(--color-ink-muted)]"> ({subjectEmail})</span>
+            ) : null}{' '}
+            —{' '}
             <strong className="font-bold">{tenantName}</strong>
           </p>
           <span className="ml-auto flex shrink-0 items-center gap-3">

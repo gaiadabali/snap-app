@@ -3,6 +3,17 @@ import 'server-only';
 import { cookies } from 'next/headers';
 
 import { config } from '../config';
+import {
+  IMPERSONATION_COOKIE,
+  getImpersonation,
+  type ImpersonationCookiePayload,
+} from '../impersonation-cookie';
+
+// Re-exported so existing callers keep one import site. The DEFINITION lives
+// in `lib/impersonation-cookie.ts` because the admin console writes the cookie
+// and the panels read it, and two modules agreeing by convention is exactly
+// what broke it: different name, different path, different field names.
+export { IMPERSONATION_COOKIE, getImpersonation, type ImpersonationCookiePayload };
 
 /**
  * The one way this website talks to the Snap API.
@@ -20,49 +31,6 @@ import { config } from '../config';
 
 export const SESSION_COOKIE = 'snap_session';
 export const WORKSPACE_COOKIE = 'snap_workspace';
-
-/**
- * Set by the admin console when a support session starts (docs/WEB.md §6
- * point 3). httpOnly, so `token` — the one field the server accepts as a
- * credential (`X-Impersonation-Token`) — never reaches client JavaScript;
- * everything else here is display data the customer-facing banner needs and
- * is not secret on its own.
- *
- * CONTRACT the cookie-writer must satisfy for the panel side to see it:
- * `path: '/'` (a cookie scoped to `/admin` is never sent on a request to
- * `/app/*`, which is the one thing that would make this whole mechanism
- * silently do nothing) and an `expires`/`maxAge` matching `expiresAt`,
- * cleared the same way `exitImpersonation` clears it below.
- */
-export const IMPERSONATION_COOKIE = 'snap_impersonation';
-
-export type ImpersonationCookiePayload = {
-  sessionId: string;
-  token: string;
-  staffName: string;
-  subjectUserId: string;
-  subjectName: string;
-  subjectEmail: string;
-  tenantId: string;
-  tenantName: string;
-  /** ISO 8601. */
-  expiresAt: string;
-};
-
-export async function getImpersonation(): Promise<ImpersonationCookiePayload | null> {
-  const jar = await cookies();
-  const raw = jar.get(IMPERSONATION_COOKIE)?.value;
-  if (!raw) return null;
-  try {
-    const parsed = JSON.parse(raw) as Partial<ImpersonationCookiePayload>;
-    if (!parsed.token || !parsed.sessionId || !parsed.subjectUserId || !parsed.tenantId || !parsed.expiresAt) {
-      return null;
-    }
-    return parsed as ImpersonationCookiePayload;
-  } catch {
-    return null;
-  }
-}
 
 export class ApiError extends Error {
   constructor(
