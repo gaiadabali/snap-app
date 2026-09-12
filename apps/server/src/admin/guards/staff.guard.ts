@@ -31,6 +31,7 @@ import { getMyCapabilities } from '../admin.repo.js';
 type GuardedRequest = {
   authUser?: AuthUser;
   adminSession?: AdminSession;
+  impersonation?: { staffUserId: string; subjectUserId: string };
 };
 
 @Injectable()
@@ -39,6 +40,26 @@ export class StaffGuard implements CanActivate {
     const request: GuardedRequest = context.switchToHttp().getRequest();
     const user = request.authUser;
     if (!user) throw new UnauthorizedException('Sign in to continue.');
+
+    // PRIVILEGE ESCALATION, CLOSED.
+    //
+    // `SessionGuard` sets `authUser` to the SUBJECT when a request carries an
+    // impersonation token. Staff are ordinary users too, so if a staff member
+    // impersonated ANOTHER STAFF MEMBER, this guard would look up the
+    // subject's capabilities and hand the impersonator the subject's admin
+    // powers — including `manage_staff`, which is enough to grant themselves
+    // everything else. The impersonate capability would silently become every
+    // capability.
+    //
+    // So the admin plane is unreachable under impersonation, full stop. It is
+    // not a capability check, because the answer does not depend on who is
+    // impersonating whom: acting-as is for using the product as a customer,
+    // never for administering the platform.
+    if (request.impersonation) {
+      throw new ForbiddenException(
+        'The admin plane cannot be used while impersonating. Stop the session first.',
+      );
+    }
 
     const session = await getMyCapabilities(user.userId);
     if (!session) throw new ForbiddenException('This account is not platform staff.');
