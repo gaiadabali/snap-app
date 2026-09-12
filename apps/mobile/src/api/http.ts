@@ -352,7 +352,13 @@ export class HttpApi implements SnapApi {
       token: string;
       user: AuthUser;
       workspaces: WorkspaceSummary[];
-    }>('POST', '/v1/auth/sign-in', { body: { email }, auth: false });
+      // `workspaceId: null` matters here and is easy to miss: without it the
+      // request waits on `awaitWorkspace()` before it will fire, and at
+      // sign-in there is no workspace yet by definition — so every sign-in sat
+      // through the full 5s timeout before the POST was even sent. Nobody
+      // noticed because it looks like a slow server rather than a client that
+      // is waiting for something that cannot arrive.
+    }>('POST', '/v1/auth/sign-in', { body: { email }, auth: false, workspaceId: null });
 
     setAuthToken(body.token);
     this.workspaces = body.workspaces;

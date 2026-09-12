@@ -16,6 +16,7 @@ apps/server/.storage/
 # Build output
 dist/
 build/
+.next/
 .expo/
 .expo-web/
 *.tsbuildinfo

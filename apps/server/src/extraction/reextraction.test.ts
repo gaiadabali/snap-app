@@ -190,15 +190,21 @@ describeIfDb('re-extraction', () => {
     if (!debit || !credit) return; // no seeded chart of accounts; nothing to assert
 
     await q(sql`
-      insert into transactions (id, tenant_id, document_id, occurred_on, description, status, created_by)
-      values (${txnId}, ${TENANT}, ${documentId}, current_date, 'test', 'draft', ${KATE})
+      insert into transactions (id, tenant_id, document_id, txn_date, memo, status)
+      values (${txnId}, ${TENANT}, ${documentId}, current_date, 'test', 'draft')
     `);
     await q(sql`
-      insert into transaction_splits (id, tenant_id, transaction_id, account_id, amount)
-      values (${randomUUID()}, ${TENANT}, ${txnId}, ${debit.id}, 110.0000),
-             (${randomUUID()}, ${TENANT}, ${txnId}, ${credit.id}, -110.0000)
+      insert into transaction_splits (id, tenant_id, transaction_id, line_number, account_id, amount)
+      values (${randomUUID()}, ${TENANT}, ${txnId}, 1, ${debit.id}, 110.0000),
+             (${randomUUID()}, ${TENANT}, ${txnId}, 2, ${credit.id}, -110.0000)
     `);
-    await q(sql`update transactions set status = 'posted' where id = ${txnId}`);
+    // `posted_at` is required alongside `status = 'posted'` (migration 0006's
+    // `txn_posted_has_timestamp` check) — this was never reached before,
+    // because `accounts` had no rows for any tenant until Lane L started
+    // seeding the handful of control accounts a scan-derived posting needs,
+    // so `debit`/`credit` above were always undefined and this test always
+    // took the early return two lines up. It is exercised for real now.
+    await q(sql`update transactions set status = 'posted', posted_at = now(), posted_by = ${KATE} where id = ${txnId}`);
 
     await saveExtraction(WORKER, TENANT, capture, reading({ payable: '500.00' }), META);
 

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Controller,
   Get,
@@ -22,6 +23,7 @@ import {
   IsIn,
   IsInt,
   IsNumber,
+  IsObject,
   IsOptional,
   IsString,
   Matches,
@@ -61,15 +63,33 @@ export class VisibilityDto {
   @IsIn(['shared', 'private']) visibility!: 'shared' | 'private';
 }
 
+/**
+ * `PATCH /v1/documents/:id`, in the shape the contract actually publishes.
+ *
+ * This took a flat `{supplierName, issueDate, ...}` body while
+ * `UpdateDocumentRequest` in `@snap/api-contract` has said
+ * `{edits: {<field path>: value}}` all along — so every correction the mobile
+ * app sent was rejected wholesale by the validation whitelist with
+ * "property edits should not exist". Correcting a field, the single most
+ * important interaction in the product, could not be done by any client
+ * following the published contract.
+ *
+ * It survived because nothing typed this class against the contract: the app
+ * compiled, the server compiled, and the two disagreed only at runtime. Found
+ * by driving the real app against the real server, which is the only thing
+ * that could have found it.
+ *
+ * Field PATHS rather than property names, because that is the vocabulary the
+ * rest of the system already speaks: `documents.locked_fields` records them,
+ * `document_field_corrections` records them, and grounding reports them.
+ */
 export class UpdateDocumentDto {
-  @IsOptional() @IsString() supplierName?: string;
-  @IsOptional() @IsString() supplierAbn?: string | null;
-  @IsOptional() @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'issueDate must be YYYY-MM-DD.' })
-  issueDate?: string;
-  @IsOptional() @Matches(/^-?\d+(\.\d{1,4})?$/, { message: 'payableAmount must be a decimal.' })
-  payableAmount?: string;
-  @IsOptional() @Matches(/^-?\d+(\.\d{1,4})?$/) gstFreeAmount?: string | null;
-  @IsOptional() @IsIn(['shared', 'private']) visibility?: 'shared' | 'private';
+  @IsObject({ message: 'Send edits as an object of field path to value.' })
+  edits!: Record<string, string | number | null>;
+
+  /** Confirming locks the edited fields against a later machine run. */
+  @IsOptional() @IsBoolean() confirm?: boolean;
+
   /**
    * The version the client last read.
    *
@@ -77,6 +97,52 @@ export class UpdateDocumentDto {
    * same extraction silently overwrite each other, and these are money fields.
    */
   @IsOptional() @IsInt() @Min(1) version?: number;
+}
+
+/** The paths a correction may carry, and which column each one settles. */
+const EDITABLE_PATHS = {
+  'supplier.name': 'supplierName',
+  'supplier.abn': 'supplierAbn',
+  'header.issue_date': 'issueDate',
+  'totals.payable': 'payableAmount',
+  'totals.gst_free': 'gstFreeAmount',
+} as const;
+
+/**
+ * Translate the contract's paths into the flat patch this handler works in.
+ *
+ * Unknown paths are REFUSED rather than ignored. A correction that is accepted
+ * and quietly dropped is the worst outcome available: the user sees their
+ * change, saves, and finds the old value again later with nothing to explain
+ * it — wrong, and claiming to be right.
+ */
+function flattenEdits(edits: Record<string, string | number | null>): {
+  supplierName?: string;
+  supplierAbn?: string | null;
+  issueDate?: string;
+  payableAmount?: string;
+  gstFreeAmount?: string | null;
+} {
+  const patch: Record<string, string | null> = {};
+  for (const [path, value] of Object.entries(edits)) {
+    if (path === 'header.category') {
+      // The app offers category chips; the server has nowhere to put one —
+      // `documents` has no category column, and `toWire` returns a constant.
+      // Refused explicitly rather than swallowed, so the gap is visible
+      // instead of looking like data loss.
+      throw new BadRequestException(
+        'Category cannot be saved yet: it is not stored on the server. Correct the other fields and leave the category alone.',
+      );
+    }
+    const column = (EDITABLE_PATHS as Record<string, string | undefined>)[path];
+    if (!column) {
+      throw new BadRequestException(
+        `Cannot correct '${path}'. Editable fields are: ${Object.keys(EDITABLE_PATHS).join(', ')}.`,
+      );
+    }
+    patch[column] = value == null ? null : String(value);
+  }
+  return patch;
 }
 
 export class LineDto {
@@ -320,23 +386,28 @@ export class DocumentsController {
     const before = await getDocument(user.userId, tenantId, id);
     if (!before) throw new NotFoundException('No such document.');
 
+    // The wire speaks field paths; everything below this line works in flat
+    // columns. One translation, at the boundary, rather than a second
+    // vocabulary leaking through the handler.
+    const edit = flattenEdits(body.edits);
+
     // Correcting the total re-derives the tax. GST is never taken from the
     // client: it is exactly 1/11 of the taxable part, and accepting both
     // invites the two to disagree.
     let taxAmount: string | undefined;
     let taxExclusiveAmount: string | undefined;
-    const payable = body.payableAmount ?? before.document.payable_amount;
-    if (body.payableAmount != null || body.gstFreeAmount !== undefined) {
-      const gstFree = money.money(body.gstFreeAmount ?? '0');
+    const payable = edit.payableAmount ?? before.document.payable_amount;
+    if (edit.payableAmount != null || edit.gstFreeAmount !== undefined) {
+      const gstFree = money.money(edit.gstFreeAmount ?? '0');
       const taxable = money.subtract(money.money(payable ?? '0'), gstFree);
       taxAmount = money.gstFromInclusive(taxable);
       taxExclusiveAmount = money.subtract(money.money(payable ?? '0'), money.money(taxAmount));
     }
 
     const abn =
-      body.supplierAbn === undefined
+      edit.supplierAbn === undefined
         ? before.document.supplier_abn
-        : (body.supplierAbn?.replace(/\D/g, '') || null);
+        : (edit.supplierAbn?.replace(/\D/g, '') || null);
 
     // The verdict is recomputed from the rules, not sent by the client.
     const verdict = validate({
@@ -348,10 +419,10 @@ export class DocumentsController {
         confidence: 1,
       },
       documentNumber: { value: null, confidence: 1 },
-      issueDate: { value: body.issueDate ?? before.document.issue_date, confidence: 1 },
+      issueDate: { value: edit.issueDate ?? before.document.issue_date, confidence: 1 },
       currency: { value: before.document.currency, confidence: 1 },
       supplierName: {
-        value: body.supplierName ?? before.document.supplier_name,
+        value: edit.supplierName ?? before.document.supplier_name,
         confidence: 1,
       },
       supplierAbn: { value: abn, confidence: 1 },
@@ -371,14 +442,15 @@ export class DocumentsController {
       tenantId,
       id,
       {
-        supplierName: body.supplierName,
-        supplierAbn: body.supplierAbn === undefined ? undefined : abn,
-        issueDate: body.issueDate,
-        payableAmount: body.payableAmount,
+        supplierName: edit.supplierName,
+        supplierAbn: edit.supplierAbn === undefined ? undefined : abn,
+        issueDate: edit.issueDate,
+        payableAmount: edit.payableAmount,
         taxAmount,
         taxExclusiveAmount,
         isTaxInvoice: verdict.isTaxInvoice,
-        visibility: body.visibility,
+        // Visibility has its own endpoint; a correction never changes who
+        // can see a document.
         atoCompliance: { failures: verdict.complianceFailures, findings: verdict.findings },
       },
       body.version,

@@ -7,8 +7,10 @@ import { BusinessController } from './business/business.controller.js';
 import { DocumentsController } from './documents/documents.controller.js';
 import { DownloadsController } from './export/downloads.controller.js';
 import { ImagesController } from './images/images.controller.js';
+import { ReportsController } from './reports/reports.controller.js';
 import { SettingsController } from './settings/settings.controller.js';
 import { SummariesController } from './summaries/summaries.controller.js';
+import { TransactionsController } from './transactions/transactions.controller.js';
 import { WorkspacesController } from './workspaces/workspaces.controller.js';
 import { getDb } from './db.js';
 import { MODELS } from './ai/router.js';
@@ -81,6 +83,8 @@ export class HealthController {
     SettingsController,
     DownloadsController,
     ImagesController,
+    TransactionsController,
+    ReportsController,
   ],
 })
 export class AppModule {}
