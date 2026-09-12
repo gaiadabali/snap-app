@@ -96,6 +96,28 @@ still less to our eight-field docket harness (§8.1). **We have never scored any
 of these against anything, on any input.** The table is a map of the field, not
 a measurement, and §8 exists to replace it with one.
 
+**Two of the systems named above cannot be shipped to a customer, and they are
+the two this table praises most.** A scan of the Hugging Face model index on
+12 September 2026 (`docs/document-engine-competitive-review.html`):
+
+| Model | Licence | Redistributable under D23 |
+|---|---|---|
+| `datalab-to/chandra-ocr-2` | OpenRAIL | **No** |
+| `datalab-to/surya-ocr-2` | OpenRAIL | **No** |
+| `PaddlePaddle/PP-OCRv5` | Apache-2.0 | **Yes — and it is what we run** |
+| `nanonets/Nanonets-OCR-s` | none stated | **No.** An unstated licence is an unusable one |
+
+OpenRAIL carries use restrictions and is not an OSI-approved licence, so it
+fails the Apache-2.0/MIT floor D23 sets for anything entering a redistributable
+image. This is D23 doing precisely what it was written for — *"discovering that
+during a customer's procurement review is a bad day that CI can have instead"* —
+and it means the two systems with the best published numbers are reference
+points we can measure against and never ship.
+
+It also means the Phase 1 choice of PP-OCRv5 was the only one of the four that
+was ever available to us. That was reasoned from the licence floor rather than
+from the leaderboard, and the scan confirms the reasoning rather than the luck.
+
 PaddleOCR is worth singling out, because it is the strongest candidate for the
 tiers that have to run where we cannot call an API: Apache-2.0, self-hostable,
 0.9B for the VL model with 1.5M/7.7M/34.5M tiers beneath it, ONNX and OpenVINO
