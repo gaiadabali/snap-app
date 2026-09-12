@@ -477,7 +477,17 @@ export async function listCapturePages(
     const rows = await tx.execute<CapturePageRow>(sql`
       select page_number, storage_key, mime_type, byte_size::text as byte_size,
              encode(sha256, 'hex') as sha256, width, height,
-             source::text as source, created_at::text as created_at
+             source::text as source,
+             -- to_json, NOT ::text. Postgres renders a timestamptz with a
+             -- SPACE where ISO 8601 wants a T, and api-contract declares these
+             -- fields IsoDateTime. V8 parses the loose form anyway, so it works
+             -- in a browser and in tests by luck -- but Hermes, which is what
+             -- React Native actually runs, is stricter, and Date.parse answers
+             -- NaN rather than throwing. Every comparison against NaN is false,
+             -- so an unparseable timestamp reads as "never expires" rather than
+             -- as an error. (No backticks in here: this is inside a tagged
+             -- template literal and one would end the string.)
+             to_json(created_at)#>>'{}' as created_at
         from capture_pages
        where capture_id = ${captureId}
        order by page_number
@@ -1400,7 +1410,7 @@ export async function latestLayout(
     const rows = await tx.execute<LayoutSqlRow>(sql`
       select id, capture_id, extraction_run_id, storage_key, docdom_version,
              page_count, engine_ids, span_count, unreadable_count, shadow,
-             created_at::text as created_at
+             to_json(created_at)#>>'{}' as created_at
         from document_layouts
        where capture_id = ${captureId}
        order by created_at desc
@@ -1546,7 +1556,7 @@ export async function groundingForLayout(
     const rows = await tx.execute<GroundingSqlRow>(sql`
       select id, capture_id, layout_id, field_path, value, grounded, span_ids,
              box, page, confidence::text as confidence, enforced,
-             created_at::text as created_at
+             to_json(created_at)#>>'{}' as created_at
         from document_field_grounding
        where layout_id = ${layoutId}
     `);
@@ -1576,7 +1586,7 @@ export async function listMembers(
       role: string;
       created_at: string;
     }>(sql`
-      select m.user_id, u.display_name, u.email, m.role, m.created_at::text as created_at
+      select m.user_id, u.display_name, u.email, m.role, to_json(m.created_at)#>>'{}' as created_at
         from memberships m
         join users u on u.id = m.user_id
        -- The tenant predicate is NOT redundant with RLS here, and leaving it
