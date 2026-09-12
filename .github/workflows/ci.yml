@@ -38,7 +38,12 @@ env:
   # refuses to start without these, which is the point of having them here.
   TOKEN_SECRET: ci-only-token-secret-at-least-32-characters-long
   ADMIN_KMS_MASTER_KEY: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
-  APP_DB_PASSWORD: ci-app-password
+  # Deliberately NOT overridden. `db.mjs appuser` defaults to
+  # `app-dev-password`, and several suites fall back to that exact string when
+  # their own env var is absent (`images.repo.test.ts`). Setting a different
+  # password here made the roles and the tests disagree, and CI failed with
+  # "password authentication failed for user snap_app" — a real defect, but not
+  # the one being tested. CI matching a developer machine is the point.
 
 jobs:
   verify:
@@ -115,6 +120,12 @@ jobs:
           # ADMIN_DATABASE_URL is the owner connection, used ONLY to provision
           # test fixtures the application role is correctly forbidden to create.
           ADMIN_DATABASE_URL: postgres://postgres:verify@127.0.0.1:55499/snapapps
+          # Some suites build their own connections rather than reading
+          # DATABASE_URL, and fall back to a hard-coded local string. Set them
+          # explicitly so the suite never silently tests a different database
+          # than the one this job prepared.
+          SNAP_TEST_APP_DATABASE_URL: postgres://snap_app:app-dev-password@127.0.0.1:55499/snapapps
+          SNAP_TEST_ADMIN_DATABASE_URL: postgres://postgres:verify@127.0.0.1:55499/snapapps
         run: pnpm --filter @snap/server test
 
       - name: Web suite

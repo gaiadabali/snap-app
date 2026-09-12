@@ -80,16 +80,25 @@ describe('zip', () => {
       const archive = join(dir, 'pack.zip');
       writeFileSync(archive, zip(entries));
 
-      // PowerShell ships with Windows and is not part of this project.
-      execFileSync(
-        'powershell',
-        [
-          '-NoProfile',
-          '-Command',
-          `Expand-Archive -LiteralPath '${archive}' -DestinationPath '${join(dir, 'out')}' -Force`,
-        ],
-        { stdio: 'pipe' },
-      );
+      // An extractor that is NOT this project's code — the whole point is that
+      // something else agrees these bytes are a zip. Which one depends on the
+      // platform: PowerShell ships with Windows, `unzip` with Linux and macOS.
+      // Hard-coding PowerShell made this pass locally and fail in CI with
+      // `spawnSync powershell ENOENT`, which says nothing about the archive.
+      const out = join(dir, 'out');
+      if (process.platform === 'win32') {
+        execFileSync(
+          'powershell',
+          [
+            '-NoProfile',
+            '-Command',
+            `Expand-Archive -LiteralPath '${archive}' -DestinationPath '${out}' -Force`,
+          ],
+          { stdio: 'pipe' },
+        );
+      } else {
+        execFileSync('unzip', ['-q', '-o', archive, '-d', out], { stdio: 'pipe' });
+      }
 
       expect(readFileSync(join(dir, 'out', 'receipts', 'bp-gundagai.txt')).toString()).toBe(
         'BP TRUCKSTOP GUNDAGAI $266.91',
