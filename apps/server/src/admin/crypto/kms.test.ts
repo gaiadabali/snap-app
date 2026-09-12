@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 /**
  * `encryptApiKey`/`decryptApiKey` — envelope encryption for AI provider keys.
@@ -85,5 +85,103 @@ describe('admin AI-key envelope encryption — no master key configured', () => 
     );
     vi.resetModules();
     if (original) process.env.ADMIN_KMS_MASTER_KEY = original;
+  });
+});
+
+/**
+ * FAIL CLOSED IN PRODUCTION — the KMS provider seam.
+ *
+ * Before this, the local env-var master key was warned about
+ * (`docs/DEPLOY.md` §5, the boot preflight) but never actually refused in
+ * production — a document and a log line are not a control. This proves the
+ * refusal actually fires (not just that the code reads a certain way), that
+ * it fires ONLY for the write path, and that development is unaffected.
+ *
+ * `vi.resetModules()` before each scenario: `NODE_ENV` and the cached
+ * provider/master-key are both read once and cached at module scope (the
+ * same "read once at startup" discipline the rest of this file already
+ * relies on), so a fresh module is required for each combination of
+ * `NODE_ENV`/`ADMIN_KMS_PROVIDER` to take effect.
+ */
+describe('admin AI-key envelope encryption — fails closed on the LOCAL KMS provider in production', () => {
+  const ORIGINAL_NODE_ENV = process.env.NODE_ENV;
+  const ORIGINAL_PROVIDER = process.env.ADMIN_KMS_PROVIDER;
+
+  beforeAll(() => {
+    process.env.ADMIN_KMS_MASTER_KEY = MASTER_KEY;
+  });
+
+  afterEach(() => {
+    if (ORIGINAL_NODE_ENV === undefined) delete (process.env as Record<string, string | undefined>).NODE_ENV;
+    else process.env.NODE_ENV = ORIGINAL_NODE_ENV;
+    if (ORIGINAL_PROVIDER === undefined) delete process.env.ADMIN_KMS_PROVIDER;
+    else process.env.ADMIN_KMS_PROVIDER = ORIGINAL_PROVIDER;
+    vi.resetModules();
+  });
+
+  it('REFUSES to store a new key when NODE_ENV=production and the provider is (by default) local', async () => {
+    process.env.NODE_ENV = 'production';
+    delete process.env.ADMIN_KMS_PROVIDER;
+    vi.resetModules();
+    const { encryptApiKey } = await import('./kms.js');
+    expect(() => encryptApiKey('sk-live-abcdefghijklmnopqrstuvwxyz0123')).toThrow(
+      /local KMS stand-in.*production/i,
+    );
+  });
+
+  it('this is a genuine refusal, not a warning — no key material is produced and nothing is left to store', async () => {
+    process.env.NODE_ENV = 'production';
+    vi.resetModules();
+    const { encryptApiKey } = await import('./kms.js');
+    let thrown: unknown;
+    try {
+      encryptApiKey('sk-live-abcdefghijklmnopqrstuvwxyz0123');
+    } catch (e) {
+      thrown = e;
+    }
+    expect(thrown).toBeInstanceOf(Error);
+  });
+
+  it('succeeds under development with the same (local) provider', async () => {
+    process.env.NODE_ENV = 'development';
+    delete process.env.ADMIN_KMS_PROVIDER;
+    vi.resetModules();
+    const { encryptApiKey } = await import('./kms.js');
+    const encrypted = encryptApiKey('sk-live-abcdefghijklmnopqrstuvwxyz0123');
+    expect(encrypted.ciphertext.length).toBeGreaterThan(0);
+  });
+
+  it('succeeds when NODE_ENV is unset entirely (test runs, local scripts)', async () => {
+    delete (process.env as Record<string, string | undefined>).NODE_ENV;
+    vi.resetModules();
+    const { encryptApiKey } = await import('./kms.js');
+    const encrypted = encryptApiKey('sk-live-abcdefghijklmnopqrstuvwxyz0123');
+    expect(encrypted.ciphertext.length).toBeGreaterThan(0);
+  });
+
+  it('READING an already-stored key keeps working in production — refusing to decrypt is not this fix\'s job', async () => {
+    // Encrypt under development (storing is allowed there), THEN switch to
+    // production and prove decryption of that same ciphertext still works —
+    // the refusal must never brick an environment that already has keys.
+    process.env.NODE_ENV = 'development';
+    vi.resetModules();
+    const dev = await import('./kms.js');
+    const plaintext = 'sk-live-abcdefghijklmnopqrstuvwxyz0123';
+    const encrypted = dev.encryptApiKey(plaintext);
+
+    process.env.NODE_ENV = 'production';
+    vi.resetModules();
+    const prod = await import('./kms.js');
+    const recovered = prod.decryptApiKey(encrypted.ciphertext, encrypted.wrappedDek);
+    expect(recovered).toBe(plaintext);
+  });
+
+  it('an unknown ADMIN_KMS_PROVIDER is refused with guidance, not silently ignored', async () => {
+    process.env.ADMIN_KMS_PROVIDER = 'aws';
+    vi.resetModules();
+    const { encryptApiKey } = await import('./kms.js');
+    expect(() => encryptApiKey('sk-live-abcdefghijklmnopqrstuvwxyz0123')).toThrow(
+      /ADMIN_KMS_PROVIDER.*not implemented/i,
+    );
   });
 });

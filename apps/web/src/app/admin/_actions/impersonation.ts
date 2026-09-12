@@ -47,10 +47,11 @@ export async function startImpersonationAction(
     sessionId: started.sessionId,
     token: started.token,
     staffId: session.data.staffId,
-    // `AdminSession` carries no display name for the signed-in staff member
-    // (it is `{staffId, role, capabilities}`), so the banner names the role
-    // and id rather than inventing a person. Recorded as an API gap.
-    staffName: `${session.data.role} · ${session.data.staffId.slice(0, 8)}`,
+    // `AdminSession` now carries the signed-in staff member's own
+    // display name/email (migration 0023's `admin_my_capabilities`) — falls
+    // back to role + id prefix only for a staff row with no `display_name`
+    // on file, which `users.display_name` allows to be null.
+    staffName: session.data.displayName ?? session.data.email ?? `${session.data.role} · ${session.data.staffId.slice(0, 8)}`,
     subjectUserId,
     subjectName: subjectLabel,
     subjectEmail: subjectEmailRaw || null,

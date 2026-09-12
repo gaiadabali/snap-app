@@ -138,6 +138,47 @@ describeIfDb('admin plane — real HTTP', () => {
     expect(res.statusCode).toBe(401);
   });
 
+  it('returns capabilities as a real ARRAY over the wire, not a Postgres array literal', async () => {
+    // This is a runtime-only violation and `tsc` cannot see it. `admin_staff_list()`
+    // returns `platform_capability[]`, a custom enum array; `pg` has no type
+    // parser for an OID this migration invented, so the column arrived as the
+    // STRING '{impersonate,manage_staff}' while satisfying
+    // `AdminStaffSummary.capabilities: PlatformCapability[]` at compile time.
+    // Any UI mapping over it iterated characters.
+    //
+    // Asserted here, over real HTTP, because that is the only layer where the
+    // difference is observable — the fix is a `::text[]` cast in the repo.
+    await admin.query(
+      `INSERT INTO platform_staff_capabilities (staff_id, capability)
+         SELECT id, 'manage_staff'::platform_capability FROM platform_staff WHERE user_id = $1
+       ON CONFLICT DO NOTHING`,
+      [STAFF_USER],
+    );
+
+    const res = await app.inject({
+      method: 'GET',
+      url: '/v1/admin/staff',
+      headers: { authorization: `Bearer ${issueSession(STAFF_USER)}` },
+    });
+    expect(res.statusCode).toBe(200);
+
+    const rows = res.json() as Array<{ capabilities: unknown }>;
+    expect(rows.length).toBeGreaterThan(0);
+    for (const row of rows) {
+      expect(
+        Array.isArray(row.capabilities),
+        `capabilities came back as ${typeof row.capabilities}: ${JSON.stringify(row.capabilities)}`,
+      ).toBe(true);
+    }
+
+    await admin.query(
+      `DELETE FROM platform_staff_capabilities
+         WHERE staff_id = (SELECT id FROM platform_staff WHERE user_id = $1)
+           AND capability = 'manage_staff'`,
+      [STAFF_USER],
+    );
+  });
+
   it('the admin surface reports the real database role, and it does not bypass RLS', async () => {
     // Not an admin route — `/v1/ready` — but the exact assertion this whole
     // plane exists to never regress: the process this suite just booted is

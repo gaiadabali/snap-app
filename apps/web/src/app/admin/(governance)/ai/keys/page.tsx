@@ -80,7 +80,7 @@ export default async function KeysPage() {
                   </div>
 
                   <div className="mt-4">
-                    <KeyForm configId={p.id} hasLiveKey={p.hasLiveKey} />
+                    <KeyForm configId={p.id} hasLiveKey={p.hasLiveKey} liveKeyId={p.liveKeyId} />
                   </div>
                 </Card>
               ))}

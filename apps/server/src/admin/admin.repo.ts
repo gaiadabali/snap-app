@@ -7,6 +7,7 @@ import type {
   AdminAiProviderConfig,
   AdminAiUsageStat,
   AdminAnalyticsOverview,
+  AdminAuditLogEntry,
   AdminImpersonationStartResponse,
   AdminImpersonationStopResponse,
   AdminPlanSummary,
@@ -24,6 +25,36 @@ import type {
   PlatformCapability,
   PlatformStaffRole,
 } from '@snap/api-contract';
+
+/**
+ * Normalises a Postgres `timestamptz` column to true ISO 8601.
+ *
+ * `pg` hands every `timestamptz` back as TEXT in Postgres' own rendering —
+ * `"2026-09-12 06:14:05.244391+00"`, a space rather than a `T` and no
+ * trailing `Z` — even though `@snap/api-contract` declares `IsoDateTime`. A
+ * stricter parser than V8's lenient one returns `Invalid Date` for that
+ * string, and `Date.parse` returning `NaN` is actively dangerous: every
+ * comparison against `NaN` is `false`, so an expiry check written the obvious
+ * way (`Date.parse(x) <= Date.now()`) treats an unreadable timestamp as NEVER
+ * expiring (see `apps/web/src/lib/impersonation-cookie.ts`'s own comment on
+ * exactly this).
+ *
+ * Fixed HERE, once, in the repo layer — not with a `to_char` cast repeated at
+ * every SQL call site — because `Date` already parses Postgres' exact output
+ * format correctly (space-separated, explicit numeric offset), so
+ * re-serialising through `.toISOString()` is a safe, well-defined
+ * normalisation: what actually leaves this process over HTTP is real ISO
+ * 8601 with `Z`, regardless of how forgiving any downstream parser is. See
+ * `packages/db/migrations/0023_admin_audit_and_gaps.sql`'s header for the
+ * full reasoning, including why this was chosen over redefining every
+ * timestamp-returning function's SQL.
+ */
+function toIso(pg: string): string;
+function toIso(pg: string | null): string | null;
+function toIso(pg: string | null): string | null {
+  if (pg == null) return null;
+  return new Date(pg).toISOString();
+}
 
 /**
  * Every database access the admin plane makes.
@@ -71,8 +102,14 @@ async function callAs<T>(staffUserId: string, fn: (tx: Tx) => Promise<T>): Promi
 
 export async function getMyCapabilities(userId: string): Promise<AdminSession | null> {
   const rows = await asUser(getDb(), userId, (tx) =>
-    tx.execute<{ staff_id: string; role: PlatformStaffRole; capability: PlatformCapability }>(sql`
-      select staff_id, role, capability from admin_my_capabilities()
+    tx.execute<{
+      staff_id: string;
+      role: PlatformStaffRole;
+      capability: PlatformCapability;
+      display_name: string | null;
+      email: string | null;
+    }>(sql`
+      select staff_id, role, capability, display_name, email from admin_my_capabilities()
     `),
   );
   if (rows.rows.length === 0) return null;
@@ -80,6 +117,8 @@ export async function getMyCapabilities(userId: string): Promise<AdminSession | 
     staffId: rows.rows[0]!.staff_id,
     role: rows.rows[0]!.role,
     capabilities: rows.rows.map((r) => r.capability),
+    displayName: rows.rows[0]!.display_name,
+    email: rows.rows[0]!.email,
   };
 }
 
@@ -173,8 +212,8 @@ export async function searchTenants(
       kind: r.kind,
       planCode: r.plan_code,
       memberCount: Number(r.member_count),
-      createdAt: r.created_at,
-      deletedAt: r.deleted_at,
+      createdAt: toIso(r.created_at),
+      deletedAt: toIso(r.deleted_at),
     }));
   });
 }
@@ -197,11 +236,14 @@ export async function getUserDetail(
       userId: r.user_id,
       email: r.email,
       displayName: r.display_name,
-      createdAt: r.created_at,
+      createdAt: toIso(r.created_at),
       tenantCount: Number(r.tenant_count),
       // Aggregated to jsonb in the function, so `pg` hands it back already
       // parsed. Built there rather than as a second round trip so the
-      // membership list cannot disagree with the count beside it.
+      // membership list cannot disagree with the count beside it. Already
+      // real ISO 8601 as-is — Postgres' jsonb encoding of a timestamptz is
+      // ALWAYS ISO 8601 regardless of DateStyle, unlike a bare SELECT column
+      // handed back as text — so `joinedAt` needs no `toIso()` here.
       memberships: r.memberships ?? [],
     };
   });
@@ -229,8 +271,8 @@ export async function getTenantDetail(staffUserId: string, tenantId: string): Pr
       country: r.country,
       planCode: r.plan_code,
       memberCount: Number(r.member_count),
-      createdAt: r.created_at,
-      deletedAt: r.deleted_at,
+      createdAt: toIso(r.created_at),
+      deletedAt: toIso(r.deleted_at),
     };
   });
 }
@@ -253,7 +295,7 @@ export async function searchUsers(
       userId: r.user_id,
       email: r.email,
       displayName: r.display_name,
-      createdAt: r.created_at,
+      createdAt: toIso(r.created_at),
       tenantCount: Number(r.tenant_count),
     }));
   });
@@ -389,7 +431,25 @@ export async function listStaff(staffUserId: string): Promise<AdminStaffSummary[
       capabilities: PlatformCapability[];
       created_at: string;
       revoked_at: string | null;
-    }>(sql`select * from admin_staff_list()`);
+      // `capabilities` is CAST TO text[] deliberately.
+      //
+      // `admin_staff_list()` returns `platform_capability[]`, a custom enum
+      // array. `pg` ships type parsers keyed by OID and has none for a type
+      // this migration invented, so it hands the column back as the raw
+      // Postgres literal — the STRING '{impersonate,manage_staff}', not an
+      // array. That satisfied `AdminStaffSummary.capabilities:
+      // PlatformCapability[]` at compile time and violated it at runtime, so
+      // any UI mapping over it iterated characters.
+      //
+      // `text[]` (OID 1009) has a built-in parser, so the cast is enough and
+      // needs no migration. `getMyCapabilities` above never hit this because
+      // it returns one ROW per capability and assembles the array in JS.
+    }>(sql`
+      select staff_id, user_id, email, display_name, role,
+             capabilities::text[] as capabilities,
+             created_at, revoked_at
+        from admin_staff_list()
+    `);
     return rows.rows.map((r) => ({
       staffId: r.staff_id,
       userId: r.user_id,
@@ -397,8 +457,8 @@ export async function listStaff(staffUserId: string): Promise<AdminStaffSummary[
       displayName: r.display_name,
       role: r.role,
       capabilities: r.capabilities,
-      createdAt: r.created_at,
-      revokedAt: r.revoked_at,
+      createdAt: toIso(r.created_at),
+      revokedAt: toIso(r.revoked_at),
     }));
   });
 }
@@ -466,7 +526,7 @@ export async function listSettings(
     const rows = await tx.execute<{ key: string; value: unknown; updated_at: string }>(
       sql`select * from admin_setting_list()`,
     );
-    return rows.rows.map((r) => ({ key: r.key, value: r.value, updatedAt: r.updated_at }));
+    return rows.rows.map((r) => ({ key: r.key, value: r.value, updatedAt: toIso(r.updated_at) }));
   });
 }
 
@@ -507,6 +567,7 @@ export async function listAiProviders(staffUserId: string): Promise<AdminAiProvi
       default_model: string | null;
       is_active: boolean;
       has_live_key: boolean;
+      live_key_id: string | null;
       key_prefix: string | null;
       key_last4: string | null;
     }>(sql`select * from admin_ai_provider_list()`);
@@ -517,6 +578,9 @@ export async function listAiProviders(staffUserId: string): Promise<AdminAiProvi
       defaultModel: r.default_model,
       isActive: r.is_active,
       hasLiveKey: r.has_live_key,
+      // 0023: the live key's own id, so a fresh page load can still revoke it
+      // — see `AdminAiProviderConfig.liveKeyId`'s contract comment.
+      liveKeyId: r.live_key_id,
       keyPrefix: r.key_prefix,
       keyLast4: r.key_last4,
     }));
@@ -598,7 +662,7 @@ export async function startImpersonation(
       select * from admin_impersonation_start(${subjectUserId}, ${subjectTenantId}, ${reason}, ${tokenHash}, ${ttlSeconds ?? null})
     `);
     const r = rows.rows[0]!;
-    return { sessionId: r.session_id, expiresAt: r.expires_at };
+    return { sessionId: r.session_id, expiresAt: toIso(r.expires_at) };
   });
 }
 
@@ -643,4 +707,70 @@ export async function verifyImpersonation(
     subjectUserId: r.subject_user_id,
     subjectTenantId: r.subject_tenant_id,
   };
+}
+
+/* ── Audit log (gap 1 — 0023) ────────────────────────────────────────────── */
+
+export type AuditLogFilters = {
+  actorId?: string | null;
+  tenantId?: string | null;
+  action?: string | null;
+  since?: string | null;
+  until?: string | null;
+  limit?: number;
+  offset?: number;
+};
+
+/**
+ * A paginated, filterable read of `audit_log` — gated on `audit_review`
+ * (`admin_audit_log_search`, migration 0023). See that migration's header for
+ * why this is a distinct capability from `view_tenant_metadata`.
+ *
+ * `audit_log` is append-only; there is no corresponding write here, and there
+ * must never be one.
+ */
+export async function searchAuditLog(
+  staffUserId: string,
+  filters: AuditLogFilters,
+): Promise<AdminAuditLogEntry[]> {
+  return callAs(staffUserId, async (tx) => {
+    const rows = await tx.execute<{
+      id: string;
+      tenant_id: string | null;
+      actor_type: string;
+      actor_id: string | null;
+      action: string;
+      entity_type: string;
+      entity_id: string | null;
+      before: unknown;
+      after: unknown;
+      request_id: string | null;
+      ip: string | null;
+      occurred_at: string;
+    }>(sql`
+      select * from admin_audit_log_search(
+        ${filters.actorId ?? null},
+        ${filters.tenantId ?? null},
+        ${filters.action ?? null},
+        ${filters.since ?? null},
+        ${filters.until ?? null},
+        ${filters.limit ?? null},
+        ${filters.offset ?? null}
+      )
+    `);
+    return rows.rows.map((r) => ({
+      id: r.id,
+      tenantId: r.tenant_id,
+      actorType: r.actor_type,
+      actorId: r.actor_id,
+      action: r.action,
+      entityType: r.entity_type,
+      entityId: r.entity_id,
+      before: r.before,
+      after: r.after,
+      requestId: r.request_id,
+      ip: r.ip,
+      occurredAt: toIso(r.occurred_at),
+    }));
+  });
 }

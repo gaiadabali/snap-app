@@ -20,6 +20,14 @@ export const PRIMARY_NAV: NavItem[] = [
   { href: '/admin', label: 'Overview', hint: 'Platform metrics', capability: 'view_analytics' },
   { href: '/admin/people', label: 'People', hint: 'Users', capability: 'view_tenant_metadata' },
   { href: '/admin/tenants', label: 'Tenants', hint: 'Workspaces', capability: 'view_tenant_metadata' },
-  { href: '/admin/audit', label: 'Audit trail', hint: 'Impersonation log' },
+  {
+    href: '/admin/audit',
+    label: 'Audit trail',
+    hint: 'Impersonation log',
+    // Wired to `GET /v1/admin/audit-log` (`audit_review`, migration 0023) —
+    // see that migration's header for why this is its own capability rather
+    // than `view_tenant_metadata`.
+    capability: 'audit_review',
+  },
   { href: '/admin/governance', label: 'Governance & AI', hint: 'Server control' },
 ];

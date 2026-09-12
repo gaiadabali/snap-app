@@ -84,6 +84,7 @@ DATABASE_URL          # snap_app — NOT a superuser. The preflight enforces thi
 WORKER_DATABASE_URL   # snap_worker
 TOKEN_SECRET          # 32+ chars, secret, stable — rotating it signs everyone out
 ADMIN_KMS_MASTER_KEY  # 64 hex chars (see §5)
+ADMIN_KMS_PROVIDER    # optional, default "local" — set to a real KmsProvider's id once one exists (§5)
 PUBLIC_URL            # how this API is reached from outside
 CORS_ORIGINS          # comma-separated allow-list; never *
 GOOGLE_CLIENT_ID      # §3
@@ -101,16 +102,26 @@ not be present at all.
 
 ---
 
-## 5. Blocking for the admin console: the KMS stand-in
+## 5. Enforced for the admin console: the KMS stand-in
 
 `apps/server/src/admin/crypto/kms.ts` wraps data keys with a local master key
-read from `ADMIN_KMS_MASTER_KEY`. It is the correct *shape* — AEAD with a
-wrapped DEK, ciphertext in `BYTEA`, never `pgcrypto` — but the master key sits
-in an environment variable rather than a hardware-backed cloud KMS.
+read from `ADMIN_KMS_MASTER_KEY`, behind a `KmsProvider` seam (`wrap`/`unwrap`).
+It is the correct *shape* — AEAD with a wrapped DEK, ciphertext in `BYTEA`,
+never `pgcrypto` — but the master key sits in an environment variable rather
+than a hardware-backed cloud KMS.
 
 That is fine for development and is **not** what should protect a live AI
-provider credential. `wrapDek` and `unwrapDek` are the two functions to
-replace. Until then, do not store a real provider key through the admin UI.
+provider credential, and this is no longer only a warning: `encryptApiKey`
+**throws** if the active provider is the local stand-in (`ADMIN_KMS_PROVIDER`
+unset, or `local`) and `NODE_ENV=production` — storing or rotating a key
+through the admin UI fails outright. Reading an already-stored key is
+unaffected, so this cannot brick an environment that already has one.
+
+Before storing a real provider key in production: implement a `KmsProvider`
+for the real KMS (AWS KMS, GCP KMS, Vault — see that file's header for the
+seam) and set `ADMIN_KMS_PROVIDER` to select it. The boot preflight still
+warns at startup if the local provider is in play, as an earlier signal than
+the first failed key-store attempt.
 
 ---
 

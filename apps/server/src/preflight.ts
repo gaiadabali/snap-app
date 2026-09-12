@@ -89,12 +89,18 @@ export function evaluatePreflight(settings: Config, probe: PreflightProbe): Pref
   // ── 4. The KMS stand-in. ──────────────────────────────────────────────────
   //
   // `admin/crypto/kms.ts` wraps data keys with a local master key rather than
-  // a cloud KMS. That is fine for development and is not what should be
-  // protecting a live provider credential.
-  if (production && process.env.ADMIN_KMS_MASTER_KEY) {
+  // a cloud KMS. WRITING a new key under that provider in production is now a
+  // hard refusal at the point of use (`encryptApiKey` throws) rather than
+  // only a warning here — this boot-time check stays as a non-fatal, EARLIER
+  // signal for an operator (before any staff member even tries to set a key),
+  // and because reading an already-stored key deliberately still works under
+  // the local provider (see that file's header), so its presence at boot is
+  // not itself an error condition worth failing the whole process over.
+  if (production && process.env.ADMIN_KMS_MASTER_KEY && (process.env.ADMIN_KMS_PROVIDER ?? 'local') === 'local') {
     warnings.push(
       'Admin AI keys are wrapped by the LOCAL KMS stand-in (apps/server/src/admin/crypto/kms.ts), not a cloud KMS. ' +
-        'Replace wrapDek/unwrapDek before storing a real provider credential.',
+        'Storing or rotating a key now THROWS in production under this provider — set ADMIN_KMS_PROVIDER to a ' +
+        'real KmsProvider before a staff member needs to store one. Reading an already-stored key is unaffected.',
     );
   }
 

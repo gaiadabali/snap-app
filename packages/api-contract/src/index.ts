@@ -916,13 +916,29 @@ export type PlatformCapability =
   | 'manage_platform_settings'
   | 'manage_ai_config'
   | 'manage_staff'
-  | 'manage_operations';
+  | 'manage_operations'
+  /**
+   * 0023: reviewing who accessed whose records (`GET /v1/admin/audit-log`) is
+   * its own capability, not folded into `view_tenant_metadata` or
+   * `manage_staff` — see that migration's header for why. Reviewing access is
+   * itself sensitive: granting it should never be a side effect of granting
+   * something else.
+   */
+  | 'audit_review';
 
 /** `GET /v1/admin/me` — what the signed-in caller may do on this plane. */
 export interface AdminSession {
   staffId: string;
   role: PlatformStaffRole;
   capabilities: PlatformCapability[];
+  /**
+   * 0023: the signed-in staff member's own name/email, joined from `users`.
+   * Previously absent, so the console could only show `role · staffId` — see
+   * `apps/web/src/app/admin/_actions/impersonation.ts` for where that showed
+   * up as a placeholder in the impersonation banner.
+   */
+  displayName: string | null;
+  email: string | null;
 }
 
 /** `GET /v1/admin/analytics/overview` */
@@ -1104,6 +1120,13 @@ export interface AdminAiProviderConfig {
   defaultModel: string | null;
   isActive: boolean;
   hasLiveKey: boolean;
+  /**
+   * 0023: the live key's own row id, so `POST /v1/admin/ai/keys/:keyId/revoke`
+   * is reachable from a fresh page load — previously only the id returned by
+   * `setAiProviderKey` in the SAME session could ever be revoked. Never the
+   * key value; an id is not secret material.
+   */
+  liveKeyId: string | null;
   keyPrefix: string | null;
   keyLast4: string | null;
 }
@@ -1192,4 +1215,41 @@ export interface AdminAddStaffRequest {
 export interface AdminSetStaffCapabilityRequest {
   capability: PlatformCapability;
   grant: boolean;
+}
+
+/**
+ * One row of `GET /v1/admin/audit-log` (`admin_audit_log_search`, 0023).
+ * Gated on `audit_review` — see that migration's header for why this is its
+ * own capability rather than folded into `view_tenant_metadata`. `audit_log`
+ * is append-only; there is no corresponding write type, and there must never
+ * be one.
+ */
+export interface AdminAuditLogEntry {
+  /** `audit_log.id` is `bigserial`; carried as a string, never a JS number. */
+  id: string;
+  tenantId: string | null;
+  actorType: string;
+  actorId: string | null;
+  action: string;
+  entityType: string;
+  entityId: string | null;
+  before: unknown;
+  after: unknown;
+  requestId: string | null;
+  ip: string | null;
+  occurredAt: IsoDateTime;
+}
+
+/**
+ * Query parameters of `GET /v1/admin/audit-log`. Every field optional — an
+ * empty query is "the most recent rows, unfiltered", capped server-side.
+ */
+export interface AdminAuditLogQuery {
+  actorId?: string;
+  tenantId?: string;
+  action?: string;
+  since?: IsoDateTime;
+  until?: IsoDateTime;
+  limit?: number;
+  offset?: number;
 }

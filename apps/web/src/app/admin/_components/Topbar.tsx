@@ -13,18 +13,32 @@ const ROLE_LABEL: Record<PlatformStaffRole, string> = {
 };
 
 /**
- * `role` and `staffId` — not a name. `AdminSession` (`GET /v1/admin/me`) is
- * `{ staffId, role, capabilities }`, with no display name or email for the
- * signed-in staff member. A friendlier topbar needs that endpoint (or the
- * session) to carry one; until then this shows what is actually known.
+ * `GET /v1/admin/me` (migration 0023's `admin_my_capabilities`) now carries
+ * the signed-in staff member's own `displayName`/`email`, joined from
+ * `users` — previously it was `{ staffId, role, capabilities }` only, so this
+ * showed a role badge and an id prefix. Falls back to the id prefix only for
+ * a `users` row with no `display_name` on file.
  */
-export function Topbar({ role, staffId, index }: { role: PlatformStaffRole; staffId: string; index: PaletteHit[] }) {
+export function Topbar({
+  role,
+  staffId,
+  displayName,
+  index,
+}: {
+  role: PlatformStaffRole;
+  staffId: string;
+  displayName: string | null;
+  index: PaletteHit[];
+}) {
   return (
     <header className="flex h-14 items-center gap-4 border-b border-[var(--color-rule)] bg-[var(--color-surface)] px-4">
       <CommandPalette index={index} />
       <div className="ml-auto flex items-center gap-3">
         <Badge tone="accent">{ROLE_LABEL[role]}</Badge>
-        <span className="font-mono text-[12px] text-[var(--color-ink-muted)]" title="No staff display name is exposed by GET /v1/admin/me yet">
+        {displayName ? (
+          <span className="text-[13px] font-semibold text-[var(--color-ink)]">{displayName}</span>
+        ) : null}
+        <span className="font-mono text-[12px] text-[var(--color-ink-muted)]" title="Staff id">
           {staffId.slice(0, 8)}…
         </span>
         <ThemeToggle />

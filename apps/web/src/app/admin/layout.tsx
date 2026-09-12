@@ -79,7 +79,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             expiresAt={activeSession.expiresAt}
           />
         ) : null}
-        <Topbar role={session.data.role} staffId={session.data.staffId} index={index} />
+        <Topbar
+          role={session.data.role}
+          staffId={session.data.staffId}
+          displayName={session.data.displayName}
+          index={index}
+        />
         <main className="min-w-0 flex-1 overflow-x-hidden p-6">{children}</main>
       </div>
     </div>

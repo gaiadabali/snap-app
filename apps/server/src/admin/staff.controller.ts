@@ -25,6 +25,9 @@ const CAPABILITIES = [
   'manage_ai_config',
   'manage_staff',
   'manage_operations',
+  // 0023 — see that migration's header for why audit review is its own,
+  // separately-grantable capability rather than folded into an existing one.
+  'audit_review',
 ] as const;
 
 export class AddStaffDto implements AdminAddStaffRequest {

@@ -105,13 +105,11 @@ export async function setAiProviderKey(
 }
 
 /**
- * Revokes a stored key by id. NOTE (see the report): `GET
- * /v1/admin/ai/providers` does not return the live key's id, only
- * prefix/last4/hasLiveKey — so the only `keyId` a caller can ever have is the
- * one handed back by `setAiProviderKey` in the same session, immediately
- * after a set/rotate. There is no way to revoke an older key that was set in
- * a previous session from this screen. That is a real gap, not a UI
- * omission — flagged for the next round of server work.
+ * Revokes a stored key by id. `GET /v1/admin/ai/providers` now returns the
+ * live key's own id (`AdminAiProviderConfig.liveKeyId`, migration 0023), so
+ * this is reachable from a fresh page load — not only in the moment right
+ * after `setAiProviderKey` returns one in the same response, which was the
+ * only way to reach this before.
  */
 export async function revokeAiKey(
   keyId: string,
@@ -369,10 +367,10 @@ export function computeChain(capability: Capability): ComputedChain {
 //    removeAnnouncementBanner — no dedicated schema.
 //  - Support/contact config: getSupportConfig, updateSupportConfig — no
 //    dedicated schema.
-//  - Audit log read: getAuditLog — every mutation above is audited
-//    server-side (`audit_log` table, per migration 0021), but no controller
-//    exposes a GET to read it back. There is no way to show "who did this
-//    and when" in this console yet.
+//  - Audit log read: NOW WIRED, as of migration 0023 — see
+//    `_data/audit.ts` (`GET /v1/admin/audit-log`, gated on `audit_review`)
+//    and `(people)/audit/page.tsx`. Listed here only because this comment
+//    used to describe it as missing; it is not this surface's data file.
 //  - Tenant picker fixture: getTenantOptions — used to read `_fixtures/seed.ts`
 //    (owned by another agent's surface, not real data). The re-extraction
 //    form below takes a tenant id as plain text instead of a picker, which

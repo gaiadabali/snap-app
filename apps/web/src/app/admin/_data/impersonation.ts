@@ -2,15 +2,16 @@
  * The signed-in staff member's own session, and impersonation start/stop —
  * platform admin, wired to the real admin plane.
  *
- * There is no `GET` to list past or currently-open impersonation sessions —
- * `apps/server/src/admin/impersonation.controller.ts` exposes only `start`
- * and `:sessionId/stop`. Every request made under a live session IS recorded
- * in Postgres `audit_log` by `admin_impersonation_start`/`_stop`/`_verify`
- * (see `packages/db/migrations/0021_admin_plane.sql`), but nothing reads that
- * table back to this app. So there is no `listAuditTrail` or `recordAction`
- * here any more — see `(people)/audit/page.tsx` for how that gap is shown,
- * and the wiring report for the endpoint this needs
- * (something like `GET /v1/admin/audit-log`).
+ * There is still no `GET` to list past or currently-open impersonation
+ * SESSIONS as such — `apps/server/src/admin/impersonation.controller.ts`
+ * exposes only `start` and `:sessionId/stop`. But every request made under a
+ * live session IS recorded in Postgres `audit_log`
+ * (`admin_impersonation_start`/`_stop`/`_verify`, `0021_admin_plane.sql`), and
+ * as of migration 0023 that log is readable — see `_data/audit.ts`
+ * (`GET /v1/admin/audit-log`, gated on `audit_review`) and
+ * `(people)/audit/page.tsx`. That is the closest thing to a session history
+ * this console has: a list of who impersonated whom and when, reconstructed
+ * from the audit trail rather than a dedicated sessions endpoint.
  */
 import 'server-only';
 

@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 
 import { AdminAiController } from './ai.controller.js';
 import { AdminAnalyticsController } from './analytics.controller.js';
+import { AdminAuditController } from './audit.controller.js';
 import { AdminBillingController } from './billing.controller.js';
 import { AdminImpersonationController } from './impersonation.controller.js';
 import { AdminOperationsController } from './operations.controller.js';
@@ -29,6 +30,7 @@ import { AdminTenantsController } from './tenants.controller.js';
     AdminAiController,
     AdminOperationsController,
     AdminStaffController,
+    AdminAuditController,
   ],
 })
 export class AdminModule {}

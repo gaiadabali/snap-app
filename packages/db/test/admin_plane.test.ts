@@ -204,6 +204,12 @@ describeIfDb('admin plane', () => {
       await expect(
         c.query(`SELECT admin_staff_add($1, 'support', ARRAY[]::platform_capability[])`, [SUBJECT_USER]),
       ).rejects.toThrow(/missing capability: manage_staff/);
+      // 0023: reviewing the audit log is its own capability, refused the
+      // same way as every other one — see that migration's header for why
+      // it is not folded into view_tenant_metadata.
+      await expect(c.query(`SELECT * FROM admin_audit_log_search()`)).rejects.toThrow(
+        /missing capability: audit_review/,
+      );
     });
 
     it('cannot call staff_has_capability its way into anything — it always reports false for them', async () => {
@@ -273,6 +279,12 @@ describeIfDb('admin plane', () => {
           ]),
       ],
       ['manage_operations', () => c.query(`SELECT admin_impersonation_sweep_expired()`)],
+      [
+        'audit_review',
+        // 0023: the audit-log read, refused BY THE DATABASE like every other
+        // capability-gated function — not just by the Nest guard.
+        () => c.query(`SELECT * FROM admin_audit_log_search()`),
+      ],
     ] as const)('lacking "%s" refuses the call that requires it', async (cap, run) => {
       await asAppRw(STAFF_USER);
       await expect(run()).rejects.toThrow(new RegExp(`missing capability: ${cap}`));
@@ -298,7 +310,7 @@ describeIfDb('admin plane', () => {
            FROM unnest(ARRAY[
              'view_analytics','view_tenant_metadata','read_tenant_records','impersonate',
              'manage_billing','manage_platform_settings','manage_ai_config','manage_staff',
-             'manage_operations'
+             'manage_operations','audit_review'
            ]::platform_capability[]) AS x`,
         [staffId],
       );
@@ -423,6 +435,100 @@ describeIfDb('admin plane', () => {
       await expect(
         c.query(`SELECT admin_trigger_reextraction($1, $2, 'because')`, [OTHER_TENANT, CAPTURE_ID]),
       ).rejects.toThrow(/no such capture/);
+    });
+
+    // ── Gap 3: admin_my_capabilities names the caller ──────────────────────
+    it('admin_my_capabilities: also returns the caller\'s own display_name and email (0023)', async () => {
+      await asAppRw(STAFF_USER);
+      const r = await c.query<{ display_name: string; email: string }>(
+        'SELECT * FROM admin_my_capabilities()',
+      );
+      expect(r.rows.length).toBeGreaterThan(0);
+      expect(r.rows[0]!.display_name).toBe('Staff Member');
+      expect(r.rows[0]!.email).toBe('staff@admin.test');
+    });
+
+    // ── Gap 2: admin_ai_provider_list exposes the live key's id ────────────
+    it('admin_ai_provider_list: the live key\'s own id is returned, so it is revocable from a fresh read (0023)', async () => {
+      await asAppRw(STAFF_USER);
+      const cfg = await c.query<{ admin_ai_provider_upsert: string }>(
+        `SELECT admin_ai_provider_upsert('ollama', 'admin-test-livekeyid', 'gemma4:31b', true)`,
+      );
+      const configId = cfg.rows[0]!.admin_ai_provider_upsert;
+      const stored = await c.query<{ admin_ai_key_store: string }>(
+        `SELECT admin_ai_key_store($1, 'sk-live-', 'wxyz', $2, $3, 'local-kek-v1')`,
+        [configId, randomBytes(48), randomBytes(48)],
+      );
+      const keyId = stored.rows[0]!.admin_ai_key_store;
+
+      // A SEPARATE call, as the read this list would serve on a fresh page
+      // load — not using the id `admin_ai_key_store` just returned.
+      const list = await c.query<{ live_key_id: string; has_live_key: boolean }>(
+        `SELECT * FROM admin_ai_provider_list() WHERE id = $1`,
+        [configId],
+      );
+      expect(list.rows[0]!.has_live_key).toBe(true);
+      expect(list.rows[0]!.live_key_id).toBe(keyId);
+
+      // And that id genuinely revokes it — proving `live_key_id` is not a
+      // decoy value that merely looks like the right shape.
+      await c.query(`SELECT admin_ai_key_revoke($1, 'test cleanup')`, [keyId]);
+      const afterRevoke = await c.query<{ has_live_key: boolean }>(
+        `SELECT * FROM admin_ai_provider_list() WHERE id = $1`,
+        [configId],
+      );
+      expect(afterRevoke.rows[0]!.has_live_key).toBe(false);
+    });
+
+    // ── Gap 1: the audit-log read ───────────────────────────────────────────
+    describe('audit_review: reading audit_log back', () => {
+      it('finds a row it can be certain exists — the view_tenant_metadata read logged earlier in this suite', async () => {
+        await asAppRw(STAFF_USER);
+        // Filtered by the exact tenant a prior test in this file caused an
+        // `admin_view_tenant_metadata` row to be written for.
+        const r = await c.query(
+          `SELECT * FROM admin_audit_log_search(NULL, $1, 'admin_view_tenant_metadata')`,
+          [SUBJECT_TENANT],
+        );
+        expect(r.rows.length).toBeGreaterThanOrEqual(1);
+        expect(r.rows[0]).toMatchObject({ tenant_id: SUBJECT_TENANT, action: 'admin_view_tenant_metadata' });
+      });
+
+      it('filters by actor_id and by action independently', async () => {
+        await asAppRw(STAFF_USER);
+        const byActor = await c.query(`SELECT * FROM admin_audit_log_search($1)`, [STAFF_USER]);
+        expect(byActor.rows.length).toBeGreaterThan(0);
+        expect(byActor.rows.every((row: { actor_id: string }) => row.actor_id === STAFF_USER)).toBe(true);
+
+        const byAction = await c.query(
+          `SELECT * FROM admin_audit_log_search(NULL, NULL, 'admin_staff_add')`,
+        );
+        expect(byAction.rows.every((row: { action: string }) => row.action === 'admin_staff_add')).toBe(true);
+      });
+
+      it('reviewing the audit log is ITSELF audited — the read leaves a trail too', async () => {
+        await asAppRw(STAFF_USER);
+        await c.query(`SELECT * FROM admin_audit_log_search($1)`, [STAFF_USER]);
+        await asSuperuser();
+        const logged = await c.query(
+          `SELECT after FROM audit_log WHERE action = 'admin_audit_log_search' AND actor_id = $1
+             ORDER BY id DESC LIMIT 1`,
+          [STAFF_USER],
+        );
+        expect(logged.rows).toHaveLength(1);
+      });
+
+      it('never mutates audit_log — it is append-only; there is no admin_audit_log function that writes another row\'s content', async () => {
+        await asAppRw(STAFF_USER);
+        await asSuperuser();
+        const before = await c.query('SELECT count(*)::int AS n FROM audit_log');
+        await asAppRw(STAFF_USER);
+        await c.query(`SELECT * FROM admin_audit_log_search()`);
+        await asSuperuser();
+        const after = await c.query('SELECT count(*)::int AS n FROM audit_log');
+        // Exactly ONE new row (the read's own audit entry) — nothing else moved.
+        expect(after.rows[0]!.n).toBe(before.rows[0]!.n + 1);
+      });
     });
   });
 

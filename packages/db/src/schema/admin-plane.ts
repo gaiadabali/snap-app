@@ -37,6 +37,14 @@ export const platformCapability = pgEnum('platform_capability', [
   'manage_ai_config',
   'manage_staff',
   'manage_operations',
+  // 0023: reviewing who accessed whose records (the audit-log read) is its
+  // own, independently-grantable power — see that migration's header for why
+  // it is not folded into `view_tenant_metadata` or `manage_staff` instead.
+  // Appended, not inserted, because `ALTER TYPE ... ADD VALUE` always appends
+  // and `packages/db/test/drift.test.ts` compares this array to the database
+  // in `enumsortorder` — reordering here without a matching `ADD VALUE ...
+  // BEFORE` in SQL would fail that test.
+  'audit_review',
 ]);
 
 export const impersonationEndReason = pgEnum('impersonation_end_reason', [
