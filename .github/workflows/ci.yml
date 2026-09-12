@@ -1,0 +1,128 @@
+name: CI
+
+# Runs the suites the way they must be run to mean anything.
+#
+# Two decisions here are load-bearing and are the direct result of defects this
+# project actually shipped — see docs/DEPLOY.md §8:
+#
+#  1. `REQUIRE_DB=1`. The database suites are `DATABASE_URL ? describe :
+#     describe.skip`, so with no database they report "200 skipped" and the run
+#     is GREEN while proving nothing — not tenant isolation, not the admin
+#     capability refusals, not RLS. That has already fooled a person on this
+#     project. With this set, the run refuses to start instead.
+#
+#  2. The server suite connects as `snap_app`, NOT as a superuser. The
+#     catastrophic version of the RLS bug was that the server connected as
+#     `postgres`, which carries `rolbypassrls`, so no policy was ever evaluated
+#     and every isolation test passed vacuously. A CI job that runs as
+#     `postgres` proves the same nothing.
+#
+# Postgres runs as a plain container named `snapdb` rather than a `services:`
+# block, because `packages/db/scripts/db.mjs` drives it with `docker exec` by
+# that name. Reusing the project's own tooling means CI sets the database up
+# exactly the way a developer does, so "works on my machine" and "works in CI"
+# cannot drift apart.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Throwaway values. Real secrets never appear in this file; the server
+  # refuses to start without these, which is the point of having them here.
+  TOKEN_SECRET: ci-only-token-secret-at-least-32-characters-long
+  ADMIN_KMS_MASTER_KEY: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
+  APP_DB_PASSWORD: ci-app-password
+
+jobs:
+  verify:
+    name: typecheck, tests, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.3.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck every package
+        run: pnpm -r typecheck
+
+      # ── Database ──────────────────────────────────────────────────────────
+      - name: Start Postgres 17
+        run: node packages/db/scripts/db.mjs up
+
+      - name: Apply migrations
+        run: node packages/db/scripts/db.mjs migrate
+
+      - name: Create the non-superuser application roles
+        id: appuser
+        run: |
+          # Prints DATABASE_URL / WORKER_DATABASE_URL for snap_app / snap_worker,
+          # both NOSUPERUSER NOBYPASSRLS. Captured rather than hard-coded so the
+          # script stays the single source of truth for how the roles are made.
+          node packages/db/scripts/db.mjs appuser | tee /tmp/appuser.txt
+          grep -E '^DATABASE_URL=' /tmp/appuser.txt >> "$GITHUB_ENV"
+          grep -E '^WORKER_DATABASE_URL=' /tmp/appuser.txt >> "$GITHUB_ENV"
+
+      - name: Prove the application role does NOT bypass RLS
+        run: |
+          # Asserted directly, before any suite runs. If this is ever false,
+          # every tenant boundary in the database is decorative and every test
+          # below passes vacuously — which is exactly what happened once.
+          BYPASS=$(docker exec snapdb psql -U postgres -d snapapps -tAc \
+            "select rolbypassrls or rolsuper from pg_roles where rolname='snap_app'")
+          echo "snap_app bypasses RLS: $BYPASS"
+          if [ "$BYPASS" != "f" ]; then
+            echo "::error::snap_app bypasses row-level security. Every isolation test would pass vacuously."
+            exit 1
+          fi
+
+      # ── Suites ────────────────────────────────────────────────────────────
+      - name: Workspace boundaries
+        run: pnpm vitest run test/boundaries.test.ts
+
+      - name: Database suite
+        env:
+          REQUIRE_DB: '1'
+          # The db package's own fixtures use RESET ROLE, so this suite
+          # legitimately needs the owner connection. The SERVER suite below
+          # does not, and must not have it.
+          DATABASE_URL: postgres://postgres:verify@127.0.0.1:55499/snapapps
+        run: pnpm --filter @snap/db test
+
+      - name: Server suite
+        env:
+          REQUIRE_DB: '1'
+          # DATABASE_URL / WORKER_DATABASE_URL come from the appuser step:
+          # snap_app and snap_worker, neither of which bypasses RLS.
+          # ADMIN_DATABASE_URL is the owner connection, used ONLY to provision
+          # test fixtures the application role is correctly forbidden to create.
+          ADMIN_DATABASE_URL: postgres://postgres:verify@127.0.0.1:55499/snapapps
+        run: pnpm --filter @snap/server test
+
+      - name: Web suite
+        run: pnpm --filter @snap/web test
+
+      - name: Web build
+        run: pnpm --filter @snap/web build
+
+      - name: Stop Postgres
+        if: always()
+        run: node packages/db/scripts/db.mjs down || true
