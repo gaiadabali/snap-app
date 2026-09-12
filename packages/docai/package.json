@@ -12,7 +12,10 @@
   },
   "types": "./src/index.ts",
   "sideEffects": false,
-  "files": ["src", "README.md"],
+  "files": [
+    "src",
+    "README.md"
+  ],
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
@@ -21,6 +24,7 @@
     "pdfjs-dist": "^6.3.289"
   },
   "devDependencies": {
+    "@types/node": "^20.19.43",
     "typescript": "^5.9.3",
     "vitest": "^4.1.9"
   }
