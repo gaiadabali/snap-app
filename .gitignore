@@ -17,6 +17,9 @@ apps/server/.storage/
 dist/
 build/
 .next/
+# A second Next build directory, used so two concurrent `next build` runs
+# in one checkout do not corrupt each other's chunks.
+.next-verify/
 .expo/
 .expo-web/
 *.tsbuildinfo
@@ -32,3 +35,7 @@ build/
 Thumbs.db
 .idea/
 .vscode/
+
+# Isolated build dir used to avoid concurrent next-build chunk corruption
+apps/web/.next/
+apps/web/.next-verify/
