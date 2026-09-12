@@ -43,7 +43,7 @@ async function ensureAccount(
   tenantId: string,
   code: string,
   name: string,
-  accountType: 'asset' | 'liability' | 'expense',
+  accountType: 'asset' | 'liability' | 'expense' | 'income',
 ): Promise<string> {
   const row = await t.execute<{ id: string }>(sql`
     insert into accounts (id, tenant_id, code, name, account_type)
@@ -64,6 +64,17 @@ const ACCOUNTS = {
   },
   accountsPayable: { code: '2-1000', name: 'Trade Creditors', type: 'liability' as const },
   rounding: { code: '6-9100', name: 'Cash Rounding', type: 'expense' as const },
+};
+
+/**
+ * The sale side's control accounts, same idempotent find-or-create as the
+ * purchase side's `ACCOUNTS` above and via the same `ensureAccount`. Distinct
+ * codes so the two never collide in one tenant's chart of accounts.
+ */
+const SALE_ACCOUNTS = {
+  revenue: { code: '4-0000', name: 'Sales Revenue', type: 'income' as const },
+  gstPayable: { code: '2-2200', name: 'GST Payable', type: 'liability' as const },
+  accountsReceivable: { code: '1-1200', name: 'Trade Debtors', type: 'asset' as const },
 };
 
 /* ── Tax codes ───────────────────────────────────────────────────────────── */
@@ -372,6 +383,230 @@ export async function draftTransactionFromDocument(
       ) values (
         ${transactionId}, ${tenantId}, coalesce(${doc.issue_date}::date, current_date),
         ${doc.supplier_id}, ${memo}, ${doc.currency}::currency_code, 'draft', 'scan', ${documentId}
+      )
+    `);
+
+    let lineNumber = 1;
+    for (const split of splits) {
+      await t.execute(sql`
+        insert into transaction_splits (
+          id, tenant_id, transaction_id, line_number, account_id, amount, tax_code_id, gst_amount, description
+        ) values (
+          ${randomUUID()}, ${tenantId}, ${transactionId}, ${lineNumber}, ${split.accountId},
+          ${split.amount}, ${split.taxCodeId}, ${split.gstAmount}, ${split.description}
+        )
+      `);
+      lineNumber += 1;
+    }
+
+    return { ok: true, transactionId };
+  });
+}
+
+/* ── Draft from an invoice (the sale side) ──────────────────────────────── */
+
+export type DraftSaleOutcome =
+  | { ok: true; transactionId: string }
+  | { ok: false; reason: 'missing' }
+  | { ok: false; reason: 'not_sent'; status: string }
+  | { ok: false; reason: 'already_posted'; transactionId: string; status: string }
+  | { ok: false; reason: 'no_lines' }
+  | { ok: false; reason: 'lines_dont_reconcile'; gap: string };
+
+/**
+ * Proposes a draft transaction from a sent invoice — the mirror image of
+ * `draftTransactionFromDocument` above, and built to the same two rules.
+ *
+ * `docs/PLAN.md` §5's sign convention: assets and expenses increase positive,
+ * liabilities/equity/income increase negative. A sale is therefore revenue
+ * CREDIT (negative), GST payable CREDIT (negative), the receivable DEBIT
+ * (positive) — the mirror of the purchase side's expense/GST-receivable/
+ * payable shape, not a reinvention of it.
+ *
+ * Unlike a scanned document, an invoice's lines are not OCR output needing a
+ * validators' reconciliation pass — `invoice_lines.net_amount`/`gst_amount`
+ * are exact stored decimals the app itself wrote. So there is no "ambiguous
+ * tax categories" fallback here: every line groups cleanly by its effective
+ * tax code (the referenced item's `tax_code`, or `GSTONINCOME` for a
+ * line with no item — the same default `items.tax_code` itself carries).
+ * `tax_codes` is looked up for that code's id, never re-derived from a label
+ * union computed here — the whole reason migration 0005 built that table.
+ */
+export async function draftTransactionFromInvoice(
+  userId: string,
+  tenantId: string,
+  invoiceId: string,
+): Promise<DraftSaleOutcome> {
+  return tx(getDb(), userId, tenantId, async (t) => {
+    // Locks the invoice for the life of this transaction, same reason as the
+    // document lock above: two concurrent posts of the same invoice cannot
+    // both pass the "no transaction yet" check below.
+    const invRows = await t.execute<{
+      id: string;
+      status: string;
+      party_id: string;
+      party_name: string;
+      issue_date: string;
+      number: string;
+      net_amount: string;
+      gst_amount: string;
+      total_amount: string;
+    }>(sql`
+      select i.id, i.status::text as status, i.party_id, p.legal_name as party_name,
+             i.issue_date::text as issue_date, i.number,
+             i.net_amount::text as net_amount, i.gst_amount::text as gst_amount,
+             i.total_amount::text as total_amount
+        from invoices i
+        join parties p on p.id = i.party_id
+       where i.id = ${invoiceId} and i.tenant_id = ${tenantId}
+       for update of i
+    `);
+    const invoice = invRows.rows[0];
+    if (!invoice) return { ok: false, reason: 'missing' };
+
+    // Rule (already posted) first, same ordering as the purchase side: a
+    // live transaction must be refused even if something later changed the
+    // invoice's status. `transactions` has no `invoice_id` column (only a
+    // scanned document gets that FK, via `document_id`) — `external_refs`
+    // is the extensibility bag migration 0006 already ships for exactly
+    // this ("{"xero":{"id":...}}"), so the link is tagged there rather than
+    // improvising a schema change for it.
+    const existing = await t.execute<{ id: string; status: string }>(sql`
+      select id, status::text as status from transactions
+       where tenant_id = ${tenantId} and status <> 'void'
+         and external_refs ->> 'invoice_id' = ${invoiceId}
+       limit 1
+    `);
+    if (existing.rows[0]) {
+      return {
+        ok: false,
+        reason: 'already_posted',
+        transactionId: existing.rows[0].id,
+        status: existing.rows[0].status,
+      };
+    }
+
+    // 'sent' is the invoice having gone to the customer; 'paid' and
+    // 'overdue' are states an already-sent invoice can carry (a payment
+    // never rewrites `invoices.status` itself — see `business.repo.ts`'s
+    // `recordPayment` — but seeded/historical data may set it directly), so
+    // all three count as "sent" here. 'draft' (nobody has been asked to pay
+    // it) and 'void' do not.
+    if (invoice.status !== 'sent' && invoice.status !== 'paid' && invoice.status !== 'overdue') {
+      return { ok: false, reason: 'not_sent', status: invoice.status };
+    }
+
+    const lineGroups = await t.execute<{ code: string; net: string; gst: string }>(sql`
+      select coalesce(it.tax_code, 'GSTONINCOME') as code,
+             sum(il.net_amount)::text as net,
+             sum(il.gst_amount)::text as gst
+        from invoice_lines il
+        left join items it on it.id = il.item_id
+       where il.invoice_id = ${invoiceId}
+       group by coalesce(it.tax_code, 'GSTONINCOME')
+    `);
+    if (lineGroups.rows.length === 0) return { ok: false, reason: 'no_lines' };
+
+    // The lines must add up to the header — the same discipline as the
+    // purchase side's `linesGap`, just against exact stored figures rather
+    // than an OCR reconciliation, so an exact match is the bar.
+    const sumNet = money.add(...lineGroups.rows.map((g) => money.money(g.net || '0')));
+    const sumGst = money.add(...lineGroups.rows.map((g) => money.money(g.gst || '0')));
+    const netGap = money.subtract(sumNet, money.money(invoice.net_amount));
+    const gstGap = money.subtract(sumGst, money.money(invoice.gst_amount));
+    if (!money.isZero(netGap) || !money.isZero(gstGap)) {
+      const gap = money.add(netGap, gstGap);
+      return { ok: false, reason: 'lines_dont_reconcile', gap };
+    }
+
+    const taxCodes = await loadTaxCodes(t);
+    const revenueAccountId = await ensureAccount(
+      t,
+      tenantId,
+      SALE_ACCOUNTS.revenue.code,
+      SALE_ACCOUNTS.revenue.name,
+      SALE_ACCOUNTS.revenue.type,
+    );
+
+    const splits: Array<{
+      accountId: string;
+      amount: Money;
+      taxCodeId: string | null;
+      gstAmount: Money;
+      description: string | null;
+    }> = [];
+
+    for (const group of lineGroups.rows) {
+      const net = money.money(group.net || '0');
+      const gst = money.money(group.gst || '0');
+      // Falls back to GSTONINCOME rather than silently excluding the line
+      // from BAS: `items.tax_code` defaults to it too, so a code this table
+      // does not recognise is a data problem elsewhere, not licence to
+      // under-report G1.
+      const taxCode = taxCodes.get(group.code) ?? taxCodes.get('GSTONINCOME');
+
+      splits.push({
+        accountId: revenueAccountId,
+        amount: money.negate(net),
+        taxCodeId: taxCode?.id ?? null,
+        gstAmount: gst,
+        description: `Sales — ${group.code}`,
+      });
+
+      if (!money.isZero(gst)) {
+        const gstPayableAccountId = await ensureAccount(
+          t,
+          tenantId,
+          SALE_ACCOUNTS.gstPayable.code,
+          SALE_ACCOUNTS.gstPayable.name,
+          SALE_ACCOUNTS.gstPayable.type,
+        );
+        splits.push({
+          accountId: gstPayableAccountId,
+          amount: money.negate(gst),
+          taxCodeId: null, // control posting — excluded from BAS aggregation, never double-counted
+          gstAmount: money.ZERO,
+          description: 'GST payable',
+        });
+      }
+    }
+
+    // The receivable leg balances whatever the credit-side splits above came
+    // to — ordinary double-entry, the mirror of the purchase side's payment
+    // leg. The trigger still has the final word at post time.
+    const creditTotal = money.add(...splits.map((s) => s.amount));
+    const receivableAccountId = await ensureAccount(
+      t,
+      tenantId,
+      SALE_ACCOUNTS.accountsReceivable.code,
+      SALE_ACCOUNTS.accountsReceivable.name,
+      SALE_ACCOUNTS.accountsReceivable.type,
+    );
+    splits.push({
+      accountId: receivableAccountId,
+      amount: money.negate(creditTotal),
+      taxCodeId: null,
+      gstAmount: money.ZERO,
+      description: `Receivable — ${invoice.number}`,
+    });
+
+    // Pre-flight, per `money.ts`'s own stated purpose — never the authority.
+    if (!money.balances(splits.map((s) => s.amount))) {
+      throw new Error(
+        `draftTransactionFromInvoice built unbalanced splits for invoice ${invoiceId}: ` +
+          JSON.stringify(splits),
+      );
+    }
+
+    const transactionId = randomUUID();
+    const memo = `${invoice.party_name} — ${invoice.number}`;
+    await t.execute(sql`
+      insert into transactions (
+        id, tenant_id, txn_date, payee_id, memo, currency, status, source, external_refs
+      ) values (
+        ${transactionId}, ${tenantId}, ${invoice.issue_date}::date,
+        ${invoice.party_id}, ${memo}, 'AUD'::currency_code, 'draft', 'manual',
+        jsonb_build_object('invoice_id', ${invoiceId}::text)
       )
     `);
 

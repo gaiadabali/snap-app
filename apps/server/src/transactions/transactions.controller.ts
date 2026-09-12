@@ -22,6 +22,7 @@ import {
 import { listMembers } from '../repo.js';
 import {
   draftTransactionFromDocument,
+  draftTransactionFromInvoice,
   listTransactions,
   postTransaction,
   type TransactionRow,
@@ -81,6 +82,41 @@ export class TransactionsController {
       case 'lines_dont_reconcile':
         throw new UnprocessableEntityException(
           `The lines do not add up to the document total (off by ${outcome.gap}) — correct the document before posting.`,
+        );
+    }
+  }
+
+  @Post('v1/business/invoices/:id/transaction')
+  @HttpCode(201)
+  @ApiOperation({
+    summary: 'Propose a draft transaction from a sent invoice',
+    description:
+      "Splits come from the invoice's lines — never from the request body, which is why this takes no payload, same as the document side. Revenue and GST payable post as credits, the receivable as a debit. An invoice that is still a draft or void, or that already carries a live transaction, is refused rather than guessed at.",
+  })
+  async draftSale(
+    @CurrentUser() user: AuthUser,
+    @WorkspaceId() tenantId: string,
+    @Param('id') invoiceId: string,
+  ): Promise<{ transactionId: string; status: 'draft' }> {
+    const outcome = await draftTransactionFromInvoice(user.userId, tenantId, invoiceId);
+    if (outcome.ok) return { transactionId: outcome.transactionId, status: 'draft' };
+
+    switch (outcome.reason) {
+      case 'missing':
+        throw new NotFoundException('No such invoice.');
+      case 'not_sent':
+        throw new ConflictException(
+          `This invoice is ${outcome.status}, not sent — send it before posting.`,
+        );
+      case 'already_posted':
+        throw new ConflictException(
+          `This invoice already has a ${outcome.status} transaction (${outcome.transactionId}).`,
+        );
+      case 'no_lines':
+        throw new UnprocessableEntityException('This invoice has no lines to post.');
+      case 'lines_dont_reconcile':
+        throw new UnprocessableEntityException(
+          `The lines do not add up to the invoice total (off by ${outcome.gap}) — correct the invoice before posting.`,
         );
     }
   }

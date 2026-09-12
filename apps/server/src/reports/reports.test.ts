@@ -1,4 +1,4 @@
-import { randomBytes, randomUUID } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 
 import { Client } from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -7,6 +7,7 @@ import { money } from '@snap/db';
 
 import { closeDb } from '../db.js';
 import { postTransaction } from '../transactions/transactions.repo.js';
+import { makeAccount, provisionTenant, sha256hex, wipeTenant } from '../test-support/tenant.js';
 import { ReportsController } from './reports.controller.js';
 import { basReport } from './reports.repo.js';
 
@@ -25,10 +26,12 @@ import { basReport } from './reports.repo.js';
  *      `1A ≈ G1/11` and `1B ≈ (G10+G11)/11` — exactly, here, since every
  *      contributing split is a clean 10% line.
  *   2. `1B` excludes every split whose evidence document is not a valid tax
- *      invoice, no matter how that changes the ratio — proved both with a
- *      fixture built for this test AND against the real posted transaction
- *      in tenant `11111111-1111-4111-8111-111111111111`, whose GST is
- *      deliberately unclaimable.
+ *      invoice, no matter how that changes the ratio — proved twice: once as
+ *      a delta inside the first tenant's fixture, and once in a second,
+ *      wholly isolated tenant built for nothing else, so the exclusion holds
+ *      even when it is the ONLY thing posted for the period (no other GST to
+ *      net against). Both fixtures are this suite's own — no assertion here
+ *      depends on data any other suite or process might reseed or delete.
  */
 const hasDb = Boolean(process.env.DATABASE_URL);
 const describeIfDb = hasDb ? describe : describe.skip;
@@ -36,11 +39,11 @@ const describeIfDb = hasDb ? describe : describe.skip;
 const TENANT = 'b2b2b2b2-0000-4000-8000-000000000002';
 const OWNER = 'b2b2b2b2-0000-4000-8000-0000000000b1';
 
-// The tenant Lane L already posted real data into — read-only in this suite.
-const REAL_TENANT = '11111111-1111-4111-8111-111111111111';
-const REAL_OWNER = '33333333-3333-4333-8333-333333333331';
-
-const sha256hex = () => randomBytes(32).toString('hex');
+// A second, wholly separate tenant for the "unclaimable GST" guarantee in
+// isolation — no other GST posted in the period, so the exclusion from 1B
+// cannot be masked or helped along by anything else the first tenant posted.
+const UNCLAIMABLE_TENANT = 'b2b2b2b2-0000-4000-8000-000000000003';
+const UNCLAIMABLE_OWNER = 'b2b2b2b2-0000-4000-8000-0000000000c1';
 
 type TaxCodeIds = Record<'GST' | 'CAP' | 'GSTONINCOME' | 'FRE', string>;
 
@@ -54,21 +57,6 @@ async function loadSystemTaxCodes(admin: Client): Promise<TaxCodeIds> {
     if (!byCode[code]) throw new Error(`seed tax code ${code} missing — check migration 0005`);
   }
   return byCode;
-}
-
-async function makeAccount(
-  admin: Client,
-  tenantId: string,
-  code: string,
-  name: string,
-  type: 'asset' | 'liability' | 'income' | 'expense',
-): Promise<string> {
-  const id = randomUUID();
-  await admin.query(
-    `insert into accounts (id, tenant_id, code, name, account_type) values ($1, $2, $3, $4, $5::account_type)`,
-    [id, tenantId, code, name, type],
-  );
-  return id;
 }
 
 /** A minimal capture + document, just enough for `transactions.document_id`'s FK and `is_tax_invoice`. */
@@ -95,6 +83,7 @@ async function makeDocument(
 /** A posted transaction with exactly one BAS-reportable split, plus its balancing legs. */
 async function postPosting(
   admin: Client,
+  ownerId: string,
   tenantId: string,
   txnDate: string,
   documentId: string | null,
@@ -137,7 +126,7 @@ async function postPosting(
       balancingAmount,
     ],
   );
-  const outcome = await postTransaction(OWNER, tenantId, txnId);
+  const outcome = await postTransaction(ownerId, tenantId, txnId);
   if (!outcome.ok) throw new Error(`fixture failed to post: ${JSON.stringify(outcome)}`);
   return txnId;
 }
@@ -155,30 +144,12 @@ describeIfDb('reports/bas', () => {
 
   beforeAll(async () => {
     if (!hasDb) return;
-    admin = new Client({ connectionString: process.env.ADMIN_DATABASE_URL ?? process.env.DATABASE_URL });
-    await admin.connect();
-
-    await admin.query('DELETE FROM transaction_splits WHERE tenant_id = $1', [TENANT]);
-    await admin.query('DELETE FROM transactions WHERE tenant_id = $1', [TENANT]);
-    await admin.query('DELETE FROM documents WHERE tenant_id = $1', [TENANT]);
-    await admin.query('DELETE FROM captures WHERE tenant_id = $1', [TENANT]);
-    await admin.query('DELETE FROM accounts WHERE tenant_id = $1', [TENANT]);
-    await admin.query('DELETE FROM memberships WHERE tenant_id = $1', [TENANT]);
-    await admin.query('DELETE FROM users WHERE id = $1', [OWNER]);
-    await admin.query('DELETE FROM tenants WHERE id = $1', [TENANT]);
-
-    await admin.query(
-      `insert into tenants (id, name, abn, gst_registered, gst_basis) values ($1, 'Lane M test co', '51824753556', true, 'accrual')`,
-      [TENANT],
-    );
-    await admin.query(
-      `insert into users (id, subject, email, display_name) values ($1, 'test|reports-owner', 'owner@lanem.test', 'Reports Owner')`,
-      [OWNER],
-    );
-    await admin.query(
-      `insert into memberships (tenant_id, user_id, role) values ($1, $2, 'owner')`,
-      [TENANT, OWNER],
-    );
+    admin = await provisionTenant({
+      tenantId: TENANT,
+      name: 'Lane M test co',
+      users: [{ id: OWNER, role: 'owner', subject: 'test|reports-owner', email: 'owner@lanem.test', displayName: 'Reports Owner' }],
+      gstBasis: 'accrual',
+    });
 
     taxCodes = await loadSystemTaxCodes(admin);
     expenseAccount = await makeAccount(admin, TENANT, '6-0000', 'Purchases', 'expense');
@@ -192,6 +163,7 @@ describeIfDb('reports/bas', () => {
     // ── Clean period: 1-15 July — wholly taxable sale, wholly claimable purchases.
     await postPosting(
       admin,
+      OWNER,
       TENANT,
       '2026-07-10',
       null,
@@ -202,6 +174,7 @@ describeIfDb('reports/bas', () => {
     const invoiceDoc = await makeDocument(admin, TENANT, true);
     await postPosting(
       admin,
+      OWNER,
       TENANT,
       '2026-07-12',
       invoiceDoc,
@@ -212,6 +185,7 @@ describeIfDb('reports/bas', () => {
     const capitalDoc = await makeDocument(admin, TENANT, true);
     await postPosting(
       admin,
+      OWNER,
       TENANT,
       '2026-07-14',
       capitalDoc,
@@ -225,6 +199,7 @@ describeIfDb('reports/bas', () => {
     const noInvoiceDoc = await makeDocument(admin, TENANT, false);
     await postPosting(
       admin,
+      OWNER,
       TENANT,
       '2026-07-20',
       noInvoiceDoc,
@@ -236,14 +211,7 @@ describeIfDb('reports/bas', () => {
 
   afterAll(async () => {
     if (!hasDb) return;
-    await admin.query('DELETE FROM transaction_splits WHERE tenant_id = $1', [TENANT]);
-    await admin.query('DELETE FROM transactions WHERE tenant_id = $1', [TENANT]);
-    await admin.query('DELETE FROM documents WHERE tenant_id = $1', [TENANT]);
-    await admin.query('DELETE FROM captures WHERE tenant_id = $1', [TENANT]);
-    await admin.query('DELETE FROM accounts WHERE tenant_id = $1', [TENANT]);
-    await admin.query('DELETE FROM memberships WHERE tenant_id = $1', [TENANT]);
-    await admin.query('DELETE FROM users WHERE id = $1', [OWNER]);
-    await admin.query('DELETE FROM tenants WHERE id = $1', [TENANT]);
+    await wipeTenant(admin, TENANT, [OWNER]);
     await admin.end();
     await closeDb();
   });
@@ -301,23 +269,76 @@ describeIfDb('reports/bas', () => {
   });
 });
 
-describeIfDb('reports/bas — real posted data (tenant 11111111-1111-4111-8111-111111111111)', () => {
+describeIfDb('reports/bas — a purchase with no valid tax invoice, alone in its period', () => {
   /**
-   * Lane L already posted one real transaction into this tenant, from a
-   * document that is deliberately NOT a valid tax invoice. Read-only: this
-   * suite touches no fixtures and mutates nothing, it only asks `basReport`
-   * what it makes of data that was already there.
+   * This used to read tenant `11111111-1111-4111-8111-111111111111`, which
+   * another lane's suites also seed and re-seed — a shared read is not
+   * reproducible if the thing on the other end can be deleted out from under
+   * it, which is exactly what happened (`transactions`/`documents` at 0 rows
+   * mid-run). The guarantee itself — 1B excludes a non-tax-invoice purchase's
+   * GST no matter how that changes the ratio — is proved just as strongly by
+   * a fixture this suite owns outright: one tenant, one posted purchase,
+   * built specifically to have no valid tax invoice behind it.
    */
-  it('keeps that document out of 1B and puts its GST in unclaimableGst instead', async () => {
-    const report = await basReport(REAL_OWNER, REAL_TENANT, '2026-08-01', '2026-08-31');
+  let admin: Client;
 
-    // Verified against the database directly before writing this test:
-    // v_bas_lines shows exactly one posted line for this tenant, tax_code
-    // GST, net 15926.65, gst 1592.66, has_valid_tax_invoice = false.
+  beforeAll(async () => {
+    if (!hasDb) return;
+    admin = await provisionTenant({
+      tenantId: UNCLAIMABLE_TENANT,
+      name: 'Lane M unclaimable-GST test co',
+      users: [
+        {
+          id: UNCLAIMABLE_OWNER,
+          role: 'owner',
+          subject: 'test|unclaimable-owner',
+          email: 'owner@lanem-unclaimable.test',
+          displayName: 'Unclaimable Owner',
+        },
+      ],
+      gstBasis: 'accrual',
+    });
+
+    const taxCodes = await loadSystemTaxCodes(admin);
+    const expenseAccount = await makeAccount(admin, UNCLAIMABLE_TENANT, '6-0000', 'Purchases', 'expense');
+    const unclaimableAccount = await makeAccount(
+      admin,
+      UNCLAIMABLE_TENANT,
+      '6-9000',
+      'GST Paid — Not Claimable',
+      'expense',
+    );
+    const apAccount = await makeAccount(admin, UNCLAIMABLE_TENANT, '2-1000', 'Trade Creditors', 'liability');
+
+    const noInvoiceDoc = await makeDocument(admin, UNCLAIMABLE_TENANT, false);
+    await postPosting(
+      admin,
+      UNCLAIMABLE_OWNER,
+      UNCLAIMABLE_TENANT,
+      '2026-08-10',
+      noInvoiceDoc,
+      { accountId: expenseAccount, amount: '15926.6500', taxCodeId: taxCodes.GST, gstAmount: '1592.6600' },
+      unclaimableAccount,
+      apAccount,
+    );
+  });
+
+  afterAll(async () => {
+    if (!hasDb) return;
+    await wipeTenant(admin, UNCLAIMABLE_TENANT, [UNCLAIMABLE_OWNER]);
+    await admin.end();
+    await closeDb();
+  });
+
+  it('keeps that document out of 1B and puts its GST in unclaimableGst instead', async () => {
+    const report = await basReport(UNCLAIMABLE_OWNER, UNCLAIMABLE_TENANT, '2026-08-01', '2026-08-31');
+
+    // The only posting in the period: a standard-rated purchase with no
+    // valid tax invoice behind it. Its GST must not appear in 1B...
     expect(report.unclaimableGst).toBe('1592.6600');
     expect(report['1B']).toBe('0.0000');
-    // The gross amount still lands in G11 — it is real GST turnover, just
-    // not a credit this tenant may claim.
-    expect(report.G11).toBe('17519.3100');
+    // ...but the gross amount still lands in G11 — it is real GST turnover,
+    // just not a credit this tenant may claim.
+    expect(report.G11).toBe('17519.3100'); // 15926.65 net + 1592.66 GST
   });
 });

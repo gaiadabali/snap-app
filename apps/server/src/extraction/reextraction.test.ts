@@ -1,12 +1,14 @@
 import { randomUUID } from 'node:crypto';
 
 import { sql } from 'drizzle-orm';
+import type { Client } from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { withTenantAs } from '@snap/db';
 
 import { closeDb, getDb } from '../db.js';
 import { saveExtraction, updateDocument } from '../repo.js';
+import { makeAccount, provisionTenant, wipeTenant } from '../test-support/tenant.js';
 import type { ValidatedExtraction } from './types.js';
 
 /**
@@ -27,13 +29,23 @@ import type { ValidatedExtraction } from './types.js';
  * Runs against a real Postgres, as a real non-superuser role, because every
  * rule here is half SQL. Skips cleanly without a database rather than passing
  * vacuously.
+ *
+ * This used to run against the shared seeded tenant
+ * (`11111111-1111-4111-8111-111111111111`) and its worker/Kate users, which
+ * another lane's suites also seed and re-seed — the exact reason this suite
+ * started failing (a re-seed left `documents`/`transactions` at 0 rows mid-run,
+ * with nothing wrong in the code under test). It now provisions its own
+ * disposable tenant, worker, and reviewer, the same pattern as
+ * `transactions.sale.test.ts`, so it starts from a known state regardless of
+ * what any other process does to the shared database.
  */
 
-const describeIfDb = process.env.DATABASE_URL ? describe : describe.skip;
+const hasDb = Boolean(process.env.DATABASE_URL);
+const describeIfDb = hasDb ? describe : describe.skip;
 
-const TENANT = '11111111-1111-4111-8111-111111111111';
-const WORKER = '44444444-4444-4444-8444-444444444444';
-const KATE = '33333333-3333-4333-8333-333333333331';
+const TENANT = 'c3c3c3c3-0000-4000-8000-000000000001';
+const WORKER = 'c3c3c3c3-0000-4000-8000-0000000000a1';
+const KATE = 'c3c3c3c3-0000-4000-8000-0000000000a2';
 
 /**
  * Every query goes through the tenant context, as the worker's own account.
@@ -94,8 +106,6 @@ const META = {
   raw: '{}',
 };
 
-const captures: string[] = [];
-
 /** A capture to hang a document off. Created as the tenant, not as a superuser. */
 async function makeCapture(): Promise<string> {
   const id = randomUUID();
@@ -108,20 +118,51 @@ async function makeCapture(): Promise<string> {
       1024, decode(${randomUUID().replace(/-/g, '').repeat(2).slice(0, 64)}, 'hex'), 'received'
     )
   `);
-  captures.push(id);
   return id;
 }
 
 describeIfDb('re-extraction', () => {
+  let admin: Client;
+
   beforeAll(async () => {
-    // Fail loudly rather than silently testing nothing.
-    await q(sql`select 1`);
+    if (!hasDb) return;
+    admin = await provisionTenant({
+      tenantId: TENANT,
+      name: 'Re-extraction test co',
+      users: [
+        {
+          id: WORKER,
+          role: 'member',
+          subject: 'test|reextraction-worker',
+          email: 'worker@reextraction.test',
+          displayName: 'Extraction Worker',
+        },
+        {
+          id: KATE,
+          role: 'owner',
+          subject: 'test|reextraction-kate',
+          email: 'kate@reextraction.test',
+          displayName: 'Kate Reviewer',
+        },
+      ],
+    });
+    // A minimal chart of accounts — just enough for the third test's posted
+    // transaction to reference two real accounts. Without this, that test
+    // used to silently skip its own assertion (`if (!debit || !credit) return`)
+    // whenever the tenant had no seeded accounts; provisioning our own means
+    // that guard is never the reason the test does nothing.
+    await makeAccount(admin, TENANT, '6-0000', 'Test expense', 'expense');
+    await makeAccount(admin, TENANT, '2-1000', 'Test payable', 'liability');
   });
 
   afterAll(async () => {
-    for (const id of captures) {
-      await q(sql`delete from captures where id = ${id}`);
-    }
+    if (!hasDb) return;
+    // wipeTenant deletes every capture (and, by cascade, every document,
+    // extraction run, and review task) for this tenant in one pass — the
+    // per-capture loop this suite used to run by hand is redundant now that
+    // cleanup is tenant-scoped rather than capture-scoped.
+    await wipeTenant(admin, TENANT, [WORKER, KATE]);
+    await admin.end();
     await closeDb();
   });
 
@@ -181,13 +222,16 @@ describeIfDb('re-extraction', () => {
     const { documentId } = await saveExtraction(WORKER, TENANT, capture, reading(), META);
 
     // A posted transaction referencing it. Balanced, because the database
-    // refuses to post anything else.
+    // refuses to post anything else. The two accounts come from this
+    // fixture's own chart of accounts (seeded in `beforeAll`) — no dependency
+    // on whatever chart of accounts, if any, another suite happens to leave
+    // behind for a shared tenant.
     const txnId = randomUUID();
     const accounts = await q<{ id: string }>(sql`
       select id from accounts where tenant_id = ${TENANT} order by code limit 2
     `);
     const [debit, credit] = accounts.rows;
-    if (!debit || !credit) return; // no seeded chart of accounts; nothing to assert
+    if (!debit || !credit) throw new Error('fixture failed to provision a chart of accounts');
 
     await q(sql`
       insert into transactions (id, tenant_id, document_id, txn_date, memo, status)
@@ -199,11 +243,7 @@ describeIfDb('re-extraction', () => {
              (${randomUUID()}, ${TENANT}, ${txnId}, 2, ${credit.id}, -110.0000)
     `);
     // `posted_at` is required alongside `status = 'posted'` (migration 0006's
-    // `txn_posted_has_timestamp` check) — this was never reached before,
-    // because `accounts` had no rows for any tenant until Lane L started
-    // seeding the handful of control accounts a scan-derived posting needs,
-    // so `debit`/`credit` above were always undefined and this test always
-    // took the early return two lines up. It is exercised for real now.
+    // `txn_posted_has_timestamp` check).
     await q(sql`update transactions set status = 'posted', posted_at = now(), posted_by = ${KATE} where id = ${txnId}`);
 
     await saveExtraction(WORKER, TENANT, capture, reading({ payable: '500.00' }), META);

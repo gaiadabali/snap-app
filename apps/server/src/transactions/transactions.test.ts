@@ -1,4 +1,4 @@
-import { randomBytes, randomUUID } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 
 import { Client } from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -7,6 +7,7 @@ import { withTenantAs } from '@snap/db';
 import { sql } from 'drizzle-orm';
 
 import { closeDb, getDb } from '../db.js';
+import { provisionTenant, sha256hex, wipeTenant } from '../test-support/tenant.js';
 import {
   draftTransactionFromDocument,
   listTransactions,
@@ -31,8 +32,6 @@ const describeIfDb = hasDb ? describe : describe.skip;
 const TENANT = 'a1a1a1a1-0000-4000-8000-000000000001';
 const OWNER = 'a1a1a1a1-0000-4000-8000-0000000000a1';
 const STAFF = 'a1a1a1a1-0000-4000-8000-0000000000a2';
-
-const sha256hex = () => randomBytes(32).toString('hex');
 
 /** A minimal capture row — just enough for `documents.capture_id`'s FK. */
 async function makeCapture(admin: Client, tenantId: string): Promise<string> {
@@ -94,48 +93,19 @@ describeIfDb('transactions: draft, post, list', () => {
 
   beforeAll(async () => {
     if (!hasDb) return;
-    admin = new Client({ connectionString: process.env.ADMIN_DATABASE_URL ?? process.env.DATABASE_URL });
-    await admin.connect();
-
-    await admin.query('DELETE FROM transaction_splits WHERE tenant_id = $1', [TENANT]);
-    await admin.query('DELETE FROM transactions WHERE tenant_id = $1', [TENANT]);
-    await admin.query('DELETE FROM document_tax_subtotals WHERE tenant_id = $1', [TENANT]);
-    await admin.query('DELETE FROM document_lines WHERE tenant_id = $1', [TENANT]);
-    await admin.query('DELETE FROM documents WHERE tenant_id = $1', [TENANT]);
-    await admin.query('DELETE FROM captures WHERE tenant_id = $1', [TENANT]);
-    await admin.query('DELETE FROM accounts WHERE tenant_id = $1', [TENANT]);
-    await admin.query('DELETE FROM memberships WHERE tenant_id = $1', [TENANT]);
-    await admin.query('DELETE FROM users WHERE id = ANY($1)', [[OWNER, STAFF]]);
-    await admin.query('DELETE FROM tenants WHERE id = $1', [TENANT]);
-
-    await admin.query(
-      `insert into tenants (id, name, abn, gst_registered) values ($1, 'Lane L test co', '51824753556', true)`,
-      [TENANT],
-    );
-    await admin.query(
-      `insert into users (id, subject, email, display_name) values
-       ($1, 'test|owner', 'owner@lanel.test', 'Owner Test'),
-       ($2, 'test|staff', 'staff@lanel.test', 'Staff Test')`,
-      [OWNER, STAFF],
-    );
-    await admin.query(
-      `insert into memberships (tenant_id, user_id, role) values ($1, $2, 'owner'), ($1, $3, 'member')`,
-      [TENANT, OWNER, STAFF],
-    );
+    admin = await provisionTenant({
+      tenantId: TENANT,
+      name: 'Lane L test co',
+      users: [
+        { id: OWNER, role: 'owner', subject: 'test|owner', email: 'owner@lanel.test', displayName: 'Owner Test' },
+        { id: STAFF, role: 'member', subject: 'test|staff', email: 'staff@lanel.test', displayName: 'Staff Test' },
+      ],
+    });
   });
 
   afterAll(async () => {
     if (!hasDb) return;
-    await admin.query('DELETE FROM transaction_splits WHERE tenant_id = $1', [TENANT]);
-    await admin.query('DELETE FROM transactions WHERE tenant_id = $1', [TENANT]);
-    await admin.query('DELETE FROM document_tax_subtotals WHERE tenant_id = $1', [TENANT]);
-    await admin.query('DELETE FROM document_lines WHERE tenant_id = $1', [TENANT]);
-    await admin.query('DELETE FROM documents WHERE tenant_id = $1', [TENANT]);
-    await admin.query('DELETE FROM captures WHERE tenant_id = $1', [TENANT]);
-    await admin.query('DELETE FROM accounts WHERE tenant_id = $1', [TENANT]);
-    await admin.query('DELETE FROM memberships WHERE tenant_id = $1', [TENANT]);
-    await admin.query('DELETE FROM users WHERE id = ANY($1)', [[OWNER, STAFF]]);
-    await admin.query('DELETE FROM tenants WHERE id = $1', [TENANT]);
+    await wipeTenant(admin, TENANT, [OWNER, STAFF]);
     await admin.end();
     await closeDb();
   });
