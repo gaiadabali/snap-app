@@ -182,3 +182,46 @@ the first failed key-store attempt.
 > passed 6/6, including its happy-path case. Until the server builds with
 > `tsc`/SWC, treat "the tests pass" as insufficient evidence that a DI change
 > works, and smoke-test the running process.
+
+---
+
+## 8. Why §7 is a checklist and not a test suite
+
+On 2026-09-12, across two sessions building the website and the admin plane,
+**six defects passed their own tests while being broken in what actually runs,
+and five test suites passed vacuously.** Not one was caught by typechecking or
+by the suite that covered it. Every one was caught by running the real thing
+against the real thing.
+
+They share a shape, and it is worth naming because it predicts where the next
+one will be: **nothing checks the agreement BETWEEN two correct things.**
+
+| What was correct | What was also correct | What was wrong |
+|---|---|---|
+| `AdminStaffSummary.capabilities: PlatformCapability[]` in TypeScript | `platform_capability[]` in Postgres | `pg` keys type parsers by OID, has none for a type a migration invented, and returns the string `'{a,b}'`. UI mapping over it iterates characters. |
+| Vitest's transformer emits `emitDecoratorMetadata` | `tsx` runs the server (the tax engine needs a bundler resolver) | esbuild does not implement it, so Nest injected `undefined` and every capability-gated admin route 500'd — while its e2e suite passed 6/6, happy path included. |
+| The admin console wrote its impersonation cookie | The panels read an impersonation cookie | Different name, different path, different fields. `path: '/admin'` is never sent to `/app/*`, so staff saw their own account believing it was the customer's. |
+| The contract declared `IsoDateTime` | Postgres rendered a valid timestamp | Space instead of `T`. V8 parses it leniently, so it worked by luck. `Date.parse` returns NaN on anything stricter, and every NaN comparison is false — an expiry check written the obvious way treats an unreadable timestamp as never expiring. |
+| A published contract type | A server DTO | Both compiled. The endpoint was broken for every real client. |
+| `isProduction()` guarded the demo-accounts LIST | `/v1/auth/sign-in` had a comment saying it must not ship | The guard was on the wrong endpoint. Anyone reachable could sign in as anyone. |
+
+And the vacuous passes: the database suites are `DATABASE_URL ? describe :
+describe.skip`, so with no database they report "197 skipped" and go green
+while proving nothing — not tenant isolation, not the admin capability
+refusals, not RLS. `REQUIRE_DB=1` now makes that fatal in CI.
+
+**The practical rules that fall out of this**, all of them already applied above:
+
+1. **Run the thing.** A smoke test against the running process catches what no
+   unit test can, because the composition is where the defect lives.
+2. **Test the refusal, not the permission.** A suite that only proves the happy
+   path is what let the RLS bypass survive. Every gate in this system has a
+   test asserting it REFUSES, and several were verified by deleting the guard
+   and watching the right test fail.
+3. **Make the agreement a compile error** where you can — handler returns
+   annotated as contract types, DTOs `implements` them — and a runtime
+   assertion where you cannot.
+4. **Fail closed.** An unreadable expiry, a missing database in CI, a local KMS
+   in production: refuse. Do not warn, and do not treat "unknown" as "fine".
+5. **A decision recorded in a document is not a control.** Three defects here
+   were decisions written down, believed, and never enforced.
