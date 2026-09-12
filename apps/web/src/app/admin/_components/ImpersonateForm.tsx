@@ -6,12 +6,28 @@ import { startImpersonationAction, type StartImpersonationFormState } from '../_
 
 const INITIAL_STATE: StartImpersonationFormState = { error: null };
 
-export function ImpersonateForm({ subjectUserId }: { subjectUserId: string }) {
+export function ImpersonateForm({
+  subjectUserId,
+  subjectTenantId,
+  subjectLabel,
+  subjectEmail,
+  tenantName,
+}: {
+  subjectUserId: string;
+  subjectTenantId: string;
+  subjectLabel: string;
+  subjectEmail: string | null;
+  tenantName: string;
+}) {
   const [state, formAction, pending] = useActionState(startImpersonationAction, INITIAL_STATE);
 
   return (
     <form action={formAction} className="space-y-4">
       <input type="hidden" name="subjectUserId" value={subjectUserId} />
+      <input type="hidden" name="subjectTenantId" value={subjectTenantId} />
+      <input type="hidden" name="subjectLabel" value={subjectLabel} />
+      <input type="hidden" name="subjectEmail" value={subjectEmail ?? ''} />
+      <input type="hidden" name="tenantName" value={tenantName} />
       <div>
         <label htmlFor="reason" className="text-[13px] font-semibold text-[var(--color-ink)]">
           Reason for accessing this account

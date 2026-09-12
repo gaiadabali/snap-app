@@ -1,7 +1,9 @@
+import { redirect } from 'next/navigation';
 import type { ReactNode } from 'react';
 
 import { Container, Empty } from '@/design/primitives';
 import { getActiveWorkspaceId } from '@/lib/api/server';
+import { panelRootFor, resolveImpersonatedWorkspace } from '@/lib/panels/impersonation';
 import { requireSession } from '@/lib/panels/session';
 import { resolveActiveWorkspace } from '@/lib/panels/workspace';
 import { CreateWorkspaceForm } from '../_shell/CreateWorkspaceForm';
@@ -9,7 +11,32 @@ import { PanelShell } from '../_shell/PanelShell';
 import { INDIVIDUAL_NAV } from '../_shell/nav';
 
 export default async function IndividualLayout({ children }: { children: ReactNode }) {
-  const { user, workspaces } = await requireSession();
+  const { user, workspaces, impersonation } = await requireSession();
+
+  if (impersonation) {
+    // Pinned to the EXACT tenant the session was opened for
+    // (`getActiveWorkspaceId` already forces every `api()` call there) — this
+    // finds that same workspace by id rather than falling back to "the
+    // first personal workspace this person has", which would silently show
+    // and act on a DIFFERENT tenant than the one that was opened and audited.
+    const pinned = resolveImpersonatedWorkspace(workspaces, impersonation.tenantId);
+    if (!pinned) redirect('/app/impersonation-ended');
+    if (pinned.kind !== 'personal') redirect(panelRootFor(pinned.kind));
+
+    return (
+      <PanelShell
+        user={user}
+        workspace={pinned}
+        sameKindWorkspaces={[pinned]}
+        otherKindHref={null}
+        nav={INDIVIDUAL_NAV}
+        impersonation={impersonation}
+      >
+        {children}
+      </PanelShell>
+    );
+  }
+
   const activeId = await getActiveWorkspaceId();
   const workspace = resolveActiveWorkspace(workspaces, 'personal', activeId);
 

@@ -237,6 +237,10 @@ describeIfDb('admin plane', () => {
       ['view_analytics', () => c.query('SELECT * FROM admin_analytics_overview()')],
       ['view_tenant_metadata', () => c.query(`SELECT * FROM admin_tenant_search(NULL, 25, 0)`)],
       [
+        'view_tenant_metadata',
+        () => c.query(`SELECT * FROM admin_user_detail($1)`, [SUBJECT_USER]),
+      ],
+      [
         'read_tenant_records',
         () => c.query(`SELECT * FROM admin_authorize_tenant_records($1, 'because')`, [SUBJECT_TENANT]),
       ],
@@ -319,6 +323,41 @@ describeIfDb('admin plane', () => {
         [SUBJECT_TENANT],
       );
       expect(logged.rows).toHaveLength(1);
+    });
+
+    it('view_tenant_metadata: fetches ONE user by id, with their memberships', async () => {
+      // 0021 shipped only a substring search, so the console paged through it
+      // hunting for a matching id — twenty round trips per page, and silently
+      // no result once the user table outgrew the scan bound. This is the
+      // endpoint that replaces that; migration 0022 exists for this test.
+      await asAppRw(STAFF_USER);
+      const r = await c.query(`SELECT * FROM admin_user_detail($1)`, [SUBJECT_USER]);
+      expect(r.rows).toHaveLength(1);
+      expect(r.rows[0].user_id).toBe(SUBJECT_USER);
+
+      // The membership list and the count beside it are built in the same
+      // query precisely so they cannot disagree.
+      const memberships = r.rows[0].memberships as Array<{ tenantId: string }>;
+      expect(Array.isArray(memberships)).toBe(true);
+      expect(Number(r.rows[0].tenant_count)).toBe(memberships.length);
+      expect(memberships.some((m) => m.tenantId === SUBJECT_TENANT)).toBe(true);
+
+      await asSuperuser();
+      const logged = await c.query(
+        `SELECT 1 FROM audit_log WHERE action = 'admin_view_user_metadata' AND entity_id = $1`,
+        [SUBJECT_USER],
+      );
+      expect(logged.rows.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('admin_user_detail: raises rather than returning an empty row for an unknown user', async () => {
+      // A silent empty result is what the paging workaround produced, and it
+      // is indistinguishable from "this user does not exist" — which is the
+      // failure this whole function is here to remove.
+      await asAppRw(STAFF_USER);
+      await expect(
+        c.query(`SELECT * FROM admin_user_detail($1)`, [randomUUID()]),
+      ).rejects.toThrow(/no such user/);
     });
 
     it('read_tenant_records: requires a non-blank reason and logs it', async () => {

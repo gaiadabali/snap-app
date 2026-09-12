@@ -1,7 +1,9 @@
+import { redirect } from 'next/navigation';
 import type { ReactNode } from 'react';
 
 import { Container, Empty } from '@/design/primitives';
 import { getActiveWorkspaceId } from '@/lib/api/server';
+import { panelRootFor, resolveImpersonatedWorkspace } from '@/lib/panels/impersonation';
 import { requireSession } from '@/lib/panels/session';
 import { resolveActiveWorkspace } from '@/lib/panels/workspace';
 import { CreateWorkspaceForm } from '../_shell/CreateWorkspaceForm';
@@ -9,7 +11,30 @@ import { PanelShell } from '../_shell/PanelShell';
 import { BUSINESS_NAV } from '../_shell/nav';
 
 export default async function BusinessLayout({ children }: { children: ReactNode }) {
-  const { user, workspaces } = await requireSession();
+  const { user, workspaces, impersonation } = await requireSession();
+
+  if (impersonation) {
+    // See the same block in `(individual)/layout.tsx` — pinned by id, not by
+    // kind, so this can never silently swap in a DIFFERENT business tenant
+    // than the one the session was actually opened and audited for.
+    const pinned = resolveImpersonatedWorkspace(workspaces, impersonation.tenantId);
+    if (!pinned) redirect('/app/impersonation-ended');
+    if (pinned.kind !== 'business') redirect(panelRootFor(pinned.kind));
+
+    return (
+      <PanelShell
+        user={user}
+        workspace={pinned}
+        sameKindWorkspaces={[pinned]}
+        otherKindHref={null}
+        nav={BUSINESS_NAV}
+        impersonation={impersonation}
+      >
+        {children}
+      </PanelShell>
+    );
+  }
+
   const activeId = await getActiveWorkspaceId();
   const workspace = resolveActiveWorkspace(workspaces, 'business', activeId);
 

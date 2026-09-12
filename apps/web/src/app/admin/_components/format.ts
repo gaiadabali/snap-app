@@ -73,3 +73,14 @@ export function formatDuration(seconds: number | null): string {
   const s = seconds % 60;
   return `${m}m ${String(s).padStart(2, '0')}s`;
 }
+
+/** Two-letter initials from a display name — a deterministic display
+ * transform, never a fact fetched or invented about the person. Falls back to
+ * the first two characters when there is no name to split. */
+export function initialsOf(name: string | null | undefined, fallback = '?'): string {
+  const trimmed = (name ?? '').trim();
+  if (!trimmed) return fallback;
+  const parts = trimmed.split(/\s+/).filter(Boolean);
+  if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase();
+  return `${parts[0]![0]}${parts[parts.length - 1]![0]}`.toUpperCase();
+}

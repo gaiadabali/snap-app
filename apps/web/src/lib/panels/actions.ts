@@ -4,7 +4,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 
-import { api, SESSION_COOKIE, WORKSPACE_COOKIE, newIdempotencyKey } from '@/lib/api/server';
+import { api, getImpersonation, IMPERSONATION_COOKIE, SESSION_COOKIE, WORKSPACE_COOKIE, newIdempotencyKey } from '@/lib/api/server';
 
 /**
  * Switches the active workspace.
@@ -41,6 +41,43 @@ export async function signOut(): Promise<void> {
   jar.delete(SESSION_COOKIE);
   jar.delete(WORKSPACE_COOKIE);
   redirect('/');
+}
+
+/**
+ * The one-click exit — docs/WEB.md §6 point 4 — bound to the banner's form on
+ * every panel page and reused by the "session ended" landing page's
+ * "Return to admin" button, since both cases end the same way: the token is
+ * asked to stop, and the local cookie is cleared either way.
+ *
+ * Calls the admin plane's stop endpoint AS THE STAFF MEMBER
+ * (`bypassImpersonation: true`), never with the impersonation token itself —
+ * `StaffGuard` refuses the admin plane outright under impersonation
+ * (`apps/server/src/admin/guards/staff.guard.ts`), by design, so asking it to
+ * stop the very session it is refusing has to happen as the person doing the
+ * impersonating, not as the subject.
+ *
+ * Best-effort on the network call: the session may already be gone (expired,
+ * stopped from another tab, revoked) by the time this runs, and the one
+ * thing that must ALWAYS happen — getting this browser out of "acting as"
+ * mode — is clearing the local cookie, which happens regardless of whether
+ * the stop call itself succeeds.
+ */
+export async function exitImpersonation(): Promise<void> {
+  const active = await getImpersonation();
+  if (active) {
+    try {
+      await api(`/v1/admin/impersonation/${active.sessionId}/stop`, {
+        method: 'POST',
+        bypassImpersonation: true,
+        idempotencyKey: newIdempotencyKey(),
+      });
+    } catch {
+      // Swallowed on purpose — see the doc comment above.
+    }
+  }
+  const jar = await cookies();
+  jar.delete(IMPERSONATION_COOKIE);
+  redirect('/admin');
 }
 
 export type ActionResult = { ok: true } | { ok: false; message: string };

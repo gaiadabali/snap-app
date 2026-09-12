@@ -16,16 +16,14 @@ import { useEffect, useState } from 'react';
 import { endImpersonationAction } from '../_actions/impersonation';
 
 export function ImpersonationBanner({
-  staffName,
   subjectName,
   subjectEmail,
   tenantName,
   expiresAt,
 }: {
-  staffName: string;
   subjectName: string;
-  subjectEmail: string;
-  tenantName: string | null;
+  subjectEmail: string | null;
+  tenantName: string;
   expiresAt: string;
 }) {
   const [remaining, setRemaining] = useState<number | null>(null);
@@ -55,15 +53,10 @@ export function ImpersonationBanner({
         Impersonating
       </span>
       <span className="text-[13px]">
-        <strong className="font-bold">{staffName}</strong> is viewing{' '}
-        <strong className="font-bold">{subjectName}</strong>
-        <span className="opacity-80"> ({subjectEmail})</span>
-        {tenantName ? (
-          <>
-            {' '}
-            — <strong className="font-bold">{tenantName}</strong>
-          </>
-        ) : null}
+        You are impersonating <strong className="font-bold">{subjectName}</strong>
+        {subjectEmail ? <span className="opacity-80"> ({subjectEmail})</span> : null}
+        {' '}
+        — <strong className="font-bold">{tenantName}</strong>
       </span>
       <span
         className={`ml-auto rounded-[var(--radius-sm)] bg-black/15 px-2 py-0.5 font-mono text-[13px] tabular ${

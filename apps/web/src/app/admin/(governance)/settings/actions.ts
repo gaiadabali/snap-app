@@ -2,60 +2,24 @@
 
 import { revalidatePath } from 'next/cache';
 
-import {
-  currentOperatorLabel,
-  removeAnnouncementBanner,
-  setExtractionThreshold,
-  setFeatureFlag,
-  setMaintenanceMode,
-  setValidatorToggle,
-  updatePlanDefault,
-  updateSupportConfig,
-  upsertAnnouncementBanner,
-  type AnnouncementBanner,
-  type MaintenanceMode,
-  type PlanQuotaDefault,
-  type SupportConfig,
-} from '../../_data/governance';
+import { newIdempotencyKey } from '@/lib/api/server';
+
+import { setPlatformSetting, type AdminPlatformSetting } from '../../_data/governance';
 
 const PATH = '/admin/settings';
 
-export async function setFeatureFlagAction(key: string, enabled: boolean): Promise<void> {
-  await setFeatureFlag(key, enabled, currentOperatorLabel());
+/**
+ * `value` arrives already parsed (the caller does `JSON.parse` on whatever
+ * was typed and only calls this if that succeeded) — this file never parses
+ * untrusted JSON itself so a malformed edit fails in the component, with the
+ * raw text still in the textarea, rather than as an opaque server error.
+ */
+export async function setPlatformSettingAction(
+  key: string,
+  value: unknown,
+  reason: string,
+): Promise<AdminPlatformSetting> {
+  const result = await setPlatformSetting(key, value, reason, newIdempotencyKey());
   revalidatePath(PATH);
-}
-
-export async function setExtractionThresholdAction(key: string, value: number): Promise<void> {
-  await setExtractionThreshold(key, value, currentOperatorLabel());
-  revalidatePath(PATH);
-}
-
-export async function setValidatorToggleAction(key: string, enabled: boolean): Promise<void> {
-  await setValidatorToggle(key, enabled, currentOperatorLabel());
-  revalidatePath(PATH);
-}
-
-export async function setMaintenanceModeAction(patch: Partial<MaintenanceMode>): Promise<void> {
-  await setMaintenanceMode(patch, currentOperatorLabel());
-  revalidatePath(PATH);
-}
-
-export async function upsertAnnouncementBannerAction(banner: AnnouncementBanner): Promise<void> {
-  await upsertAnnouncementBanner(banner, currentOperatorLabel());
-  revalidatePath(PATH);
-}
-
-export async function removeAnnouncementBannerAction(id: string): Promise<void> {
-  await removeAnnouncementBanner(id, currentOperatorLabel());
-  revalidatePath(PATH);
-}
-
-export async function updateSupportConfigAction(patch: Partial<SupportConfig>): Promise<void> {
-  await updateSupportConfig(patch, currentOperatorLabel());
-  revalidatePath(PATH);
-}
-
-export async function updatePlanDefaultAction(planCode: string, patch: Partial<PlanQuotaDefault>): Promise<void> {
-  await updatePlanDefault(planCode, patch, currentOperatorLabel());
-  revalidatePath(PATH);
+  return result;
 }

@@ -21,6 +21,49 @@ import { config } from '../config';
 export const SESSION_COOKIE = 'snap_session';
 export const WORKSPACE_COOKIE = 'snap_workspace';
 
+/**
+ * Set by the admin console when a support session starts (docs/WEB.md §6
+ * point 3). httpOnly, so `token` — the one field the server accepts as a
+ * credential (`X-Impersonation-Token`) — never reaches client JavaScript;
+ * everything else here is display data the customer-facing banner needs and
+ * is not secret on its own.
+ *
+ * CONTRACT the cookie-writer must satisfy for the panel side to see it:
+ * `path: '/'` (a cookie scoped to `/admin` is never sent on a request to
+ * `/app/*`, which is the one thing that would make this whole mechanism
+ * silently do nothing) and an `expires`/`maxAge` matching `expiresAt`,
+ * cleared the same way `exitImpersonation` clears it below.
+ */
+export const IMPERSONATION_COOKIE = 'snap_impersonation';
+
+export type ImpersonationCookiePayload = {
+  sessionId: string;
+  token: string;
+  staffName: string;
+  subjectUserId: string;
+  subjectName: string;
+  subjectEmail: string;
+  tenantId: string;
+  tenantName: string;
+  /** ISO 8601. */
+  expiresAt: string;
+};
+
+export async function getImpersonation(): Promise<ImpersonationCookiePayload | null> {
+  const jar = await cookies();
+  const raw = jar.get(IMPERSONATION_COOKIE)?.value;
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as Partial<ImpersonationCookiePayload>;
+    if (!parsed.token || !parsed.sessionId || !parsed.subjectUserId || !parsed.tenantId || !parsed.expiresAt) {
+      return null;
+    }
+    return parsed as ImpersonationCookiePayload;
+  } catch {
+    return null;
+  }
+}
+
 export class ApiError extends Error {
   constructor(
     readonly status: number,
@@ -29,6 +72,24 @@ export class ApiError extends Error {
   ) {
     super(message);
     this.name = 'ApiError';
+  }
+}
+
+/**
+ * Thrown instead of a plain `ApiError` when a request carrying
+ * `X-Impersonation-Token` comes back 401 or 403.
+ *
+ * `admin_impersonation_verify` runs on every single call (not once at session
+ * start), so this is exactly the shape of "the session died between two
+ * clicks" — natural expiry, an explicit stop from the admin console, or a
+ * revoked capability — never a normal permissions error. Callers use this to
+ * show "that session ended" instead of a raw error, and to know the
+ * impersonation cookie is now dead weight worth clearing.
+ */
+export class ImpersonationEndedError extends ApiError {
+  constructor(status: number, message: string, body?: unknown) {
+    super(status, message, body);
+    this.name = 'ImpersonationEndedError';
   }
 }
 
@@ -46,6 +107,16 @@ type RequestOptions = {
   idempotencyKey?: string;
   /** Opt out of the session token, for genuinely public endpoints. */
   anonymous?: boolean;
+  /**
+   * Force the ordinary session bearer even while an impersonation cookie is
+   * present. The one legitimate use is the "exit impersonation" call itself:
+   * the admin plane's stop endpoint is unreachable BY DESIGN under an
+   * impersonation token (`StaffGuard` refuses it — the escalation that closes
+   * is staff impersonating another staff member and inheriting their admin
+   * capabilities), so ending a session has to be asked for as the staff
+   * member, not as the subject.
+   */
+  bypassImpersonation?: boolean;
   /** Next.js fetch cache control. Dashboards should not be cached. */
   cache?: RequestCache;
   revalidate?: number | false;
@@ -57,6 +128,15 @@ export async function getSessionToken(): Promise<string | undefined> {
 }
 
 export async function getActiveWorkspaceId(): Promise<string | undefined> {
+  // An impersonation session is opened FOR ONE TENANT and pinned there
+  // server-side (`MembershipGuard`) — reading the ordinary workspace cookie
+  // here instead would let a stale or foreign `snap_workspace` value pick a
+  // DIFFERENT workspace than the one the session was actually opened for,
+  // and every write would then 403. Forcing it here means every caller of
+  // `getActiveWorkspaceId()` — every panel layout and page — is correct by
+  // construction rather than by remembering to special-case impersonation.
+  const impersonation = await getImpersonation();
+  if (impersonation) return impersonation.tenantId;
   const jar = await cookies();
   return jar.get(WORKSPACE_COOKIE)?.value;
 }
@@ -76,15 +156,27 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
     workspaceId,
     idempotencyKey,
     anonymous = false,
+    bypassImpersonation = false,
     cache,
     revalidate,
   } = options;
 
   const headers: Record<string, string> = { accept: 'application/json' };
 
+  // When an impersonation cookie is present, it REPLACES the ordinary bearer
+  // — the two are never sent together, and `SessionGuard` on the other end
+  // does not expect them to be (see its comments). This is additive: with no
+  // cookie, `impersonation` is null and every line below behaves exactly as
+  // it did before this existed.
+  const impersonation = anonymous || bypassImpersonation ? null : await getImpersonation();
+
   if (!anonymous) {
-    const token = await getSessionToken();
-    if (token) headers.authorization = `Bearer ${token}`;
+    if (impersonation) {
+      headers['x-impersonation-token'] = impersonation.token;
+    } else {
+      const token = await getSessionToken();
+      if (token) headers.authorization = `Bearer ${token}`;
+    }
   }
 
   const tenant = workspaceId ?? (await getActiveWorkspaceId());
@@ -117,6 +209,11 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
       (typeof parsed === 'object' && parsed !== null && 'message' in parsed
         ? String((parsed as { message: unknown }).message)
         : undefined) ?? `${method} ${path} failed with ${response.status}`;
+    // Verified per request, so this is the shape of a session that died mid
+    // browse, not an ordinary permissions error — see `ImpersonationEndedError`.
+    if (impersonation && (response.status === 401 || response.status === 403)) {
+      throw new ImpersonationEndedError(response.status, message, parsed);
+    }
     throw new ApiError(response.status, message, parsed);
   }
 

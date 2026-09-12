@@ -1,160 +1,73 @@
 /**
- * People data access — platform admin.
+ * People data access — platform admin, wired to the real admin plane.
  *
- * FIXTURE-BACKED, deliberately. The admin backend (a new staff/identity table
- * and a `SECURITY DEFINER` cross-tenant read path — see docs/WEB.md §6 and
- * `packages/db/migrations/0015_identity_plane.sql`) is being built in
- * parallel and had no routes at the time this was written. Every exported
- * function here is typed and named so that the body — currently a read of
- * `../_fixtures/seed.ts` — becomes an `api<T>('/v1/admin/users...')` call
- * without any caller (a page, a server action) needing to change.
- *
- * Billing/wallet fields are honest about `docs/WEB.md` §7: `subscriptions`
- * and `usage_counters` exist in schema but Stripe is phase 6.5 and unbuilt,
- * so `walletState` is always `'not_wired'` here — never invent a checkout.
+ * Backed by `GET /v1/admin/users` (`admin_user_search` — 0021_admin_plane.sql),
+ * which matches a name/email substring and is gated on `view_tenant_metadata`.
+ * Every row is exactly `AdminUserSummary` from `@snap/api-contract` — no
+ * richer shape is invented here. See the wiring report for the full list of
+ * fields the previous fixture showed that have no server backing at all
+ * (status, last sign-in, sign-in count, primary workspace, plan name,
+ * workspace list, sign-in history, activity feed, wallet).
  */
 import 'server-only';
 
-import type { MemberRole, Workspace } from '@snap/api-contract';
+import type { AdminUserDetail, AdminUserSummary } from '@snap/api-contract';
 
-import { FIRMS, TENANTS, USERS, activityFor, signInHistoryFor, type UserSeed } from '../_fixtures/seed';
+import { ApiError, adminApi, capabilityGated, type Gated } from './client';
 
-export type UserStatus = 'active' | 'dormant' | 'suspended';
+export type UserListParams = { query?: string; page?: number; pageSize?: number };
 
-export type UserWorkspaceMembership = {
-  tenantId: string;
-  tenantName: string;
-  kind: Workspace;
-  role: MemberRole;
-  firmName: string | null;
-};
-
-export type UserListRow = {
-  id: string;
-  displayName: string;
-  email: string;
-  initials: string;
-  status: UserStatus;
-  createdAt: string;
-  lastSignInAt: string | null;
-  signInCount: number;
-  workspaceCount: number;
-  primaryWorkspace: string | null;
-  planName: string | null;
-};
-
-export type WalletState = {
-  /** Always false today — Stripe is phase 6.5 and unbuilt. Never invent a checkout. */
-  billingWired: false;
-  note: string;
-};
-
-export type UserDetail = UserListRow & {
-  workspaces: UserWorkspaceMembership[];
-  signInHistory: Array<{ at: string; ip: string; device: string; outcome: 'success' | 'failed' }>;
-  activity: Array<{ at: string; action: string; detail: string }>;
-  plan: { planCode: string; planName: string; scanQuota: number | null; scansUsed: number; scansRemaining: number | null } | null;
-  wallet: WalletState;
-};
-
-export type UserListParams = {
-  query?: string;
-  status?: UserStatus | 'all';
-  tenantId?: string;
-  page?: number;
-  pageSize?: number;
-};
-
-function tenantOf(tenantId: string) {
-  return TENANTS.find((t) => t.id === tenantId) ?? null;
-}
-
-function firmNameOf(firmId: string | null): string | null {
-  return firmId ? (FIRMS.find((f) => f.id === firmId)?.name ?? null) : null;
-}
-
-function workspacesOf(u: UserSeed): UserWorkspaceMembership[] {
-  return u.memberships
-    .map((m) => {
-      const tenant = tenantOf(m.tenantId);
-      if (!tenant) return null;
-      return {
-        tenantId: tenant.id,
-        tenantName: tenant.name,
-        kind: tenant.kind,
-        role: m.role,
-        firmName: firmNameOf(tenant.firmId),
-      } satisfies UserWorkspaceMembership;
-    })
-    .filter((x): x is UserWorkspaceMembership => x !== null);
-}
-
-function toRow(u: UserSeed): UserListRow {
-  const primary = tenantOf(u.memberships[0]?.tenantId ?? '');
-  return {
-    id: u.id,
-    displayName: u.displayName,
-    email: u.email,
-    initials: u.initials,
-    status: u.status,
-    createdAt: u.createdAt,
-    lastSignInAt: u.lastSignInAt,
-    signInCount: u.signInCount,
-    workspaceCount: u.memberships.length,
-    primaryWorkspace: primary?.name ?? null,
-    planName: primary?.planName ?? null,
-  };
-}
+/** Clamped server-side too (`admin.repo.ts`'s `clampLimit`) — mirrored here
+ * only so pagination math matches what the server will actually apply. */
+const MAX_PAGE_SIZE = 100;
 
 export async function listUsers(
   params: UserListParams = {},
-): Promise<{ items: UserListRow[]; total: number }> {
-  const { query = '', status = 'all', tenantId, page = 1, pageSize = 50 } = params;
-  const q = query.trim().toLowerCase();
-  let rows = USERS.filter((u) => (tenantId ? u.memberships.some((m) => m.tenantId === tenantId) : true)).map(toRow);
-  if (q) {
-    rows = rows.filter((r) => r.displayName.toLowerCase().includes(q) || r.email.toLowerCase().includes(q));
-  }
-  if (status !== 'all') rows = rows.filter((r) => r.status === status);
-  rows.sort((a, b) => (b.lastSignInAt ?? '').localeCompare(a.lastSignInAt ?? ''));
-  const total = rows.length;
-  const start = (page - 1) * pageSize;
-  return { items: rows.slice(start, start + pageSize), total };
+): Promise<Gated<{ items: AdminUserSummary[]; hasMore: boolean }>> {
+  const { query = '', page = 1, pageSize = 50 } = params;
+  const limit = Math.min(Math.max(Math.trunc(pageSize), 1), MAX_PAGE_SIZE);
+  const offset = Math.max(0, (page - 1) * limit);
+  return capabilityGated(async () => {
+    const items = await adminApi<AdminUserSummary[]>(
+      `/v1/admin/users?query=${encodeURIComponent(query)}&limit=${limit}&offset=${offset}`,
+    );
+    return { items, hasMore: items.length === limit };
+  });
 }
 
-export async function getUser(id: string): Promise<UserDetail | null> {
-  const u = USERS.find((x) => x.id === id);
-  if (!u) return null;
-  const primary = tenantOf(u.memberships[0]?.tenantId ?? '');
-  return {
-    ...toRow(u),
-    workspaces: workspacesOf(u),
-    signInHistory: signInHistoryFor(u.id),
-    activity: activityFor(u.id),
-    plan: primary
-      ? {
-          planCode: primary.planCode,
-          planName: primary.planName,
-          scanQuota: primary.scanQuota,
-          scansUsed: primary.scansUsed,
-          scansRemaining: primary.scanQuota === null ? null : Math.max(0, primary.scanQuota - primary.scansUsed),
-        }
-      : null,
-    wallet: {
-      billingWired: false,
-      note: 'Stripe integration is phase 6.5 and unbuilt. subscriptions and usage_counters exist in schema; no payment method or invoice history can be shown yet.',
-    },
-  };
+/**
+ * There is no `GET /v1/admin/users/:userId` — `admin_user_search` only
+ * matches a name/email substring and cannot fetch by id. Migration 0022 adds
+ * `admin_user_detail`, so a single user is now ONE request that also carries
+ * their memberships — replacing a scan that made twenty round trips per page
+ * and silently found nobody once the user table outgrew its bound.
+ */
+export async function getUser(userId: string): Promise<Gated<AdminUserDetail | null>> {
+  return capabilityGated(async () => {
+    try {
+      return await adminApi<AdminUserDetail>(`/v1/admin/users/${encodeURIComponent(userId)}`);
+    } catch (error) {
+      // The function raises `no such user` rather than returning an empty
+      // row, so an unknown id arrives as a 404 and is a legitimate "not
+      // found" for the page to render — not a fault to propagate.
+      if (error instanceof ApiError && error.status === 404) return null;
+      throw error;
+    }
+  });
 }
 
 export type PaletteHit = { id: string; label: string; sublabel: string; href: string };
 
-/** Bounded client-side index for the command palette — see the same note in tenants.ts. */
+/** Bounded client-side index for the command palette. Empty (not thrown) when
+ * the signed-in staff member lacks `view_tenant_metadata` — the palette
+ * degrades quietly rather than breaking the whole shell over one section. */
 export async function searchUsersForPalette(limit = 200): Promise<PaletteHit[]> {
-  return USERS.slice(0, limit).map((u) => ({
-    id: u.id,
-    label: u.displayName,
-    sublabel: u.email,
-    href: `/admin/people/${u.id}`,
+  const gated = await capabilityGated(() => adminApi<AdminUserSummary[]>(`/v1/admin/users?limit=${limit}`));
+  if (!gated.allowed) return [];
+  return gated.data.map((u) => ({
+    id: u.userId,
+    label: u.displayName ?? u.email ?? u.userId,
+    sublabel: u.email ?? u.userId,
+    href: `/admin/people/${u.userId}`,
   }));
 }

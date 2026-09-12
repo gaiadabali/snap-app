@@ -1,100 +1,93 @@
-import { Badge, Card } from '@/design/primitives';
+import { Card, Empty } from '@/design/primitives';
 
-import { getApiKeyProviders, getAuditLog } from '../../../_data/governance';
+import { getAiProviders } from '../../../_data/governance';
 
+import { KmsWarning } from '../../_components/KmsWarning';
+import { RefusalPanel } from '../../_components/RefusalPanel';
+import { ToggleControl } from '../../_components/ToggleControl';
+import { AddProviderForm } from './_components/AddProviderForm';
 import { KeyForm } from './_components/KeyForm';
+import { setProviderActiveAction } from './actions';
 
 export const metadata = { title: 'API keys · Snap Apps admin' };
 
 export default async function KeysPage() {
-  const [providers, audit] = await Promise.all([getApiKeyProviders(), getAuditLog(50)]);
-  const keyEvents = audit.filter((e) => e.action.startsWith('ai_key.'));
+  const gated = await getAiProviders();
 
   return (
     <div className="flex flex-col gap-6">
       <Card tone="ground">
         <p className="text-[13px] leading-relaxed text-[var(--color-ink-muted)]">
           Keys are stored encrypted — app-level AEAD, KMS-wrapped DEK, ciphertext in <code>BYTEA</code>.
-          This screen only ever shows a prefix and last four characters, never the value, and never
-          reads one back — see <code>docs/WEB.md</code> §6.
+          This screen only ever shows a prefix and last four characters, never the value, and there is no
+          endpoint anywhere that can read one back by design — see <code>docs/WEB.md</code> §6.
         </p>
       </Card>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        {providers.map((p) => (
-          <Card key={p.id}>
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <h3 className="text-[16px] font-bold">{p.label}</h3>
-                <p className="mt-1 text-[13px] text-[var(--color-ink-muted)]">{p.description}</p>
-              </div>
-              <Badge tone={p.status === 'configured' ? 'good' : p.status === 'missing' ? 'risk' : 'neutral'}>
-                {p.status === 'not_applicable' ? 'not a UI secret' : p.status}
-              </Badge>
-            </div>
+      <KmsWarning />
 
-            <div className="mt-4 rounded-[var(--radius-md)] border border-[var(--color-rule)] bg-[var(--color-ground)] p-3">
-              <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--color-ink-faint)]">
-                Current value
-              </div>
-              {p.editable ? (
-                p.status === 'configured' ? (
-                  <div className="tabular mt-1 text-[15px] font-semibold">
-                    {p.prefix}
-                    <span className="text-[var(--color-ink-faint)]">••••••••</span>
-                    {p.last4}
+      {!gated.allowed ? (
+        <RefusalPanel capability="manage_ai_config" status={gated.status} message={gated.message} />
+      ) : (
+        <>
+          <AddProviderForm />
+
+          {gated.data.length === 0 ? (
+            <Empty
+              title="No AI provider configurations yet"
+              body="Add one above, then set its key below."
+            />
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2">
+              {gated.data.map((p) => (
+                <Card key={p.id}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h3 className="text-[16px] font-bold">{p.label}</h3>
+                      <p className="mt-1 text-[13px] text-[var(--color-ink-muted)]">
+                        {p.provider}
+                        {p.defaultModel ? ` · default model ${p.defaultModel}` : ''}
+                      </p>
+                    </div>
+                    <ToggleControl
+                      key={`${p.id}-${p.isActive}`}
+                      checked={p.isActive}
+                      label={`${p.label} active`}
+                      onToggle={(next) =>
+                        setProviderActiveAction({
+                          provider: p.provider,
+                          label: p.label,
+                          defaultModel: p.defaultModel,
+                          isActive: next,
+                        })
+                      }
+                    />
                   </div>
-                ) : (
-                  <div className="mt-1 text-[14px] font-semibold text-[var(--color-risk)]">Not set</div>
-                )
-              ) : (
-                <div className="mt-1 text-[14px] text-[var(--color-ink-muted)]">
-                  No static value — ambient credential chain.
-                </div>
-              )}
-              {p.setAt ? (
-                <div className="mt-1 text-[12px] text-[var(--color-ink-muted)]">
-                  Set {new Date(p.setAt).toLocaleDateString('en-AU')} by {p.setBy} · rotated {p.rotatedCount}×
-                </div>
-              ) : null}
-              {p.envVar ? (
-                <div className="mt-1 text-[12px] text-[var(--color-ink-faint)]">
-                  Maps to <code>{p.envVar}</code> in <code>apps/server/src/config.ts</code>
-                </div>
-              ) : null}
+
+                  <div className="mt-4 rounded-[var(--radius-md)] border border-[var(--color-rule)] bg-[var(--color-ground)] p-3">
+                    <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--color-ink-faint)]">
+                      Current key
+                    </div>
+                    {p.hasLiveKey ? (
+                      <div className="tabular mt-1 text-[15px] font-semibold">
+                        {p.keyPrefix}
+                        <span className="text-[var(--color-ink-faint)]">••••••••</span>
+                        {p.keyLast4}
+                      </div>
+                    ) : (
+                      <div className="mt-1 text-[14px] font-semibold text-[var(--color-risk)]">Not set</div>
+                    )}
+                  </div>
+
+                  <div className="mt-4">
+                    <KeyForm configId={p.id} hasLiveKey={p.hasLiveKey} />
+                  </div>
+                </Card>
+              ))}
             </div>
-
-            <p className="mt-3 text-[13px] text-[var(--color-ink-muted)]">{p.usedFor}</p>
-
-            <div className="mt-4">
-              {p.editable ? (
-                <KeyForm providerId={p.id} wasConfigured={p.status === 'configured'} />
-              ) : (
-                <p className="text-[13px] text-[var(--color-ink-faint)]">
-                  This provider deliberately has no settable key here — see the note above.
-                </p>
-              )}
-            </div>
-          </Card>
-        ))}
-      </div>
-
-      <Card>
-        <h3 className="text-[16px] font-bold">Key audit trail</h3>
-        <p className="mt-1 text-[13px] text-[var(--color-ink-muted)]">
-          Every set or rotate, who did it, when — never the value.
-        </p>
-        <ul className="mt-3 flex flex-col gap-2">
-          {keyEvents.map((e) => (
-            <li key={e.id} className="flex items-baseline justify-between gap-4 border-b border-[var(--color-rule)] pb-2 text-[13px] last:border-0">
-              <span>{e.detail}</span>
-              <span className="tabular shrink-0 text-[var(--color-ink-faint)]">
-                {new Date(e.at).toLocaleString('en-AU')} · {e.actor}
-              </span>
-            </li>
-          ))}
-        </ul>
-      </Card>
+          )}
+        </>
+      )}
     </div>
   );
 }

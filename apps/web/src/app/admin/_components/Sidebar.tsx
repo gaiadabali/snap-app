@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
+import type { PlatformCapability } from '@snap/api-contract';
+
 import { cx } from '@/design/primitives';
 
 import { PRIMARY_NAV } from './nav';
@@ -12,8 +14,16 @@ function isActive(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function Sidebar() {
+/**
+ * Hides a section a staff member genuinely cannot reach — cosmetic, per
+ * docs/WEB.md §6: the real gate is the capability check inside the Postgres
+ * function each route calls. `capabilities` is `null` when the signed-in
+ * account is not platform staff at all, which shows nothing but the always-on
+ * items (there are none today — every gated item disappears).
+ */
+export function Sidebar({ capabilities }: { capabilities: PlatformCapability[] | null }) {
   const pathname = usePathname();
+  const items = PRIMARY_NAV.filter((item) => !item.capability || (capabilities?.includes(item.capability) ?? false));
   return (
     <nav
       aria-label="Admin sections"
@@ -31,7 +41,7 @@ export function Sidebar() {
         </div>
       </div>
       <ul className="flex-1 space-y-0.5 overflow-y-auto p-2">
-        {PRIMARY_NAV.map((item) => {
+        {items.map((item) => {
           const active = isActive(pathname, item.href);
           return (
             <li key={item.href}>

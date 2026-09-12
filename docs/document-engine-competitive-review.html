@@ -1,0 +1,732 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Document Engine — Competitive Review</title>
+<style>
+  @page {
+    size: A4;
+    margin: 18mm 16mm 20mm 16mm;
+    @bottom-center { content: counter(page); }
+  }
+
+  :root {
+    --ink:      #14181d;
+    --body:     #2d343d;
+    --muted:    #6b7480;
+    --faint:    #9aa2ad;
+    --rule:     #d9dde3;
+    --hairline: #eceef2;
+    --accent:   #9a5b1f;
+    --accent-bg:#fdf6ee;
+    --good:     #2f6b46;
+    --warn:     #9a5b1f;
+    --bad:      #9c3226;
+    --panel:    #f7f8fa;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    font-family: "Charter", "Bitstream Charter", "Georgia", "Times New Roman", serif;
+    font-size: 9.6pt;
+    line-height: 1.52;
+    color: var(--body);
+    margin: 0;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .sans { font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif; }
+
+  /* ---------- cover ---------- */
+  .cover {
+    page-break-after: always;
+    padding-top: 22mm;
+  }
+  .eyebrow {
+    font-family: "Segoe UI", Arial, sans-serif;
+    font-size: 7.6pt;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 600;
+    margin-bottom: 10mm;
+  }
+  h1.title {
+    font-size: 27pt;
+    line-height: 1.1;
+    color: var(--ink);
+    font-weight: 600;
+    margin: 0 0 5mm 0;
+    letter-spacing: -.015em;
+  }
+  .subtitle {
+    font-size: 12.5pt;
+    color: var(--muted);
+    font-weight: 400;
+    line-height: 1.4;
+    margin: 0 0 14mm 0;
+    max-width: 132mm;
+  }
+  .cover-rule { border: 0; border-top: 2px solid var(--ink); margin: 0 0 5mm 0; }
+  .cover-meta {
+    font-family: "Segoe UI", Arial, sans-serif;
+    font-size: 8.2pt;
+    color: var(--muted);
+    display: flex;
+    gap: 14mm;
+    flex-wrap: wrap;
+  }
+  .cover-meta b { color: var(--ink); font-weight: 600; display: block; font-size: 7.4pt; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 1.5mm; }
+  .cover-abstract {
+    margin-top: 16mm;
+    padding: 7mm 8mm;
+    background: var(--panel);
+    border-left: 2.5pt solid var(--accent);
+    font-size: 10pt;
+    line-height: 1.6;
+    color: var(--body);
+  }
+  .cover-abstract p { margin: 0 0 3.5mm 0; }
+  .cover-abstract p:last-child { margin-bottom: 0; }
+
+  /* ---------- headings ---------- */
+  h2 {
+    font-size: 14pt;
+    color: var(--ink);
+    font-weight: 600;
+    margin: 11mm 0 3mm 0;
+    padding-bottom: 2mm;
+    border-bottom: 1.2pt solid var(--ink);
+    letter-spacing: -.01em;
+    page-break-after: avoid;
+  }
+  h2 .num {
+    font-family: "Segoe UI", Arial, sans-serif;
+    font-size: 9pt;
+    color: var(--accent);
+    font-weight: 600;
+    margin-right: 3mm;
+  }
+  h3 {
+    font-size: 10.8pt;
+    color: var(--ink);
+    font-weight: 600;
+    margin: 7mm 0 2mm 0;
+    page-break-after: avoid;
+  }
+  h4 {
+    font-family: "Segoe UI", Arial, sans-serif;
+    font-size: 8pt;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 600;
+    margin: 6mm 0 2mm 0;
+    page-break-after: avoid;
+  }
+  p { margin: 0 0 3mm 0; }
+  a { color: var(--accent); text-decoration: none; }
+
+  /* ---------- plain-english callout ---------- */
+  .plain {
+    background: var(--accent-bg);
+    border: .8pt solid #efdfc9;
+    border-radius: 2pt;
+    padding: 3.5mm 5mm;
+    margin: 3.5mm 0 4mm 0;
+    font-size: 9.3pt;
+    line-height: 1.55;
+    page-break-inside: avoid;
+  }
+  .plain .lbl {
+    font-family: "Segoe UI", Arial, sans-serif;
+    font-size: 7.2pt;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 700;
+    display: block;
+    margin-bottom: 1.5mm;
+  }
+  .plain p { margin: 0 0 2mm 0; }
+  .plain p:last-child { margin-bottom: 0; }
+
+  .keypoint {
+    border-left: 2.5pt solid var(--ink);
+    padding: 1mm 0 1mm 5mm;
+    margin: 4mm 0;
+    font-size: 10pt;
+    color: var(--ink);
+    line-height: 1.5;
+    page-break-inside: avoid;
+  }
+
+  /* ---------- tables ---------- */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: "Segoe UI", Arial, sans-serif;
+    font-size: 8.1pt;
+    margin: 3mm 0 4mm 0;
+    page-break-inside: avoid;
+  }
+  table.long { page-break-inside: auto; }
+  thead th {
+    text-align: left;
+    font-size: 7.2pt;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 600;
+    border-bottom: 1pt solid var(--ink);
+    padding: 0 3mm 1.8mm 0;
+    vertical-align: bottom;
+  }
+  tbody td {
+    padding: 2mm 3mm 2mm 0;
+    border-bottom: .5pt solid var(--hairline);
+    vertical-align: top;
+    line-height: 1.42;
+  }
+  tbody tr:last-child td { border-bottom: .8pt solid var(--rule); }
+  td.k, th.k { font-weight: 600; color: var(--ink); }
+  td.num, th.num2 { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .mono { font-family: "Consolas", "SF Mono", "Menlo", monospace; font-size: 7.6pt; }
+  caption {
+    caption-side: bottom;
+    text-align: left;
+    font-family: "Segoe UI", Arial, sans-serif;
+    font-size: 7.4pt;
+    color: var(--faint);
+    padding-top: 1.5mm;
+    line-height: 1.4;
+  }
+
+  .yes { color: var(--good); font-weight: 600; }
+  .no  { color: var(--bad);  font-weight: 600; }
+  .part{ color: var(--warn); font-weight: 600; }
+
+  .pill {
+    display: inline-block;
+    font-family: "Segoe UI", Arial, sans-serif;
+    font-size: 6.8pt;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    font-weight: 700;
+    padding: .6mm 1.8mm;
+    border-radius: 1.5pt;
+    white-space: nowrap;
+  }
+  .pill.live   { background: #e6f0e9; color: var(--good); }
+  .pill.shadow { background: #f6ece0; color: var(--warn); }
+  .pill.planned{ background: #eceef2; color: var(--muted); }
+  .pill.gap    { background: #f7e6e3; color: var(--bad); }
+
+  ul, ol { margin: 0 0 3.5mm 0; padding-left: 5mm; }
+  li { margin-bottom: 1.6mm; line-height: 1.5; }
+
+  .two-col { display: flex; gap: 7mm; margin: 3mm 0 4mm 0; page-break-inside: avoid; }
+  .two-col > div { flex: 1; }
+
+  .card {
+    background: var(--panel);
+    border-radius: 2pt;
+    padding: 4mm 5mm;
+    page-break-inside: avoid;
+  }
+  .card h4 { margin-top: 0; }
+
+  .metric-row { display: flex; gap: 4mm; margin: 4mm 0; page-break-inside: avoid; }
+  .metric {
+    flex: 1;
+    border-top: 1.5pt solid var(--ink);
+    padding-top: 2mm;
+  }
+  .metric .v {
+    font-family: "Segoe UI", Arial, sans-serif;
+    font-size: 17pt;
+    font-weight: 600;
+    color: var(--ink);
+    line-height: 1;
+    letter-spacing: -.02em;
+  }
+  .metric .l {
+    font-family: "Segoe UI", Arial, sans-serif;
+    font-size: 7.3pt;
+    color: var(--muted);
+    line-height: 1.35;
+    margin-top: 1.5mm;
+  }
+
+  .pagebreak { page-break-before: always; }
+  .avoid { page-break-inside: avoid; }
+
+  footer.doc {
+    margin-top: 10mm;
+    padding-top: 3mm;
+    border-top: .8pt solid var(--rule);
+    font-family: "Segoe UI", Arial, sans-serif;
+    font-size: 7.4pt;
+    color: var(--faint);
+    line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ COVER ============ -->
+<section class="cover">
+  <div class="eyebrow">Snap Apps &middot; Document Engine</div>
+  <h1 class="title">What we have built,<br>and how it compares</h1>
+  <p class="subtitle">A review of three external reference points against the Snap Apps document engine — what is running today, what is planned, and the three things this comparison changes.</p>
+  <hr class="cover-rule">
+  <div class="cover-meta">
+    <div><b>Date</b>12 September 2026</div>
+    <div><b>Status</b>Review draft</div>
+    <div><b>Audience</b>Engineering &amp; non-technical</div>
+    <div><b>Source docs</b>docs/OCR.md, docs/AI.md, bench/results</div>
+  </div>
+
+  <div class="cover-abstract">
+    <p><b>The short version.</b> Three things were examined: a public benchmark comparing three ways of serving the same small AI model; a teaching demo showing how compressing a model changes its speed and accuracy; and a scan of Hugging Face, the main public library of open AI models, for anything built to read Australian documents.</p>
+    <p>None of the three is a commercial competitor. All three are useful, because each one does something we have written down as important and not yet finished.</p>
+    <p>The scan produced the one finding that changes a decision: <b>the two open models our own architecture document names as the strongest available are licensed in a way that forbids us shipping them to a customer.</b> That needs to be recorded before anyone plans around them.</p>
+  </div>
+</section>
+
+<!-- ============ 1 ============ -->
+<h2><span class="num">01</span>Why this review exists</h2>
+
+<p>Snap Apps reads Australian receipts and invoices and turns them into accounting records. The part that does the reading is called the <b>document engine</b>. Its architecture is written down in <span class="mono">docs/OCR.md</span>, a long and deliberately honest document whose competitive section opens with a table of how well rival systems perform — and then admits, in bold, that <i>every number in that table is someone else's.</i></p>
+
+<p>Three links were put forward for comparison. This document answers the question properly: what are they, what do we have, what is planned, and where does the comparison actually bite.</p>
+
+<div class="plain">
+  <span class="lbl">In plain terms</span>
+  <p>Reading a receipt with a computer sounds simple and is not. The difficulty is not reading the letters — it is knowing, afterwards, whether you read them correctly. A system that is confidently wrong about a tax figure is worse than one that says "I could not read this." Almost everything below is about that distinction.</p>
+</div>
+
+<h3>The three references at a glance</h3>
+
+<table>
+  <thead>
+    <tr><th style="width:24%">Reference</th><th style="width:20%">What it is</th><th>What it actually does</th><th style="width:17%">Relationship to us</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="k">sentiment.net1io.space<div class="mono" style="color:var(--faint)">"Experiment 001"</div></td>
+      <td>A public benchmark, not a product</td>
+      <td>Takes one sentence and one fixed AI model, then runs it through three different software stacks on identical hardware to see which serves it fastest.</td>
+      <td>Not a competitor. A <b>method</b> worth copying.</td>
+    </tr>
+    <tr>
+      <td class="k">github.com/azlanabas/<wbr>utmcs_llmv</td>
+      <td>A university teaching demo</td>
+      <td>Runs one small language model at three compression levels side by side so students can see the trade-off between model size, speed and accuracy.</td>
+      <td>Not a competitor. Fills a <b>measurement gap</b> we have.</td>
+    </tr>
+    <tr>
+      <td class="k">Hugging Face search<div class="mono" style="color:var(--faint)">"OCR for documents, Australia"</div></td>
+      <td>The main public library of open AI models</td>
+      <td>Shows what the world has already published and made free to use.</td>
+      <td>Tells us <b>what to build and what to borrow</b>.</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="plain">
+  <span class="lbl">Note on category</span>
+  <p>The first two are small personal or academic projects — one has two commits and no stars. Nothing below treats them as rivals. They are treated as evidence, because a small project that has actually measured something outranks a large document that has not.</p>
+</div>
+
+<!-- ============ 2 ============ -->
+<h2><span class="num">02</span>Where the Snap Apps engine stands today</h2>
+
+<p>Before comparing anything, an honest statement of our own position. The engine has three layers, and they are at three very different stages of completion.</p>
+
+<table class="long">
+  <thead>
+    <tr><th style="width:20%">Capability</th><th style="width:11%">Status</th><th style="width:34%">What exists in the codebase</th><th>What that means in practice</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="k">Reading the document</td>
+      <td><span class="pill live">Live</span></td>
+      <td>A vision-language model is handed the whole page and asked for structured data. Default <span class="mono">gemma4:31b</span>; a router escalates through four models on failure.</td>
+      <td>Works. But the model never reports <i>where</i> on the page it found a number — it goes straight from picture to answer.</td>
+    </tr>
+    <tr>
+      <td class="k">Checking the reading</td>
+      <td><span class="pill live">Live</span></td>
+      <td>Arithmetic, date and ABN checks in <span class="mono">validators.ts</span>, including the modulus-89 ABN checksum and a dual-convention line-total check.</td>
+      <td>This is our strongest asset and it is fully built. Deterministic code, not a model, decides whether a human must look.</td>
+    </tr>
+    <tr>
+      <td class="k">Audit trail &amp; replay</td>
+      <td><span class="pill live">Live</span></td>
+      <td>Migration 0009: re-extraction updates in place, both runs survive, human corrections are locked, documents behind a posted transaction are frozen.</td>
+      <td>A past result can be reproduced and every correction is traceable. Rare in this field.</td>
+    </tr>
+    <tr>
+      <td class="k">Data isolation</td>
+      <td><span class="pill live">Live</span></td>
+      <td>Row-level security in the database; the background worker itself goes through it rather than around it.</td>
+      <td>One tenant cannot read another's documents, enforced by the database, not by application discipline.</td>
+    </tr>
+    <tr>
+      <td class="k">Our own OCR stage</td>
+      <td><span class="pill shadow">Shadow</span></td>
+      <td><span class="mono">packages/docai</span> plus a Python service wrapping PP-OCRv5. Built, tested, and wired in — but only in shadow mode.</td>
+      <td>It runs <i>alongside</i> the real result and never affects it. If the switch is unset, it is not called at all.</td>
+    </tr>
+    <tr>
+      <td class="k">Location of every value</td>
+      <td><span class="pill shadow">Shadow</span></td>
+      <td><span class="mono">grounding.ts</span> attaches coordinates to extracted fields — advisory only.</td>
+      <td>Cannot yet be relied on, because the stage that produces coordinates is not the primary reader.</td>
+    </tr>
+    <tr>
+      <td class="k">Deployment restrictions</td>
+      <td><span class="pill live">Live</span></td>
+      <td><span class="mono">registry.ts</span> models residency as a <i>type</i>. An air-gapped profile does not forbid external engines — it removes them from the list.</td>
+      <td>A misconfigured flag cannot send Australian tax records offshore, because the option does not exist in that build.</td>
+    </tr>
+    <tr>
+      <td class="k">Calibrated confidence</td>
+      <td><span class="pill gap">Gap</span></td>
+      <td>The engine self-reports <span class="mono">calibrated: false</span>. The cutoff of 0.8 is labelled in code as a placeholder.</td>
+      <td>When the system says it is 95% sure, that number does not yet mean anything measurable.</td>
+    </tr>
+    <tr>
+      <td class="k">Evaluation corpus</td>
+      <td><span class="pill gap">Gap</span></td>
+      <td>Four documents, all synthetic, rendered from HTML templates in the bench folder. The manifest says so explicitly.</td>
+      <td>Good enough to exercise the harness. Not good enough to claim accuracy on real Australian paperwork.</td>
+    </tr>
+  </tbody>
+  <caption>Status as of 12 September 2026. "Shadow" means the code runs but its output is stored separately and never changes what the user sees.</caption>
+</table>
+
+<div class="keypoint">
+  The single most important line in this table: <b>the OCR stage is built but not switched on.</b> Every stored layout record from the most recent run reads <span class="mono">ppocr-v5 failed: docai-engine sidecar not reachable</span>. Shadow mode that never executes collects no evidence, and the calibration work planned next depends entirely on that evidence.
+</div>
+
+<h3 class="pagebreak">What we have actually measured</h3>
+
+<p>As of 11 September 2026 the competitive table is no longer entirely borrowed. Two benchmark runs exist, on our own harness, on our own documents.</p>
+
+<div class="metric-row">
+  <div class="metric"><div class="v">4 &times; 4 &times; 5</div><div class="l">documents &times; models &times; repeated runs in the extraction benchmark</div></div>
+  <div class="metric"><div class="v">0.875</div><div class="l">text-detection recall of the OCR stage — 7 of 8 regions found</div></div>
+  <div class="metric"><div class="v">0.0000</div><div class="l">character error rate, ignoring spacing — the characters are read perfectly</div></div>
+  <div class="metric"><div class="v">n/a</div><div class="l">confidence-vs-error correlation — not enough data to compute</div></div>
+</div>
+
+<table>
+  <thead>
+    <tr><th style="width:26%">Model</th><th class="num2">Easy receipt</th><th class="num2">Hard receipt</th><th class="num2">No-ABN receipt</th><th class="num2">2-page invoice</th><th style="width:26%">Field outcomes</th></tr>
+  </thead>
+  <tbody>
+    <tr><td class="k">minimax-m3</td><td class="num">4.2 s</td><td class="num">5.7 s</td><td class="num">3.4 s</td><td class="num">13.0 s</td><td><span class="yes">Clean</span> — no wrong, no misses, both abstentions correct</td></tr>
+    <tr><td class="k">kimi-k3</td><td class="num">5.9 s</td><td class="num">7.7 s</td><td class="num">5.4 s</td><td class="num">28.6 s</td><td><span class="yes">Clean</span> — same accuracy, roughly twice the time</td></tr>
+    <tr><td class="k">gemma4:31b <span style="color:var(--faint);font-weight:400">(default)</span></td><td class="num">2.4 s</td><td class="num">2.9 s</td><td class="num">1.8 s</td><td class="num">4.1 s</td><td><span class="part">Fastest</span> — but 2 wrong and 1 miss across the set</td></tr>
+    <tr><td class="k">qwen3.5:397b</td><td class="num">21.2 s</td><td class="num">27.3 s</td><td class="num">20.4 s</td><td class="num">50.2 s</td><td><span class="no">5&ndash;10&times; slower</span> for no accuracy gain over minimax-m3</td></tr>
+  </tbody>
+  <caption>Median seconds over 5 repeated runs, 11 September 2026. Documents are synthetic. "Abstention correct" means the document genuinely had no ABN and the model correctly returned nothing rather than inventing one.</caption>
+</table>
+
+<div class="plain">
+  <span class="lbl">What this table is worth</span>
+  <p>It is real, it is ours, and it is small. Four synthetic documents cannot tell us how the system behaves on a crumpled thermal docket photographed in a car park. That corpus is the next thing to build, and the architecture document already says so.</p>
+  <p>It does, however, settle one live question: the largest model is not the best one. <b>qwen3.5:397b costs five to ten times the latency of minimax-m3 and reads no better.</b></p>
+</div>
+
+<h3>What is planned</h3>
+
+<table>
+  <thead>
+    <tr><th style="width:16%">Phase</th><th style="width:12%">Effort</th><th style="width:10%">State</th><th>What it delivers</th></tr>
+  </thead>
+  <tbody>
+    <tr><td class="k">0 &mdash; Stop lying to the user</td><td>1&ndash;2 weeks</td><td><span class="pill live">Done</span></td><td>Multi-page capture fixed, PDF intake accepted, evaluation harness built. Gate passed 11 Sep 2026 — and found six defects no unit test had caught.</td></tr>
+    <tr><td class="k">1 &mdash; Reading stage</td><td>4&ndash;6 weeks</td><td><span class="pill shadow">Next</span></td><td>Promote the OCR stage from shadow to primary. The AI model is demoted from <i>the reader</i> to <i>the fallback for hard patches</i>. Calibrated confidence.</td></tr>
+    <tr><td class="k">1b &mdash; Device tier</td><td>2&ndash;3 weeks</td><td><span class="pill planned">Planned</span></td><td>The same reading stage running on a phone, offline.</td></tr>
+    <tr><td class="k">2 &mdash; Tables</td><td>4&ndash;6 weeks</td><td><span class="pill planned">Planned</span></td><td>Business documents with real table structure.</td></tr>
+    <tr><td class="k">3 &mdash; Figures</td><td>3&ndash;4 weeks</td><td><span class="pill planned">Planned</span></td><td>Charts and their underlying series.</td></tr>
+    <tr><td class="k">4 &mdash; Forms</td><td>4&ndash;6 weeks</td><td><span class="pill planned">Planned</span></td><td>Filled-in forms and handwriting.</td></tr>
+    <tr><td class="k">5 &mdash; Portability</td><td>ongoing</td><td><span class="pill planned">Planned</span></td><td>On-premises packaging, and the corrections flywheel: every human fix becomes training data.</td></tr>
+  </tbody>
+</table>
+
+<h3>The four-tier routing model</h3>
+
+<p>Both planned and partly live. The principle is <b>cheapest capable engine first, escalate only on failure</b> — implemented today in <span class="mono">pipeline.ts</span>.</p>
+
+<table>
+  <thead><tr><th style="width:8%">Tier</th><th style="width:30%">What reads the page</th><th style="width:22%">Runs where</th><th style="width:16%">Cost per page</th><th>State</th></tr></thead>
+  <tbody>
+    <tr><td class="k">T0</td><td>Text already embedded in a PDF</td><td>Anywhere</td><td>Free, and exact</td><td><span class="pill live">Live</span></td></tr>
+    <tr><td class="k">T1</td><td>Our own OCR stage (PP-OCRv5)</td><td>Ordinary CPU, offline, phone</td><td>Near zero</td><td><span class="pill shadow">Shadow</span></td></tr>
+    <tr><td class="k">T2</td><td>Open AI model on our own GPU</td><td>Our cloud, customer's cloud, air-gapped</td><td>GPU-seconds</td><td><span class="pill planned">Planned</span></td></tr>
+    <tr><td class="k">T3</td><td>Frontier AI model (Claude, Sydney region)</td><td>Cloud deployments only</td><td>~$6&ndash;11 per 1,000 pages</td><td><span class="pill live">Live</span></td></tr>
+  </tbody>
+  <caption>Today almost everything goes to T3 because T1 is not switched on. The economics of the whole plan depend on reversing that: T1 handling most of the page, T3 seeing only the genuinely hard 5–15%.</caption>
+</table>
+
+<!-- ============ 3 ============ -->
+<h2 class="pagebreak"><span class="num">03</span>Reference one — the sentiment benchmark</h2>
+
+<p><b>sentiment.net1io.space</b> is an experiment, presented as one. It has sections headed <i>Apparatus</i>, <i>Method</i>, <i>Observation</i> and <i>Control</i>. One sentence goes in; one fixed model classifies it as positive or negative; the only thing that changes is the software stack serving it.</p>
+
+<table>
+  <thead><tr><th style="width:14%">Held constant</th><th>Detail</th></tr></thead>
+  <tbody>
+    <tr><td class="k">Model</td><td><span class="mono">distilbert-base-uncased-finetuned-sst-2-english</span> — a small, standard sentiment classifier</td></tr>
+    <tr><td class="k">Hardware</td><td>One rented server, 2 CPU cores</td></tr>
+    <tr><td class="k">Interface</td><td><span class="mono">POST /analyze</span> — identical for all three stacks</td></tr>
+  </tbody>
+</table>
+
+<table>
+  <thead><tr><th style="width:12%">Variable</th><th style="width:34%">Stack</th><th>What is being tested</th></tr></thead>
+  <tbody>
+    <tr><td class="k">Stack A</td><td>FastAPI + Python (PyTorch)</td><td>The conventional approach — and the one our own OCR service uses</td></tr>
+    <tr><td class="k">Stack B</td><td>Rust / Axum bridging to Python</td><td>A fast front end still calling Python for inference</td></tr>
+    <tr><td class="k">Stack C</td><td>Rust / Axum + rust-bert (native)</td><td>No Python at all in the serving path</td></tr>
+  </tbody>
+</table>
+
+<h3>Comparison</h3>
+
+<table>
+  <thead><tr><th style="width:24%">Dimension</th><th style="width:24%">Their experiment</th><th style="width:26%">Snap Apps — current</th><th>Snap Apps — planned</th></tr></thead>
+  <tbody>
+    <tr><td class="k">Question asked</td><td>Which serving stack is fastest?</td><td>Which AI model reads a receipt best?</td><td>Unchanged, plus: is our own OCR stage good enough to take over?</td></tr>
+    <tr><td class="k">Scoring</td><td>Latency</td><td>Per-field, with <i>correct abstention</i> as a distinct success and <i>hallucination</i> as worse than a miss</td><td>Adds calibration: does "95% sure" mean right 95% of the time?</td></tr>
+    <tr><td class="k">Repeats</td><td>Live, per request</td><td>5 repeats, medians reported</td><td>Same, on real documents</td></tr>
+    <tr><td class="k">Missing-engine handling</td><td>n/a</td><td>Reports <span class="mono">"not run"</span> with a reason; never invents a score</td><td>Unchanged</td></tr>
+    <tr><td class="k">Serving layer tested</td><td><span class="yes">Yes — it is the whole point</span></td><td><span class="no">Never</span></td><td><span class="part">Not in the plan</span></td></tr>
+  </tbody>
+</table>
+
+<div class="keypoint">
+  Our harness is the more sophisticated instrument. Their <i>discipline</i> is the thing worth taking: <b>hold everything constant, change exactly one thing, publish the number you measured.</b> On the one dimension they chose, they have data and we have none.
+</div>
+
+<h3>Why the serving layer is not an idle question for us</h3>
+
+<p>Our OCR service is Python and FastAPI — their Stack A. It currently runs with a CPU accelerator switched off, because PaddlePaddle 3.3.1 throws an error on both detection models with it enabled. The workaround is documented and correct. It also means the stage is running slower than its ceiling, and we have never measured what a different serving architecture would recover.</p>
+
+<div class="plain">
+  <span class="lbl">In plain terms</span>
+  <p>Two parts of the system could be responsible for slowness: the AI itself, or the plumbing around it. We have measured the AI. We have never measured the plumbing. This experiment is a template for doing that in about a day.</p>
+</div>
+
+<!-- ============ 4 ============ -->
+<h2><span class="num">04</span>Reference two — the quantization demo</h2>
+
+<p><b>utmcs_llmv</b> is a university teaching tool, deployed 6 September 2026, with two commits and no stars. It demonstrates <b>quantization</b>: compressing an AI model so it is smaller and faster, at some cost to accuracy. It runs one model — Llama 3.2 1B — at three compression levels and lets a student watch the trade-off.</p>
+
+<div class="plain">
+  <span class="lbl">In plain terms</span>
+  <p>Quantization is like saving a photo as a smaller JPEG. The file shrinks and loads faster; at some point the picture starts to look wrong. The skill is knowing where that point is. For AI models it matters enormously, because the difference between compression levels can be the difference between needing an expensive GPU and not.</p>
+</div>
+
+<h3>Their architecture, and ours</h3>
+
+<table>
+  <thead><tr><th style="width:22%">Concern</th><th style="width:30%">utmcs_llmv</th><th>Snap Apps</th></tr></thead>
+  <tbody>
+    <tr><td class="k">Front end</td><td>Next.js, TypeScript</td><td>Next.js web, React Native mobile</td></tr>
+    <tr><td class="k">Back end</td><td>Rust / Axum</td><td>Node / Fastify, plus a Python OCR service</td></tr>
+    <tr><td class="k">Store</td><td>SQLite, append-only</td><td>PostgreSQL with row-level security, append-only edit history</td></tr>
+    <tr><td class="k">Where AI runs</td><td>A Mac on the desk, reached over a private network</td><td>Hosted models today; our own CPU stage in shadow</td></tr>
+    <tr><td class="k">Separation principle</td><td>The web server never runs a model — it stores results and proxies when the Mac is awake</td><td>The same idea, expressed as a <i>type</i>: a deployment profile filters the engine list, so a forbidden engine is absent rather than disabled</td></tr>
+  </tbody>
+</table>
+
+<div class="two-col">
+  <div class="card">
+    <h4>Where we are ahead</h4>
+    <p>Ours is the stronger design. Their separation is a network arrangement that can be misconfigured; ours is enforced in code — <span class="mono">permitted()</span> removes an engine from the list entirely. Their store has no audit trail, no locked human corrections, no tenant isolation. Ours has all three, tested against a real database.</p>
+  </div>
+  <div class="card">
+    <h4>Where they are ahead</h4>
+    <p>Theirs is <b>running</b>. Ours is behind an unset environment variable, and every stored record says the service was unreachable. A split-brain design that has never completed a run has not been proven — it has been described.</p>
+  </div>
+</div>
+
+<h3>The gap this exposes</h3>
+
+<p>Our tier table names "an open AI model on our own GPU" as tier 2 and never pins which model, at which compression. GPU cost is the largest number in the plan's cost section. Meanwhile, in our engine registry, the field recording how long each engine takes reads:</p>
+
+<div class="keypoint mono" style="font-size:8.6pt">
+  medianSeconds: number | null;&nbsp;&nbsp;<span style="color:var(--muted)">/* Measured median seconds per page. <b>null</b> until someone measures it. */</span>
+</div>
+
+<table>
+  <thead><tr><th style="width:30%">Question</th><th style="width:20%">Them</th><th style="width:22%">Us — current</th><th>Us — planned</th></tr></thead>
+  <tbody>
+    <tr><td class="k">Effect of compression on speed</td><td><span class="yes">Measured, 3 levels</span></td><td><span class="no">Never measured</span></td><td><span class="no">Not in the plan</span></td></tr>
+    <tr><td class="k">Effect of compression on accuracy</td><td><span class="yes">Measured</span></td><td><span class="no">Never measured</span></td><td><span class="no">Not in the plan</span></td></tr>
+    <tr><td class="k">Cost per page at tier 2</td><td>n/a</td><td><span class="part">Estimated, not measured</span></td><td><span class="part">Still an estimate</span></td></tr>
+    <tr><td class="k">Per-engine timing in the registry</td><td>n/a</td><td><span class="mono">null</span></td><td>To be filled by the harness</td></tr>
+  </tbody>
+</table>
+
+<div class="keypoint">
+  A two-commit teaching repository has plotted the curve that our cost model assumes and has never drawn. The harness to draw it already exists in our codebase. This is the cheapest high-value measurement available to us.
+</div>
+
+<!-- ============ 5 ============ -->
+<h2 class="pagebreak"><span class="num">05</span>Reference three — the public model library</h2>
+
+<p>Hugging Face is where the world publishes open AI models. The search page is built in a way that hides results from automated retrieval, so the site's data interface was queried directly instead. Two findings, and the second changes a decision.</p>
+
+<h3>Finding one — nobody has built this for Australia</h3>
+
+<table>
+  <thead><tr><th style="width:34%">Search</th><th style="width:26%">Best result</th><th>What it actually is</th></tr></thead>
+  <tbody>
+    <tr><td class="k">"australian" — models</td><td class="mono">isaacus/open-australian-legal-gpt2</td><td>Legal text generation. Also returned: text-to-speech voices, and a dog-breed image model.</td></tr>
+    <tr><td class="k">"australian" — datasets</td><td class="mono">ATO-Australian-Tax-Rulings</td><td>Tax <i>rulings as text</i>. Useful, but not documents to be read.</td></tr>
+    <tr><td class="k">"receipt" — models</td><td class="mono">SZL-Forge-1.5B-ReceiptAgent</td><td>1,970 downloads. The rest of the top ten are largely Japanese receipt models, one German.</td></tr>
+  </tbody>
+  <caption>No model anywhere in the public library is trained to read Australian receipts, invoices or tax documents.</caption>
+</table>
+
+<p>Meanwhile the general "read any page" category is saturated:</p>
+
+<table>
+  <thead><tr><th style="width:34%">Model</th><th class="num2" style="width:16%">Downloads</th><th style="width:16%">Licence</th><th>Can we ship it to a customer?</th></tr></thead>
+  <tbody>
+    <tr><td class="k mono">datalab-to/chandra-ocr-2</td><td class="num">2,908,785</td><td>OpenRAIL</td><td><span class="no">No</span> — fails our licence floor</td></tr>
+    <tr><td class="k mono">baidu/Unlimited-OCR</td><td class="num">2,700,194</td><td>MIT</td><td><span class="yes">Yes</span></td></tr>
+    <tr><td class="k mono">deepseek-ai/DeepSeek-OCR</td><td class="num">2,400,151</td><td>MIT</td><td><span class="yes">Yes</span></td></tr>
+    <tr><td class="k mono">zai-org/GLM-OCR</td><td class="num">1,893,869</td><td>MIT</td><td><span class="yes">Yes</span></td></tr>
+    <tr><td class="k mono">datalab-to/surya-ocr-2</td><td class="num">1,206,466</td><td>OpenRAIL</td><td><span class="no">No</span> — fails our licence floor</td></tr>
+    <tr><td class="k mono">PaddlePaddle/PP-OCRv5</td><td class="num">763,379</td><td>Apache-2.0</td><td><span class="yes">Yes</span> — this is what we already use</td></tr>
+    <tr><td class="k mono">stepfun-ai/GOT-OCR2_0</td><td class="num">670,426</td><td>Apache-2.0</td><td><span class="yes">Yes</span></td></tr>
+    <tr><td class="k mono">dots-studio/dots.ocr</td><td class="num">368,761</td><td>MIT</td><td><span class="yes">Yes</span></td></tr>
+    <tr><td class="k mono">nanonets/Nanonets-OCR-s</td><td class="num">351,066</td><td>none stated</td><td><span class="no">No</span> — unstated licence is an unusable licence</td></tr>
+  </tbody>
+  <caption>Licences verified against the Hugging Face model index, 12 September 2026. Our rule allows only Apache-2.0 or MIT weights in a build handed to a customer.</caption>
+</table>
+
+<h3>Finding two — the two strongest models are ones we cannot ship</h3>
+
+<p>Our architecture document singles out two open systems by name: <b>Chandra 2</b> as the "best single published number", and <b>Surya 2</b> as the "best cost/accuracy of the small models". Both are OpenRAIL-licensed. Our own licence rule — written into code as a function that scans the engine list and returns violations — would reject both from any package sent to a customer.</p>
+
+<div class="plain">
+  <span class="lbl">In plain terms</span>
+  <p>A licence is the legal permission attached to a model. Some open licences let you use a model freely but not redistribute it inside a product you sell. OpenRAIL is that kind. For a consumer app that calls a model over the internet it rarely matters. For an enterprise customer who wants the system installed inside their own building, it decides whether the product can exist at all.</p>
+  <p>Our own document anticipated this in general — it warns that discovering a licence problem during a customer's procurement review is "a bad day that CI can have instead." It just never named which two models the warning applies to.</p>
+</div>
+
+<div class="keypoint">
+  The comparison table in <span class="mono">docs/OCR.md §2</span> currently reads as a menu of options. Two of its headline entries are not on the menu. A licence column should be added, so nobody plans around a model we cannot deliver.
+</div>
+
+<h3>What the saturation tells us</h3>
+
+<table>
+  <thead><tr><th style="width:30%">Strategic question</th><th style="width:32%">What the library shows</th><th>Consequence for us</th></tr></thead>
+  <tbody>
+    <tr><td class="k">Should we compete on general page reading?</td><td>Four models with over 1.8 million downloads each, heavily funded, measured to two decimals</td><td><span class="no">No.</span> We would start a year behind. Our plan already says so; the download counts confirm it.</td></tr>
+    <tr><td class="k">Is there an Australian model to borrow?</td><td>Nothing. Not one.</td><td>The shelf is empty because only someone with the data can fill it.</td></tr>
+    <tr><td class="k">Do we have that data?</td><td>n/a</td><td><span class="yes">Yes.</span> Every human correction in the review screen has been stored since migration 0004 as a matched triple: the image, what the machine read, what the person changed it to.</td></tr>
+    <tr><td class="k">Is the tier-2 slot fillable under our licence rule?</td><td>DeepSeek-OCR, GLM-OCR and dots.ocr are all MIT and all widely used</td><td><span class="yes">Yes.</span> Losing Chandra and Surya is a narrowing, not a blockage.</td></tr>
+  </tbody>
+</table>
+
+<!-- ============ 6 ============ -->
+<h2 class="pagebreak"><span class="num">06</span>The comparison in one table</h2>
+
+<p>The dimensions that matter to a finance customer, across all four systems. Two of the four are small side projects and are not expected to score here — they are included to show what a research demo does and does not have to care about.</p>
+
+<table class="long">
+  <thead>
+    <tr>
+      <th style="width:29%">Capability</th>
+      <th style="width:12%">Sentiment<br>experiment</th>
+      <th style="width:12%">utmcs_llmv</th>
+      <th style="width:14%">Open OCR<br>models</th>
+      <th style="width:15%">Snap Apps<br>today</th>
+      <th>Snap Apps<br>planned</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td class="k">Reads Australian tax documents</td><td class="no">No</td><td class="no">No</td><td class="no">No</td><td class="yes">Yes</td><td class="yes">Yes, wider</td></tr>
+    <tr><td class="k">Says where on the page a value came from</td><td>n/a</td><td>n/a</td><td class="part">Block level at best</td><td class="part">Shadow only</td><td class="yes">Required on every value</td></tr>
+    <tr><td class="k">Confidence that means something</td><td class="no">No</td><td class="no">No</td><td class="no">Not reported</td><td class="no">Not calibrated</td><td class="yes">Calibrated and measured</td></tr>
+    <tr><td class="k">Can say "I could not read this"</td><td class="no">No</td><td class="no">No</td><td class="no">Largely absent</td><td class="yes">Yes, scored as a success</td><td class="yes">Yes</td></tr>
+    <tr><td class="k">Catches its own mistakes</td><td class="no">No</td><td class="no">No</td><td class="no">No</td><td class="yes">Arithmetic + ABN checksum</td><td class="yes">Plus engine disagreement</td></tr>
+    <tr><td class="k">Reproduce a past result exactly</td><td class="no">No</td><td class="part">Results stored</td><td class="no">No</td><td class="yes">Yes, versioned runs</td><td class="yes">Yes</td></tr>
+    <tr><td class="k">Audit trail of human corrections</td><td class="no">No</td><td class="no">No</td><td class="no">No</td><td class="yes">Yes, with locking</td><td class="yes">Yes, feeds training</td></tr>
+    <tr><td class="k">Can run with no internet</td><td class="part">Locally, yes</td><td class="part">Private network</td><td class="yes">Most can</td><td class="part">Built, not switched on</td><td class="yes">Yes, enforced by type</td></tr>
+    <tr><td class="k">Data residency guaranteed</td><td class="no">No concept</td><td class="no">No concept</td><td class="no">No concept</td><td class="yes">Engine registry</td><td class="yes">Same</td></tr>
+    <tr><td class="k">Tenant data isolation</td><td class="no">No</td><td class="no">No</td><td>n/a</td><td class="yes">Database-enforced</td><td class="yes">Same</td></tr>
+    <tr><td class="k">Serving stack measured</td><td class="yes">Yes — the whole point</td><td class="part">Partly</td><td>n/a</td><td class="no">Never</td><td class="no">Not in the plan</td></tr>
+    <tr><td class="k">Model compression measured</td><td class="no">No</td><td class="yes">Yes, 3 levels</td><td>n/a</td><td class="no">Never</td><td class="no">Not in the plan</td></tr>
+    <tr><td class="k">Accuracy on real captured documents</td><td>n/a</td><td>n/a</td><td class="yes">Public benchmarks</td><td class="no">Synthetic only</td><td class="yes">Real gold sets</td></tr>
+  </tbody>
+  <caption>"n/a" means the dimension does not apply to that kind of system. Red entries against the two side projects are not criticism — a sentiment benchmark has no reason to have an audit trail.</caption>
+</table>
+
+<div class="keypoint">
+  Read the last three rows together. <b>Every gap we have that these references do not is a measurement gap, not a capability gap.</b> We have built more than either of them; we have measured less of it than either of them has measured of theirs.
+</div>
+
+<!-- ============ 7 ============ -->
+<h2><span class="num">07</span>What this changes</h2>
+
+<p>Four actions, in the order they should be taken. Two are hours of work; two are days.</p>
+
+<table>
+  <thead><tr><th style="width:5%"></th><th style="width:30%">Action</th><th style="width:13%">Effort</th><th>Why</th></tr></thead>
+  <tbody>
+    <tr>
+      <td class="k">1</td>
+      <td class="k">Start the OCR service and complete one real shadow run</td>
+      <td>Hours</td>
+      <td>Every stored layout says the service was unreachable. Nothing downstream — calibration, grounding, the Phase 1 promotion — can proceed without evidence from a run that actually happened.</td>
+    </tr>
+    <tr>
+      <td class="k">2</td>
+      <td class="k">Add a licence column to the competitive table</td>
+      <td>Hours</td>
+      <td>The two models named as strongest cannot be shipped. Recording that now prevents a plan being built on them.</td>
+    </tr>
+    <tr>
+      <td class="k">3</td>
+      <td class="k">Fix the character-error-rate reporting</td>
+      <td>Hours</td>
+      <td>The OCR stage scores 6.6% error strictly and <b>0.0% ignoring spacing</b> — it reads <span class="mono">$1,042.60</span> as <span class="mono">$ 1 , 042.60</span>. That is a spacing convention, not a misreading, and the headline number currently overstates the error.</td>
+    </tr>
+    <tr>
+      <td class="k">4</td>
+      <td class="k">Run two measurements borrowed from these references</td>
+      <td>Days</td>
+      <td>A compression sweep for the tier-2 model, and one serving-layer comparison for the OCR service. Both are gaps the plan does not currently close; both have an existing harness.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>The honest summary</h3>
+
+<p>The engine's design is well ahead of both reference projects and, on the dimensions an accounting customer actually buys, well ahead of the open models too: provenance, calibrated abstention, deterministic validation, replay, audit trail, residency as a type. None of that is aspiration — most of it is built and tested.</p>
+
+<p>What the references expose is narrower and fairly uncomfortable: <b>two small projects with almost no code have published measurements we have not taken.</b> One measured its serving stack; one measured its model compression. We have measured neither, on a system far larger than both, whose cost model assumes answers to exactly those two questions.</p>
+
+<div class="keypoint">
+  The fix is not more architecture. The architecture is good. The fix is to switch on the stage that is already written, run it against real documents, and fill in the numbers our own code marks as <span class="mono">null</span>.
+</div>
+
+<footer class="doc">
+  <b>Sources.</b> Snap Apps repository as of 12 September 2026: <span class="mono">docs/OCR.md</span>, <span class="mono">packages/docai/src/registry.ts</span>, <span class="mono">packages/docai/src/pipeline.ts</span>, <span class="mono">apps/server/src/extraction/shadow.ts</span>, <span class="mono">apps/server/bench/results/</span>, <span class="mono">services/docai-engine/</span>. External: sentiment.net1io.space; github.com/azlanabas/utmcs_llmv; Hugging Face model index, queried 12 September 2026.<br>
+  <b>Caveats.</b> Benchmark figures are on four synthetic documents and do not represent accuracy on real captured paperwork. Download counts and licences are point-in-time. The two external projects were read, not benchmarked — no number in this document was produced by running their code.
+</footer>
+
+</body>
+</html>

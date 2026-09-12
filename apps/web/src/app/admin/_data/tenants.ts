@@ -1,159 +1,98 @@
 /**
- * Tenant/workspace data access — platform admin.
+ * Tenant/workspace data access — platform admin, wired to the real admin
+ * plane.
  *
- * FIXTURE-BACKED. Reads `../_fixtures/seed.ts` only. The admin backend (a
- * cross-tenant `SECURITY DEFINER` read path per docs/WEB.md §6) is being built
- * in parallel; every function below is written so that swapping the fixture
- * read for `api<T>('/v1/admin/tenants...')` is a change inside this file only
- * — no caller needs to change shape.
+ * `listTenants`/`getTenant` are backed by `GET /v1/admin/tenants` and
+ * `GET /v1/admin/tenants/:tenantId` (`admin_tenant_search` /
+ * `admin_tenant_detail`, 0021_admin_plane.sql), gated on
+ * `view_tenant_metadata`. `getRetentionStatus` is a second, separately-gated
+ * (`view_analytics`) call folded into the detail page only — see the wiring
+ * report for the full list of fixture fields with no server backing at all
+ * (firm, GST position, storage, per-tenant extraction rates, MRR, AI cost,
+ * connections, member list).
  */
 import 'server-only';
 
-import type { ConnectionStatus, Workspace } from '@snap/api-contract';
+import type {
+  AdminRetentionStatusRow,
+  AdminTenantDetail,
+  AdminTenantDocumentsView,
+  AdminTenantSummary,
+} from '@snap/api-contract';
 
-import { FIRMS, TENANTS, USERS, type TenantSeed } from '../_fixtures/seed';
+import { adminApi, capabilityGated, readTenantRecords, type Gated } from './client';
 
-export type TenantStatus = 'active' | 'dormant' | 'suspended';
+export type TenantListParams = { query?: string; page?: number; pageSize?: number };
 
-export type TenantListRow = {
-  id: string;
-  name: string;
-  abn: string;
-  kind: Workspace;
-  status: TenantStatus;
-  firmId: string | null;
-  firmName: string | null;
-  planCode: string;
-  planName: string;
-  memberCount: number;
-  documents30d: number;
-  autoAcceptRate: number;
-  needsReviewRate: number;
-  errorRate: number;
-  mrrCents: number;
-  aiCostCents30d: number;
-  costRisk: boolean;
-  connectionStatus: ConnectionStatus;
-};
-
-export type TenantDetail = TenantListRow & {
-  gstRegistered: boolean;
-  gstBasis: 'cash' | 'accrual';
-  gstAtRiskCents: number;
-  gstClaimableCents: number;
-  storageBytes: number;
-  retentionMonths: number;
-  scanQuota: number | null;
-  scansUsed: number;
-  seatLimit: number;
-  seatsUsed: number;
-  createdAt: string;
-  connections: TenantSeed['connections'];
-  members: Array<{ userId: string; displayName: string; email: string; role: string }>;
-};
-
-export type TenantListParams = {
-  query?: string;
-  status?: TenantStatus | 'all';
-  firmId?: string | 'all' | 'none';
-  costRiskOnly?: boolean;
-  page?: number;
-  pageSize?: number;
-};
-
-function firmName(firmId: string | null): string | null {
-  return firmId ? (FIRMS.find((f) => f.id === firmId)?.name ?? null) : null;
-}
-
-/** Mirrors `v_tenant_cost_vs_price`: real inference spend outrunning the seat price. */
-function isCostRisk(t: TenantSeed): boolean {
-  return t.aiCostCents30d > t.priceCents * 0.5;
-}
-
-function toRow(t: TenantSeed): TenantListRow {
-  return {
-    id: t.id,
-    name: t.name,
-    abn: t.abn,
-    kind: t.kind,
-    status: t.status,
-    firmId: t.firmId,
-    firmName: firmName(t.firmId),
-    planCode: t.planCode,
-    planName: t.planName,
-    memberCount: t.seatsUsed,
-    documents30d: t.documents30d,
-    autoAcceptRate: t.autoAcceptRate,
-    needsReviewRate: t.needsReviewRate,
-    errorRate: t.errorRate,
-    mrrCents: t.priceCents,
-    aiCostCents30d: t.aiCostCents30d,
-    costRisk: isCostRisk(t),
-    connectionStatus: t.connections[0]?.status ?? 'disconnected',
-  };
-}
+const MAX_PAGE_SIZE = 100;
 
 export async function listTenants(
   params: TenantListParams = {},
-): Promise<{ items: TenantListRow[]; total: number }> {
-  const { query = '', status = 'all', firmId = 'all', costRiskOnly = false, page = 1, pageSize = 50 } = params;
-  const q = query.trim().toLowerCase();
-  let rows = TENANTS.map(toRow);
-  if (q) {
-    rows = rows.filter(
-      (r) => r.name.toLowerCase().includes(q) || r.abn.replace(/\s/g, '').includes(q.replace(/\s/g, '')),
+): Promise<Gated<{ items: AdminTenantSummary[]; hasMore: boolean }>> {
+  const { query = '', page = 1, pageSize = 50 } = params;
+  const limit = Math.min(Math.max(Math.trunc(pageSize), 1), MAX_PAGE_SIZE);
+  const offset = Math.max(0, (page - 1) * limit);
+  return capabilityGated(async () => {
+    const items = await adminApi<AdminTenantSummary[]>(
+      `/v1/admin/tenants?query=${encodeURIComponent(query)}&limit=${limit}&offset=${offset}`,
     );
-  }
-  if (status !== 'all') rows = rows.filter((r) => r.status === status);
-  if (firmId === 'none') rows = rows.filter((r) => r.firmId === null);
-  else if (firmId !== 'all') rows = rows.filter((r) => r.firmId === firmId);
-  if (costRiskOnly) rows = rows.filter((r) => r.costRisk);
-  rows.sort((a, b) => b.documents30d - a.documents30d);
-  const total = rows.length;
-  const start = (page - 1) * pageSize;
-  return { items: rows.slice(start, start + pageSize), total };
+    return { items, hasMore: items.length === limit };
+  });
 }
 
-export async function getTenant(id: string): Promise<TenantDetail | null> {
-  const t = TENANTS.find((x) => x.id === id);
-  if (!t) return null;
-  const members = USERS.filter((u) => u.memberships.some((m) => m.tenantId === id)).map((u) => ({
-    userId: u.id,
-    displayName: u.displayName,
-    email: u.email,
-    role: u.memberships.find((m) => m.tenantId === id)!.role,
-  }));
-  return {
-    ...toRow(t),
-    gstRegistered: t.gstRegistered,
-    gstBasis: t.gstBasis,
-    gstAtRiskCents: t.gstAtRiskCents,
-    gstClaimableCents: t.gstClaimableCents,
-    storageBytes: t.storageBytes,
-    retentionMonths: t.retentionMonths,
-    scanQuota: t.scanQuota,
-    scansUsed: t.scansUsed,
-    seatLimit: t.seatLimit,
-    seatsUsed: t.seatsUsed,
-    createdAt: t.createdAt,
-    connections: t.connections,
-    members,
-  };
+export async function getTenant(tenantId: string): Promise<Gated<AdminTenantDetail | null>> {
+  return capabilityGated(async () => {
+    try {
+      return await adminApi<AdminTenantDetail>(`/v1/admin/tenants/${encodeURIComponent(tenantId)}`);
+    } catch (error) {
+      if (isNotFound(error)) return null;
+      throw error;
+    }
+  });
+}
+
+/**
+ * `GET /v1/admin/operations/retention` (`admin_retention_status()`) — one row
+ * per tenant that has at least one document, capped at 100 rows, ordered by
+ * oldest kept document first. There is no per-tenant retention endpoint, so
+ * the detail page fetches the whole list and finds its own row; a tenant with
+ * no documents yet, or outside the 100-row window, genuinely has none here —
+ * that is a real "not available", not a bug.
+ */
+export async function getRetentionStatus(): Promise<Gated<AdminRetentionStatusRow[]>> {
+  return capabilityGated(() => adminApi<AdminRetentionStatusRow[]>('/v1/admin/operations/retention'));
+}
+
+/**
+ * A staff read of one tenant's actual documents — `readTenantRecords` from
+ * `_data/client.ts`, gated on `read_tenant_records` and audited server-side
+ * with the typed `reason`. This is a deliberately separate, occasional action
+ * from the ordinary tenant-metadata read above: `view_tenant_metadata` lets a
+ * staff member see that a tenant exists and what plan it's on; this is the
+ * one that opens actual financial records, and costs a reason every time.
+ */
+export async function getTenantDocuments(
+  tenantId: string,
+  reason: string,
+): Promise<Gated<AdminTenantDocumentsView>> {
+  return capabilityGated(() => readTenantRecords<AdminTenantDocumentsView>(tenantId, reason));
+}
+
+function isNotFound(error: unknown): boolean {
+  return typeof error === 'object' && error !== null && 'status' in error && (error as { status: unknown }).status === 404;
 }
 
 export type PaletteHit = { id: string; label: string; sublabel: string; href: string };
 
-/** Bounded client-side index for the command palette. Fine at this size —
- * move to a server search endpoint once the tenant count leaves the hundreds. */
+/** Bounded client-side index for the command palette — same shape and same
+ * caveat as `searchUsersForPalette` in `people.ts`. */
 export async function searchTenantsForPalette(limit = 200): Promise<PaletteHit[]> {
-  return TENANTS.slice(0, limit).map((t) => ({
-    id: t.id,
+  const gated = await capabilityGated(() => adminApi<AdminTenantSummary[]>(`/v1/admin/tenants?limit=${limit}`));
+  if (!gated.allowed) return [];
+  return gated.data.map((t) => ({
+    id: t.tenantId,
     label: t.name,
-    sublabel: `${t.abn} · ${firmName(t.firmId) ?? 'Direct'}`,
-    href: `/admin/tenants/${t.id}`,
+    sublabel: t.planCode ?? 'No active plan',
+    href: `/admin/tenants/${t.tenantId}`,
   }));
-}
-
-export function listFirms(): Array<{ id: string; name: string }> {
-  return FIRMS.map((f) => ({ id: f.id, name: f.name }));
 }

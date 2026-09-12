@@ -982,6 +982,33 @@ export interface AdminUserSummary {
   tenantCount: number;
 }
 
+/** One workspace a user belongs to, as the admin console sees it. */
+export interface AdminUserMembership {
+  tenantId: string;
+  tenantName: string;
+  kind: Workspace;
+  role: MemberRole;
+  joinedAt: IsoDateTime;
+}
+
+/**
+ * `GET /v1/admin/users/:userId` — one user by id, with their memberships.
+ *
+ * Exists because `admin_user_search` substring-matches name and email and
+ * cannot fetch by id, which forced the console to page through the search
+ * looking for one row — twenty round trips per page, and silently no result
+ * once the platform outgrew the scan bound. Metadata only; a user's actual
+ * records still require `read_tenant_records` and an audited reason.
+ */
+export interface AdminUserDetail {
+  userId: string;
+  email: string | null;
+  displayName: string | null;
+  createdAt: IsoDateTime;
+  tenantCount: number;
+  memberships: AdminUserMembership[];
+}
+
 /**
  * `GET /v1/admin/tenants/:tenantId/documents` — a staff read of one tenant's
  * actual records. `reason` is a required query parameter; the server

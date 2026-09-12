@@ -4,6 +4,7 @@ import type {
   AdminTenantDetail,
   AdminTenantDocumentsView,
   AdminTenantSummary,
+  AdminUserDetail,
   AdminUserSummary,
 } from '@snap/api-contract';
 
@@ -64,6 +65,21 @@ export class AdminTenantsController {
     @Query('offset') offset?: string,
   ): Promise<AdminUserSummary[]> {
     return adminRepo.searchUsers(user.userId, query ?? null, clampLimit(limit), clampOffset(offset));
+  }
+
+  @Get('users/:userId')
+  @UseGuards(SessionGuard, StaffGuard, CapabilityGuard)
+  @RequireCapability('view_tenant_metadata')
+  @ApiOperation({
+    summary: 'One user by id, with the workspaces they belong to',
+    description:
+      'Metadata only. Reading a user’s actual records is a different capability and requires an audited reason.',
+  })
+  async userDetail(
+    @CurrentUser() user: AuthUser,
+    @Param('userId') userId: string,
+  ): Promise<AdminUserDetail> {
+    return adminRepo.getUserDetail(user.userId, userId);
   }
 
   /**

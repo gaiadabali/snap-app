@@ -15,6 +15,8 @@ import type {
   AdminSession,
   AdminStaffSummary,
   AdminTenantDetail,
+  AdminUserDetail,
+  AdminUserMembership,
   AdminTenantDocumentsView,
   AdminTenantSummary,
   AdminUserSummary,
@@ -174,6 +176,34 @@ export async function searchTenants(
       createdAt: r.created_at,
       deletedAt: r.deleted_at,
     }));
+  });
+}
+
+export async function getUserDetail(
+  staffUserId: string,
+  userId: string,
+): Promise<AdminUserDetail> {
+  return callAs(staffUserId, async (tx) => {
+    const rows = await tx.execute<{
+      user_id: string;
+      email: string | null;
+      display_name: string | null;
+      created_at: string;
+      tenant_count: string;
+      memberships: AdminUserMembership[];
+    }>(sql`select * from admin_user_detail(${userId})`);
+    const r = rows.rows[0]!;
+    return {
+      userId: r.user_id,
+      email: r.email,
+      displayName: r.display_name,
+      createdAt: r.created_at,
+      tenantCount: Number(r.tenant_count),
+      // Aggregated to jsonb in the function, so `pg` hands it back already
+      // parsed. Built there rather than as a second round trip so the
+      // membership list cannot disagree with the count beside it.
+      memberships: r.memberships ?? [],
+    };
   });
 }
 

@@ -1,184 +1,86 @@
-import { Badge, Card, Money, Stat, Table, Td, Th, Thead, Tr } from '@/design/primitives';
+import { Badge, Card, Empty, Money, Table, Td, Th, Thead, Tr } from '@/design/primitives';
 
-import {
-  getBudgetCaps,
-  getModelSpend,
-  getSpendOverview,
-  getTenantSpend,
-  getWeeklySpend,
-} from '../../../_data/governance';
+import { getAiUsage } from '../../../_data/governance';
 
-import { BudgetCapRow } from './_components/BudgetCapRow';
-import { SpendTrend } from './_components/SpendTrend';
-import { pct, usd } from '../../_components/format';
+import { NotWired } from '../../_components/NotWired';
+import { RefusalPanel } from '../../_components/RefusalPanel';
 
 export const metadata = { title: 'Usage & spend · Snap Apps admin' };
 
 export default async function UsagePage() {
-  const [overview, modelSpend, tenantSpend, budgetCaps, weekly] = await Promise.all([
-    getSpendOverview(),
-    getModelSpend(),
-    getTenantSpend(),
-    getBudgetCaps(),
-    getWeeklySpend(),
-  ]);
-
-  const revenueOutsideGuardrail = overview.revenueSharePct < 2 || overview.revenueSharePct > 4;
+  const gated = await getAiUsage();
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+      {!gated.allowed ? (
+        <RefusalPanel capability="manage_ai_config" status={gated.status} message={gated.message} />
+      ) : (
         <Card>
-          <Stat label="AI spend, 30d" value={<Money amount={usd(overview.totalCostUsd30d)} />} />
+          <h3 className="text-[16px] font-bold">Extraction runs by engine/model, last 30 days</h3>
+          <p className="mt-1 text-[13px] text-[var(--color-ink-muted)]">
+            <code>GET /v1/admin/ai/usage</code> — real cost and latency figures, aggregated per
+            engine/model. Nothing here is sliced by tenant; the server does not attribute AI cost to a
+            tenant anywhere yet.
+          </p>
+          <div className="mt-4 overflow-x-auto">
+            {gated.data.length === 0 ? (
+              <Empty title="No extraction runs in the last 30 days" />
+            ) : (
+              <Table>
+                <Thead>
+                  <Th>Engine</Th>
+                  <Th>Model</Th>
+                  <Th align="right">Runs</Th>
+                  <Th align="right">Succeeded</Th>
+                  <Th align="right">Failed</Th>
+                  <Th align="right">Cost, 30d</Th>
+                  <Th align="right">Avg latency</Th>
+                </Thead>
+                <tbody>
+                  {gated.data.map((row, i) => (
+                    <Tr key={`${row.engine}-${row.modelId ?? 'null'}-${i}`}>
+                      <Td className="font-semibold">{row.engine}</Td>
+                      <Td className="tabular">{row.modelId ?? '—'}</Td>
+                      <Td align="right" className="tabular">
+                        {row.runs.toLocaleString('en-AU')}
+                      </Td>
+                      <Td align="right" className="tabular">
+                        {row.succeeded.toLocaleString('en-AU')}
+                      </Td>
+                      <Td align="right">
+                        <span className={row.failed > 0 ? 'tabular font-semibold text-[var(--color-risk)]' : 'tabular'}>
+                          {row.failed.toLocaleString('en-AU')}
+                        </span>
+                      </Td>
+                      <Td align="right">
+                        <Money amount={row.costAud} />
+                      </Td>
+                      <Td align="right" className="tabular">
+                        {row.avgLatencyMs === null ? '—' : `${Math.round(row.avgLatencyMs)}ms`}
+                      </Td>
+                    </Tr>
+                  ))}
+                </tbody>
+              </Table>
+            )}
+          </div>
         </Card>
-        <Card>
-          <Stat
-            label="Share of seat revenue"
-            value={`${overview.revenueSharePct.toFixed(1)}%`}
-            tone={revenueOutsideGuardrail ? 'risk' : 'good'}
-            hint={
-              revenueOutsideGuardrail
-                ? 'Outside the 2–4% guardrail (docs/MONETISATION.md §4) — driven by the flagged tenants below.'
-                : 'Within the 2–4% guardrail (docs/MONETISATION.md §4).'
-            }
-          />
-        </Card>
-        <Card>
-          <Stat
-            label="Tenants over their seat price"
-            value={overview.flaggedTenantCount}
-            tone={overview.flaggedTenantCount > 0 ? 'risk' : 'good'}
-            hint="Inference spend ≥ 80% of what they pay in seats"
-          />
-        </Card>
-        <Card>
-          <Stat label="Seat revenue, 30d" value={<Money amount={usd(overview.totalSeatRevenueUsd30d)} />} />
-        </Card>
-      </div>
+      )}
 
-      <Card>
-        <h3 className="text-[16px] font-bold">Weekly spend</h3>
-        <div className="mt-4">
-          <SpendTrend points={weekly} />
-        </div>
-      </Card>
+      <NotWired title="Spend overview, weekly trend, and revenue-share guardrail">
+        There is no endpoint for platform-wide spend totals, a time series, or a comparison against seat
+        revenue — <code>GET /v1/admin/ai/usage</code> above is the only AI-cost read that exists, and it
+        is not a time series.
+      </NotWired>
 
-      <Card>
-        <h3 className="text-[16px] font-bold">Spend by model</h3>
-        <p className="mt-1 text-[13px] text-[var(--color-ink-muted)]">
-          Illustrative decomposition of the total above across the registry — the total itself is the
-          same figure the tenant table below and the people/tenants surface both read.
-        </p>
-        <div className="mt-4 overflow-x-auto">
-          <Table>
-            <Thead>
-              <Th>Model</Th>
-              <Th>Capability</Th>
-              <Th align="right">Cost, 30d</Th>
-              <Th align="right">Calls, 30d</Th>
-              <Th align="right">Tokens in</Th>
-              <Th align="right">Tokens out</Th>
-              <Th align="right">Escalation rate</Th>
-              <Th align="right">Cache-hit rate</Th>
-            </Thead>
-            <tbody>
-              {modelSpend.map((m) => (
-                <Tr key={m.modelId}>
-                  <Td className="font-semibold">{m.modelId}</Td>
-                  <Td>
-                    <Badge tone="accent">{m.capability}</Badge>
-                  </Td>
-                  <Td align="right">
-                    <Money amount={usd(m.costUsd30d)} />
-                  </Td>
-                  <Td align="right" className="tabular">
-                    {m.calls30d.toLocaleString('en-AU')}
-                  </Td>
-                  <Td align="right" className="tabular">
-                    {m.tokensIn30d.toLocaleString('en-AU')}
-                  </Td>
-                  <Td align="right" className="tabular">
-                    {m.tokensOut30d.toLocaleString('en-AU')}
-                  </Td>
-                  <Td align="right" className="tabular">
-                    {pct(m.escalationRate)}
-                  </Td>
-                  <Td align="right" className="tabular">
-                    {pct(m.cacheHitRate)}
-                  </Td>
-                </Tr>
-              ))}
-            </tbody>
-          </Table>
-        </div>
-      </Card>
+      <NotWired title="Spend by tenant">
+        No endpoint attributes AI inference cost to a tenant. The <Badge tone="neutral">engine/model</Badge>{' '}
+        breakdown above is the finest grain the server currently reports.
+      </NotWired>
 
-      <Card>
-        <h3 className="text-[16px] font-bold">Spend by tenant</h3>
-        <p className="mt-1 text-[13px] text-[var(--color-ink-muted)]">
-          The guardrail that matters (docs/MONETISATION.md §6): a tenant whose inference spend
-          outruns what they pay in seats. Sorted worst first.
-        </p>
-        <div className="mt-4 overflow-x-auto">
-          <Table>
-            <Thead>
-              <Th>Tenant</Th>
-              <Th>Plan</Th>
-              <Th align="right">Seat price, 30d</Th>
-              <Th align="right">Inference cost, 30d</Th>
-              <Th align="right">Ratio</Th>
-            </Thead>
-            <tbody>
-              {tenantSpend.map((t) => (
-                <Tr key={t.tenantId} className={t.flagged ? 'bg-[var(--color-risk-soft)]' : undefined}>
-                  <Td className="font-semibold">{t.tenantName}</Td>
-                  <Td>{t.planName}</Td>
-                  <Td align="right">
-                    <Money amount={usd(t.seatPriceUsd30d)} />
-                  </Td>
-                  <Td align="right">
-                    <Money amount={usd(t.inferenceCostUsd30d)} />
-                  </Td>
-                  <Td align="right">
-                    {t.ratio === null ? (
-                      <span className="text-[var(--color-ink-faint)]">free tier</span>
-                    ) : (
-                      <span className={t.flagged ? 'font-bold text-[var(--color-risk)]' : 'tabular'}>
-                        {(t.ratio * 100).toFixed(0)}%
-                      </span>
-                    )}
-                  </Td>
-                </Tr>
-              ))}
-            </tbody>
-          </Table>
-        </div>
-      </Card>
-
-      <Card>
-        <h3 className="text-[16px] font-bold">Budget caps and alert thresholds</h3>
-        <p className="mt-1 text-[13px] text-[var(--color-ink-muted)]">
-          A cap never blocks a scan (docs/MONETISATION.md §6: never drop a capture) — it is a
-          visibility control, so the flagged tenants above get a cap before they get a surprise.
-        </p>
-        <div className="mt-4 overflow-x-auto">
-          <Table>
-            <Thead>
-              <Th>Scope</Th>
-              <Th align="right">Current spend</Th>
-              <Th align="right">Monthly cap</Th>
-              <Th align="right">Alert at</Th>
-              <Th align="right">Status</Th>
-              <Th align="right"> </Th>
-            </Thead>
-            <tbody>
-              {budgetCaps.map((cap) => (
-                <BudgetCapRow key={cap.id} cap={cap} />
-              ))}
-            </tbody>
-          </Table>
-        </div>
-      </Card>
+      <NotWired title="Budget caps and alert thresholds">
+        No budget-cap concept exists server-side — nothing to read, nothing to set.
+      </NotWired>
     </div>
   );
 }
