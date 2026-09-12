@@ -54,6 +54,19 @@ export type ModelSpec = {
   medianSeconds: number | null;
   /** Why this model is in the list, in one line. */
   note: string;
+  /**
+   * Capabilities this model is BARRED from, each with the reason.
+   *
+   * Distinct from simply omitting the capability: the model genuinely has the
+   * ability, and we refuse to use it anyway. Keeping it in the registry with
+   * the reason attached means the measurement that justified the exclusion
+   * survives, and the next person to look does not "fix" it by adding the
+   * capability back.
+   *
+   * `chain()` filters on this, so an excluded model can never be selected or
+   * escalated to for that capability.
+   */
+  excludedFrom?: Partial<Record<Capability, string>>;
 };
 
 /**
@@ -110,7 +123,15 @@ export const MODELS: ModelSpec[] = [
     tier: 2,
     benchmarkScore: null,
     medianSeconds: 4.4,
-    note: 'Chat only. Cheap escalation for a long conversation.',
+    note: 'Chat only. Cheap, and excluded — see excludedFrom.',
+    excludedFrom: {
+      chat:
+        'docs/AI.md §2.3: it called the tools and then failed to report what ' +
+        'they returned. A model that ignores the authoritative answer it just ' +
+        'requested is worse than one with no tools, because the wrong figure ' +
+        'now appears sanctioned. Scored 2/4 with tools where every other ' +
+        'candidate scored 4/4.',
+    },
   },
 ];
 
@@ -132,6 +153,14 @@ export function chain(capability: Capability, preferred?: string): ModelSpec[] {
   if (preferred) {
     const pinned = MODELS.find((m) => m.id === preferred);
     if (!pinned) throw new Error(`Unknown model: ${preferred}`);
+    const barred = pinned.excludedFrom?.[capability];
+    if (barred) {
+      // Refused even when explicitly pinned. A replay or a benchmark may want
+      // to reproduce a particular run, but not one this project has decided
+      // is unsafe to serve — that decision should not be reachable by
+      // passing a string.
+      throw new Error(`${preferred} is excluded from ${capability}. ${barred}`);
+    }
     if (!pinned.capabilities.includes(capability)) {
       // Caught here rather than as a 400 from the provider three seconds
       // later, with a message that says which models would have worked.
@@ -143,7 +172,9 @@ export function chain(capability: Capability, preferred?: string): ModelSpec[] {
     return [pinned];
   }
 
-  const eligible = MODELS.filter((m) => m.capabilities.includes(capability)).sort(
+  const eligible = MODELS.filter(
+    (m) => m.capabilities.includes(capability) && !m.excludedFrom?.[capability],
+  ).sort(
     (a, b) => a.tier - b.tier || (a.medianSeconds ?? 99) - (b.medianSeconds ?? 99),
   );
   if (eligible.length === 0) throw new NoModelAvailableError(capability, 3);

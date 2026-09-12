@@ -92,6 +92,15 @@ report what they returned. A model that ignores the authoritative answer it
 just requested is worse than one with no tools, because the wrong figure now
 appears sanctioned.
 
+> **Enforced in code since 2026-09-12.** This paragraph was the only thing
+> excluding it. The registry still listed the model as chat-capable and
+> `chain()` filtered on capability alone, so it sat in the live chat
+> escalation ladder at tier 2 — the decision was written down, believed, and
+> never applied. `ModelSpec.excludedFrom` now carries the reason and `chain()`
+> honours it, including against an explicit pin, and `src/ai/router.test.ts`
+> asserts the refusal. A decision that only exists in a document is not a
+> control.
+
 ### 2.4 What the tools cover
 
 `src/ai/tools.ts`, 58 tests. Each returns a phrased answer, the underlying

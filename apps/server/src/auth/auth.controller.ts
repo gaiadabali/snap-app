@@ -80,15 +80,34 @@ export class AuthController {
   // URL, and a client checking for 201 would be checking the wrong thing.
   @HttpCode(200)
   @ApiOperation({
-    summary: 'Exchange an email address for a session token',
+    summary: 'Exchange an email address for a session token (NON-PRODUCTION ONLY)',
     description:
-      'Development stand-in for an OIDC code exchange. Creates the user if the address is unknown, in which case the session has no workspaces and the client must run onboarding.',
+      'Development stand-in for an OIDC code exchange. Creates the user if the address is unknown, in which case the session has no workspaces and the client must run onboarding. Returns 404 when NODE_ENV is production — use Google sign-in or a magic link there.',
   })
   async signIn(@ValidBody(SignInDto) body: SignInDto): Promise<{
     token: string;
     user: AuthUser;
     workspaces: Array<{ id: string; name: string; kind: string; role: string }>;
   }> {
+    // THE GATE.
+    //
+    // This endpoint trades an email address for a full session with no proof
+    // that the caller owns it. That is fine in development and is a complete
+    // authentication bypass in production: anyone who can reach the API signs
+    // in as anyone whose address they can guess.
+    //
+    // The comment above this class has said "must not ship" since it was
+    // written, but nothing enforced it. `isProduction()` was applied to the
+    // endpoint that LISTS demo accounts and not to the one that ISSUES
+    // sessions — the list feels like the sensitive half, and it is not.
+    //
+    // 404 rather than 403: a production server should not advertise that a
+    // bypass route exists here at all. Same reasoning as keeping expired and
+    // forged tokens indistinguishable elsewhere in this file.
+    if (isProduction()) {
+      throw new HttpException('Not found', HttpStatus.NOT_FOUND);
+    }
+
     const email = body.email.trim().toLowerCase();
     const nameFromEmail = (email.split('@')[0] ?? 'You')
       .replace(/[._-]+/g, ' ')
