@@ -1,0 +1,150 @@
+@import "tailwindcss";
+
+/**
+ * Snap Apps — web design tokens.
+ *
+ * The palette is NOT invented here. It is the same measured set the mobile app
+ * uses (apps/mobile/src/theme/tokens.ts), sampled from the launch teaser:
+ * #1878D8 dominant, #0060C0 in the deeper areas, a #1CA8DB cyan scan line.
+ * The product should look like its own advertising, and the website should look
+ * like the product. One palette, two clients — change it in both or in neither.
+ *
+ * Red is reserved for money at risk. It is never decorative.
+ */
+
+@theme {
+  /* Light — the default. */
+  --color-ground:      #F2F7FE;
+  --color-surface:     #E5EFFC;
+  --color-surface-alt: #D3E4F9;
+  --color-ink:         #0A1A2F;
+  --color-ink-muted:   #4C6280;
+  --color-ink-faint:   #8299B4;
+  --color-accent:      #1878D8;
+  --color-accent-deep: #0060C0;
+  --color-accent-soft: #DCEAFB;
+  --color-accent-ink:  #FFFFFF;
+  --color-scan:        #1CA8DB;
+  --color-risk:        #C4322A;
+  --color-risk-soft:   #FBE3E1;
+  --color-warn:        #95590A;
+  --color-warn-soft:   #FBEFD8;
+  --color-good:        #1B6E4F;
+  --color-good-soft:   #DCF2E8;
+  --color-rule:        #C9DCF3;
+  --color-rule-strong: #A5C2E4;
+
+  /* 4pt base scale, matching the app. */
+  --spacing: 0.25rem;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+
+  /* System stack on purpose — see the app's tokens.ts. What this product needs
+     from type is aligned digits, not a personality face that fails to load. */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, Menlo, Consolas, monospace;
+
+  --shadow-card: 0 1px 2px rgb(10 26 47 / 0.04), 0 8px 24px -12px rgb(10 26 47 / 0.12);
+  --shadow-lift: 0 2px 4px rgb(10 26 47 / 0.05), 0 24px 48px -20px rgb(10 26 47 / 0.22);
+}
+
+/* Dark. Redefined as raw custom properties so a token never has its ONLY
+   definition inside a media query. Both the explicit toggle and the system
+   default are handled, and the toggle wins in both directions. */
+:root[data-theme="dark"],
+:root:not([data-theme="light"]) {
+  @media (prefers-color-scheme: dark) {
+    --color-ground:      #071527;
+    --color-surface:     #0E2440;
+    --color-surface-alt: #173355;
+    --color-ink:         #E6F0FC;
+    --color-ink-muted:   #9DB6D2;
+    --color-ink-faint:   #6E8BAC;
+    --color-accent:      #4DA3F5;
+    --color-accent-deep: #1878D8;
+    --color-accent-soft: #122A4B;
+    --color-accent-ink:  #04101E;
+    --color-scan:        #3FC6EE;
+    --color-risk:        #F08B80;
+    --color-risk-soft:   #331B1A;
+    --color-warn:        #E5B871;
+    --color-warn-soft:   #2B2214;
+    --color-good:        #6FD3AC;
+    --color-good-soft:   #10291F;
+    --color-rule:        #1C3A5E;
+    --color-rule-strong: #2F5480;
+  }
+}
+
+:root[data-theme="dark"] {
+  --color-ground:      #071527;
+  --color-surface:     #0E2440;
+  --color-surface-alt: #173355;
+  --color-ink:         #E6F0FC;
+  --color-ink-muted:   #9DB6D2;
+  --color-ink-faint:   #6E8BAC;
+  --color-accent:      #4DA3F5;
+  --color-accent-deep: #1878D8;
+  --color-accent-soft: #122A4B;
+  --color-accent-ink:  #04101E;
+  --color-scan:        #3FC6EE;
+  --color-risk:        #F08B80;
+  --color-risk-soft:   #331B1A;
+  --color-warn:        #E5B871;
+  --color-warn-soft:   #2B2214;
+  --color-good:        #6FD3AC;
+  --color-good-soft:   #10291F;
+  --color-rule:        #1C3A5E;
+  --color-rule-strong: #2F5480;
+}
+
+html { color-scheme: light dark; }
+
+body {
+  background: var(--color-ground);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/**
+ * Money, always. A figure that shifts by a pixel as it updates reads as
+ * untrustworthy, and this product's entire pitch is that the numbers are right.
+ */
+.tabular { font-variant-numeric: tabular-nums; }
+
+/* The teaser's scan line, as a reusable motif for capture/processing states. */
+@keyframes scan-sweep {
+  0%   { transform: translateY(-100%); opacity: 0; }
+  15%  { opacity: 1; }
+  85%  { opacity: 1; }
+  100% { transform: translateY(1100%); opacity: 0; }
+}
+.scan-line::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--color-scan), transparent);
+  box-shadow: 0 0 12px var(--color-scan);
+  animation: scan-sweep 2.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .scan-line::after { display: none; }
+}
+
+/* Focus that is visible on both grounds. Never remove it. */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}

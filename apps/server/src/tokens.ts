@@ -17,7 +17,7 @@ import { config } from './config.js';
 
 type Payload = {
   /** What the token authorises. */
-  k: 'session' | 'upload' | 'download' | 'image';
+  k: 'session' | 'upload' | 'download' | 'image' | 'magic';
   /** Subject: a user id for a session, a capture id for an upload or an image. */
   s: string;
   /** Tenant, for an upload — so a token cannot be replayed into another. */
@@ -102,6 +102,41 @@ export function readSession(token: string | undefined): string | null {
   // The kind is checked, not assumed: without it an upload token would be
   // accepted as a session for whatever id it happens to carry.
   return payload && payload.k === 'session' ? payload.s : null;
+}
+
+/* ── Magic links ─────────────────────────────────────────────────────────── */
+
+/**
+ * A passwordless sign-in link (docs/PLAN.md §7: "do not own password
+ * hashing" — email registration/sign-in is passwordless by design, not by
+ * omission).
+ *
+ * Signed and short-lived exactly like every other token here, which proves
+ * the link was never forged and is still fresh. Neither of those proves it
+ * has never been redeemed before — that is a single-use guarantee this module
+ * cannot provide by itself (verification is stateless, on purpose), so the
+ * caller must track `jti` against `auth/magic-link-store.ts` before trusting
+ * a decoded token. Fifteen minutes: long enough to open an email, short
+ * enough that a link read from an inbox days later is simply expired.
+ */
+export function issueMagicLinkToken(email: string): { token: string; jti: string } {
+  const n = randomUUID();
+  const e = Math.floor(Date.now() / 1000) + 15 * 60;
+  return { token: encode({ k: 'magic', s: email, e, n }), jti: n };
+}
+
+/** The email a magic-link token names, or null if it is not a valid one. */
+export function readMagicLinkToken(
+  token: string | undefined,
+): { email: string; jti: string; expiresAt: number } | null {
+  if (!token) return null;
+  const payload = decode(token);
+  // `e` is required, not optional, for this kind: a magic link with no
+  // expiry would be a permanent, non-expiring bearer credential mailed in
+  // plain text, which is a much worse thing to leak than a link that goes
+  // stale in fifteen minutes.
+  if (!payload || payload.k !== 'magic' || payload.e == null) return null;
+  return { email: payload.s, jti: payload.n, expiresAt: payload.e };
 }
 
 /* ── Uploads ─────────────────────────────────────────────────────────────── */

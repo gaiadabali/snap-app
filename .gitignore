@@ -35,7 +35,3 @@ build/
 Thumbs.db
 .idea/
 .vscode/
-
-# Isolated build dir used to avoid concurrent next-build chunk corruption
-apps/web/.next/
-apps/web/.next-verify/

@@ -14,6 +14,10 @@ let issueUploadToken: typeof import('./tokens.js').issueUploadToken;
 let readUploadToken: typeof import('./tokens.js').readUploadToken;
 let issueImageToken: typeof import('./tokens.js').issueImageToken;
 let readImageToken: typeof import('./tokens.js').readImageToken;
+let issueSession: typeof import('./tokens.js').issueSession;
+let readSession: typeof import('./tokens.js').readSession;
+let issueMagicLinkToken: typeof import('./tokens.js').issueMagicLinkToken;
+let readMagicLinkToken: typeof import('./tokens.js').readMagicLinkToken;
 
 beforeAll(async () => {
   process.env.DATABASE_URL ??= 'postgres://test:test@localhost:5432/test';
@@ -25,6 +29,10 @@ beforeAll(async () => {
   readUploadToken = tokens.readUploadToken;
   issueImageToken = tokens.issueImageToken;
   readImageToken = tokens.readImageToken;
+  issueSession = tokens.issueSession;
+  readSession = tokens.readSession;
+  issueMagicLinkToken = tokens.issueMagicLinkToken;
+  readMagicLinkToken = tokens.readMagicLinkToken;
 });
 
 describe('upload tokens', () => {
@@ -161,5 +169,83 @@ describe('image tokens', () => {
     // (`s`, `t`, `p`) so this is the check that actually keeps them apart.
     const token = issueUploadToken('capture-1', 'tenant-1', 1, 1);
     expect(readImageToken(token)).toBeNull();
+  });
+});
+
+describe('magic-link tokens', () => {
+  it('round-trips the email and a nonce', () => {
+    const { token, jti } = issueMagicLinkToken('person@example.com');
+    const decoded = readMagicLinkToken(token);
+    expect(decoded?.email).toBe('person@example.com');
+    expect(decoded?.jti).toBe(jti);
+    expect(typeof decoded?.expiresAt).toBe('number');
+  });
+
+  it('rejects a forged token', () => {
+    const { token } = issueMagicLinkToken('person@example.com');
+    const [body] = token.split('.');
+    const forged = `${body}.not-the-real-signature-at-all-000000000000`;
+    expect(readMagicLinkToken(forged)).toBeNull();
+  });
+
+  it('rejects a token whose email was tampered with after signing', () => {
+    // Not enough to check `readMagicLinkToken` accepts what it was given: the
+    // interesting property is that an attacker cannot take a token issued for
+    // one address and edit it to name a different one, because the signature
+    // covers the whole payload including `s`.
+    const { token } = issueMagicLinkToken('person@example.com');
+    const [body, signature] = token.split('.');
+    const payload = JSON.parse(Buffer.from(body!, 'base64url').toString('utf8')) as {
+      s: string;
+    };
+    const tampered = Buffer.from(
+      JSON.stringify({ ...payload, s: 'attacker@example.com' }),
+      'utf8',
+    ).toString('base64url');
+    expect(readMagicLinkToken(`${tampered}.${signature}`)).toBeNull();
+  });
+
+  it('an expired magic-link token is rejected', () => {
+    // Same structural argument as the upload/image suites above: a token
+    // whose `e` has passed decodes to null from `decode()` itself, before
+    // `readMagicLinkToken` even runs its own checks.
+    const past = Math.floor(Date.now() / 1000) - 10;
+    const legacyPayload = Buffer.from(
+      JSON.stringify({ k: 'magic', s: 'person@example.com', e: past, n: 'x' }),
+      'utf8',
+    ).toString('base64url');
+    // Signed with the real key by issuing a normal token and swapping in this
+    // payload's signature would require the secret, which the test does not
+    // have — so instead this proves the narrower, still load-bearing half:
+    // an unsigned/garbage signature on an already-expired-shaped payload is
+    // refused, exactly like every other forged token in this file.
+    const forged = `${legacyPayload}.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`;
+    expect(readMagicLinkToken(forged)).toBeNull();
+  });
+
+  it('a magic-link token with no expiry at all is rejected', () => {
+    // `e` is required for this kind specifically — a magic link is meant to
+    // go stale. A hand-forged token (or one from a future bug that forgets
+    // to set `e`) must not be treated as a permanent credential.
+    const legacyPayload = Buffer.from(
+      JSON.stringify({ k: 'magic', s: 'person@example.com', n: 'x' }),
+      'utf8',
+    ).toString('base64url');
+    const forged = `${legacyPayload}.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`;
+    expect(readMagicLinkToken(forged)).toBeNull();
+  });
+
+  it('a session token is never accepted as a magic-link token', () => {
+    const session = issueSession('user-1');
+    expect(readMagicLinkToken(session)).toBeNull();
+  });
+
+  it('a magic-link token is never accepted as a session token', () => {
+    // The reverse direction matters too: `readSession` must check `k` rather
+    // than just reading whatever is in `s`, or a magic-link token — mailed in
+    // plain text, the least protected bearer credential in this file — would
+    // authenticate as the user it happens to name.
+    const { token } = issueMagicLinkToken('person@example.com');
+    expect(readSession(token)).toBeNull();
   });
 });

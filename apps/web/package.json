@@ -1,0 +1,30 @@
+{
+  "name": "@snap/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Snap Apps website: marketing, downloads, registration, and the individual / business / platform-admin panels.",
+  "scripts": {
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "start": "next start -p 3000",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@snap/api-contract": "workspace:*",
+    "next": "^15.5.4",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "server-only": "^0.0.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.14",
+    "@types/node": "^20.19.9",
+    "@types/react": "^19.1.10",
+    "@types/react-dom": "^19.1.7",
+    "tailwindcss": "^4.1.14",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.9"
+  }
+}

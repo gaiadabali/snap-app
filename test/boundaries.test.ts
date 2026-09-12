@@ -20,8 +20,19 @@ import { describe, expect, it } from 'vitest';
 
 const ROOT = join(import.meta.dirname, '..');
 
-/** Packages the mobile app must never depend on, directly or transitively. */
-const FORBIDDEN_FOR_MOBILE = ['@snap/db', '@snap/tax-engine'];
+/** Packages a CLIENT must never depend on, directly or transitively. */
+const FORBIDDEN_FOR_CLIENTS = ['@snap/db', '@snap/tax-engine'];
+/** Kept as the old name for the mobile-specific assertions below. */
+const FORBIDDEN_FOR_MOBILE = FORBIDDEN_FOR_CLIENTS;
+
+/**
+ * The clients. Both are untrusted surfaces that a person can inspect: mobile is
+ * a binary an attacker can hold in their hand, and web ships JavaScript to a
+ * browser. Neither may reach the `pg` driver and the tenant-isolation helpers in
+ * @snap/db, and neither may carry the tax engine whose ATO rates change every
+ * 1 July — a rate change must be a deploy, not a client release.
+ */
+const CLIENTS = ['@snap/mobile', '@snap/web'];
 /** The only workspace package mobile may use: types, zero runtime weight. */
 const ALLOWED_FOR_MOBILE = ['@snap/api-contract'];
 
@@ -40,6 +51,7 @@ function readPkg(rel: string): Pkg | null {
 const WORKSPACE_DIRS = [
   'apps/mobile',
   'apps/server',
+  'apps/web',
   'packages/api-contract',
   'packages/db',
   'packages/tax-engine',
@@ -74,16 +86,30 @@ describe('workspace boundaries', () => {
       '@snap/mobile',
       '@snap/server',
       '@snap/tax-engine',
+      '@snap/web',
     ]);
   });
 
-  it.each(FORBIDDEN_FOR_MOBILE)('mobile does not depend on %s, even transitively', (forbidden) => {
-    const reachable = closure('@snap/mobile');
+  const clientCases = CLIENTS.flatMap((client) =>
+    FORBIDDEN_FOR_CLIENTS.map((forbidden) => [client, forbidden] as const),
+  );
+
+  it.each(clientCases)('%s does not depend on %s, even transitively', (client, forbidden) => {
+    const reachable = closure(client);
     expect(
       reachable.has(forbidden),
-      `@snap/mobile reaches ${forbidden} via ${[...reachable].join(' -> ')}. ` +
+      `${client} reaches ${forbidden} via ${[...reachable].join(' -> ')}. ` +
         'Heavy logic belongs on the server; put the wire types in @snap/api-contract instead.',
     ).toBe(false);
+  });
+
+  it('web depends only on the api-contract from this workspace', () => {
+    const web = readPkg('apps/web');
+    const snapDeps = Object.keys(web?.dependencies ?? {}).filter((d) => d.startsWith('@snap/'));
+    expect(
+      snapDeps.sort(),
+      'The website is a browser client. It talks to the server over HTTP and shares TYPES only.',
+    ).toEqual(['@snap/api-contract']);
   });
 
   it('mobile depends only on the api-contract from this workspace', () => {

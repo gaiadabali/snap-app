@@ -136,6 +136,30 @@ const schema = z.object({
   DOCAI_SHADOW_TIMEOUT_MS: z.coerce.number().int().positive().default(120000),
 
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+
+  /**
+   * This site's public web origin.
+   *
+   * Only needed to build the link inside a magic-link email — nobody browses
+   * to the API directly. Optional in spirit (a worker process never sends a
+   * magic link) but given a working default so `config()` does not refuse to
+   * start over a variable most deployments of this process never touch.
+   */
+  WEB_PUBLIC_URL: z.string().url().default('http://127.0.0.1:3000'),
+
+  /**
+   * Google's OAuth client id, for checking the `aud` claim on a Google ID
+   * token this server is asked to trust.
+   *
+   * Deliberately just the client id, never the secret. Verifying a JWT's
+   * signature against Google's published JWKS needs no secret at all, and the
+   * OAuth client that DOES hold one is the web app, not this server — see
+   * `apps/web/src/lib/config.ts#googleOauth`. Optional so this server starts
+   * fine before staging credentials exist; the Google sign-in endpoint
+   * refuses cleanly (501) until it is set, rather than this whole process
+   * refusing to boot over a feature nobody has wired up yet.
+   */
+  GOOGLE_CLIENT_ID: z.string().optional(),
 });
 
 export type Config = z.infer<typeof schema>;

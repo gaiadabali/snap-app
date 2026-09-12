@@ -891,3 +891,278 @@ export interface OnboardingInput {
   /** Personal only: what the household intends to spend each month. */
   monthlyBudget?: string | null;
 }
+
+// ── The platform admin plane (docs/WEB.md §6) ──────────────────────────────
+//
+// A second, deliberately narrow authorisation surface over every tenant's
+// records — see `packages/db/migrations/0021_admin_plane.sql` for the whole
+// design. Every shape below is a plain data type: capability enforcement,
+// impersonation, and audit all happen in Postgres SECURITY DEFINER functions,
+// never here. These types exist so the server's DTOs and the admin UI cannot
+// silently disagree about what a route returns — see that migration's header
+// and `apps/server/src/admin/*.controller.ts`, where each handler's return
+// type is one of these, not an inferred shape.
+
+/** Descriptive only — reporting label. Every gate tests a capability, never this. */
+export type PlatformStaffRole = 'support' | 'billing' | 'operations' | 'super_admin';
+
+/** Granular on purpose: no god flag. Checked in the database, not just here. */
+export type PlatformCapability =
+  | 'view_analytics'
+  | 'view_tenant_metadata'
+  | 'read_tenant_records'
+  | 'impersonate'
+  | 'manage_billing'
+  | 'manage_platform_settings'
+  | 'manage_ai_config'
+  | 'manage_staff'
+  | 'manage_operations';
+
+/** `GET /v1/admin/me` — what the signed-in caller may do on this plane. */
+export interface AdminSession {
+  staffId: string;
+  role: PlatformStaffRole;
+  capabilities: PlatformCapability[];
+}
+
+/** `GET /v1/admin/analytics/overview` */
+export interface AdminAnalyticsOverview {
+  tenantCount: number;
+  activeTenantCount: number;
+  userCount: number;
+  staffCount: number;
+  documentCount: number;
+  /** Fraction 0..1 over the trailing 30 days, or null with no runs to divide by. */
+  extractionSuccessRate: number | null;
+  costAud30d: MoneyString;
+  revenueAud30d: MoneyString;
+}
+
+/** One row of `GET /v1/admin/operations/queue` — a queue `kind`'s health. */
+export interface AdminQueueStat {
+  kind: string;
+  pending: number;
+  locked: number;
+  /** Hit max_attempts and will never be retried automatically. */
+  stalledAtMax: number;
+  /** Age of the oldest unlocked pending job, ISO 8601 duration, or null if none. */
+  oldestPendingAge: string | null;
+}
+
+/** One row of `GET /v1/admin/tenants` */
+export interface AdminTenantSummary {
+  tenantId: string;
+  name: string;
+  kind: Workspace;
+  planCode: string | null;
+  memberCount: number;
+  createdAt: IsoDateTime;
+  deletedAt: IsoDateTime | null;
+}
+
+/** `GET /v1/admin/tenants/:tenantId` */
+export interface AdminTenantDetail {
+  tenantId: string;
+  name: string;
+  kind: Workspace;
+  abn: string | null;
+  country: string;
+  planCode: string | null;
+  memberCount: number;
+  createdAt: IsoDateTime;
+  deletedAt: IsoDateTime | null;
+}
+
+/** One row of `GET /v1/admin/users` */
+export interface AdminUserSummary {
+  userId: string;
+  email: string | null;
+  displayName: string | null;
+  createdAt: IsoDateTime;
+  tenantCount: number;
+}
+
+/**
+ * `GET /v1/admin/tenants/:tenantId/documents` — a staff read of one tenant's
+ * actual records. `reason` is a required query parameter; the server
+ * authorises and audits it BEFORE running the scoped read (see the migration
+ * header, rule 5). Reuses `DocumentSummary` rather than inventing a second
+ * shape for the same row.
+ */
+export interface AdminTenantDocumentsView {
+  tenantId: string;
+  documents: DocumentSummary[];
+}
+
+/** Request body of `POST /v1/admin/impersonation/start`. */
+export interface AdminImpersonationStartRequest {
+  subjectUserId: string;
+  subjectTenantId: string;
+  /** Required. Refused by the database if blank. */
+  reason: string;
+  /** Clamped server-side to at most one hour. */
+  ttlSeconds?: number;
+}
+
+/** Response of `POST /v1/admin/impersonation/start`. `token` is shown once. */
+export interface AdminImpersonationStartResponse {
+  sessionId: string;
+  /** The bearer credential for `X-Impersonation-Token`. Never stored by the client beyond the session. */
+  token: string;
+  expiresAt: IsoDateTime;
+}
+
+export type ImpersonationEndReason = 'expired' | 'stopped' | 'revoked';
+
+/** Response of `POST /v1/admin/impersonation/:sessionId/stop`. */
+export interface AdminImpersonationStopResponse {
+  sessionId: string;
+  endedReason: ImpersonationEndReason;
+}
+
+/** One row of `GET /v1/admin/plans` */
+export interface AdminPlanSummary {
+  planId: string;
+  code: string;
+  name: string;
+  priceCents: number;
+  scanQuota: number | null;
+  seatLimit: number;
+  isActive: boolean;
+}
+
+/** Request body of `POST /v1/admin/tenants/:tenantId/plan` */
+export interface AdminSetPlanRequest {
+  planId: string;
+  reason: string;
+}
+
+/** Response of `POST /v1/admin/tenants/:tenantId/plan` */
+export interface AdminSubscriptionRef {
+  subscriptionId: string;
+}
+
+/** Request body of `POST /v1/admin/tenants/:tenantId/usage-grants` */
+export interface AdminUsageGrantRequest {
+  metric: string;
+  amount: number;
+  reason: string;
+}
+
+export interface AdminUsageGrantRef {
+  usageGrantId: string;
+}
+
+/** One row of `GET /v1/admin/settings`, and the body/response of setting one. */
+export interface AdminPlatformSetting {
+  key: string;
+  value: unknown;
+  updatedAt: IsoDateTime;
+}
+
+/** Request body of `PUT /v1/admin/settings/:key` */
+export interface AdminSetSettingRequest {
+  value: unknown;
+  reason: string;
+}
+
+/**
+ * One row of `GET /v1/admin/ai/providers`. Never a plaintext key, never
+ * ciphertext — only what is safe to show on a settings screen.
+ */
+export interface AdminAiProviderConfig {
+  id: string;
+  provider: string;
+  label: string;
+  defaultModel: string | null;
+  isActive: boolean;
+  hasLiveKey: boolean;
+  keyPrefix: string | null;
+  keyLast4: string | null;
+}
+
+/** Request body of `POST /v1/admin/ai/providers` */
+export interface AdminUpsertAiProviderRequest {
+  provider: string;
+  label: string;
+  defaultModel?: string | null;
+  isActive?: boolean;
+}
+
+/**
+ * Request body of `POST /v1/admin/ai/providers/:configId/key`.
+ *
+ * `apiKey` is the ONLY place a plaintext key ever appears on the wire, and it
+ * travels exactly once, over TLS, from the admin UI to this endpoint. The
+ * server encrypts it immediately (app-level AEAD, KMS-wrapped DEK) and never
+ * returns it — see `AdminAiProviderConfig`, which carries only a prefix and
+ * last 4 characters.
+ */
+export interface AdminSetAiKeyRequest {
+  apiKey: string;
+}
+
+export interface AdminAiKeyRef {
+  keyId: string;
+  keyPrefix: string;
+  keyLast4: string;
+}
+
+export interface AdminRevokeAiKeyRequest {
+  reason: string;
+}
+
+/** One row of `GET /v1/admin/ai/usage` */
+export interface AdminAiUsageStat {
+  engine: string;
+  modelId: string | null;
+  runs: number;
+  succeeded: number;
+  failed: number;
+  costAud: MoneyString;
+  avgLatencyMs: number | null;
+}
+
+/** Request body of `POST /v1/admin/operations/reextraction` */
+export interface AdminTriggerReextractionRequest {
+  tenantId: string;
+  captureId: string;
+  reason: string;
+}
+
+export interface AdminJobRef {
+  jobId: string;
+}
+
+/** One row of `GET /v1/admin/operations/retention` */
+export interface AdminRetentionStatusRow {
+  tenantId: string;
+  name: string;
+  oldestDocumentIssueDate: IsoDate | null;
+  retentionMonths: number | null;
+}
+
+/** One row of `GET /v1/admin/staff` */
+export interface AdminStaffSummary {
+  staffId: string;
+  userId: string;
+  email: string | null;
+  displayName: string | null;
+  role: PlatformStaffRole;
+  capabilities: PlatformCapability[];
+  createdAt: IsoDateTime;
+  revokedAt: IsoDateTime | null;
+}
+
+/** Request body of `POST /v1/admin/staff` */
+export interface AdminAddStaffRequest {
+  userId: string;
+  role: PlatformStaffRole;
+  capabilities: PlatformCapability[];
+}
+
+/** Request body of `PATCH /v1/admin/staff/:staffId/capabilities` */
+export interface AdminSetStaffCapabilityRequest {
+  capability: PlatformCapability;
+  grant: boolean;
+}

@@ -1,6 +1,7 @@
 import { Controller, Get, Module } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
+import { AdminModule } from './admin/admin.module.js';
 import { AuthController } from './auth/auth.controller.js';
 import { CapturesController } from './captures/captures.controller.js';
 import { BusinessController } from './business/business.controller.js';
@@ -72,6 +73,7 @@ export class HealthController {
 }
 
 @Module({
+  imports: [AdminModule],
   controllers: [
     HealthController,
     AuthController,
