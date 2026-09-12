@@ -26,6 +26,15 @@ interface TrayPage {
   sha256: string;
   mimeType: string;
   byteSize: number;
+  /**
+   * The bytes themselves — web only.
+   *
+   * On a device, `uri` is a real file path and the bytes are re-read lazily at
+   * upload time so twenty photographs are never all in memory at once. A
+   * browser has no such path: a picked file exists only as a `blob:` URL that
+   * `expo-file-system` cannot open, so the web path has to hold what it read.
+   */
+  bytes?: ArrayBuffer;
 }
 
 /** Where one page's upload stands, for the progress list during `uploading`. */
@@ -117,7 +126,51 @@ export default function CaptureScreen() {
   const camera = useRef<CameraView>(null);
 
   /** Photographs one page and returns its uri, bytes and hash. */
+  /**
+   * Capture, on a platform with no camera.
+   *
+   * `expo-camera` has no working `CameraView` on web, so the web build showed a
+   * black placeholder and the shutter failed every single time with "the camera
+   * returned no image" — which meant the capture flow, the thing this product
+   * is, could not be exercised in a browser at all, by a person or by a test.
+   *
+   * A file picker is the honest substitute: it produces the same bytes a camera
+   * would, which is all the pipeline downstream actually cares about. It also
+   * accepts a PDF, which is how a supplier invoice usually arrives anyway.
+   *
+   * `globalThis.File` rather than `File`, because `expo-file-system` exports a
+   * class of that name and it is already imported here.
+   */
+  async function pickFileOnWeb(): Promise<{
+    uri: string;
+    bytes: ArrayBuffer;
+    sha256: string;
+    mimeType: string;
+  }> {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*,application/pdf';
+    const chosen = await new Promise<globalThis.File | null>((resolve) => {
+      input.onchange = () => resolve(input.files?.[0] ?? null);
+      // Cancelling the dialog is an ordinary thing to do, not an error.
+      input.oncancel = () => resolve(null);
+      input.click();
+    });
+    if (!chosen) throw new Error('No file was chosen.');
+
+    const bytes = await chosen.arrayBuffer();
+    const digest = await Crypto.digest(Crypto.CryptoDigestAlgorithm.SHA256, bytes);
+    return {
+      uri: URL.createObjectURL(chosen),
+      bytes,
+      sha256: [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join(''),
+      mimeType: chosen.type || 'application/octet-stream',
+    };
+  }
+
   async function shoot() {
+    if (Platform.OS === 'web') return pickFileOnWeb();
+
     const photo = await camera.current?.takePictureAsync({
       quality: 0.9,
       // The ATO accepts an electronic copy only if it is a true and clear
@@ -127,11 +180,13 @@ export default function CaptureScreen() {
     });
     if (!photo?.uri) throw new Error('The camera returned no image.');
     const bytes = await new File(photo.uri).arrayBuffer();
+    // Native only, so the bytes are not retained here: `uri` is a real path and
+    // the upload re-reads it when it needs it.
     const digest = await Crypto.digest(Crypto.CryptoDigestAlgorithm.SHA256, bytes);
     const sha256 = [...new Uint8Array(digest)]
       .map((b) => b.toString(16).padStart(2, '0'))
       .join('');
-    return { uri: photo.uri, bytes, sha256 };
+    return { uri: photo.uri, bytes, sha256, mimeType: 'image/jpeg' };
   }
 
   /** Adds a page to the tray without processing anything yet. */
@@ -150,7 +205,16 @@ export default function CaptureScreen() {
       const shot = await shoot();
       setPages((prev) => [
         ...prev,
-        { uri: shot.uri, sha256: shot.sha256, mimeType: 'image/jpeg', byteSize: shot.bytes.byteLength },
+        {
+          uri: shot.uri,
+          sha256: shot.sha256,
+          // What was actually picked, not an assumption. A PDF uploaded as
+          // `image/jpeg` is refused by the server's content-type parser.
+          mimeType: shot.mimeType,
+          byteSize: shot.bytes.byteLength,
+          // Web only — see TrayPage.bytes for why a browser cannot re-read.
+          bytes: Platform.OS === 'web' ? shot.bytes : undefined,
+        },
       ]);
       setPhase('framing');
     } catch (err) {
@@ -197,7 +261,9 @@ export default function CaptureScreen() {
         continue;
       }
       try {
-        const bytes = await new File(page.uri).arrayBuffer();
+        // Web carries its own bytes; a device re-reads them from the path it
+        // stored, so a long document never sits in memory all at once.
+        const bytes = page.bytes ?? (await new File(page.uri).arrayBuffer());
         await uploadPageWithRetry(upload.uploadUrl, bytes, page.mimeType);
         statuses[upload.pageNumber] = 'done';
       } catch {
@@ -267,7 +333,16 @@ export default function CaptureScreen() {
       const shot = await shoot();
       const allPages: TrayPage[] = [
         ...pages,
-        { uri: shot.uri, sha256: shot.sha256, mimeType: 'image/jpeg', byteSize: shot.bytes.byteLength },
+        {
+          uri: shot.uri,
+          sha256: shot.sha256,
+          // What was actually picked, not an assumption. A PDF uploaded as
+          // `image/jpeg` is refused by the server's content-type parser.
+          mimeType: shot.mimeType,
+          byteSize: shot.bytes.byteLength,
+          // Web only — see TrayPage.bytes for why a browser cannot re-read.
+          bytes: Platform.OS === 'web' ? shot.bytes : undefined,
+        },
       ];
 
       // ── 2. Register the capture; the server dedupes before any upload ──
@@ -364,7 +439,12 @@ export default function CaptureScreen() {
           web build shows a framing placeholder and the device shows the real
           viewfinder. */}
       {Platform.OS === 'web' ? (
-        <View style={{ flex: 1, backgroundColor: '#111' }} />
+        <View style={{ flex: 1, backgroundColor: '#111', alignItems: 'center', justifyContent: 'center' }}>
+          <Text style={{ color: '#888', textAlign: 'center', paddingHorizontal: space.xl }}>
+            No camera in a browser. The shutter opens a file picker — choose a
+            photo or a PDF of the document.
+          </Text>
+        </View>
       ) : (
         <CameraView ref={camera} style={{ flex: 1 }} facing="back" />
       )}
