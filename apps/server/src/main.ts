@@ -21,11 +21,53 @@ import { IdempotencyInterceptor } from './common/idempotency.interceptor.js';
  * Fastify rather than Express under Nest: schema-based serialisation, and the
  * adapter is swappable without touching a controller.
  */
+/**
+ * In production, refuse to start unless someone can actually sign in.
+ *
+ * The passwordless `/v1/auth/sign-in` endpoint is disabled in production
+ * (see `auth.controller.ts`), which leaves the magic link and Google. Both can
+ * be *present as routes* while being incapable of completing:
+ *
+ *   - the magic link needs a real mailer, and the production mailer is still
+ *     `NoopMailer`, which logs a warning and delivers nothing;
+ *   - Google needs `GOOGLE_CLIENT_ID`.
+ *
+ * If neither can work, the honest outcome is a server that refuses to boot and
+ * says why. The alternative is one that starts, accepts magic-link requests,
+ * answers 200 to every one of them, and delivers nothing — a locked building
+ * whose doorbell is wired to nowhere. That failure is silent, arrives at
+ * whoever is trying to log in rather than at whoever deployed it, and is
+ * exactly the shape this codebase already refuses elsewhere: the Bedrock
+ * provider throws rather than quietly falling back offshore.
+ *
+ * Delete the mailer clause here the moment a real provider is wired.
+ */
+function assertProductionHasAWayIn(settings: ReturnType<typeof config>): void {
+  if (settings.NODE_ENV !== 'production') return;
+
+  const google = Boolean(settings.GOOGLE_CLIENT_ID);
+  // No real Mailer implementation exists yet, so the magic link cannot deliver
+  // in production however it is configured.
+  const magicLink = false;
+  if (google || magicLink) return;
+
+  throw new Error(
+    [
+      'Refusing to start in production: no usable sign-in method.',
+      '  - passwordless email sign-in is disabled in production, by design',
+      '  - the magic link needs a real Mailer; the production mailer is NoopMailer and delivers nothing',
+      '  - Google needs GOOGLE_CLIENT_ID, which is not set',
+      'Configure Google, or wire a real email provider, before deploying.',
+    ].join('\n'),
+  );
+}
+
 export async function bootstrap(): Promise<NestFastifyApplication> {
   // Read and validate configuration before anything else, so a missing
   // variable is a startup failure rather than a 500 on the request that
   // happens to need it.
   const settings = config();
+  assertProductionHasAWayIn(settings);
 
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
