@@ -720,7 +720,15 @@ export async function listTransactions(
     }>(sql`
       select t.id, t.txn_date::text as txn_date, t.status::text as status,
              t.source::text as source, t.memo, t.reference, t.currency::text as currency,
-             t.document_id, t.posted_at::text as posted_at, t.void_reason,
+             t.document_id,
+             -- to_json, NOT ::text: a timestamptz cast to text renders a SPACE
+             -- where ISO 8601 wants a T, and TransactionSummary.postedAt is
+             -- declared IsoDateTime. V8 forgives it, Hermes does not, and
+             -- Date.parse answers NaN rather than throwing -- which every
+             -- comparison then reads as false, so a broken timestamp looks
+             -- like a valid one. Null survives as null, not the text 'null'.
+             to_json(t.posted_at)#>>'{}' as posted_at,
+             t.void_reason,
              coalesce(
                json_agg(
                  json_build_object(
