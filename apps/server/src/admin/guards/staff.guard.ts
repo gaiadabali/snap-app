@@ -84,7 +84,30 @@ export const RequireCapability = (capability: PlatformCapability) =>
  */
 @Injectable()
 export class CapabilityGuard implements CanActivate {
-  constructor(private readonly reflector: Reflector) {}
+  /**
+   * Constructed directly rather than injected, and that is load-bearing.
+   *
+   * The server runs under `tsx` (see docs/PLAN.md §6.1 — the tax engine's
+   * extensionless imports need a bundler-style resolver), and tsx compiles
+   * with esbuild, which does NOT implement `emitDecoratorMetadata` however
+   * the tsconfig is set. Without `design:paramtypes` Nest cannot resolve a
+   * constructor parameter, so `constructor(private reflector: Reflector)`
+   * silently injected `undefined` and every capability-gated route answered
+   * 500 with "Cannot read properties of undefined (reading
+   * 'getAllAndOverride')".
+   *
+   * It survived because this is the only Nest class in the server with a
+   * constructor dependency at all — every controller here deliberately calls
+   * module-level functions instead — and because the admin e2e suite's cases
+   * were all 401/403, which are refused by SessionGuard or StaffGuard before
+   * this guard ever runs. The happy path had never been exercised over HTTP.
+   *
+   * `Reflector` is a stateless reader of metadata with no injected state of
+   * its own, so constructing one is equivalent to receiving one. If a future
+   * change adds real constructor injection anywhere in this app, the build
+   * must move to `tsc`/SWC rather than tsx.
+   */
+  private readonly reflector = new Reflector();
 
   canActivate(context: ExecutionContext): boolean {
     // Checks the HANDLER first, the CONTROLLER CLASS second — `@RequireCapability`

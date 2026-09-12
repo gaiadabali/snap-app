@@ -152,3 +152,22 @@ replace. Until then, do not store a real provider key through the admin UI.
 7. Confirm `POST /v1/auth/sign-in` returns **404**, not 200. This is the one
    check worth doing by hand against the live host, because getting it wrong
    means every account is open.
+8. **Smoke-test the admin plane over real HTTP**, as a staff user with one
+   capability. Not optional, and not covered by the test suite:
+
+   ```
+   curl -H "Authorization: Bearer <staff session>" https://<api>/v1/admin/me
+   ```
+
+   Expect 200 with the staff's capabilities; expect 403, naming the missing
+   capability, on a route they do not hold.
+
+> **The suite does not reproduce the production runtime.** Vitest's transformer
+> emits `emitDecoratorMetadata`; `tsx` — which runs the server, because the tax
+> engine's extensionless imports need a bundler-style resolver — uses esbuild,
+> which does not. A Nest class with constructor injection therefore works under
+> test and receives `undefined` in production. That is not hypothetical: it took
+> out every capability-gated admin route with a 500 while `admin.e2e.test.ts`
+> passed 6/6, including its happy-path case. Until the server builds with
+> `tsc`/SWC, treat "the tests pass" as insufficient evidence that a DI change
+> works, and smoke-test the running process.
