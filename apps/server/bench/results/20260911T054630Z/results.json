@@ -1,0 +1,490 @@
+{
+  "generated_at": "2026-09-11T05:46:30.219595+00:00",
+  "prompt_version": "v1",
+  "dry_run": false,
+  "documents": [
+    "receipt-easy",
+    "receipt-hard",
+    "receipt-noabn",
+    "invoice-multipage"
+  ],
+  "engines_run": [
+    "hosted:gemma4:31b",
+    "hosted:minimax-m3"
+  ],
+  "engines_skipped": {},
+  "results": [
+    {
+      "document": "receipt-easy",
+      "engine": "hosted:gemma4:31b",
+      "requested_runs": 2,
+      "completed_runs": 2,
+      "errors": [],
+      "median_seconds": 2.0257668495178223,
+      "seconds_all": [
+        1.8098340034484863,
+        2.241699695587158
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "NORMALISED",
+          "NORMALISED"
+        ],
+        "supplier_abn": [
+          "EXACT",
+          "EXACT"
+        ],
+        "issue_date": [
+          "EXACT",
+          "EXACT"
+        ],
+        "total_inclusive": [
+          "EXACT",
+          "EXACT"
+        ],
+        "gst_amount": [
+          "MISS",
+          "EXACT"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "field_outcome_mode": {
+        "supplier_name": "NORMALISED",
+        "supplier_abn": "EXACT",
+        "issue_date": "EXACT",
+        "total_inclusive": "EXACT",
+        "gst_amount": "MISS",
+        "is_tax_invoice": "EXACT",
+        "line_count": "EXACT",
+        "page_count": "EXACT"
+      },
+      "lines_total": 3,
+      "lines_matched_median": 3.0,
+      "parse_failures": 0
+    },
+    {
+      "document": "receipt-hard",
+      "engine": "hosted:gemma4:31b",
+      "requested_runs": 2,
+      "completed_runs": 2,
+      "errors": [],
+      "median_seconds": 3.0751067399978638,
+      "seconds_all": [
+        3.1557815074920654,
+        2.994431972503662
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "NORMALISED",
+          "NORMALISED"
+        ],
+        "supplier_abn": [
+          "EXACT",
+          "EXACT"
+        ],
+        "issue_date": [
+          "EXACT",
+          "EXACT"
+        ],
+        "total_inclusive": [
+          "EXACT",
+          "EXACT"
+        ],
+        "gst_amount": [
+          "EXACT",
+          "EXACT"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "field_outcome_mode": {
+        "supplier_name": "NORMALISED",
+        "supplier_abn": "EXACT",
+        "issue_date": "EXACT",
+        "total_inclusive": "EXACT",
+        "gst_amount": "EXACT",
+        "is_tax_invoice": "EXACT",
+        "line_count": "EXACT",
+        "page_count": "EXACT"
+      },
+      "lines_total": 3,
+      "lines_matched_median": 3.0,
+      "parse_failures": 0
+    },
+    {
+      "document": "receipt-noabn",
+      "engine": "hosted:gemma4:31b",
+      "requested_runs": 2,
+      "completed_runs": 2,
+      "errors": [],
+      "median_seconds": 1.7569129467010498,
+      "seconds_all": [
+        1.8140747547149658,
+        1.6997511386871338
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "NORMALISED",
+          "NORMALISED"
+        ],
+        "supplier_abn": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "issue_date": [
+          "WRONG",
+          "WRONG"
+        ],
+        "total_inclusive": [
+          "EXACT",
+          "EXACT"
+        ],
+        "gst_amount": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "field_outcome_mode": {
+        "supplier_name": "NORMALISED",
+        "supplier_abn": "ABSTAIN_OK",
+        "issue_date": "WRONG",
+        "total_inclusive": "EXACT",
+        "gst_amount": "ABSTAIN_OK",
+        "is_tax_invoice": "EXACT",
+        "line_count": "EXACT",
+        "page_count": "EXACT"
+      },
+      "lines_total": 2,
+      "lines_matched_median": 2.0,
+      "parse_failures": 0
+    },
+    {
+      "document": "invoice-multipage",
+      "engine": "hosted:gemma4:31b",
+      "requested_runs": 2,
+      "completed_runs": 2,
+      "errors": [],
+      "median_seconds": 5.009637832641602,
+      "seconds_all": [
+        5.289088249206543,
+        4.73018741607666
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "EXACT",
+          "EXACT"
+        ],
+        "supplier_abn": [
+          "WRONG",
+          "WRONG"
+        ],
+        "issue_date": [
+          "EXACT",
+          "EXACT"
+        ],
+        "total_inclusive": [
+          "EXACT",
+          "EXACT"
+        ],
+        "gst_amount": [
+          "EXACT",
+          "EXACT"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "field_outcome_mode": {
+        "supplier_name": "EXACT",
+        "supplier_abn": "WRONG",
+        "issue_date": "EXACT",
+        "total_inclusive": "EXACT",
+        "gst_amount": "EXACT",
+        "is_tax_invoice": "EXACT",
+        "line_count": "EXACT",
+        "page_count": "EXACT"
+      },
+      "lines_total": 3,
+      "lines_matched_median": 3.0,
+      "parse_failures": 0
+    },
+    {
+      "document": "receipt-easy",
+      "engine": "hosted:minimax-m3",
+      "requested_runs": 2,
+      "completed_runs": 2,
+      "errors": [],
+      "median_seconds": 4.433320760726929,
+      "seconds_all": [
+        5.051558256149292,
+        3.8150832653045654
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "NORMALISED",
+          "NORMALISED"
+        ],
+        "supplier_abn": [
+          "EXACT",
+          "EXACT"
+        ],
+        "issue_date": [
+          "EXACT",
+          "EXACT"
+        ],
+        "total_inclusive": [
+          "EXACT",
+          "EXACT"
+        ],
+        "gst_amount": [
+          "EXACT",
+          "EXACT"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "field_outcome_mode": {
+        "supplier_name": "NORMALISED",
+        "supplier_abn": "EXACT",
+        "issue_date": "EXACT",
+        "total_inclusive": "EXACT",
+        "gst_amount": "EXACT",
+        "is_tax_invoice": "EXACT",
+        "line_count": "EXACT",
+        "page_count": "EXACT"
+      },
+      "lines_total": 3,
+      "lines_matched_median": 3.0,
+      "parse_failures": 0
+    },
+    {
+      "document": "receipt-hard",
+      "engine": "hosted:minimax-m3",
+      "requested_runs": 2,
+      "completed_runs": 2,
+      "errors": [],
+      "median_seconds": 4.603936553001404,
+      "seconds_all": [
+        5.132282257080078,
+        4.0755908489227295
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "NORMALISED",
+          "NORMALISED"
+        ],
+        "supplier_abn": [
+          "EXACT",
+          "EXACT"
+        ],
+        "issue_date": [
+          "EXACT",
+          "EXACT"
+        ],
+        "total_inclusive": [
+          "EXACT",
+          "EXACT"
+        ],
+        "gst_amount": [
+          "EXACT",
+          "EXACT"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "field_outcome_mode": {
+        "supplier_name": "NORMALISED",
+        "supplier_abn": "EXACT",
+        "issue_date": "EXACT",
+        "total_inclusive": "EXACT",
+        "gst_amount": "EXACT",
+        "is_tax_invoice": "EXACT",
+        "line_count": "EXACT",
+        "page_count": "EXACT"
+      },
+      "lines_total": 3,
+      "lines_matched_median": 3.0,
+      "parse_failures": 0
+    },
+    {
+      "document": "receipt-noabn",
+      "engine": "hosted:minimax-m3",
+      "requested_runs": 2,
+      "completed_runs": 2,
+      "errors": [],
+      "median_seconds": 3.193437933921814,
+      "seconds_all": [
+        2.877002477645874,
+        3.509873390197754
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "NORMALISED",
+          "NORMALISED"
+        ],
+        "supplier_abn": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "issue_date": [
+          "EXACT",
+          "EXACT"
+        ],
+        "total_inclusive": [
+          "EXACT",
+          "EXACT"
+        ],
+        "gst_amount": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "field_outcome_mode": {
+        "supplier_name": "NORMALISED",
+        "supplier_abn": "ABSTAIN_OK",
+        "issue_date": "EXACT",
+        "total_inclusive": "EXACT",
+        "gst_amount": "ABSTAIN_OK",
+        "is_tax_invoice": "EXACT",
+        "line_count": "EXACT",
+        "page_count": "EXACT"
+      },
+      "lines_total": 2,
+      "lines_matched_median": 2.0,
+      "parse_failures": 0
+    },
+    {
+      "document": "invoice-multipage",
+      "engine": "hosted:minimax-m3",
+      "requested_runs": 2,
+      "completed_runs": 2,
+      "errors": [],
+      "median_seconds": 9.137215733528137,
+      "seconds_all": [
+        10.365600347518921,
+        7.9088311195373535
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "EXACT",
+          "EXACT"
+        ],
+        "supplier_abn": [
+          "EXACT",
+          "EXACT"
+        ],
+        "issue_date": [
+          "EXACT",
+          "EXACT"
+        ],
+        "total_inclusive": [
+          "EXACT",
+          "EXACT"
+        ],
+        "gst_amount": [
+          "EXACT",
+          "EXACT"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "field_outcome_mode": {
+        "supplier_name": "EXACT",
+        "supplier_abn": "EXACT",
+        "issue_date": "EXACT",
+        "total_inclusive": "EXACT",
+        "gst_amount": "EXACT",
+        "is_tax_invoice": "EXACT",
+        "line_count": "EXACT",
+        "page_count": "EXACT"
+      },
+      "lines_total": 3,
+      "lines_matched_median": 3.0,
+      "parse_failures": 0
+    }
+  ]
+}

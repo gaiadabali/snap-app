@@ -1,0 +1,256 @@
+{
+  "generated_at": "2026-09-11T14:11:50.294638+00:00",
+  "contract": "docs/contracts/phase1-ocr-stage.md \u00a76",
+  "source": "--sidecar-url http://127.0.0.1:8088",
+  "scores": {
+    "sidecar": {
+      "iou_threshold": 0.5,
+      "confident_threshold": 0.5,
+      "containment_threshold": 0.5,
+      "n_truth_regions": 8,
+      "n_predicted_spans": 70,
+      "n_unreadable_declared": 0,
+      "detection": {
+        "n_truth": 8,
+        "n_regions_with_any_prediction": 7,
+        "n_regions_detected_at_threshold": 7,
+        "recall_at_threshold": 0.875,
+        "mean_coverage_iou_where_any_prediction": 0.8228199718239833,
+        "per_region_coverage": [
+          {
+            "truth_id": "gt-supplier",
+            "n_assigned": 5,
+            "coverage_iou": 0.8730319119619336
+          },
+          {
+            "truth_id": "gt-abn",
+            "n_assigned": 4,
+            "coverage_iou": 0.729330748414718
+          },
+          {
+            "truth_id": "gt-date",
+            "n_assigned": 3,
+            "coverage_iou": 0.8649350649350649
+          },
+          {
+            "truth_id": "gt-line",
+            "n_assigned": 6,
+            "coverage_iou": 0.8360077414929323
+          },
+          {
+            "truth_id": "gt-total",
+            "n_assigned": 4,
+            "coverage_iou": 0.8693795375510952
+          },
+          {
+            "truth_id": "gt-signature",
+            "n_assigned": 0,
+            "coverage_iou": 0.0
+          },
+          {
+            "truth_id": "gt-smudged",
+            "n_assigned": 1,
+            "coverage_iou": 0.8119582522554396
+          },
+          {
+            "truth_id": "gt-faint",
+            "n_assigned": 2,
+            "coverage_iou": 0.7750965461566993
+          }
+        ],
+        "n_pred_total": 70,
+        "n_pred_assigned_to_a_region": 25,
+        "n_pred_unassigned": 45,
+        "pred_assigned_fraction": 0.35714285714285715
+      },
+      "text_error": {
+        "mean_cer_strict": 0.0661005661005661,
+        "mean_cer_whitespace_insensitive": 0.0,
+        "mean_wer_matched": 0.7714285714285715,
+        "n_matched_legible": 7,
+        "per_region": [
+          {
+            "truth_id": "gt-supplier",
+            "truth_text": "Curragundi Rural Supplies Pty Ltd",
+            "grouped_text": "Curragundi Rural Supplies Pty Ltd",
+            "cer_strict": 0.0,
+            "cer_whitespace_insensitive": 0.0,
+            "wer": 0.0
+          },
+          {
+            "truth_id": "gt-abn",
+            "truth_text": "69 447 119 320",
+            "grouped_text": "69 447 119 320",
+            "cer_strict": 0.0,
+            "cer_whitespace_insensitive": 0.0,
+            "wer": 0.0
+          },
+          {
+            "truth_id": "gt-date",
+            "truth_text": "14 August 2026",
+            "grouped_text": "14 August 2026",
+            "cer_strict": 0.0,
+            "cer_whitespace_insensitive": 0.0,
+            "wer": 0.0
+          },
+          {
+            "truth_id": "gt-line",
+            "truth_text": "Fencing wire, 25kg roll x4",
+            "grouped_text": "Fencing wire , 25kg roll x4",
+            "cer_strict": 0.038461538461538464,
+            "cer_whitespace_insensitive": 0.0,
+            "wer": 0.4
+          },
+          {
+            "truth_id": "gt-total",
+            "truth_text": "$1,042.60",
+            "grouped_text": "$ 1 , 042.60",
+            "cer_strict": 0.3333333333333333,
+            "cer_whitespace_insensitive": 0.0,
+            "wer": 4.0
+          },
+          {
+            "truth_id": "gt-smudged",
+            "truth_text": "CN 88421-QX",
+            "grouped_text": "CN88421-QX",
+            "cer_strict": 0.09090909090909091,
+            "cer_whitespace_insensitive": 0.0,
+            "wer": 1.0
+          },
+          {
+            "truth_id": "gt-faint",
+            "truth_text": "REF 7741-BD",
+            "grouped_text": "REF 7741-BD",
+            "cer_strict": 0.0,
+            "cer_whitespace_insensitive": 0.0,
+            "wer": 0.0
+          }
+        ]
+      },
+      "abstention": {
+        "outcome_counts": {
+          "CORRECT": 7,
+          "ABSTAINED_CORRECTLY": 0,
+          "ABSTAINED_UNNECESSARILY": 0,
+          "MISSED": 1,
+          "WRONG_LOW_CONF": 0,
+          "CONFIDENT_WRONG": 0
+        },
+        "mean_quality": 0.875,
+        "invariant_holds_this_run": null,
+        "per_region": [
+          {
+            "truth_id": "gt-supplier",
+            "outcome": "CORRECT",
+            "quality": 1.0,
+            "confidence": 0.9821681380271912,
+            "cer_used_for_classification_whitespace_insensitive": 0.0
+          },
+          {
+            "truth_id": "gt-abn",
+            "outcome": "CORRECT",
+            "quality": 1.0,
+            "confidence": 0.9698976278305054,
+            "cer_used_for_classification_whitespace_insensitive": 0.0
+          },
+          {
+            "truth_id": "gt-date",
+            "outcome": "CORRECT",
+            "quality": 1.0,
+            "confidence": 0.9896298050880432,
+            "cer_used_for_classification_whitespace_insensitive": 0.0
+          },
+          {
+            "truth_id": "gt-line",
+            "outcome": "CORRECT",
+            "quality": 1.0,
+            "confidence": 0.9974775910377502,
+            "cer_used_for_classification_whitespace_insensitive": 0.0
+          },
+          {
+            "truth_id": "gt-total",
+            "outcome": "CORRECT",
+            "quality": 1.0,
+            "confidence": 0.9995971322059631,
+            "cer_used_for_classification_whitespace_insensitive": 0.0
+          },
+          {
+            "truth_id": "gt-signature",
+            "outcome": "MISSED",
+            "quality": 0.0,
+            "confidence": null,
+            "cer_used_for_classification_whitespace_insensitive": null
+          },
+          {
+            "truth_id": "gt-smudged",
+            "outcome": "CORRECT",
+            "quality": 1.0,
+            "confidence": 0.9960677027702332,
+            "cer_used_for_classification_whitespace_insensitive": 0.0
+          },
+          {
+            "truth_id": "gt-faint",
+            "outcome": "CORRECT",
+            "quality": 1.0,
+            "confidence": 0.9772012829780579,
+            "cer_used_for_classification_whitespace_insensitive": 0.0
+          }
+        ]
+      },
+      "calibration": {
+        "n_points": 7,
+        "pearson_confidence_vs_correctness": null,
+        "reliability_buckets": [
+          {
+            "range": [
+              0.0,
+              0.2
+            ],
+            "n": 0,
+            "mean_confidence": null,
+            "mean_correctness": null
+          },
+          {
+            "range": [
+              0.2,
+              0.4
+            ],
+            "n": 0,
+            "mean_confidence": null,
+            "mean_correctness": null
+          },
+          {
+            "range": [
+              0.4,
+              0.6
+            ],
+            "n": 0,
+            "mean_confidence": null,
+            "mean_correctness": null
+          },
+          {
+            "range": [
+              0.6,
+              0.8
+            ],
+            "n": 0,
+            "mean_confidence": null,
+            "mean_correctness": null
+          },
+          {
+            "range": [
+              0.8,
+              1.0
+            ],
+            "n": 7,
+            "mean_confidence": 0.9874341828482491,
+            "mean_correctness": 1.0
+          }
+        ],
+        "engine_claims_calibrated": [
+          false
+        ]
+      }
+    }
+  }
+}

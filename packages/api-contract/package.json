@@ -1,0 +1,25 @@
+{
+  "name": "@snap/api-contract",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Wire types shared between the mobile app and the server, plus the pure aggregation both sides must agree on. No runtime dependencies. This is the ONLY @snap/* package the mobile app may depend on.",
+  "license": "UNLICENSED",
+  "exports": {
+    ".": "./src/index.ts",
+    "./money": "./src/money.ts",
+    "./analytics": "./src/analytics.ts"
+  },
+  "types": "./src/index.ts",
+  "sideEffects": false,
+  "files": [
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}

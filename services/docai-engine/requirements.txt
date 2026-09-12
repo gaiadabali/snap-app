@@ -1,0 +1,11 @@
+# Pinned versions — see README.md "Verification" for exactly what was tested.
+# All Apache-2.0 (paddlepaddle/paddleocr/paddlex) or a permissive licence
+# (fastapi/uvicorn MIT, python-multipart Apache-2.0). D23 floor: satisfied.
+
+paddlepaddle==3.3.1
+paddleocr==3.7.0
+paddlex==3.7.2
+
+fastapi==0.118.0
+uvicorn[standard]==0.37.0
+python-multipart==0.0.20

@@ -1,0 +1,836 @@
+{
+  "generated_at": "2026-09-11T07:45:55.237644+00:00",
+  "prompt_version": "v1",
+  "dry_run": true,
+  "documents": [
+    "receipt-easy",
+    "receipt-hard",
+    "receipt-noabn",
+    "invoice-multipage"
+  ],
+  "engines_run": [
+    "hosted:minimax-m3",
+    "hosted:gemma4:31b",
+    "hosted:kimi-k3",
+    "hosted:qwen3.5:397b"
+  ],
+  "engines_skipped": {},
+  "results": [
+    {
+      "document": "receipt-easy",
+      "engine": "hosted:minimax-m3",
+      "requested_runs": 1,
+      "completed_runs": 1,
+      "errors": [],
+      "median_seconds": 0.0,
+      "seconds_all": [
+        0.0
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "UNPARSEABLE"
+        ],
+        "supplier_abn": [
+          "UNPARSEABLE"
+        ],
+        "issue_date": [
+          "UNPARSEABLE"
+        ],
+        "total_inclusive": [
+          "UNPARSEABLE"
+        ],
+        "gst_amount": [
+          "UNPARSEABLE"
+        ],
+        "is_tax_invoice": [
+          "UNPARSEABLE"
+        ],
+        "line_count": [
+          "UNPARSEABLE"
+        ],
+        "page_count": [
+          "UNPARSEABLE"
+        ]
+      },
+      "field_outcome_mode": {
+        "supplier_name": "UNPARSEABLE",
+        "supplier_abn": "UNPARSEABLE",
+        "issue_date": "UNPARSEABLE",
+        "total_inclusive": "UNPARSEABLE",
+        "gst_amount": "UNPARSEABLE",
+        "is_tax_invoice": "UNPARSEABLE",
+        "line_count": "UNPARSEABLE",
+        "page_count": "UNPARSEABLE"
+      },
+      "lines_total": 3,
+      "lines_matched_median": 0,
+      "parse_failures": 1,
+      "sample_raw_output": "[dry-run: no call made]"
+    },
+    {
+      "document": "receipt-hard",
+      "engine": "hosted:minimax-m3",
+      "requested_runs": 1,
+      "completed_runs": 1,
+      "errors": [],
+      "median_seconds": 0.0,
+      "seconds_all": [
+        0.0
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "UNPARSEABLE"
+        ],
+        "supplier_abn": [
+          "UNPARSEABLE"
+        ],
+        "issue_date": [
+          "UNPARSEABLE"
+        ],
+        "total_inclusive": [
+          "UNPARSEABLE"
+        ],
+        "gst_amount": [
+          "UNPARSEABLE"
+        ],
+        "is_tax_invoice": [
+          "UNPARSEABLE"
+        ],
+        "line_count": [
+          "UNPARSEABLE"
+        ],
+        "page_count": [
+          "UNPARSEABLE"
+        ]
+      },
+      "field_outcome_mode": {
+        "supplier_name": "UNPARSEABLE",
+        "supplier_abn": "UNPARSEABLE",
+        "issue_date": "UNPARSEABLE",
+        "total_inclusive": "UNPARSEABLE",
+        "gst_amount": "UNPARSEABLE",
+        "is_tax_invoice": "UNPARSEABLE",
+        "line_count": "UNPARSEABLE",
+        "page_count": "UNPARSEABLE"
+      },
+      "lines_total": 3,
+      "lines_matched_median": 0,
+      "parse_failures": 1,
+      "sample_raw_output": "[dry-run: no call made]"
+    },
+    {
+      "document": "receipt-noabn",
+      "engine": "hosted:minimax-m3",
+      "requested_runs": 1,
+      "completed_runs": 1,
+      "errors": [],
+      "median_seconds": 0.0,
+      "seconds_all": [
+        0.0
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "UNPARSEABLE"
+        ],
+        "supplier_abn": [
+          "UNPARSEABLE"
+        ],
+        "issue_date": [
+          "UNPARSEABLE"
+        ],
+        "total_inclusive": [
+          "UNPARSEABLE"
+        ],
+        "gst_amount": [
+          "UNPARSEABLE"
+        ],
+        "is_tax_invoice": [
+          "UNPARSEABLE"
+        ],
+        "line_count": [
+          "UNPARSEABLE"
+        ],
+        "page_count": [
+          "UNPARSEABLE"
+        ]
+      },
+      "field_outcome_mode": {
+        "supplier_name": "UNPARSEABLE",
+        "supplier_abn": "UNPARSEABLE",
+        "issue_date": "UNPARSEABLE",
+        "total_inclusive": "UNPARSEABLE",
+        "gst_amount": "UNPARSEABLE",
+        "is_tax_invoice": "UNPARSEABLE",
+        "line_count": "UNPARSEABLE",
+        "page_count": "UNPARSEABLE"
+      },
+      "lines_total": 2,
+      "lines_matched_median": 0,
+      "parse_failures": 1,
+      "sample_raw_output": "[dry-run: no call made]"
+    },
+    {
+      "document": "invoice-multipage",
+      "engine": "hosted:minimax-m3",
+      "requested_runs": 1,
+      "completed_runs": 1,
+      "errors": [],
+      "median_seconds": 0.0,
+      "seconds_all": [
+        0.0
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "UNPARSEABLE"
+        ],
+        "supplier_abn": [
+          "UNPARSEABLE"
+        ],
+        "issue_date": [
+          "UNPARSEABLE"
+        ],
+        "total_inclusive": [
+          "UNPARSEABLE"
+        ],
+        "gst_amount": [
+          "UNPARSEABLE"
+        ],
+        "is_tax_invoice": [
+          "UNPARSEABLE"
+        ],
+        "line_count": [
+          "UNPARSEABLE"
+        ],
+        "page_count": [
+          "UNPARSEABLE"
+        ]
+      },
+      "field_outcome_mode": {
+        "supplier_name": "UNPARSEABLE",
+        "supplier_abn": "UNPARSEABLE",
+        "issue_date": "UNPARSEABLE",
+        "total_inclusive": "UNPARSEABLE",
+        "gst_amount": "UNPARSEABLE",
+        "is_tax_invoice": "UNPARSEABLE",
+        "line_count": "UNPARSEABLE",
+        "page_count": "UNPARSEABLE"
+      },
+      "lines_total": 3,
+      "lines_matched_median": 0,
+      "parse_failures": 1,
+      "sample_raw_output": "[dry-run: no call made]"
+    },
+    {
+      "document": "receipt-easy",
+      "engine": "hosted:gemma4:31b",
+      "requested_runs": 1,
+      "completed_runs": 1,
+      "errors": [],
+      "median_seconds": 0.0,
+      "seconds_all": [
+        0.0
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "UNPARSEABLE"
+        ],
+        "supplier_abn": [
+          "UNPARSEABLE"
+        ],
+        "issue_date": [
+          "UNPARSEABLE"
+        ],
+        "total_inclusive": [
+          "UNPARSEABLE"
+        ],
+        "gst_amount": [
+          "UNPARSEABLE"
+        ],
+        "is_tax_invoice": [
+          "UNPARSEABLE"
+        ],
+        "line_count": [
+          "UNPARSEABLE"
+        ],
+        "page_count": [
+          "UNPARSEABLE"
+        ]
+      },
+      "field_outcome_mode": {
+        "supplier_name": "UNPARSEABLE",
+        "supplier_abn": "UNPARSEABLE",
+        "issue_date": "UNPARSEABLE",
+        "total_inclusive": "UNPARSEABLE",
+        "gst_amount": "UNPARSEABLE",
+        "is_tax_invoice": "UNPARSEABLE",
+        "line_count": "UNPARSEABLE",
+        "page_count": "UNPARSEABLE"
+      },
+      "lines_total": 3,
+      "lines_matched_median": 0,
+      "parse_failures": 1,
+      "sample_raw_output": "[dry-run: no call made]"
+    },
+    {
+      "document": "receipt-hard",
+      "engine": "hosted:gemma4:31b",
+      "requested_runs": 1,
+      "completed_runs": 1,
+      "errors": [],
+      "median_seconds": 0.0,
+      "seconds_all": [
+        0.0
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "UNPARSEABLE"
+        ],
+        "supplier_abn": [
+          "UNPARSEABLE"
+        ],
+        "issue_date": [
+          "UNPARSEABLE"
+        ],
+        "total_inclusive": [
+          "UNPARSEABLE"
+        ],
+        "gst_amount": [
+          "UNPARSEABLE"
+        ],
+        "is_tax_invoice": [
+          "UNPARSEABLE"
+        ],
+        "line_count": [
+          "UNPARSEABLE"
+        ],
+        "page_count": [
+          "UNPARSEABLE"
+        ]
+      },
+      "field_outcome_mode": {
+        "supplier_name": "UNPARSEABLE",
+        "supplier_abn": "UNPARSEABLE",
+        "issue_date": "UNPARSEABLE",
+        "total_inclusive": "UNPARSEABLE",
+        "gst_amount": "UNPARSEABLE",
+        "is_tax_invoice": "UNPARSEABLE",
+        "line_count": "UNPARSEABLE",
+        "page_count": "UNPARSEABLE"
+      },
+      "lines_total": 3,
+      "lines_matched_median": 0,
+      "parse_failures": 1,
+      "sample_raw_output": "[dry-run: no call made]"
+    },
+    {
+      "document": "receipt-noabn",
+      "engine": "hosted:gemma4:31b",
+      "requested_runs": 1,
+      "completed_runs": 1,
+      "errors": [],
+      "median_seconds": 0.0,
+      "seconds_all": [
+        0.0
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "UNPARSEABLE"
+        ],
+        "supplier_abn": [
+          "UNPARSEABLE"
+        ],
+        "issue_date": [
+          "UNPARSEABLE"
+        ],
+        "total_inclusive": [
+          "UNPARSEABLE"
+        ],
+        "gst_amount": [
+          "UNPARSEABLE"
+        ],
+        "is_tax_invoice": [
+          "UNPARSEABLE"
+        ],
+        "line_count": [
+          "UNPARSEABLE"
+        ],
+        "page_count": [
+          "UNPARSEABLE"
+        ]
+      },
+      "field_outcome_mode": {
+        "supplier_name": "UNPARSEABLE",
+        "supplier_abn": "UNPARSEABLE",
+        "issue_date": "UNPARSEABLE",
+        "total_inclusive": "UNPARSEABLE",
+        "gst_amount": "UNPARSEABLE",
+        "is_tax_invoice": "UNPARSEABLE",
+        "line_count": "UNPARSEABLE",
+        "page_count": "UNPARSEABLE"
+      },
+      "lines_total": 2,
+      "lines_matched_median": 0,
+      "parse_failures": 1,
+      "sample_raw_output": "[dry-run: no call made]"
+    },
+    {
+      "document": "invoice-multipage",
+      "engine": "hosted:gemma4:31b",
+      "requested_runs": 1,
+      "completed_runs": 1,
+      "errors": [],
+      "median_seconds": 0.0,
+      "seconds_all": [
+        0.0
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "UNPARSEABLE"
+        ],
+        "supplier_abn": [
+          "UNPARSEABLE"
+        ],
+        "issue_date": [
+          "UNPARSEABLE"
+        ],
+        "total_inclusive": [
+          "UNPARSEABLE"
+        ],
+        "gst_amount": [
+          "UNPARSEABLE"
+        ],
+        "is_tax_invoice": [
+          "UNPARSEABLE"
+        ],
+        "line_count": [
+          "UNPARSEABLE"
+        ],
+        "page_count": [
+          "UNPARSEABLE"
+        ]
+      },
+      "field_outcome_mode": {
+        "supplier_name": "UNPARSEABLE",
+        "supplier_abn": "UNPARSEABLE",
+        "issue_date": "UNPARSEABLE",
+        "total_inclusive": "UNPARSEABLE",
+        "gst_amount": "UNPARSEABLE",
+        "is_tax_invoice": "UNPARSEABLE",
+        "line_count": "UNPARSEABLE",
+        "page_count": "UNPARSEABLE"
+      },
+      "lines_total": 3,
+      "lines_matched_median": 0,
+      "parse_failures": 1,
+      "sample_raw_output": "[dry-run: no call made]"
+    },
+    {
+      "document": "receipt-easy",
+      "engine": "hosted:kimi-k3",
+      "requested_runs": 1,
+      "completed_runs": 1,
+      "errors": [],
+      "median_seconds": 0.0,
+      "seconds_all": [
+        0.0
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "UNPARSEABLE"
+        ],
+        "supplier_abn": [
+          "UNPARSEABLE"
+        ],
+        "issue_date": [
+          "UNPARSEABLE"
+        ],
+        "total_inclusive": [
+          "UNPARSEABLE"
+        ],
+        "gst_amount": [
+          "UNPARSEABLE"
+        ],
+        "is_tax_invoice": [
+          "UNPARSEABLE"
+        ],
+        "line_count": [
+          "UNPARSEABLE"
+        ],
+        "page_count": [
+          "UNPARSEABLE"
+        ]
+      },
+      "field_outcome_mode": {
+        "supplier_name": "UNPARSEABLE",
+        "supplier_abn": "UNPARSEABLE",
+        "issue_date": "UNPARSEABLE",
+        "total_inclusive": "UNPARSEABLE",
+        "gst_amount": "UNPARSEABLE",
+        "is_tax_invoice": "UNPARSEABLE",
+        "line_count": "UNPARSEABLE",
+        "page_count": "UNPARSEABLE"
+      },
+      "lines_total": 3,
+      "lines_matched_median": 0,
+      "parse_failures": 1,
+      "sample_raw_output": "[dry-run: no call made]"
+    },
+    {
+      "document": "receipt-hard",
+      "engine": "hosted:kimi-k3",
+      "requested_runs": 1,
+      "completed_runs": 1,
+      "errors": [],
+      "median_seconds": 0.0,
+      "seconds_all": [
+        0.0
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "UNPARSEABLE"
+        ],
+        "supplier_abn": [
+          "UNPARSEABLE"
+        ],
+        "issue_date": [
+          "UNPARSEABLE"
+        ],
+        "total_inclusive": [
+          "UNPARSEABLE"
+        ],
+        "gst_amount": [
+          "UNPARSEABLE"
+        ],
+        "is_tax_invoice": [
+          "UNPARSEABLE"
+        ],
+        "line_count": [
+          "UNPARSEABLE"
+        ],
+        "page_count": [
+          "UNPARSEABLE"
+        ]
+      },
+      "field_outcome_mode": {
+        "supplier_name": "UNPARSEABLE",
+        "supplier_abn": "UNPARSEABLE",
+        "issue_date": "UNPARSEABLE",
+        "total_inclusive": "UNPARSEABLE",
+        "gst_amount": "UNPARSEABLE",
+        "is_tax_invoice": "UNPARSEABLE",
+        "line_count": "UNPARSEABLE",
+        "page_count": "UNPARSEABLE"
+      },
+      "lines_total": 3,
+      "lines_matched_median": 0,
+      "parse_failures": 1,
+      "sample_raw_output": "[dry-run: no call made]"
+    },
+    {
+      "document": "receipt-noabn",
+      "engine": "hosted:kimi-k3",
+      "requested_runs": 1,
+      "completed_runs": 1,
+      "errors": [],
+      "median_seconds": 0.0,
+      "seconds_all": [
+        0.0
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "UNPARSEABLE"
+        ],
+        "supplier_abn": [
+          "UNPARSEABLE"
+        ],
+        "issue_date": [
+          "UNPARSEABLE"
+        ],
+        "total_inclusive": [
+          "UNPARSEABLE"
+        ],
+        "gst_amount": [
+          "UNPARSEABLE"
+        ],
+        "is_tax_invoice": [
+          "UNPARSEABLE"
+        ],
+        "line_count": [
+          "UNPARSEABLE"
+        ],
+        "page_count": [
+          "UNPARSEABLE"
+        ]
+      },
+      "field_outcome_mode": {
+        "supplier_name": "UNPARSEABLE",
+        "supplier_abn": "UNPARSEABLE",
+        "issue_date": "UNPARSEABLE",
+        "total_inclusive": "UNPARSEABLE",
+        "gst_amount": "UNPARSEABLE",
+        "is_tax_invoice": "UNPARSEABLE",
+        "line_count": "UNPARSEABLE",
+        "page_count": "UNPARSEABLE"
+      },
+      "lines_total": 2,
+      "lines_matched_median": 0,
+      "parse_failures": 1,
+      "sample_raw_output": "[dry-run: no call made]"
+    },
+    {
+      "document": "invoice-multipage",
+      "engine": "hosted:kimi-k3",
+      "requested_runs": 1,
+      "completed_runs": 1,
+      "errors": [],
+      "median_seconds": 0.0,
+      "seconds_all": [
+        0.0
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "UNPARSEABLE"
+        ],
+        "supplier_abn": [
+          "UNPARSEABLE"
+        ],
+        "issue_date": [
+          "UNPARSEABLE"
+        ],
+        "total_inclusive": [
+          "UNPARSEABLE"
+        ],
+        "gst_amount": [
+          "UNPARSEABLE"
+        ],
+        "is_tax_invoice": [
+          "UNPARSEABLE"
+        ],
+        "line_count": [
+          "UNPARSEABLE"
+        ],
+        "page_count": [
+          "UNPARSEABLE"
+        ]
+      },
+      "field_outcome_mode": {
+        "supplier_name": "UNPARSEABLE",
+        "supplier_abn": "UNPARSEABLE",
+        "issue_date": "UNPARSEABLE",
+        "total_inclusive": "UNPARSEABLE",
+        "gst_amount": "UNPARSEABLE",
+        "is_tax_invoice": "UNPARSEABLE",
+        "line_count": "UNPARSEABLE",
+        "page_count": "UNPARSEABLE"
+      },
+      "lines_total": 3,
+      "lines_matched_median": 0,
+      "parse_failures": 1,
+      "sample_raw_output": "[dry-run: no call made]"
+    },
+    {
+      "document": "receipt-easy",
+      "engine": "hosted:qwen3.5:397b",
+      "requested_runs": 1,
+      "completed_runs": 1,
+      "errors": [],
+      "median_seconds": 0.0,
+      "seconds_all": [
+        0.0
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "UNPARSEABLE"
+        ],
+        "supplier_abn": [
+          "UNPARSEABLE"
+        ],
+        "issue_date": [
+          "UNPARSEABLE"
+        ],
+        "total_inclusive": [
+          "UNPARSEABLE"
+        ],
+        "gst_amount": [
+          "UNPARSEABLE"
+        ],
+        "is_tax_invoice": [
+          "UNPARSEABLE"
+        ],
+        "line_count": [
+          "UNPARSEABLE"
+        ],
+        "page_count": [
+          "UNPARSEABLE"
+        ]
+      },
+      "field_outcome_mode": {
+        "supplier_name": "UNPARSEABLE",
+        "supplier_abn": "UNPARSEABLE",
+        "issue_date": "UNPARSEABLE",
+        "total_inclusive": "UNPARSEABLE",
+        "gst_amount": "UNPARSEABLE",
+        "is_tax_invoice": "UNPARSEABLE",
+        "line_count": "UNPARSEABLE",
+        "page_count": "UNPARSEABLE"
+      },
+      "lines_total": 3,
+      "lines_matched_median": 0,
+      "parse_failures": 1,
+      "sample_raw_output": "[dry-run: no call made]"
+    },
+    {
+      "document": "receipt-hard",
+      "engine": "hosted:qwen3.5:397b",
+      "requested_runs": 1,
+      "completed_runs": 1,
+      "errors": [],
+      "median_seconds": 0.0,
+      "seconds_all": [
+        0.0
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "UNPARSEABLE"
+        ],
+        "supplier_abn": [
+          "UNPARSEABLE"
+        ],
+        "issue_date": [
+          "UNPARSEABLE"
+        ],
+        "total_inclusive": [
+          "UNPARSEABLE"
+        ],
+        "gst_amount": [
+          "UNPARSEABLE"
+        ],
+        "is_tax_invoice": [
+          "UNPARSEABLE"
+        ],
+        "line_count": [
+          "UNPARSEABLE"
+        ],
+        "page_count": [
+          "UNPARSEABLE"
+        ]
+      },
+      "field_outcome_mode": {
+        "supplier_name": "UNPARSEABLE",
+        "supplier_abn": "UNPARSEABLE",
+        "issue_date": "UNPARSEABLE",
+        "total_inclusive": "UNPARSEABLE",
+        "gst_amount": "UNPARSEABLE",
+        "is_tax_invoice": "UNPARSEABLE",
+        "line_count": "UNPARSEABLE",
+        "page_count": "UNPARSEABLE"
+      },
+      "lines_total": 3,
+      "lines_matched_median": 0,
+      "parse_failures": 1,
+      "sample_raw_output": "[dry-run: no call made]"
+    },
+    {
+      "document": "receipt-noabn",
+      "engine": "hosted:qwen3.5:397b",
+      "requested_runs": 1,
+      "completed_runs": 1,
+      "errors": [],
+      "median_seconds": 0.0,
+      "seconds_all": [
+        0.0
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "UNPARSEABLE"
+        ],
+        "supplier_abn": [
+          "UNPARSEABLE"
+        ],
+        "issue_date": [
+          "UNPARSEABLE"
+        ],
+        "total_inclusive": [
+          "UNPARSEABLE"
+        ],
+        "gst_amount": [
+          "UNPARSEABLE"
+        ],
+        "is_tax_invoice": [
+          "UNPARSEABLE"
+        ],
+        "line_count": [
+          "UNPARSEABLE"
+        ],
+        "page_count": [
+          "UNPARSEABLE"
+        ]
+      },
+      "field_outcome_mode": {
+        "supplier_name": "UNPARSEABLE",
+        "supplier_abn": "UNPARSEABLE",
+        "issue_date": "UNPARSEABLE",
+        "total_inclusive": "UNPARSEABLE",
+        "gst_amount": "UNPARSEABLE",
+        "is_tax_invoice": "UNPARSEABLE",
+        "line_count": "UNPARSEABLE",
+        "page_count": "UNPARSEABLE"
+      },
+      "lines_total": 2,
+      "lines_matched_median": 0,
+      "parse_failures": 1,
+      "sample_raw_output": "[dry-run: no call made]"
+    },
+    {
+      "document": "invoice-multipage",
+      "engine": "hosted:qwen3.5:397b",
+      "requested_runs": 1,
+      "completed_runs": 1,
+      "errors": [],
+      "median_seconds": 0.0,
+      "seconds_all": [
+        0.0
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "UNPARSEABLE"
+        ],
+        "supplier_abn": [
+          "UNPARSEABLE"
+        ],
+        "issue_date": [
+          "UNPARSEABLE"
+        ],
+        "total_inclusive": [
+          "UNPARSEABLE"
+        ],
+        "gst_amount": [
+          "UNPARSEABLE"
+        ],
+        "is_tax_invoice": [
+          "UNPARSEABLE"
+        ],
+        "line_count": [
+          "UNPARSEABLE"
+        ],
+        "page_count": [
+          "UNPARSEABLE"
+        ]
+      },
+      "field_outcome_mode": {
+        "supplier_name": "UNPARSEABLE",
+        "supplier_abn": "UNPARSEABLE",
+        "issue_date": "UNPARSEABLE",
+        "total_inclusive": "UNPARSEABLE",
+        "gst_amount": "UNPARSEABLE",
+        "is_tax_invoice": "UNPARSEABLE",
+        "line_count": "UNPARSEABLE",
+        "page_count": "UNPARSEABLE"
+      },
+      "lines_total": 3,
+      "lines_matched_median": 0,
+      "parse_failures": 1,
+      "sample_raw_output": "[dry-run: no call made]"
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "name": "@snap/tax-engine",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Australian individual tax deduction engine — FY-versioned ATO rates, occupation profiles, and per-label deduction calculators. Extracted from free-tax-returns so Snap Apps and the tax product share one rate set and one test suite.",
+  "license": "UNLICENSED",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "types": "./src/index.ts",
+  "sideEffects": false,
+  "files": [
+    "src",
+    "docs",
+    "README.md",
+    "smoke"
+  ],
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.9",
+    "@snap/tax-engine": "workspace:*"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -1,0 +1,41 @@
+packages:
+  - 'packages/*'
+  - 'apps/*'
+
+# pnpm 11 requires explicit approval for dependency build scripts.
+# esbuild's postinstall fetches its platform binary; it backs `tsx`, which the
+# server uses because @snap/tax-engine's extensionless imports need a
+# bundler-style resolver (see packages/tax-engine/README.md).
+allowBuilds:
+  # Scarf is install-time analytics pulled in by a transitive dependency. It
+  # reports back on install. Denied: a financial application's build has no
+  # business phoning a third party, and nothing depends on it running.
+  '@scarf/scarf': false
+  esbuild: true
+
+minimumReleaseAgeExclude:
+  - '@expo/cli@57.0.24'
+  - '@expo/fingerprint@0.20.13'
+  - '@expo/prebuild-config@57.0.16'
+  - expo-asset@57.0.17
+  - expo-constants@57.0.18
+  - expo-file-system@57.0.7
+  - expo-font@57.0.4
+  - expo-keep-awake@57.0.2
+  - expo-modules-autolinking@57.0.13
+  - expo-modules-core@57.0.18
+  - expo@57.0.22
+  - '@expo/ui@57.0.18'
+  - expo-camera@57.0.5
+  - expo-crypto@57.0.3
+  - expo-glass-effect@57.0.3
+  - expo-haptics@57.0.3
+  - expo-linear-gradient@57.0.2
+  - expo-linking@57.0.10
+  - expo-location@57.0.17
+  - expo-print@57.0.2
+  - expo-router@57.0.21
+  - expo-sharing@57.0.19
+  - expo-splash-screen@57.0.9
+  - expo-symbols@57.0.3
+  - expo-system-ui@57.0.4

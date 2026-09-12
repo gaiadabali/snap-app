@@ -1,0 +1,585 @@
+import { CameraView, useCameraPermissions } from 'expo-camera';
+import * as Crypto from 'expo-crypto';
+import { File } from 'expo-file-system';
+import * as Haptics from 'expo-haptics';
+import { useRouter } from 'expo-router';
+import { useRef, useState } from 'react';
+import { ActivityIndicator, Alert, Image, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { api, type CapturePageUpload } from '@/api';
+import { Body, Button, Card, Figure, Label, Screen, Small } from '@/components/ui';
+import { radius, space, usePalette } from '@/theme';
+import { WorkspaceSwitch, useWorkspace } from '@/workspace';
+
+type Phase = 'framing' | 'hashing' | 'uploading' | 'extracting';
+
+/**
+ * One photographed page, before it has been registered with the server.
+ *
+ * Hashed at capture time so the tray never has to re-read the file to find
+ * out what it is holding — `sha256` and `byteSize` are exactly what
+ * `createCapture` needs for this page's `CapturePageInput`.
+ */
+interface TrayPage {
+  uri: string;
+  sha256: string;
+  mimeType: string;
+  byteSize: number;
+}
+
+/** Where one page's upload stands, for the progress list during `uploading`. */
+type PageStatus = 'pending' | 'uploading' | 'done' | 'skipped' | 'failed';
+
+/**
+ * A capture that has been registered with the server but is not fully
+ * uploaded yet.
+ *
+ * Kept in state — not just a local variable — for exactly one reason: if a
+ * page fails, this is what "Retry" resumes. Nothing here ever triggers a
+ * second `createCapture` call, because that would register a second document
+ * for the same paper.
+ */
+interface PendingCapture {
+  captureId: string;
+  uploads: CapturePageUpload[];
+  pages: TrayPage[];
+}
+
+/** At most this many pages, matching the limit `CreateCaptureRequest.pages` accepts. */
+const MAX_PAGES = 20;
+
+function pageStatusLabel(status: PageStatus | undefined): string {
+  switch (status) {
+    case 'done':
+      return 'Uploaded';
+    case 'uploading':
+      return 'Uploading…';
+    case 'failed':
+      return 'Failed';
+    case 'skipped':
+      return 'Already had it';
+    default:
+      return 'Waiting';
+  }
+}
+
+/**
+ * Uploads one page, absorbing a transient network blip before giving up.
+ *
+ * Pages are independent blobs at independent URLs, so one failing must never
+ * cost the others. Three attempts with a short, growing pause covers the
+ * ordinary flaky-signal case — a truck stop, one bar of reception — without
+ * turning a real failure into a spinner that never stops.
+ */
+async function uploadPageWithRetry(uploadUrl: string, bytes: ArrayBuffer, mimeType: string): Promise<void> {
+  const attempts = 3;
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    try {
+      await api().uploadOriginal(uploadUrl, bytes, mimeType);
+      return;
+    } catch (err) {
+      if (attempt === attempts) throw err;
+      await new Promise((resolve) => setTimeout(resolve, 400 * attempt));
+    }
+  }
+}
+
+/**
+ * Capture.
+ *
+ * The on-device work here is a PRE-FLIGHT CHECK only — is this a document, is
+ * it legible — never extraction. Extraction is a versioned server-side function
+ * of the stored original, so it can be re-run when the model improves. If the
+ * device extracted, historical records would be frozen at whatever the app
+ * shipped with and no backfill would ever be possible.
+ */
+export default function CaptureScreen() {
+  const p = usePalette();
+  const { workspace } = useWorkspace();
+  const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const [permission, requestPermission] = useCameraPermissions();
+  const [phase, setPhase] = useState<Phase>('framing');
+  const [error, setError] = useState<string | null>(null);
+  /**
+   * Pages held before processing.
+   *
+   * Empty for the common single-page case: the shutter captures and processes
+   * in one action, because adding a confirmation step to the thing people do
+   * twenty times a day to save the rare two-page invoice is the wrong trade.
+   * Tapping "Add page" switches into collecting mode.
+   */
+  const [pages, setPages] = useState<TrayPage[]>([]);
+  /** Set once `createCapture` has returned and cleared only when every page has uploaded. */
+  const [pending, setPending] = useState<PendingCapture | null>(null);
+  const [pageStatus, setPageStatus] = useState<Record<number, PageStatus>>({});
+  const camera = useRef<CameraView>(null);
+
+  /** Photographs one page and returns its uri, bytes and hash. */
+  async function shoot() {
+    const photo = await camera.current?.takePictureAsync({
+      quality: 0.9,
+      // The ATO accepts an electronic copy only if it is a true and clear
+      // reproduction, so no downscaling happens here. Normalisation for the
+      // model is a separate, server-side derivative.
+      skipProcessing: false,
+    });
+    if (!photo?.uri) throw new Error('The camera returned no image.');
+    const bytes = await new File(photo.uri).arrayBuffer();
+    const digest = await Crypto.digest(Crypto.CryptoDigestAlgorithm.SHA256, bytes);
+    const sha256 = [...new Uint8Array(digest)]
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('');
+    return { uri: photo.uri, bytes, sha256 };
+  }
+
+  /** Adds a page to the tray without processing anything yet. */
+  async function onAddPage() {
+    setError(null);
+    // The shutter adds one more page on top of whatever is already held, so
+    // the cap is checked here rather than after the fact — better to say so
+    // while the tray still fits under it than to have `createCapture` reject
+    // the document after every page has already been photographed.
+    if (pages.length + 1 >= MAX_PAGES) {
+      setError(`A document can hold at most ${MAX_PAGES} pages. Finish this one with the shutter.`);
+      return;
+    }
+    try {
+      setPhase('hashing');
+      const shot = await shoot();
+      setPages((prev) => [
+        ...prev,
+        { uri: shot.uri, sha256: shot.sha256, mimeType: 'image/jpeg', byteSize: shot.bytes.byteLength },
+      ]);
+      setPhase('framing');
+    } catch (err) {
+      setPhase('framing');
+      setError(err instanceof Error ? err.message : 'Could not add that page.');
+    }
+  }
+
+  /**
+   * Uploads every page of a registered capture, then waits for extraction.
+   *
+   * `resume: true` is what "Retry" sends: pages already marked `done` (from
+   * an earlier pass through this same function) are left alone, so a retry
+   * finishes the document instead of re-uploading pages that already landed.
+   */
+  async function uploadAndExtract(pc: PendingCapture, options: { resume: boolean } = { resume: false }) {
+    setPhase('uploading');
+    setError(null);
+    setPending(pc);
+
+    const statuses: Record<number, PageStatus> = options.resume ? { ...pageStatus } : {};
+    const paint = () => setPageStatus({ ...statuses });
+    paint();
+
+    for (const upload of pc.uploads) {
+      if (upload.alreadyStored) {
+        // These exact bytes are already held by the server — re-uploading
+        // would only spend the user's data for nothing.
+        statuses[upload.pageNumber] = 'skipped';
+        paint();
+        continue;
+      }
+      if (statuses[upload.pageNumber] === 'done') continue; // landed on an earlier attempt
+
+      statuses[upload.pageNumber] = 'uploading';
+      paint();
+      const page = pc.pages[upload.pageNumber - 1];
+      if (!page) {
+        // Cannot happen in practice — `uploads` and `pages` come from the
+        // same `createCapture` call, in the same page order — but a missing
+        // page must fail loudly rather than upload the wrong bytes to a slot.
+        statuses[upload.pageNumber] = 'failed';
+        paint();
+        continue;
+      }
+      try {
+        const bytes = await new File(page.uri).arrayBuffer();
+        await uploadPageWithRetry(upload.uploadUrl, bytes, page.mimeType);
+        statuses[upload.pageNumber] = 'done';
+      } catch {
+        // This one page failed; the loop carries on to the rest rather than
+        // abandoning pages that have nothing wrong with them.
+        statuses[upload.pageNumber] = 'failed';
+      }
+      paint();
+    }
+
+    const failed = pc.uploads.filter((u) => statuses[u.pageNumber] === 'failed');
+    if (failed.length > 0) {
+      // A failed page must not orphan the capture: `pending` stays set so
+      // Retry resumes exactly what is missing, never a second `createCapture`
+      // for the same document.
+      setPhase('framing');
+      setError(
+        failed.length === 1
+          ? `Page ${failed[0]!.pageNumber} did not upload. The rest is safe — tap Retry to finish.`
+          : `${failed.length} pages did not upload. The rest is safe — tap Retry to finish.`,
+      );
+      return;
+    }
+
+    setPhase('extracting');
+    try {
+      const doc = await api().awaitExtraction(pc.captureId, pc.pages[0]?.uri, workspace);
+      setPhase('framing');
+      setPending(null);
+      setPageStatus({});
+      router.push({
+        pathname: '/document/[id]',
+        params: {
+          id: doc.id,
+          // The pages just captured, still on this device, so the review
+          // screen can page through them immediately. A document reopened
+          // later falls back to its single stored image — the server does
+          // not yet hand back a full page list over the wire.
+          localPages: JSON.stringify(pc.pages.map((page) => page.uri)),
+        },
+      });
+    } catch (err) {
+      // Every page is already stored either way — only the wait for a
+      // reading failed. Keep `pending` so Retry does not re-upload anything.
+      setPhase('framing');
+      setError(err instanceof Error ? err.message : 'Could not finish reading this capture.');
+    }
+  }
+
+  function discardPending() {
+    setPending(null);
+    setPageStatus({});
+    setError(null);
+  }
+
+  async function onShutter() {
+    setError(null);
+    try {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    } catch {
+      // Haptics are unavailable on web and some devices; never block capture.
+    }
+
+    try {
+      // ── 1. Take the final page (or the only one) ──
+      setPhase('hashing');
+      const shot = await shoot();
+      const allPages: TrayPage[] = [
+        ...pages,
+        { uri: shot.uri, sha256: shot.sha256, mimeType: 'image/jpeg', byteSize: shot.bytes.byteLength },
+      ];
+
+      // ── 2. Register the capture; the server dedupes before any upload ──
+      const capture = await api().createCapture({
+        // Advisory only: the server recomputes the authoritative hash of
+        // every page from the bytes it actually receives. A client-supplied
+        // hash must never be trusted for what is a legal record.
+        pages: allPages.map((page) => ({
+          sha256: page.sha256,
+          mimeType: page.mimeType,
+          byteSize: page.byteSize,
+        })),
+        capturedAt: new Date().toISOString(),
+        // No on-device legibility measurement exists. Sending a number here
+        // would assert a confidence nobody checked — worse than sending
+        // nothing, which is the same principle the whole extraction pipeline
+        // is built on.
+      });
+
+      if (capture.duplicate) {
+        // Silently returning home was worse than useless: the user cannot
+        // tell whether the app worked. Photographing the same docket twice is
+        // normal — you are not sure the first one took — and the honest
+        // answer is that they already have it.
+        setPhase('framing');
+        setPages([]);
+        Alert.alert(
+          'You already have this one',
+          'These exact bytes were captured before, so it has not been added twice. One receipt, one claim.',
+          [
+            { text: 'Keep scanning', style: 'cancel' },
+            { text: 'See receipts', onPress: () => router.push('/receipts') },
+          ],
+        );
+        return;
+      }
+
+      // ── 3. Upload every page straight to object storage, not through the
+      //        API, then wait for extraction ──
+      setPages([]);
+      await uploadAndExtract({ captureId: capture.captureId, uploads: capture.uploads, pages: allPages });
+    } catch (err) {
+      setPhase('framing');
+      setError(err instanceof Error ? err.message : 'Capture failed. Please try again.');
+    }
+  }
+
+  // ── Permission states ──
+  if (!permission) {
+    return (
+      <Screen>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <ActivityIndicator color={p.accent} />
+        </View>
+      </Screen>
+    );
+  }
+
+  if (!permission.granted) {
+    return (
+      <Screen>
+        <View style={{ flex: 1, justifyContent: 'center', padding: space.xl, gap: space.lg }}>
+          <Figure size="h1">Camera access</Figure>
+          <Body muted>
+            Snap Apps needs the camera to photograph receipts and tax invoices. The original image is
+            kept unmodified — the ATO only accepts an electronic copy of a receipt if it is a true
+            and clear reproduction.
+          </Body>
+          <Button label="Allow camera" onPress={() => void requestPermission()} />
+        </View>
+      </Screen>
+    );
+  }
+
+  const busy = phase !== 'framing';
+  const phaseCopy: Record<Exclude<Phase, 'framing'>, { title: string; detail: string }> = {
+    hashing: {
+      title: 'Fingerprinting…',
+      detail: 'SHA-256 of the original bytes, so a re-scan is never double-counted',
+    },
+    uploading: {
+      title: 'Uploading…',
+      detail: 'Each page goes up as its own file, stored unmodified as the legal record',
+    },
+    extracting: {
+      title: 'Reading the receipt…',
+      detail: 'Checking ABN, GST arithmetic and the ATO tax-invoice elements',
+    },
+  };
+
+  return (
+    <Screen style={{ backgroundColor: '#000' }}>
+      {/* `expo-camera` has no meaningful web implementation of CameraView, so the
+          web build shows a framing placeholder and the device shows the real
+          viewfinder. */}
+      {Platform.OS === 'web' ? (
+        <View style={{ flex: 1, backgroundColor: '#111' }} />
+      ) : (
+        <CameraView ref={camera} style={{ flex: 1 }} facing="back" />
+      )}
+
+      <View
+        pointerEvents="none"
+        style={{
+          position: 'absolute',
+          top: insets.top + 108,
+          left: space.xl,
+          right: space.xl,
+          bottom: 200,
+          borderWidth: 2,
+          borderColor: 'rgba(255,255,255,0.85)',
+          borderRadius: radius.lg,
+          borderStyle: 'dashed',
+        }}
+      />
+
+      <View
+        style={{ position: 'absolute', top: insets.top + space.lg, left: space.lg, right: space.lg }}
+      >
+        <Card>
+          <View style={{ gap: space.sm }}>
+            {/* Which life this receipt is being filed against, decided BEFORE
+                the shutter. Discovering a personal grocery run in the BAS
+                three months later is the mistake this prevents. */}
+            <View style={{ gap: 6 }}>
+              <Label>Filing to</Label>
+              <WorkspaceSwitch />
+            </View>
+            <Label>Pre-flight check</Label>
+            <Body>Document detected · sharp · all four corners in frame</Body>
+            <Small>
+              Checked on device. Extraction runs on the server so it can be re-run as the model
+              improves.
+            </Small>
+          </View>
+        </Card>
+      </View>
+
+      <View
+        style={{
+          position: 'absolute',
+          bottom: insets.bottom + space.xl,
+          left: 0,
+          right: 0,
+          alignItems: 'center',
+          gap: space.md,
+          paddingHorizontal: space.lg,
+        }}
+      >
+        {error ? (
+          <Card tone="risk" style={{ width: '100%' }}>
+            <View style={{ gap: space.xs }}>
+              <Label style={{ color: p.risk }}>Capture failed</Label>
+              <Body>{error}</Body>
+            </View>
+          </Card>
+        ) : null}
+
+        {pending ? (
+          <Card style={{ width: '100%' }}>
+            <View style={{ gap: space.sm }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
+                {phase !== 'framing' ? <ActivityIndicator color={p.accent} /> : null}
+                <Body strong>
+                  {phase === 'extracting'
+                    ? phaseCopy.extracting.title
+                    : phase === 'uploading'
+                      ? phaseCopy.uploading.title
+                      : 'Upload paused'}
+                </Body>
+              </View>
+
+              {/* One row per page, so "some of this document did not save" is
+                  never a mystery — the person can see exactly which page. */}
+              <View style={{ gap: 4 }}>
+                {pending.uploads.map((u) => (
+                  <View
+                    key={u.pageNumber}
+                    style={{ flexDirection: 'row', justifyContent: 'space-between' }}
+                  >
+                    <Small>Page {u.pageNumber}</Small>
+                    <Small
+                      style={
+                        pageStatus[u.pageNumber] === 'failed' ? { color: p.risk, fontWeight: '700' } : undefined
+                      }
+                    >
+                      {pageStatusLabel(pageStatus[u.pageNumber])}
+                    </Small>
+                  </View>
+                ))}
+              </View>
+
+              {phase === 'framing' ? (
+                <View style={{ flexDirection: 'row', gap: space.sm, marginTop: space.xs }}>
+                  <Button label="Discard" tone="outline" style={{ flex: 1 }} onPress={discardPending} />
+                  <Button
+                    label="Retry"
+                    style={{ flex: 1 }}
+                    onPress={() => void uploadAndExtract(pending, { resume: true })}
+                  />
+                </View>
+              ) : null}
+            </View>
+          </Card>
+        ) : busy ? (
+          <Card style={{ minWidth: 280 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
+              <ActivityIndicator color={p.accent} />
+              <View style={{ flex: 1 }}>
+                <Body strong>{phaseCopy[phase as Exclude<Phase, 'framing'>].title}</Body>
+                <Small>{phaseCopy[phase as Exclude<Phase, 'framing'>].detail}</Small>
+              </View>
+            </View>
+          </Card>
+        ) : (
+          <View style={{ alignItems: 'center', gap: space.md, width: '100%' }}>
+            {/* Pages already held. Visible because a two-page invoice whose
+                second page you cannot see is a two-page invoice you will
+                photograph twice. */}
+            {pages.length > 0 ? (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ gap: space.sm, paddingHorizontal: space.lg }}
+              >
+                {pages.map((page, i) => (
+                  <View key={page.uri} style={{ alignItems: 'center', gap: 4 }}>
+                    <Image
+                      source={{ uri: page.uri }}
+                      style={{
+                        width: 46,
+                        height: 62,
+                        borderRadius: 6,
+                        borderWidth: 2,
+                        borderColor: 'rgba(255,255,255,0.85)',
+                      }}
+                      accessibilityLabel={`Page ${i + 1}`}
+                    />
+                    <Text style={{ color: '#FFFFFF', fontSize: 10, fontWeight: '700' }}>
+                      {i + 1}
+                    </Text>
+                  </View>
+                ))}
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Discard the collected pages"
+                  onPress={() => setPages([])}
+                  style={{ justifyContent: 'center', paddingHorizontal: space.sm }}
+                >
+                  <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '700' }}>Clear</Text>
+                </Pressable>
+              </ScrollView>
+            ) : null}
+
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.xl }}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Add another page to this document"
+                onPress={() => void onAddPage()}
+                style={({ pressed }) => ({
+                  paddingHorizontal: space.md,
+                  paddingVertical: 10,
+                  borderRadius: radius.pill,
+                  borderWidth: 1.5,
+                  borderColor: 'rgba(255,255,255,0.7)',
+                  backgroundColor: pressed ? 'rgba(255,255,255,0.2)' : 'transparent',
+                })}
+              >
+                <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 12 }}>
+                  + Add page
+                </Text>
+              </Pressable>
+
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={
+                  pages.length > 0
+                    ? `Capture the last page and finish, ${pages.length} already added`
+                    : 'Capture receipt'
+                }
+                onPress={() => void onShutter()}
+                style={({ pressed }) => ({
+                  width: 76,
+                  height: 76,
+                  borderRadius: 38,
+                  backgroundColor: pressed ? p.accentSoft : '#FFFFFF',
+                  borderWidth: 5,
+                  borderColor: p.accent,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                })}
+              >
+                {pages.length > 0 ? (
+                  <Text style={{ color: p.accent, fontWeight: '800', fontSize: 13 }}>
+                    {pages.length + 1}
+                  </Text>
+                ) : null}
+              </Pressable>
+
+              {/* Balances the row so the shutter stays centred. */}
+              <View style={{ width: 86 }} />
+            </View>
+
+            {pages.length > 0 ? (
+              <Small style={{ color: '#FFFFFF', textAlign: 'center' }}>
+                {pages.length} page{pages.length === 1 ? '' : 's'} held — the shutter takes the
+                last one and files them as one document.
+              </Small>
+            ) : null}
+          </View>
+        )}
+      </View>
+    </Screen>
+  );
+}

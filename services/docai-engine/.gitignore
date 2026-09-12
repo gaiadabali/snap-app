@@ -1,0 +1,7 @@
+.venv313/
+__pycache__/
+*.pyc
+smoke_test*.py
+smoke_out*.json
+*.output.json
+server.log

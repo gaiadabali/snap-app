@@ -1,0 +1,40 @@
+{
+  "generated_at": "2026-09-11T05:47:45.974477+00:00",
+  "prompt_version": "v1",
+  "dry_run": false,
+  "documents": [
+    "receipt-easy"
+  ],
+  "engines_run": [
+    "hosted:glm-5.2"
+  ],
+  "engines_skipped": {},
+  "results": [
+    {
+      "document": "receipt-easy",
+      "engine": "hosted:glm-5.2",
+      "requested_runs": 1,
+      "completed_runs": 0,
+      "errors": [
+        "RuntimeError: HTTP 400: {\"error\":{\"message\":\"this model does not support image input (ref: c9a0ddcf-916d-4c4e-b615-cdde7675eb19)\",\"type\":\"invalid_request_error\",\"param\":null,\"code\":null}}\n"
+      ],
+      "median_seconds": null,
+      "seconds_all": [],
+      "field_outcomes_by_run": {
+        "supplier_name": [],
+        "supplier_abn": [],
+        "issue_date": [],
+        "total_inclusive": [],
+        "gst_amount": [],
+        "is_tax_invoice": [],
+        "line_count": [],
+        "page_count": []
+      },
+      "field_outcome_mode": {},
+      "lines_total": 3,
+      "lines_matched_median": null,
+      "parse_failures": 0,
+      "sample_raw_output": null
+    }
+  ]
+}

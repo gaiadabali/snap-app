@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    /* The engine is pure computation — no DOM, no Node APIs, no framework.
+       Keeping `lib` free of "dom" is a boundary, not a detail: it makes a stray
+       `document`/`window` reference a compile error rather than a runtime crash
+       in the worker. */
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+
+    "strict": true,
+    "noUncheckedIndexedAccess": false,
+    "forceConsistentCasingInFileNames": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+
+    /* Consumers bundle this package from source (see README § Consuming),
+       so nothing is emitted here. */
+    "noEmit": true
+  },
+  "include": ["src/**/*.ts", "smoke/**/*.ts", "vitest.config.ts"]
+}

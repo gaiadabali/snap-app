@@ -1,0 +1,20 @@
+{
+  "name": "snap-apps",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Snap Apps — API-first receipt capture and finance tracker for Australia.",
+  "packageManager": "pnpm@11.3.0",
+  "scripts": {
+    "test": "vitest run && pnpm -r test",
+    "typecheck": "pnpm -r typecheck",
+    "test:boundaries": "vitest run test/boundaries.test.ts"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.9",
+    "typescript": "^5.9.3"
+  },
+  "type": "module"
+}

@@ -1,0 +1,242 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://snapapps.example/schemas/extraction/v1.json",
+  "title": "Snap Apps document extraction — v1 (AU)",
+  "description": "Strict output contract for receipt/invoice extraction. Used with strict:true tool use or output_config.format. EVERY value is wrapped in a Field object carrying confidence and a bounding box. The model MUST return value:null with a reason rather than guessing — a confident wrong ABN silently creates an unclaimable GST credit, which is worse than a missing one.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "doc_type", "header", "lines", "tax_subtotals", "extraction_notes"],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+
+    "doc_type": {
+      "description": "Internal classification. In Australia a supermarket receipt is often ALSO a tax invoice — that is decided by the validators from the ATO elements, not here.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value", "confidence"],
+      "properties": {
+        "value": { "enum": ["tax_invoice", "invoice", "receipt", "credit_note", "statement", "unknown"] },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+
+    "header": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "says_tax_invoice", "document_number", "issue_date", "currency",
+        "supplier", "buyer",
+        "tax_exclusive_amount", "tax_amount", "tax_inclusive_amount",
+        "rounding_amount", "payable_amount", "payment"
+      ],
+      "properties": {
+        "says_tax_invoice": {
+          "description": "ATO element 1: are the words 'tax invoice' printed prominently on the document?",
+          "$ref": "#/$defs/BoolField"
+        },
+        "document_number": { "$ref": "#/$defs/TextField", "description": "BT-1" },
+        "issue_date":      { "$ref": "#/$defs/DateField", "description": "BT-2, ISO 8601. ATO element 3." },
+        "due_date":        { "$ref": "#/$defs/DateField", "description": "BT-9" },
+        "currency":        { "$ref": "#/$defs/TextField", "description": "BT-5, ISO 4217. Default AUD when absent." },
+
+        "supplier": { "$ref": "#/$defs/Party", "description": "ATO elements 2 and 2a: seller identity and ABN" },
+        "buyer":    { "$ref": "#/$defs/Party", "description": "ATO element 7: required when the sale is $1,000 or more incl GST" },
+
+        "tax_exclusive_amount": { "$ref": "#/$defs/MoneyField", "description": "BT-109" },
+        "tax_amount":           { "$ref": "#/$defs/MoneyField", "description": "BT-110, total GST" },
+        "tax_inclusive_amount": { "$ref": "#/$defs/MoneyField", "description": "BT-112" },
+        "rounding_amount":      { "$ref": "#/$defs/MoneyField", "description": "BT-114. Australian cash sales round to 5c; record the difference here rather than distorting a total." },
+        "payable_amount":       { "$ref": "#/$defs/MoneyField", "description": "BT-115" },
+
+        "gst_inclusive_statement": {
+          "description": "ATO element 6 alternative: a statement such as 'Total price includes GST' instead of a separately itemised GST amount.",
+          "$ref": "#/$defs/BoolField"
+        },
+
+        "payment": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["method", "card_last4", "card_brand"],
+          "properties": {
+            "method":     { "$ref": "#/$defs/TextField", "description": "EFTPOS, VISA, CASH, AMEX, ACCOUNT" },
+            "card_last4": { "$ref": "#/$defs/TextField", "description": "Last 4 digits ONLY. Never return a full or partial PAN beyond 4 digits — doing so drags the platform into PCI-DSS scope." },
+            "card_brand": { "$ref": "#/$defs/TextField" }
+          }
+        }
+      }
+    },
+
+    "lines": {
+      "type": "array",
+      "maxItems": 300,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["line_number", "description", "quantity", "unit_code", "unit_price", "line_net_amount", "gst_category_code", "gst_rate", "gst_amount"],
+        "properties": {
+          "line_number":       { "type": "integer", "minimum": 1, "description": "BT-126" },
+          "description":       { "$ref": "#/$defs/TextField",  "description": "BT-153. ATO element 4." },
+          "item_code":         { "$ref": "#/$defs/TextField",  "description": "BT-155" },
+          "quantity":          { "$ref": "#/$defs/NumberField","description": "BT-129. ATO element 5." },
+          "unit_code":         { "$ref": "#/$defs/TextField",  "description": "BT-130, UN/ECE Rec 20: EA, LTR, KGM, MTR, HUR, DAY" },
+          "unit_price":        { "$ref": "#/$defs/NumberField","description": "BT-146. Up to 6 decimals — fuel is priced at $1.899/L." },
+          "line_net_amount":   { "$ref": "#/$defs/MoneyField", "description": "BT-131" },
+          "discount_amount":   { "$ref": "#/$defs/MoneyField" },
+          "gst_category_code": {
+            "description": "BT-151, UNCL5305. S = standard 10%, Z = GST-free (fresh food, most medical, education), E = exempt/input-taxed, O = out of scope.",
+            "allOf": [{ "$ref": "#/$defs/TextField" }]
+          },
+          "gst_rate":          { "$ref": "#/$defs/NumberField","description": "BT-152. 10 or 0 in Australia." },
+          "gst_amount":        { "$ref": "#/$defs/MoneyField" }
+        }
+      }
+    },
+
+    "tax_subtotals": {
+      "description": "Peppol BG-23, one entry per (category, rate). REQUIRED even when there is only one — an Australian grocery receipt legitimately mixes GST-free fresh food with taxable packaged goods, and a single total cannot express that. Validators reconcile these against the lines.",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 10,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["category_code", "rate", "taxable_amount", "tax_amount"],
+        "properties": {
+          "category_code":  { "type": "string", "description": "BT-118" },
+          "rate":           { "type": "number", "description": "BT-119" },
+          "taxable_amount": { "type": "number", "description": "BT-116" },
+          "tax_amount":     { "type": "number", "description": "BT-117" }
+        }
+      }
+    },
+
+    "extraction_notes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["legible", "image_issues", "unread_regions", "warnings"],
+      "properties": {
+        "legible": {
+          "description": "Is this a true and clear reproduction? The ATO only accepts an electronic copy of a receipt if it is. false should send the capture back to the user for a re-shoot rather than into the ledger.",
+          "type": "boolean"
+        },
+        "image_issues": {
+          "type": "array",
+          "items": { "enum": ["blurry", "glare", "cropped", "folded", "faded", "skewed", "dark", "partial", "not_a_document"] }
+        },
+        "unread_regions": {
+          "description": "Areas of the document that could not be read at all. Being explicit here is more useful than a low confidence score on a guessed value.",
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "warnings": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  },
+
+  "$defs": {
+    "BBox": {
+      "description": "[x, y, width, height] normalised 0-1 relative to the page. Powers tap-to-source in the review UI.",
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": { "type": "number", "minimum": 0, "maximum": 1 }
+    },
+    "FieldMeta": {
+      "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+      "bbox": { "$ref": "#/$defs/BBox" },
+      "page": { "type": "integer", "minimum": 1 },
+      "null_reason": {
+        "description": "REQUIRED whenever value is null. 'not_present' (the document genuinely lacks it), 'illegible' (it is there but unreadable), 'ambiguous' (several candidates, no basis to choose).",
+        "enum": ["not_present", "illegible", "ambiguous", null]
+      }
+    },
+    "TextField": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value", "confidence", "null_reason"],
+      "properties": {
+        "value": { "type": ["string", "null"] },
+        "confidence": { "$ref": "#/$defs/FieldMeta/confidence" },
+        "bbox": { "$ref": "#/$defs/FieldMeta/bbox" },
+        "page": { "$ref": "#/$defs/FieldMeta/page" },
+        "null_reason": { "$ref": "#/$defs/FieldMeta/null_reason" }
+      }
+    },
+    "NumberField": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value", "confidence", "null_reason"],
+      "properties": {
+        "value": { "type": ["number", "null"] },
+        "confidence": { "$ref": "#/$defs/FieldMeta/confidence" },
+        "bbox": { "$ref": "#/$defs/FieldMeta/bbox" },
+        "page": { "$ref": "#/$defs/FieldMeta/page" },
+        "null_reason": { "$ref": "#/$defs/FieldMeta/null_reason" }
+      }
+    },
+    "MoneyField": {
+      "description": "Decimal amount in the document currency. Return the number as printed; never round, never convert currency.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value", "confidence", "null_reason"],
+      "properties": {
+        "value": { "type": ["number", "null"] },
+        "confidence": { "$ref": "#/$defs/FieldMeta/confidence" },
+        "bbox": { "$ref": "#/$defs/FieldMeta/bbox" },
+        "page": { "$ref": "#/$defs/FieldMeta/page" },
+        "null_reason": { "$ref": "#/$defs/FieldMeta/null_reason" }
+      }
+    },
+    "DateField": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value", "confidence", "null_reason"],
+      "properties": {
+        "value": { "type": ["string", "null"], "format": "date", "description": "ISO 8601 YYYY-MM-DD. Australian documents are overwhelmingly DD/MM/YYYY — resolve ambiguous dates that way, and set confidence below 0.9 when the day/month order cannot be proven from the document itself." },
+        "confidence": { "$ref": "#/$defs/FieldMeta/confidence" },
+        "bbox": { "$ref": "#/$defs/FieldMeta/bbox" },
+        "page": { "$ref": "#/$defs/FieldMeta/page" },
+        "null_reason": { "$ref": "#/$defs/FieldMeta/null_reason" }
+      }
+    },
+    "BoolField": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value", "confidence"],
+      "properties": {
+        "value": { "type": ["boolean", "null"] },
+        "confidence": { "$ref": "#/$defs/FieldMeta/confidence" },
+        "bbox": { "$ref": "#/$defs/FieldMeta/bbox" }
+      }
+    },
+    "Party": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["legal_name", "trading_name", "abn", "address", "email", "phone"],
+      "properties": {
+        "legal_name":   { "$ref": "#/$defs/TextField", "description": "BT-27 / BT-44" },
+        "trading_name": { "$ref": "#/$defs/TextField", "description": "BT-28 / BT-45. Often the only name on a receipt." },
+        "abn": {
+          "description": "11 digits, no spaces. Transcribe exactly what is printed — do NOT repair a number that fails the checksum, and do not infer one from the business name. The validators run the mod-89 check and an ABR lookup; a fabricated ABN defeats both.",
+          "allOf": [{ "$ref": "#/$defs/TextField" }]
+        },
+        "acn": { "$ref": "#/$defs/TextField" },
+        "address": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["line1", "city", "state", "postcode", "country"],
+          "properties": {
+            "line1":    { "$ref": "#/$defs/TextField" },
+            "line2":    { "$ref": "#/$defs/TextField" },
+            "city":     { "$ref": "#/$defs/TextField" },
+            "state":    { "$ref": "#/$defs/TextField", "description": "NSW, VIC, QLD, WA, SA, TAS, ACT, NT" },
+            "postcode": { "$ref": "#/$defs/TextField" },
+            "country":  { "$ref": "#/$defs/TextField", "description": "ISO 3166-1 alpha-2; default AU" }
+          }
+        },
+        "email": { "$ref": "#/$defs/TextField" },
+        "phone": { "$ref": "#/$defs/TextField" }
+      }
+    }
+  }
+}

@@ -1,0 +1,1412 @@
+{
+  "generated_at": "2026-09-11T08:03:56.293092+00:00",
+  "prompt_version": "v1",
+  "dry_run": false,
+  "documents": [
+    "receipt-easy",
+    "receipt-hard",
+    "receipt-noabn",
+    "invoice-multipage"
+  ],
+  "engines_run": [
+    "hosted:minimax-m3",
+    "hosted:gemma4:31b",
+    "hosted:kimi-k3",
+    "hosted:qwen3.5:397b"
+  ],
+  "engines_skipped": {},
+  "results": [
+    {
+      "document": "receipt-easy",
+      "engine": "hosted:minimax-m3",
+      "requested_runs": 5,
+      "completed_runs": 5,
+      "errors": [],
+      "median_seconds": 4.239125728607178,
+      "seconds_all": [
+        4.239125728607178,
+        3.6498522758483887,
+        18.89682674407959,
+        6.929675340652466,
+        4.034765958786011
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "NORMALISED",
+          "NORMALISED",
+          "NORMALISED",
+          "NORMALISED",
+          "NORMALISED"
+        ],
+        "supplier_abn": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "issue_date": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "total_inclusive": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "gst_amount": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "field_outcome_mode": {
+        "supplier_name": "NORMALISED",
+        "supplier_abn": "EXACT",
+        "issue_date": "EXACT",
+        "total_inclusive": "EXACT",
+        "gst_amount": "EXACT",
+        "is_tax_invoice": "EXACT",
+        "line_count": "EXACT",
+        "page_count": "EXACT"
+      },
+      "lines_total": 3,
+      "lines_matched_median": 3,
+      "parse_failures": 0,
+      "sample_raw_output": "{\"supplier_name\":\"BP TRUCKSTOP GUNDAGAI\",\"supplier_abn\":\"33051775556\",\"issue_date\":\"2026-09-06\",\"total_inclusive\":\"266.91\",\"gst_amount\":\"24.26\",\"is_tax_invoice\":true,\"line_count\":3,\"page_count\":1,\"lines\":[{\"description\":\"DIESEL 128.44L @ 1.899\",\"amount\":\"243.91\"},{\"description\":\"ADBLUE 10L\",\"amount\":\"18.50\"},{\"description\":\"COFFEE LGE\",\"amount\":\"4.50\"}]}"
+    },
+    {
+      "document": "receipt-hard",
+      "engine": "hosted:minimax-m3",
+      "requested_runs": 5,
+      "completed_runs": 5,
+      "errors": [],
+      "median_seconds": 5.663017749786377,
+      "seconds_all": [
+        6.315600872039795,
+        4.71791934967041,
+        4.441471099853516,
+        6.684324264526367,
+        5.663017749786377
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "NORMALISED",
+          "NORMALISED",
+          "NORMALISED",
+          "NORMALISED",
+          "NORMALISED"
+        ],
+        "supplier_abn": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "issue_date": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "total_inclusive": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "gst_amount": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "field_outcome_mode": {
+        "supplier_name": "NORMALISED",
+        "supplier_abn": "EXACT",
+        "issue_date": "EXACT",
+        "total_inclusive": "EXACT",
+        "gst_amount": "EXACT",
+        "is_tax_invoice": "EXACT",
+        "line_count": "EXACT",
+        "page_count": "EXACT"
+      },
+      "lines_total": 3,
+      "lines_matched_median": 3,
+      "parse_failures": 0,
+      "sample_raw_output": "{\"supplier_name\":\"BP TRUCKSTOP GUNDAGAI\",\"supplier_abn\":\"33051775556\",\"issue_date\":\"2026-09-06\",\"total_inclusive\":\"266.91\",\"gst_amount\":\"24.26\",\"is_tax_invoice\":true,\"line_count\":3,\"page_count\":1,\"lines\":[{\"description\":\"DIESEL 128.44L @ 1.899\",\"amount\":\"243.91\"},{\"description\":\"ADBLUE 10L\",\"amount\":\"18.50\"},{\"description\":\"COFFEE LGE\",\"amount\":\"4.50\"}]}"
+    },
+    {
+      "document": "receipt-noabn",
+      "engine": "hosted:minimax-m3",
+      "requested_runs": 5,
+      "completed_runs": 5,
+      "errors": [],
+      "median_seconds": 3.4202017784118652,
+      "seconds_all": [
+        3.437016248703003,
+        5.114609479904175,
+        2.6371986865997314,
+        2.7857632637023926,
+        3.4202017784118652
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "NORMALISED",
+          "NORMALISED",
+          "NORMALISED",
+          "NORMALISED",
+          "NORMALISED"
+        ],
+        "supplier_abn": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK",
+          "ABSTAIN_OK",
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "issue_date": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "total_inclusive": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "gst_amount": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK",
+          "ABSTAIN_OK",
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "field_outcome_mode": {
+        "supplier_name": "NORMALISED",
+        "supplier_abn": "ABSTAIN_OK",
+        "issue_date": "EXACT",
+        "total_inclusive": "EXACT",
+        "gst_amount": "ABSTAIN_OK",
+        "is_tax_invoice": "EXACT",
+        "line_count": "EXACT",
+        "page_count": "EXACT"
+      },
+      "lines_total": 2,
+      "lines_matched_median": 2,
+      "parse_failures": 0,
+      "sample_raw_output": "{\"supplier_name\":\"ROADSIDE COFFEE VAN\",\"supplier_abn\":null,\"issue_date\":\"2026-09-06\",\"total_inclusive\":\"8.50\",\"gst_amount\":null,\"is_tax_invoice\":false,\"line_count\":2,\"page_count\":1,\"lines\":[{\"description\":\"FLAT WHITE LGE\",\"amount\":\"5.50\"},{\"description\":\"BANANA BREAD\",\"amount\":\"3.00\"}]}"
+    },
+    {
+      "document": "invoice-multipage",
+      "engine": "hosted:minimax-m3",
+      "requested_runs": 5,
+      "completed_runs": 5,
+      "errors": [],
+      "median_seconds": 12.992123126983643,
+      "seconds_all": [
+        12.580893278121948,
+        12.497767210006714,
+        15.054590463638306,
+        14.42532753944397,
+        12.992123126983643
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "supplier_abn": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "issue_date": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "total_inclusive": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "gst_amount": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "field_outcome_mode": {
+        "supplier_name": "EXACT",
+        "supplier_abn": "EXACT",
+        "issue_date": "EXACT",
+        "total_inclusive": "EXACT",
+        "gst_amount": "EXACT",
+        "is_tax_invoice": "EXACT",
+        "line_count": "EXACT",
+        "page_count": "EXACT"
+      },
+      "lines_total": 3,
+      "lines_matched_median": 3,
+      "parse_failures": 0,
+      "sample_raw_output": "```json\n{\"supplier_name\":\"Southern Cross Logistics Pty Ltd\",\"supplier_abn\":\"85129887341\",\"issue_date\":\"2026-08-14\",\"total_inclusive\":\"17519.31\",\"gst_amount\":\"1592.66\",\"is_tax_invoice\":true,\"line_count\":40,\"page_count\":2,\"lines\":[{\"description\":\"Freight: Melbourne -> Sydney (14/08)\",\"amount\":\"640.00\"},{\"description\":\"Freight: Sydney -> Brisbane (14/08)\",\"amount\":\"715.50\"},{\"description\":\"Freight: Brisbane -> Cairns (14/08)\",\"amount\":\"980.00\"},{\"description\":\"Freight: Cairns -> Townsville (14/08)\",\"amount\":\"410.25\"},{\"description\":\"Freight: Townsville -> Darwin (14/08)\",\"amount\":\"1120.00\"},{\"des"
+    },
+    {
+      "document": "receipt-easy",
+      "engine": "hosted:gemma4:31b",
+      "requested_runs": 5,
+      "completed_runs": 5,
+      "errors": [],
+      "median_seconds": 2.4017233848571777,
+      "seconds_all": [
+        2.4017233848571777,
+        1.9025580883026123,
+        6.736536979675293,
+        2.7964797019958496,
+        2.180959701538086
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "NORMALISED",
+          "NORMALISED",
+          "NORMALISED",
+          "NORMALISED",
+          "NORMALISED"
+        ],
+        "supplier_abn": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "issue_date": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "total_inclusive": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "gst_amount": [
+          "MISS",
+          "MISS",
+          "MISS",
+          "MISS",
+          "MISS"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "field_outcome_mode": {
+        "supplier_name": "NORMALISED",
+        "supplier_abn": "EXACT",
+        "issue_date": "EXACT",
+        "total_inclusive": "EXACT",
+        "gst_amount": "MISS",
+        "is_tax_invoice": "EXACT",
+        "line_count": "EXACT",
+        "page_count": "EXACT"
+      },
+      "lines_total": 3,
+      "lines_matched_median": 3,
+      "parse_failures": 0,
+      "sample_raw_output": "```json\n{\"supplier_name\":\"BP TRUCKSTOP GUNDAGAI\",\"supplier_abn\":\"33051775556\",\"issue_date\":\"2026-09-06\",\"total_inclusive\":\"266.91\",\"gst_amount\":null,\"is_tax_invoice\":true,\"line_count\":3,\"page_count\":1,\"lines\":[{\"description\":\"DIESEL 128.44L @ 1.899\",\"amount\":\"243.91\"},{\"description\":\"ADBLUE 10L\",\"amount\":\"18.50\"},{\"description\":\"COFFEE LGE\",\"amount\":\"4.50\"}]}\n```"
+    },
+    {
+      "document": "receipt-hard",
+      "engine": "hosted:gemma4:31b",
+      "requested_runs": 5,
+      "completed_runs": 5,
+      "errors": [],
+      "median_seconds": 2.909275531768799,
+      "seconds_all": [
+        3.432358503341675,
+        2.686622142791748,
+        2.909275531768799,
+        2.8432540893554688,
+        3.0215365886688232
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "NORMALISED",
+          "NORMALISED",
+          "NORMALISED",
+          "NORMALISED",
+          "NORMALISED"
+        ],
+        "supplier_abn": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "issue_date": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "total_inclusive": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "gst_amount": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "field_outcome_mode": {
+        "supplier_name": "NORMALISED",
+        "supplier_abn": "EXACT",
+        "issue_date": "EXACT",
+        "total_inclusive": "EXACT",
+        "gst_amount": "EXACT",
+        "is_tax_invoice": "EXACT",
+        "line_count": "EXACT",
+        "page_count": "EXACT"
+      },
+      "lines_total": 3,
+      "lines_matched_median": 3,
+      "parse_failures": 0,
+      "sample_raw_output": "```json\n{\"supplier_name\":\"BP TRUCKSTOP GUNDAGAI\",\"supplier_abn\":\"33051775556\",\"issue_date\":\"2026-09-06\",\"total_inclusive\":\"266.91\",\"gst_amount\":\"24.26\",\"is_tax_invoice\":true,\"line_count\":3,\"page_count\":1,\"lines\":[{\"description\":\"DIESEL 128.44L @ 1.899\",\"amount\":\"243.91\"},{\"description\":\"ADBLUE 10L\",\"amount\":\"18.50\"},{\"description\":\"COFFEE LGE\",\"amount\":\"4.50\"}]}\n```"
+    },
+    {
+      "document": "receipt-noabn",
+      "engine": "hosted:gemma4:31b",
+      "requested_runs": 5,
+      "completed_runs": 5,
+      "errors": [],
+      "median_seconds": 1.782160997390747,
+      "seconds_all": [
+        1.782160997390747,
+        1.4865772724151611,
+        1.4498093128204346,
+        2.000443458557129,
+        1.881589651107788
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "NORMALISED",
+          "NORMALISED",
+          "NORMALISED",
+          "NORMALISED",
+          "NORMALISED"
+        ],
+        "supplier_abn": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK",
+          "ABSTAIN_OK",
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "issue_date": [
+          "WRONG",
+          "WRONG",
+          "WRONG",
+          "WRONG",
+          "WRONG"
+        ],
+        "total_inclusive": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "gst_amount": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK",
+          "ABSTAIN_OK",
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "field_outcome_mode": {
+        "supplier_name": "NORMALISED",
+        "supplier_abn": "ABSTAIN_OK",
+        "issue_date": "WRONG",
+        "total_inclusive": "EXACT",
+        "gst_amount": "ABSTAIN_OK",
+        "is_tax_invoice": "EXACT",
+        "line_count": "EXACT",
+        "page_count": "EXACT"
+      },
+      "lines_total": 2,
+      "lines_matched_median": 2,
+      "parse_failures": 0,
+      "sample_raw_output": "```json\n{\"supplier_name\":\"ROADSIDE COFFEE VAN\",\"supplier_abn\":null,\"issue_date\":\"2006-09-26\",\"total_inclusive\":\"8.50\",\"gst_amount\":null,\"is_tax_invoice\":false,\"line_count\":2,\"page_count\":1,\"lines\":[{\"description\":\"FLAT WHITE LGE\",\"amount\":\"5.50\"},{\"description\":\"BANANA BREAD\",\"amount\":\"3.00\"}]}\n```"
+    },
+    {
+      "document": "invoice-multipage",
+      "engine": "hosted:gemma4:31b",
+      "requested_runs": 5,
+      "completed_runs": 5,
+      "errors": [],
+      "median_seconds": 4.126671552658081,
+      "seconds_all": [
+        3.5589089393615723,
+        4.126671552658081,
+        4.223634481430054,
+        5.694561243057251,
+        4.049598455429077
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "supplier_abn": [
+          "WRONG",
+          "WRONG",
+          "WRONG",
+          "WRONG",
+          "WRONG"
+        ],
+        "issue_date": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "total_inclusive": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "gst_amount": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "field_outcome_mode": {
+        "supplier_name": "EXACT",
+        "supplier_abn": "WRONG",
+        "issue_date": "EXACT",
+        "total_inclusive": "EXACT",
+        "gst_amount": "EXACT",
+        "is_tax_invoice": "EXACT",
+        "line_count": "EXACT",
+        "page_count": "EXACT"
+      },
+      "lines_total": 3,
+      "lines_matched_median": 3,
+      "parse_failures": 0,
+      "sample_raw_output": "```json\n{\"supplier_name\":\"Southern Cross Logistics Pty Ltd\",\"supplier_abn\":\"85129887841\",\"issue_date\":\"2026-08-14\",\"total_inclusive\":\"17519.31\",\"gst_amount\":\"1592.66\",\"is_tax_invoice\":true,\"line_count\":40,\"page_count\":2,\"lines\":[{\"description\":\"Freight: Melbourne -> Sydney (14/08)\",\"amount\":\"640.00\"},{\"description\":\"Freight: Sydney -> Brisbane (14/08)\",\"amount\":\"715.50\"},{\"description\":\"Freight: Brisbane -> Cairns (14/08)\",\"amount\":\"980.00\"},{\"description\":\"Freight: Cairns -> Townsville (14/08)\",\"amount\":\"410.25\"},{\"description\":\"Freight: Townsville -> Darwin (14/08)\",\"amount\":\"1120.00\"},{\"des"
+    },
+    {
+      "document": "receipt-easy",
+      "engine": "hosted:kimi-k3",
+      "requested_runs": 5,
+      "completed_runs": 5,
+      "errors": [],
+      "median_seconds": 5.882521390914917,
+      "seconds_all": [
+        7.039511680603027,
+        5.882521390914917,
+        6.009645462036133,
+        5.827737092971802,
+        5.740379571914673
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "NORMALISED",
+          "NORMALISED",
+          "NORMALISED",
+          "NORMALISED",
+          "NORMALISED"
+        ],
+        "supplier_abn": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "issue_date": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "total_inclusive": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "gst_amount": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "field_outcome_mode": {
+        "supplier_name": "NORMALISED",
+        "supplier_abn": "EXACT",
+        "issue_date": "EXACT",
+        "total_inclusive": "EXACT",
+        "gst_amount": "EXACT",
+        "is_tax_invoice": "EXACT",
+        "line_count": "EXACT",
+        "page_count": "EXACT"
+      },
+      "lines_total": 3,
+      "lines_matched_median": 3,
+      "parse_failures": 0,
+      "sample_raw_output": "{\"supplier_name\":\"BP TRUCKSTOP GUNDAGAI\",\"supplier_abn\":\"33051775556\",\"issue_date\":\"2026-09-06\",\"total_inclusive\":\"266.91\",\"gst_amount\":\"24.26\",\"is_tax_invoice\":true,\"line_count\":3,\"page_count\":1,\"lines\":[{\"description\":\"DIESEL 128.44L @ 1.899\",\"amount\":\"243.91\"},{\"description\":\"ADBLUE 10L\",\"amount\":\"18.50\"},{\"description\":\"COFFEE LGE\",\"amount\":\"4.50\"}]}"
+    },
+    {
+      "document": "receipt-hard",
+      "engine": "hosted:kimi-k3",
+      "requested_runs": 5,
+      "completed_runs": 5,
+      "errors": [],
+      "median_seconds": 7.718677997589111,
+      "seconds_all": [
+        7.718677997589111,
+        8.388500452041626,
+        7.519948244094849,
+        9.963867425918579,
+        6.862493515014648
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "NORMALISED",
+          "NORMALISED",
+          "NORMALISED",
+          "NORMALISED",
+          "NORMALISED"
+        ],
+        "supplier_abn": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "issue_date": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "total_inclusive": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "gst_amount": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "field_outcome_mode": {
+        "supplier_name": "NORMALISED",
+        "supplier_abn": "EXACT",
+        "issue_date": "EXACT",
+        "total_inclusive": "EXACT",
+        "gst_amount": "EXACT",
+        "is_tax_invoice": "EXACT",
+        "line_count": "EXACT",
+        "page_count": "EXACT"
+      },
+      "lines_total": 3,
+      "lines_matched_median": 3,
+      "parse_failures": 0,
+      "sample_raw_output": "{\"supplier_name\":\"BP TRUCKSTOP GUNDAGAI\",\"supplier_abn\":\"33051775556\",\"issue_date\":\"2026-09-06\",\"total_inclusive\":\"266.91\",\"gst_amount\":\"24.26\",\"is_tax_invoice\":true,\"line_count\":3,\"page_count\":1,\"lines\":[{\"description\":\"DIESEL 128.44L @ 1.899\",\"amount\":\"243.91\"},{\"description\":\"ADBLUE 10L\",\"amount\":\"18.50\"},{\"description\":\"COFFEE LGE\",\"amount\":\"4.50\"}]}"
+    },
+    {
+      "document": "receipt-noabn",
+      "engine": "hosted:kimi-k3",
+      "requested_runs": 5,
+      "completed_runs": 5,
+      "errors": [],
+      "median_seconds": 5.354302167892456,
+      "seconds_all": [
+        4.946665287017822,
+        5.354302167892456,
+        5.090528726577759,
+        5.852313995361328,
+        8.002803325653076
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "NORMALISED",
+          "NORMALISED",
+          "NORMALISED",
+          "NORMALISED",
+          "NORMALISED"
+        ],
+        "supplier_abn": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK",
+          "ABSTAIN_OK",
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "issue_date": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "total_inclusive": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "gst_amount": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK",
+          "ABSTAIN_OK",
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "field_outcome_mode": {
+        "supplier_name": "NORMALISED",
+        "supplier_abn": "ABSTAIN_OK",
+        "issue_date": "EXACT",
+        "total_inclusive": "EXACT",
+        "gst_amount": "ABSTAIN_OK",
+        "is_tax_invoice": "EXACT",
+        "line_count": "EXACT",
+        "page_count": "EXACT"
+      },
+      "lines_total": 2,
+      "lines_matched_median": 2,
+      "parse_failures": 0,
+      "sample_raw_output": "{\"supplier_name\":\"ROADSIDE COFFEE VAN\",\"supplier_abn\":null,\"issue_date\":\"2026-09-06\",\"total_inclusive\":\"8.50\",\"gst_amount\":null,\"is_tax_invoice\":false,\"line_count\":2,\"page_count\":1,\"lines\":[{\"description\":\"FLAT WHITE LGE\",\"amount\":\"5.50\"},{\"description\":\"BANANA BREAD\",\"amount\":\"3.00\"}]}"
+    },
+    {
+      "document": "invoice-multipage",
+      "engine": "hosted:kimi-k3",
+      "requested_runs": 5,
+      "completed_runs": 5,
+      "errors": [],
+      "median_seconds": 28.636268615722656,
+      "seconds_all": [
+        36.675313234329224,
+        28.530887842178345,
+        29.28012466430664,
+        26.328091144561768,
+        28.636268615722656
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "supplier_abn": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "issue_date": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "total_inclusive": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "gst_amount": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "field_outcome_mode": {
+        "supplier_name": "EXACT",
+        "supplier_abn": "EXACT",
+        "issue_date": "EXACT",
+        "total_inclusive": "EXACT",
+        "gst_amount": "EXACT",
+        "is_tax_invoice": "EXACT",
+        "line_count": "EXACT",
+        "page_count": "EXACT"
+      },
+      "lines_total": 3,
+      "lines_matched_median": 3,
+      "parse_failures": 0,
+      "sample_raw_output": "{\"supplier_name\":\"Southern Cross Logistics Pty Ltd\",\"supplier_abn\":\"85129887341\",\"issue_date\":\"2026-08-14\",\"total_inclusive\":\"17519.31\",\"gst_amount\":\"1592.66\",\"is_tax_invoice\":true,\"line_count\":40,\"page_count\":2,\"lines\":[{\"description\":\"Freight: Melbourne -> Sydney (14/08)\",\"amount\":\"640.00\"},{\"description\":\"Freight: Sydney -> Brisbane (14/08)\",\"amount\":\"715.50\"},{\"description\":\"Freight: Brisbane -> Cairns (14/08)\",\"amount\":\"980.00\"},{\"description\":\"Freight: Cairns -> Townsville (14/08)\",\"amount\":\"410.25\"},{\"description\":\"Freight: Townsville -> Darwin (14/08)\",\"amount\":\"1120.00\"},{\"description"
+    },
+    {
+      "document": "receipt-easy",
+      "engine": "hosted:qwen3.5:397b",
+      "requested_runs": 5,
+      "completed_runs": 5,
+      "errors": [],
+      "median_seconds": 21.235391855239868,
+      "seconds_all": [
+        21.74409794807434,
+        20.341622829437256,
+        21.235391855239868,
+        19.606427431106567,
+        23.133314609527588
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "NORMALISED",
+          "NORMALISED",
+          "NORMALISED",
+          "NORMALISED",
+          "NORMALISED"
+        ],
+        "supplier_abn": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "issue_date": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "total_inclusive": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "gst_amount": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "field_outcome_mode": {
+        "supplier_name": "NORMALISED",
+        "supplier_abn": "EXACT",
+        "issue_date": "EXACT",
+        "total_inclusive": "EXACT",
+        "gst_amount": "EXACT",
+        "is_tax_invoice": "EXACT",
+        "line_count": "EXACT",
+        "page_count": "EXACT"
+      },
+      "lines_total": 3,
+      "lines_matched_median": 3,
+      "parse_failures": 0,
+      "sample_raw_output": "{\"supplier_name\":\"BP TRUCKSTOP GUNDAGAI\",\"supplier_abn\":\"33051775556\",\"issue_date\":\"2026-09-06\",\"total_inclusive\":\"266.91\",\"gst_amount\":\"24.26\",\"is_tax_invoice\":true,\"line_count\":3,\"page_count\":1,\"lines\":[{\"description\":\"DIESEL 128.44L @ 1.899\",\"amount\":\"243.91\"},{\"description\":\"ADBLUE 10L\",\"amount\":\"18.50\"},{\"description\":\"COFFEE LGE\",\"amount\":\"4.50\"}]}"
+    },
+    {
+      "document": "receipt-hard",
+      "engine": "hosted:qwen3.5:397b",
+      "requested_runs": 5,
+      "completed_runs": 5,
+      "errors": [],
+      "median_seconds": 27.33054780960083,
+      "seconds_all": [
+        34.65345120429993,
+        33.07370734214783,
+        23.2898006439209,
+        27.33054780960083,
+        23.09244990348816
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "NORMALISED",
+          "NORMALISED",
+          "NORMALISED",
+          "NORMALISED",
+          "NORMALISED"
+        ],
+        "supplier_abn": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "issue_date": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "total_inclusive": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "gst_amount": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "field_outcome_mode": {
+        "supplier_name": "NORMALISED",
+        "supplier_abn": "EXACT",
+        "issue_date": "EXACT",
+        "total_inclusive": "EXACT",
+        "gst_amount": "EXACT",
+        "is_tax_invoice": "EXACT",
+        "line_count": "EXACT",
+        "page_count": "EXACT"
+      },
+      "lines_total": 3,
+      "lines_matched_median": 3,
+      "parse_failures": 0,
+      "sample_raw_output": "{\"supplier_name\":\"BP TRUCKSTOP GUNDAGAI\",\"supplier_abn\":\"33051775556\",\"issue_date\":\"2026-09-06\",\"total_inclusive\":\"266.91\",\"gst_amount\":\"24.26\",\"is_tax_invoice\":true,\"line_count\":3,\"page_count\":1,\"lines\":[{\"description\":\"DIESEL 128.44L @ 1.899\",\"amount\":\"243.91\"},{\"description\":\"ADBLUE 10L\",\"amount\":\"18.50\"},{\"description\":\"COFFEE LGE\",\"amount\":\"4.50\"}]}"
+    },
+    {
+      "document": "receipt-noabn",
+      "engine": "hosted:qwen3.5:397b",
+      "requested_runs": 5,
+      "completed_runs": 5,
+      "errors": [],
+      "median_seconds": 20.366241216659546,
+      "seconds_all": [
+        20.115564346313477,
+        25.206473112106323,
+        20.366241216659546,
+        21.053005933761597,
+        19.048420667648315
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "NORMALISED",
+          "NORMALISED",
+          "NORMALISED",
+          "NORMALISED",
+          "NORMALISED"
+        ],
+        "supplier_abn": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK",
+          "ABSTAIN_OK",
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "issue_date": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "total_inclusive": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "gst_amount": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK",
+          "ABSTAIN_OK",
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "field_outcome_mode": {
+        "supplier_name": "NORMALISED",
+        "supplier_abn": "ABSTAIN_OK",
+        "issue_date": "EXACT",
+        "total_inclusive": "EXACT",
+        "gst_amount": "ABSTAIN_OK",
+        "is_tax_invoice": "EXACT",
+        "line_count": "EXACT",
+        "page_count": "EXACT"
+      },
+      "lines_total": 2,
+      "lines_matched_median": 2,
+      "parse_failures": 0,
+      "sample_raw_output": "{\"supplier_name\":\"ROADSIDE COFFEE VAN\",\"supplier_abn\":null,\"issue_date\":\"2026-09-06\",\"total_inclusive\":\"8.50\",\"gst_amount\":null,\"is_tax_invoice\":false,\"line_count\":2,\"page_count\":1,\"lines\":[{\"description\":\"FLAT WHITE LGE\",\"amount\":\"5.50\"},{\"description\":\"BANANA BREAD\",\"amount\":\"3.00\"}]}"
+    },
+    {
+      "document": "invoice-multipage",
+      "engine": "hosted:qwen3.5:397b",
+      "requested_runs": 5,
+      "completed_runs": 5,
+      "errors": [],
+      "median_seconds": 50.16593098640442,
+      "seconds_all": [
+        57.77098321914673,
+        45.20749521255493,
+        49.13091444969177,
+        56.14133620262146,
+        50.16593098640442
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "UNPARSEABLE",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "supplier_abn": [
+          "UNPARSEABLE",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "issue_date": [
+          "UNPARSEABLE",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "total_inclusive": [
+          "UNPARSEABLE",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "gst_amount": [
+          "UNPARSEABLE",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "is_tax_invoice": [
+          "UNPARSEABLE",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "UNPARSEABLE",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "UNPARSEABLE",
+          "EXACT",
+          "EXACT",
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "field_outcome_mode": {
+        "supplier_name": "EXACT",
+        "supplier_abn": "EXACT",
+        "issue_date": "EXACT",
+        "total_inclusive": "EXACT",
+        "gst_amount": "EXACT",
+        "is_tax_invoice": "EXACT",
+        "line_count": "EXACT",
+        "page_count": "EXACT"
+      },
+      "lines_total": 3,
+      "lines_matched_median": 3,
+      "parse_failures": 1,
+      "sample_raw_output": "```json\n{\n  \"supplier_name\": \"Southern Cross Logistics Pty Ltd\",\n  \"supplier_abn\": \"85129887341\",\n  \"issue_date\": \"2026-08-14\",\n  \"total_inclusive\": \"17519.31\",\n  \"gst_amount\": \"1592.66\",\n  \"is_tax_invoice\": true,\n  \"line_count\": 40,\n  \"page_count\": 2,\n  \"lines\": [\n    {\n      \"description\": \"Freight: Melbourne -> Sydney (14/08)\",\n      \"amount\": \"640.00\"\n    },\n    {\n      \"description\": \"Freight: Sydney -> Brisbane (14/08)\",\n      \"amount\": \"715.50\"\n    },\n    {\n      \"description\": \"Freight: Brisbane -> Cairns (14/08)\",\n      \"amount\": \"980.00\"\n    },\n    {\n      \"description\": \"Freight: Ca"
+    }
+  ]
+}

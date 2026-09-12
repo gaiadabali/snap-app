@@ -1,0 +1,635 @@
+{
+  "generated_at": "2026-09-11T09:56:07.614890+00:00",
+  "contract": "docs/contracts/phase1-ocr-stage.md \u00a76",
+  "source": "--self-test (constructed fixtures, not a real engine)",
+  "note": "SELF-TEST: both documents below were built by this script directly from ground truth, not produced by any real OCR engine. They exist to prove the scorer works, not to measure a recogniser. Use --docdom or --sidecar-url for a real measurement.",
+  "scores": {
+    "fixture:identity-reader": {
+      "iou_threshold": 0.5,
+      "confident_threshold": 0.5,
+      "containment_threshold": 0.5,
+      "n_truth_regions": 6,
+      "n_predicted_spans": 5,
+      "n_unreadable_declared": 1,
+      "detection": {
+        "n_truth": 6,
+        "n_regions_with_any_prediction": 5,
+        "n_regions_detected_at_threshold": 5,
+        "recall_at_threshold": 0.8333333333333334,
+        "mean_coverage_iou_where_any_prediction": 1.0,
+        "per_region_coverage": [
+          {
+            "truth_id": "gt-supplier",
+            "n_assigned": 1,
+            "coverage_iou": 1.0
+          },
+          {
+            "truth_id": "gt-abn",
+            "n_assigned": 1,
+            "coverage_iou": 1.0
+          },
+          {
+            "truth_id": "gt-date",
+            "n_assigned": 1,
+            "coverage_iou": 1.0
+          },
+          {
+            "truth_id": "gt-line",
+            "n_assigned": 1,
+            "coverage_iou": 1.0
+          },
+          {
+            "truth_id": "gt-total",
+            "n_assigned": 1,
+            "coverage_iou": 1.0
+          },
+          {
+            "truth_id": "gt-signature",
+            "n_assigned": 0,
+            "coverage_iou": 0.0
+          }
+        ],
+        "n_pred_total": 5,
+        "n_pred_assigned_to_a_region": 5,
+        "n_pred_unassigned": 0,
+        "pred_assigned_fraction": 1.0
+      },
+      "text_error": {
+        "mean_cer_strict": 0.0,
+        "mean_cer_whitespace_insensitive": 0.0,
+        "mean_wer_matched": 0.0,
+        "n_matched_legible": 5,
+        "per_region": [
+          {
+            "truth_id": "gt-supplier",
+            "truth_text": "Curragundi Rural Supplies Pty Ltd",
+            "grouped_text": "Curragundi Rural Supplies Pty Ltd",
+            "cer_strict": 0.0,
+            "cer_whitespace_insensitive": 0.0,
+            "wer": 0.0
+          },
+          {
+            "truth_id": "gt-abn",
+            "truth_text": "69 447 119 320",
+            "grouped_text": "69 447 119 320",
+            "cer_strict": 0.0,
+            "cer_whitespace_insensitive": 0.0,
+            "wer": 0.0
+          },
+          {
+            "truth_id": "gt-date",
+            "truth_text": "14 August 2026",
+            "grouped_text": "14 August 2026",
+            "cer_strict": 0.0,
+            "cer_whitespace_insensitive": 0.0,
+            "wer": 0.0
+          },
+          {
+            "truth_id": "gt-line",
+            "truth_text": "Fencing wire, 25kg roll x4",
+            "grouped_text": "Fencing wire, 25kg roll x4",
+            "cer_strict": 0.0,
+            "cer_whitespace_insensitive": 0.0,
+            "wer": 0.0
+          },
+          {
+            "truth_id": "gt-total",
+            "truth_text": "$1,042.60",
+            "grouped_text": "$1,042.60",
+            "cer_strict": 0.0,
+            "cer_whitespace_insensitive": 0.0,
+            "wer": 0.0
+          }
+        ]
+      },
+      "abstention": {
+        "outcome_counts": {
+          "CORRECT": 5,
+          "ABSTAINED_CORRECTLY": 1,
+          "ABSTAINED_UNNECESSARILY": 0,
+          "MISSED": 0,
+          "WRONG_LOW_CONF": 0,
+          "CONFIDENT_WRONG": 0
+        },
+        "mean_quality": 1.0,
+        "invariant_holds_this_run": null,
+        "per_region": [
+          {
+            "truth_id": "gt-supplier",
+            "outcome": "CORRECT",
+            "quality": 1.0,
+            "confidence": 1.0,
+            "cer_used_for_classification_whitespace_insensitive": 0.0
+          },
+          {
+            "truth_id": "gt-abn",
+            "outcome": "CORRECT",
+            "quality": 1.0,
+            "confidence": 1.0,
+            "cer_used_for_classification_whitespace_insensitive": 0.0
+          },
+          {
+            "truth_id": "gt-date",
+            "outcome": "CORRECT",
+            "quality": 1.0,
+            "confidence": 1.0,
+            "cer_used_for_classification_whitespace_insensitive": 0.0
+          },
+          {
+            "truth_id": "gt-line",
+            "outcome": "CORRECT",
+            "quality": 1.0,
+            "confidence": 1.0,
+            "cer_used_for_classification_whitespace_insensitive": 0.0
+          },
+          {
+            "truth_id": "gt-total",
+            "outcome": "CORRECT",
+            "quality": 1.0,
+            "confidence": 1.0,
+            "cer_used_for_classification_whitespace_insensitive": 0.0
+          },
+          {
+            "truth_id": "gt-signature",
+            "outcome": "ABSTAINED_CORRECTLY",
+            "quality": 1.0,
+            "confidence": null,
+            "cer_used_for_classification_whitespace_insensitive": null
+          }
+        ]
+      },
+      "calibration": {
+        "n_points": 5,
+        "pearson_confidence_vs_correctness": null,
+        "reliability_buckets": [
+          {
+            "range": [
+              0.0,
+              0.2
+            ],
+            "n": 0,
+            "mean_confidence": null,
+            "mean_correctness": null
+          },
+          {
+            "range": [
+              0.2,
+              0.4
+            ],
+            "n": 0,
+            "mean_confidence": null,
+            "mean_correctness": null
+          },
+          {
+            "range": [
+              0.4,
+              0.6
+            ],
+            "n": 0,
+            "mean_confidence": null,
+            "mean_correctness": null
+          },
+          {
+            "range": [
+              0.6,
+              0.8
+            ],
+            "n": 0,
+            "mean_confidence": null,
+            "mean_correctness": null
+          },
+          {
+            "range": [
+              0.8,
+              1.0
+            ],
+            "n": 5,
+            "mean_confidence": 1.0,
+            "mean_correctness": 1.0
+          }
+        ],
+        "engine_claims_calibrated": [
+          false
+        ]
+      }
+    },
+    "fixture:flawed-reader": {
+      "iou_threshold": 0.5,
+      "confident_threshold": 0.5,
+      "containment_threshold": 0.5,
+      "n_truth_regions": 6,
+      "n_predicted_spans": 6,
+      "n_unreadable_declared": 0,
+      "detection": {
+        "n_truth": 6,
+        "n_regions_with_any_prediction": 6,
+        "n_regions_detected_at_threshold": 6,
+        "recall_at_threshold": 1.0,
+        "mean_coverage_iou_where_any_prediction": 1.0,
+        "per_region_coverage": [
+          {
+            "truth_id": "gt-supplier",
+            "n_assigned": 1,
+            "coverage_iou": 1.0
+          },
+          {
+            "truth_id": "gt-abn",
+            "n_assigned": 1,
+            "coverage_iou": 1.0
+          },
+          {
+            "truth_id": "gt-date",
+            "n_assigned": 1,
+            "coverage_iou": 1.0
+          },
+          {
+            "truth_id": "gt-line",
+            "n_assigned": 1,
+            "coverage_iou": 1.0
+          },
+          {
+            "truth_id": "gt-total",
+            "n_assigned": 1,
+            "coverage_iou": 1.0
+          },
+          {
+            "truth_id": "gt-signature",
+            "n_assigned": 1,
+            "coverage_iou": 1.0
+          }
+        ],
+        "n_pred_total": 6,
+        "n_pred_assigned_to_a_region": 6,
+        "n_pred_unassigned": 0,
+        "pred_assigned_fraction": 1.0
+      },
+      "text_error": {
+        "mean_cer_strict": 0.014285714285714285,
+        "mean_cer_whitespace_insensitive": 0.01818181818181818,
+        "mean_wer_matched": 0.05,
+        "n_matched_legible": 5,
+        "per_region": [
+          {
+            "truth_id": "gt-supplier",
+            "truth_text": "Curragundi Rural Supplies Pty Ltd",
+            "grouped_text": "Curragundi Rural Supplies Pty Ltd",
+            "cer_strict": 0.0,
+            "cer_whitespace_insensitive": 0.0,
+            "wer": 0.0
+          },
+          {
+            "truth_id": "gt-abn",
+            "truth_text": "69 447 119 320",
+            "grouped_text": "69 447 119 321",
+            "cer_strict": 0.07142857142857142,
+            "cer_whitespace_insensitive": 0.09090909090909091,
+            "wer": 0.25
+          },
+          {
+            "truth_id": "gt-date",
+            "truth_text": "14 August 2026",
+            "grouped_text": "14 August 2026",
+            "cer_strict": 0.0,
+            "cer_whitespace_insensitive": 0.0,
+            "wer": 0.0
+          },
+          {
+            "truth_id": "gt-line",
+            "truth_text": "Fencing wire, 25kg roll x4",
+            "grouped_text": "Fencing wire, 25kg roll x4",
+            "cer_strict": 0.0,
+            "cer_whitespace_insensitive": 0.0,
+            "wer": 0.0
+          },
+          {
+            "truth_id": "gt-total",
+            "truth_text": "$1,042.60",
+            "grouped_text": "$1,042.60",
+            "cer_strict": 0.0,
+            "cer_whitespace_insensitive": 0.0,
+            "wer": 0.0
+          }
+        ]
+      },
+      "abstention": {
+        "outcome_counts": {
+          "CORRECT": 4,
+          "ABSTAINED_CORRECTLY": 0,
+          "ABSTAINED_UNNECESSARILY": 0,
+          "MISSED": 0,
+          "WRONG_LOW_CONF": 0,
+          "CONFIDENT_WRONG": 2
+        },
+        "mean_quality": 0.3333333333333333,
+        "invariant_holds_this_run": null,
+        "per_region": [
+          {
+            "truth_id": "gt-supplier",
+            "outcome": "CORRECT",
+            "quality": 1.0,
+            "confidence": 1.0,
+            "cer_used_for_classification_whitespace_insensitive": 0.0
+          },
+          {
+            "truth_id": "gt-abn",
+            "outcome": "CONFIDENT_WRONG",
+            "quality": -1.0,
+            "confidence": 0.97,
+            "cer_used_for_classification_whitespace_insensitive": 0.09090909090909091
+          },
+          {
+            "truth_id": "gt-date",
+            "outcome": "CORRECT",
+            "quality": 1.0,
+            "confidence": 1.0,
+            "cer_used_for_classification_whitespace_insensitive": 0.0
+          },
+          {
+            "truth_id": "gt-line",
+            "outcome": "CORRECT",
+            "quality": 1.0,
+            "confidence": 1.0,
+            "cer_used_for_classification_whitespace_insensitive": 0.0
+          },
+          {
+            "truth_id": "gt-total",
+            "outcome": "CORRECT",
+            "quality": 1.0,
+            "confidence": 1.0,
+            "cer_used_for_classification_whitespace_insensitive": 0.0
+          },
+          {
+            "truth_id": "gt-signature",
+            "outcome": "CONFIDENT_WRONG",
+            "quality": -1.0,
+            "confidence": 0.97,
+            "cer_used_for_classification_whitespace_insensitive": null
+          }
+        ]
+      },
+      "calibration": {
+        "n_points": 5,
+        "pearson_confidence_vs_correctness": 1.0,
+        "reliability_buckets": [
+          {
+            "range": [
+              0.0,
+              0.2
+            ],
+            "n": 0,
+            "mean_confidence": null,
+            "mean_correctness": null
+          },
+          {
+            "range": [
+              0.2,
+              0.4
+            ],
+            "n": 0,
+            "mean_confidence": null,
+            "mean_correctness": null
+          },
+          {
+            "range": [
+              0.4,
+              0.6
+            ],
+            "n": 0,
+            "mean_confidence": null,
+            "mean_correctness": null
+          },
+          {
+            "range": [
+              0.6,
+              0.8
+            ],
+            "n": 0,
+            "mean_confidence": null,
+            "mean_correctness": null
+          },
+          {
+            "range": [
+              0.8,
+              1.0
+            ],
+            "n": 5,
+            "mean_confidence": 0.994,
+            "mean_correctness": 0.9818181818181818
+          }
+        ],
+        "engine_claims_calibrated": [
+          false
+        ]
+      }
+    },
+    "fixture:mixed-reader": {
+      "iou_threshold": 0.5,
+      "confident_threshold": 0.5,
+      "containment_threshold": 0.5,
+      "n_truth_regions": 6,
+      "n_predicted_spans": 5,
+      "n_unreadable_declared": 1,
+      "detection": {
+        "n_truth": 6,
+        "n_regions_with_any_prediction": 5,
+        "n_regions_detected_at_threshold": 5,
+        "recall_at_threshold": 0.8333333333333334,
+        "mean_coverage_iou_where_any_prediction": 1.0,
+        "per_region_coverage": [
+          {
+            "truth_id": "gt-supplier",
+            "n_assigned": 1,
+            "coverage_iou": 1.0
+          },
+          {
+            "truth_id": "gt-abn",
+            "n_assigned": 1,
+            "coverage_iou": 1.0
+          },
+          {
+            "truth_id": "gt-date",
+            "n_assigned": 1,
+            "coverage_iou": 1.0
+          },
+          {
+            "truth_id": "gt-line",
+            "n_assigned": 1,
+            "coverage_iou": 1.0
+          },
+          {
+            "truth_id": "gt-total",
+            "n_assigned": 1,
+            "coverage_iou": 1.0
+          },
+          {
+            "truth_id": "gt-signature",
+            "n_assigned": 0,
+            "coverage_iou": 0.0
+          }
+        ],
+        "n_pred_total": 5,
+        "n_pred_assigned_to_a_region": 5,
+        "n_pred_unassigned": 0,
+        "pred_assigned_fraction": 1.0
+      },
+      "text_error": {
+        "mean_cer_strict": 0.014285714285714285,
+        "mean_cer_whitespace_insensitive": 0.01818181818181818,
+        "mean_wer_matched": 0.05,
+        "n_matched_legible": 5,
+        "per_region": [
+          {
+            "truth_id": "gt-supplier",
+            "truth_text": "Curragundi Rural Supplies Pty Ltd",
+            "grouped_text": "Curragundi Rural Supplies Pty Ltd",
+            "cer_strict": 0.0,
+            "cer_whitespace_insensitive": 0.0,
+            "wer": 0.0
+          },
+          {
+            "truth_id": "gt-abn",
+            "truth_text": "69 447 119 320",
+            "grouped_text": "69 447 119 321",
+            "cer_strict": 0.07142857142857142,
+            "cer_whitespace_insensitive": 0.09090909090909091,
+            "wer": 0.25
+          },
+          {
+            "truth_id": "gt-date",
+            "truth_text": "14 August 2026",
+            "grouped_text": "14 August 2026",
+            "cer_strict": 0.0,
+            "cer_whitespace_insensitive": 0.0,
+            "wer": 0.0
+          },
+          {
+            "truth_id": "gt-line",
+            "truth_text": "Fencing wire, 25kg roll x4",
+            "grouped_text": "Fencing wire, 25kg roll x4",
+            "cer_strict": 0.0,
+            "cer_whitespace_insensitive": 0.0,
+            "wer": 0.0
+          },
+          {
+            "truth_id": "gt-total",
+            "truth_text": "$1,042.60",
+            "grouped_text": "$1,042.60",
+            "cer_strict": 0.0,
+            "cer_whitespace_insensitive": 0.0,
+            "wer": 0.0
+          }
+        ]
+      },
+      "abstention": {
+        "outcome_counts": {
+          "CORRECT": 4,
+          "ABSTAINED_CORRECTLY": 1,
+          "ABSTAINED_UNNECESSARILY": 0,
+          "MISSED": 0,
+          "WRONG_LOW_CONF": 0,
+          "CONFIDENT_WRONG": 1
+        },
+        "mean_quality": 0.6666666666666666,
+        "invariant_holds_this_run": true,
+        "per_region": [
+          {
+            "truth_id": "gt-supplier",
+            "outcome": "CORRECT",
+            "quality": 1.0,
+            "confidence": 1.0,
+            "cer_used_for_classification_whitespace_insensitive": 0.0
+          },
+          {
+            "truth_id": "gt-abn",
+            "outcome": "CONFIDENT_WRONG",
+            "quality": -1.0,
+            "confidence": 0.97,
+            "cer_used_for_classification_whitespace_insensitive": 0.09090909090909091
+          },
+          {
+            "truth_id": "gt-date",
+            "outcome": "CORRECT",
+            "quality": 1.0,
+            "confidence": 1.0,
+            "cer_used_for_classification_whitespace_insensitive": 0.0
+          },
+          {
+            "truth_id": "gt-line",
+            "outcome": "CORRECT",
+            "quality": 1.0,
+            "confidence": 1.0,
+            "cer_used_for_classification_whitespace_insensitive": 0.0
+          },
+          {
+            "truth_id": "gt-total",
+            "outcome": "CORRECT",
+            "quality": 1.0,
+            "confidence": 1.0,
+            "cer_used_for_classification_whitespace_insensitive": 0.0
+          },
+          {
+            "truth_id": "gt-signature",
+            "outcome": "ABSTAINED_CORRECTLY",
+            "quality": 1.0,
+            "confidence": null,
+            "cer_used_for_classification_whitespace_insensitive": null
+          }
+        ]
+      },
+      "calibration": {
+        "n_points": 5,
+        "pearson_confidence_vs_correctness": 1.0,
+        "reliability_buckets": [
+          {
+            "range": [
+              0.0,
+              0.2
+            ],
+            "n": 0,
+            "mean_confidence": null,
+            "mean_correctness": null
+          },
+          {
+            "range": [
+              0.2,
+              0.4
+            ],
+            "n": 0,
+            "mean_confidence": null,
+            "mean_correctness": null
+          },
+          {
+            "range": [
+              0.4,
+              0.6
+            ],
+            "n": 0,
+            "mean_confidence": null,
+            "mean_correctness": null
+          },
+          {
+            "range": [
+              0.6,
+              0.8
+            ],
+            "n": 0,
+            "mean_confidence": null,
+            "mean_correctness": null
+          },
+          {
+            "range": [
+              0.8,
+              1.0
+            ],
+            "n": 5,
+            "mean_confidence": 0.994,
+            "mean_correctness": 0.9818181818181818
+          }
+        ],
+        "engine_claims_calibrated": [
+          false
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "expo": {
+    "name": "Snap Apps",
+    "slug": "snap-apps",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "snapapps",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "au.com.snapapps.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Snap Apps uses the camera to capture receipts and tax invoices.",
+        "NSLocationWhenInUseUsageDescription": "Snap Apps measures the distance of a work trip while you are recording it, so your logbook does not depend on remembering an odometer reading. Location is used only while the trip screen is open."
+      },
+      "icon": "./assets/icon.png"
+    },
+    "android": {
+      "package": "au.com.snapapps.app",
+      "permissions": [
+        "android.permission.CAMERA"
+      ],
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#1878D8"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "output": "single",
+      "bundler": "metro",
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Snap Apps uses the camera to capture receipts and tax invoices."
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#1878D8",
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 180
+        }
+      ],
+      "expo-sharing"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "icon": "./assets/icon.png"
+  }
+}

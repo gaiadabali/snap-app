@@ -1,0 +1,61 @@
+{
+  "$schema": "https://raw.githubusercontent.com/expo/eas-cli/main/packages/eas-json/schema/eas.schema.json",
+  "cli": {
+    "version": ">= 16.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "//": [
+      "EXPO_PUBLIC_API_URL is baked into the bundle AT BUILD TIME, so it cannot",
+      "be changed on the device afterwards. That is why each profile names its",
+      "own: a build pointed at 127.0.0.1 works only in a simulator sharing the",
+      "host's loopback, and on a real phone it fails with a network error that",
+      "looks like the server is down.",
+      "",
+      "An empty value is not 'no server' by accident — it is the deliberate",
+      "demo mode in src/api/index.ts, which runs the app on fixtures and marks",
+      "every screen with a Demo chip so a demo is never mistaken for live data."
+    ],
+
+    "demo": {
+      "//": "Fixtures only. Nothing to configure, nothing to connect to, works on a plane.",
+      "distribution": "internal",
+      "android": { "buildType": "apk" },
+      "ios": { "simulator": true },
+      "env": { "EXPO_PUBLIC_API_URL": "" }
+    },
+
+    "development": {
+      "//": [
+        "A dev client against a server on this machine. Set EXPO_PUBLIC_API_URL",
+        "to the LAN address of the host, not localhost — the phone's loopback",
+        "is the phone. `ipconfig` / `ifconfig` gives it, and the server must be",
+        "listening on 0.0.0.0 (it is) with that origin in CORS_ORIGINS."
+      ],
+      "developmentClient": true,
+      "distribution": "internal",
+      "android": { "buildType": "apk" },
+      "ios": { "simulator": true },
+      "env": { "EXPO_PUBLIC_API_URL": "http://192.168.1.10:4000" }
+    },
+
+    "preview": {
+      "//": [
+        "An installable APK for putting the app in someone's hands. Points at",
+        "staging; a preview build must never carry a production URL, because a",
+        "tester tapping Confirm would post to a real ledger."
+      ],
+      "distribution": "internal",
+      "android": { "buildType": "apk" },
+      "env": { "EXPO_PUBLIC_API_URL": "https://staging.api.snapapps.au" }
+    },
+
+    "production": {
+      "autoIncrement": true,
+      "env": { "EXPO_PUBLIC_API_URL": "https://api.snapapps.au" }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

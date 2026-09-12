@@ -1,0 +1,27 @@
+{
+  "name": "@snap/docai",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "The document engine: DocDOM, the engine registry, and the reading pipeline. Pure TypeScript with no database and no cloud SDK — a function from bytes to a document. SERVER ONLY.",
+  "license": "UNLICENSED",
+  "exports": {
+    ".": "./src/index.ts",
+    "./docdom": "./src/docdom.ts",
+    "./registry": "./src/registry.ts"
+  },
+  "types": "./src/index.ts",
+  "sideEffects": false,
+  "files": ["src", "README.md"],
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "pdfjs-dist": "^6.3.289"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.9"
+  }
+}

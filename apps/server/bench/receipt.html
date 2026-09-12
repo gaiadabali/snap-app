@@ -1,0 +1,43 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8">
+<style>
+  body { margin:0; background:#3a3d42; display:flex; align-items:center; justify-content:center; height:900px; font-family:'Courier New',monospace; }
+  .scene { transform: rotate(-2.4deg) perspective(900px) rotateX(3deg); }
+  .paper {
+    width: 300px; padding: 22px 20px; background:#fdfbf4; color:#23262b;
+    font-size: 12px; line-height: 1.55;
+    box-shadow: 0 18px 40px rgba(0,0,0,.55);
+    background-image: repeating-linear-gradient(0deg, rgba(0,0,0,.014) 0 2px, transparent 2px 4px);
+  }
+  .c { text-align:center; }
+  .b { font-weight:bold; }
+  .row { display:flex; justify-content:space-between; }
+  .rule { border-top:1px dashed #6b6f76; margin:8px 0; }
+  .big { font-size:15px; }
+  .fade { color:#4c5058; }
+  /* A crease down the middle, as a folded docket has. */
+  .crease { position:absolute; }
+</style></head>
+<body>
+  <div class="scene"><div class="paper">
+    <div class="c b big">BP TRUCKSTOP GUNDAGAI</div>
+    <div class="c">Sheridan St, Gundagai NSW 2722</div>
+    <div class="c">ABN 33 051 775 556</div>
+    <div class="c b" style="margin-top:8px">*** TAX INVOICE ***</div>
+    <div class="rule"></div>
+    <div class="row"><span>06/09/2026 14:32</span><span>Pump 4</span></div>
+    <div class="row"><span>Inv 88214</span><span>Op: JODIE</span></div>
+    <div class="rule"></div>
+    <div class="row"><span>DIESEL 128.44L @ 1.899</span><span>243.91</span></div>
+    <div class="row"><span>ADBLUE 10L</span><span>18.50</span></div>
+    <div class="row"><span>COFFEE LGE</span><span>4.50</span></div>
+    <div class="rule"></div>
+    <div class="row b big"><span>TOTAL</span><span>$266.91</span></div>
+    <div class="row"><span>GST INCLUDED</span><span>24.26</span></div>
+    <div class="rule"></div>
+    <div class="row"><span>VISA ****4417</span><span>266.91</span></div>
+    <div class="c fade" style="margin-top:10px">THANK YOU - DRIVE SAFELY</div>
+    <div class="c fade">bp.com.au/rewards</div>
+  </div></div>
+</body></html>

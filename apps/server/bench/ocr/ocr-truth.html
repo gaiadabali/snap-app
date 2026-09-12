@@ -1,0 +1,55 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+  body { font-family: Arial, Helvetica, sans-serif; font-size: 16px; color: #111;
+          width: 640px; margin: 0; padding: 24px; background: #fff; }
+  .row { margin: 18px 0; }
+  .label { color: #666; font-size: 12px; display: block; }
+  .value { font-size: 18px; }
+  .redact-wrap { position: relative; display: inline-block; }
+  .redact-box { position: absolute; inset: 0; background: #111; }
+  /* Two DEGRADED-BUT-READABLE regions, and the story of how they got that
+     label is the point of keeping them.
+
+     They were added as `illegible`, to try to exercise ABSTAINED_CORRECTLY —
+     the outcome that needs detection to fire and recognition to fail. At
+     2.6px blur the detector found nothing at all (MISSED). Tuned down to
+     1.4px it detected them and read BOTH correctly: `CN88421-QX` and
+     `REF 7741-BD`. The engine was right and the ground truth was wrong, so
+     the scorer dutifully reported two CONFIDENT_WRONGs that were nothing of
+     the kind.
+
+     Relabelled to what was measured. They stay because hard-but-readable is
+     a useful case, and because the lesson is the expensive one: a ground
+     truth asserting what an engine CANNOT do is a claim about the engine,
+     and it has to be checked against the engine like any other claim.
+
+     The abstention window — detected, not resolvable — is narrower than a CSS
+     filter can reliably hit. Finding it needs a genuinely degraded
+     photograph, which is what the `au-receipts` gold set in docs/OCR.md §8.2
+     is for. ABSTAINED_CORRECTLY remains unobserved against a real engine. */
+  .smudge { filter: blur(1.4px); }
+  /* Faint, not blurred. A second shot at the same window: detection is
+     driven by contrast, recognition by glyph clarity, so low-contrast
+     text is the other way to get a box the recogniser cannot resolve. */
+  .faint { color: #c9c9c9; }
+</style></head><body>
+  <div class="row"><span class="label">Supplier</span>
+    <span class="value" id="gt-supplier" data-gt="legible">Curragundi Rural Supplies Pty Ltd</span></div>
+  <div class="row"><span class="label">ABN</span>
+    <span class="value" id="gt-abn" data-gt="legible">69 447 119 320</span></div>
+  <div class="row"><span class="label">Invoice date</span>
+    <span class="value" id="gt-date" data-gt="legible">14 August 2026</span></div>
+  <div class="row"><span class="label">Line item</span>
+    <span class="value" id="gt-line" data-gt="legible">Fencing wire, 25kg roll x4</span></div>
+  <div class="row"><span class="label">Total (incl. GST)</span>
+    <span class="value" id="gt-total" data-gt="legible">$1,042.60</span></div>
+  <div class="row"><span class="label">Authorised signature (redacted -- genuinely unreadable, not merely hard)</span>
+    <span class="redact-wrap">
+      <span class="value" id="gt-signature" data-gt="illegible"
+            data-reason="opaque overlay -- the pixels carry no text at all">J. Whitfield</span>
+      <span class="redact-box"></span>
+    </span></div>
+  <div class="row"><span class="label">Consignment note (blurred, and still read correctly)</span>
+    <span class="value smudge" id="gt-smudged" data-gt="legible">CN 88421-QX</span></div>
+  <div class="row"><span class="label">Carrier reference (low contrast, and still read correctly)</span>
+    <span class="value faint" id="gt-faint" data-gt="legible">REF 7741-BD</span></div>
+</body></html>

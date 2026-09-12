@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Python sidecar virtualenv and caches — 892 MB, rebuilt from requirements.txt
+services/docai-engine/.venv*/
+**/__pycache__/
+*.pyc
+
+# Uploaded originals. These are CAPTURED DOCUMENTS — someone's receipts and
+# invoices, and under the ATO rules the legal record. They belong in object
+# storage with tenant-scoped access, never in a git history that cannot be
+# unpublished.
+apps/server/.storage/
+
+# Build output
+dist/
+build/
+.expo/
+.expo-web/
+*.tsbuildinfo
+
+# Local environment. No secret has ever lived in this repo and none should
+# start now: the provider key is read from OLLAMA_ENV_FILE outside the tree.
+.env
+.env.*
+!.env.example
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
