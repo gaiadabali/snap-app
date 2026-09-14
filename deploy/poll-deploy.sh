@@ -114,7 +114,7 @@ log "Deploying ${SHORT} (was ${DEPLOYED})"
 # into the remote URL: a token written into .git/config leaks into every
 # `git remote -v`, every backup of this directory, and any log that echoes it.
 AUTH_HEADER="Authorization: Basic $(printf 'x-access-token:%s' "${GITHUB_TOKEN}" | base64 -w0)"
-git -C "${REPO_DIR}" -c "http.https://github.com/.extraheader=${AUTH_HEADER}" \n  fetch --quiet origin "${BRANCH}"
+git -C "${REPO_DIR}" -c "http.https://github.com/.extraheader=${AUTH_HEADER}" fetch --quiet origin "${BRANCH}"
 # Hard reset rather than merge: this checkout is a deployment artifact, not
 # somewhere anyone edits, and a merge conflict at 3am helps nobody.
 git -C "${REPO_DIR}" reset --quiet --hard "${TARGET}"
