@@ -52,7 +52,7 @@ jobs:
             # Inlined at build time and unchangeable afterwards, so the staging
             # API is baked in here. A different environment needs its own build.
             build_args: |
-              EXPO_PUBLIC_API_URL=https://snap-apps-api.gaiada.online
+              EXPO_PUBLIC_API_URL=https://snap-apps-api.gaiada.com
 
     steps:
       - uses: actions/checkout@v4

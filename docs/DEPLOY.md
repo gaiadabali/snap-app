@@ -413,13 +413,13 @@ inlined at build time and cannot be changed afterwards.
 ## 11. The staging addresses (delphi)
 
 Two addresses, following the pattern the other projects on this host already
-use (`pilot-fullstack-cms{,-api}.gaiada.online`):
+use (`pilot-fullstack-cms{,-api}.gaiada.com`):
 
 | Address | Serves | Consumed by | Loopback port |
 |---|---|---|---|
-| `snap-apps.gaiada.online` | Website + individual / business / admin panels | Browsers | 3300 |
-| `snap-apps-api.gaiada.online` | The API | Website (server-side), the browser app, the phone app | 3301 |
-| `snap-apps-app.gaiada.online` | **The mobile app, exported for the browser** | Reviewers, before anyone installs anything | 3302 |
+| `snap-apps.gaiada.com` | Website + individual / business / admin panels | Browsers | 3300 |
+| `snap-apps-api.gaiada.com` | The API | Website (server-side), the browser app, the phone app | 3301 |
+| `snap-apps-app.gaiada.com` | **The mobile app, exported for the browser** | Reviewers, before anyone installs anything | 3302 |
 
 The third exists because the dev review looks at the app in a browser rather
 than on a phone. Expo exports the same React Native source as a web bundle, so
@@ -430,7 +430,7 @@ covers that path.
 
 **The browser build is subject to CORS and the phone build is not.** A native
 app is not governed by the same-origin policy at all; a web bundle is. So
-`CORS_ORIGINS` must name `https://snap-apps-app.gaiada.online` as well as the
+`CORS_ORIGINS` must name `https://snap-apps-app.gaiada.com` as well as the
 website, or every request the app makes fails at preflight and surfaces as a
 network error indistinguishable from being offline. That precise failure has
 already cost this project a day once, when a missing header on the allow-list
@@ -442,7 +442,7 @@ This host runs **CloudPanel**, so sites are created with `clpctl`, not by
 hand-writing vhosts — the same way every other site here exists:
 
 ```bash
-clpctl site:add:reverse-proxy --domainName=snap-apps.gaiada.online \
+clpctl site:add:reverse-proxy --domainName=snap-apps.gaiada.com \
   --reverseProxyUrl='http://127.0.0.1:3300' --siteUser=snapwebonl --siteUserPassword='...'
 ```
 
@@ -457,20 +457,21 @@ nowhere in nginx and unbound.
 
 ### Still required, and neither can be done from here
 
-**1. DNS.** `gaiada.online` is on GoDaddy (`ns37/ns38.domaincontrol.com`). Add
+**1. DNS.** `gaiada.com` is on GoDaddy (`ns37/ns38.domaincontrol.com`). Add
 two A records pointing at `72.61.142.88`:
 
 ```
-snap-apps.gaiada.online        A   72.61.142.88
-snap-apps-api.gaiada.online    A   72.61.142.88
+snap-apps.gaiada.com        A   72.61.142.88
+snap-apps-api.gaiada.com    A   72.61.142.88
+snap-apps-app.gaiada.com    A   72.61.142.88
 ```
 
 **2. TLS, once DNS resolves.** Let's Encrypt validates over HTTP, so this must
 come second or it fails:
 
 ```bash
-clpctl lets-encrypt:install:certificate --domainName=snap-apps.gaiada.online
-clpctl lets-encrypt:install:certificate --domainName=snap-apps-api.gaiada.online
+clpctl lets-encrypt:install:certificate --domainName=snap-apps.gaiada.com
+clpctl lets-encrypt:install:certificate --domainName=snap-apps-api.gaiada.com
 ```
 
 **3. The GitHub token** (§10). Once it is in place the poller deploys within

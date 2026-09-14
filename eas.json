@@ -35,7 +35,7 @@
         "simulator": false
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://snap-apps-api.gaiada.online"
+        "EXPO_PUBLIC_API_URL": "https://snap-apps-api.gaiada.com"
       }
     },
     "production": {
