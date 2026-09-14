@@ -42,11 +42,11 @@ COMPOSE=(docker compose -f "${HERE}/docker-compose.yml" --env-file "${HERE}/.env
 # Which services this host runs. Caddy is optional because a box that already
 # terminates TLS for other sites must not have a second thing fighting for
 # port 443.
-SERVICES=(api worker web caddy)
-HEALTH_SERVICES=(postgres api worker web caddy)
+SERVICES=(api worker web mobile caddy)
+HEALTH_SERVICES=(postgres api worker web mobile caddy)
 if [[ "${SKIP_CADDY:-0}" == "1" ]]; then
-  SERVICES=(api worker web)
-  HEALTH_SERVICES=(postgres api worker web)
+  SERVICES=(api worker web mobile)
+  HEALTH_SERVICES=(postgres api worker web mobile)
 fi
 ENV_FILE="${HERE}/.env"
 

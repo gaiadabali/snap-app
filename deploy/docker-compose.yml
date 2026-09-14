@@ -167,6 +167,31 @@ services:
       retries: 10
       start_period: 20s
 
+  # ── The mobile app, in a browser ─────────────────────────────────────────
+  # For the dev review the app is looked at in a browser rather than installed.
+  # Same React Native source, exported by Expo for web — the real app, not a
+  # mock. The phone build (eas.json) is unaffected and remains the real target.
+  mobile:
+    image: ${MOBILE_IMAGE:-snap-mobile}:${IMAGE_TAG:-local}
+    build:
+      context: ..
+      dockerfile: apps/mobile/Dockerfile
+      args:
+        # Inlined at BUILD time and unchangeable afterwards, so the image is
+        # bound to one API. Empty would silently produce a fixtures-only build.
+        EXPO_PUBLIC_API_URL: ${MOBILE_API_URL:?MOBILE_API_URL must be set — an empty value builds a fixtures-only app that looks healthy while touching no server}
+    restart: unless-stopped
+    # Loopback only; the host reverse proxy fronts it. See api/web above for
+    # why the address is explicit rather than left to Docker.
+    ports:
+      - '127.0.0.1:${MOBILE_HOST_PORT:-3302}:3000'
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:3000/']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
   caddy:
     image: caddy:2.8.4-alpine
     restart: unless-stopped

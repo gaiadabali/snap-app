@@ -47,6 +47,12 @@ jobs:
             dockerfile: apps/server/Dockerfile
           - name: snap-web
             dockerfile: apps/web/Dockerfile
+          - name: snap-mobile
+            dockerfile: apps/mobile/Dockerfile
+            # Inlined at build time and unchangeable afterwards, so the staging
+            # API is baked in here. A different environment needs its own build.
+            build_args: |
+              EXPO_PUBLIC_API_URL=https://snap-apps-api.gaiada.online
 
     steps:
       - uses: actions/checkout@v4
@@ -79,6 +85,7 @@ jobs:
         with:
           context: .
           file: ${{ matrix.dockerfile }}
+          build-args: ${{ matrix.build_args }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

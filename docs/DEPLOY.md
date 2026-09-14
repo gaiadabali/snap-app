@@ -418,10 +418,23 @@ use (`pilot-fullstack-cms{,-api}.gaiada.online`):
 | Address | Serves | Consumed by | Loopback port |
 |---|---|---|---|
 | `snap-apps.gaiada.online` | Website + individual / business / admin panels | Browsers | 3300 |
-| `snap-apps-api.gaiada.online` | The API | The website server-side, **and the mobile app** | 3301 |
+| `snap-apps-api.gaiada.online` | The API | Website (server-side), the browser app, the phone app | 3301 |
+| `snap-apps-app.gaiada.online` | **The mobile app, exported for the browser** | Reviewers, before anyone installs anything | 3302 |
 
-The mobile app has no address of its own — it is a client of the API one, and
-`eas.json`'s `preview` profile now points at it.
+The third exists because the dev review looks at the app in a browser rather
+than on a phone. Expo exports the same React Native source as a web bundle, so
+it is the real app — same screens, same seam, same `@snap/api-contract` types —
+not a mock. The phone build is unaffected: `eas.json`'s `preview` profile still
+produces an installable APK pointed at the same API, and `docs/BUILD.md` §6
+covers that path.
+
+**The browser build is subject to CORS and the phone build is not.** A native
+app is not governed by the same-origin policy at all; a web bundle is. So
+`CORS_ORIGINS` must name `https://snap-apps-app.gaiada.online` as well as the
+website, or every request the app makes fails at preflight and surfaces as a
+network error indistinguishable from being offline. That precise failure has
+already cost this project a day once, when a missing header on the allow-list
+meant the offline outbox could queue writes it could never send.
 
 ### How they were made
 
