@@ -256,3 +256,81 @@ refusals, not RLS. `REQUIRE_DB=1` now makes that fatal in CI.
    in production: refuse. Do not warn, and do not treat "unknown" as "fine".
 5. **A decision recorded in a document is not a control.** Three defects here
    were decisions written down, believed, and never enforced.
+
+---
+
+## 9. Deploying to the VPS (delphi)
+
+Shared hosting cannot run this. It needs two long-lived Node processes (the API
+and the extraction worker), Next.js as a server rather than static files, and a
+Postgres you can `CREATE EXTENSION` and `CREATE ROLE` on. A KVM VPS is the
+target; `deploy/` holds everything.
+
+**Sizing.** 2 vCPU / 4 GB is comfortable. 2 GB works only if you deploy with
+`--pull` — see below.
+
+### First time
+
+```bash
+deploy/bootstrap.sh                  # docker, app user, data dir, firewall (22/80/443)
+cp deploy/.env.example deploy/.env   # then fill it in — §4 and the file's own comments
+deploy/deploy.sh --pull              # or bare, to build on the box
+```
+
+`deploy.sh` encodes §7: it migrates, creates the non-superuser roles, restarts,
+then **verifies** — `/v1/ready` must report `rlsEnforced: true`, and
+`POST /v1/auth/sign-in` must return 404. It fails loudly if either is wrong.
+
+### Prefer `--pull`
+
+`next build` is the most memory-hungry step in this stack and is what gets
+OOM-killed on a small box, with an error that reads like a code fault rather
+than a capacity one. `.github/workflows/publish-images.yml` builds both images
+on GitHub and pushes them to GHCR, so the VPS only pulls. The larger benefit is
+that the artifact CI tested is the artifact that runs.
+
+**The packages are private, and this is the step that will bite you.** They
+inherit the repository's visibility, and a token belonging to a *different*
+GitHub account cannot pull them even if that account can read the repo —
+verified: pushing succeeded, and `docker manifest inspect` from another account
+returned "not accessible".
+
+So on the VPS, once:
+
+```bash
+docker login ghcr.io -u <github-user> -p <PAT with read:packages>
+```
+
+The PAT must belong to an account that can see `gaiadabali`'s packages — the
+repository owner, or an account explicitly granted access under the package's
+*Package settings → Manage access*. Alternatively link each package to the
+repository (*Package settings → Connect repository*) so repository
+collaborators inherit read access.
+
+Then set in `deploy/.env`:
+
+```
+SERVER_IMAGE=ghcr.io/gaiadabali/snap-server
+WEB_IMAGE=ghcr.io/gaiadabali/snap-web
+IMAGE_TAG=sha-<short sha>      # never `latest`
+```
+
+`--pull` refuses to run without all three. `latest` is rejected deliberately: a
+rollback has to be able to name what it is rolling back to.
+
+### Routine deploy and rollback
+
+```bash
+git pull && deploy/deploy.sh --pull        # after CI is green for that SHA
+deploy/deploy.sh --rollback <previous sha> # no build, no migration
+```
+
+Rollback does not reverse migrations. A migration that must be undone is a
+separate, deliberate act — this script never touches the postgres volume.
+
+### Where things are
+
+Logs: `docker compose -f deploy/docker-compose.yml logs -f api worker web`.
+Captured originals: the host path in `STORAGE_HOST_DIR` — legal records under
+ATO retention, so they must be in the backup set (`deploy/backup.sh`), not just
+in a container volume.

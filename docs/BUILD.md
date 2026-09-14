@@ -124,3 +124,60 @@ therefore all still open:
   headroom than a desktop browser.
 
 Treat the first device run as a source of findings, not a formality.
+
+---
+
+## 6. Getting a demo build onto a phone (2026-09-14)
+
+`expo-doctor` passes 21/21 and `expo export --platform web` bundles clean, so
+the app itself is build-ready. Two things stand between that and an APK.
+
+### 1. The project id — the only step needing your account
+
+`app.json` still has no `extra.eas.projectId`. A project id is issued by Expo
+against a specific account and cannot be invented, so nobody but you can do
+this:
+
+```bash
+cd apps/mobile
+npx eas login
+npx eas init      # writes extra.eas.projectId into app.json
+```
+
+Everything after this works.
+
+### 2. Each profile now declares its API URL, and that was silently missing
+
+`EXPO_PUBLIC_API_URL` is **inlined into the JavaScript bundle at build time**.
+It is not read from the device and cannot be changed after the build — §2 of
+this document already warned about that, but no profile in `eas.json` actually
+set it. A `preview` APK built before 2026-09-14 therefore fell back to the
+empty default and ran entirely on **fixtures**: it would have looked completely
+healthy in a demo while touching no server at all, which is a worse failure
+than a crash.
+
+Every profile now names its own value:
+
+| Profile | `EXPO_PUBLIC_API_URL` | For |
+|---|---|---|
+| `demo` | *(empty)* | Fixtures only. No server, works on a plane. |
+| `development` | LAN address | A dev client against a server on your machine. |
+| `preview` | staging | **The investor/demo APK.** |
+| `production` | production | The real thing. |
+
+`preview` and `production` carry `REPLACE-WITH-...` placeholders. Replace the
+`preview` one with the staging API hostname once the VPS has its temporary
+domain (`docs/DEPLOY.md` §9), then:
+
+```bash
+npx eas build --profile preview --platform android
+```
+
+Build `preview` for the demo, not `demo` — the whole point is showing the app
+against the real server.
+
+### iOS
+
+Unchanged and still not side-loadable: TestFlight, then the App Store. The
+website's download page states this honestly and its structured data marks iOS
+as unreleased — see `docs/WEB.md` §7.
