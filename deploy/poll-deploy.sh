@@ -6,9 +6,9 @@
 #
 # WHY PULL RATHER THAN PUSH. A push deploy needs a credential that can change
 # this server, held by whatever is doing the pushing — a laptop, a CI runner.
-# Pull inverts that: the server holds a READ-ONLY deploy key and a read-only
-# registry token, and nothing outside needs access to it at all. It also means
-# a deploy still happens when the person who merged has closed their laptop.
+# Pull inverts that: the server holds ONE read-only token and nothing outside
+# needs access to it at all. It also means a deploy still happens when the
+# person who merged has already closed their laptop.
 #
 # WHAT "DEPLOYABLE" MEANS HERE, and this is the important part: not "the newest
 # commit on main". It is "the newest commit on main whose CI passed AND whose
@@ -16,12 +16,18 @@
 # not deploying, and deploying one whose images do not exist yet just fails
 # noisily every minute until they do.
 #
-# Setup (once, as root):
-#   1. Add /root/.ssh/snap-deploy-key.pub to the repo as a READ-ONLY deploy key
-#      (Settings → Deploy keys). Read-only: this host never needs to write.
-#   2. Put a fine-grained PAT with `contents: read` and `packages: read` in
-#      /etc/snap-apps/secrets/github.env as GITHUB_TOKEN=...  (chmod 600)
-#   3. systemctl enable --now snap-deploy.timer
+# Setup (once, as root) — ONE credential, nothing else:
+#   1. Create a fine-grained PAT scoped to this repository with
+#        Contents: Read   and   Packages: Read
+#      and put it in /etc/snap-apps/secrets/github.env as
+#        GITHUB_TOKEN=github_pat_...
+#      chmod 600 that file. It is the only secret this host needs.
+#   2. systemctl enable --now snap-deploy.timer
+#
+# The same token authenticates git over HTTPS and `docker login ghcr.io`.
+# A deploy key would be tidier for the git half, but deploy keys are DISABLED
+# by policy on this repository — and one read-only token covering both is
+# arguably better anyway: fewer credentials to rotate, and it cannot write.
 #
 # Logs: journalctl -u snap-deploy.service -f
 
@@ -98,14 +104,17 @@ fi
 log "Deploying ${SHORT} (was ${DEPLOYED})"
 
 # The working tree is needed for migrations and compose files, not for images.
-export GIT_SSH_COMMAND="ssh -i /root/.ssh/snap-deploy-key -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new"
-git -C "${REPO_DIR}" fetch --quiet origin "${BRANCH}"
+# Fetched over HTTPS with the token supplied per-invocation rather than baked
+# into the remote URL: a token written into .git/config leaks into every
+# `git remote -v`, every backup of this directory, and any log that echoes it.
+AUTH_HEADER="Authorization: Basic $(printf 'x-access-token:%s' "${GITHUB_TOKEN}" | base64 -w0)"
+git -C "${REPO_DIR}" -c "http.https://github.com/.extraheader=${AUTH_HEADER}" \n  fetch --quiet origin "${BRANCH}"
 # Hard reset rather than merge: this checkout is a deployment artifact, not
 # somewhere anyone edits, and a merge conflict at 3am helps nobody.
 git -C "${REPO_DIR}" reset --quiet --hard "${TARGET}"
 
 echo "${GITHUB_TOKEN}" | docker login ghcr.io -u "${GITHUB_ACTOR:-x-access-token}" --password-stdin >/dev/null 2>&1 \
-  || fail "docker login to ghcr.io failed — does the token have packages:read?"
+  || fail "docker login to ghcr.io failed. Does the token have packages:read, and can that account see the package? GHCR packages inherit the private visibility of the repository."
 
 # deploy.sh does the real work: migrate, roles, restart, and verify that
 # /v1/ready reports rlsEnforced and that sign-in is 404. SKIP_CADDY because
