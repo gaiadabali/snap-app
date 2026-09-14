@@ -4,6 +4,11 @@
 **Shape:** API-first personal/business finance tracker with OCR document capture, local + cloud
 storage, accounting-software sync, and Australian tax export.
 
+> **Reading order for the extraction pipeline.** §4 here is widened by
+> `docs/OCR.md`, whose §12 records which decisions below it revises — D2 (engine
+> choice) and D3 (on-device scope) in particular. **`docs/GAPS.md` is the ordered
+> build queue** for both, with per-ticket acceptance criteria.
+
 ---
 
 ## 1. What this is

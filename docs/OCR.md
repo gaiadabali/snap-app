@@ -2,6 +2,10 @@
 
 **Status:** draft for review · **Date:** 2026-09-11 · **Supersedes:** the extraction
 sections of `docs/AI.md` §2.1 and `docs/PLAN.md` §4 (see §12, *Decisions revised*)
+**Revised 2026-09-12** by a five-reference competitive scan
+(`docs/document-engine-competitive-review.pdf`): see §2 on PP-OCRv6 and the
+licence floor, and D34–D37 in §11. **To build against this, use
+`docs/GAPS.md`** — the ordered ticket queue with acceptance criteria.
 
 What exists today reads Australian receipts. What is planned here reads
 *documents* — receipts, invoices, statements, contracts, financial reports with
@@ -124,6 +128,49 @@ tiers that have to run where we cannot call an API: Apache-2.0, self-hostable,
 backends, and a browser build. That is the shape T1 needs (§4.4) and it clears
 the licence floor (D23) — which makes verifying its claims Phase 0 work rather
 than a curiosity.
+
+#### And we are a generation behind inside a library we already pin
+
+`services/docai-engine/requirements.txt` pins `paddleocr==3.7.0`. That **is**
+the current release (11 June 2026) — we are not behind on the library. But
+the headline feature of 3.7.0 is **PP-OCRv6**, and `ocr_engine.py` names
+`PP-OCRv5_server_det` / `PP-OCRv5_mobile_det` explicitly, with
+`ENGINE_ID = "ppocr-v5"`. The newer weights are already downloadable from the
+version we installed; the code asks for the older ones by name because it was
+written before they existed.
+
+| Tier | Params | PaddleOCR's own claim (not measured by us) |
+|---|---|---|
+| tiny | 1.5M | 6.1× speedup on Apple M4 |
+| small | 7.7M | — |
+| medium | 34.5M | **+4.6% detection, +5.1% recognition over `PP-OCRv5_server`**; 5.2× CPU via OpenVINO; 0.13s/page on A100 |
+
+Three consequences, all of which land on something this document already
+cares about:
+
+1. **Detection is our weakest measured number and the exact thing the upgrade
+   targets.** §8.1's OCR run scored recall 0.875 — seven of eight regions. A
+   claimed +4.6% detection is directly aimed at that gap, and the harness to
+   check it already exists.
+2. **The 5.2× CPU figure is quoted for OpenVINO, not oneDNN.** Our sidecar
+   runs with `enable_mkldnn=False` because PaddlePaddle 3.3.1's oneDNN
+   executor throws on both detection models — a documented, verified
+   workaround that leaves us with *no* CPU accelerator at all. OpenVINO is a
+   different backend we have never tried. The workaround may have an
+   alternative rather than being the floor.
+3. **Phase 1b names no model, and tiny/small/medium is exactly its shape.**
+   §4.9's three-tier device plan was written against PaddleOCR's tier
+   structure; PP-OCRv6 is that structure, one generation newer, with a
+   published Apple-silicon number.
+
+Licence and cost do not change: still Apache-2.0, still self-hosted, still
+near-zero per page. See D34.
+
+**The uncomfortable half.** The same project ships **PaddleOCR-VL 1.6**, which
+claims 96.3% on OmniDocBench v1.6 and is also Apache-2.0 — so unlike Chandra
+and Surya we *could* ship it. That model competes with this entire reading
+stage, not a part of it. That is not a threat provided we stay honest about
+where we differ, which is the next three paragraphs.
 
 Three things follow, and they set the whole strategy.
 
@@ -1293,17 +1340,28 @@ Current standing, corrected labels, 8 regions: **CER 0.000
 whitespace-insensitive across all 7 legible regions**, detection 7/8, one
 `MISSED` (the opaque redaction), zero `CONFIDENT_WRONG`.
 
-### Phase 1b — The device tier (2–3 weeks, overlaps Phase 2)
+### Phase 1b — The device tier (2–3 weeks, *after calibration* — see D37)
 
 The native module, the capability probe, the three model tiers, the delegate
 ladder and the on-shutter quality gate (§4.9). Deliberately *after* the server
 stage works: the device runs the same adapter against the same gold sets, so
 building it second costs a fraction of building it in parallel.
 
+**Revised sequencing (D36, D37).** This phase no longer overlaps Phase 2. It
+starts once calibration (D20) lands, because the device tier's entire value is
+its abstention and an uncalibrated one fails in both directions. And it ships
+**iOS first**: 61% of Australian smartphone users are on iPhone, so Core ML is
+the primary path and the low-end Android floor below remains the design target
+rather than the first build target.
+
 **Gate:** on the `device-matrix` floor device — low-end Android, no NPU — a
 receipt reads end to end in under a second, within a stated accuracy delta of
 the server tier, without thermal throttling across twenty consecutive
 captures. Server-only fallback verified as a normal path, not an error.
+
+> **Building this?** The ordered, ticket-level queue for this phase and every
+> other gap found in the 12 September competitive scan is `docs/GAPS.md`.
+> Lane D covers the device tier and states its preconditions.
 
 ### Phase 2 — Tables and business documents (4–6 weeks)
 
@@ -1396,6 +1454,10 @@ from a review screen people actually use is not.
 | D26 | **Never redraw what nobody changed.** Only edited runs are synthesised. | Turns fidelity from a hard rendering problem into a cosmetic one confined to edits, and makes the visual diff *be* the change log. |
 | D27 | **A field is a pointer to a node**, not a copy of its value. | Two copies — a form and a page — drift the moment either is touched. Bindings make that unrepresentable. |
 | D28 | **Certified copy and working copy are different artifacts.** An edited export can never present itself as the original record. | A document that can impersonate a tax record is a forgery surface. Cheapest to close before the first one exists. |
+| D34 | **Track PaddleOCR's current generation, not the one we started on.** PP-OCRv6 now; re-evaluate each release against the gold sets before adopting. | The weights are rented (D30), so staying current is a version bump and a bench run, not a rewrite. Being a generation behind inside a library we already pin is pure forgone accuracy — and detection, the thing v6 improves most, is our weakest measured number (§8.1). |
+| D35 | **Reading accuracy is reported whitespace-insensitively for money and identifier fields**, with strict CER kept beside it. | §8.1 measured strict CER 0.0661 and whitespace-insensitive 0.0000 on the same seven regions: PP-OCRv5 read `$1,042.60` as `$ 1 , 042.60`. Token boundaries are a convention of the engine, not a misreading, and a headline that says 6.6% error when the characters are perfect will get the stage rejected for the wrong reason. Whitespace is not ignored where it is semantic — it is normalised only inside a matched field. |
+| D36 | **The device tier ships iOS first.** Core ML is the primary path; the low-end Android floor (§4.9) stays the design target but is sequenced second. | 61% of Australian smartphone users are on iPhone, and premium devices are more than half of all AU sales. §4.9 says "not a recent iPhone" and spends its budget on a 2–3 GB Android that is, in this market, uncommon and shrinking. Designing for the floor is right; *building* for it first serves the smallest slice of the actual customer base. |
+| D37 | **Calibration (D20) is a prerequisite for the device tier, not a parallel workstream.** | The whole value of an on-device read is its abstention — "I cannot read the total" while the receipt is in hand. An uncalibrated abstention fails both ways: too eager and it nags users into deleting the app, too shy and it gives false comfort on a receipt they have already walked away from. Today the engine self-reports `calibrated: false` and the 0.8 cutoff is a placeholder in code. |
 
 ---
 
@@ -1420,3 +1482,16 @@ from a review screen people actually use is not.
   quality question; it is where coordinates come from, and coordinates are
   what this product is built on. D29 and D30 separate the two: the stage is
   ours now, the weights are ours later.
+- **D30's "PP-OCRv5 now" is superseded by D34: PP-OCRv6 now.** The principle
+  is unchanged — own the stage, rent the weights — and the point of renting
+  is exactly that the tenancy is cheap to move. §2 records what that move is
+  worth and what it costs (a version bump and a bench run).
+- **§4.9's device-tier framing is revised by D36.** "'Any phone' means a
+  low-end Android with 2–3 GB of RAM … not a recent iPhone" remains the right
+  *design floor* and every lever in that table stands. What changes is build
+  order: Core ML first, because the Australian market is 61% iOS and the
+  budget Android floor here starts around 8 GB, three to four times the
+  device the section is written against.
+- **§9's Phase 1b is resequenced by D37**, from "overlaps Phase 2" to "after
+  calibration". Nothing in the device tier is worth shipping before the
+  abstention it depends on means something.

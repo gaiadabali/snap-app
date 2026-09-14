@@ -36,19 +36,66 @@ dominated the old analysis entirely, because practices buy on the web.
 
 ## 2. The wedge: what free tools structurally cannot do
 
-Two gaps, both of which the schema already models:
+Two gaps were claimed here. **A market scan on 12 September 2026 found that one of them has
+closed, and it is worth being blunt about which.**
 
-1. **myDeductions is built around the annual return, not quarterly BAS.** GST-registered sole
-   traders, tradies and truckies hit that wall four times a year.
-2. **Hubdoc captures header-level data only, and only for Xero.** No per-category tax subtotals — so
-   it cannot separate a grocery receipt's GST-free half from its taxable half.
+1. ~~**myDeductions is built around the annual return, not quarterly BAS.**~~ **Narrowed — no
+   longer load-bearing.** The gap against *myDeductions* is real and unchanged, but it is no
+   longer a gap against *free tools*. **Ozly** (`ozly.au`), Australian-built, now ships a free
+   tier with unlimited receipts, an AI scanner reading totals, dates, GST and categories, and a
+   **live GST / BAS / PAYG dashboard**. Reviewers describe its GST fields as working correctly
+   for BAS. "We do quarterly BAS and the free tool does not" is no longer true as written.
+2. **Hubdoc captures header-level data only, and only for Xero.** **Stands, and is now the whole
+   wedge.** No line items at all; no per-category tax subtotals — so it cannot separate a grocery
+   receipt's GST-free half from its taxable half. Dext *does* extract line items, but bills them
+   as extra credits, and is not AU-tax-native.
+
+### The wedge, restated
+
+| Capability | Hubdoc | Dext | myDeductions | Ozly | Snap Apps |
+|---|---|---|---|---|---|
+| Line items | ✗ | credits | ✗ | ✗ | ✓ |
+| **Per-category tax subtotals** | ✗ | ✗ | ✗ | ✗ | **✓** |
+| Quarterly BAS view | ✗ | ✗ | ✗ | ✓ | ✓ |
+| Occupation-aware deductions | ✗ | ✗ | partial | ✗ | **✓** |
+| Abstention — "I could not read this" | ✗ | ✗ | ✗ | ✗ | **✓** |
+| Correction audit trail on an immutable original | ✗ | ✗ | ✗ | ✗ | **✓** |
+| Price | free with Xero | from $33.58/mo | free | free tier | practice-billed |
 
 Snap Apps has `document_tax_subtotals` (Peppol BG-23), BAS label mapping through `tax_codes`, and
 the `is_tax_invoice` gate on label 1B. Plus the occupation engine, which a competitor cannot copy in
 a quarter because it took a tax consultant's spreadsheet to build.
 
+**The headline is the row nobody else has.** Per-category tax subtotals is not a schema detail to
+mention in paragraph four — it is the single capability no competitor at any price currently
+offers, and it is the one a tradie with a mixed Bunnings-and-groceries docket feels every quarter.
+
 **Positioning:** not "a receipt scanner". **A BAS and deduction-compliance layer for Australian sole
 traders and tradies, sold through accountants, funnelled by free-tax-returns.**
+
+### 2.1 The metric the channel actually buys
+
+The practice channel does not buy provenance, residency or audit architecture — those are
+procurement words for a buyer we are not selling to (see `docs/OCR.md` §0, which concedes the
+point). What a bookkeeping firm buys is **fewer minutes per document**, and the market research is
+unambiguous that the accuracy gap between top-tier and budget capture is the single biggest driver
+of post-scan cleanup.
+
+**So the number on the pitch deck is `corrections per 100 documents`, not character error rate.**
+
+We already measure it and did not notice: `apps/server/bench` scores every field as exact /
+normalised / wrong / miss / abstain-ok / hallucinated. Corrections per 100 documents is
+`(wrong + miss + hallucinated)` per document × 100 — one derived column away, and it is the same
+harness that grades the engine. That makes the engine work and the sales claim the *same
+measurement*, which is the strongest position available here.
+
+Two conditions before it can be quoted to anyone:
+
+- It must be measured on the **`au-receipts` gold set**, not the four synthetic fixtures currently
+  in `manifest.json`. A synthetic corpus cannot support a commercial claim.
+- It must be measured **against Hubdoc and Dext on the same documents.** A number with no
+  comparator is a number nobody can act on — and "fewer corrections than the free thing already
+  installed" is the entire practice pitch.
 
 ---
 

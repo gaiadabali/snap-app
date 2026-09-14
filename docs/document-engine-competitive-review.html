@@ -259,6 +259,13 @@
     margin-top: 1.5mm;
   }
 
+  @page landscape { size: A4 landscape; margin: 14mm 15mm 16mm 15mm; }
+  section.landscape { page: landscape; page-break-before: always; }
+  section.landscape table { font-size: 7.5pt; margin-bottom: 2.5mm; }
+  section.landscape tbody td { padding: 1.35mm 2.5mm 1.35mm 0; }
+  section.landscape p { margin-bottom: 2mm; }
+  section.landscape .keypoint { margin: 2.5mm 0 0 0; font-size: 9.4pt; }
+
   .pagebreak { page-break-before: always; }
   .avoid { page-break-inside: avoid; }
 
@@ -279,7 +286,7 @@
 <section class="cover">
   <div class="eyebrow">Snap Apps &middot; Document Engine</div>
   <h1 class="title">What we have built,<br>and how it compares</h1>
-  <p class="subtitle">A review of three external reference points against the Snap Apps document engine — what is running today, what is planned, and the three things this comparison changes.</p>
+  <p class="subtitle">A review of five external reference points against the Snap Apps document engine — what is running today, what is planned, and the four things this comparison changes.</p>
   <hr class="cover-rule">
   <div class="cover-meta">
     <div><b>Date</b>12 September 2026</div>
@@ -289,9 +296,9 @@
   </div>
 
   <div class="cover-abstract">
-    <p><b>The short version.</b> Three things were examined: a public benchmark comparing three ways of serving the same small AI model; a teaching demo showing how compressing a model changes its speed and accuracy; and a scan of Hugging Face, the main public library of open AI models, for anything built to read Australian documents.</p>
-    <p>None of the three is a commercial competitor. All three are useful, because each one does something we have written down as important and not yet finished.</p>
-    <p>The scan produced the one finding that changes a decision: <b>the two open models our own architecture document names as the strongest available are licensed in a way that forbids us shipping them to a customer.</b> That needs to be recorded before anyone plans around them.</p>
+    <p><b>The short version.</b> Five things were examined: a benchmark comparing three ways of serving the same small AI model; a teaching demo showing how compressing a model changes its speed and accuracy; a scan of the main public library of open AI models; <b>PaddleOCR</b>, the toolkit our own reading stage is built on; and <b>ai-parsing</b>, a live sibling system solving almost exactly our problem the opposite way.</p>
+    <p>None is a commercial competitor. All five are useful, because each does something we have written down as important and not yet finished.</p>
+    <p>Two findings change a decision. <b>We are one model generation behind inside a library we have already installed</b> — the upgrade is a one-line change and claims roughly 5% better reading. And <b>the two open models our architecture document names as strongest are licensed so we cannot ship them to a customer.</b></p>
   </div>
 </section>
 
@@ -300,7 +307,7 @@
 
 <p>Snap Apps reads Australian receipts and invoices and turns them into accounting records. The part that does the reading is called the <b>document engine</b>. Its architecture is written down in <span class="mono">docs/OCR.md</span>, a long and deliberately honest document whose competitive section opens with a table of how well rival systems perform — and then admits, in bold, that <i>every number in that table is someone else's.</i></p>
 
-<p>Three links were put forward for comparison. This document answers the question properly: what are they, what do we have, what is planned, and where does the comparison actually bite.</p>
+<p>Five links were put forward for comparison. This document answers the question properly: what are they, what do we have, what is planned, and where does the comparison actually bite.</p>
 
 <div class="plain">
   <span class="lbl">In plain terms</span>
@@ -332,12 +339,25 @@
       <td>Shows what the world has already published and made free to use.</td>
       <td>Tells us <b>what to build and what to borrow</b>.</td>
     </tr>
+    <tr>
+      <td class="k">PaddlePaddle/PaddleOCR<div class="mono" style="color:var(--faint)">89,400 stars</div></td>
+      <td>The open toolkit our reading stage is built on</td>
+      <td>Text detection and recognition, Apache-2.0, used by a large part of the industry. We pin it in our own dependency file.</td>
+      <td><b>Our supplier</b> — and, at its top end, a competitor.</td>
+    </tr>
+    <tr>
+      <td class="k">aiparsing.gaiada.online<div class="mono" style="color:var(--faint)">"ai-parsing"</div></td>
+      <td>A live sibling system</td>
+      <td>Invoice extraction in production, solving nearly our problem with the opposite architecture — an AI model makes the routing decisions rather than deterministic code.</td>
+      <td>The closest thing we have to a <b>control group</b>.</td>
+    </tr>
   </tbody>
 </table>
 
 <div class="plain">
   <span class="lbl">Note on category</span>
   <p>The first two are small personal or academic projects — one has two commits and no stars. Nothing below treats them as rivals. They are treated as evidence, because a small project that has actually measured something outranks a large document that has not.</p>
+  <p>The last two are different in kind and the most useful of the five. One is code we already ship. The other is a system built by the same people, to the same brief, on the opposite principle — which makes it the nearest thing to a controlled experiment this review contains.</p>
 </div>
 
 <!-- ============ 2 ============ -->
@@ -641,91 +661,255 @@
 </table>
 
 <!-- ============ 6 ============ -->
-<h2 class="pagebreak"><span class="num">06</span>The comparison in one table</h2>
+<h2 class="pagebreak"><span class="num">06</span>Reference four — PaddleOCR, our own supplier</h2>
 
-<p>The dimensions that matter to a finance customer, across all four systems. Two of the four are small side projects and are not expected to score here — they are included to show what a research demo does and does not have to care about.</p>
+<p><b>PaddleOCR</b> is the most widely used open text-recognition toolkit in the world: 89,400 stars, Apache-2.0, supporting over 100 languages. It is not a competitor in the ordinary sense. <b>We ship it.</b> Our dependency file pins <span class="mono">paddleocr==3.7.0</span>, and our OCR service is a wrapper around it.</p>
+
+<p>Checking it produced the most immediately actionable finding in this review.</p>
+
+<h3>We are current on the library and one generation behind on the models</h3>
+
+<table>
+  <thead><tr><th style="width:30%">Item</th><th style="width:26%">What we use</th><th style="width:22%">What is available</th><th>Verdict</th></tr></thead>
+  <tbody>
+    <tr><td class="k">Library version</td><td class="mono">paddleocr 3.7.0</td><td class="mono">3.7.0</td><td><span class="yes">Current</span> — this is the newest release, 11 June 2026</td></tr>
+    <tr><td class="k">Detection model</td><td class="mono">PP-OCRv5_server_det</td><td class="mono">PP-OCRv6 (3 tiers)</td><td><span class="part">Superseded</span></td></tr>
+    <tr><td class="k">Recognition model</td><td class="mono">PP-OCRv5_server_rec</td><td class="mono">PP-OCRv6 (3 tiers)</td><td><span class="part">Superseded</span></td></tr>
+    <tr><td class="k">Engine identifier in code</td><td class="mono">ENGINE_ID = "ppocr-v5"</td><td>&mdash;</td><td>Hardcoded to the older generation</td></tr>
+  </tbody>
+  <caption>PP-OCRv6 is the headline feature of release 3.7.0 — the exact version already pinned in <span class="mono">services/docai-engine/requirements.txt</span>.</caption>
+</table>
+
+<div class="plain">
+  <span class="lbl">In plain terms</span>
+  <p>We already installed the toolbox that contains the newer, better tools. Our code just asks for the older ones by name, because it was written before the new ones arrived. Changing which tools it reaches for is a one-line edit, and the licence and cost do not change at all.</p>
+</div>
+
+<h3>What the newer generation offers</h3>
+
+<table>
+  <thead><tr><th style="width:14%">Tier</th><th style="width:14%">Size</th><th style="width:24%">Intended for</th><th>Claimed by PaddleOCR</th></tr></thead>
+  <tbody>
+    <tr><td class="k">tiny</td><td>1.5M parameters</td><td>Edge devices, browser</td><td>6.1&times; faster on an Apple M4 chip</td></tr>
+    <tr><td class="k">small</td><td>7.7M parameters</td><td>Mobile</td><td>&mdash;</td></tr>
+    <tr><td class="k">medium</td><td>34.5M parameters</td><td>Server &mdash; our tier</td><td><b>+4.6% detection, +5.1% recognition</b> over the model we currently run; 5.2&times; CPU speedup via OpenVINO; 0.13s per page on an A100 GPU</td></tr>
+  </tbody>
+  <caption>Figures are PaddleOCR's own README claims, not measured by us. Also claimed: a single model now covering 50 languages, and — at 34.5M parameters — outperforming far larger general-purpose vision models on document text.</caption>
+</table>
+
+<h3>Three consequences for us</h3>
+
+<table>
+  <thead><tr><th style="width:5%"></th><th style="width:30%">Consequence</th><th>Detail</th></tr></thead>
+  <tbody>
+    <tr>
+      <td class="k">1</td>
+      <td class="k">Our weakest measured number is the one the upgrade targets</td>
+      <td>Our OCR stage found 7 of 8 text regions — a detection recall of 0.875. Detection is precisely what the new generation claims to improve by 4.6%. This is testable against the benchmark we already have.</td>
+    </tr>
+    <tr>
+      <td class="k">2</td>
+      <td class="k">There may be a way around our disabled accelerator</td>
+      <td>Our service runs with its CPU accelerator switched off, because of a crash in one specific acceleration library. PaddleOCR's 5.2&times; speed claim is quoted for <b>OpenVINO — a different accelerator entirely</b>, which we have never tried. The workaround we documented may have an alternative we never looked for.</td>
+    </tr>
+    <tr>
+      <td class="k">3</td>
+      <td class="k">The phone tier now has an obvious candidate</td>
+      <td>Phase 1b plans the reading stage running offline on a phone and names no model. A 1.5M-parameter tier with a published Apple-silicon speed figure is exactly that shape. Our code currently offers only two options, <span class="mono">mobile</span> and <span class="mono">server</span>, both pointing at the older generation.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>The uncomfortable half: PaddleOCR is also a competitor</h3>
+
+<p>The same project publishes <b>PaddleOCR-VL</b>, a document-parsing model claiming 96.3% on a major public benchmark — and it is Apache-2.0, so unlike Chandra and Surya we <i>could</i> ship it. That model competes with our entire reading stage, not just part of it.</p>
+
+<div class="keypoint">
+  This is not a threat, provided we are honest about where we differ. Our architecture document already says it plainly: <b>do not compete on turning pages into text — use the people who are winning that race.</b> Our differentiation is knowing when we are wrong, proving where every number came from, and being deployable where the internet is forbidden. None of those are things PaddleOCR-VL offers, and none of them are reading accuracy.
+</div>
+
+<!-- ============ 7 ============ -->
+<h2 class="pagebreak"><span class="num">07</span>Reference five — ai-parsing, the control group</h2>
+
+<p><b>aiparsing.gaiada.online</b> is live, and titled "ai-parsing — Invoice Processing Dashboard". It is a sibling system: same problem, same brief, built on the opposite principle. Our architecture document already analyses it at length as "the nearest prior art, and it is instructive."</p>
+
+<div class="plain">
+  <span class="lbl">How this was checked</span>
+  <p>The live site is a single-page application, so an automated fetch returns only its title. The analysis below comes from our own architecture document, which examined the system <b>at source</b> — reading its code, not benchmarking its output. An attempt to independently re-verify one finding against the live deployment was blocked by this environment's safety controls, and was not worked around. Anything marked below as a source reading should be re-confirmed directly before being acted on.</p>
+</div>
+
+<h3>Same problem, opposite architecture</h3>
+
+<table class="long">
+  <thead><tr><th style="width:22%">Decision</th><th style="width:36%">ai-parsing</th><th>Snap Apps</th></tr></thead>
+  <tbody>
+    <tr><td class="k">Reading the page</td><td>LlamaParse, agentic tier — a paid external service</td><td>Vision model today; our own OCR stage next, self-hosted and free per page</td></tr>
+    <tr><td class="k">Understanding it</td><td><span class="mono">deepseek-chat</span> across four of five reasoning steps</td><td>A model reads; deterministic code decides</td></tr>
+    <tr><td class="k"><b>Who decides if a human looks</b></td><td><b>The language model.</b> The two thresholds are real constants — flag at 75, escalate at 50 — but they are inserted as text into the model's own instructions. No comparison is performed in code.</td><td><b>Code.</b> Arithmetic, date and ABN checksum rules in <span class="mono">validators.ts</span>. The model has no vote.</td></tr>
+    <tr><td class="k">Confidence</td><td>The model scores its own homework</td><td>Uncalibrated today and treated as advisory; calibration is planned and measurable</td></tr>
+    <tr><td class="k">Access control</td><td>Reported at source as fully open on the invoice collection — all records readable without signing in</td><td>Row-level security in the database; the background worker goes through it, not around it</td></tr>
+    <tr><td class="k">Model choice</td><td>Built on the one model our own testing excluded</td><td>Excluded in code &mdash; our benchmark found it called the right tool and then ignored the answer it got back</td></tr>
+  </tbody>
+</table>
+
+<h3>What its own numbers show</h3>
+
+<p>Five hand-built test documents, thirty-four runs. The confidence column is the model rating itself — not measured accuracy.</p>
+
+<table>
+  <thead><tr><th style="width:36%">Test document</th><th style="width:24%">Self-reported confidence</th><th>Outcome</th></tr></thead>
+  <tbody>
+    <tr><td class="k mono">clean_typed_invoice</td><td>95&ndash;97</td><td>Auto-approved</td></tr>
+    <tr><td class="k mono">scanned_crumpled_receipt</td><td>62&ndash;68</td><td>Flagged for review</td></tr>
+    <tr><td class="k mono">multipage_buried_table</td><td>95</td><td>Flagged for review</td></tr>
+    <tr><td class="k mono">unrecognized_vendor</td><td>95</td><td>Escalated</td></tr>
+    <tr><td class="k mono">handwritten_correction</td><td>40&ndash;45</td><td>Escalated</td></tr>
+  </tbody>
+  <caption>Consistent across repeats — but that is the consistency of a demo, not evidence of accuracy. The prompts were written against these same five fixtures.</caption>
+</table>
+
+<div class="keypoint">
+  The one genuinely measured quantity in that system is the deterministic one. Its arithmetic cross-check caught a line total of <b>$518.00 against a stated $512.00</b>, and <b>$760.00 typed against $700.00 struck through</b> by hand. Cheap arithmetic found what a self-reported 95% confidence did not.
+</div>
+
+<div class="plain">
+  <span class="lbl">Why this matters more than the other four references</span>
+  <p>This is a live system, built to the same brief, that demonstrates the exact failure our architecture is designed to prevent — and demonstrates it while reporting high confidence. It is the strongest evidence in this review for our central design choice, and it did not come from a benchmark or a vendor claim. It came from reading a sibling system's source.</p>
+  <p>It also shows the cost of the opposite choice honestly: the parts of ai-parsing that worked are the parts that were arithmetic, and the part that failed is the part that asked a model to police itself.</p>
+</div>
+
+<h3>The warning we should take personally</h3>
+
+<p>Two of the four problems recorded against ai-parsing are not really about reading documents at all. One is that a decision written down as a rule was never implemented as one. The other is that access control was written permissively and never tightened.</p>
+
+<p>Our own repository closed a defect of precisely that shape on the day this review was written. The commit message begins: <i>"Two decisions that were written down, believed, and never applied."</i> A sign-in endpoint that was meant never to reach production had its production guard applied to the wrong route; and a model exclusion recorded in our AI document had never been enforced in code.</p>
+
+<div class="keypoint">
+  <b>The pattern is the finding.</b> This engine's strength is that its important decisions are written down with reasons. Its recurring weakness — visible in ai-parsing, in the unenforced exclusion, in the sign-in guard, and in the OCR stage sitting behind an unset switch — is that <b>writing a decision down is being mistaken for shipping it.</b>
+</div>
+
+<!-- ============ 8 ============ -->
+<section class="landscape">
+<h2 style="margin-top:0"><span class="num">08</span>The comparison in one table</h2>
+
+<p>The dimensions that matter to a finance customer, across all six systems. Three of them are research demos or toolkits and are not expected to score on most rows — they are included to show what each kind of system does and does not have to care about. The column that matters most is <b>ai-parsing</b>: it is the only other one built to do our actual job.</p>
 
 <table class="long">
   <thead>
     <tr>
-      <th style="width:29%">Capability</th>
-      <th style="width:12%">Sentiment<br>experiment</th>
-      <th style="width:12%">utmcs_llmv</th>
-      <th style="width:14%">Open OCR<br>models</th>
-      <th style="width:15%">Snap Apps<br>today</th>
+      <th style="width:21%">Capability</th>
+      <th style="width:10%">Sentiment<br>experiment</th>
+      <th style="width:10%">utmcs_llmv</th>
+      <th style="width:11%">Open OCR<br>models</th>
+      <th style="width:12%">PaddleOCR<br>(our supplier)</th>
+      <th style="width:13%">ai-parsing<br>(control group)</th>
+      <th style="width:11%">Snap Apps<br>today</th>
       <th>Snap Apps<br>planned</th>
     </tr>
   </thead>
   <tbody>
-    <tr><td class="k">Reads Australian tax documents</td><td class="no">No</td><td class="no">No</td><td class="no">No</td><td class="yes">Yes</td><td class="yes">Yes, wider</td></tr>
-    <tr><td class="k">Says where on the page a value came from</td><td>n/a</td><td>n/a</td><td class="part">Block level at best</td><td class="part">Shadow only</td><td class="yes">Required on every value</td></tr>
-    <tr><td class="k">Confidence that means something</td><td class="no">No</td><td class="no">No</td><td class="no">Not reported</td><td class="no">Not calibrated</td><td class="yes">Calibrated and measured</td></tr>
-    <tr><td class="k">Can say "I could not read this"</td><td class="no">No</td><td class="no">No</td><td class="no">Largely absent</td><td class="yes">Yes, scored as a success</td><td class="yes">Yes</td></tr>
-    <tr><td class="k">Catches its own mistakes</td><td class="no">No</td><td class="no">No</td><td class="no">No</td><td class="yes">Arithmetic + ABN checksum</td><td class="yes">Plus engine disagreement</td></tr>
-    <tr><td class="k">Reproduce a past result exactly</td><td class="no">No</td><td class="part">Results stored</td><td class="no">No</td><td class="yes">Yes, versioned runs</td><td class="yes">Yes</td></tr>
-    <tr><td class="k">Audit trail of human corrections</td><td class="no">No</td><td class="no">No</td><td class="no">No</td><td class="yes">Yes, with locking</td><td class="yes">Yes, feeds training</td></tr>
-    <tr><td class="k">Can run with no internet</td><td class="part">Locally, yes</td><td class="part">Private network</td><td class="yes">Most can</td><td class="part">Built, not switched on</td><td class="yes">Yes, enforced by type</td></tr>
-    <tr><td class="k">Data residency guaranteed</td><td class="no">No concept</td><td class="no">No concept</td><td class="no">No concept</td><td class="yes">Engine registry</td><td class="yes">Same</td></tr>
-    <tr><td class="k">Tenant data isolation</td><td class="no">No</td><td class="no">No</td><td>n/a</td><td class="yes">Database-enforced</td><td class="yes">Same</td></tr>
-    <tr><td class="k">Serving stack measured</td><td class="yes">Yes — the whole point</td><td class="part">Partly</td><td>n/a</td><td class="no">Never</td><td class="no">Not in the plan</td></tr>
-    <tr><td class="k">Model compression measured</td><td class="no">No</td><td class="yes">Yes, 3 levels</td><td>n/a</td><td class="no">Never</td><td class="no">Not in the plan</td></tr>
-    <tr><td class="k">Accuracy on real captured documents</td><td>n/a</td><td>n/a</td><td class="yes">Public benchmarks</td><td class="no">Synthetic only</td><td class="yes">Real gold sets</td></tr>
+    <tr><td class="k">Reads Australian tax documents</td><td class="no">No</td><td class="no">No</td><td class="no">No</td><td class="no">No</td><td class="part">Invoices, not AU-specific</td><td class="yes">Yes</td><td class="yes">Yes, wider</td></tr>
+    <tr><td class="k">Says where on the page a value came from</td><td>n/a</td><td>n/a</td><td class="part">Block level</td><td class="yes">Yes — that is its job</td><td class="no">No</td><td class="part">Shadow only</td><td class="yes">On every value</td></tr>
+    <tr><td class="k">Confidence that means something</td><td class="no">No</td><td class="no">No</td><td class="no">Not reported</td><td class="part">Per-character, raw</td><td class="no">Model rates itself</td><td class="no">Not calibrated</td><td class="yes">Calibrated</td></tr>
+    <tr><td class="k">Can say "I could not read this"</td><td class="no">No</td><td class="no">No</td><td class="no">Largely absent</td><td class="yes">Yes</td><td class="no">Fills the gap</td><td class="yes">Scored as success</td><td class="yes">Yes</td></tr>
+    <tr><td class="k"><b>Who decides a human must look</b></td><td>n/a</td><td>n/a</td><td>n/a</td><td>n/a</td><td class="no">The language model</td><td class="yes">Code</td><td class="yes">Code</td></tr>
+    <tr><td class="k">Catches its own mistakes</td><td class="no">No</td><td class="no">No</td><td class="no">No</td><td class="no">No</td><td class="part">Arithmetic only — and it worked</td><td class="yes">Arithmetic + ABN checksum</td><td class="yes">Plus engine disagreement</td></tr>
+    <tr><td class="k">Reproduce a past result exactly</td><td class="no">No</td><td class="part">Results stored</td><td class="no">No</td><td class="yes">Deterministic</td><td class="no">No</td><td class="yes">Versioned runs</td><td class="yes">Yes</td></tr>
+    <tr><td class="k">Audit trail of human corrections</td><td class="no">No</td><td class="no">No</td><td class="no">No</td><td class="no">No</td><td class="no">No</td><td class="yes">Yes, with locking</td><td class="yes">Feeds training</td></tr>
+    <tr><td class="k">Can run with no internet</td><td class="part">Locally</td><td class="part">Private network</td><td class="yes">Most can</td><td class="yes">Yes</td><td class="no">Two paid APIs</td><td class="part">Built, not on</td><td class="yes">Enforced by type</td></tr>
+    <tr><td class="k">Data residency guaranteed</td><td class="no">No concept</td><td class="no">No concept</td><td class="no">No concept</td><td class="no">No concept</td><td class="no">No concept</td><td class="yes">Engine registry</td><td class="yes">Same</td></tr>
+    <tr><td class="k">Tenant data isolation</td><td class="no">No</td><td class="no">No</td><td>n/a</td><td>n/a</td><td class="no">Reported fully open</td><td class="yes">Database-enforced</td><td class="yes">Same</td></tr>
+    <tr><td class="k">Cost per page at scale</td><td>n/a</td><td>n/a</td><td class="yes">Near zero</td><td class="yes">Near zero</td><td class="no">Two metered APIs</td><td class="part">Frontier-priced</td><td class="yes">Mostly near zero</td></tr>
+    <tr><td class="k">Serving stack measured</td><td class="yes">Yes — the point</td><td class="part">Partly</td><td>n/a</td><td class="yes">Published</td><td class="no">No</td><td class="no">Never</td><td class="no">Not in the plan</td></tr>
+    <tr><td class="k">Model compression measured</td><td class="no">No</td><td class="yes">Yes, 3 levels</td><td>n/a</td><td class="yes">Yes, 3 tiers</td><td class="no">No</td><td class="no">Never</td><td class="no">Not in the plan</td></tr>
+    <tr><td class="k">Accuracy on real captured documents</td><td>n/a</td><td>n/a</td><td class="yes">Public benchmarks</td><td class="yes">Public benchmarks</td><td class="no">5 hand-built fixtures</td><td class="no">Synthetic only</td><td class="yes">Real gold sets</td></tr>
   </tbody>
-  <caption>"n/a" means the dimension does not apply to that kind of system. Red entries against the two side projects are not criticism — a sentiment benchmark has no reason to have an audit trail.</caption>
+  <caption>"n/a" means the dimension does not apply to that kind of system. Red entries against the research demos are not criticism — a sentiment benchmark has no reason to have an audit trail. Entries for ai-parsing derive from a source reading recorded in our architecture document, not from testing the live system.</caption>
 </table>
 
 <div class="keypoint">
-  Read the last three rows together. <b>Every gap we have that these references do not is a measurement gap, not a capability gap.</b> We have built more than either of them; we have measured less of it than either of them has measured of theirs.
+  Two readings of this table. <b>Down the ai-parsing column:</b> on every row that decides whether a finance team can trust the output, the system built the opposite way scores badly — and its one green entry, arithmetic, is the same mechanism we rely on. <b>Across the last three rows:</b> every gap we have that these references do not is a measurement gap, not a capability gap. We have built more than any of them and measured less of it.
 </div>
+</section>
 
 <!-- ============ 7 ============ -->
-<h2><span class="num">07</span>What this changes</h2>
+<h2 class="pagebreak"><span class="num">09</span>What this changes</h2>
 
-<p>Four actions, in the order they should be taken. Two are hours of work; two are days.</p>
+<p>Six actions, in the order they should be taken. Four are hours of work; two are days.</p>
 
-<table>
-  <thead><tr><th style="width:5%"></th><th style="width:30%">Action</th><th style="width:13%">Effort</th><th>Why</th></tr></thead>
+<table class="long">
+  <thead><tr><th style="width:5%"></th><th style="width:28%">Action</th><th style="width:11%">Effort</th><th style="width:11%">From</th><th>Why</th></tr></thead>
   <tbody>
     <tr>
       <td class="k">1</td>
       <td class="k">Start the OCR service and complete one real shadow run</td>
       <td>Hours</td>
+      <td>Our own state</td>
       <td>Every stored layout says the service was unreachable. Nothing downstream — calibration, grounding, the Phase 1 promotion — can proceed without evidence from a run that actually happened.</td>
     </tr>
     <tr>
       <td class="k">2</td>
-      <td class="k">Add a licence column to the competitive table</td>
+      <td class="k">Point the sidecar at the newer model generation</td>
       <td>Hours</td>
-      <td>The two models named as strongest cannot be shipped. Recording that now prevents a plan being built on them.</td>
+      <td>PaddleOCR</td>
+      <td>PP-OCRv6 ships inside the version we already pin. Same licence, same cost, claimed +4.6% detection — which is our weakest measured number. A one-line change, then re-run the benchmark that already exists.</td>
     </tr>
     <tr>
       <td class="k">3</td>
-      <td class="k">Fix the character-error-rate reporting</td>
+      <td class="k">Add a licence column to the competitive table</td>
       <td>Hours</td>
-      <td>The OCR stage scores 6.6% error strictly and <b>0.0% ignoring spacing</b> — it reads <span class="mono">$1,042.60</span> as <span class="mono">$ 1 , 042.60</span>. That is a spacing convention, not a misreading, and the headline number currently overstates the error.</td>
+      <td>Model library</td>
+      <td>The two models named as strongest cannot be shipped to a customer. Recording that now prevents a plan being built on them.</td>
     </tr>
     <tr>
       <td class="k">4</td>
-      <td class="k">Run two measurements borrowed from these references</td>
+      <td class="k">Fix the character-error-rate reporting</td>
+      <td>Hours</td>
+      <td>Our own state</td>
+      <td>The OCR stage scores 6.6% error strictly and <b>0.0% ignoring spacing</b> — it reads <span class="mono">$1,042.60</span> as <span class="mono">$ 1 , 042.60</span>. That is a spacing convention, not a misreading, and the headline number overstates the error.</td>
+    </tr>
+    <tr>
+      <td class="k">5</td>
+      <td class="k">Try the alternative CPU accelerator</td>
       <td>Days</td>
-      <td>A compression sweep for the tier-2 model, and one serving-layer comparison for the OCR service. Both are gaps the plan does not currently close; both have an existing harness.</td>
+      <td>PaddleOCR</td>
+      <td>Our accelerator is off because of a crash in one library. PaddleOCR's published 5.2&times; speed figure is for a different one we have never tried. This may make the documented workaround unnecessary.</td>
+    </tr>
+    <tr>
+      <td class="k">6</td>
+      <td class="k">Run the two missing measurements</td>
+      <td>Days</td>
+      <td>Demos 1 &amp; 2</td>
+      <td>A compression sweep for the tier-2 model, and one serving-layer comparison for the OCR service. Both are gaps the plan does not close; both have an existing harness.</td>
     </tr>
   </tbody>
+  <caption>Actions 1, 2 and 4 together would replace most of the uncertain numbers in this document with measured ones, in under a day.</caption>
 </table>
 
 <h3>The honest summary</h3>
 
-<p>The engine's design is well ahead of both reference projects and, on the dimensions an accounting customer actually buys, well ahead of the open models too: provenance, calibrated abstention, deterministic validation, replay, audit trail, residency as a type. None of that is aspiration — most of it is built and tested.</p>
+<p>The engine's design is well ahead of the research demos and, on the dimensions an accounting customer actually buys, well ahead of the open models too: provenance, calibrated abstention, deterministic validation, replay, audit trail, residency as a type. Against ai-parsing — the only other system here built to do our job — the gap is not close, and it is a gap in the things that decide whether a finance team can trust the output at all. None of that is aspiration; most of it is built and tested.</p>
 
-<p>What the references expose is narrower and fairly uncomfortable: <b>two small projects with almost no code have published measurements we have not taken.</b> One measured its serving stack; one measured its model compression. We have measured neither, on a system far larger than both, whose cost model assumes answers to exactly those two questions.</p>
+<p>What the five references expose is narrower and fairly uncomfortable, and it is the same thing three times over:</p>
+
+<table>
+  <thead><tr><th style="width:34%">Written down</th><th>Actually in force</th></tr></thead>
+  <tbody>
+    <tr><td class="k">The OCR stage is the future primary reader</td><td>Behind an unset switch; every stored run says "unreachable"</td></tr>
+    <tr><td class="k">A model our testing rejected must not be used</td><td>Enforced in code only as of this week</td></tr>
+    <tr><td class="k">A sign-in bypass must never reach production</td><td>The guard was on the wrong route until this week</td></tr>
+    <tr><td class="k">The strongest open models are our candidates</td><td>Two of them are unshippable under our own licence rule</td></tr>
+    <tr><td class="k">We use the best available reading models</td><td>One generation behind, inside a library already installed</td></tr>
+  </tbody>
+</table>
 
 <div class="keypoint">
-  The fix is not more architecture. The architecture is good. The fix is to switch on the stage that is already written, run it against real documents, and fill in the numbers our own code marks as <span class="mono">null</span>.
+  The fix is not more architecture. The architecture is genuinely good, and the decisions in it are right — including the one ai-parsing proves by getting wrong. The fix is to close the gap between <b>a decision recorded with its reasons</b> and <b>a decision running in production</b>: switch on the stage that is already written, ask for the models we already downloaded, run it against real documents, and fill in the numbers our own code still marks <span class="mono">null</span>.
 </div>
 
 <footer class="doc">
-  <b>Sources.</b> Snap Apps repository as of 12 September 2026: <span class="mono">docs/OCR.md</span>, <span class="mono">packages/docai/src/registry.ts</span>, <span class="mono">packages/docai/src/pipeline.ts</span>, <span class="mono">apps/server/src/extraction/shadow.ts</span>, <span class="mono">apps/server/bench/results/</span>, <span class="mono">services/docai-engine/</span>. External: sentiment.net1io.space; github.com/azlanabas/utmcs_llmv; Hugging Face model index, queried 12 September 2026.<br>
-  <b>Caveats.</b> Benchmark figures are on four synthetic documents and do not represent accuracy on real captured paperwork. Download counts and licences are point-in-time. The two external projects were read, not benchmarked — no number in this document was produced by running their code.
+  <b>Sources.</b> Snap Apps repository as of 12 September 2026: <span class="mono">docs/OCR.md</span> (&sect;2.1 for the ai-parsing source reading), <span class="mono">packages/docai/src/registry.ts</span>, <span class="mono">packages/docai/src/pipeline.ts</span>, <span class="mono">apps/server/src/extraction/shadow.ts</span>, <span class="mono">apps/server/bench/results/</span>, <span class="mono">services/docai-engine/</span>, commit <span class="mono">d588ff3</span>. External, queried 12 September 2026: sentiment.net1io.space; github.com/azlanabas/utmcs_llmv; Hugging Face model index; github.com/PaddlePaddle/PaddleOCR release notes for v3.7.0; aiparsing.gaiada.online.<br>
+  <b>Caveats.</b> Benchmark figures are on four synthetic documents and do not represent accuracy on real captured paperwork. Download counts, licences and version numbers are point-in-time. PP-OCRv6 performance figures are PaddleOCR's own published claims and have not been verified by us. None of the five external projects was benchmarked — no number in this document was produced by running their code. Findings about ai-parsing come from a source reading recorded in our own architecture document; an attempt to re-verify one of them against the live deployment was blocked by this environment's safety controls and was not circumvented.
 </footer>
 
 </body>
