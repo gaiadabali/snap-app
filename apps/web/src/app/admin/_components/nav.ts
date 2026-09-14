@@ -29,5 +29,29 @@ export const PRIMARY_NAV: NavItem[] = [
     // than `view_tenant_metadata`.
     capability: 'audit_review',
   },
-  { href: '/admin/governance', label: 'Governance & AI', hint: 'Server control' },
+  // The governance surface has no index route — the pages are /admin/ai/*,
+  // /admin/operations and /admin/settings. A single 'Governance & AI' entry
+  // pointed at /admin/governance, which 404s. Listed individually instead:
+  // it is honest about what exists, and a reviewer can reach each section
+  // without guessing.
+  {
+    href: '/admin/ai/models',
+    label: 'AI models',
+    hint: 'Routing & exclusions',
+    capability: 'manage_ai_config',
+  },
+  { href: '/admin/ai/keys', label: 'AI keys', hint: 'Provider credentials', capability: 'manage_ai_config' },
+  { href: '/admin/ai/usage', label: 'AI usage', hint: 'Spend & cost', capability: 'manage_ai_config' },
+  {
+    href: '/admin/operations',
+    label: 'Operations',
+    hint: 'Queue, retention, replay',
+    capability: 'manage_operations',
+  },
+  {
+    href: '/admin/settings',
+    label: 'Platform settings',
+    hint: 'Flags & defaults',
+    capability: 'manage_platform_settings',
+  },
 ];
