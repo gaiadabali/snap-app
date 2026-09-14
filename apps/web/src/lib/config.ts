@@ -43,6 +43,20 @@ export const config = {
   isProduction: process.env.NODE_ENV === 'production',
 
   /**
+   * Whether a magic link can actually be DELIVERED.
+   *
+   * `apps/server/src/auth/mailer.ts` falls back to a NoopMailer in production:
+   * it logs a warning and sends nothing, and the request still answers "ok"
+   * because a magic-link endpoint must respond identically whether or not the
+   * address exists. Correct for security, and it means an unconfigured mailer
+   * shows the user "check your email" for a message that will never arrive.
+   *
+   * So the UI asks this before offering the option at all. Mirrors the same
+   * two variables the server's boot preflight reads.
+   */
+  mailerConfigured: Boolean(process.env.MAILER_PROVIDER ?? process.env.SMTP_URL),
+
+  /**
    * Whether the real Google OAuth flow has credentials to run at all. When
    * this is true, `googleSignInSimulatorAvailable` below is always false —
    * the genuine flow takes precedence with nothing to configure to prefer it.

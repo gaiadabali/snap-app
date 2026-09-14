@@ -133,9 +133,18 @@ export class AuthController {
     if (isProduction()) {
       const identities = await listDemoAccounts();
       if (!identities.some((candidate) => candidate.email.toLowerCase() === email)) {
-        // The same 404 as "this route does not exist", so an address that is
-        // not on the list learns nothing about which addresses are.
-        throw new HttpException('Not found', HttpStatus.NOT_FOUND);
+        // Still 404 — the status must not distinguish "wrong address" from
+        // "no such route", or it becomes an oracle for which accounts exist.
+        //
+        // The MESSAGE can be helpful here, though, and only here: a demo host
+        // publishes its identities on the sign-in screen itself, so naming the
+        // situation reveals nothing that is not already on the page. A bare
+        // "Not found" sent a reviewer looking for a bug that did not exist.
+        // A real production host never reaches this branch.
+        throw new HttpException(
+          'That address is not one of this demo host’s accounts. Pick one from the list below.',
+          HttpStatus.NOT_FOUND,
+        );
       }
     }
 

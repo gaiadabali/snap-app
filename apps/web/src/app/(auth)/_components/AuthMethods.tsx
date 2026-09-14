@@ -70,28 +70,53 @@ export function AuthMethods({
             </ButtonLink>
           )}
 
-          <div className="flex items-center gap-3 text-[12px] font-medium uppercase tracking-[0.08em] text-[var(--color-ink-faint)]">
-            <span className="h-px flex-1 bg-[var(--color-rule)]" />
-            or
-            <span className="h-px flex-1 bg-[var(--color-rule)]" />
-          </div>
+          {config.mailerConfigured ? (
+            <>
+              <div className="flex items-center gap-3 text-[12px] font-medium uppercase tracking-[0.08em] text-[var(--color-ink-faint)]">
+                <span className="h-px flex-1 bg-[var(--color-rule)]" />
+                or
+                <span className="h-px flex-1 bg-[var(--color-rule)]" />
+              </div>
 
-          <form action={requestMagicLinkAction} className="flex flex-col gap-4">
-            <input type="hidden" name="returnTo" value={returnTo} />
-            <Field label="Email address" htmlFor="magic-email">
-              <Input
-                id="magic-email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                placeholder="you@example.com"
-                required
-              />
-            </Field>
-            <Button type="submit" size="lg">
-              Email me a sign-in link
-            </Button>
-          </form>
+              <form action={requestMagicLinkAction} className="flex flex-col gap-4">
+                <input type="hidden" name="returnTo" value={returnTo} />
+                <Field label="Email address" htmlFor="magic-email">
+                  <Input
+                    id="magic-email"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    placeholder="you@example.com"
+                    required
+                  />
+                </Field>
+                <Button type="submit" size="lg">
+                  Email me a sign-in link
+                </Button>
+              </form>
+            </>
+          ) : (
+            /*
+             * No mail provider, so a magic link cannot be delivered. Offering
+             * the form anyway would answer "check your email" for a message
+             * that never arrives — a dead end that looks like a mail delay and
+             * wastes a reviewer's time before they think to try anything else.
+             * Say so instead, and point at the way in that does work.
+             */
+            <div className="rounded-[var(--radius-md)] border border-[var(--color-rule-strong)] bg-[var(--color-surface-alt)] px-3 py-3 text-[13px] text-[var(--color-ink-muted)]">
+              <strong className="font-semibold text-[var(--color-ink)]">
+                {mode === 'register'
+                  ? 'Account creation is closed on this demo host.'
+                  : 'Email sign-in is unavailable on this demo host.'}
+              </strong>
+              <p className="mt-1">
+                No mail provider is configured, so a sign-in link cannot be delivered.
+                {mode === 'register'
+                  ? ' Use one of the demo identities above to explore every role — including the platform admin console.'
+                  : ' Use the demo sign-in above.'}
+              </p>
+            </div>
+          )}
         </>
       )}
 
