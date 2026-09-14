@@ -165,7 +165,12 @@ echo "${READY_BODY}" | grep -q '"rlsEnforced":true' \
   || fail "/v1/ready did NOT report rlsEnforced:true — the API may be connected as a role that bypasses RLS. DO NOT consider this deploy complete. Response: ${READY_BODY}"
 
 log "Verify: POST \${PUBLIC_URL}/v1/auth/sign-in returns 404 (it must be 404 in production, never 200)"
-SIGNIN_STATUS="$(curl -fsS -o /dev/null -w '%{http_code}' -X POST "${API_BASE}/v1/auth/sign-in" -H 'Content-Type: application/json' -d '{}')" || true
+# A VALID body, deliberately. `{}` fails the email validator and returns 400
+# before the request reaches the handler — so the old check could not tell
+# "the production gate is present" from "the gate was deleted". It was
+# verifying the validation pipe, not the security control it claimed to.
+# A well-formed address reaches the handler, where the gate decides.
+SIGNIN_STATUS="$(curl -sS -o /dev/null -w '%{http_code}' -X POST "${API_BASE}/v1/auth/sign-in" -H 'Content-Type: application/json' -d '{"email":"deploy-probe@invalid.example"}')" || true
 [[ "${SIGNIN_STATUS}" == "404" ]] \
   || fail "POST ${API_BASE}/v1/auth/sign-in returned ${SIGNIN_STATUS}, not 404 — this endpoint must never be reachable in production (see docs/DEPLOY.md §3). Refusing to consider this deploy successful."
 log "sign-in correctly 404"
