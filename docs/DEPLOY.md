@@ -407,3 +407,61 @@ EAS builds cost plan minutes and take 10–20 minutes each. It needs an
 and refuses up front naming which is missing — including refusing to build a
 profile whose `EXPO_PUBLIC_API_URL` is still a placeholder, since that value is
 inlined at build time and cannot be changed afterwards.
+
+---
+
+## 11. The staging addresses (delphi)
+
+Two addresses, following the pattern the other projects on this host already
+use (`pilot-fullstack-cms{,-api}.gaiada.online`):
+
+| Address | Serves | Consumed by | Loopback port |
+|---|---|---|---|
+| `snap-apps.gaiada.online` | Website + individual / business / admin panels | Browsers | 3300 |
+| `snap-apps-api.gaiada.online` | The API | The website server-side, **and the mobile app** | 3301 |
+
+The mobile app has no address of its own — it is a client of the API one, and
+`eas.json`'s `preview` profile now points at it.
+
+### How they were made
+
+This host runs **CloudPanel**, so sites are created with `clpctl`, not by
+hand-writing vhosts — the same way every other site here exists:
+
+```bash
+clpctl site:add:reverse-proxy --domainName=snap-apps.gaiada.online \
+  --reverseProxyUrl='http://127.0.0.1:3300' --siteUser=snapwebonl --siteUserPassword='...'
+```
+
+Site users `snapwebonl` / `snapapionl`; their passwords are on the host in
+`/etc/snap-apps/secrets/cloudpanel-sites.env` (chmod 600).
+
+**The ports are not the defaults, deliberately.** `127.0.0.1:3000` is already
+referenced by another project's vhost on this box. Nothing is listening on it,
+so a naive check calls it free — and taking it would have made that project's
+domain quietly serve this application to its visitors. 3300/3301 are referenced
+nowhere in nginx and unbound.
+
+### Still required, and neither can be done from here
+
+**1. DNS.** `gaiada.online` is on GoDaddy (`ns37/ns38.domaincontrol.com`). Add
+two A records pointing at `72.61.142.88`:
+
+```
+snap-apps.gaiada.online        A   72.61.142.88
+snap-apps-api.gaiada.online    A   72.61.142.88
+```
+
+**2. TLS, once DNS resolves.** Let's Encrypt validates over HTTP, so this must
+come second or it fails:
+
+```bash
+clpctl lets-encrypt:install:certificate --domainName=snap-apps.gaiada.online
+clpctl lets-encrypt:install:certificate --domainName=snap-apps-api.gaiada.online
+```
+
+**3. The GitHub token** (§10). Once it is in place the poller deploys within
+five minutes and the addresses go live.
+
+Until the containers run, both addresses answer 502 from nginx. That is the
+proxy behaving correctly with nothing behind it, not a misconfiguration.
