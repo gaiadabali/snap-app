@@ -47,7 +47,7 @@ services:
 
   api:
     build: *server-build
-    image: snap-server:${IMAGE_TAG:-local}
+    image: ${SERVER_IMAGE:-snap-server}:${IMAGE_TAG:-local}
     command: ["serve"]
     restart: unless-stopped
     env_file: .env
@@ -75,7 +75,7 @@ services:
 
   worker:
     build: *server-build
-    image: snap-server:${IMAGE_TAG:-local}
+    image: ${SERVER_IMAGE:-snap-server}:${IMAGE_TAG:-local}
     command: ["worker"]
     restart: unless-stopped
     env_file: .env
@@ -112,7 +112,7 @@ services:
     build:
       context: ..
       dockerfile: apps/web/Dockerfile
-    image: snap-web:${IMAGE_TAG:-local}
+    image: ${WEB_IMAGE:-snap-web}:${IMAGE_TAG:-local}
     command: ["start"]
     restart: unless-stopped
     env_file: .env

@@ -1,0 +1,96 @@
+name: Publish images
+
+# Builds the server and web images on GitHub and pushes them to GHCR, so the
+# VPS PULLS rather than compiles.
+#
+# This is not a convenience. `next build` on a small VPS is the step most
+# likely to fail: it is memory-hungry, and on a 2 GB box it gets OOM-killed
+# partway through with an error that looks like a code fault rather than a
+# capacity one. Building here means the box only ever runs `docker pull`, and
+# it means the artifact that was tested is the artifact that runs, rather than
+# two separate builds that happen to come from the same commit.
+#
+# The repository is private, so these packages inherit that visibility — the
+# VPS authenticates with a read-only token to pull them (see docs/DEPLOY.md).
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*', 'Alpha.*']
+  workflow_dispatch:
+
+concurrency:
+  group: images-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    # `packages: write` is what allows pushing to GHCR at all. `contents: read`
+    # is narrowed from the default deliberately: this job never needs to write
+    # to the repository.
+    permissions:
+      contents: read
+      packages: write
+
+    strategy:
+      # One image failing should not hide whether the other builds.
+      fail-fast: false
+      matrix:
+        include:
+          - name: snap-server
+            dockerfile: apps/server/Dockerfile
+          - name: snap-web
+            dockerfile: apps/web/Dockerfile
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Tags and labels
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ matrix.name }}
+          # The short SHA is the tag `deploy.sh` uses, because a deployment
+          # must name an exact immutable build. `latest` exists only for a
+          # human poking at the registry — never deploy from it, or "roll back"
+          # stops meaning anything.
+          tags: |
+            type=sha,format=short
+            type=ref,event=tag
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # Layer cache in the registry: a monorepo install is the slow part
+          # and changes far less often than application source.
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+
+      - name: Report what to deploy
+        run: |
+          echo "Pushed:"
+          echo "${{ steps.meta.outputs.tags }}"
+          echo ""
+          echo "On the VPS, deploy this exact build with:"
+          echo "  IMAGE_TAG=sha-$(git rev-parse --short HEAD) deploy/deploy.sh --pull"

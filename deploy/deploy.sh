@@ -9,8 +9,17 @@
 #
 # Usage (as the snapapps user, from the repo root, after bootstrap.sh and a
 # filled-in deploy/.env):
-#   deploy/deploy.sh                 # build, migrate, verify, deploy at HEAD
-#   deploy/deploy.sh --rollback SHA   # redeploy a previously-built image tag
+#   deploy/deploy.sh                 # build on this host, migrate, verify, deploy
+#   deploy/deploy.sh --pull           # PULL prebuilt images from GHCR instead
+#   deploy/deploy.sh --rollback SHA   # redeploy a previously-deployed image tag
+#
+# Prefer --pull on a small VPS. `next build` is the most memory-hungry step in
+# this stack and is the one that gets OOM-killed on a 2 GB box, with an error
+# that reads like a code fault rather than a capacity one. The images are built
+# by .github/workflows/publish-images.yml, so --pull also means the artifact
+# that CI tested is the artifact that runs.
+# Requires SERVER_IMAGE / WEB_IMAGE / IMAGE_TAG in deploy/.env, and a prior
+# `docker login ghcr.io` (the repo is private).
 #
 # Does NOT: touch the postgres volume, run `db.mjs reset`, or force-recreate
 # postgres. Any state-destroying operation is out of scope for this script by
@@ -32,8 +41,19 @@ fail() { echo "FAILED: $*" >&2; exit 1; }
 set -a; source "${ENV_FILE}"; set +a
 
 ROLLBACK_SHA=""
-if [[ "${1:-}" == "--rollback" ]]; then
-  ROLLBACK_SHA="${2:?--rollback needs a SHA — see: docker images | grep snap-server}"
+PULL_MODE=0
+case "${1:-}" in
+  --rollback) ROLLBACK_SHA="${2:?--rollback needs a SHA — see: docker images | grep snap-server}" ;;
+  --pull)     PULL_MODE=1 ;;
+  "")         ;;
+  *)          fail "unknown option '${1}'. Use --pull, --rollback SHA, or no argument." ;;
+esac
+
+if [[ "${PULL_MODE}" == "1" ]]; then
+  # Named explicitly rather than defaulted: pulling the wrong registry's image
+  # is a silent way to deploy something nobody reviewed.
+  [[ -n "${SERVER_IMAGE:-}" && -n "${WEB_IMAGE:-}" ]]     || fail "--pull needs SERVER_IMAGE and WEB_IMAGE in deploy/.env (e.g. ghcr.io/gaiadabali/snap-server)."
+  [[ -n "${IMAGE_TAG:-}" ]]     || fail "--pull needs IMAGE_TAG in deploy/.env naming an exact build (e.g. sha-1a2b3c4). Never 'latest' — a rollback must be able to name what it is rolling back to."
 fi
 
 cd "${REPO_ROOT}"
@@ -47,10 +67,16 @@ if [[ -n "${ROLLBACK_SHA}" ]]; then
   "${COMPOSE[@]}" up -d postgres api worker web caddy
   log "Rolled back to ${ROLLBACK_SHA}. Verifying..."
 else
-  IMAGE_TAG="$(git rev-parse --short HEAD)"
-  export IMAGE_TAG
-  log "Building images at ${IMAGE_TAG}"
-  "${COMPOSE[@]}" build --pull api worker web
+  if [[ "${PULL_MODE}" == "1" ]]; then
+    export IMAGE_TAG
+    log "Pulling prebuilt images ${SERVER_IMAGE}:${IMAGE_TAG} and ${WEB_IMAGE}:${IMAGE_TAG}"
+    "${COMPOSE[@]}" pull api worker web       || fail "pull failed. The repo is private — has this host run 'docker login ghcr.io'? Does the tag exist?"
+  else
+    IMAGE_TAG="$(git rev-parse --short HEAD)"
+    export IMAGE_TAG
+    log "Building images at ${IMAGE_TAG} (use --pull on a small VPS; next build is memory-hungry)"
+    "${COMPOSE[@]}" build --pull api worker web
+  fi
 
   log "Pulling postgres/caddy"
   "${COMPOSE[@]}" pull postgres caddy

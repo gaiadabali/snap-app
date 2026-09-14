@@ -9,7 +9,6 @@
 # production to get automatic HTTPS; a `http://host:port` address (as
 # deploy/.env.local.example does) disables TLS entirely, which is what local
 # verification uses since there is no public domain to issue a cert for.
-
 {
 	email {$CADDY_ACME_EMAIL}
 }
