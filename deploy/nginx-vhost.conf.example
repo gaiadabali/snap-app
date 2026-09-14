@@ -1,0 +1,85 @@
+# Fronting Snap Apps with an EXISTING nginx.
+#
+# Use this instead of the bundled Caddy when the host already terminates TLS
+# for other sites — as `delphi` does, serving many gaiada.com vhosts on 80/443
+# alongside MariaDB, Varnish and a system Postgres. Two things must not happen
+# on a box like that: a second process fighting for 443, and somebody "fixing"
+# that fight by stopping the nginx everyone else depends on.
+#
+# So: deploy with `SKIP_CADDY=1 deploy/deploy.sh`, which publishes the app on
+# loopback only, and add this vhost.
+#
+#   1. Point DNS at the server, then:
+#        certbot --nginx -d snap.example.com -d api.snap.example.com
+#      Certbot rewrites the listen/ssl lines below; that is expected.
+#   2. cp this to /etc/nginx/sites-available/snap-apps.conf
+#   3. ln -s into sites-enabled, then: nginx -t && systemctl reload nginx
+#
+# `nginx -t` before every reload. On a host serving other people's sites, a
+# broken config that is reloaded anyway takes all of them down, not just this
+# one.
+
+# ── The API ──────────────────────────────────────────────────────────────────
+server {
+    listen 80;
+    server_name api.REPLACE-ME.example;
+
+    # Receipt photographs and PDFs. The API itself accepts 32 MB (see
+    # apps/server/src/main.ts bodyLimit); nginx's 1 MB default would reject an
+    # ordinary phone photo with a 413 long before the app ever saw it.
+    client_max_body_size 32m;
+
+    location / {
+        proxy_pass http://127.0.0.1:4000;
+        proxy_http_version 1.1;
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # Extraction calls a vision model; the default 60s read timeout will
+        # cut a slow multi-page document off mid-flight and surface as a 504
+        # that looks like a server fault rather than a slow upstream.
+        proxy_read_timeout 300s;
+        proxy_send_timeout 300s;
+    }
+}
+
+# ── The website ──────────────────────────────────────────────────────────────
+server {
+    listen 80;
+    server_name REPLACE-ME.example;
+
+    client_max_body_size 32m;
+
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # Next.js streams server-rendered responses; buffering them delays
+        # first paint and breaks streaming entirely on slower pages.
+        proxy_buffering off;
+    }
+
+    # Immutable, content-hashed build assets. Safe to cache hard, and worth it:
+    # without this every asset is proxied to Node on every request.
+    location /_next/static/ {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_cache_valid 200 365d;
+        add_header Cache-Control "public, max-age=31536000, immutable";
+    }
+}
+
+# ── After TLS is issued, set these in deploy/.env and redeploy ───────────────
+#
+#   PUBLIC_URL=https://api.REPLACE-ME.example
+#   WEB_PUBLIC_URL=https://REPLACE-ME.example
+#   CORS_ORIGINS=https://REPLACE-ME.example
+#
+# CORS_ORIGINS is an allow-list and must name the website's origin exactly. It
+# is never `*` — these responses carry financial records, and the boot
+# preflight fails outright on a wildcard.

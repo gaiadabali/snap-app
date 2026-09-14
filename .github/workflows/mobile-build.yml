@@ -1,0 +1,107 @@
+name: Mobile build
+
+# The mobile half of the same pipeline: GitHub → EAS → an installable APK.
+#
+# A phone app cannot be "deployed" to a server the way the website is, so the
+# analogue of `poll-deploy.sh` ends at an artifact somebody installs. What is
+# shared is the shape: a tag or a button produces a build from a known commit,
+# nobody builds from a laptop, and the binary is traceable to a SHA.
+#
+# NOT on every push, deliberately. EAS builds consume plan minutes and take
+# 10-20 minutes each; a build per commit would exhaust the quota and nobody
+# would install them anyway. Tag when you want a build, or run it by hand.
+#
+# BEFORE THIS CAN RUN, two things are needed and neither can be automated here:
+#
+#   1. `extra.eas.projectId` in apps/mobile/app.json. A project id is issued by
+#      Expo against a specific account and cannot be invented:
+#         cd apps/mobile && npx eas login && npx eas init
+#
+#   2. An `EXPO_TOKEN` repository secret — Expo dashboard → Access tokens.
+#      Without it eas-action cannot authenticate and the job fails immediately.
+#
+# The workflow checks for both up front and says which is missing, rather than
+# failing thirty lines into an EAS command with something less obvious.
+
+on:
+  push:
+    tags: ['mobile-v*', 'Alpha.*']
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: 'EAS build profile (see eas.json)'
+        required: true
+        default: preview
+        type: choice
+        options: [demo, preview, production]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check the prerequisites that cannot be automated
+        run: |
+          missing=0
+          if ! grep -q '"projectId"' apps/mobile/app.json; then
+            echo "::error::apps/mobile/app.json has no extra.eas.projectId. Run: cd apps/mobile && npx eas login && npx eas init"
+            missing=1
+          fi
+          if [ -z "${{ secrets.EXPO_TOKEN }}" ]; then
+            echo "::error::EXPO_TOKEN repository secret is not set (Expo dashboard → Access tokens)."
+            missing=1
+          fi
+          # The build profile bakes EXPO_PUBLIC_API_URL into the bundle and it
+          # cannot be changed afterwards, so a placeholder must not ship: the
+          # app would point at a hostname that does not resolve, and would look
+          # like a network fault on every screen.
+          profile="${{ inputs.profile || 'preview' }}"
+          url=$(python3 -c "import json;print(json.load(open('eas.json'))['build']['$profile'].get('env',{}).get('EXPO_PUBLIC_API_URL',''))")
+          if echo "$url" | grep -q 'REPLACE-WITH'; then
+            echo "::error::eas.json profile '$profile' still has a placeholder EXPO_PUBLIC_API_URL ($url). Set the real staging/production API hostname first — it is inlined at build time and cannot be changed after."
+            missing=1
+          fi
+          [ "$missing" = "0" ] || exit 1
+          echo "Prerequisites OK — building '$profile' against $url"
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.3.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # Cheap, and catches the class of problem that otherwise surfaces twenty
+      # minutes into a remote build: a missing config plugin, a bad app.json.
+      - name: expo-doctor
+        working-directory: apps/mobile
+        run: npx expo-doctor
+
+      - name: EAS build
+        working-directory: apps/mobile
+        run: |
+          eas build \
+            --platform android \
+            --profile "${{ inputs.profile || 'preview' }}" \
+            --non-interactive \
+            --wait
+
+      - name: Where to get it
+        run: |
+          echo "Build finished. The APK is on the EAS dashboard for this project;"
+          echo "'eas build:list --limit 1' prints its download URL."
+          echo "iOS is not built here: it cannot be side-loaded, so it goes via"
+          echo "TestFlight. See docs/WEB.md §7 and docs/BUILD.md §6."

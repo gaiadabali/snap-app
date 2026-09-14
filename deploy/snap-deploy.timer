@@ -1,0 +1,15 @@
+[Unit]
+Description=Poll GitHub for a deployable Snap Apps commit
+
+[Timer]
+# Five minutes: fast enough that a merge is live before anyone asks, slow
+# enough to stay far inside GitHub's rate limit (this makes 2 API calls a tick,
+# ~576/day against 5000/hour for a token).
+OnBootSec=3min
+OnUnitActiveSec=5min
+# Without this, every host with this timer polls on the same second.
+RandomizedDelaySec=45
+Persistent=true
+
+[Install]
+WantedBy=timers.target

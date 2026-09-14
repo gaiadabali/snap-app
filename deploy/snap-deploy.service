@@ -1,0 +1,15 @@
+[Unit]
+Description=Snap Apps — poll GitHub and deploy the newest green commit
+Documentation=file:///opt/snap-apps/docs/DEPLOY.md
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/snap-apps/deploy/poll-deploy.sh
+# Long enough for a migration plus a container restart; short enough that a
+# wedged deploy is killed rather than blocking every later tick behind its lock.
+TimeoutStartSec=900
+# Non-zero exit is expected and normal here — "the token expired", "images not
+# published yet". The timer keeps ticking; journalctl carries the reason.
+SuccessExitStatus=0
