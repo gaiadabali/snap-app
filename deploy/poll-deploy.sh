@@ -17,8 +17,14 @@
 # noisily every minute until they do.
 #
 # Setup (once, as root) — ONE credential, nothing else:
-#   1. Create a fine-grained PAT scoped to this repository with
-#        Contents: Read   and   Packages: Read
+#   1. Create a CLASSIC personal access token with scopes:
+#        repo            (read the private repository)
+#        read:packages   (pull the images from GHCR)
+#      Classic, not fine-grained: GHCR's support for fine-grained tokens is
+#      still partial, and a token that reads the repo fine but cannot pull an
+#      image fails halfway through a deploy rather than at the first step.
+#      It must belong to an account that can SEE the packages — they inherit
+#      the repository's private visibility.
 #      and put it in /etc/snap-apps/secrets/github.env as
 #        GITHUB_TOKEN=github_pat_...
 #      chmod 600 that file. It is the only secret this host needs.

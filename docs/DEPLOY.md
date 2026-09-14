@@ -366,8 +366,12 @@ merge to main
 
 ### The one thing still needed
 
-A **fine-grained PAT** scoped to this repository with `Contents: Read` and
-`Packages: Read`, on the host:
+A **classic** personal access token with the `repo` and `read:packages`
+scopes, on the host. Classic rather than fine-grained: GHCR's support for
+fine-grained tokens is still partial, and a token that reads the repository
+but cannot pull an image fails halfway through a deploy instead of at the
+first step. It must belong to an account that can see the packages — they
+inherit the repository's private visibility.
 
 ```bash
 install -m 600 /dev/null /etc/snap-apps/secrets/github.env
