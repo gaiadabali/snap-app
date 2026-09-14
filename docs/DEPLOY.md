@@ -334,3 +334,76 @@ Logs: `docker compose -f deploy/docker-compose.yml logs -f api worker web`.
 Captured originals: the host path in `STORAGE_HOST_DIR` — legal records under
 ATO retention, so they must be in the backup set (`deploy/backup.sh`), not just
 in a container volume.
+
+---
+
+## 10. Continuous deploy: GitHub → delphi polls → live
+
+The website and server deploy themselves. A systemd timer on the host asks
+GitHub every five minutes what the deployable commit is and rolls it out if it
+differs from what is running. Nobody SSHes in to ship.
+
+**Deployable is not "newest commit on main".** It is the newest commit whose
+**CI passed and whose images were published** — `poll-deploy.sh` intersects the
+successful runs of both workflows. A commit can have green images and red
+tests; deploying that is worse than not deploying.
+
+Pull rather than push, deliberately: a push deploy needs a credential that can
+*change* the server, held by a laptop or a CI runner. Here the server holds one
+**read-only** token and nothing outside needs access to it.
+
+```
+merge to main
+   ├─ CI ................... typecheck, 4 suites, RLS assertion, web build
+   └─ Publish images ....... ghcr.io/gaiadabali/snap-{server,web}:sha-<short>
+                                          ↓  (delphi polls, ≤5 min)
+                             poll-deploy.sh: both green? → git reset --hard
+                                          ↓
+                             deploy.sh --pull: migrate, roles, restart
+                                          ↓
+                             verify: /v1/ready rlsEnforced, sign-in 404
+```
+
+### The one thing still needed
+
+A **fine-grained PAT** scoped to this repository with `Contents: Read` and
+`Packages: Read`, on the host:
+
+```bash
+install -m 600 /dev/null /etc/snap-apps/secrets/github.env
+echo 'GITHUB_TOKEN=github_pat_...' > /etc/snap-apps/secrets/github.env
+systemctl enable --now snap-deploy.timer
+journalctl -u snap-deploy.service -f
+```
+
+One credential covers both git and GHCR. A deploy key would be tidier for git,
+but **deploy keys are disabled by policy on this repository** — confirmed, the
+API returns 422 — and one read-only token is arguably better anyway: less to
+rotate, and it cannot write.
+
+Until that file exists the poller exits cleanly each tick with
+`FAILED: /etc/snap-apps/secrets/github.env not found`, which is why the timer
+ships disabled: enabling it first would fill the journal with a failure nobody
+needs repeated every five minutes.
+
+### What is already in place on delphi
+
+`/opt/snap-apps` (repo + `deploy/.env` with secrets generated on-host, chmod
+600), `/etc/snap-apps/secrets/ollama.env` (extraction key, chmod 600),
+`/opt/snap-apps/data/storage`, and both systemd units installed.
+
+`bootstrap.sh` was deliberately **not** run. It does `ufw default deny
+incoming` and `ufw --force enable` permitting only 22/80/443, and this host
+also serves 6081 (Varnish) and 8443 (nginx) publicly — it would have cut live
+services. Docker 29.8 and Node 22 were already installed, so it had nothing to
+offer that was worth that risk.
+
+### Mobile
+
+`.github/workflows/mobile-build.yml` is the same shape, ending in an artifact
+rather than a server. Tag- or button-triggered rather than per-commit, because
+EAS builds cost plan minutes and take 10–20 minutes each. It needs an
+`EXPO_TOKEN` secret and an EAS project id (`npx eas login && npx eas init`),
+and refuses up front naming which is missing — including refusing to build a
+profile whose `EXPO_PUBLIC_API_URL` is still a placeholder, since that value is
+inlined at build time and cannot be changed afterwards.
