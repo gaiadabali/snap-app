@@ -13,6 +13,14 @@
 #   deploy/deploy.sh --pull           # PULL prebuilt images from GHCR instead
 #   deploy/deploy.sh --rollback SHA   # redeploy a previously-deployed image tag
 #
+# SKIP_CADDY=1 deploy/deploy.sh ...  # host already has a reverse proxy on 80/443
+#
+# Set SKIP_CADDY=1 when something else already owns 80/443 — an existing nginx
+# serving other sites, for instance. Caddy would fail to bind and, worse, a
+# careless fix would take that other thing down. With it set, api and web are
+# published on loopback only and you point the existing proxy at them; see
+# docs/DEPLOY.md §9.
+#
 # Prefer --pull on a small VPS. `next build` is the most memory-hungry step in
 # this stack and is the one that gets OOM-killed on a 2 GB box, with an error
 # that reads like a code fault rather than a capacity one. The images are built
@@ -30,6 +38,16 @@ set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${HERE}/.." && pwd)"
 COMPOSE=(docker compose -f "${HERE}/docker-compose.yml" --env-file "${HERE}/.env")
+
+# Which services this host runs. Caddy is optional because a box that already
+# terminates TLS for other sites must not have a second thing fighting for
+# port 443.
+SERVICES=(api worker web caddy)
+HEALTH_SERVICES=(postgres api worker web caddy)
+if [[ "${SKIP_CADDY:-0}" == "1" ]]; then
+  SERVICES=(api worker web)
+  HEALTH_SERVICES=(postgres api worker web)
+fi
 ENV_FILE="${HERE}/.env"
 
 log()  { echo "==> $*"; }
@@ -64,7 +82,7 @@ if [[ -n "${ROLLBACK_SHA}" ]]; then
   docker image inspect "snap-web:${ROLLBACK_SHA}" >/dev/null 2>&1 || fail "no local image snap-web:${ROLLBACK_SHA}"
   IMAGE_TAG="${ROLLBACK_SHA}"
   export IMAGE_TAG
-  "${COMPOSE[@]}" up -d postgres api worker web caddy
+  "${COMPOSE[@]}" up -d postgres "${SERVICES[@]}"
   log "Rolled back to ${ROLLBACK_SHA}. Verifying..."
 else
   if [[ "${PULL_MODE}" == "1" ]]; then
@@ -79,7 +97,7 @@ else
   fi
 
   log "Pulling postgres/caddy"
-  "${COMPOSE[@]}" pull postgres caddy
+  if [[ "${SKIP_CADDY:-0}" == "1" ]]; then "${COMPOSE[@]}" pull postgres; else "${COMPOSE[@]}" pull postgres caddy; fi
 
   log "Starting postgres, waiting for it to be genuinely ready"
   "${COMPOSE[@]}" up -d postgres
@@ -99,8 +117,8 @@ else
   APP_DB_PASSWORD="${APP_DB_PASSWORD:?APP_DB_PASSWORD must be set in deploy/.env}" \
     node "${REPO_ROOT}/packages/db/scripts/db.mjs" appuser
 
-  log "Starting api, worker, web, caddy at image tag ${IMAGE_TAG}"
-  "${COMPOSE[@]}" up -d api worker web caddy
+  log "Starting ${SERVICES[*]} at image tag ${IMAGE_TAG}"
+  "${COMPOSE[@]}" up -d "${SERVICES[@]}"
 
   # Record the tag that just went live so a later --rollback has something to
   # target without the operator hunting through `docker images` or shell history.
@@ -112,7 +130,7 @@ else
 fi
 
 log "Waiting for containers to report healthy"
-for svc in postgres api worker web caddy; do
+for svc in "${HEALTH_SERVICES[@]}"; do
   tries=0
   until [[ "$(docker inspect -f '{{.State.Health.Status}}' "$("${COMPOSE[@]}" ps -q "${svc}")" 2>/dev/null)" == "healthy" ]]; do
     tries=$((tries + 1))

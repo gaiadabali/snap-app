@@ -46,24 +46,35 @@ RUN mkdir -p public
 RUN pnpm build
 
 # ── runtime ──────────────────────────────────────────────────────────────────
-# Reuses the `build` stage's node_modules wholesale rather than a fresh
-# `--prod` install. Verified necessary, not assumed: next.config.ts is
-# TypeScript, and `next start` loads it by invoking the TypeScript compiler
-# ON DEMAND at process start — a `--prod` install strips the `typescript`
-# devDependency, and `next start` then fails outright trying (and failing) to
-# self-install it, tripping over pnpm's store-location check in the process.
-FROM build AS runtime
-ENV NODE_ENV=production
+# A slim runtime, NOT the build stage.
+#
+# This used to be `FROM build`, carrying node_modules and the build cache into
+# the shipped image: 2.72 GB. The stated reason was real — `next start` loads
+# next.config.ts, which is TypeScript, so it needs the `typescript`
+# devDependency at process start. `output: 'standalone'` removes that reason
+# entirely: `.next/standalone/server.js` is plain JavaScript, never reads the
+# config, and carries only the dependencies Next actually traced.
+#
+# It matters beyond tidiness: the target VPS is at 85% disk and serves live
+# sites, so a multi-gigabyte image is a real risk to somebody else's uptime.
+FROM node:22-bookworm-slim AS runtime
+ENV NODE_ENV=production     PORT=3000     HOSTNAME=0.0.0.0
 
-# See apps/server/Dockerfile — plain (non --system) ids to avoid useradd
-# scanning the system-id range for a slot it will not use.
-RUN groupadd --gid 1001 snap \
-    && useradd --uid 1001 --gid 1001 --no-create-home snap \
-    && chown -R snap:snap /repo
+WORKDIR /repo
+
+# Plain (non --system) ids, matching apps/server/Dockerfile.
+RUN groupadd --gid 1001 snap     && useradd --uid 1001 --gid 1001 --no-create-home snap
+
+# `outputFileTracingRoot` is the repo root, so standalone reproduces the
+# workspace layout: server.js sits at apps/web/ with node_modules at the root.
+COPY --from=build --chown=snap:snap /repo/apps/web/.next/standalone ./
+# Static assets and public/ are deliberately NOT included in standalone output
+# — Next expects them copied alongside, and without this every asset 404s
+# while the pages themselves render, which looks like a CSS bug.
+COPY --from=build --chown=snap:snap /repo/apps/web/.next/static ./apps/web/.next/static
+COPY --from=build --chown=snap:snap /repo/apps/web/public ./apps/web/public
 
 USER snap
-WORKDIR /repo/apps/web
 EXPOSE 3000
 
-ENTRYPOINT ["pnpm"]
-CMD ["start"]
+CMD ["node", "apps/web/server.js"]

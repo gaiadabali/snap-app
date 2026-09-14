@@ -12,6 +12,20 @@ import type { NextConfig } from 'next';
  */
 const config: NextConfig = {
   reactStrictMode: true,
+  /**
+   * Ships a self-contained server with only the traced dependencies.
+   *
+   * Without it the runtime image had to reuse the whole build stage —
+   * node_modules, build cache and all — because `next start` loads this
+   * TypeScript config at process start and therefore needs `typescript`
+   * present. That produced a 2.7 GB image, which is a third of the free disk
+   * on the target VPS, a box already at 85% and serving live sites.
+   *
+   * `.next/standalone/server.js` is plain JavaScript and never reads this
+   * file, so the runtime needs neither `next` nor `typescript` — which
+   * removes the reason the build stage was being kept.
+   */
+  output: 'standalone',
   /* This repo is a pnpm workspace nested under a home directory that also has a
      lockfile. Without this, Next picks the wrong root and traces the wrong files. */
   outputFileTracingRoot: join(import.meta.dirname, '../..'),
