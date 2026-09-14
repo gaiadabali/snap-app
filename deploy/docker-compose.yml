@@ -46,6 +46,20 @@ services:
     # verification only.
 
   api:
+    # Published on LOOPBACK ONLY, for a reverse proxy on this host.
+    #
+    # 127.0.0.1 is not decoration: without it Docker publishes on
+    # 0.0.0.0 and writes its own iptables rules, which bypass ufw
+    # entirely. The app would be reachable from the internet on a raw
+    # unencrypted port while `ufw status` still claimed only 80/443
+    # were open.
+    #
+    # The host port is a variable because the default collides on a
+    # shared box: 4000 was already claimed by another project's vhost
+    # on the target host, and binding it would have made that project's
+    # domain quietly serve this app.
+    ports:
+      - '127.0.0.1:${API_HOST_PORT:-4000}:4000'
     build: *server-build
     image: ${SERVER_IMAGE:-snap-server}:${IMAGE_TAG:-local}
     command: ["serve"]
@@ -109,6 +123,20 @@ services:
       start_period: 15s
 
   web:
+    # Published on LOOPBACK ONLY, for a reverse proxy on this host.
+    #
+    # 127.0.0.1 is not decoration: without it Docker publishes on
+    # 0.0.0.0 and writes its own iptables rules, which bypass ufw
+    # entirely. The app would be reachable from the internet on a raw
+    # unencrypted port while `ufw status` still claimed only 80/443
+    # were open.
+    #
+    # The host port is a variable because the default collides on a
+    # shared box: 3000 was already claimed by another project's vhost
+    # on the target host, and binding it would have made that project's
+    # domain quietly serve this app.
+    ports:
+      - '127.0.0.1:${WEB_HOST_PORT:-3000}:3000'
     build:
       context: ..
       dockerfile: apps/web/Dockerfile
