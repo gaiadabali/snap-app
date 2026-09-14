@@ -55,8 +55,23 @@ fail() { echo "FAILED: $*" >&2; exit 1; }
 
 [[ -f "${ENV_FILE}" ]] || fail "deploy/.env not found. Copy deploy/.env.example and fill it in first."
 
+# An IMAGE_TAG passed by the CALLER must survive sourcing the env file.
+#
+# `set -a; source` overwrites the environment with whatever the file says, and
+# deploy.sh WRITES the last deployed tag back into that file at the end. So the
+# poller's `IMAGE_TAG=sha-abc1234 deploy.sh --pull` was being silently replaced
+# by the previous run's value, and the deploy would pull a tag nobody asked for
+# — or one that does not exist, failing with a registry error that says nothing
+# about precedence.
+CALLER_IMAGE_TAG="${IMAGE_TAG:-}"
+
 # shellcheck disable=SC1090
 set -a; source "${ENV_FILE}"; set +a
+
+if [[ -n "${CALLER_IMAGE_TAG}" ]]; then
+  IMAGE_TAG="${CALLER_IMAGE_TAG}"
+  export IMAGE_TAG
+fi
 
 ROLLBACK_SHA=""
 PULL_MODE=0
