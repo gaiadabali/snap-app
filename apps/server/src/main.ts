@@ -9,7 +9,7 @@ import { AppModule } from './app.module.js';
 import { PREFLIGHT_ROLE_SQL, evaluatePreflight } from './preflight.js';
 import { ErrorsFilter } from './common/errors.filter.js';
 import { closeDb, getDb } from './db.js';
-import { config } from './config.js';
+import { config, isGoogleSignInSimulatorEnabled } from './config.js';
 import { sql } from 'drizzle-orm';
 
 import cors from '@fastify/cors';
@@ -41,6 +41,17 @@ import { IdempotencyInterceptor } from './common/idempotency.interceptor.js';
  * provider throws rather than quietly falling back offshore.
  *
  * Delete the mailer clause here the moment a real provider is wired.
+ *
+ * The simulated Google sign-in (`AuthController#googleSimulatorSignIn`,
+ * gated by `isGoogleSignInSimulatorEnabled`) counts as a fourth way in,
+ * deliberately: it exists precisely so the demo host — which IS a production
+ * build, same image as everywhere else — does not hit this same refusal
+ * before real Google credentials exist. It cannot satisfy this check by
+ * accident: it requires its own two extra opt-ins (`DEMO_ENV=staging` and
+ * `GOOGLE_SIGNIN_SIMULATOR=true`) on top of `NODE_ENV=production`, and it
+ * turns itself back off the moment `GOOGLE_CLIENT_ID` is actually set — so a
+ * plain production deployment with neither Google nor the simulator
+ * configured still refuses to boot exactly as before.
  */
 function assertProductionHasAWayIn(settings: ReturnType<typeof config>): void {
   if (settings.NODE_ENV !== 'production') return;
@@ -49,7 +60,8 @@ function assertProductionHasAWayIn(settings: ReturnType<typeof config>): void {
   // No real Mailer implementation exists yet, so the magic link cannot deliver
   // in production however it is configured.
   const magicLink = false;
-  if (google || magicLink) return;
+  const simulator = isGoogleSignInSimulatorEnabled();
+  if (google || magicLink || simulator) return;
 
   throw new Error(
     [
@@ -57,7 +69,9 @@ function assertProductionHasAWayIn(settings: ReturnType<typeof config>): void {
       '  - passwordless email sign-in is disabled in production, by design',
       '  - the magic link needs a real Mailer; the production mailer is NoopMailer and delivers nothing',
       '  - Google needs GOOGLE_CLIENT_ID, which is not set',
-      'Configure Google, or wire a real email provider, before deploying.',
+      '  - the simulated Google sign-in needs DEMO_ENV=staging AND GOOGLE_SIGNIN_SIMULATOR=true, ' +
+        'neither of which is set (see apps/server/src/config.ts#isGoogleSignInSimulatorEnabled)',
+      'Configure Google, wire a real email provider, or enable the demo-host simulator, before deploying.',
     ].join('\n'),
   );
 }

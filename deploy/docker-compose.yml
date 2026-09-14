@@ -1,0 +1,188 @@
+# Snap Apps — production compose file.
+#
+# Build context for api/worker/web is the REPO ROOT (`..` from here), because
+# this is a pnpm workspace and both Dockerfiles need every package.json to
+# resolve it. Run this file with `-f deploy/docker-compose.yml` from the repo
+# root, or `cd deploy && docker compose ...` — either works, compose resolves
+# `context: ..` and `env_file: .env` relative to THIS file's directory either
+# way.
+#
+# See docs/DEPLOY.md §9 for the full runbook (first-time setup, routine
+# deploy, rollback). deploy/deploy.sh drives this file; it is not meant to be
+# invoked by hand for a real rollout.
+
+name: snap-apps
+
+x-server-build: &server-build
+  context: ..
+  dockerfile: apps/server/Dockerfile
+
+services:
+  postgres:
+    image: postgres:17.2-alpine
+    container_name: ${SNAP_PG_CONTAINER:-snap-postgres}
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: snapapps
+      # The superuser password. Nothing application-level ever connects with
+      # it — deploy.sh uses `docker exec ... psql` (local socket, trust auth)
+      # to run migrations and create snap_app/snap_worker, exactly as
+      # packages/db/scripts/db.mjs already does for local dev. The API and
+      # worker connect as snap_app/snap_worker, never as postgres — the boot
+      # preflight (apps/server/src/preflight.ts) refuses to start otherwise.
+      POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD:?set POSTGRES_SUPERUSER_PASSWORD in .env}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks: [snap-internal]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d snapapps"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    # Never published to the host in production — only Caddy and, if you
+    # choose to open it for psql/backup tooling, an operator's own SSH
+    # tunnel. deploy/docker-compose.local.yml adds a host port for local
+    # verification only.
+
+  api:
+    build: *server-build
+    image: snap-server:${IMAGE_TAG:-local}
+    command: ["serve"]
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://snap_app:${APP_DB_PASSWORD}@postgres:5432/snapapps
+    volumes:
+      - storage_data:/data/storage
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [snap-internal]
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:4000/v1/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+  worker:
+    build: *server-build
+    image: snap-server:${IMAGE_TAG:-local}
+    command: ["worker"]
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      # The worker's OWN role — never snap_app. It carries the one policy
+      # that spans tenants (on `jobs`, and only `jobs`) so a queue consumer
+      # can claim work before it has a tenant context; see
+      # apps/server/src/config.ts's WORKER_DATABASE_URL comment.
+      DATABASE_URL: postgres://snap_app:${APP_DB_PASSWORD}@postgres:5432/snapapps
+      WORKER_DATABASE_URL: postgres://snap_worker:${APP_DB_PASSWORD}@postgres:5432/snapapps
+      # The Ollama Cloud key is never baked into the image or this file — it
+      # is read from a file on the HOST (OLLAMA_ENV_FILE_HOST in .env, e.g.
+      # /etc/snap-apps/secrets/ollama.env, mode 0600, outside the repo) and
+      # bind-mounted read-only below. This is the same
+      # KEY=VALUE-file-on-disk shape apps/server/src/extraction/provider.ts
+      # already reads (see readKeyFromEnvFile) — only the path changes.
+      OLLAMA_ENV_FILE: /run/secrets/ollama.env
+    volumes:
+      - storage_data:/data/storage
+      - ${OLLAMA_ENV_FILE_HOST:-/dev/null}:/run/secrets/ollama.env:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [snap-internal]
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f scripts/worker.ts || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+  web:
+    build:
+      context: ..
+      dockerfile: apps/web/Dockerfile
+    image: snap-web:${IMAGE_TAG:-local}
+    command: ["start"]
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      # Server-to-server only — the browser never talks to the API directly
+      # (apps/web/src/lib/config.ts). This is the compose-internal hostname,
+      # not PUBLIC_URL.
+      SNAP_API_URL: http://api:4000
+    depends_on:
+      api:
+        condition: service_healthy
+    networks: [snap-internal]
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.status<500?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  caddy:
+    image: caddy:2.8.4-alpine
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - '${HTTP_PORT:-80}:80'
+      - '${HTTPS_PORT:-443}:443'
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      api:
+        condition: service_healthy
+      web:
+        condition: service_healthy
+    networks: [snap-internal]
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:2019/config/"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+networks:
+  snap-internal:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  # Legal records (originals) live here — 5-year ATO retention, see
+  # docs/DEPLOY.md §9's backup section. A plain NAMED volume is fine for
+  # Postgres (pg_dump is the correct backup method regardless of where its
+  # files physically sit), but storage_data is a named volume BOUND to a host
+  # path (STORAGE_HOST_DIR) instead of Docker-managed storage, so file-level
+  # backup tooling (rsync/restic/tar) can reach the originals directly without
+  # going through the Docker API, and the directory survives `docker compose
+  # down -v` by construction (nothing about that host path is removed by
+  # Docker even when the volume record is).
+  storage_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${STORAGE_HOST_DIR:?set STORAGE_HOST_DIR in .env — where original captures persist on the host}
+  caddy_data:
+  caddy_config:

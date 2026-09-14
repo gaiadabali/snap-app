@@ -6,6 +6,7 @@ import type { AuthUser } from '@snap/api-contract';
 import { ApiError, api, newIdempotencyKey } from '@/lib/api/server';
 
 import { isDevBypassAvailable } from './dev-bypass';
+import { isGoogleSignInSimulatorAvailable } from './google-simulator';
 import { safeReturnPath } from './safe-redirect';
 import { setActiveWorkspaceCookie, setSessionCookie } from './session';
 
@@ -19,8 +20,8 @@ function destinationAfterSignIn(workspaces: WorkspaceSummary[], returnTo: string
   return workspaces.length === 0 ? '/onboarding' : returnTo;
 }
 
-function signInFailureRedirect(message: string, returnTo: string): never {
-  const url = new URL('/sign-in', 'http://placeholder');
+function signInFailureRedirect(message: string, returnTo: string, path = '/sign-in'): never {
+  const url = new URL(path, 'http://placeholder');
   url.searchParams.set('error', message);
   url.searchParams.set('returnTo', returnTo);
   redirect(`${url.pathname}${url.search}`);
@@ -87,6 +88,56 @@ export async function devBypassSignInAction(formData: FormData): Promise<void> {
   } catch (error) {
     const message = error instanceof ApiError ? error.message : 'Sign-in failed.';
     signInFailureRedirect(message, returnTo);
+  }
+
+  await setSessionCookie(result.token);
+  redirect(destinationAfterSignIn(result.workspaces, returnTo));
+}
+
+/**
+ * The simulated Google sign-in: mints a real session for one of a fixed,
+ * server-side allow-listed demo identities — never an arbitrary address.
+ * `isGoogleSignInSimulatorAvailable()` is checked here again, not only by the
+ * page that lists the identities — the same "don't trust the client, re-check
+ * server-side" rule `devBypassSignInAction` follows above. The server's own
+ * `/v1/auth/google-simulator/sign-in` endpoint enforces the identical three
+ * conditions again, completely independently, and separately re-validates
+ * that the requested email is actually on the allow-list — this action is a
+ * convenience, not the boundary.
+ */
+export async function googleSimulatorSignInAction(formData: FormData): Promise<void> {
+  if (!isGoogleSignInSimulatorAvailable()) {
+    throw new Error(
+      'The Google sign-in simulator is not available. It requires NODE_ENV to not be ' +
+        '"production" (or DEMO_ENV=staging), GOOGLE_SIGNIN_SIMULATOR=true, and no real Google ' +
+        'credentials configured — all three, not just this form having been shown.',
+    );
+  }
+
+  const email = String(formData.get('email') ?? '').trim();
+  const returnTo = safeReturnPath(String(formData.get('returnTo') ?? ''), '/app');
+  if (!email) signInFailureRedirect('Choose a demo identity.', returnTo, '/auth/google-simulator');
+
+  let result: SignInResult;
+  try {
+    result = await api<SignInResult>('/v1/auth/google-simulator/sign-in', {
+      method: 'POST',
+      body: { email },
+      anonymous: true,
+      idempotencyKey: newIdempotencyKey(),
+    });
+  } catch (error) {
+    // The server answers an identical 404 whether the simulator is disabled
+    // or the email is simply not on its allow-list — see that endpoint's own
+    // comment. Either way, the honest message here is the same for the
+    // person looking at this screen.
+    const message =
+      error instanceof ApiError && error.status === 404
+        ? 'That is not one of the demo identities.'
+        : error instanceof ApiError
+          ? error.message
+          : 'Simulated sign-in failed.';
+    signInFailureRedirect(message, returnTo, '/auth/google-simulator');
   }
 
   await setSessionCookie(result.token);

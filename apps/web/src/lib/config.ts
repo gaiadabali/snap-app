@@ -41,6 +41,47 @@ export const config = {
     process.env.NODE_ENV !== 'production' && process.env.SNAP_DEV_AUTH_BYPASS === 'true',
 
   isProduction: process.env.NODE_ENV === 'production',
+
+  /**
+   * Whether the real Google OAuth flow has credentials to run at all. When
+   * this is true, `googleSignInSimulatorAvailable` below is always false —
+   * the genuine flow takes precedence with nothing to configure to prefer it.
+   */
+  googleOauthConfigured:
+    Boolean(process.env.GOOGLE_CLIENT_ID) && Boolean(process.env.GOOGLE_CLIENT_SECRET),
+
+  /**
+   * The simulated Google sign-in for the public staging/demo host.
+   *
+   * Real Google OAuth credentials do not exist yet, and the production
+   * mailer is still a no-op (`apps/server/src/auth/mailer.ts`), so without
+   * this nobody can sign in on a real deploy at all (docs/DEPLOY.md §3). This
+   * trades proof of identity for one of a fixed, server-side allow-listed
+   * demo accounts — never an arbitrary address — and everything after that
+   * (session cookie, onboarding, workspace selection, RBAC) runs through the
+   * exact same code the real flow uses.
+   *
+   * Mirrors `apps/server/src/config.ts#isGoogleSignInSimulatorEnabled` (read
+   * that function's comment for the full rationale) with the SAME three
+   * independent conditions, one more than `devAuthBypass`'s two because this
+   * one runs on a host anyone can find:
+   *
+   *   1. `NODE_ENV !== 'production'` OR `DEMO_ENV === 'staging'` — a signal
+   *      kept separate from `NODE_ENV` because this app is typically BUILT
+   *      with `NODE_ENV=production` even on the demo host.
+   *   2. `GOOGLE_SIGNIN_SIMULATOR === 'true'` — a second, independent opt-in.
+   *   3. Real Google credentials are NOT configured (`googleOauthConfigured`
+   *      above) — the genuine flow always wins the moment they exist.
+   *
+   * The server enforces the identical three conditions again, independently,
+   * on the endpoints that actually mint a session
+   * (`/v1/auth/google-simulator/*`) — this flag only decides whether the
+   * button is rendered at all, exactly as `devAuthBypass` does for its form.
+   */
+  googleSignInSimulatorAvailable:
+    (process.env.NODE_ENV !== 'production' || process.env.DEMO_ENV === 'staging') &&
+    process.env.GOOGLE_SIGNIN_SIMULATOR === 'true' &&
+    !(Boolean(process.env.GOOGLE_CLIENT_ID) && Boolean(process.env.GOOGLE_CLIENT_SECRET)),
 } as const;
 
 /** Read lazily: only the routes that actually do Google OAuth need these. */

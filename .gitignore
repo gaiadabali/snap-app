@@ -35,7 +35,10 @@ next-env.d.ts
 # start now: the provider key is read from OLLAMA_ENV_FILE outside the tree.
 .env
 .env.*
-!.env.example
+# ...but every *.example file is documentation, not a secret. Written as a
+# glob because `!.env.example` alone left `deploy/.env.local.example` ignored,
+# which is how a template nobody can see gets "committed".
+!.env*.example
 
 # Editor / OS
 .DS_Store

@@ -52,16 +52,50 @@ export function evaluatePreflight(settings: Config, probe: PreflightProbe): Pref
 
   // ── 2. A working way to sign in. ──────────────────────────────────────────
   //
-  // `/v1/auth/sign-in` is now correctly 404 in production. That closes an
-  // authentication bypass and, on a server with no Google client id, leaves no
-  // working sign-in path at all — the site would deploy and simply refuse
-  // everyone. Magic links still work if a mailer is configured, so this is a
-  // warning rather than a failure.
-  if (production && !settings.GOOGLE_CLIENT_ID) {
-    warnings.push(
-      'GOOGLE_CLIENT_ID is not set, and the development sign-in bypass is disabled in production. ' +
-        'Unless email magic links are configured and deliverable, nobody can sign in.',
-    );
+  // `/v1/auth/sign-in` is correctly 404 in production. That closed an
+  // authentication bypass and, on a server with no other method configured,
+  // leaves NO way for anyone to sign in at all — the site deploys, looks
+  // healthy, and refuses every human who visits it. That is a silent,
+  // total outage of the product's front door, and it presents as "the login
+  // button does nothing".
+  //
+  // FATAL, not a warning: a server nobody can enter is not serving. Three
+  // methods count, and exactly one of them needs to work —
+  //
+  //   * real Google OAuth (GOOGLE_CLIENT_ID configured), or
+  //   * email magic links, which need a real mailer — `auth/mailer.ts` is a
+  //     NoopMailer in production until one is wired, so the deliverability
+  //     signal is the env var that configures it, or
+  //   * the Google sign-in SIMULATOR, which is the deliberate staging/demo
+  //     path and is itself triple-gated (see config#isGoogleSignInSimulatorEnabled).
+  //
+  // The simulator counting here is the point: it is what makes a demo host
+  // legitimately bootable before real credentials exist, while a genuine
+  // production host — which never sets DEMO_ENV — still cannot start without
+  // a real method.
+  if (production) {
+    const google = Boolean(settings.GOOGLE_CLIENT_ID);
+    const mailer = Boolean(process.env.MAILER_PROVIDER ?? process.env.SMTP_URL);
+    const simulator =
+      settings.DEMO_ENV === 'staging' && settings.GOOGLE_SIGNIN_SIMULATOR === true;
+
+    if (!google && !mailer && !simulator) {
+      failures.push(
+        'No usable sign-in method is configured, so nobody can sign in and the deployment is ' +
+          'a silent outage. The development bypass is disabled in production by design. ' +
+          'Configure ONE of: GOOGLE_CLIENT_ID (real Google OAuth); a mail provider ' +
+          '(MAILER_PROVIDER or SMTP_URL) so magic links are actually delivered — ' +
+          'auth/mailer.ts is a NoopMailer until then and silently sends nothing; ' +
+          'or, for a demo host only, DEMO_ENV=staging together with ' +
+          'GOOGLE_SIGNIN_SIMULATOR=true.',
+      );
+    } else if (!google && !mailer && simulator) {
+      warnings.push(
+        'Sign-in is served by the SIMULATOR, not real Google, and magic links cannot be ' +
+          'delivered (no mail provider configured). Correct for a demo host; never for ' +
+          'anything real.',
+      );
+    }
   }
 
   // ── 3. CORS. ──────────────────────────────────────────────────────────────

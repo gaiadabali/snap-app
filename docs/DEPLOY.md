@@ -43,7 +43,7 @@ and booting as `snap_app` logs `preflight ok · database role snap_app · rls en
 |---|---|---|
 | Connection bypasses RLS | **Fatal** | The bug this project shipped once: connected as `postgres`, so no policy was ever evaluated. Nothing about a running system looks different when this is wrong. |
 | `CORS_ORIGINS` contains `*` | **Fatal** | These responses carry financial records. |
-| No `GOOGLE_CLIENT_ID` | Warning | The dev bypass is 404 in production, so without Google (and without a deliverable mailer) nobody can sign in at all. |
+| No `GOOGLE_CLIENT_ID` | Warning | The dev bypass is 404 in production, so without Google (and without a deliverable mailer) nobody can sign in at all — unless this is the demo host with the simulator enabled (§3). |
 | `CORS_ORIGINS` empty | Warning | Every cross-origin browser request refused. Correct if only the native app and a server-side BFF call the API. |
 | Local KMS stand-in in use | Warning | §5. |
 
@@ -73,6 +73,28 @@ Magic links work but need a real mailer: `apps/server/src/auth/mailer.ts` is a
 console transport in development and a no-op in production. Wire a provider
 before relying on them.
 
+**Stopgap for a demo before either of those exists:** a simulated Google
+sign-in — `apps/server/src/config.ts#isGoogleSignInSimulatorEnabled`,
+`POST /v1/auth/google-simulator/sign-in` — lets a public demo/staging host let
+people in as one of the fixed, seeded demo accounts (`apps/server/scripts/
+seed.ts`) without real Google credentials or a working mailer. It requires
+THREE things set together, none of which a plain production deploy ever sets
+by accident:
+
+```
+NODE_ENV=production          # same build as everywhere else
+DEMO_ENV=staging              # explicit — never inferred from NODE_ENV
+GOOGLE_SIGNIN_SIMULATOR=true  # explicit — a second, separate opt-in
+```
+
+It turns itself back off the instant `GOOGLE_CLIENT_ID` is actually set, so
+there is nothing to remember to unset when real credentials land — see that
+function's own comment for the full rationale, and
+`apps/server/src/auth/google-simulator.test.ts` /
+`apps/web/src/lib/auth/google-simulator.test.ts` for the negative-case tests.
+**Do not set these on a real production deploy** — same rule as
+`SNAP_DEV_AUTH_BYPASS` below.
+
 ---
 
 ## 4. Environment
@@ -89,16 +111,25 @@ PUBLIC_URL            # how this API is reached from outside
 CORS_ORIGINS          # comma-separated allow-list; never *
 GOOGLE_CLIENT_ID      # §3
 NODE_ENV=production
+
+# Demo/staging host ONLY (§3) — leave both unset on a real production deploy:
+DEMO_ENV=staging
+GOOGLE_SIGNIN_SIMULATOR=true
 ```
 
 `node packages/db/scripts/db.mjs appuser` prints the two database URLs.
 
 **Web** (`apps/web`): see `apps/web/.env.example`. `SNAP_API_URL` may be a
-private address — the browser never talks to the API directly.
+private address — the browser never talks to the API directly. Set the same
+`DEMO_ENV` / `GOOGLE_SIGNIN_SIMULATOR` pair here too, on the demo host only —
+the web app and the API each enforce their own copy of the same three
+conditions independently (§3).
 
 **Do not set `SNAP_DEV_AUTH_BYPASS=true` in production.** It is guarded by two
 independent conditions and `NODE_ENV` alone already disables it, but it should
-not be present at all.
+not be present at all. The same rule applies to `DEMO_ENV` /
+`GOOGLE_SIGNIN_SIMULATOR` above — set them on the demo host, never on the
+real one.
 
 ---
 

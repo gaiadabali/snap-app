@@ -15,7 +15,7 @@ import { IsEmail, IsString } from 'class-validator';
 
 import { CurrentUser, SessionGuard, type AuthUser } from '../common/auth.guard.js';
 import { ValidBody } from '../common/valid-body.decorator.js';
-import { config, isProduction } from '../config.js';
+import { config, isGoogleSignInSimulatorEnabled, isProduction } from '../config.js';
 import { listDemoAccounts, listWorkspacesFor, upsertUserByEmail } from '../repo.js';
 import { getDb } from '../db.js';
 import { issueMagicLinkToken, issueSession, readMagicLinkToken } from '../tokens.js';
@@ -47,6 +47,12 @@ export class GoogleExchangeDto {
   /** The nonce the web app bound to this sign-in attempt before the redirect. */
   @IsString({ message: 'A nonce is required.' })
   nonce!: string;
+}
+
+export class GoogleSimulatorSignInDto {
+  /** Must exactly match one of `listDemoAccounts()` — never an arbitrary address. */
+  @IsEmail({}, { message: 'That does not look like an email address.' })
+  email!: string;
 }
 
 /** The bit of the request this controller reads for rate limiting. Fastify supplies `.ip`. */
@@ -269,6 +275,82 @@ export class AuthController {
       const message =
         error instanceof GoogleIdTokenError ? error.message : 'Could not verify that sign-in.';
       throw new UnauthorizedException(message);
+    }
+
+    const user = await upsertUserByEmail(identity.email, identity.displayName);
+    const workspaces = await listWorkspacesFor(getDb(), user.userId);
+    return { token: issueSession(user.userId), user, workspaces };
+  }
+
+  /* ── Simulated Google sign-in (staging/demo host only) ───────────────────
+   *
+   * Stands in for the real `oauth/google` exchange above for exactly one
+   * reason: an investor demo on a public host that has no Google OAuth
+   * credentials yet and whose mailer is still `NoopMailer`, so on a real
+   * deploy today nobody can sign in at all (docs/DEPLOY.md §3).
+   *
+   * `isGoogleSignInSimulatorEnabled()` (apps/server/src/config.ts) is the
+   * actual boundary — three independent conditions, none satisfiable by a
+   * plain production build, and it returns false unconditionally the moment
+   * real Google credentials exist, so the genuine flow above always takes
+   * precedence with nothing to unset.
+   *
+   * This only ever simulates the IDENTITY ASSERTION. The identity itself is
+   * still constrained to the fixed, seeded accounts `listDemoAccounts()`
+   * already serves elsewhere in this file — never an arbitrary address — and
+   * everything downstream is the exact same `upsertUserByEmail` +
+   * `issueSession` call the real flow makes, so the session shape, cookie,
+   * onboarding and workspace/RBAC behaviour are identical either way.
+   */
+
+  @Get('google-simulator/identities')
+  @ApiOperation({
+    summary: 'The identities the Google sign-in simulator may sign in as (DEMO HOST ONLY)',
+    description:
+      '404 unless isGoogleSignInSimulatorEnabled() is true — same refusal shape as every other ' +
+      'gate in this controller. The same fixed, seeded accounts as GET /v1/auth/demo-accounts.',
+  })
+  async googleSimulatorIdentities(): Promise<
+    Array<{ userId: string; email: string; displayName: string }>
+  > {
+    if (!isGoogleSignInSimulatorEnabled()) {
+      throw new HttpException('Not found', HttpStatus.NOT_FOUND);
+    }
+    return listDemoAccounts();
+  }
+
+  @Post('google-simulator/sign-in')
+  @HttpCode(200)
+  @ApiOperation({
+    summary: 'Sign in as a seeded demo identity, simulating Google (DEMO HOST ONLY)',
+    description:
+      '404 unless isGoogleSignInSimulatorEnabled() is true. The requested email must exactly ' +
+      'match one of listDemoAccounts() (case-insensitive) — anything else gets the identical ' +
+      '404, before this touches the database for anything beyond that lookup, so a stranger who ' +
+      'finds this host cannot enumerate or sign in as an address of their choosing.',
+  })
+  async googleSimulatorSignIn(
+    @ValidBody(GoogleSimulatorSignInDto) body: GoogleSimulatorSignInDto,
+  ): Promise<{
+    token: string;
+    user: AuthUser;
+    workspaces: Array<{ id: string; name: string; kind: string; role: string }>;
+  }> {
+    // THE GATE. Checked first and unconditionally, same as `signIn` above —
+    // a production server (the demo host included, absent its two extra
+    // opt-ins) must not admit this route exists any more than that one does.
+    if (!isGoogleSignInSimulatorEnabled()) {
+      throw new HttpException('Not found', HttpStatus.NOT_FOUND);
+    }
+
+    const requested = body.email.trim().toLowerCase();
+    const identities = await listDemoAccounts();
+    const identity = identities.find((candidate) => candidate.email.toLowerCase() === requested);
+    if (!identity) {
+      // Same status and message as "the simulator does not exist" — an
+      // address that is not on the allow-list learns nothing about which
+      // addresses ARE on it.
+      throw new HttpException('Not found', HttpStatus.NOT_FOUND);
     }
 
     const user = await upsertUserByEmail(identity.email, identity.displayName);

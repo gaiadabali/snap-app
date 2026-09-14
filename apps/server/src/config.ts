@@ -160,6 +160,31 @@ const schema = z.object({
    * refusing to boot over a feature nobody has wired up yet.
    */
   GOOGLE_CLIENT_ID: z.string().optional(),
+
+  /**
+   * A distinct signal that this deployment IS the public staging/demo host —
+   * see `isGoogleSignInSimulatorEnabled` below for what it gates. Kept wholly
+   * separate from `NODE_ENV` on purpose: the demo host runs the same build as
+   * production (so `NODE_ENV` really may be `'production'` there), and a flag
+   * that only meant "not production" would already be true on every developer
+   * laptop. `z.enum` rather than a free string so a typo fails config
+   * validation loudly instead of silently leaving the demo host unreachable.
+   */
+  DEMO_ENV: z.enum(['staging']).optional(),
+
+  /**
+   * Explicit opt-in for the simulated Google sign-in — see
+   * `isGoogleSignInSimulatorEnabled`. Defaults to off and is never inferred
+   * from `DEMO_ENV` or anything else: enabling the demo host and enabling
+   * this authentication bypass are two separate decisions, made with two
+   * separate variables, same as `SNAP_DEV_AUTH_BYPASS` is kept separate from
+   * `NODE_ENV` for the development bypass.
+   */
+  GOOGLE_SIGNIN_SIMULATOR: z
+    .string()
+    .optional()
+    .default('false')
+    .transform((v) => v === 'true'),
 });
 
 export type Config = z.infer<typeof schema>;
@@ -181,3 +206,39 @@ export function config(): Config {
 
 /** True in production, where several behaviours must be stricter. */
 export const isProduction = (): boolean => config().NODE_ENV === 'production';
+
+/**
+ * Whether the SIMULATED Google sign-in may run right now — a deliberate
+ * authentication bypass built for exactly one purpose: an investor demo on a
+ * public host that has no real Google OAuth credentials yet and whose mailer
+ * is still `NoopMailer` (`auth/mailer.ts`), so today literally nobody can
+ * sign in there at all (docs/DEPLOY.md §3).
+ *
+ * Three independent conditions, ALL required — one more than
+ * `apps/web/src/lib/auth/dev-bypass.ts`'s two, because that one never leaves
+ * a developer's own machine and this one runs on a host anyone can find:
+ *
+ *   1. `NODE_ENV !== 'production'` OR `DEMO_ENV === 'staging'`. The second
+ *      disjunct exists because the demo host is typically the SAME build as
+ *      production — so `NODE_ENV` alone cannot be the signal, and a plain
+ *      production deployment that never sets `DEMO_ENV` fails this outright.
+ *   2. `GOOGLE_SIGNIN_SIMULATOR === true` — a second, independent opt-in.
+ *      "This is the demo host" and "this demo host may bypass authentication"
+ *      are different decisions; conflating them would mean the mere act of
+ *      marking a deployment "staging" turns the bypass on.
+ *   3. Real Google credentials are NOT configured. The instant
+ *      `GOOGLE_CLIENT_ID` is set, this returns `false` unconditionally — the
+ *      genuine OAuth + PKCE + JWKS-verified flow always wins, and nobody has
+ *      to remember to flip the other two flags back off once it exists.
+ *
+ * Called from both sides of the boundary it guards: `AuthController` calls it
+ * again immediately before minting a session — that second call is the real
+ * boundary, not this one, same as `isDevBypassAvailable`'s own comment.
+ */
+export function isGoogleSignInSimulatorEnabled(): boolean {
+  const settings = config();
+  const demoHost = settings.NODE_ENV !== 'production' || settings.DEMO_ENV === 'staging';
+  const explicitOptIn = settings.GOOGLE_SIGNIN_SIMULATOR;
+  const realGoogleConfigured = Boolean(settings.GOOGLE_CLIENT_ID);
+  return demoHost && explicitOptIn && !realGoogleConfigured;
+}

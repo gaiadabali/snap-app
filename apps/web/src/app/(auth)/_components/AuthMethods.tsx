@@ -1,13 +1,16 @@
 import { Badge, Button, ButtonLink, Card, Field, Input } from '@/design/primitives';
 import { devBypassSignInAction, requestMagicLinkAction } from '@/lib/auth/actions';
 import { isDevBypassAvailable } from '@/lib/auth/dev-bypass';
+import { isGoogleSignInSimulatorAvailable } from '@/lib/auth/google-simulator';
+import { config } from '@/lib/config';
 
 /**
- * The three ways in: Google, a magic-link email, and — development only — the
- * bare-email bypass. Shared between `/sign-in` and `/register` because the
- * mechanism is identical; only the framing text differs (this app's sign-in
- * endpoint already creates an unknown address's account, so "sign in" and
- * "register" are the same request).
+ * The ways in: Google (real or, on the demo host, simulated), a magic-link
+ * email, and — development only — the bare-email bypass. Shared between
+ * `/sign-in` and `/register` because the mechanism is identical; only the
+ * framing text differs (this app's sign-in endpoint already creates an
+ * unknown address's account, so "sign in" and "register" are the same
+ * request).
  */
 export function AuthMethods({
   mode,
@@ -47,14 +50,25 @@ export function AuthMethods({
         </div>
       ) : (
         <>
-          <ButtonLink
-            href={`/auth/google?returnTo=${encodeURIComponent(returnTo)}`}
-            variant="secondary"
-            size="lg"
-            className="w-full"
-          >
-            Continue with Google
-          </ButtonLink>
+          {!config.googleOauthConfigured && isGoogleSignInSimulatorAvailable() ? (
+            <ButtonLink
+              href={`/auth/google-simulator?returnTo=${encodeURIComponent(returnTo)}`}
+              variant="secondary"
+              size="lg"
+              className="w-full"
+            >
+              Continue with Google (demo sign-in)
+            </ButtonLink>
+          ) : (
+            <ButtonLink
+              href={`/auth/google?returnTo=${encodeURIComponent(returnTo)}`}
+              variant="secondary"
+              size="lg"
+              className="w-full"
+            >
+              Continue with Google
+            </ButtonLink>
+          )}
 
           <div className="flex items-center gap-3 text-[12px] font-medium uppercase tracking-[0.08em] text-[var(--color-ink-faint)]">
             <span className="h-px flex-1 bg-[var(--color-rule)]" />

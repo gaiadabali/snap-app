@@ -1,0 +1,35 @@
+# Local verification override — NOT for the VPS.
+#
+# Usage:
+#   cp deploy/.env.local.example deploy/.env.local
+#   docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.local.yml \
+#     --env-file deploy/.env.local up -d --build
+#
+# What this changes vs. production:
+#   - Publishes postgres/api/web on host ports that don't collide with the
+#     `snapdb` container already running on this machine (55499) or anything
+#     else observed running locally.
+#   - Caddy listens on plain HTTP on two non-standard ports instead of
+#     80/443 with Let's Encrypt — there is no public domain to issue a
+#     certificate for on a dev box, and 80/443 may already be in use.
+#   - Nothing here changes what image is built or how the app boots; it only
+#     changes host-side exposure, so this is a faithful test of the same
+#     images/commands docs/DEPLOY.md §9 deploys.
+
+services:
+  postgres:
+    ports:
+      - '127.0.0.1:${LOCAL_PG_PORT:-55599}:5432'
+
+  api:
+    ports:
+      - '127.0.0.1:${LOCAL_API_PORT:-4001}:4000'
+
+  web:
+    ports:
+      - '127.0.0.1:${LOCAL_WEB_PORT:-3001}:3000'
+
+  caddy:
+    ports:
+      - '127.0.0.1:${LOCAL_CADDY_API_PORT:-8092}:8092'
+      - '127.0.0.1:${LOCAL_CADDY_WEB_PORT:-8093}:8093'

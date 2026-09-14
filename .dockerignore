@@ -1,0 +1,26 @@
+# Keeps the Docker build context small and correct. apps/server/Dockerfile
+# and apps/web/Dockerfile both build with the repo root as context (they are
+# workspace-aware and need every package.json), so this lives at the root.
+
+**/node_modules
+**/.next
+**/.next-ledger
+**/dist
+**/.turbo
+**/*.tsbuildinfo
+.git
+.storage
+.vscode
+.idea
+
+# Never send these into a build context or an image layer.
+**/.env
+**/.env.local
+**/.env.*.local
+deploy/.env
+
+# Mobile is a separate app; never needed to build the server or web images,
+# and its dep tree (Expo/React Native) is heavy.
+apps/mobile/node_modules
+apps/mobile/.expo
+apps/mobile/dist

@@ -1,0 +1,37 @@
+# Snap Apps reverse proxy / TLS termination.
+#
+# Caddy over nginx+certbot: automatic Let's Encrypt with zero extra moving
+# parts (no certbot timer, no manual renewal hook) — one binary, one config.
+#
+# WEB_ADDRESS / API_ADDRESS come from deploy/.env and are substituted by
+# Caddy itself (it reads `{$VAR}` from its own process environment — no
+# envsubst step needed). Give them a `https://` scheme and a real hostname in
+# production to get automatic HTTPS; a `http://host:port` address (as
+# deploy/.env.local.example does) disables TLS entirely, which is what local
+# verification uses since there is no public domain to issue a cert for.
+
+{
+	email {$CADDY_ACME_EMAIL}
+}
+
+{$API_ADDRESS} {
+	reverse_proxy api:4000
+	encode gzip
+	log {
+		output file /data/access-api.log {
+			roll_size 50MiB
+			roll_keep 5
+		}
+	}
+}
+
+{$WEB_ADDRESS} {
+	reverse_proxy web:3000
+	encode gzip
+	log {
+		output file /data/access-web.log {
+			roll_size 50MiB
+			roll_keep 5
+		}
+	}
+}

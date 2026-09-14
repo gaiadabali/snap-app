@@ -14,6 +14,8 @@ function settings(overrides: Partial<Config> = {}): Config {
     NODE_ENV: 'production',
     CORS_ORIGINS: ['https://snapapps.example'],
     GOOGLE_CLIENT_ID: 'client-id.apps.googleusercontent.com',
+    DEMO_ENV: undefined,
+    GOOGLE_SIGNIN_SIMULATOR: false,
     PORT: 4000,
     ...overrides,
   } as Config;
@@ -48,12 +50,61 @@ describe('production preflight', () => {
     expect(result.failures.join(' ')).toMatch(/financial records/i);
   });
 
-  it('warns when production has no working sign-in path', () => {
-    // The dev bypass is 404 in production by design. Without Google, and
-    // absent a deliverable mailer, the site deploys and refuses everyone.
+  it('REFUSES to start when nobody can sign in at all', () => {
+    // The dev bypass is 404 in production by design, so with no Google, no
+    // mail provider and no simulator there is NO way in. The site would
+    // deploy, look healthy, and refuse every human who visited it — a total
+    // outage of the front door that presents as "the login button does
+    // nothing". Fatal, not a warning: a server nobody can enter is not
+    // serving.
+    delete process.env.MAILER_PROVIDER;
+    delete process.env.SMTP_URL;
+
     const result = evaluatePreflight(settings({ GOOGLE_CLIENT_ID: undefined }), safe);
-    expect(result.ok).toBe(true); // not fatal — magic links may be configured
-    expect(result.warnings.join(' ')).toMatch(/nobody can sign in/i);
+    expect(result.ok).toBe(false);
+    expect(result.failures.join(' ')).toMatch(/no usable sign-in method/i);
+  });
+
+  it('names every option, because someone reads this at 2am mid-deploy', () => {
+    // "Refused to start" without the remedy is a worse outcome than the
+    // bypass it replaced.
+    delete process.env.MAILER_PROVIDER;
+    delete process.env.SMTP_URL;
+
+    const message = evaluatePreflight(settings({ GOOGLE_CLIENT_ID: undefined }), safe).failures.join(
+      ' ',
+    );
+    expect(message).toMatch(/GOOGLE_CLIENT_ID/);
+    expect(message).toMatch(/MAILER_PROVIDER|SMTP_URL/);
+    expect(message).toMatch(/GOOGLE_SIGNIN_SIMULATOR/);
+  });
+
+  it('a demo host boots on the simulator alone, and says so', () => {
+    // This is what lets a staging host run before real credentials exist. A
+    // genuine production host never sets DEMO_ENV, so it cannot reach this.
+    delete process.env.MAILER_PROVIDER;
+    delete process.env.SMTP_URL;
+
+    const result = evaluatePreflight(
+      settings({
+        GOOGLE_CLIENT_ID: undefined,
+        DEMO_ENV: 'staging',
+        GOOGLE_SIGNIN_SIMULATOR: true,
+      }),
+      safe,
+    );
+    expect(result.ok).toBe(true);
+    expect(result.warnings.join(' ')).toMatch(/SIMULATOR/);
+  });
+
+  it('a mail provider alone is enough', () => {
+    process.env.MAILER_PROVIDER = 'resend';
+    try {
+      const result = evaluatePreflight(settings({ GOOGLE_CLIENT_ID: undefined }), safe);
+      expect(result.ok).toBe(true);
+    } finally {
+      delete process.env.MAILER_PROVIDER;
+    }
   });
 
   it('warns when CORS is empty in production', () => {
