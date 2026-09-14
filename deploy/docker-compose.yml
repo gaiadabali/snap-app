@@ -141,7 +141,11 @@ services:
       context: ..
       dockerfile: apps/web/Dockerfile
     image: ${WEB_IMAGE:-snap-web}:${IMAGE_TAG:-local}
-    command: ["start"]
+    # No `command:` override. The image's own CMD runs the Next standalone
+    # server directly (`node apps/web/server.js`). It used to be ['start'],
+    # which paired with an `ENTRYPOINT ["pnpm"]` that the slimmed image no
+    # longer has — leaving the base node image to run `node start` and
+    # crash-loop on MODULE_NOT_FOUND for a file named 'start'.
     restart: unless-stopped
     env_file: .env
     environment:
