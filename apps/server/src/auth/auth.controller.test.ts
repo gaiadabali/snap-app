@@ -265,3 +265,93 @@ describe('POST /v1/auth/sign-in — the production gate', () => {
     });
   });
 });
+
+describe('POST /v1/auth/sign-in — the demo-host exception', () => {
+  /**
+   * The native app has no browser, so the Google simulator's redirect flow is
+   * unavailable to it and this endpoint is its only way in. Closing it in
+   * production therefore left the mobile app unusable on the demo host.
+   *
+   * Reopening it is the dangerous kind of fix, so what matters is the shape of
+   * the exception: on a demo host this is "sign in as one of a fixed set of
+   * seeded people", NEVER "sign in as anyone". These tests exist to keep that
+   * distinction true — the second one is the whole point of the suite.
+   */
+  async function onDemoHost<T>(
+    body: (controller: InstanceType<typeof AuthController>) => Promise<T>,
+  ): Promise<T> {
+    vi.resetModules();
+    const prev = {
+      node: process.env.NODE_ENV,
+      demo: process.env.DEMO_ENV,
+      sim: process.env.GOOGLE_SIGNIN_SIMULATOR,
+      google: process.env.GOOGLE_CLIENT_ID,
+    };
+    process.env.NODE_ENV = 'production';
+    process.env.DEMO_ENV = 'staging';
+    process.env.GOOGLE_SIGNIN_SIMULATOR = 'true';
+    delete process.env.GOOGLE_CLIENT_ID;
+    try {
+      const mod = await import('./auth.controller.js');
+      return await body(new mod.AuthController());
+    } finally {
+      process.env.NODE_ENV = prev.node;
+      if (prev.demo === undefined) delete process.env.DEMO_ENV;
+      else process.env.DEMO_ENV = prev.demo;
+      if (prev.sim === undefined) delete process.env.GOOGLE_SIGNIN_SIMULATOR;
+      else process.env.GOOGLE_SIGNIN_SIMULATOR = prev.sim;
+      if (prev.google === undefined) delete process.env.GOOGLE_CLIENT_ID;
+      else process.env.GOOGLE_CLIENT_ID = prev.google;
+    }
+  }
+
+  it('REFUSES an address that is not a seeded demo identity', async () => {
+    // The case that decides whether this exception is safe. An arbitrary
+    // address must be refused exactly as if the route did not exist — so a
+    // stranger who finds the demo host cannot sign in as anyone, and cannot
+    // learn which addresses would work.
+    await onDemoHost(async (controller) => {
+      await expect(
+        controller.signIn({ email: 'attacker-chosen@example.com' }),
+      ).rejects.toMatchObject({ status: 404 });
+    });
+  });
+
+  it('still refuses when the demo opt-in is absent, even with DEMO_ENV set', async () => {
+    // Marking a deployment "staging" must not by itself open authentication.
+    // The two flags are separate decisions.
+    vi.resetModules();
+    const prev = { node: process.env.NODE_ENV, demo: process.env.DEMO_ENV, sim: process.env.GOOGLE_SIGNIN_SIMULATOR };
+    process.env.NODE_ENV = 'production';
+    process.env.DEMO_ENV = 'staging';
+    delete process.env.GOOGLE_SIGNIN_SIMULATOR;
+    try {
+      const mod = await import('./auth.controller.js');
+      await expect(
+        new mod.AuthController().signIn({ email: 'kate@marshtransport.example' }),
+      ).rejects.toMatchObject({ status: 404 });
+    } finally {
+      process.env.NODE_ENV = prev.node;
+      if (prev.demo === undefined) delete process.env.DEMO_ENV;
+      else process.env.DEMO_ENV = prev.demo;
+      if (prev.sim !== undefined) process.env.GOOGLE_SIGNIN_SIMULATOR = prev.sim;
+    }
+  });
+
+  it('the account list stays empty on a plain production host', async () => {
+    // Without the demo opt-ins, the picker must reveal nothing.
+    vi.resetModules();
+    const prev = { node: process.env.NODE_ENV, demo: process.env.DEMO_ENV, sim: process.env.GOOGLE_SIGNIN_SIMULATOR };
+    process.env.NODE_ENV = 'production';
+    delete process.env.DEMO_ENV;
+    delete process.env.GOOGLE_SIGNIN_SIMULATOR;
+    try {
+      const mod = await import('./auth.controller.js');
+      await expect(new mod.AuthController().demoAccounts()).resolves.toEqual([]);
+    } finally {
+      process.env.NODE_ENV = prev.node;
+      if (prev.demo !== undefined) process.env.DEMO_ENV = prev.demo;
+      if (prev.sim !== undefined) process.env.GOOGLE_SIGNIN_SIMULATOR = prev.sim;
+    }
+  });
+});

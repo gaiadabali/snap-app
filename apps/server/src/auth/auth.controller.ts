@@ -110,11 +110,35 @@ export class AuthController {
     // 404 rather than 403: a production server should not advertise that a
     // bypass route exists here at all. Same reasoning as keeping expired and
     // forged tokens indistinguishable elsewhere in this file.
-    if (isProduction()) {
+    // A DEMO HOST is the one exception, and it is deliberately narrow.
+    //
+    // The native app signs in through this endpoint. It has no browser, so the
+    // Google simulator's redirect flow is not available to it, and closing
+    // this outright left the app with no way in at all — "not found" on
+    // sign-in and an empty account picker, which is what a reviewer hit.
+    //
+    // So on a demo host it stays reachable, but ONLY for addresses already
+    // seeded as demo identities: the same allow-list the Google simulator
+    // enforces. The dangerous property stays closed. This is never "sign in as
+    // anyone", it is "sign in as one of a fixed set of demo people". A real
+    // production deployment sets no DEMO_ENV, fails
+    // `isGoogleSignInSimulatorEnabled()`, and gets the 404 unconditionally.
+    const demoHost = isGoogleSignInSimulatorEnabled();
+    if (isProduction() && !demoHost) {
       throw new HttpException('Not found', HttpStatus.NOT_FOUND);
     }
 
     const email = body.email.trim().toLowerCase();
+
+    if (isProduction()) {
+      const identities = await listDemoAccounts();
+      if (!identities.some((candidate) => candidate.email.toLowerCase() === email)) {
+        // The same 404 as "this route does not exist", so an address that is
+        // not on the list learns nothing about which addresses are.
+        throw new HttpException('Not found', HttpStatus.NOT_FOUND);
+      }
+    }
+
     const nameFromEmail = (email.split('@')[0] ?? 'You')
       .replace(/[._-]+/g, ' ')
       .replace(/\b\w/g, (c) => c.toUpperCase());
@@ -134,7 +158,12 @@ export class AuthController {
       'So a presenter can switch person without typing an address. Returns nothing in production — a list of real sign-in addresses is not something to serve publicly.',
   })
   async demoAccounts(): Promise<Array<{ userId: string; email: string; displayName: string }>> {
-    if (isProduction()) return [];
+    // Empty on a real production host — a list of sign-in addresses is not
+    // something to serve publicly. Populated on a demo host, because the app's
+    // account picker is the only way a reviewer signs in there, and the same
+    // triple gate that permits the simulator permits this. These are seeded
+    // fixtures, not real customers.
+    if (isProduction() && !isGoogleSignInSimulatorEnabled()) return [];
     return listDemoAccounts();
   }
 
