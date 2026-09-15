@@ -173,8 +173,32 @@ const INVOICES = [
   { n: 'INV-1045', customer: 0, net: '990.00',  issued: 3,  due: -25, paid: null, draft: true },
 ];
 
+/**
+ * A STABLE id derived from a fixture's natural key.
+ *
+ * `randomUUID()` per run is what broke re-seeding. `invoices` is
+ * `UNIQUE (tenant_id, number)`, so a second run conflicted, `on conflict do
+ * nothing` skipped the insert, and the freshly-generated id therefore named no
+ * row — after which `invoice_lines` failed its foreign key. The seed could be
+ * run exactly once against a given database.
+ *
+ * Worse where there is NO unique constraint: `payments` and `trips` have none,
+ * so a random primary key conflicted with nothing and a re-run silently
+ * INSERTED THE ROWS AGAIN — inflating amount-due and mileage while every
+ * screen kept rendering happily. Wrong numbers that look right are the failure
+ * this project exists to prevent.
+ *
+ * Deriving the id from the natural key makes `on conflict do nothing` mean what
+ * it says, and makes a fixture keep the same id across resets — which is what
+ * lets a screenshot or a bug report stay valid.
+ */
+function fixtureId(prefix: string, key: string): string {
+  const digits = key.replace(/\D/g, '').padStart(12, '0').slice(-12);
+  return `${prefix}-${prefix.slice(0, 4)}-4${prefix.slice(0, 3)}-8${prefix.slice(0, 3)}-${digits}`;
+}
+
 for (const inv of INVOICES) {
-  const id = randomUUID();
+  const id = fixtureId('55555555', inv.n);
   const net = inv.net;
   const gst = (Number(net) * 0.1).toFixed(4);      // 10% ADDED on a sale.
   const total = (Number(net) * 1.1).toFixed(4);
@@ -205,7 +229,7 @@ for (const inv of INVOICES) {
       quantity, unit_price, net_amount, gst_amount, total_amount
     )
     values (
-      ${randomUUID()}, ${BUSINESS}, ${id}, 1, 'Line-haul freight', 'km',
+      ${fixtureId('5a5a5a5a', inv.n)}, ${BUSINESS}, ${id}, 1, 'Line-haul freight', 'km',
       1, ${net}, ${net}, ${gst}, ${total}
     )
     on conflict do nothing
@@ -213,7 +237,7 @@ for (const inv of INVOICES) {
   if (inv.paid) {
     await db.execute(sql`
       insert into payments (id, tenant_id, invoice_id, paid_on, amount, method, recorded_by)
-      values (${randomUUID()}, ${BUSINESS}, ${id}, ${daysAgo(Math.max(0, inv.due - 2))}::date,
+      values (${fixtureId('66666666', inv.n)}, ${BUSINESS}, ${id}, ${daysAgo(Math.max(0, inv.due - 2))}::date,
               ${inv.paid}, 'bank', ${PEOPLE[0]!.id})
       on conflict do nothing
     `);
@@ -228,11 +252,11 @@ const TRIPS = [
   { d: 21, from: 'Goulburn depot',  to: 'Melbourne',        km: '648.5', why: 'Interstate run',      work: true },
 ];
 
-for (const t of TRIPS) {
+for (const [tripIndex, t] of TRIPS.entries()) {
   await db.execute(sql`
     insert into trips (id, tenant_id, trip_date, from_place, to_place, km, purpose,
                        work_related, source, created_by)
-    values (${randomUUID()}, ${BUSINESS}, ${daysAgo(t.d)}::date, ${t.from}, ${t.to},
+    values (${fixtureId('77777777', String(tripIndex))}, ${BUSINESS}, ${daysAgo(t.d)}::date, ${t.from}, ${t.to},
             ${t.km}, ${t.why}, ${t.work}, 'manual', ${PEOPLE[0]!.id})
     on conflict do nothing
   `);
