@@ -7,18 +7,19 @@ Snap Apps stops being one product here. It becomes the first app in an
 ecosystem that shares one account, and it grows a consumer-side economy —
 credits you buy, points you earn — on top of the compliance engine.
 
-Four decisions, numbered on from `docs/OCR.md`.
+Four decisions. **Numbered D30–D33**: `docs/OCR.md` already occupies D24–D29,
+and an earlier draft of this file collided with it.
 
 | # | Decision | Choice | Why |
 |---|---|---|---|
-| **D24** | On-device VLM | **Preview on device, server authoritative** | Keeps D1/D21 intact. The phone reads instantly and offline; the server's read is the record. |
-| **D25** | Advertising | **House ads now, one vetted partner later, always self-served** | No third-party SDK next to financial records. |
-| **D26** | Identity | **One ecosystem account** — register in any app, sign in to all | The "Gaiada Account". Resolves open question O2. |
-| **D27** | Consumer economy | **Credits (money, tenant-scoped) + points (earned, user-scoped)** | Two mechanisms because they answer different questions and travel differently. |
+| **D30** | On-device VLM | **Preview on device, server authoritative** | Keeps D1/D21 intact. The phone reads instantly and offline; the server's read is the record. |
+| **D31** | Advertising | **House ads now, one vetted partner later, always self-served** | No third-party SDK next to financial records. |
+| **D32** | Identity | **One ecosystem account** — register in any app, sign in to all | The "Gaiada Account". Resolves open question O2. |
+| **D33** | Consumer economy | **Credits (money, tenant-scoped) + points (earned, user-scoped)** | Two mechanisms because they answer different questions and travel differently. |
 
 ---
 
-## D24 — On-device is the preview, never the record
+## D30 — On-device is the preview, never the record
 
 The requirement was "a local model that can truly run on a phone". D1, D3 and
 D21 all say on-device extraction is **not a data path**, and the reason is not
@@ -42,16 +43,39 @@ server. Nothing in the architecture has to bend.
 produce a BAS figure, or write a value the server has not confirmed. It fills
 the review screen early. That is all.
 
-**Open, and the actual research question:** which model. It must run on a
-mid-range Android — not a flagship — because the buyer is a tradie, not a
-developer. Candidates are small quantised VLMs via ExecuTorch / MediaPipe /
-llama.cpp, or platform OCR (ML Kit, Vision) feeding a small on-device LLM that
-only does structuring. The second is far more likely to fit in the memory
-budget and is already half-built: D3 put ML Kit on the device as a quality gate.
+**Answered — see `docs/ON-DEVICE.md`. The answer is no VLM.**
+
+The research came back negative on the literal requirement, and the reasoning
+is worth keeping: the small VLMs that clear the D23 licence floor (Gemma 4 E2B,
+Qwen2-VL-2B class) are **1.7–2.6 GB on disk and 1.7 GB+ of memory before an
+image is even encoded**, every published on-phone benchmark is a *flagship*
+(S26 Ultra, iPhone 17 Pro), and — the structural objection, which no amount of
+hardware fixes — they emit values **without spans**, which D16 forbids outright.
+
+What does work, and gives the same user-visible result: **the text recognition
+already built into both operating systems.** Apple Vision on iOS, Google ML Kit
+on Android, emitting DocDOM into a deterministic grounded structurer. **Zero
+model weights shipped** — 0 MB on iOS, ~0.3 MB on Android — no licence
+exposure, and every field carries a span, so D16 holds.
+
+Target: **p90 ≤ 3 s to first field on a 4 GB Galaxy A16 5G and an iPhone 11** —
+deliberately floor devices, not flagships.
+
+The honest sentence for a deck is *"the phone reads it instantly and offline,
+using the recognition built into iOS and Android; the server's read is the
+record"* — **not** "an on-device VLM". A VLM stays on the roadmap as a later
+spike (ON-DEVICE.md OD-15) once there are floor-device numbers to beat.
+
+**Correction to an earlier draft of this file:** it claimed D3 had already put
+ML Kit on the device. It had not. D3 *decided* a pre-flight quality gate;
+`apps/mobile` has no ML Kit or Vision dependency, and the capture screen's
+"hold steady" text is static copy with a comment saying no legibility
+measurement exists. **Nothing on the device reads anything today.** The first
+step is therefore a measurement, not a feature.
 
 ---
 
-## D25 — House ads, self-served
+## D31 — House ads, self-served
 
 Ads sit next to somebody's receipts. A generic network SDK profiles the device,
 which is an APP disclosure obligation and a question every accountant's
@@ -71,7 +95,7 @@ Placement rules, because "not intrusive" needs to be testable:
 
 ---
 
-## D26 — One account for the ecosystem
+## D32 — One account for the ecosystem
 
 Register in any app — Snap Apps, free-tax-returns, yourtal — and that account
 signs you into all of them. A Google account for our own products.
@@ -89,7 +113,7 @@ every app in the ecosystem will share.
 
 ---
 
-## D27 — Credits and points are different mechanisms
+## D33 — Credits and points are different mechanisms
 
 Three balances that look alike and are not. Confusing them is how a customer
 gets billed for scans they already had.
@@ -135,7 +159,7 @@ extraction plus ~$0.002 storage across the five-year retention window
 The margin case therefore depends on two things that are not yet measured:
 
 1. **Open-weight primary (D18)** — order-of-magnitude cheaper extraction.
-2. **On-device preview (D24)** — if the preview is good enough that the server
+2. **On-device preview (D30)** — if the preview is good enough that the server
    can run a cheaper confirm pass rather than a full extraction.
 
 Storage never goes away: those images are legal records held five years.
