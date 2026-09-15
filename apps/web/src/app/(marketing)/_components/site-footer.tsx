@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { Container, Rule } from '@/design/primitives';
+import { BUSINESS_SURFACES_ENABLED } from '@/lib/features';
 
 const COLUMNS: Array<{ heading: string; links: Array<{ href: string; label: string }> }> = [
   {
@@ -12,6 +13,9 @@ const COLUMNS: Array<{ heading: string; links: Array<{ href: string; label: stri
       { href: '/download', label: 'Download' },
     ],
   },
+  // The whole "Practices" column is a business surface — hidden below while
+  // BUSINESS_SURFACES_ENABLED is false (`src/lib/features.ts`), not deleted,
+  // so it comes back verbatim when the flag flips back on.
   {
     heading: 'Practices',
     links: [
@@ -37,19 +41,26 @@ const COLUMNS: Array<{ heading: string; links: Array<{ href: string; label: stri
   },
 ];
 
+const VISIBLE_COLUMNS = COLUMNS.filter((c) => c.heading !== 'Practices' || BUSINESS_SURFACES_ENABLED);
+
 export function SiteFooter() {
   return (
     <footer className="border-t border-[var(--color-rule)] bg-[var(--color-ground)]">
       <Container width="wide" className="py-20">
-        <div className="grid gap-14 lg:grid-cols-[1.6fr_1fr_1fr_1fr_1fr]">
+        <div
+          className={
+            VISIBLE_COLUMNS.length === COLUMNS.length
+              ? 'grid gap-14 lg:grid-cols-[1.6fr_1fr_1fr_1fr_1fr]'
+              : 'grid gap-14 lg:grid-cols-[1.6fr_1fr_1fr_1fr]'
+          }
+        >
           <div className="max-w-[32ch]">
             <div className="text-[15px] font-medium text-[var(--color-ink)]">Snap Apps</div>
             <p className="mt-3 text-[13.5px] leading-relaxed text-[var(--color-ink-muted)]">
-              A BAS and deduction-compliance layer for Australian sole traders and tradies, built
-              for the accountants and bookkeepers who look after them.
+              A BAS and deduction-compliance layer for Australian sole traders and tradies.
             </p>
           </div>
-          {COLUMNS.map((col) => (
+          {VISIBLE_COLUMNS.map((col) => (
             <div key={col.heading}>
               <div className="t-label text-[var(--color-ink-faint)]">{col.heading}</div>
               <ul className="mt-4 flex flex-col gap-3">

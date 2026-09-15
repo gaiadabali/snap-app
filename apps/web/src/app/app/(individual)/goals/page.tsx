@@ -1,3 +1,4 @@
+import { HouseAd } from '@/components/ads';
 import { Empty, SectionTitle } from '@/design/primitives';
 import { listGoals } from '@/lib/panels/data';
 import { contributeToGoal, createGoal, deleteGoal } from '@/lib/panels/goal-actions';
@@ -22,6 +23,8 @@ export default async function GoalsPage() {
         onContribute={contributeToGoal.bind(null, workspace.id, path)}
         onDelete={deleteGoal.bind(null, workspace.id, path)}
       />
+
+      <HouseAd placement="individual-goals" />
     </div>
   );
 }

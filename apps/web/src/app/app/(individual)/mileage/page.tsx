@@ -1,3 +1,4 @@
+import { HouseAd } from '@/components/ads';
 import { Card, Empty, Money, SectionTitle, Stat } from '@/design/primitives';
 import { getMileage } from '@/lib/panels/data';
 import { addTrip, deleteTrip } from '@/lib/panels/mileage-actions';
@@ -50,6 +51,8 @@ export default async function MileagePage() {
         onAdd={addTrip.bind(null, workspace.id, path)}
         onDelete={deleteTrip.bind(null, workspace.id, path)}
       />
+
+      <HouseAd placement="individual-mileage" />
     </div>
   );
 }

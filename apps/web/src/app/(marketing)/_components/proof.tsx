@@ -1,4 +1,5 @@
 import { ArrowLink, ButtonLink, LedgerRow, Reveal, Rule, cx } from '@/design/primitives';
+import { BUSINESS_SURFACES_ENABLED } from '@/lib/features';
 
 import {
   HAS_PLACEHOLDERS,
@@ -67,7 +68,11 @@ function Standing() {
             <ButtonLink href="/register" size="lg">
               Scan 20 free, no card
             </ButtonLink>
-            <ArrowLink href="/pricing#practice">Bring a practice</ArrowLink>
+            {BUSINESS_SURFACES_ENABLED ? (
+              <ArrowLink href="/pricing#practice">Bring a practice</ArrowLink>
+            ) : (
+              <ArrowLink href="/how-it-works">See how a receipt moves through it</ArrowLink>
+            )}
           </div>
         </Reveal>
       </div>

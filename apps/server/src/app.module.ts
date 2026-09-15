@@ -5,6 +5,8 @@ import { AdminModule } from './admin/admin.module.js';
 import { AuthController } from './auth/auth.controller.js';
 import { CapturesController } from './captures/captures.controller.js';
 import { BusinessController } from './business/business.controller.js';
+import { CreditsController } from './credits/credits.controller.js';
+import { PointsController } from './credits/points.controller.js';
 import { DocumentsController } from './documents/documents.controller.js';
 import { DownloadsController } from './export/downloads.controller.js';
 import { ImagesController } from './images/images.controller.js';
@@ -87,6 +89,8 @@ export class HealthController {
     ImagesController,
     TransactionsController,
     ReportsController,
+    CreditsController,
+    PointsController,
   ],
 })
 export class AppModule {}

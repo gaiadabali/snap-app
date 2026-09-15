@@ -10,6 +10,7 @@ import type {
 import { sql } from 'drizzle-orm';
 
 import { getDb } from './db.js';
+import { awardScanPoint } from './credits/points.repo.js';
 import type { ValidatedExtraction } from './extraction/types.js';
 
 /**
@@ -1072,8 +1073,17 @@ export async function saveExtraction(
     raw: string;
   },
 ): Promise<{ documentId: string }> {
-  return withTenantAs(getDb(), workerUserId, tenantId, async (tx) => {
+  const { documentId, uploadedBy } = await withTenantAs(getDb(), workerUserId, tenantId, async (tx) => {
     const e = result.extraction;
+
+    // Whoever captured the receipt — a point for a completed scan belongs to
+    // this person, not to the worker's own service identity that is running
+    // this transaction. Read once, up front, so it is available regardless
+    // of which branch below this run takes.
+    const captureRow = await tx.execute<{ uploaded_by: string | null }>(sql`
+      select uploaded_by from captures where id = ${captureId} limit 1
+    `);
+    const uploadedBy = captureRow.rows[0]?.uploaded_by ?? null;
 
     const runId = randomUUID();
     await tx.execute(sql`
@@ -1162,7 +1172,7 @@ export async function saveExtraction(
           2
         )
       `);
-      return { documentId: before.id };
+      return { documentId: before.id, uploadedBy };
     }
 
     const locked = new Set(before?.locked_fields ?? []);
@@ -1272,8 +1282,21 @@ export async function saveExtraction(
     }
 
     await tx.execute(sql`update captures set status = 'extracted' where id = ${captureId}`);
-    return { documentId };
+    return { documentId, uploadedBy };
   });
+
+  // One point for one genuinely completed scan — see the header on
+  // `awardScanPoint` for why THIS is the point in the pipeline that counts,
+  // and why the unique index (not a pre-check) is what makes a retried or
+  // re-run capture safe to call this again. Never allowed to fail the
+  // extraction that was just durably saved above: a missed point is a
+  // support ticket, a lost extraction is a compliance problem.
+  if (uploadedBy) {
+    await awardScanPoint(uploadedBy, captureId).catch((error) => {
+      console.error(`awardScanPoint failed for capture ${captureId}:`, error);
+    });
+  }
+  return { documentId };
 }
 
 /** Records why an extraction failed, so a retry has something to read. */

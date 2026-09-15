@@ -1,3 +1,4 @@
+import { HouseAd } from '@/components/ads';
 import { Empty, SectionTitle } from '@/design/primitives';
 import { listDocuments } from '@/lib/panels/data';
 import { loadWorkspace } from '@/lib/panels/workspace';
@@ -29,6 +30,8 @@ export default async function IndividualDocumentsPage({
         showTaxColumns={false}
         initialStatus={(status as 'needs_review' | 'reviewed' | 'auto_accepted' | 'rejected') ?? 'all'}
       />
+
+      <HouseAd placement="individual-documents" />
     </div>
   );
 }

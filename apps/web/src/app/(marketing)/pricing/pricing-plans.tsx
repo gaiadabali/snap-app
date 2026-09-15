@@ -3,6 +3,7 @@
 import { useState } from 'react';
 
 import { Badge, Card, Money, cx } from '@/design/primitives';
+import { BUSINESS_SURFACES_ENABLED } from '@/lib/features';
 
 import { BillingToggle, type BillingPeriod } from './billing-toggle';
 import { PracticeEstimator } from './practice-estimator';
@@ -106,7 +107,11 @@ export function PricingPlans() {
         <BillingToggle onChange={setPeriod} />
       </div>
 
-      {/* ── Practices ─────────────────────────────────────────────────── */}
+      {/* ── Practices ─────────────────────────────────────────────────── *
+       * The whole section is a business surface. Hidden while
+       * BUSINESS_SURFACES_ENABLED is false (src/lib/features.ts) rather than
+       * removed, so it comes back exactly as it was when the flag flips. */}
+      {BUSINESS_SURFACES_ENABLED ? (
       <section className="mt-14">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
@@ -174,9 +179,16 @@ export function PricingPlans() {
 
         <PracticeEstimator />
       </section>
+      ) : null}
 
       {/* ── Direct ────────────────────────────────────────────────────── */}
-      <section className="mt-16 border-t border-[var(--color-rule)] pt-14">
+      <section
+        className={
+          BUSINESS_SURFACES_ENABLED
+            ? 'mt-16 border-t border-[var(--color-rule)] pt-14'
+            : 'mt-14'
+        }
+      >
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <Badge>No accountant yet</Badge>
@@ -184,10 +196,9 @@ export function PricingPlans() {
               Working solo — the direct plan
             </h3>
             <p className="mt-2 max-w-[62ch] text-[15px] text-[var(--color-ink-muted)]">
-              For sole traders who arrive without a firm. It costs more per month than a practice
-              client seat, on purpose — direct customers cost more for us to support, and it gives
-              your accountant a reason to bring you onto a firm plan later. If you already have a
-              bookkeeper, ask them about Practice above; it&apos;s the cheaper way in.
+              {BUSINESS_SURFACES_ENABLED
+                ? "For sole traders who arrive without a firm. It costs more per month than a practice client seat, on purpose — direct customers cost more for us to support, and it gives your accountant a reason to bring you onto a firm plan later. If you already have a bookkeeper, ask them about Practice above; it's the cheaper way in."
+                : 'For sole traders and tradies working without a firm. Free covers 20 receipts a month with no card; Sole Trader adds realtime extraction, a BAS pack and Xero sync once you outgrow that.'}
             </p>
           </div>
         </div>

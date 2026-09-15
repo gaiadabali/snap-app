@@ -26,6 +26,7 @@ import {
   type AuthUser,
 } from '../common/auth.guard.js';
 import { ValidBody } from '../common/valid-body.decorator.js';
+import { grantSignupBonusIfFirst } from '../credits/credits.repo.js';
 import { getDb } from '../db.js';
 import { listMembers, listWorkspacesFor, updateTenant } from '../repo.js';
 import { seedDefaultCategories } from '../settings/settings.repo.js';
@@ -129,6 +130,16 @@ export class WorkspacesController {
     // wrong first screen. Seeded per kind: a household is not offered "D1 —
     // car expenses", which is the whole reason the personal side is simpler.
     await seedDefaultCategories(user.userId, id, body.kind);
+
+    // The ten free scans a brand-new account gets (docs/ECOSYSTEM.md D27),
+    // attached to the first tenant this user ever creates and never a
+    // second time — see the function's own header for how it stays
+    // idempotent across a second workspace or a retried request. Generous,
+    // not load-bearing: never fails workspace creation over it.
+    await grantSignupBonusIfFirst(user.userId, id).catch((error) => {
+      console.error(`grantSignupBonusIfFirst failed for tenant ${id}:`, error);
+    });
+
     return { id, name: body.name, kind: body.kind, role: 'owner', memberCount: 1, abn };
   }
 

@@ -7,6 +7,9 @@ import type {
   BusinessSettings,
   CategorySetting,
   Connection,
+  CreditBalance,
+  CreditPack,
+  CreditPurchase,
   DocumentFilter,
   DocumentView,
   Goal,
@@ -19,6 +22,8 @@ import type {
   Payment,
   PersonalSummary,
   PlanUsage,
+  PointBalance,
+  PointLedgerEntry,
   Recurring,
   SalesSummary,
   StockMovement,
@@ -95,6 +100,26 @@ export const listParties = (workspaceId: string, kind?: 'customer' | 'supplier')
 
 export const listMembers = (workspaceId: string) =>
   api<MemberList>(`/v1/workspaces/${workspaceId}/members`, { workspaceId });
+
+/* ── Credits & points — docs/ECOSYSTEM.md D27 ─────────────────────────────
+ *
+ * Credits are tenant-scoped, like everything above. Points are USER-scoped —
+ * a point is earned by a person, not a workspace — so those two calls take
+ * no `workspaceId` at all; the server's `PointsController` uses
+ * `SessionGuard` alone and never reads `X-Workspace-Id`.
+ */
+
+export const listCreditPacks = (workspaceId: string) => api<CreditPack[]>('/v1/credit-packs', { workspaceId });
+
+export const getCreditBalance = (workspaceId: string) => api<CreditBalance>('/v1/credits', { workspaceId });
+
+export const listCreditPurchases = (workspaceId: string) =>
+  api<CreditPurchase[]>('/v1/credits/purchases', { workspaceId });
+
+export const getPointBalance = () => api<PointBalance>('/v1/points');
+
+export const listPointLedger = (limit?: number) =>
+  api<PointLedgerEntry[]>(`/v1/points/ledger${limit ? `?limit=${limit}` : ''}`);
 
 /* ── The ledger — not part of the mobile seam, called directly ───────────── */
 

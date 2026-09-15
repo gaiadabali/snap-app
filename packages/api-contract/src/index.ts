@@ -1253,3 +1253,94 @@ export interface AdminAuditLogQuery {
   limit?: number;
   offset?: number;
 }
+
+/* ── Credits & points ──────────────────────────────────────────────────────
+ *
+ * `docs/ECOSYSTEM.md` D27: three balances that look alike and are not.
+ *
+ *   PLAN QUOTA — `PlanUsage` above. Tenant-scoped, resets monthly.
+ *   CREDITS    — bought with money, or granted free at signup. Tenant-scoped
+ *                (a credit buys a scan, and a scan happens inside a
+ *                workspace) and never reset.
+ *   POINTS     — earned by scanning, redeemed in a different ecosystem app
+ *                (yourtal, unbuilt). USER-scoped: earned by a person, not a
+ *                workspace, and redeemed somewhere a workspace means nothing.
+ *
+ * Conflating any two of these is exactly how a customer ends up billed for
+ * scans they already had. They stay as separate types here for the same
+ * reason they stay as separate tables in migration 0024.
+ */
+
+/** One row of `GET /v1/credit-packs` — the catalogue, active packs only, in
+ *  display order. */
+export interface CreditPack {
+  code: string;
+  credits: number;
+  /** GST-inclusive AUD. A decimal STRING — see `MoneyString` above. Never
+   *  parse this to a number; render it with `<Money>`. */
+  priceAud: MoneyString;
+  sortOrder: number;
+}
+
+/**
+ * `GET /v1/credits` — the credits balance ALONE.
+ *
+ * Deliberately not folded together with the plan quota: `GET /v1/plan`'s
+ * `scansRemaining` already answers "how many scans can I make right now" by
+ * adding the two. This answers a different question — "what did I buy or
+ * get for free, and what is left of just that, which never expires" — and a
+ * screen that only ever showed the combined figure could not tell a customer
+ * why their balance didn't reset on their renewal date.
+ */
+export interface CreditBalance {
+  /** Sum of live `usage_grants.remaining` where `metric = 'scans'`. */
+  creditsRemaining: number;
+}
+
+export type CreditPurchaseStatus = 'pending' | 'paid' | 'failed' | 'refunded';
+
+/** `POST /v1/credits/purchases` request body. */
+export interface StartCreditPurchaseRequest {
+  packCode: string;
+}
+
+/**
+ * One purchase record. `status` starts `pending`; it becomes `paid` only
+ * once a grant exists (migration 0024's CHECK constraints make the reverse
+ * unrepresentable). There is no payment processor yet — Stripe is phase 6.5
+ * — so today `pending` is the honest, whole truth about a purchase started
+ * from this screen: fulfilment is a manual step, not something this request
+ * can promise.
+ */
+export interface CreditPurchase {
+  id: string;
+  packCode: string;
+  credits: number;
+  priceAud: MoneyString;
+  status: CreditPurchaseStatus;
+  /** 'manual' until a real processor is wired. */
+  provider: string;
+  createdAt: IsoDateTime;
+  paidAt: IsoDateTime | null;
+}
+
+/** `GET /v1/points` — USER-scoped; see the header above. */
+export interface PointBalance {
+  balance: number;
+}
+
+/**
+ * One row of `GET /v1/points/ledger` — append-only history, most recent
+ * first. There is no redemption type here: redemption happens in yourtal,
+ * not in this product, and nothing in this contract should be read as
+ * assuming otherwise.
+ */
+export interface PointLedgerEntry {
+  id: string;
+  /** Positive earns; a redemption (elsewhere) would be negative. */
+  delta: number;
+  reason: string;
+  ref: string | null;
+  app: string;
+  createdAt: IsoDateTime;
+}

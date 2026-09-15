@@ -1,3 +1,4 @@
+import { HouseAd } from '@/components/ads';
 import { Empty, SectionTitle } from '@/design/primitives';
 import { listCategorySettings } from '@/lib/panels/data';
 import { createCategory, setBudget, setCategoryActive } from '@/lib/panels/category-actions';
@@ -31,6 +32,8 @@ export default async function CategoriesPage() {
         onSetBudget={setBudget.bind(null, workspace.id, path)}
         onCreate={createCategory.bind(null, workspace.id, path)}
       />
+
+      <HouseAd placement="individual-categories" />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { AnalyticsRange } from '@snap/api-contract';
 
+import { HouseAd } from '@/components/ads';
 import { Card, Empty, Money, SectionTitle, cx } from '@/design/primitives';
 import { formatPercent } from '@/lib/panels/format';
 import { getAnalytics } from '@/lib/panels/data';
@@ -141,6 +142,8 @@ export default async function AnalyticsPage({
           )}
         </Card>
       </div>
+
+      <HouseAd placement="individual-analytics" />
     </div>
   );
 }

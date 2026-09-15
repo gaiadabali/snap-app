@@ -12,6 +12,7 @@ import {
   Section,
   SectionHead,
 } from '@/design/primitives';
+import { BUSINESS_SURFACES_ENABLED } from '@/lib/features';
 
 import { AppScreens, PhoneFrame, APP_SCREENS } from './_components/app-showcase';
 import { ComparisonTable } from './_components/comparison';
@@ -116,6 +117,9 @@ const PLANS = [
     cta: 'See what is included',
     primary: true,
   },
+  // The Practice door is folded back in the moment BUSINESS_SURFACES_ENABLED
+  // flips true — see src/lib/features.ts. Kept in the source, filtered at
+  // render, so re-enabling needs no rewrite.
   {
     name: 'Practice',
     price: '$19',
@@ -124,8 +128,11 @@ const PLANS = [
     href: '/pricing#practice',
     cta: 'See practice pricing',
     primary: false,
+    businessOnly: true,
   },
 ] as const;
+
+const VISIBLE_PLANS = PLANS.filter((p) => !('businessOnly' in p) || BUSINESS_SURFACES_ENABLED);
 
 /** The two doors. Equal weight, because the business has two buyers. */
 function Door({
@@ -223,26 +230,41 @@ export default function HomePage() {
               />
             </div>
 
+            {/*
+              Two doors — sole trader and practice — when both audiences are
+              sold (docs/MONETISATION.md §3). BUSINESS_SURFACES_ENABLED is
+              off (`src/lib/features.ts`), so this is one door at full width
+              rather than a two-column grid with an empty second cell —
+              "gap-toothed" is the thing docs/WEB.md §3.5 rules out.
+            */}
             <div
-              className="anim-load grid gap-4 sm:grid-cols-2 lg:col-start-1 lg:row-start-2"
+              className={
+                BUSINESS_SURFACES_ENABLED
+                  ? 'anim-load grid gap-4 sm:grid-cols-2 lg:col-start-1 lg:row-start-2'
+                  : 'anim-load flex flex-col gap-5 lg:col-start-1 lg:row-start-2'
+              }
               style={{ ['--i' as string]: 4 }}
             >
               <Door
-                kicker="I scan my own receipts"
+                kicker="Start free, no card"
                 title="Sole trader, tradie, or on the road"
                 price="Free"
                 note="20 receipts a month"
                 href="/register"
                 cta="Start scanning"
               />
-              <Door
-                kicker="I look after clients"
-                title="Accounting or bookkeeping practice"
-                price="$19"
-                note="per client / month"
-                href="/pricing#practice"
-                cta="See practice pricing"
-              />
+              {BUSINESS_SURFACES_ENABLED ? (
+                <Door
+                  kicker="I look after clients"
+                  title="Accounting or bookkeeping practice"
+                  price="$19"
+                  note="per client / month"
+                  href="/pricing#practice"
+                  cta="See practice pricing"
+                />
+              ) : (
+                <ArrowLink href="/pricing">See what Sole Trader unlocks — realtime, BAS pack, Xero sync</ArrowLink>
+              )}
             </div>
           </div>
         </Container>
@@ -464,7 +486,12 @@ export default function HomePage() {
         </div>
       </Section>
 
-      {/* ── Practices ───────────────────────────────────────────────────── */}
+      {/* ── Practices ───────────────────────────────────────────────────── *
+       * Whole section hidden while BUSINESS_SURFACES_ENABLED is false — this
+       * IS the business/practice surface `docs/MONETISATION.md` §3 calls the
+       * primary revenue line. Left in the source rather than deleted so
+       * flipping the flag back on restores it exactly as it was. */}
+      {BUSINESS_SURFACES_ENABLED ? (
       <Section code="FIRMS">
         <div className="grid gap-12 lg:grid-cols-[1fr_1fr] lg:gap-20">
           <div>
@@ -518,6 +545,7 @@ export default function HomePage() {
           </div>
         </div>
       </Section>
+      ) : null}
 
       {/* ── Pricing ─────────────────────────────────────────────────────── */}
       <Section code="PLANS" tone="surface">
@@ -526,8 +554,14 @@ export default function HomePage() {
           title="Start free. Bring your accountant when you are ready."
           lede="No trial clock and no card on the free tier — it is a real plan, not a countdown."
         />
-        <div className="mt-12 grid gap-6 md:grid-cols-3">
-          {PLANS.map((plan, i) => (
+        <div
+          className={
+            VISIBLE_PLANS.length === 3
+              ? 'mt-12 grid gap-6 md:grid-cols-3'
+              : 'mt-12 grid gap-6 sm:grid-cols-2 md:mx-auto md:max-w-[720px]'
+          }
+        >
+          {VISIBLE_PLANS.map((plan, i) => (
             <Reveal key={plan.name} variant="deal" delay={i}>
               <div
                 className={[

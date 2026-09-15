@@ -1,8 +1,9 @@
-import { redirect } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import type { ReactNode } from 'react';
 
 import { Container, Empty } from '@/design/primitives';
 import { getActiveWorkspaceId } from '@/lib/api/server';
+import { BUSINESS_SURFACES_ENABLED } from '@/lib/features';
 import { panelRootFor, resolveImpersonatedWorkspace } from '@/lib/panels/impersonation';
 import { requireSession } from '@/lib/panels/session';
 import { resolveActiveWorkspace } from '@/lib/panels/workspace';
@@ -11,6 +12,12 @@ import { PanelShell } from '../_shell/PanelShell';
 import { BUSINESS_NAV } from '../_shell/nav';
 
 export default async function BusinessLayout({ children }: { children: ReactNode }) {
+  // Business surfaces are switched off entirely (`src/lib/features.ts`) — a
+  // 404 before any session or workspace lookup, so this route behaves
+  // exactly like a route that does not exist, for anyone, business member or
+  // not. Flip the flag back to `true` to restore everything below unchanged.
+  if (!BUSINESS_SURFACES_ENABLED) notFound();
+
   const { user, workspaces, impersonation } = await requireSession();
 
   if (impersonation) {
