@@ -132,6 +132,13 @@ jobs:
         run: pnpm --filter @snap/web test
 
       - name: Web build
+        # `next build` sets NODE_ENV=production, which trips the sample
+        # testimonial guard in the marketing proof section. CI is verifying
+        # that the app compiles, not gating what ships — the real gate is the
+        # image build, which opts in explicitly per host. See docs/WEB.md §4.5.
+        # Remove alongside the samples.
+        env:
+          SNAP_ALLOW_PLACEHOLDER_PROOF: '1'
         run: pnpm --filter @snap/web build
 
       - name: Stop Postgres

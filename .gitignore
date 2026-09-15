@@ -45,3 +45,7 @@ next-env.d.ts
 Thumbs.db
 .idea/
 .vscode/
+
+# Expo web export — build output of `pnpm --filter @snap/mobile export:web`.
+# Used to capture the marketing site's app screenshots (docs/WEB.md 4.6).
+.expo-export/

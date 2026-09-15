@@ -1,360 +1,589 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 
-import { Badge, ButtonLink, Card, Container, Money, SectionTitle, Stat } from '@/design/primitives';
-
-import { ReceiptScanCard } from './_components/receipt-scan-card';
 import {
-  AlertIcon,
-  ArrowRightIcon,
-  FolderCheckIcon,
-  ScaleIcon,
-  ShieldCheckIcon,
-  SplitIcon,
-} from './_components/icons';
+  ArrowLink,
+  ButtonLink,
+  Container,
+  LedgerRow,
+  Money,
+  Reveal,
+  Rule,
+  Section,
+  SectionHead,
+} from '@/design/primitives';
+
+import { AppScreens, PhoneFrame, APP_SCREENS } from './_components/app-showcase';
+import { ComparisonTable } from './_components/comparison';
+import { Proof, PROOF_HEAD } from './_components/proof';
 
 export const metadata: Metadata = {
-  title: 'BAS and deduction compliance for Australian tradies',
+  title: 'Split every receipt correctly — GST, BAS and deductions for Australian trades',
   description:
-    'Photograph a receipt. Get a balanced ledger entry, a GST position you can defend, and a BAS that reconciles — built for Australian sole traders and the accountants who look after them.',
+    'Half a docket can have GST and half can be GST-free. Snap Apps reads every line, splits the tax correctly, and gives you a BAS position you can defend. Free for 20 receipts a month.',
 };
 
-const DEDUCTION_ROWS = [
-  { label: 'D1 — Car', amount: '2,140.00' },
-  { label: 'D3 — Clothing & laundry', amount: '312.50' },
-  { label: 'D5 — Tools & equipment', amount: '1,486.90' },
+/**
+ * The home page.
+ *
+ * Its job is conversion, not credibility theatre: get a sole trader to install
+ * the app, and get a practice to look at pricing. An earlier revision led with
+ * the pipeline architecture (`captures` → `extraction_runs` → …), which
+ * `docs/MONETISATION.md` §2.1 explicitly calls "procurement words for a buyer
+ * we are not selling to". That material now lives on /how-it-works, where
+ * someone already sold is going to look for it.
+ *
+ * Two ordering rules came straight out of MONETISATION.md:
+ *
+ * 1. **Per-category tax subtotals leads.** §2 calls it "the single capability
+ *    no competitor at any price currently offers" and warns against burying it
+ *    in paragraph four. It is now the headline and the first section.
+ * 2. **Both doors are visible above the fold.** Practices are the revenue
+ *    ($19/client/month, one sales motion) and sole traders are the funnel
+ *    (free tier). A homepage that only speaks to one loses the other.
+ *
+ * Every figure on this page comes from ONE worked case — K. Marsh Transport,
+ * the demo workspace the app screenshots are captured from. A page that quotes
+ * four unrelated made-up numbers reads as invented; a page that follows one
+ * business through a quarter reads as a product someone actually built.
+ */
+
+/** A mixed servo docket. GST-free groceries and taxable hot food on one receipt. */
+const DOCKET = [
+  { label: 'Milk 2L', amount: '4.50', taxable: false },
+  { label: 'Bread', amount: '3.80', taxable: false },
+  { label: 'Fresh sandwich', amount: '8.50', taxable: false },
+  { label: 'Hot pie', amount: '6.20', taxable: true },
+  { label: 'Soft drink 1.25L', amount: '3.20', taxable: true },
+  { label: 'Coffee', amount: '6.00', taxable: true },
 ] as const;
 
-const FLAGGED_RECEIPTS = [
-  { name: 'Riverside Café', amount: '18.20', reason: 'No supplier ABN on the receipt' },
-  { name: 'QuickFix Auto Parts', amount: '41.30', reason: 'ABN fails the mod-89 checksum' },
-  { name: 'Coastal Fuel & Diesel', amount: '9.60', reason: 'Not a tax invoice — missing GST breakdown' },
+/**
+ * The six documents flagged in the demo quarter. Totals are the receipt
+ * amounts; GST at risk across all six is $177.15, which is the figure the
+ * app's own Tax & BAS screen shows in the screenshot further up the page.
+ */
+const FLAGGED = [
+  { name: 'Beaurepaires Orange', amount: '1848.00', reason: 'No supplier ABN on the invoice' },
+  { name: 'Coin Laundry Parkes', amount: '12.00', reason: 'Not a tax invoice — no GST breakdown' },
+  { name: 'Roadside Coffee Van', amount: '8.50', reason: 'ABN fails the mod-89 checksum' },
 ] as const;
+
+const DEDUCTIONS = [
+  { code: 'D1', label: 'Work-related car and truck expenses', amount: '21,480.00' },
+  { code: 'D2', label: 'Travel — accommodation and meals away', amount: '18,905.00' },
+  { code: 'D3', label: 'Clothing, laundry and dry-cleaning', amount: '1,240.00' },
+  { code: 'D5', label: 'Other work-related expenses — tools, phone', amount: '8,945.00' },
+] as const;
+
+const PRACTICE_QUEUE = [
+  {
+    client: 'K. Marsh Transport',
+    state: '6 receipts missing a valid tax invoice',
+    figure: '6 to review',
+    tone: 'risk',
+  },
+  {
+    client: 'Baird & Sons Plumbing',
+    state: 'One fuel claim awaiting a tax invoice',
+    figure: '1 to review',
+    tone: 'warn',
+  },
+  {
+    client: 'Coastline Carpentry',
+    state: 'All 84 documents validated · G11 reconciled',
+    figure: 'Ready',
+    tone: 'good',
+  },
+] as const;
+
+const PLANS = [
+  {
+    name: 'Free',
+    price: '$0',
+    unit: 'forever',
+    line: '20 receipts a month, 12-month retention. No card.',
+    href: '/register',
+    cta: 'Start scanning',
+    primary: false,
+  },
+  {
+    name: 'Sole Trader',
+    price: '$29',
+    unit: 'per month, incl GST',
+    line: '150 receipts, realtime, BAS pack, Xero sync, 5-year retention.',
+    href: '/pricing',
+    cta: 'See what is included',
+    primary: true,
+  },
+  {
+    name: 'Practice',
+    price: '$19',
+    unit: 'per client / month',
+    line: 'From 10 clients. 200 scans each, firm-wide BAS review queue.',
+    href: '/pricing#practice',
+    cta: 'See practice pricing',
+    primary: false,
+  },
+] as const;
+
+/** The two doors. Equal weight, because the business has two buyers. */
+function Door({
+  kicker,
+  title,
+  price,
+  note,
+  href,
+  cta,
+}: {
+  kicker: string;
+  title: string;
+  price: string;
+  note: string;
+  href: string;
+  cta: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className={[
+        'group flex flex-col justify-between gap-6 rounded-[var(--radius-md)] border p-6',
+        'border-[var(--color-rule-strong)] bg-[var(--color-ground)]',
+        'transition-colors duration-200 hover:border-[var(--color-accent)]',
+      ].join(' ')}
+    >
+      <div>
+        <div className="t-label text-[var(--color-ink-faint)]">{kicker}</div>
+        <div className="mt-3 text-[19px] leading-snug text-[var(--color-ink)]">{title}</div>
+        <div className="mt-4 flex items-baseline gap-2">
+          <span className="font-mono text-[26px] tabular text-[var(--color-ink)]">{price}</span>
+          <span className="text-[13px] text-[var(--color-ink-muted)]">{note}</span>
+        </div>
+      </div>
+      <span className="inline-flex items-center gap-2 text-[14px] font-medium text-[var(--color-accent)]">
+        {cta}
+        <span aria-hidden className="transition-transform duration-300 group-hover:translate-x-1">
+          &rarr;
+        </span>
+      </span>
+    </Link>
+  );
+}
 
 export default function HomePage() {
   return (
     <>
-      {/* ── Hero ────────────────────────────────────────────────────────── */}
-      <section className="overflow-hidden border-b border-[var(--color-rule)]">
-        <Container width="wide" className="grid gap-12 py-16 md:py-24 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
-          <div>
-            <Badge tone="accent">BAS &amp; deduction compliance — not a receipt scanner</Badge>
-            <h1 className="mt-5 text-[36px] font-bold leading-[1.1] tracking-tight text-[var(--color-ink)] sm:text-[46px]">
-              Every receipt becomes a balanced ledger entry your accountant can trust.
-            </h1>
-            <p className="mt-5 max-w-[52ch] text-[17px] leading-relaxed text-[var(--color-ink-muted)]">
-              Photograph a tax invoice. Snap Apps reads it, validates it against nine deterministic
-              checks, and posts a double-entry transaction with the right BAS label already
-              attached — G11, 1B, the lot. Not a summary a human wrote by hand.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <ButtonLink href="/register" size="lg">
-                Get started free
-              </ButtonLink>
-              <ButtonLink href="/pricing" size="lg" variant="secondary">
-                Practice pricing
-              </ButtonLink>
-            </div>
-            <div className="mt-10 grid max-w-[30rem] grid-cols-3 gap-6 border-t border-[var(--color-rule)] pt-6">
-              <Stat label="GST validators" value="9" hint="run on every scan" />
-              <Stat label="Ledger" value="0.0000" hint="the required sum, every time" />
-              <Stat label="Retention" value="5 yr" hint="ATO evidence window" />
-            </div>
-          </div>
-
-          <ReceiptScanCard className="mx-auto w-full max-w-[380px]" />
-        </Container>
-      </section>
-
-      {/* ── Core proposition: the four-layer pipeline, briefly ─────────── */}
-      <section className="border-b border-[var(--color-rule)] bg-[var(--color-surface)]">
-        <Container width="wide" className="py-16">
-          <SectionTitle
-            eyebrow="How it fits together"
-            title="Capture → extraction → document → transaction"
-            lede="Four layers, each one a database record, not a throwaway API response. A better model in six months re-runs the whole layer without touching the one above it."
-          />
-          <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              {
-                step: '01',
-                title: 'Capture',
-                body: 'Original bytes, kept forever — the legal record the ATO expects.',
-              },
-              {
-                step: '02',
-                title: 'Extraction run',
-                body: 'A versioned read of that image. Every attempt kept, none overwritten.',
-              },
-              {
-                step: '03',
-                title: 'Document',
-                body: 'The curated result, with confidence, provenance, and a tax-invoice verdict.',
-              },
-              {
-                step: '04',
-                title: 'Transaction',
-                body: 'A proposed, balanced ledger entry with a BAS label already attached.',
-              },
-            ].map((s) => (
-              <Card key={s.step}>
-                <div className="text-[13px] font-bold tabular text-[var(--color-accent)]">{s.step}</div>
-                <div className="mt-2 text-[16px] font-bold text-[var(--color-ink)]">{s.title}</div>
-                <p className="mt-1.5 text-[13.5px] leading-relaxed text-[var(--color-ink-muted)]">
-                  {s.body}
-                </p>
-              </Card>
-            ))}
-          </div>
-          <div className="mt-6">
-            <ButtonLink href="/how-it-works" variant="ghost" className="gap-1.5 px-0">
-              See how a receipt actually moves through this
-              <ArrowRightIcon className="h-4 w-4" />
-            </ButtonLink>
-          </div>
-        </Container>
-      </section>
-
-      {/* ── The proof: the sharpest moment ──────────────────────────────── */}
+      {/* ── Hero ─────────────────────────────────────────────────────────
+          The wedge as the headline, both doors above the fold, and a real
+          screen from the real app rather than an illustration of one. */}
       <section className="border-b border-[var(--color-rule)]">
-        <Container width="wide" className="py-16">
-          <SectionTitle
-            eyebrow="The proof"
-            title="A number no naive OCR tool can produce"
-            lede="Reading a total off a receipt is the easy part. Knowing whether that GST is legally claimable takes a model of what a valid tax invoice is — which is the part everyone else skipped."
-          />
+        <Container width="wide" className="pb-16 pt-14 md:pb-20 md:pt-20">
+          {/**
+           * Three children, explicitly placed, so the phone can sit in
+           * different places on the two layouts.
+           *
+           * On a handset the source order wins: headline → phone → doors. The
+           * app has to be visible before the reader is asked to choose a door,
+           * because "show me the thing" is the whole job of this page and
+           * burying it under both CTAs is exactly backwards on the surface
+           * where most of this traffic lands.
+           *
+           * From `lg` the phone moves to its own column and spans both rows,
+           * putting the copy and the doors back in one stack beside it.
+           */}
+          <div className="grid gap-10 lg:grid-cols-[1.15fr_0.85fr] lg:items-center lg:gap-16">
+            <div className="lg:col-start-1 lg:row-start-1">
+              <div className="anim-load t-label text-[var(--color-ink-muted)]">
+                GST · BAS · deductions — built for Australian trades
+              </div>
 
-          <div className="mt-10 grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
-            <Card className="!border-[var(--color-risk-soft)] !bg-[var(--color-risk-soft)] p-7">
-              <div className="flex items-start gap-3">
-                <AlertIcon className="mt-0.5 h-6 w-6 shrink-0 text-[var(--color-risk)]" />
+              <h1 className="t-display anim-load mt-6 max-w-[15ch]" style={{ ['--i' as string]: 1 }}>
+                Half this docket has GST.{' '}
+                <span className="text-[var(--color-accent)]">Half doesn&apos;t.</span>
+              </h1>
+
+              <p
+                className="t-lede anim-load mt-7 max-w-[48ch] text-[var(--color-ink-muted)]"
+                style={{ ['--i' as string]: 2 }}
+              >
+                Every other scanner reads one total and hopes. Snap Apps reads every line, splits
+                the tax correctly, and hands you a BAS position you can actually defend — on the
+                fresh sandwich and the hot pie from the same servo receipt.
+              </p>
+            </div>
+
+            <div
+              className="anim-load mx-auto w-full max-w-[260px] lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:max-w-[280px]"
+              style={{ ['--i' as string]: 3 }}
+            >
+              <PhoneFrame
+                screen={APP_SCREENS[0]!}
+                priority
+                sizes="(max-width: 1024px) 60vw, 280px"
+              />
+            </div>
+
+            <div
+              className="anim-load grid gap-4 sm:grid-cols-2 lg:col-start-1 lg:row-start-2"
+              style={{ ['--i' as string]: 4 }}
+            >
+              <Door
+                kicker="I scan my own receipts"
+                title="Sole trader, tradie, or on the road"
+                price="Free"
+                note="20 receipts a month"
+                href="/register"
+                cta="Start scanning"
+              />
+              <Door
+                kicker="I look after clients"
+                title="Accounting or bookkeeping practice"
+                price="$19"
+                note="per client / month"
+                href="/pricing#practice"
+                cta="See practice pricing"
+              />
+            </div>
+          </div>
+        </Container>
+      </section>
+
+      {/* ── The wedge, first and shown ───────────────────────────────────
+          MONETISATION.md §2: "not a schema detail to mention in paragraph
+          four". So it is section one. */}
+      <Section code="G11">
+        <SectionHead
+          kicker="The thing no other app does"
+          title="One receipt. Two tax answers. Split to the cent."
+          lede="Buy milk, bread and a sandwich with a hot pie and a coffee, and you have bought two different tax treatments on one docket. A tool that only reads the total has to guess which half is which — and a guess is not a BAS position."
+        />
+
+        <div className="mt-12 grid gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:gap-20">
+          <div>
+            <div className="t-label text-[var(--color-ink-faint)]">
+              Coles Express Yass · 11 Sep 2026
+            </div>
+            <div className="mt-5">
+              <Rule />
+              {DOCKET.map((line, i) => (
+                <LedgerRow
+                  key={line.label}
+                  index={i}
+                  code={line.taxable ? 'TAX' : 'FREE'}
+                  label={line.label}
+                  value={<Money amount={line.amount} />}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="flex flex-col justify-center gap-8">
+            <Reveal>
+              <div>
+                <div className="t-label text-[var(--color-good)]">GST-free</div>
+                <div className="mt-3 font-mono text-[40px] font-normal leading-none tabular text-[var(--color-good)]">
+                  <Money amount="16.80" />
+                </div>
+                <p className="mt-2 text-[13.5px] text-[var(--color-ink-muted)]">
+                  Basic food. No GST to claim, and none claimed.
+                </p>
+              </div>
+            </Reveal>
+            <Rule />
+            <Reveal>
+              <div>
+                <div className="t-label text-[var(--color-accent)]">Taxable · GST $1.40</div>
+                <div className="mt-3 font-mono text-[40px] font-normal leading-none tabular text-[var(--color-accent)]">
+                  <Money amount="15.40" />
+                </div>
+                <p className="mt-2 text-[13.5px] text-[var(--color-ink-muted)]">
+                  Hot food and drinks. Reconciled per line, not per receipt.
+                </p>
+              </div>
+            </Reveal>
+          </div>
+        </div>
+      </Section>
+
+      {/* ── The app itself ──────────────────────────────────────────────── */}
+      <Section code="THE APP" tone="surface">
+        <SectionHead
+          kicker="What you actually get"
+          title="Photograph it. Check what was read. Move on."
+          lede="The app tells you what needs a human and leaves everything else alone. These are real screens from the app, running on a demo workspace."
+        />
+        <div className="mt-12">
+          <AppScreens />
+        </div>
+        <div className="mt-12 flex flex-wrap items-center gap-6">
+          <ButtonLink href="/download" size="lg">
+            Download the app
+          </ButtonLink>
+          <ArrowLink href="/how-it-works">How a receipt moves through it</ArrowLink>
+        </div>
+      </Section>
+
+      {/* ── Comparison ──────────────────────────────────────────────────── */}
+      <Section code="VS">
+        <SectionHead
+          kicker="Against what you are probably using"
+          title="The row nobody else can tick."
+          lede="Hubdoc comes free with Xero and myDeductions comes free from the ATO. Neither of them — and nothing else on this list — can split one docket into its GST-free and taxable halves."
+        />
+        <div className="mt-12">
+          <ComparisonTable />
+        </div>
+      </Section>
+
+      {/* ── Proof ───────────────────────────────────────────────────────
+          Currently sample copy plus the things a reader can verify today.
+          See _components/proof.tsx — it will not build for production while
+          the samples are still in. */}
+      <Section code="CHECK" tone="surface">
+        <SectionHead
+          kicker={PROOF_HEAD.kicker}
+          title={PROOF_HEAD.title}
+          lede={PROOF_HEAD.lede}
+        />
+        <div className="mt-12">
+          <Proof />
+        </div>
+      </Section>
+
+      {/* ── The inverted band ────────────────────────────────────────────
+          One dark moment, on the sharpest number, tied to the same worked
+          case as the app screenshots above. */}
+      <Section code="1B" tone="void" size="lg">
+        <div className="grid gap-14 lg:grid-cols-[1fr_1fr] lg:gap-16">
+          <Reveal variant="expand">
+            <div className="t-label text-[var(--color-void-muted)]">
+              GST credits at risk — this quarter
+            </div>
+
+            <div className="anim-wipe mt-5">
+              <div className="font-mono text-[clamp(3.25rem,8vw,6rem)] font-normal leading-none tabular text-[var(--color-risk)]">
+                <Money amount="177.15" />
+              </div>
+            </div>
+
+            <p className="t-lede mt-7 max-w-[42ch] text-[var(--color-void-ink)]">
+              of GST this business cannot legally claim, on six documents out of eighty. Not because
+              the money was not spent — because the paperwork is not a valid tax invoice.
+            </p>
+            <p className="mt-5 max-w-[46ch] text-[15px] leading-relaxed text-[var(--color-void-muted)]">
+              You find this out in one of two ways. Either the app flags it the day you scan it,
+              while the supplier will still reissue the docket — or the ATO finds it, and by then
+              nobody is reissuing anything.
+            </p>
+          </Reveal>
+
+          <div className="lg:pt-2">
+            <div className="t-label text-[var(--color-void-muted)]">Flagged at capture</div>
+            <div className="mt-5">
+              <Rule tone="void" />
+              {FLAGGED.map((r, i) => (
+                <LedgerRow
+                  key={r.name}
+                  tone="void"
+                  index={i}
+                  label={r.name}
+                  note={r.reason}
+                  value={<Money amount={r.amount} className="text-[var(--color-risk)]" />}
+                />
+              ))}
+              <LedgerRow
+                tone="void"
+                index={3}
+                label="…and three more this quarter"
+                note="Each one caught the day it was photographed"
+                value={<span className="text-[var(--color-void-muted)]">—</span>}
+              />
+            </div>
+
+            <Reveal>
+              <div className="mt-10 border-t border-[var(--color-void-rule)] pt-6">
+                <div className="t-label text-[var(--color-good)]">
+                  Claimable, same quarter · label 1B
+                </div>
+                <div className="mt-3 font-mono text-[40px] font-normal leading-none tabular text-[var(--color-good)]">
+                  <Money amount="1476.70" />
+                </div>
+                <p className="mt-3 max-w-[38ch] text-[13.5px] leading-relaxed text-[var(--color-void-muted)]">
+                  Backed by valid tax invoices — every element the ATO requires, present and
+                  checked.
+                </p>
+              </div>
+            </Reveal>
+          </div>
+        </div>
+      </Section>
+
+      {/* ── Deductions ──────────────────────────────────────────────────── */}
+      <Section code="D1–D5" tone="surface">
+        <div className="grid gap-12 lg:grid-cols-[1fr_1.1fr] lg:gap-20">
+          <div>
+            <SectionHead
+              kicker="Built for 1 July"
+              title="Scan all year. The return is already written."
+              lede="Snap Apps knows what a line-haul driver can claim that a sparky cannot. Every scan is tagged against its ATO deduction label as it is captured — not reconstructed from a shoebox in June."
+            />
+            <div className="mt-10">
+              <ArrowLink href="/features#tax-pack">See the tax pack</ArrowLink>
+            </div>
+          </div>
+
+          <div>
+            <div className="t-label text-[var(--color-ink-faint)]">
+              K. Marsh Transport · line haul / interstate · FY2025–26
+            </div>
+            <div className="mt-5">
+              <Rule tone="strong" />
+              {DEDUCTIONS.map((d, i) => (
+                <LedgerRow
+                  key={d.code}
+                  index={i}
+                  code={d.code}
+                  label={d.label}
+                  value={<Money amount={d.amount} />}
+                />
+              ))}
+            </div>
+            <Reveal>
+              <div className="mt-1 flex items-baseline justify-between gap-4 border-t-2 border-[var(--color-ink)] pt-5">
+                <span className="text-[15px] text-[var(--color-ink)]">Estimated deduction</span>
+                <span className="font-mono text-[28px] font-normal tabular text-[var(--color-accent)]">
+                  <Money amount="50570.00" />
+                </span>
+              </div>
+              <p className="mt-3 text-[13px] text-[var(--color-ink-muted)]">
+                Typical for this occupation: $40,000–$55,000. An estimate outside the band is the
+                first thing your accountant should see.
+              </p>
+            </Reveal>
+          </div>
+        </div>
+      </Section>
+
+      {/* ── Practices ───────────────────────────────────────────────────── */}
+      <Section code="FIRMS">
+        <div className="grid gap-12 lg:grid-cols-[1fr_1fr] lg:gap-20">
+          <div>
+            <SectionHead
+              kicker="For accounting &amp; bookkeeping practices"
+              title="Fewer minutes per document. Across every client."
+              lede="Onboard a client base, not one user at a time. Xero sync posts into the chart of accounts you already run, and every scan a client takes rolls up into one firm-wide review queue."
+            />
+            <div className="mt-10 flex flex-wrap items-center gap-6">
+              <ButtonLink href="/pricing#practice" size="lg">
+                See practice pricing
+              </ButtonLink>
+              <ArrowLink href="/support">Talk to us</ArrowLink>
+            </div>
+          </div>
+
+          <div className="lg:pt-8">
+            <div className="t-label text-[var(--color-ink-faint)]">
+              BAS review queue · Q1 FY2026–27
+            </div>
+            <div className="mt-5">
+              <Rule tone="strong" />
+              {PRACTICE_QUEUE.map((c, i) => (
+                <LedgerRow
+                  key={c.client}
+                  index={i}
+                  label={c.client}
+                  note={c.state}
+                  value={
+                    <span
+                      className={
+                        c.tone === 'risk'
+                          ? 'text-[var(--color-risk)]'
+                          : c.tone === 'good'
+                            ? 'text-[var(--color-good)]'
+                            : 'text-[var(--color-warn)]'
+                      }
+                    >
+                      {c.figure}
+                    </span>
+                  }
+                />
+              ))}
+            </div>
+            <Reveal>
+              <p className="mt-6 max-w-[40ch] text-[13.5px] leading-relaxed text-[var(--color-ink-muted)]">
+                Sorted by what needs a human, not alphabetically. A client whose receipts all
+                validated never reaches this list.
+              </p>
+            </Reveal>
+          </div>
+        </div>
+      </Section>
+
+      {/* ── Pricing ─────────────────────────────────────────────────────── */}
+      <Section code="PLANS" tone="surface">
+        <SectionHead
+          kicker="Pricing"
+          title="Start free. Bring your accountant when you are ready."
+          lede="No trial clock and no card on the free tier — it is a real plan, not a countdown."
+        />
+        <div className="mt-12 grid gap-6 md:grid-cols-3">
+          {PLANS.map((plan, i) => (
+            <Reveal key={plan.name} variant="deal" delay={i}>
+              <div
+                className={[
+                  'flex h-full flex-col justify-between gap-8 rounded-[var(--radius-md)] border p-6',
+                  plan.primary
+                    ? 'border-[var(--color-accent)] bg-[var(--color-ground)]'
+                    : 'border-[var(--color-rule-strong)] bg-[var(--color-ground)]',
+                ].join(' ')}
+              >
                 <div>
-                  <div className="text-[13px] font-semibold uppercase tracking-[0.06em] text-[var(--color-risk)]">
-                    Unclaimable GST report — this quarter
+                  <div className="t-label text-[var(--color-ink-faint)]">{plan.name}</div>
+                  <div className="mt-4 flex items-baseline gap-2">
+                    <span className="font-mono text-[34px] tabular text-[var(--color-ink)]">
+                      {plan.price}
+                    </span>
+                    <span className="text-[13px] text-[var(--color-ink-muted)]">{plan.unit}</span>
                   </div>
-                  <div className="mt-2 text-[34px] font-bold tabular text-[var(--color-risk)]">
-                    <Money amount="342.18" />
-                  </div>
-                  <p className="mt-1 text-[14.5px] leading-relaxed text-[var(--color-ink)]">
-                    of GST credits you cannot claim. 12 receipts are missing a supplier ABN, have an
-                    ABN that fails the checksum, or were never issued as a valid tax invoice.
+                  <p className="mt-4 text-[14px] leading-relaxed text-[var(--color-ink-muted)]">
+                    {plan.line}
                   </p>
                 </div>
+                <ButtonLink
+                  href={plan.href}
+                  variant={plan.primary ? 'primary' : 'secondary'}
+                  className="w-full"
+                >
+                  {plan.cta}
+                </ButtonLink>
               </div>
+            </Reveal>
+          ))}
+        </div>
+      </Section>
 
-              <div className="mt-5 divide-y divide-[var(--color-rule)] rounded-[var(--radius-md)] border border-[var(--color-rule)] bg-[var(--color-ground)]">
-                {FLAGGED_RECEIPTS.map((r) => (
-                  <div key={r.name} className="flex items-center justify-between gap-4 px-4 py-3">
-                    <div>
-                      <div className="text-[13.5px] font-semibold text-[var(--color-ink)]">{r.name}</div>
-                      <div className="text-[12.5px] text-[var(--color-ink-muted)]">{r.reason}</div>
-                    </div>
-                    <Money amount={r.amount} className="text-[13.5px] text-[var(--color-risk)]" />
-                  </div>
-                ))}
-              </div>
-            </Card>
-
-            <Card className="p-7">
-              <div className="text-[13px] font-semibold uppercase tracking-[0.06em] text-[var(--color-good)]">
-                Confirmed claimable this quarter
-              </div>
-              <div className="mt-2 text-[34px] font-bold tabular text-[var(--color-good)]">
-                <Money amount="1284.30" />
-              </div>
-              <p className="mt-1 text-[14.5px] leading-relaxed text-[var(--color-ink-muted)]">
-                Backed by valid tax invoices — the seven ATO elements present, ABN verified against
-                the register, GST arithmetic reconciled to the cent.
-              </p>
-              <div className="mt-6 border-t border-[var(--color-rule)] pt-5">
-                <div className="flex items-center gap-2 text-[13.5px] font-semibold text-[var(--color-ink)]">
-                  <ShieldCheckIcon className="h-4 w-4 text-[var(--color-accent)]" />
-                  Why the difference is knowable at all
-                </div>
-                <p className="mt-2 text-[13.5px] leading-relaxed text-[var(--color-ink-muted)]">
-                  Every document carries an <code className="font-mono text-[12.5px]">is_tax_invoice</code>{' '}
-                  verdict from validators, not a guess from the model. A GST claim without one is
-                  flagged before your BAS is lodged — not after the ATO asks.
-                </p>
-              </div>
-            </Card>
-          </div>
-        </Container>
-      </section>
-
-      {/* ── Per-category GST subtotals ───────────────────────────────────── */}
-      <section className="border-b border-[var(--color-rule)] bg-[var(--color-surface)]">
-        <Container width="wide" className="py-16">
-          <div className="grid gap-10 lg:grid-cols-2 lg:items-center">
-            <div>
-              <SectionTitle
-                eyebrow="What Hubdoc cannot do"
-                title="One receipt, two tax treatments — split correctly"
-                lede="Hubdoc captures header totals only. A grocery run for site lunch mixes GST-free fresh food with taxable packaged goods, and a single total can't say which is which."
-              />
-              <div className="mt-6 flex items-center gap-2 text-[14px] text-[var(--color-ink-muted)]">
-                <SplitIcon className="h-4 w-4 text-[var(--color-accent)]" />
-                Snap Apps reconciles each category separately, per line item.
-              </div>
-            </div>
-
-            <Card className="p-6">
-              <div className="text-[13px] font-semibold uppercase tracking-[0.06em] text-[var(--color-ink-faint)]">
-                Foodworks IGA — site lunch, 8 Jun 2026
-              </div>
-              <div className="mt-4 space-y-2 font-mono text-[13px] text-[var(--color-ink-muted)]">
-                <div className="flex justify-between"><span>Milk 2L</span><Money amount="4.50" /></div>
-                <div className="flex justify-between"><span>Bread</span><Money amount="3.80" /></div>
-                <div className="flex justify-between"><span>Muesli bars 12pk</span><Money amount="6.95" /></div>
-                <div className="flex justify-between"><span>Soft drink 1.25L</span><Money amount="3.20" /></div>
-              </div>
-              <div className="mt-4 grid grid-cols-2 gap-3 border-t border-[var(--color-rule)] pt-4">
-                <div className="rounded-[var(--radius-md)] bg-[var(--color-good-soft)] p-3">
-                  <div className="text-[11px] font-semibold uppercase tracking-[0.05em] text-[var(--color-good)]">
-                    GST-free
-                  </div>
-                  <Money amount="8.30" className="mt-1 block text-[18px] font-bold text-[var(--color-good)]" />
-                </div>
-                <div className="rounded-[var(--radius-md)] bg-[var(--color-accent-soft)] p-3">
-                  <div className="text-[11px] font-semibold uppercase tracking-[0.05em] text-[var(--color-accent)]">
-                    Taxable · GST $0.92
-                  </div>
-                  <Money amount="10.15" className="mt-1 block text-[18px] font-bold text-[var(--color-accent)]" />
-                </div>
-              </div>
-            </Card>
-          </div>
-        </Container>
-      </section>
-
-      {/* ── Provably balanced ────────────────────────────────────────────── */}
-      <section className="border-b border-[var(--color-rule)]">
-        <Container width="wide" className="py-16">
-          <div className="grid gap-10 lg:grid-cols-2 lg:items-center">
-            <Card className="p-6">
-              <div className="flex items-center gap-2 text-[13px] font-semibold uppercase tracking-[0.06em] text-[var(--color-ink-faint)]">
-                <ScaleIcon className="h-4 w-4" />
-                Worked example — fuel on the card
-              </div>
-              <div className="mt-4 divide-y divide-[var(--color-rule)] font-mono text-[13.5px]">
-                <div className="flex items-center justify-between py-2.5">
-                  <span className="text-[var(--color-ink-muted)]">Motor Vehicle — Fuel (expense)</span>
-                  <Money amount="100.00" className="text-[var(--color-ink)]" />
-                </div>
-                <div className="flex items-center justify-between py-2.5">
-                  <span className="text-[var(--color-ink-muted)]">GST Receivable (asset)</span>
-                  <Money amount="10.00" className="text-[var(--color-ink)]" />
-                </div>
-                <div className="flex items-center justify-between py-2.5">
-                  <span className="text-[var(--color-ink-muted)]">Credit Card (liability)</span>
-                  <Money amount="-110.00" className="text-[var(--color-ink)]" />
-                </div>
-                <div className="flex items-center justify-between py-2.5 font-sans font-bold">
-                  <span className="text-[var(--color-ink)]">Sum of splits</span>
-                  <Money amount="0.00" className="text-[var(--color-good)]" />
-                </div>
-              </div>
-            </Card>
-
-            <div>
-              <SectionTitle
-                eyebrow="Not application discipline"
-                title="The books are balanced by the database"
-                lede="A posted transaction's splits must sum to exactly zero, or Postgres refuses the commit. That's a constraint trigger, not a form validation someone could forget to add."
-              />
-              <p className="mt-4 max-w-[46ch] text-[14.5px] leading-relaxed text-[var(--color-ink-muted)]">
-                Drafts can sit half-built and be edited freely — the check only fires on
-                <span className="font-mono text-[13px]"> status = &apos;posted&apos;</span>. Nothing
-                reaches your BAS in an unbalanced state, because the database itself won't allow it.
-              </p>
-            </div>
-          </div>
-        </Container>
-      </section>
-
-      {/* ── The deduction worksheet, already filled in ──────────────────── */}
-      <section className="border-b border-[var(--color-rule)] bg-[var(--color-surface)]">
-        <Container width="wide" className="py-16">
-          <div className="grid gap-10 lg:grid-cols-2 lg:items-center">
-            <div>
-              <SectionTitle
-                eyebrow="Built for 1 July"
-                title="Scan all year. The worksheet is already done."
-                lede="Every occupation-relevant scan is tagged against the ATO deduction labels as it's captured — not reconstructed from a shoebox in June."
-              />
-              <ButtonLink href="/features#tax-pack" variant="ghost" className="mt-4 gap-1.5 px-0">
-                See the tax pack
-                <ArrowRightIcon className="h-4 w-4" />
+      {/* ── Final CTA ───────────────────────────────────────────────────── */}
+      <section className="border-t border-[var(--color-rule)]">
+        <Container width="wide" className="flex flex-col items-center py-24 text-center md:py-32">
+          <Reveal>
+            <h2 className="t-head max-w-[18ch]">Start with the next receipt in your pocket.</h2>
+          </Reveal>
+          <Reveal>
+            <p className="t-lede mt-6 max-w-[46ch] text-[var(--color-ink-muted)]">
+              Twenty receipts a month, free, no card. You will know by the third one whether it
+              reads your dockets properly.
+            </p>
+          </Reveal>
+          <Reveal>
+            <div className="mt-10 flex flex-wrap justify-center gap-4">
+              <ButtonLink href="/register" size="lg">
+                Start scanning free
+              </ButtonLink>
+              <ButtonLink href="/download" size="lg" variant="secondary">
+                Download the app
               </ButtonLink>
             </div>
-
-            <Card className="p-6">
-              <div className="flex items-center gap-2 text-[13px] font-semibold uppercase tracking-[0.06em] text-[var(--color-ink-faint)]">
-                <FolderCheckIcon className="h-4 w-4" />
-                Deduction worksheet — Electrician · FY2026
-              </div>
-              <div className="mt-4 divide-y divide-[var(--color-rule)]">
-                {DEDUCTION_ROWS.map((row) => (
-                  <div key={row.label} className="flex items-center justify-between py-2.5 text-[14px]">
-                    <span className="text-[var(--color-ink-muted)]">{row.label}</span>
-                    <Money amount={row.amount} className="font-semibold text-[var(--color-ink)]" />
-                  </div>
-                ))}
-                <div className="flex items-center justify-between pt-3 text-[15px] font-bold">
-                  <span className="text-[var(--color-ink)]">Estimated total deduction</span>
-                  <Money amount="3939.40" className="text-[var(--color-accent)]" />
-                </div>
-              </div>
-            </Card>
-          </div>
-        </Container>
-      </section>
-
-      {/* ── Sold through accountants ─────────────────────────────────────── */}
-      <section className="border-b border-[var(--color-rule)]">
-        <Container width="wide" className="py-16">
-          <div className="rounded-[var(--radius-xl)] border border-[var(--color-rule)] bg-[var(--color-surface)] p-8 md:p-12">
-            <div className="grid gap-8 lg:grid-cols-[1.3fr_1fr] lg:items-center">
-              <div>
-                <Badge tone="accent">For accounting &amp; bookkeeping practices</Badge>
-                <h2 className="mt-3 text-[26px] font-bold leading-tight text-[var(--color-ink)]">
-                  One practice login. Every client&apos;s BAS position, reconciled.
-                </h2>
-                <p className="mt-3 max-w-[56ch] text-[14.5px] leading-relaxed text-[var(--color-ink-muted)]">
-                  Onboard a client base, not one user at a time. Xero sync posts into the chart of
-                  accounts you already run, and every scan a client takes rolls up into a firm-wide
-                  BAS review queue — no client left reading their own receipts at deadline.
-                </p>
-              </div>
-              <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
-                <ButtonLink href="/pricing" size="lg">
-                  See practice pricing
-                </ButtonLink>
-                <ButtonLink href="/how-it-works" size="lg" variant="secondary">
-                  How the pipeline works
-                </ButtonLink>
-              </div>
-            </div>
-          </div>
-        </Container>
-      </section>
-
-      {/* ── Final CTA ────────────────────────────────────────────────────── */}
-      <section>
-        <Container width="wide" className="flex flex-col items-center gap-5 py-20 text-center">
-          <h2 className="max-w-[38ch] text-[28px] font-bold leading-tight text-[var(--color-ink)]">
-            Start with the next receipt in your pocket.
-          </h2>
-          <p className="max-w-[48ch] text-[15px] text-[var(--color-ink-muted)]">
-            Free for 20 scans a month, no card required. Bring your accountant in when you're ready.
-          </p>
-          <div className="mt-2 flex flex-wrap justify-center gap-3">
-            <ButtonLink href="/register" size="lg">
-              Get started free
-            </ButtonLink>
-            <ButtonLink href="/download" size="lg" variant="secondary">
-              Download the app
-            </ButtonLink>
-          </div>
+          </Reveal>
         </Container>
       </section>
     </>

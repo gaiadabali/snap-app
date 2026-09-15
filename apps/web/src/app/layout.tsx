@@ -1,6 +1,32 @@
 import type { Metadata, Viewport } from 'next';
+import { Archivo, IBM_Plex_Mono } from 'next/font/google';
 
 import './globals.css';
+
+/**
+ * Two families, self-hosted by next/font at build time.
+ *
+ * `next/font` downloads these into our own bundle and emits a metric-matched
+ * local fallback, so there is no third-party request at runtime and no layout
+ * shift while they load — which is what the mobile app's "system fonts on
+ * purpose" rule was actually guarding against.
+ *
+ * Archivo is a variable face; declaring the axis range rather than a list of
+ * cuts means the 300 used for display and the 500 used for UI cost one file.
+ */
+const archivo = Archivo({
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600'],
+  variable: '--font-archivo',
+  display: 'swap',
+});
+
+const plexMono = IBM_Plex_Mono({
+  subsets: ['latin'],
+  weight: ['400', '500'],
+  variable: '--font-plex-mono',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: {
@@ -14,8 +40,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#F2F7FE' },
-    { media: '(prefers-color-scheme: dark)', color: '#071527' },
+    { media: '(prefers-color-scheme: light)', color: '#FAF9F7' },
+    { media: '(prefers-color-scheme: dark)', color: '#0E1116' },
   ],
 };
 
@@ -41,7 +67,11 @@ const THEME_INIT_SCRIPT = `
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en-AU" suppressHydrationWarning>
+    <html
+      lang="en-AU"
+      suppressHydrationWarning
+      className={`${archivo.variable} ${plexMono.variable}`}
+    >
       <head>
         <script suppressHydrationWarning dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>

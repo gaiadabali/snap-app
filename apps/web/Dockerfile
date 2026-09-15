@@ -40,9 +40,25 @@ COPY apps/web apps/web
 # `outputFileTracingRoot` in next.config.ts points at the repo root, so the
 # workspace layout has to match what it will be at runtime.
 WORKDIR /repo/apps/web
-# apps/web has no public/ directory today; make sure it exists so the later
-# `COPY --from=build .../public` never fails on an absent source.
+# `COPY --from=build .../public` must never fail on an absent source. It does
+# exist now (the marketing app screenshots live in public/screens), but this
+# stays so a checkout without it still builds.
 RUN mkdir -p public
+
+# ── Sample testimonials: review hosts only ───────────────────────────────────
+# `next build` sets NODE_ENV=production, which trips the guard in
+# src/app/(marketing)/_components/proof-data.ts while the proof section still
+# holds SAMPLE testimonials. That guard is deliberate — see docs/WEB.md §4.5.
+#
+# Defaults to EMPTY, so a plain `docker build` of this file still refuses to
+# produce an image advertising customers we do not have. The review host opts
+# in explicitly via build-args in .github/workflows/publish-images.yml.
+#
+# REMOVE the ARG here and the build-arg there together, the moment the proof
+# section carries real consented quotes.
+ARG SNAP_ALLOW_PLACEHOLDER_PROOF=""
+ENV SNAP_ALLOW_PLACEHOLDER_PROOF=$SNAP_ALLOW_PLACEHOLDER_PROOF
+
 RUN pnpm build
 
 # ── runtime ──────────────────────────────────────────────────────────────────

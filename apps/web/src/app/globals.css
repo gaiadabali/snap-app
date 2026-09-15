@@ -3,52 +3,80 @@
 /**
  * Snap Apps — web design tokens.
  *
- * The palette is NOT invented here. It is the same measured set the mobile app
- * uses (apps/mobile/src/theme/tokens.ts), sampled from the launch teaser:
- * #1878D8 dominant, #0060C0 in the deeper areas, a #1CA8DB cyan scan line.
- * The product should look like its own advertising, and the website should look
- * like the product. One palette, two clients — change it in both or in neither.
+ * IDENTITY COLOURS ARE MEASURED, NOT INVENTED. #1878D8 dominant, #0060C0 deep,
+ * #1CA8DB scan line — sampled from the launch teaser and shared byte-for-byte
+ * with apps/mobile/src/theme/tokens.ts. Those do not change here.
+ *
+ * What DID change (2026-09-14): the grounds. They used to be blue too
+ * (#F2F7FE / #E5EFFC), which meant the brand blue had nowhere to land — an
+ * accent sitting on a tinted version of itself stops reading as an accent.
+ * The grounds are now docket paper: a faintly warm off-white under a cool
+ * blue. That temperature contrast is what makes #1878D8 finally register.
  *
  * Red is reserved for money at risk. It is never decorative.
  */
 
 @theme {
-  /* Light — the default. */
-  --color-ground:      #F2F7FE;
-  --color-surface:     #E5EFFC;
-  --color-surface-alt: #D3E4F9;
-  --color-ink:         #0A1A2F;
-  --color-ink-muted:   #4C6280;
-  --color-ink-faint:   #8299B4;
+  /* ── Light: docket paper ─────────────────────────────────────────────── */
+  --color-ground:      #FAF9F7;
+  --color-surface:     #F2F0EC;
+  --color-surface-alt: #E7E4DE;
+  --color-ink:         #14181D;
+  --color-ink-muted:   #5A6068;
+  --color-ink-faint:   #8D9299;
+
+  /* Identity — measured from the teaser. Do not drift from mobile. */
   --color-accent:      #1878D8;
   --color-accent-deep: #0060C0;
-  --color-accent-soft: #DCEAFB;
+  --color-accent-soft: #E4EEFA;
   --color-accent-ink:  #FFFFFF;
   --color-scan:        #1CA8DB;
+
   --color-risk:        #C4322A;
-  --color-risk-soft:   #FBE3E1;
+  --color-risk-soft:   #F8E7E5;
   --color-warn:        #95590A;
-  --color-warn-soft:   #FBEFD8;
+  --color-warn-soft:   #F7EEDC;
   --color-good:        #1B6E4F;
-  --color-good-soft:   #DCF2E8;
-  --color-rule:        #C9DCF3;
-  --color-rule-strong: #A5C2E4;
+  --color-good-soft:   #E2EFE9;
+
+  /* True hairlines. A ruled book, not a stack of boxes. */
+  --color-rule:        #E2DFD8;
+  --color-rule-strong: #C9C5BC;
+
+  /* Inverted band — the one dark moment on the page. */
+  --color-void:        #101319;
+  --color-void-ink:    #F4F2EE;
+  --color-void-muted:  #8E949E;
+  --color-void-rule:   #2A2F38;
 
   /* 4pt base scale, matching the app. */
   --spacing: 0.25rem;
 
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --radius-xl: 20px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-xl: 16px;
 
-  /* System stack on purpose — see the app's tokens.ts. What this product needs
-     from type is aligned digits, not a personality face that fails to load. */
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-mono: ui-monospace, Menlo, Consolas, monospace;
+  /**
+   * Two families, one system.
+   *
+   * Archivo is drawn from American highway-signage grotesques: engineered,
+   * plain-spoken, and it holds at 300 weight set very large — which is the
+   * whole typographic move on this site. IBM Plex Mono carries every figure,
+   * every ATO label, every line of a receipt. That is not decoration: a
+   * receipt really is printed in mono, and a ledger really does align on a
+   * column.
+   *
+   * The old note here said a custom face "can fail to load five minutes before
+   * a demo". True on React Native, which is where that rule came from.
+   * next/font self-hosts these from our own origin with a metric-matched
+   * fallback, so they cannot fail independently of the app itself.
+   */
+  --font-sans: var(--font-archivo), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, Menlo, Consolas, monospace;
 
-  --shadow-card: 0 1px 2px rgb(10 26 47 / 0.04), 0 8px 24px -12px rgb(10 26 47 / 0.12);
-  --shadow-lift: 0 2px 4px rgb(10 26 47 / 0.05), 0 24px 48px -20px rgb(10 26 47 / 0.22);
+  --shadow-card: 0 1px 2px rgb(20 24 29 / 0.04), 0 8px 24px -12px rgb(20 24 29 / 0.10);
+  --shadow-lift: 0 2px 4px rgb(20 24 29 / 0.05), 0 24px 48px -20px rgb(20 24 29 / 0.18);
 }
 
 /* Dark. Redefined as raw custom properties so a token never has its ONLY
@@ -57,57 +85,69 @@
 :root[data-theme="dark"],
 :root:not([data-theme="light"]) {
   @media (prefers-color-scheme: dark) {
-    --color-ground:      #071527;
-    --color-surface:     #0E2440;
-    --color-surface-alt: #173355;
-    --color-ink:         #E6F0FC;
-    --color-ink-muted:   #9DB6D2;
-    --color-ink-faint:   #6E8BAC;
+    --color-ground:      #0E1116;
+    --color-surface:     #161A21;
+    --color-surface-alt: #1F242C;
+    --color-ink:         #EDEBE7;
+    --color-ink-muted:   #9BA1A9;
+    --color-ink-faint:   #6C737C;
     --color-accent:      #4DA3F5;
     --color-accent-deep: #1878D8;
-    --color-accent-soft: #122A4B;
-    --color-accent-ink:  #04101E;
+    --color-accent-soft: #13243A;
+    --color-accent-ink:  #05101E;
     --color-scan:        #3FC6EE;
     --color-risk:        #F08B80;
-    --color-risk-soft:   #331B1A;
+    --color-risk-soft:   #2C1A18;
     --color-warn:        #E5B871;
-    --color-warn-soft:   #2B2214;
+    --color-warn-soft:   #2A2114;
     --color-good:        #6FD3AC;
-    --color-good-soft:   #10291F;
-    --color-rule:        #1C3A5E;
-    --color-rule-strong: #2F5480;
+    --color-good-soft:   #11241D;
+    --color-rule:        #262B33;
+    --color-rule-strong: #3A414B;
+    --color-void:        #060809;
+    --color-void-ink:    #EDEBE7;
+    --color-void-muted:  #8E949E;
+    --color-void-rule:   #1E232A;
   }
 }
 
 :root[data-theme="dark"] {
-  --color-ground:      #071527;
-  --color-surface:     #0E2440;
-  --color-surface-alt: #173355;
-  --color-ink:         #E6F0FC;
-  --color-ink-muted:   #9DB6D2;
-  --color-ink-faint:   #6E8BAC;
+  --color-ground:      #0E1116;
+  --color-surface:     #161A21;
+  --color-surface-alt: #1F242C;
+  --color-ink:         #EDEBE7;
+  --color-ink-muted:   #9BA1A9;
+  --color-ink-faint:   #6C737C;
   --color-accent:      #4DA3F5;
   --color-accent-deep: #1878D8;
-  --color-accent-soft: #122A4B;
-  --color-accent-ink:  #04101E;
+  --color-accent-soft: #13243A;
+  --color-accent-ink:  #05101E;
   --color-scan:        #3FC6EE;
   --color-risk:        #F08B80;
-  --color-risk-soft:   #331B1A;
+  --color-risk-soft:   #2C1A18;
   --color-warn:        #E5B871;
-  --color-warn-soft:   #2B2214;
+  --color-warn-soft:   #2A2114;
   --color-good:        #6FD3AC;
-  --color-good-soft:   #10291F;
-  --color-rule:        #1C3A5E;
-  --color-rule-strong: #2F5480;
+  --color-good-soft:   #11241D;
+  --color-rule:        #262B33;
+  --color-rule-strong: #3A414B;
+  --color-void:        #060809;
+  --color-void-ink:    #EDEBE7;
+  --color-void-muted:  #8E949E;
+  --color-void-rule:   #1E232A;
 }
 
-html { color-scheme: light dark; }
+html {
+  color-scheme: light dark;
+  scroll-behavior: smooth;
+}
 
 body {
   background: var(--color-ground);
   color: var(--color-ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 /**
@@ -116,7 +156,48 @@ body {
  */
 .tabular { font-variant-numeric: tabular-nums; }
 
-/* The teaser's scan line, as a reusable motif for capture/processing states. */
+/* ── Type roles ──────────────────────────────────────────────────────────
+   The site's voice lives here. Display is set LARGE and LIGHT with negative
+   tracking; labels are mono and widely tracked. The contrast between those two
+   registers — airy headline, tight machine label — is the identity. */
+
+.t-display {
+  font-size: clamp(2.75rem, 7.2vw, 5.75rem);
+  font-weight: 300;
+  line-height: 1.02;
+  letter-spacing: -0.035em;
+}
+
+.t-head {
+  font-size: clamp(1.75rem, 3.4vw, 2.75rem);
+  font-weight: 300;
+  line-height: 1.1;
+  letter-spacing: -0.025em;
+}
+
+.t-sub {
+  font-size: clamp(1.15rem, 1.9vw, 1.5rem);
+  font-weight: 400;
+  line-height: 1.3;
+  letter-spacing: -0.015em;
+}
+
+/** The ledger label. Mono, small, widely tracked — a real account code. */
+.t-label {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.t-lede {
+  font-size: clamp(1rem, 1.25vw, 1.125rem);
+  line-height: 1.65;
+}
+
+/* ── The scan line ───────────────────────────────────────────────────────
+   The teaser's motif, reserved for capture/extraction imagery. */
 @keyframes scan-sweep {
   0%   { transform: translateY(-100%); opacity: 0; }
   15%  { opacity: 1; }
@@ -131,6 +212,129 @@ body {
   background: linear-gradient(90deg, transparent, var(--color-scan), transparent);
   box-shadow: 0 0 12px var(--color-scan);
   animation: scan-sweep 2.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  pointer-events: none;
+}
+
+/* ── Scroll-driven motion ────────────────────────────────────────────────
+ *
+ * Native CSS scroll timelines. No library: these run on the compositor rather
+ * than the main thread, and — the part that actually matters architecturally —
+ * they work inside React Server Components, so the marketing pages stay
+ * server-rendered and ship no animation JavaScript at all.
+ *
+ * Everything sits behind @supports. A browser without scroll timelines gets
+ * the finished state, statically — never a blank page waiting for an observer
+ * that will never fire. That is why the rest state is defined INSIDE the
+ * feature query and not outside it.
+ */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+
+    /* Rise and fade on entry. The workhorse. */
+    .anim-rise {
+      animation: rise-in linear both;
+      animation-timeline: view();
+      animation-range: entry 5% cover 32%;
+    }
+
+    /* Same idea, settles sooner — for items already near the fold. */
+    .anim-fade {
+      animation: fade-in linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 25%;
+    }
+
+    /* A hairline that draws itself across the measure, like a ruled line being
+       struck. Sits above every section head. */
+    .anim-rule {
+      animation: rule-draw linear both;
+      animation-timeline: view();
+      animation-range: entry 10% cover 30%;
+      transform-origin: left center;
+    }
+
+    /* Slow drift against the scroll. Subtle — 3rem across the entire pass,
+       not a parallax funhouse. */
+    .anim-drift {
+      animation: drift linear both;
+      animation-timeline: view();
+      animation-range: cover 0% cover 100%;
+    }
+
+    /* Ledger rows dealing in like cards off a deck. Stagger comes from --i,
+       set inline per row. */
+    .anim-deal {
+      animation: deal-in linear both;
+      animation-timeline: view();
+      animation-range: entry calc(4% + (var(--i, 0) * 7%)) cover calc(26% + (var(--i, 0) * 7%));
+    }
+
+    /* Scrubbed wipe — uncovers a figure left to right. Reserved for the single
+       sharpest number on the page. */
+    .anim-wipe {
+      animation: wipe-in linear both;
+      animation-timeline: view();
+      animation-range: entry 15% cover 45%;
+    }
+
+    /* Scroll-linked progress, driven by the document scroller. */
+    .anim-progress {
+      animation: rule-draw linear both;
+      animation-timeline: scroll(root block);
+      transform-origin: left center;
+    }
+
+    /* The dark band breathes open as it takes the viewport. */
+    .anim-expand {
+      animation: expand-in linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 40%;
+    }
+  }
+}
+
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(1.75rem); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes rule-draw {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+@keyframes drift {
+  from { transform: translateY(1.5rem); }
+  to   { transform: translateY(-1.5rem); }
+}
+
+@keyframes deal-in {
+  from { opacity: 0; transform: translateY(1rem); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes wipe-in {
+  from { clip-path: inset(0 100% 0 0); }
+  to   { clip-path: inset(0 0 0 0); }
+}
+
+@keyframes expand-in {
+  from { opacity: 0.25; transform: scale(0.97); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* The hero's one orchestrated moment. Runs on load rather than on scroll,
+   because it is above the fold and has no entry to animate against. */
+@media (prefers-reduced-motion: no-preference) {
+  .anim-load {
+    animation: rise-in 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-delay: calc(var(--i, 0) * 90ms);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -138,6 +342,7 @@ body {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
   .scan-line::after { display: none; }
 }
@@ -145,6 +350,6 @@ body {
 /* Focus that is visible on both grounds. Never remove it. */
 :where(a, button, input, select, textarea, [tabindex]):focus-visible {
   outline: 2px solid var(--color-accent);
-  outline-offset: 2px;
-  border-radius: 4px;
+  outline-offset: 3px;
+  border-radius: 2px;
 }

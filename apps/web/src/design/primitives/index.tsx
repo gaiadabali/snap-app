@@ -9,6 +9,17 @@
  * No component here hard-codes a colour. They all reference the tokens in
  * globals.css, which is what makes light and dark work without a second
  * implementation.
+ *
+ * ── The ledger language (2026-09-14) ──────────────────────────────────────
+ * The marketing surface used to be a stack of bordered, rounded, shadowed
+ * cards in alternating bands. That reads as a template regardless of how good
+ * the copy inside it is. It is also the wrong metaphor: accountancy's native
+ * visual form is ruled paper and aligned columns, not a deck of cards.
+ *
+ * So `Section`, `Rule`, `LedgerRow` and `Reveal` below are the marketing
+ * vocabulary — hairlines spanning the full measure, figures locked to a right
+ * column, and a left gutter carrying the real ATO label for the row. `Card`
+ * survives for the panels, where a bounded box genuinely helps.
  */
 import Link from 'next/link';
 import type { ComponentProps, ReactNode } from 'react';
@@ -30,12 +41,251 @@ export function Container({
   className?: string;
 }) {
   const w =
-    width === 'prose' ? 'max-w-[68ch]' : width === 'wide' ? 'max-w-[1200px]' : 'max-w-none';
-  return <div className={cx('mx-auto w-full px-6', w, className)}>{children}</div>;
+    width === 'prose' ? 'max-w-[68ch]' : width === 'wide' ? 'max-w-[1280px]' : 'max-w-none';
+  return <div className={cx('mx-auto w-full px-6 md:px-10', w, className)}>{children}</div>;
+}
+
+// ── Motion ────────────────────────────────────────────────────────────────
+
+/**
+ * Scroll-driven reveal.
+ *
+ * Deliberately NOT a client component. The animation is pure CSS
+ * (`animation-timeline: view()`), so this stays a server component and the
+ * marketing pages ship no animation JavaScript at all — no IntersectionObserver,
+ * no library, nothing to hydrate.
+ *
+ * `delay` staggers siblings by feeding `--i` to the keyframe range rather than
+ * to `animation-delay`, because a scroll-linked animation has no wall clock to
+ * delay against — the stagger has to live in the scroll range itself.
+ */
+export function Reveal({
+  children,
+  as: As = 'div',
+  variant = 'rise',
+  delay = 0,
+  className,
+}: {
+  children: ReactNode;
+  as?: 'div' | 'section' | 'li' | 'tr' | 'span' | 'p';
+  variant?: 'rise' | 'fade' | 'deal' | 'drift' | 'wipe' | 'expand';
+  /** Stagger index for `deal`; ignored by the others. */
+  delay?: number;
+  className?: string;
+}) {
+  const variants = {
+    rise: 'anim-rise',
+    fade: 'anim-fade',
+    deal: 'anim-deal',
+    drift: 'anim-drift',
+    wipe: 'anim-wipe',
+    expand: 'anim-expand',
+  } as const;
+  return (
+    <As
+      className={cx(variants[variant], className)}
+      style={delay ? ({ ['--i' as string]: delay } as React.CSSProperties) : undefined}
+    >
+      {children}
+    </As>
+  );
+}
+
+/** A hairline that draws itself across the measure as it enters view. */
+export function Rule({
+  className,
+  tone = 'default',
+  animate = true,
+}: {
+  className?: string;
+  tone?: 'default' | 'strong' | 'void';
+  animate?: boolean;
+}) {
+  const tones = {
+    default: 'bg-[var(--color-rule)]',
+    strong: 'bg-[var(--color-rule-strong)]',
+    void: 'bg-[var(--color-void-rule)]',
+  } as const;
+  return <div aria-hidden className={cx('h-px w-full', tones[tone], animate && 'anim-rule', className)} />;
+}
+
+// ── Section shell ─────────────────────────────────────────────────────────
+
+/**
+ * A marketing section with a left label gutter.
+ *
+ * The gutter carries a real account code — G11, 1B, D5 — not an invented
+ * "01 / 02 / 03". Those codes are the product's entire point, so using them as
+ * the page's structural markers means the navigation furniture is teaching
+ * something rather than decorating.
+ *
+ * `tone="void"` is the single inverted band. Used once per page, on the
+ * sharpest content; a second one would spend the effect.
+ */
+export function Section({
+  code,
+  children,
+  tone = 'ground',
+  size = 'md',
+  className,
+  id,
+}: {
+  /** The ATO label this section is about, e.g. "G11" or "D5". */
+  code?: string;
+  children: ReactNode;
+  tone?: 'ground' | 'surface' | 'void';
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+  id?: string;
+}) {
+  const tones = {
+    ground: 'bg-[var(--color-ground)] text-[var(--color-ink)]',
+    surface: 'bg-[var(--color-surface)] text-[var(--color-ink)]',
+    void: 'bg-[var(--color-void)] text-[var(--color-void-ink)]',
+  } as const;
+  /**
+   * Measured, not guessed. At `md:py-24` the eight sections on the home page
+   * spent ~1,500px on padding alone and the document ran to 9,300px — about
+   * ten full screens, which is more scrolling than a marketing page gets.
+   * These keep the page breathing without making the reader work for it.
+   */
+  const sizes = {
+    sm: 'py-12 md:py-14',
+    md: 'py-14 md:py-20',
+    lg: 'py-16 md:py-24',
+  } as const;
+  return (
+    <section id={id} className={cx(tones[tone], sizes[size], id && 'scroll-mt-24', className)}>
+      <Container width="wide">
+        <div className="grid gap-y-8 lg:grid-cols-[7.5rem_1fr] lg:gap-x-12">
+          <div aria-hidden className="hidden lg:block">
+            {code ? (
+              <div
+                className={cx(
+                  't-label sticky top-28',
+                  tone === 'void' ? 'text-[var(--color-void-muted)]' : 'text-[var(--color-ink-faint)]',
+                )}
+              >
+                {code}
+              </div>
+            ) : null}
+          </div>
+          <div className="min-w-0">{children}</div>
+        </div>
+      </Container>
+    </section>
+  );
+}
+
+/**
+ * A section heading in the ledger language: a struck rule, a mono kicker, then
+ * a large light display line. Replaces the eyebrow/title/lede stack that ran
+ * identically seven times down the old home page.
+ */
+export function SectionHead({
+  kicker,
+  title,
+  lede,
+  tone = 'ground',
+  as = 'h2',
+  className,
+}: {
+  kicker?: string;
+  title: ReactNode;
+  lede?: ReactNode;
+  tone?: 'ground' | 'void';
+  as?: 'h1' | 'h2';
+  className?: string;
+}) {
+  const Heading = as;
+  const muted = tone === 'void' ? 'text-[var(--color-void-muted)]' : 'text-[var(--color-ink-muted)]';
+  return (
+    <div className={className}>
+      <Rule tone={tone === 'void' ? 'void' : 'default'} />
+      {kicker ? (
+        <Reveal variant="fade">
+          <div className={cx('t-label mt-5', muted)}>{kicker}</div>
+        </Reveal>
+      ) : null}
+      <Reveal>
+        <Heading className={cx('t-head mt-4 max-w-[22ch]', tone === 'void' && 'text-[var(--color-void-ink)]')}>
+          {title}
+        </Heading>
+      </Reveal>
+      {lede ? (
+        <Reveal>
+          <p className={cx('t-lede mt-6 max-w-[58ch]', muted)}>{lede}</p>
+        </Reveal>
+      ) : null}
+    </div>
+  );
+}
+
+// ── Ledger rows ───────────────────────────────────────────────────────────
+
+/**
+ * One ruled row: description on the left, figure locked to the right column.
+ *
+ * This is the marketing counterpart to `Tr`/`Td` — same alignment discipline,
+ * no table semantics, because these are illustrative figures in prose rather
+ * than tabular data a screen reader should navigate as a grid.
+ */
+export function LedgerRow({
+  label,
+  note,
+  value,
+  code,
+  emphasis = false,
+  tone = 'ground',
+  index = 0,
+}: {
+  label: ReactNode;
+  note?: ReactNode;
+  value: ReactNode;
+  /** Account or BAS code shown in the row's own small gutter. */
+  code?: string;
+  emphasis?: boolean;
+  tone?: 'ground' | 'void';
+  index?: number;
+}) {
+  const muted = tone === 'void' ? 'text-[var(--color-void-muted)]' : 'text-[var(--color-ink-muted)]';
+  const rule = tone === 'void' ? 'border-[var(--color-void-rule)]' : 'border-[var(--color-rule)]';
+  return (
+    <Reveal variant="deal" delay={index}>
+      <div className={cx('flex items-baseline gap-4 border-b py-4 last:border-b-0', rule)}>
+        {code ? (
+          <span className={cx('t-label w-14 shrink-0 pt-0.5', muted)}>{code}</span>
+        ) : null}
+        <span className="min-w-0 flex-1">
+          <span
+            className={cx(
+              'block text-[15px] leading-snug',
+              emphasis
+                ? tone === 'void'
+                  ? 'font-medium text-[var(--color-void-ink)]'
+                  : 'font-medium text-[var(--color-ink)]'
+                : muted,
+            )}
+          >
+            {label}
+          </span>
+          {note ? <span className={cx('mt-0.5 block text-[13px]', muted)}>{note}</span> : null}
+        </span>
+        <span className={cx('shrink-0 font-mono text-[15px] tabular', emphasis && 'font-medium')}>
+          {value}
+        </span>
+      </div>
+    </Reveal>
+  );
 }
 
 // ── Card ──────────────────────────────────────────────────────────────────
 
+/**
+ * Retained for the panels. Flatter than it was — a 4px radius and a hairline
+ * rather than a 14px radius with a drop shadow, so a dense review queue reads
+ * as a document instead of a pinboard.
+ */
 export function Card({
   children,
   className,
@@ -55,10 +305,10 @@ export function Card({
   return (
     <div
       className={cx(
-        'rounded-[var(--radius-lg)] border p-5 shadow-[var(--shadow-card)]',
+        'rounded-[var(--radius-md)] border p-5',
         tones[tone],
         interactive &&
-          'transition duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-lift)]',
+          'transition duration-200 hover:border-[var(--color-rule-strong)] hover:shadow-[var(--shadow-card)]',
         className,
       )}
     >
@@ -75,15 +325,15 @@ export type ButtonSize = 'sm' | 'md' | 'lg';
 const BUTTON_VARIANTS: Record<ButtonVariant, string> = {
   primary: 'bg-[var(--color-accent)] text-[var(--color-accent-ink)] hover:bg-[var(--color-accent-deep)]',
   secondary:
-    'bg-transparent text-[var(--color-ink)] border border-[var(--color-rule-strong)] hover:bg-[var(--color-surface-alt)]',
+    'bg-transparent text-[var(--color-ink)] border border-[var(--color-rule-strong)] hover:border-[var(--color-ink)]',
   ghost: 'bg-transparent text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]',
   danger: 'bg-[var(--color-risk)] text-white hover:brightness-110',
 };
 
 const BUTTON_SIZES: Record<ButtonSize, string> = {
-  sm: 'h-8 px-3 text-[13px]',
-  md: 'h-10 px-4 text-[15px]',
-  lg: 'h-12 px-6 text-[16px]',
+  sm: 'h-9 px-4 text-[13px]',
+  md: 'h-11 px-5 text-[14px]',
+  lg: 'h-14 px-8 text-[15px]',
 };
 
 /** Shared by `Button` and `ButtonLink` so a link that must look like a button never drifts from one. */
@@ -93,7 +343,8 @@ export function buttonClasses(
   className?: string,
 ): string {
   return cx(
-    'inline-flex items-center justify-center gap-2 rounded-[var(--radius-md)] font-semibold',
+    'inline-flex items-center justify-center gap-2 rounded-[var(--radius-sm)]',
+    'font-medium tracking-[0.01em]',
     'transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-50',
     BUTTON_VARIANTS[variant],
     BUTTON_SIZES[size],
@@ -125,6 +376,52 @@ export function ButtonLink({ variant = 'primary', size = 'md', className, ...res
   return <Link {...rest} className={buttonClasses(variant, size, className)} />;
 }
 
+/**
+ * A text link that reads as forward motion: a rule under it that extends on
+ * hover. Used instead of a ghost button wherever the action is "read more",
+ * because a second button next to a real CTA dilutes the real one.
+ */
+export function ArrowLink({
+  href,
+  children,
+  tone = 'ground',
+  className,
+}: {
+  href: string;
+  children: ReactNode;
+  tone?: 'ground' | 'void';
+  className?: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className={cx(
+        'group inline-flex items-center gap-3 text-[15px] font-medium',
+        tone === 'void'
+          ? 'text-[var(--color-void-ink)]'
+          : 'text-[var(--color-ink)] hover:text-[var(--color-accent)]',
+        'transition-colors',
+        className,
+      )}
+    >
+      <span className="relative">
+        {children}
+        <span
+          aria-hidden
+          className={cx(
+            'absolute -bottom-1 left-0 h-px w-full origin-left scale-x-100 transition-transform duration-300',
+            'group-hover:scale-x-0',
+            tone === 'void' ? 'bg-[var(--color-void-rule)]' : 'bg-[var(--color-rule-strong)]',
+          )}
+        />
+      </span>
+      <span aria-hidden className="transition-transform duration-300 group-hover:translate-x-1">
+        &rarr;
+      </span>
+    </Link>
+  );
+}
+
 // ── Badge ─────────────────────────────────────────────────────────────────
 
 export function Badge({
@@ -142,13 +439,7 @@ export function Badge({
     accent: 'bg-[var(--color-accent-soft)] text-[var(--color-accent)]',
   } as const;
   return (
-    <span
-      className={cx(
-        'inline-flex items-center rounded-full px-2.5 py-0.5',
-        'text-[11px] font-semibold uppercase tracking-[0.06em]',
-        tones[tone],
-      )}
-    >
+    <span className={cx('t-label inline-flex items-center rounded-[var(--radius-sm)] px-2 py-1', tones[tone])}>
       {children}
     </span>
   );
@@ -210,11 +501,9 @@ export function Stat({
   } as const;
   return (
     <div>
-      <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-ink-faint)]">
-        {label}
-      </div>
-      <div className={cx('mt-1 text-3xl font-bold tabular', tones[tone])}>{value}</div>
-      {hint ? <div className="mt-1 text-[13px] text-[var(--color-ink-muted)]">{hint}</div> : null}
+      <div className="t-label text-[var(--color-ink-faint)]">{label}</div>
+      <div className={cx('mt-2 font-mono text-[28px] font-normal tabular', tones[tone])}>{value}</div>
+      {hint ? <div className="mt-1.5 text-[13px] text-[var(--color-ink-muted)]">{hint}</div> : null}
     </div>
   );
 }
@@ -252,7 +541,7 @@ export function Input({ className, ...rest }: ComponentProps<'input'>) {
     <input
       {...rest}
       className={cx(
-        'h-10 rounded-[var(--radius-md)] border border-[var(--color-rule-strong)]',
+        'h-11 rounded-[var(--radius-sm)] border border-[var(--color-rule-strong)]',
         'bg-[var(--color-ground)] px-3 text-[15px] text-[var(--color-ink)]',
         'placeholder:text-[var(--color-ink-faint)]',
         className,
@@ -266,7 +555,7 @@ export function Select({ className, ...rest }: ComponentProps<'select'>) {
     <select
       {...rest}
       className={cx(
-        'h-10 rounded-[var(--radius-md)] border border-[var(--color-rule-strong)]',
+        'h-11 rounded-[var(--radius-sm)] border border-[var(--color-rule-strong)]',
         'bg-[var(--color-ground)] px-3 text-[15px] text-[var(--color-ink)]',
         className,
       )}
@@ -279,7 +568,7 @@ export function Textarea({ className, ...rest }: ComponentProps<'textarea'>) {
     <textarea
       {...rest}
       className={cx(
-        'rounded-[var(--radius-md)] border border-[var(--color-rule-strong)]',
+        'rounded-[var(--radius-sm)] border border-[var(--color-rule-strong)]',
         'bg-[var(--color-ground)] px-3 py-2 text-[15px] text-[var(--color-ink)]',
         'placeholder:text-[var(--color-ink-faint)]',
         className,
@@ -290,6 +579,11 @@ export function Textarea({ className, ...rest }: ComponentProps<'textarea'>) {
 
 // ── Section heading ───────────────────────────────────────────────────────
 
+/**
+ * The panel-side heading. Kept at its original API because ~60 routes call it;
+ * `SectionHead` above is the marketing counterpart with the struck rule and the
+ * large light display line.
+ */
 export function SectionTitle({
   eyebrow,
   title,
@@ -305,12 +599,8 @@ export function SectionTitle({
   const Heading = as;
   return (
     <div className="max-w-[60ch]">
-      {eyebrow ? (
-        <div className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--color-accent)]">
-          {eyebrow}
-        </div>
-      ) : null}
-      <Heading className="mt-2 text-[28px] font-bold leading-tight text-[var(--color-ink)]">
+      {eyebrow ? <div className="t-label text-[var(--color-accent)]">{eyebrow}</div> : null}
+      <Heading className="mt-3 text-[26px] font-normal leading-tight tracking-[-0.02em] text-[var(--color-ink)]">
         {title}
       </Heading>
       {lede ? (
@@ -329,7 +619,7 @@ export function SectionTitle({
  */
 export function Empty({ title, body, action }: { title: string; body?: string; action?: ReactNode }) {
   return (
-    <div className="rounded-[var(--radius-lg)] border border-dashed border-[var(--color-rule-strong)] p-10 text-center">
+    <div className="rounded-[var(--radius-md)] border border-dashed border-[var(--color-rule-strong)] p-10 text-center">
       <div className="text-[15px] font-semibold text-[var(--color-ink)]">{title}</div>
       {body ? (
         <p className="mx-auto mt-2 max-w-[46ch] text-[14px] text-[var(--color-ink-muted)]">{body}</p>
