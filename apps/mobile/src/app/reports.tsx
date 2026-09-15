@@ -1,9 +1,11 @@
+import { Redirect } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
 import { api, type DocumentView, type Invoice, type Overview, type SalesSummary } from '@/api';
 import { CategoryBar, GradientHero, HeroBody, HeroFigure, HeroLabel, Raised, Tile } from '@/components/rich';
 import { Body, Divider, Figure, Label, Screen, Small } from '@/components/ui';
+import { BUSINESS_FEATURES_ENABLED } from '@/config';
 import { formatAud, space, usePalette } from '@/theme';
 
 /**
@@ -14,6 +16,9 @@ import { formatAud, space, usePalette } from '@/theme';
  * screen elsewhere, so nothing can disagree with the Receipts or Tax tabs.
  */
 export default function ReportsScreen() {
+  // Business-only. Personal-only hides this from every nav path; this covers
+  // a direct URL on the web build, where a route always resolves.
+  if (!BUSINESS_FEATURES_ENABLED) return <Redirect href="/" />;
   const p = usePalette();
   const [docs, setDocs] = useState<DocumentView[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);

@@ -111,13 +111,15 @@ export default function PlanScreen() {
                 <Label>If you run out of scans</Label>
                 <Body>
                   The photo is still captured and queued — a receipt you cannot re-photograph is
-                  never dropped because of a quota. Extraction resumes when the month rolls over
-                  or you add a top-up.
+                  never dropped because of a quota. Extraction resumes when the month rolls over,
+                  or immediately if you have credits — a separate, never-expiring balance.
                 </Body>
               </View>
             </Card>
 
             <View style={{ gap: space.sm }}>
+              <Button label="Credits" tone="outline" onPress={() => router.push('/credits')} />
+              <Button label="Points" tone="outline" onPress={() => router.push('/points')} />
               <Button
                 label="Manage people and seats"
                 tone="outline"

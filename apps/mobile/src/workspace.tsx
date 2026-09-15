@@ -5,7 +5,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, setActiveWorkspaceId, type MemberRole, type Workspace, type WorkspaceSummary } from '@/api';
 import { Avatar, Choice, Field, Sheet } from '@/components/form';
-import { Body, Button, Chip, Figure, Label, Small } from '@/components/ui';
+import { Body, Button, Chip, Figure, Label, Screen, Small } from '@/components/ui';
+import { BUSINESS_FEATURES_ENABLED } from '@/config';
 import { radius, space, usePalette } from '@/theme';
 
 /**
@@ -99,7 +100,13 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       .catch(() => {});
   }, []);
 
-  const list = workspaces ?? [];
+  const rawList = workspaces ?? [];
+  // Personal-only (`BUSINESS_FEATURES_ENABLED`): business workspaces are
+  // withheld from the app entirely, not just from the switcher, so nothing
+  // downstream — the switcher, the menu, home — ever has to ask the flag
+  // again. See `PersonalOnlyGate` below for the one case this creates: an
+  // account whose ONLY workspace is a business.
+  const list = BUSINESS_FEATURES_ENABLED ? rawList : rawList.filter((w) => w.kind === 'personal');
   const active = list.find((w) => w.id === activeId) ?? list[0] ?? FALLBACK;
 
   // The API layer scopes every tenant request to this, via a header. Pushed
@@ -134,7 +141,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     [list, active, setActive, setKind, refresh],
   );
 
-  if (workspaces === null || active.id === '') {
+  if (workspaces === null) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: p.ground, gap: space.lg }}>
         {failed ? (
@@ -149,11 +156,77 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     );
   }
 
+  // The one account shape personal-only can produce and must not crash on:
+  // every workspace this person belongs to is a business, and business is
+  // hidden. Falling through to `active.id === ''` here would spin forever —
+  // nothing was ever going to arrive to fill it — so this is a real screen
+  // instead, with the one action that actually resolves it.
+  if (list.length === 0) {
+    return <PersonalOnlyGate hadBusinessOnly={rawList.length > 0} refresh={refresh} setActive={setActive} />;
+  }
+
   return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>;
 }
 
 export function useWorkspace(): Ctx {
   return useContext(WorkspaceContext);
+}
+
+/**
+ * Shown when personal-only hides every workspace a person actually belongs
+ * to — i.e. their account is business-only (an owner, or staff invited only
+ * into the business, or the accountant's read-only seat). This is the case
+ * most likely to break — a blank dashboard, or a silent bounce into
+ * onboarding for someone who already has an account — so it gets its own
+ * coherent screen rather than falling through to one built for a different
+ * state.
+ */
+function PersonalOnlyGate({
+  hadBusinessOnly,
+  refresh,
+  setActive,
+}: {
+  hadBusinessOnly: boolean;
+  refresh: () => Promise<void>;
+  setActive: (id: string) => void;
+}) {
+  const p = usePalette();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function start() {
+    setError(null);
+    setBusy(true);
+    try {
+      const made = await api().createWorkspace('Personal', 'personal');
+      await refresh();
+      setActive(made.id);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not set that up.');
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Screen>
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: space.xl, gap: space.md }}>
+        <Figure size="h1" style={{ textAlign: 'center' }}>
+          {hadBusinessOnly ? 'This app tracks personal spending' : 'Set up your space'}
+        </Figure>
+        <Body muted style={{ textAlign: 'center' }}>
+          {hadBusinessOnly
+            ? 'Your account is set up for a business workspace, which is not part of Snap Apps right now. Start a personal space to track what you spend — it is entirely separate.'
+            : 'Create a personal space to start tracking what you spend.'}
+        </Body>
+        {error ? (
+          <Small muted={false} style={{ color: p.risk, textAlign: 'center' }}>
+            {error}
+          </Small>
+        ) : null}
+        <Button label="Set up personal tracking" onPress={() => void start()} busy={busy} />
+      </View>
+    </Screen>
+  );
 }
 
 /**
@@ -265,7 +338,7 @@ export function WorkspacePicker({ open, onClose }: { open: boolean; onClose: () 
   async function create() {
     setError(null);
     try {
-      const made = await api().createWorkspace(name.trim(), kind);
+      const made = await api().createWorkspace(name.trim(), BUSINESS_FEATURES_ENABLED ? kind : 'personal');
       await refresh();
       setActive(made.id);
       setCreating(false);
@@ -364,22 +437,26 @@ export function WorkspacePicker({ open, onClose }: { open: boolean; onClose: () 
           placeholder="Marsh Household"
           autoFocus
         />
-        <View style={{ gap: space.sm }}>
-          <Choice
-            label="Kind"
-            value={kind}
-            onChange={setKind}
-            options={[
-              { value: 'personal', label: 'Personal' },
-              { value: 'business', label: 'Business' },
-            ]}
-          />
-          <Label>
-            {kind === 'business'
-              ? 'Tracks GST, tax invoices and a BAS position.'
-              : 'Tracks budgets and spending. No tax, no GST, no ABN.'}
-          </Label>
-        </View>
+        {BUSINESS_FEATURES_ENABLED ? (
+          <View style={{ gap: space.sm }}>
+            <Choice
+              label="Kind"
+              value={kind}
+              onChange={setKind}
+              options={[
+                { value: 'personal', label: 'Personal' },
+                { value: 'business', label: 'Business' },
+              ]}
+            />
+            <Label>
+              {kind === 'business'
+                ? 'Tracks GST, tax invoices and a BAS position.'
+                : 'Tracks budgets and spending. No tax, no GST, no ABN.'}
+            </Label>
+          </View>
+        ) : (
+          <Label>Tracks budgets and spending. No tax, no GST, no ABN.</Label>
+        )}
       </Sheet>
     </Modal>
   );

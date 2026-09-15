@@ -1,4 +1,4 @@
-import { useLocalSearchParams } from 'expo-router';
+import { Redirect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { FlatList, Text, View } from 'react-native';
 
@@ -6,9 +6,13 @@ import { api, type Party } from '@/api';
 import { AddButton, Field, Sheet } from '@/components/form';
 import { GradientHero, HeroBody, HeroFigure, HeroLabel, Raised } from '@/components/rich';
 import { Body, Chip, Figure, Label, Screen, Small } from '@/components/ui';
+import { BUSINESS_FEATURES_ENABLED } from '@/config';
 import { formatAbn, formatAud, space, usePalette } from '@/theme';
 
 export default function PartiesScreen() {
+  // Business-only. Personal-only hides this from every nav path; this covers
+  // a direct URL on the web build, where a route always resolves.
+  if (!BUSINESS_FEATURES_ENABLED) return <Redirect href="/" />;
   const p = usePalette();
   const params = useLocalSearchParams<{ kind?: string }>();
   const kind = params.kind === 'supplier' ? 'supplier' : 'customer';

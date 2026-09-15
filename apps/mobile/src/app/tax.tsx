@@ -1,9 +1,10 @@
-import { useFocusEffect, useRouter } from 'expo-router';
+import { Redirect, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { IS_DEMO, api, type Overview } from '@/api';
+import { BUSINESS_FEATURES_ENABLED } from '@/config';
 import {
   Body,
   Card,
@@ -32,6 +33,9 @@ import { formatAud, space, usePalette } from '@/theme';
  * the question: how much can I not claim, and why.
  */
 export default function TaxScreen() {
+  // Business-only. Personal-only hides this from every nav path; this covers
+  // a direct URL on the web build, where a route always resolves.
+  if (!BUSINESS_FEATURES_ENABLED) return <Redirect href="/" />;
   const p = usePalette();
   const router = useRouter();
   const insets = useSafeAreaInsets();

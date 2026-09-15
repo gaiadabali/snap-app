@@ -1,4 +1,4 @@
-import { useFocusEffect } from 'expo-router';
+import { Redirect, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,6 +8,7 @@ import { AddButton, Empty, Field, Loading, Sheet, StatRow, Toggle } from '@/comp
 import { TripTracker } from '@/components/TripTracker';
 import { GradientHero, HeroBody, HeroFigure, HeroLabel, Raised } from '@/components/rich';
 import { Body, Card, Chip, Divider, Label, Screen, Small } from '@/components/ui';
+import { BUSINESS_FEATURES_ENABLED } from '@/config';
 import { formatAud, formatShortDate, space, usePalette } from '@/theme';
 
 /**
@@ -34,6 +35,9 @@ const blank = {
 };
 
 export default function MileageScreen() {
+  // Business-only. Personal-only hides this from every nav path; this covers
+  // a direct URL on the web build, where a route always resolves.
+  if (!BUSINESS_FEATURES_ENABLED) return <Redirect href="/" />;
   const p = usePalette();
   const insets = useSafeAreaInsets();
   const [data, setData] = useState<MileageSummary | null>(null);

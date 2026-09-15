@@ -3,6 +3,7 @@ import { Pressable, Text, View } from 'react-native';
 
 import { Body, Chip, Label, Small } from '@/components/ui';
 import { Raised } from '@/components/rich';
+import { BUSINESS_FEATURES_ENABLED } from '@/config';
 import { radius, space, usePalette } from '@/theme';
 import { WorkspaceSwitch, useWorkspace } from '@/workspace';
 
@@ -74,6 +75,8 @@ const BUSINESS_GROUPS: Group[] = [
       { label: 'People', hint: 'Who is in this workspace', glyph: '👥', hue: '#1878D8', href: '/members' },
       { label: 'Business', hint: 'ABN, GST basis, occupation', glyph: '🏢', hue: '#55677E', href: '/settings' },
       { label: 'Categories', hint: 'How spending is sorted', glyph: '🏷', hue: '#EF6C7E', href: '/categories' },
+      { label: 'Credits', hint: 'Scans this workspace has bought or been given', glyph: '💳', hue: '#1878D8', href: '/credits' },
+      { label: 'Points', hint: 'Yours, earned by scanning', glyph: '✦', hue: '#9B6BF2', href: '/points' },
       { label: 'Plan', hint: 'Usage and billing', glyph: '⭐', hue: '#F2994A', href: '/plan' },
     ],
   },
@@ -96,12 +99,19 @@ const PERSONAL_GROUPS: Group[] = [
     ],
   },
   {
+    title: 'Your account',
+    entries: [
+      { label: 'Credits', hint: 'Scans you have bought or been given', glyph: '💳', hue: '#1878D8', href: '/credits' },
+      { label: 'Points', hint: 'Earned by scanning', glyph: '✦', hue: '#9B6BF2', href: '/points' },
+      { label: 'Plan', hint: 'Usage and billing', glyph: '⭐', hue: '#F2994A', href: '/plan' },
+    ],
+  },
+  {
     title: 'Household',
     entries: [
       { label: 'People', hint: 'Share with your family', glyph: '👥', hue: '#1878D8', href: '/members' },
       { label: 'Categories', hint: 'How spending is sorted', glyph: '🏷', hue: '#9B6BF2', href: '/categories' },
       { label: 'Settings', hint: 'Workspace and privacy', glyph: '⚙️', hue: '#55677E', href: '/settings' },
-      { label: 'Plan', hint: 'Usage and billing', glyph: '⭐', hue: '#F2994A', href: '/plan' },
     ],
   },
 ];
@@ -110,7 +120,10 @@ export function MenuContent({ onNavigate }: { onNavigate?: () => void }) {
   const p = usePalette();
   const router = useRouter();
   const { isBusiness } = useWorkspace();
-  const groups = isBusiness ? BUSINESS_GROUPS : PERSONAL_GROUPS;
+  // The one place this flag is checked to pick a menu: everywhere else reads
+  // `isBusiness`, which the workspace provider already keeps honest — a
+  // personal-only build never has a business workspace to be active.
+  const groups = BUSINESS_FEATURES_ENABLED && isBusiness ? BUSINESS_GROUPS : PERSONAL_GROUPS;
 
   return (
     <View style={{ gap: space.lg }}>

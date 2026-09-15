@@ -1,4 +1,4 @@
-import { useFocusEffect } from 'expo-router';
+import { Redirect, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -7,6 +7,7 @@ import { api, type Invoice, type Payment, type PaymentMethod } from '@/api';
 import { AddButton, Avatar, Choice, Empty, Field, Loading, Sheet } from '@/components/form';
 import { GradientHero, HeroBody, HeroFigure, HeroLabel, Raised } from '@/components/rich';
 import { Body, Chip, Divider, Figure, Label, Screen, Small } from '@/components/ui';
+import { BUSINESS_FEATURES_ENABLED } from '@/config';
 import { formatAud, formatShortDate, space, usePalette } from '@/theme';
 
 /**
@@ -26,6 +27,9 @@ const METHODS: Array<{ value: PaymentMethod; label: string }> = [
 ];
 
 export default function PaymentsScreen() {
+  // Business-only. Personal-only hides this from every nav path; this covers
+  // a direct URL on the web build, where a route always resolves.
+  if (!BUSINESS_FEATURES_ENABLED) return <Redirect href="/" />;
   const p = usePalette();
   const insets = useSafeAreaInsets();
   const [payments, setPayments] = useState<Payment[] | null>(null);

@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import { useRouter } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api, type Item, type Party } from '@/api';
 import { Raised } from '@/components/rich';
 import { Body, Button, Chip, Divider, Figure, Label, Screen, Small } from '@/components/ui';
+import { BUSINESS_FEATURES_ENABLED } from '@/config';
 import { add, gstOnSale, multiply, ZERO } from '@/lib/money';
 import { formatAud, radius, space, usePalette } from '@/theme';
 
@@ -27,6 +28,9 @@ import { formatAud, radius, space, usePalette } from '@/theme';
 type Line = { itemId: string; qty: number };
 
 export default function NewInvoiceScreen() {
+  // Business-only. Personal-only hides this from every nav path; this covers
+  // a direct URL on the web build, where a route always resolves.
+  if (!BUSINESS_FEATURES_ENABLED) return <Redirect href="/" />;
   const p = usePalette();
   const router = useRouter();
   const insets = useSafeAreaInsets();

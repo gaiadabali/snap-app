@@ -1,4 +1,4 @@
-import { useFocusEffect } from 'expo-router';
+import { Redirect, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Alert, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,6 +8,7 @@ import { exportDocumentsCsv, exportLinesCsv, saveTaxPack } from '@/lib/share';
 import { Loading } from '@/components/form';
 import { GradientHero, HeroBody, HeroFigure, HeroLabel, Raised } from '@/components/rich';
 import { Body, Button, Card, Chip, Divider, Figure, Label, Screen, Small } from '@/components/ui';
+import { BUSINESS_FEATURES_ENABLED } from '@/config';
 import { formatShortDate, space, usePalette } from '@/theme';
 
 /**
@@ -27,6 +28,9 @@ function mb(bytes: number): string {
 }
 
 export default function TaxPackScreen() {
+  // Business-only. Personal-only hides this from every nav path; this covers
+  // a direct URL on the web build, where a route always resolves.
+  if (!BUSINESS_FEATURES_ENABLED) return <Redirect href="/" />;
   const p = usePalette();
   const insets = useSafeAreaInsets();
   const [pack, setPack] = useState<TaxPack | null>(null);

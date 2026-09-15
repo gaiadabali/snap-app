@@ -23,6 +23,9 @@ import type {
   Connection,
   CreateCaptureRequest,
   CreateCaptureResponse,
+  CreditBalance,
+  CreditPack,
+  CreditPurchase,
   DocumentFilter,
   DocumentLine,
   DocumentView,
@@ -40,6 +43,8 @@ import type {
   Permissions,
   PersonalSummary,
   PlanUsage,
+  PointBalance,
+  PointLedgerEntry,
   Recurring,
   SalesSummary,
   Session,
@@ -860,5 +865,51 @@ export class HttpApi implements SnapApi {
     // The server returns a relative URL so it works behind any host or tunnel.
     // The share sheet needs an absolute one.
     return { ...file, url: this.absolutize(file.url) };
+  }
+
+  /* ── Credits & points (D27) ──
+   *
+   * The credits endpoints are workspace-scoped, like every other tenant
+   * read/write — a credit buys a scan, and a scan happens inside a
+   * workspace. The two-step purchase (`start` then `fulfil`) is deliberate:
+   * there is no payment processor yet, so `start` only ever records intent
+   * (`pending`, nothing granted), and `fulfil` is the manual stand-in for
+   * what a processor's webhook will call — see the server's own comment on
+   * `CreditPurchase`. Points are explicitly NOT workspace-scoped — keyed on
+   * `users.id`, not a tenant — so both point endpoints go out with
+   * `workspaceId: null`, the same way `/v1/auth/session` does.
+   */
+
+  listCreditPacks(): Promise<CreditPack[]> {
+    return this.get<CreditPack[]>('/v1/credit-packs');
+  }
+
+  getCreditBalance(): Promise<CreditBalance> {
+    return this.get<CreditBalance>('/v1/credits');
+  }
+
+  listCreditPurchases(): Promise<CreditPurchase[]> {
+    return this.get<CreditPurchase[]>('/v1/credits/purchases');
+  }
+
+  startCreditPurchase(packCode: string): Promise<CreditPurchase> {
+    return this.request<CreditPurchase>('POST', '/v1/credits/purchases', { body: { packCode } });
+  }
+
+  fulfilCreditPurchase(purchaseId: string): Promise<CreditPurchase> {
+    return this.request<CreditPurchase>('POST', `/v1/credits/purchases/${purchaseId}/fulfil`, {
+      body: {},
+    });
+  }
+
+  getPointBalance(): Promise<PointBalance> {
+    return this.get<PointBalance>('/v1/points', null);
+  }
+
+  listPointLedger(limit?: number): Promise<PointLedgerEntry[]> {
+    return this.get<PointLedgerEntry[]>(
+      `/v1/points/ledger${limit ? `?limit=${limit}` : ''}`,
+      null,
+    );
   }
 }

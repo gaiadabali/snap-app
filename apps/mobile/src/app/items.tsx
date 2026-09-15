@@ -1,3 +1,4 @@
+import { Redirect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { FlatList, Text, View } from 'react-native';
 
@@ -5,11 +6,15 @@ import { api, type Item } from '@/api';
 import { AddButton, Choice, Field, Sheet } from '@/components/form';
 import { GradientHero, HeroBody, HeroFigure, HeroLabel, Raised } from '@/components/rich';
 import { Body, Chip, Figure, Label, Screen, Small } from '@/components/ui';
+import { BUSINESS_FEATURES_ENABLED } from '@/config';
 import { formatAud, radius, space, usePalette } from '@/theme';
 
 const blank = { name: '', sku: '', unit: 'ea', sellPrice: '', costPrice: '', stock: '' };
 
 export default function ItemsScreen() {
+  // Business-only. Personal-only hides this from every nav path; this covers
+  // a direct URL on the web build, where a route always resolves.
+  if (!BUSINESS_FEATURES_ENABLED) return <Redirect href="/" />;
   const p = usePalette();
   const [rows, setRows] = useState<Item[] | null>(null);
   const [adding, setAdding] = useState(false);

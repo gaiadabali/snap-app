@@ -1,5 +1,6 @@
 import { useRouter, type Href } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { CategoryIcon, Raised, radius } from '@/components/rich';
 import { Body, Chip, Divider, Figure, Label, Small } from '@/components/ui';
@@ -178,28 +179,34 @@ export function LatestReceipts({ docs }: { docs: DocumentView[] }) {
           docs.map((d, i) => (
             <View key={d.id}>
               {i > 0 ? <Divider style={{ marginLeft: 68 }} /> : null}
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => router.push(`/document/${d.id}`)}
-                style={({ pressed }) => ({
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: space.md,
-                  paddingHorizontal: space.lg,
-                  paddingVertical: 12,
-                  backgroundColor: pressed ? p.surfaceAlt : 'transparent',
-                })}
-              >
-                <CategoryIcon category={d.category} size={38} />
-                <View style={{ flex: 1, gap: 2 }}>
-                  <Body strong numberOfLines={1}>
-                    {d.supplierName}
-                  </Body>
-                  <Small numberOfLines={1}>{d.category}</Small>
-                </View>
-                {d.reviewStatus === 'needs_review' ? <Chip tone="warn">Check</Chip> : null}
-                <Figure size="h2">{formatAud(d.payableAmount)}</Figure>
-              </Pressable>
+              {/* The list settling in: a real change (this refresh's data),
+                  cheap (opacity + a few px of translateY), and off entirely
+                  under reduce-motion because Reanimated's entering animations
+                  no-op when `AccessibilityInfo.isReduceMotionEnabled()` is on. */}
+              <Animated.View entering={FadeInDown.duration(260).delay(Math.min(i, 6) * 35)}>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => router.push(`/document/${d.id}`)}
+                  style={({ pressed }) => ({
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: space.md,
+                    paddingHorizontal: space.lg,
+                    paddingVertical: 12,
+                    backgroundColor: pressed ? p.surfaceAlt : 'transparent',
+                  })}
+                >
+                  <CategoryIcon category={d.category} size={38} />
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <Body strong numberOfLines={1}>
+                      {d.supplierName}
+                    </Body>
+                    <Small numberOfLines={1}>{d.category}</Small>
+                  </View>
+                  {d.reviewStatus === 'needs_review' ? <Chip tone="warn">Check</Chip> : null}
+                  <Figure size="h2">{formatAud(d.payableAmount)}</Figure>
+                </Pressable>
+              </Animated.View>
             </View>
           ))
         )}

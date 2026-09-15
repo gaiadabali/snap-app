@@ -6,6 +6,7 @@ import { abnIsValid, api, type Session, type Workspace } from '@/api';
 import { Choice, Field, Toggle } from '@/components/form';
 import { Raised } from '@/components/rich';
 import { Body, Button, Figure, Label, Screen, Small } from '@/components/ui';
+import { BUSINESS_FEATURES_ENABLED } from '@/config';
 import { radius, space, usePalette } from '@/theme';
 
 /**
@@ -43,8 +44,13 @@ export function Onboarding({
 }) {
   const p = usePalette();
   const insets = useSafeAreaInsets();
-  const [step, setStep] = useState(0);
-  const [kind, setKind] = useState<Workspace>('business');
+  // Personal-only: there is nothing to choose, so the chooser step is
+  // skipped entirely rather than shown with one option pre-selected — a
+  // screen offering "a business" when business is not part of this release
+  // is exactly the kind of business surface the flag exists to hide.
+  const [step, setStep] = useState(BUSINESS_FEATURES_ENABLED ? 0 : 1);
+  const [kindChoice, setKindChoice] = useState<Workspace>('business');
+  const kind: Workspace = BUSINESS_FEATURES_ENABLED ? kindChoice : 'personal';
   const [name, setName] = useState('');
   const [abn, setAbn] = useState('');
   const [gstRegistered, setGstRegistered] = useState(true);
@@ -93,9 +99,11 @@ export function Onboarding({
         }}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Progress, so three steps read as three and not as an unknown number. */}
+        {/* Progress, so the steps read as a known, finite count. Personal-only
+            drops the kind-picker step, so there are two dots, not three, and
+            the first one showing is `step - 1` of them rather than `step`. */}
         <View style={{ flexDirection: 'row', gap: 6 }}>
-          {[0, 1, 2].map((i) => (
+          {(BUSINESS_FEATURES_ENABLED ? [0, 1, 2] : [1, 2]).map((i) => (
             <View
               key={i}
               style={{
@@ -137,7 +145,7 @@ export function Onboarding({
                   key={option.value}
                   accessibilityRole="radio"
                   accessibilityState={{ selected: on }}
-                  onPress={() => setKind(option.value)}
+                  onPress={() => setKindChoice(option.value)}
                   style={{
                     borderRadius: radius.lg,
                     borderWidth: 2,
@@ -161,7 +169,11 @@ export function Onboarding({
         ) : step === 1 ? (
           <>
             <View style={{ gap: space.xs }}>
-              <Label>Step 2 of 3</Label>
+              {BUSINESS_FEATURES_ENABLED ? (
+                <Label>Step 2 of 3</Label>
+              ) : (
+                <Small>Welcome, {displayName.split(' ')[0]}</Small>
+              )}
               <Figure size="h1">{business ? 'Your business' : 'Your household'}</Figure>
             </View>
 
@@ -200,7 +212,7 @@ export function Onboarding({
         ) : (
           <>
             <View style={{ gap: space.xs }}>
-              <Label>Step 3 of 3</Label>
+              <Label>{BUSINESS_FEATURES_ENABLED ? 'Step 3 of 3' : 'Step 2 of 2'}</Label>
               <Figure size="h1">{business ? 'GST' : 'Monthly budget'}</Figure>
             </View>
 
@@ -250,6 +262,13 @@ export function Onboarding({
               </Raised>
             )}
 
+            {!business ? (
+              <Small>
+                Your account starts with 10 free scans — no card, no plan. Check Credits any time to
+                see what is left.
+              </Small>
+            ) : null}
+
             {error ? (
               <View style={{ backgroundColor: p.riskSoft, borderRadius: radius.md, padding: space.md }}>
                 <Small muted={false} style={{ color: p.risk }}>
@@ -261,7 +280,7 @@ export function Onboarding({
         )}
 
         <View style={{ flexDirection: 'row', gap: space.sm }}>
-          {step > 0 ? (
+          {step > (BUSINESS_FEATURES_ENABLED ? 0 : 1) ? (
             <Button
               label="Back"
               tone="outline"

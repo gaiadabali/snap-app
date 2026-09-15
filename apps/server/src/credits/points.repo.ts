@@ -41,7 +41,7 @@ export type PointLedgerRow = {
 export async function listPointLedger(userId: string, limit = 50): Promise<PointLedgerRow[]> {
   return asUser(getDb(), userId, async (tx) => {
     const rows = await tx.execute<PointLedgerRow>(sql`
-      select id, delta, reason, ref, app, created_at::text as created_at
+      select id, delta, reason, ref, app, to_json(created_at)#>>'{}' as created_at
         from point_ledger
        where user_id = current_user_id()
        order by created_at desc

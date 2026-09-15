@@ -8,6 +8,7 @@ import { ActivityIndicator, Alert, Image, Platform, Pressable, ScrollView, Text,
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, type CapturePageUpload } from '@/api';
+import { ScanLine } from '@/components/ScanLine';
 import { Body, Button, Card, Figure, Label, Screen, Small } from '@/components/ui';
 import { radius, space, usePalette } from '@/theme';
 import { WorkspaceSwitch, useWorkspace } from '@/workspace';
@@ -461,8 +462,13 @@ export default function CaptureScreen() {
           borderColor: 'rgba(255,255,255,0.85)',
           borderRadius: radius.lg,
           borderStyle: 'dashed',
+          overflow: 'hidden',
         }}
-      />
+      >
+        {/* The signature sweep, and only here: extraction is the one moment
+            this app reads a document, and the cyan line says so. */}
+        <ScanLine active={phase === 'extracting'} />
+      </View>
 
       <View
         style={{ position: 'absolute', top: insets.top + space.lg, left: space.lg, right: space.lg }}

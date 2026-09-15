@@ -78,11 +78,25 @@ export type CreditPurchaseRow = {
 };
 
 /** Purchase history for this workspace, most recent first. */
+/*
+ * Timestamps are rendered with `to_json(col)#>>'{}'`, never `::text`.
+ *
+ * `::text` gives Postgres' own rendering — "2026-09-15 16:12:40.13896+00", a
+ * space instead of a `T` — while the contract declares `IsoDateTime`. V8 parses
+ * that leniently so it appears to work, which is exactly why it keeps coming
+ * back: the same drift was fixed across the admin endpoints and reintroduced
+ * here the moment a new repo was written. `to_json` yields real ISO 8601 via
+ * jsonb encoding, matching `apps/server/src/repo.ts`.
+ *
+ * It matters beyond tidiness: `Date.parse` returns NaN on anything stricter,
+ * and every comparison against NaN is false — so an expiry or ordering check
+ * written the obvious way treats an unreadable timestamp as fine.
+ */
 export async function listCreditPurchases(userId: string, tenantId: string): Promise<CreditPurchaseRow[]> {
   return withTenantAs(getDb(), userId, tenantId, async (tx) => {
     const rows = await tx.execute<CreditPurchaseRow>(sql`
       select id, pack_code, credits, price_aud::text as price_aud, status::text as status,
-             provider::text as provider, created_at::text as created_at, paid_at::text as paid_at
+             provider::text as provider, to_json(created_at)#>>'{}' as created_at, to_json(paid_at)#>>'{}' as paid_at
         from credit_purchases
        where tenant_id = current_tenant_id()
        order by created_at desc
@@ -124,7 +138,7 @@ export async function startCreditPurchase(
       insert into credit_purchases (id, tenant_id, purchased_by, pack_code, credits, price_aud, status, provider)
       values (${id}, current_tenant_id(), ${userId}, ${row.code}, ${row.credits}, ${row.price_aud}, 'pending', 'manual')
       returning id, pack_code, credits, price_aud::text as price_aud, status::text as status,
-                provider::text as provider, created_at::text as created_at, paid_at::text as paid_at
+                provider::text as provider, to_json(created_at)#>>'{}' as created_at, to_json(paid_at)#>>'{}' as paid_at
     `);
     return inserted.rows[0]!;
   });
@@ -169,7 +183,7 @@ export async function fulfilCreditPurchase(
   return withTenantAs(getDb(), userId, tenantId, async (tx) => {
     const found = await tx.execute<CreditPurchaseRow>(sql`
       select id, pack_code, credits, price_aud::text as price_aud, status::text as status,
-             provider::text as provider, created_at::text as created_at, paid_at::text as paid_at
+             provider::text as provider, to_json(created_at)#>>'{}' as created_at, to_json(paid_at)#>>'{}' as paid_at
         from credit_purchases
        where id = ${purchaseId} and tenant_id = current_tenant_id()
        for update
@@ -189,7 +203,7 @@ export async function fulfilCreditPurchase(
          set status = 'paid', paid_at = now(), grant_id = ${grantId}
        where id = ${purchaseId} and tenant_id = current_tenant_id()
       returning id, pack_code, credits, price_aud::text as price_aud, status::text as status,
-                provider::text as provider, created_at::text as created_at, paid_at::text as paid_at
+                provider::text as provider, to_json(created_at)#>>'{}' as created_at, to_json(paid_at)#>>'{}' as paid_at
     `);
     return updated.rows[0]!;
   });

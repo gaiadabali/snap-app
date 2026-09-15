@@ -5,6 +5,7 @@ import type {
   Budget,
   BusinessSettings,
   Connection,
+  CreditPurchase,
   DocumentView,
   Goal,
   Invitation,
@@ -12,6 +13,7 @@ import type {
   Item,
   MemberRole,
   Payment,
+  PointLedgerEntry,
   StockMovement,
   Trip,
 } from './types';
@@ -72,6 +74,10 @@ export type Persisted = {
   inactiveCategories: string[];
   customCategories: string[];
   extraWorkspaces: Array<{ id: string; name: string; kind: 'business' | 'personal' }>;
+  /** Aggregate only — see `mock.ts`: the server exposes no grant-level breakdown. */
+  creditBalance?: number;
+  creditPurchases?: CreditPurchase[];
+  pointLedger?: PointLedgerEntry[];
 };
 
 let timer: ReturnType<typeof setTimeout> | null = null;

@@ -68,7 +68,36 @@ import type {
   CreateCaptureResponse,
   TaxPackFile,
   UpdateDocumentRequest,
+  CreditBalance,
+  CreditPack,
+  CreditPurchase,
+  PointBalance,
+  PointLedgerEntry,
 } from '@snap/api-contract';
+
+/**
+ * Credits and points (`docs/ECOSYSTEM.md` D27) — the real contract types,
+ * from `@snap/api-contract`, the one workspace package this app may depend
+ * on (`test/boundaries.test.ts`). No shape is re-declared here: an earlier
+ * pass of this file invented `CreditsSummary`/`PointsSummary`/`CreditGrant`
+ * against a guess at what the server would return, built in parallel with
+ * this client, and the guess didn't match — the same class of bug as
+ * `AuthUser.initials` shipping absent from every response. The fix is to
+ * import the wire types and compose a view model in the screen, not in this
+ * file.
+ *
+ * Three balances, never conflated (D27's whole point):
+ *   - plan quota  — `PlanUsage.scanQuota`/`scansUsed`, tenant, resets monthly.
+ *   - credits     — `CreditBalance`/`CreditPack`/`CreditPurchase`, tenant,
+ *                    bought or granted, never reset.
+ *   - points      — `PointBalance`/`PointLedgerEntry`, USER-scoped, earned by
+ *                    scanning, never reset.
+ *
+ * There is no grant-level breakdown endpoint (e.g. "free-to-start: 7 of 10
+ * left" as its own row) — only the aggregate `CreditBalance.creditsRemaining`
+ * and the purchase list. The credits screen's copy says so as static text
+ * rather than inventing a `grants` array to render.
+ */
 
 export interface SnapApi {
   // ── Identity ──
@@ -255,6 +284,32 @@ export interface SnapApi {
    * a server job measured in seconds, not a screen that can pretend.
    */
   prepareTaxPack(): Promise<TaxPackFile>;
+
+  // ── Credits & points (D27) ──
+  /** `GET /v1/credit-packs` — the catalogue, active packs only. */
+  listCreditPacks(): Promise<CreditPack[]>;
+  /** `GET /v1/credits` — the balance ALONE, never folded with plan quota. */
+  getCreditBalance(): Promise<CreditBalance>;
+  /** `GET /v1/credits/purchases` — this workspace's purchase history. */
+  listCreditPurchases(): Promise<CreditPurchase[]>;
+  /**
+   * `POST /v1/credits/purchases` — records intent to buy a pack. Returns it
+   * `pending`; nothing is granted yet. There is no payment processor (Stripe
+   * is phase 6.5), so a real checkout does not exist for this to redirect to.
+   */
+  startCreditPurchase(packCode: string): Promise<CreditPurchase>;
+  /**
+   * `POST /v1/credits/purchases/:id/fulfil` — the manual stand-in for a
+   * payment processor's webhook: marks the purchase `paid` and grants the
+   * credits, atomically. Idempotent — fulfilling an already-paid purchase
+   * returns it unchanged rather than granting twice.
+   */
+  fulfilCreditPurchase(purchaseId: string): Promise<CreditPurchase>;
+
+  /** `GET /v1/points` — USER-scoped, not workspace-scoped. */
+  getPointBalance(): Promise<PointBalance>;
+  /** `GET /v1/points/ledger` — most recent first, how the balance was earned. */
+  listPointLedger(limit?: number): Promise<PointLedgerEntry[]>;
 }
 
 /**

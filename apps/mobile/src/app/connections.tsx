@@ -1,4 +1,4 @@
-import { useFocusEffect } from 'expo-router';
+import { Redirect, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Alert, Linking, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -7,6 +7,7 @@ import { api, type Connection } from '@/api';
 import { Loading } from '@/components/form';
 import { Raised } from '@/components/rich';
 import { Body, Button, Card, Chip, Figure, Label, Screen, Small } from '@/components/ui';
+import { BUSINESS_FEATURES_ENABLED } from '@/config';
 import { space, usePalette } from '@/theme';
 
 /**
@@ -19,6 +20,9 @@ import { space, usePalette } from '@/theme';
  * attachment on every transaction it pushes.
  */
 export default function ConnectionsScreen() {
+  // Business-only. Personal-only hides this from every nav path; this covers
+  // a direct URL on the web build, where a route always resolves.
+  if (!BUSINESS_FEATURES_ENABLED) return <Redirect href="/" />;
   const p = usePalette();
   const insets = useSafeAreaInsets();
   const [connections, setConnections] = useState<Connection[] | null>(null);

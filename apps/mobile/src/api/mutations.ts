@@ -9,7 +9,7 @@
  * that silently does not survive a reload.
  */
 export const MUTATION =
-  /^(create|update|set|add|delete|remove|confirm|pay|record|count|contribute|invite|revoke|connect|disconnect|reject|await|sign|complete|convert)/;
+  /^(create|update|set|add|delete|remove|confirm|pay|record|count|contribute|invite|revoke|connect|disconnect|reject|await|sign|complete|convert|start|fulfil)/;
 
 /**
  * Methods that change session state and therefore MUST queue a write.
@@ -50,6 +50,8 @@ export const STATE_CHANGING = [
   'disconnectAccounting',
   'createItem',
   'createParty',
+  'startCreditPurchase',
+  'fulfilCreditPurchase',
 ] as const;
 
 /**
@@ -89,4 +91,9 @@ export const READ_METHODS = [
   'getPlanUsage',
   'listConnections',
   'getTaxPack',
+  'listCreditPacks',
+  'getCreditBalance',
+  'listCreditPurchases',
+  'getPointBalance',
+  'listPointLedger',
 ] as const;

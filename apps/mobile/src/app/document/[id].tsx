@@ -1,7 +1,8 @@
 import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Image, Modal, ScrollView, TextInput, View } from 'react-native';
+import { Alert, Image, Modal, TextInput, View } from 'react-native';
+import Animated, { FadeInUp } from 'react-native-reanimated';
 
 import { abnIsValid, api, type DocumentLine, type DocumentView, type Permissions } from '@/api';
 import { Avatar } from '@/components/form';
@@ -175,7 +176,15 @@ export default function DocumentScreen() {
 
   return (
     <Screen>
-      <ScrollView contentContainerStyle={{ padding: space.lg, gap: space.lg, paddingBottom: space.xxxl }}>
+      <Animated.ScrollView
+        // A capture landing: this document just arrived from the shutter
+        // (`localPages` is only ever passed by the capture screen), so the
+        // review fields settle in rather than snapping onto the screen.
+        // Reopening the same document later carries no `localPages` and gets
+        // no entrance at all — nothing to animate, because nothing changed.
+        entering={localPages ? FadeInUp.duration(320) : undefined}
+        contentContainerStyle={{ padding: space.lg, gap: space.lg, paddingBottom: space.xxxl }}
+      >
         {/* ── Header ── */}
         <View style={{ gap: space.xs }}>
           <Label>{doc.category}</Label>
@@ -398,7 +407,7 @@ export default function DocumentScreen() {
             </Card>
           )}
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
 
       {/* ── ABN edit sheet ── */}
       <Modal visible={editing === 'abn'} transparent animationType="slide">

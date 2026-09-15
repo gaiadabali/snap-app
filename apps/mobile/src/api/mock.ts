@@ -27,6 +27,9 @@ import type {
   BusinessSettings,
   CategorySetting,
   Connection,
+  CreditBalance,
+  CreditPack,
+  CreditPurchase,
   DocumentFilter,
   DocumentLine,
   DocumentView,
@@ -46,6 +49,8 @@ import type {
   Permissions,
   PersonalSummary,
   PlanUsage,
+  PointBalance,
+  PointLedgerEntry,
   Recurring,
   SalesSummary,
   Session,
@@ -222,6 +227,68 @@ const inactiveCategories = new Set<string>();
 const customCategories = new Set<string>();
 
 /**
+ * The six catalogue packs — `docs/ECOSYSTEM.md` D27's pricing table, verbatim,
+ * in the `CreditPack` shape from `@snap/api-contract` (`code`/`credits`, not
+ * the `id`/`scans` this file guessed at before the server's contract landed).
+ * Not generated: this is a fixed price list, not derived from any document,
+ * so it lives beside the other hand-authored demo constants (`ACCOUNTS`,
+ * `OCCUPATION_LABELS`) rather than in the generated fixture.
+ */
+const CREDIT_PACKS: CreditPack[] = [
+  { code: 'pack_10', credits: 10, priceAud: '0.15', sortOrder: 1 },
+  { code: 'pack_50', credits: 50, priceAud: '0.70', sortOrder: 2 },
+  { code: 'pack_100', credits: 100, priceAud: '1.30', sortOrder: 3 },
+  { code: 'pack_200', credits: 200, priceAud: '2.40', sortOrder: 4 },
+  { code: 'pack_500', credits: 500, priceAud: '5.50', sortOrder: 5 },
+  { code: 'pack_1000', credits: 1000, priceAud: '10.00', sortOrder: 6 },
+];
+
+/**
+ * Credits (tenant-scoped) and points (user-scoped) — D27.
+ *
+ * Kept as session state exactly like `budgets`/`goals`: a purchase in the
+ * demo has to move the balance on screen, or "buy a pack" would be a button
+ * that does nothing.
+ *
+ * The server exposes only the AGGREGATE credits balance
+ * (`GET /v1/credits` -> `{ creditsRemaining }`) — there is no grant-level
+ * breakdown endpoint, so this mock does not invent one either. Internally it
+ * still tracks a free signup grant and any paid purchases to derive that one
+ * number, the same arithmetic `getCreditBalance` (migration 0024) does over
+ * `usage_grants` — but nothing here is shaped like a `grants` API response,
+ * because there isn't one.
+ *
+ * Seed functions rather than inline literals so `resetDemoData` can restore
+ * exactly this starting state without repeating it.
+ */
+let creditBalance = 7; // 10 free-to-start, 3 already used — see docs/ECOSYSTEM.md D27.
+const seedCreditPurchases = (): CreditPurchase[] => [
+  {
+    id: 'cpu_1',
+    packCode: 'pack_50',
+    credits: 50,
+    priceAud: '0.70',
+    status: 'paid',
+    provider: 'manual',
+    createdAt: '2026-06-02T01:15:00.000Z',
+    paidAt: '2026-06-02T01:15:40.000Z',
+  },
+];
+/** One point per scan (D27); a handful seeded against real fixture dates. */
+const seedPointLedger = (): PointLedgerEntry[] =>
+  DEMO.documents.slice(0, 6).map((d, i) => ({
+    id: `pt_${i + 1}`,
+    delta: 1,
+    reason: 'scan',
+    ref: d.id,
+    app: 'snap-apps',
+    createdAt: `${d.issueDate}T09:00:00.000Z`,
+  }));
+
+let creditPurchases: CreditPurchase[] = seedCreditPurchases();
+let pointLedger: PointLedgerEntry[] = seedPointLedger();
+
+/**
  * Hydration, run once before the first read.
  *
  * Every method starts with `await settle(...)` rather than `await sleep(...)`,
@@ -294,6 +361,9 @@ function snapshot(): Persisted {
     inactiveCategories: [...inactiveCategories],
     customCategories: [...customCategories],
     extraWorkspaces,
+    creditBalance,
+    creditPurchases,
+    pointLedger,
   };
 }
 
@@ -352,6 +422,9 @@ export async function resetDemoData(): Promise<void> {
   inactiveCategories.clear();
   customCategories.clear();
   extraWorkspaces = [];
+  creditBalance = 7;
+  creditPurchases = seedCreditPurchases();
+  pointLedger = seedPointLedger();
   WHO = 'usr_kate';
   signedIn = false;
 }
@@ -384,6 +457,9 @@ async function hydrate(): Promise<void> {
   for (const c of stored.inactiveCategories ?? []) inactiveCategories.add(c);
   for (const c of stored.customCategories ?? []) customCategories.add(c);
   extraWorkspaces = stored.extraWorkspaces ?? [];
+  if (typeof stored.creditBalance === 'number') creditBalance = stored.creditBalance;
+  if (stored.creditPurchases) creditPurchases = stored.creditPurchases;
+  if (stored.pointLedger) pointLedger = stored.pointLedger;
   // Restored last, so the session lines up with the memberships just loaded.
   if (stored.signedInUserId) WHO = stored.signedInUserId;
   signedIn = stored.signedIn ?? false;
@@ -1619,6 +1695,73 @@ export class MockApi implements SnapApi {
       retentionNote:
         'Australian business records must be kept for five years from the date they are prepared, obtained or the transaction is complete — whichever is latest.',
     };
+  }
+
+  // ── Credits & points (D27) ──
+
+  async listCreditPacks(): Promise<CreditPack[]> {
+    await settle(120);
+    return [...CREDIT_PACKS].sort((a, b) => a.sortOrder - b.sortOrder);
+  }
+
+  async getCreditBalance(): Promise<CreditBalance> {
+    await settle(120);
+    return { creditsRemaining: creditBalance };
+  }
+
+  async listCreditPurchases(): Promise<CreditPurchase[]> {
+    await settle(140);
+    return [...creditPurchases].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+
+  async startCreditPurchase(packCode: string): Promise<CreditPurchase> {
+    await settle(400);
+    const pack = CREDIT_PACKS.find((x) => x.code === packCode);
+    if (!pack) throw new Error(`No such credit pack: ${packCode}.`);
+    // Mirrors the server exactly: this records INTENT only. Nothing is
+    // granted until `fulfilCreditPurchase` runs — there is no payment
+    // processor yet (Stripe is phase 6.5), so `pending` is the whole honest
+    // truth about a purchase started from this screen.
+    const purchase: CreditPurchase = {
+      id: `cpu_${Date.now()}`,
+      packCode: pack.code,
+      credits: pack.credits,
+      priceAud: pack.priceAud,
+      status: 'pending',
+      provider: 'manual',
+      createdAt: new Date().toISOString(),
+      paidAt: null,
+    };
+    creditPurchases = [purchase, ...creditPurchases];
+    return purchase;
+  }
+
+  async fulfilCreditPurchase(purchaseId: string): Promise<CreditPurchase> {
+    await settle(400);
+    const purchase = creditPurchases.find((x) => x.id === purchaseId);
+    if (!purchase) throw new Error('No such purchase.');
+    // Idempotent, exactly like the server: fulfilling an already-paid
+    // purchase returns it unchanged rather than granting the credits twice.
+    if (purchase.status === 'paid') return purchase;
+    if (purchase.status !== 'pending') {
+      throw new Error(
+        `This purchase is ${purchase.status}, not pending — it cannot be fulfilled.`,
+      );
+    }
+    const paid: CreditPurchase = { ...purchase, status: 'paid', paidAt: new Date().toISOString() };
+    creditPurchases = creditPurchases.map((x) => (x.id === purchaseId ? paid : x));
+    creditBalance += paid.credits;
+    return paid;
+  }
+
+  async getPointBalance(): Promise<PointBalance> {
+    await settle(120);
+    return { balance: pointLedger.reduce((a, e) => a + e.delta, 0) };
+  }
+
+  async listPointLedger(limit = 50): Promise<PointLedgerEntry[]> {
+    await settle(130);
+    return [...pointLedger].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, limit);
   }
 }
 

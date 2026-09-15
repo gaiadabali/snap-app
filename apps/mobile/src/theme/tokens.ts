@@ -6,11 +6,17 @@ import { Platform, type TextStyle } from 'react-native';
  * Every frame of the launch film sits on the same blue — #1878D8 dominant,
  * #0060C0 in the deeper areas — with a cyan scan line (#1CA8DB) sweeping the
  * receipt and the app icon tile running #1C97DB to #237ABD. The product should
- * look like its own advertising, so these are the measured values rather than a
- * designer's guess.
+ * look like its own advertising, so `accent`, `scan` and the risk/warn hues
+ * are measured values rather than a designer's guess, and must not change.
  *
- * Red stays reserved for money at risk. It is warmed slightly from the usual
- * ledger red so it reads as a warning against blue rather than fighting it.
+ * The NEUTRALS are a different story. Through 2026-09-14 this file ran its own
+ * blue-tinted greys (`ground #F2F7FE`, `rule #C9DCF3`, …) while `apps/web`
+ * moved to a warm "docket paper" set — see `docs/DESIGN-HANDOFF.md` §4/§5/§12.5.
+ * That was a drift, not a decision: two clients sharing one brand ended up on
+ * two different backgrounds. The values below are the web tokens, byte for
+ * byte, so `ground`/`surface`/`surfaceAlt`/`ink`/`inkMuted`/`inkFaint`/`rule`/
+ * `ruleStrong` (and the soft fills built from them) now read as one palette on
+ * both clients. Only the neutrals moved — the identity colours did not.
  */
 
 export type Scheme = 'light' | 'dark';
@@ -27,55 +33,66 @@ export interface Palette {
   accent: string;
   accentSoft: string;
   accentInk: string;
-  /** Cyan from the teaser's scan line. Capture UI only. */
+  /** Cyan from the teaser's scan line. Capture/extraction UI only. */
   scan: string;
   risk: string;
   riskSoft: string;
   warn: string;
   warnSoft: string;
+  /** Validated, balanced — a positive that is not the brand accent. */
+  good: string;
+  goodSoft: string;
   rule: string;
   ruleStrong: string;
   overlay: string;
 }
 
 const light: Palette = {
-  ground: '#F2F7FE',
-  surface: '#E5EFFC',
-  surfaceAlt: '#D3E4F9',
-  ink: '#0A1A2F',
-  inkMuted: '#4C6280',
-  inkFaint: '#8299B4',
+  // Docket paper — apps/web §4.
+  ground: '#FAF9F7',
+  surface: '#F2F0EC',
+  surfaceAlt: '#E7E4DE',
+  ink: '#14181D',
+  inkMuted: '#5A6068',
+  inkFaint: '#8D9299',
+  // Measured from the launch film — do not change.
   accent: '#1878D8',
-  accentSoft: '#DCEAFB',
+  accentSoft: '#E4EEFA',
   accentInk: '#FFFFFF',
   scan: '#1CA8DB',
   risk: '#C4322A',
-  riskSoft: '#FBE3E1',
+  riskSoft: '#F8E7E5',
   warn: '#95590A',
-  warnSoft: '#FBEFD8',
-  rule: '#C9DCF3',
-  ruleStrong: '#A5C2E4',
-  overlay: 'rgba(7,22,42,0.55)',
+  warnSoft: '#F7EEDC',
+  good: '#1B6E4F',
+  goodSoft: '#E2EFE9',
+  rule: '#E2DFD8',
+  ruleStrong: '#C9C5BC',
+  overlay: 'rgba(20,24,29,0.55)',
 };
 
 const dark: Palette = {
-  ground: '#071527',
-  surface: '#0E2440',
-  surfaceAlt: '#173355',
-  ink: '#E6F0FC',
-  inkMuted: '#9DB6D2',
-  inkFaint: '#6E8BAC',
+  // apps/web §5.
+  ground: '#0E1116',
+  surface: '#161A21',
+  surfaceAlt: '#1F242C',
+  ink: '#EDEBE7',
+  inkMuted: '#9BA1A9',
+  inkFaint: '#6C737C',
+  // Same identity colours as light — measured, not themed.
   accent: '#4DA3F5',
-  accentSoft: '#122A4B',
-  accentInk: '#04101E',
+  accentSoft: '#13243A',
+  accentInk: '#05101E',
   scan: '#3FC6EE',
   risk: '#F08B80',
-  riskSoft: '#331B1A',
+  riskSoft: '#2C1A18',
   warn: '#E5B871',
-  warnSoft: '#2B2214',
-  rule: '#1C3A5E',
-  ruleStrong: '#2F5480',
-  overlay: 'rgba(2,10,22,0.72)',
+  warnSoft: '#2A2114',
+  good: '#6FD3AC',
+  goodSoft: '#11241D',
+  rule: '#262B33',
+  ruleStrong: '#3A414B',
+  overlay: 'rgba(6,8,9,0.72)',
 };
 
 export const palettes: Record<Scheme, Palette> = { light, dark };
