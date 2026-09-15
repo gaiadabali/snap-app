@@ -16,6 +16,7 @@ and an earlier draft of this file collided with it.
 | **D31** | Advertising | **House ads now, one vetted partner later, always self-served** | No third-party SDK next to financial records. |
 | **D32** | Identity | **One ecosystem account** — register in any app, sign in to all | The "Gaiada Account". Resolves open question O2. |
 | **D33** | Consumer economy | **Credits (money, tenant-scoped) + points (earned, user-scoped)** | Two mechanisms because they answer different questions and travel differently. |
+| **D34** | Business surfaces | **Dark behind a flag, not deleted** | Personal-only so it can be designed properly. Reversible in one line — but it hides the revenue line, so the trade is recorded below. |
 
 ---
 
@@ -198,3 +199,36 @@ checkout exists.
 **Not decided:** which on-device model, and whether the redemption side of
 points lives here or in yourtal. Redemption writes a negative entry; nothing in
 this schema assumes which app does it.
+
+---
+
+## D34 — Business is dark, and that hides the revenue line
+
+`BUSINESS_SURFACES_ENABLED = false` in `apps/web/src/lib/features.ts` (and its
+mobile counterpart) hides every business and practice surface so the personal
+experience can be designed on its own.
+
+**A flag, not commented-out code.** Commented blocks stop being typechecked,
+stop being refactored with everything around them, and rot silently. Everything
+stays compiled and one line restores it.
+
+**What a visitor no longer sees, stated plainly because it matters.**
+`docs/MONETISATION.md` §3 is explicit that Practice at **$19/client/month is
+the primary revenue line** and the direct/sole-trader tier is the funnel
+beneath it. With the flag off the marketing site sells **only the funnel**: no
+practice door in the hero, no Practice or Practice Plus pricing, no practices
+footer column, no practice FAQ. A visitor never learns the accounting-practice
+channel exists.
+
+That is a deliberate instruction and it is fully reversible. It is recorded
+here rather than left in a chat log because **an investor shown this site is
+being shown the funnel, not the business** — and whoever prepares that
+conversation needs to know it.
+
+**The edge case that was most likely to break, and was handled:** a user whose
+only workspace is a business. They get a dedicated screen explaining the
+surfaces are off, that nothing in their books has changed, and an offer to
+create a personal workspace — not a crash, an empty dashboard, or a redirect
+loop. Staff impersonating a business tenant keep the impersonation banner
+instead of being redirected into a 404, which would have silently dropped it
+and violated `docs/WEB.md` §6 rule 4.
