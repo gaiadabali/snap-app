@@ -267,6 +267,45 @@ reduced **from reading to pointing.**
 - **Why it matters:** it converts the model's failure mode from *invent a number* into *point at
   the wrong span*, which is checkable because every answer now has coordinates.
 
+> **Built and MEASURED 2026-09-16. Verdict: do not adopt as the default yet.**
+> `apps/server/src/extraction/grounded.ts` + `grounded-prompt.ts`, scored by
+> `bench/pointing_score.py` against the free-reading run on the same 24 documents
+> (`bench/results/pointing/sample.json`). Tier S+P, internal only.
+>
+> | engine | path | correct | WRONG | MISS | HALLUC |
+> |---|---|---|---|---|---|
+> | gemma4:31b | free-reading | 86 | 2 | 8 | 0 |
+> | gemma4:31b | **pointing** | 85 | 3 | 8 | **0** |
+> | minimax-m3 | free-reading | 87 | 1 | 5 | 0 |
+> | minimax-m3 | **pointing** | 69 | 2 | 25 | **0** |
+>
+> **The guarantee holds and buys nothing measurable here.** Zero hallucinated
+> fields and zero invented span ids across both models — but free reading also
+> scored zero hallucinations on this sample, so the thing C1 makes impossible is
+> something the baseline did not do anyway. A structural guarantee is still worth
+> more than an observed zero, because it holds on documents nobody has seen; it
+> is just not worth what it costs on *these* documents.
+>
+> **The cost is real and model-specific.** gemma4 is a wash (86→85 correct).
+> minimax-m3 falls off a cliff (87→69), almost entirely into MISS: it declines to
+> point far more readily than it declines to read. That is a model-selection
+> signal, not a verdict on the approach — and it is the inverse of the
+> free-reading run, where minimax guessed more and gemma4 abstained more.
+>
+> **What would change the answer**, in order of how much:
+> 1. **A case where free reading actually fabricates.** B2 predicted fabrication
+>    and none appeared, so the failure C1 prevents remains untested outside the
+>    Phase 0 gate document. Until one is observed, C1 is insurance against a
+>    hazard we have not seen priced.
+> 2. **Tier R.** Real Australian paper cuts both ways — the OCR misses more
+>    (hurting pointing) and the model has more to invent on (helping it).
+> 3. **C3's routing.** Pointing only ever sees what the recogniser found, so it
+>    inherits detection recall directly. A2/A4 lifting recall lifts this.
+>
+> Kept built and **unwired** rather than discarded: the measurement is cheap to
+> repeat, and the code is where the argument can be settled rather than
+> re-litigated.
+
 ### C2 — No span means null
 
 - **Do:** a field with no supporting span is `null`. **Not low-confidence — null** (D16).

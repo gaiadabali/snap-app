@@ -8,9 +8,9 @@
       "MISS": 1
     },
     "hosted:gemma4:31b|total_inclusive": {
-      "NORMALISED": 17,
+      "NORMALISED": 18,
       "WRONG": 3,
-      "EXACT": 3,
+      "EXACT": 2,
       "MISS": 1
     },
     "hosted:gemma4:31b|gst_amount": {
@@ -25,34 +25,33 @@
       "EXACT": 1
     },
     "hosted:gemma4:31b|issue_date": {
-      "WRONG": 11,
+      "EXACT": 11,
       "MISS": 1
     },
     "hosted:minimax-m3|supplier_abn": {
       "ABSTAIN_OK": 18,
-      "MISS": 4,
-      "EXACT": 2
+      "EXACT": 3,
+      "MISS": 3
     },
     "hosted:minimax-m3|total_inclusive": {
-      "MISS": 9,
-      "NORMALISED": 11,
+      "NORMALISED": 13,
       "WRONG": 2,
+      "MISS": 7,
       "EXACT": 2
     },
     "hosted:minimax-m3|gst_amount": {
-      "MISS": 9,
-      "WRONG": 1,
-      "NORMALISED": 2,
+      "NORMALISED": 3,
+      "MISS": 8,
       "ABSTAIN_OK": 10,
-      "EXACT": 2
+      "EXACT": 3
     },
     "hosted:minimax-m3|supplier_name": {
-      "NORMALISED": 7,
-      "MISS": 4,
+      "NORMALISED": 8,
+      "MISS": 3,
       "EXACT": 1
     },
     "hosted:minimax-m3|issue_date": {
-      "WRONG": 8,
+      "EXACT": 8,
       "MISS": 4
     }
   },
@@ -201,7 +200,7 @@
       "got": {
         "supplier_name": "THE LITTLE FOOD TRUCK",
         "supplier_abn": null,
-        "issue_date": "22 / 08 / 2026",
+        "issue_date": "2026-08-22",
         "total_inclusive": "$ 23.00",
         "gst_amount": null
       }
@@ -214,7 +213,7 @@
       "got": {
         "supplier_name": "RIVERTON FRESH MARKET",
         "supplier_abn": "08293882425",
-        "issue_date": "19 / 12 / 2025",
+        "issue_date": "2025-12-19",
         "total_inclusive": "$ 44.78",
         "gst_amount": "1.75"
       }
@@ -227,7 +226,7 @@
       "got": {
         "supplier_name": "RIVERBANK SNACK TRAILER",
         "supplier_abn": null,
-        "issue_date": "18 / 09 / 2026",
+        "issue_date": "2026-09-18",
         "total_inclusive": "$ 16.50",
         "gst_amount": null
       }
@@ -240,7 +239,7 @@
       "got": {
         "supplier_name": "KALINDA GROCERS",
         "supplier_abn": "76672752465",
-        "issue_date": "04 / 08 / 2026",
+        "issue_date": "2026-08-04",
         "total_inclusive": "$ 51.28",
         "gst_amount": "2.73"
       }
@@ -253,8 +252,8 @@
       "got": {
         "supplier_name": "RIVERBANK SNACK TRAILER",
         "supplier_abn": null,
-        "issue_date": "04 / 01 / 2026",
-        "total_inclusive": "13.90",
+        "issue_date": "2026-01-04",
+        "total_inclusive": "$ 13.90",
         "gst_amount": null
       }
     },
@@ -266,7 +265,7 @@
       "got": {
         "supplier_name": "THE SIDINGS CAFE",
         "supplier_abn": "26547496341",
-        "issue_date": "31 / 08 / 2026",
+        "issue_date": "2026-08-31",
         "total_inclusive": "$ 21.50",
         "gst_amount": "1.95"
       }
@@ -279,7 +278,7 @@
       "got": {
         "supplier_name": "ROADSIDE COFFEE VAN",
         "supplier_abn": null,
-        "issue_date": "06 / 09 / 26",
+        "issue_date": "2026-09-06",
         "total_inclusive": "8.50",
         "gst_amount": null
       }
@@ -305,7 +304,7 @@
       "got": {
         "supplier_name": "RIVERBANK SNACK TRAILER",
         "supplier_abn": null,
-        "issue_date": "07 / 09 / 2026",
+        "issue_date": "2026-09-07",
         "total_inclusive": "$ 11.70",
         "gst_amount": null
       }
@@ -318,7 +317,7 @@
       "got": {
         "supplier_name": "RIVERGUM COFFEE HOUSE",
         "supplier_abn": "51314757397",
-        "issue_date": "12 / 02 / 2026",
+        "issue_date": "2026-02-12",
         "total_inclusive": "$ 29.90",
         "gst_amount": "2.72"
       }
@@ -331,7 +330,7 @@
       "got": {
         "supplier_name": "ROADSIDE COFFEE VAN",
         "supplier_abn": null,
-        "issue_date": "25 / 01 / 2026",
+        "issue_date": "2026-01-25",
         "total_inclusive": "$ 23.70",
         "gst_amount": null
       }
@@ -344,7 +343,7 @@
       "got": {
         "supplier_name": "Cavanagh Transport Pty Ltd",
         "supplier_abn": "82926267200",
-        "issue_date": "07 / 07 / 2026",
+        "issue_date": "2026-07-07",
         "total_inclusive": "$ 5 , 527.50",
         "gst_amount": "502.50"
       }
@@ -356,8 +355,8 @@
       "unknownSpans": [],
       "got": {
         "supplier_abn": null,
-        "total_inclusive": null,
-        "gst_amount": null
+        "total_inclusive": "282 , 000",
+        "gst_amount": "25 , 637"
       }
     },
     {
@@ -368,7 +367,7 @@
       "got": {
         "supplier_abn": null,
         "total_inclusive": "16 , 500",
-        "gst_amount": null
+        "gst_amount": "1.500"
       }
     },
     {
@@ -378,7 +377,7 @@
       "unknownSpans": [],
       "got": {
         "supplier_abn": null,
-        "total_inclusive": null,
+        "total_inclusive": "113.886",
         "gst_amount": null
       }
     },
@@ -390,7 +389,7 @@
       "got": {
         "supplier_abn": null,
         "total_inclusive": "40.690",
-        "gst_amount": "10.0007"
+        "gst_amount": null
       }
     },
     {
@@ -455,8 +454,8 @@
       "unknownSpans": [],
       "got": {
         "supplier_abn": null,
-        "total_inclusive": "145 , 900",
-        "gst_amount": "13 , 264"
+        "total_inclusive": null,
+        "gst_amount": null
       }
     },
     {
@@ -489,7 +488,7 @@
       "got": {
         "supplier_name": "THE LITTLE FOOD TRUCK",
         "supplier_abn": null,
-        "issue_date": "22 / 08 / 2026",
+        "issue_date": "2026-08-22",
         "total_inclusive": "$ 23.00",
         "gst_amount": null
       }
@@ -500,11 +499,11 @@
       "groundedRate": 1,
       "unknownSpans": [],
       "got": {
-        "supplier_name": null,
-        "supplier_abn": null,
-        "issue_date": null,
-        "total_inclusive": null,
-        "gst_amount": null
+        "supplier_name": "RIVERTON FRESH MARKET",
+        "supplier_abn": "08293882425",
+        "issue_date": "2025-12-19",
+        "total_inclusive": "$ 44.78",
+        "gst_amount": "1.75"
       }
     },
     {
@@ -515,7 +514,7 @@
       "got": {
         "supplier_name": "RIVERBANK SNACK TRAILER",
         "supplier_abn": null,
-        "issue_date": "18 / 09 / 2026",
+        "issue_date": "2026-09-18",
         "total_inclusive": "$ 16.50",
         "gst_amount": null
       }
@@ -541,7 +540,7 @@
       "got": {
         "supplier_name": "RIVERBANK SNACK TRAILER",
         "supplier_abn": null,
-        "issue_date": "04 / 01 / 2026",
+        "issue_date": "2026-01-04",
         "total_inclusive": "$ 13.90",
         "gst_amount": null
       }
@@ -554,7 +553,7 @@
       "got": {
         "supplier_name": "THE SIDINGS CAFE",
         "supplier_abn": "26547496341",
-        "issue_date": "31 / 08 / 2026",
+        "issue_date": "2026-08-31",
         "total_inclusive": "$ 21.50",
         "gst_amount": "1.95"
       }
@@ -567,7 +566,7 @@
       "got": {
         "supplier_name": "ROADSIDE COFFEE VAN",
         "supplier_abn": null,
-        "issue_date": "06 / 09 / 26 06 : 14",
+        "issue_date": null,
         "total_inclusive": "8.50",
         "gst_amount": null
       }
@@ -593,7 +592,7 @@
       "got": {
         "supplier_name": "RIVERBANK SNACK TRAILER",
         "supplier_abn": null,
-        "issue_date": "07 / 09 / 2026",
+        "issue_date": "2026-09-07",
         "total_inclusive": "$ 11.70",
         "gst_amount": null
       }
@@ -619,7 +618,7 @@
       "got": {
         "supplier_name": "ROADSIDE COFFEE VAN",
         "supplier_abn": null,
-        "issue_date": "25 / 01 / 2026",
+        "issue_date": "2026-01-25",
         "total_inclusive": "$ 23.70",
         "gst_amount": null
       }
@@ -632,7 +631,7 @@
       "got": {
         "supplier_name": "Cavanagh Transport Pty Ltd",
         "supplier_abn": "82926267200",
-        "issue_date": "07 / 07 / 2026",
+        "issue_date": "2026-07-07",
         "total_inclusive": "$ 5 , 527.50",
         "gst_amount": "502.50"
       }
