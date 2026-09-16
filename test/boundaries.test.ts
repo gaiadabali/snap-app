@@ -34,7 +34,17 @@ const FORBIDDEN_FOR_MOBILE = FORBIDDEN_FOR_CLIENTS;
  */
 const CLIENTS = ['@snap/mobile', '@snap/web'];
 /** The only workspace package mobile may use: types, zero runtime weight. */
-const ALLOWED_FOR_MOBILE = ['@snap/api-contract'];
+// The mobile app may depend on these and nothing else.
+//
+// `@snap/docai-preview` is the named exception docs/ON-DEVICE.md OD-4 asks for,
+// and the reason it is safe is the reason it was allowed: it is pure TypeScript
+// with ZERO runtime dependencies, types only from api-contract. The rule exists
+// to keep pdfjs, an engine registry and a reading pipeline out of the phone —
+// not to keep out a few hundred lines that turn boxes into fields.
+//
+// The assertion below that it has no runtime deps is what keeps that true. If
+// it ever grows one, this exception stops being justified and the test says so.
+const ALLOWED_FOR_MOBILE = ['@snap/api-contract', '@snap/docai-preview'];
 
 type Pkg = {
   name?: string;
@@ -63,6 +73,7 @@ const WORKSPACE_DIRS = [
   // api-contract when the DocDOM types moved there, and a package outside this
   // list can acquire any dependency at all without anything noticing.
   'packages/docai',
+  'packages/docai-preview',
   'packages/tax-engine',
 ];
 
@@ -166,6 +177,23 @@ describe('workspace boundaries', () => {
       );
       expect(external, `${entry} imports from outside api-contract: ${external.join(', ')}`)
         .toEqual([]);
+    }
+  });
+
+  it('docai-preview carries no runtime weight, which is why mobile may have it', () => {
+    // The exception in ALLOWED_FOR_MOBILE is justified by exactly one fact: this
+    // package is pure TypeScript with no runtime dependency except the
+    // types-only contract. docs/ON-DEVICE.md OD-4 asks for the exception to be
+    // NAMED and for the reason to stay checkable rather than remembered.
+    const pkg = readPkg('packages/docai-preview');
+    expect(Object.keys(pkg?.dependencies ?? {})).toEqual(['@snap/api-contract']);
+
+    // And it must not reach the heavy packages even transitively — docai drags
+    // pdfjs and a reading pipeline, db drags a driver, tax-engine drags the
+    // deduction tables. Any of those on the phone defeats the whole rule.
+    const reachable = closure('@snap/docai-preview');
+    for (const forbidden of ['@snap/db', '@snap/docai', '@snap/tax-engine', '@snap/server']) {
+      expect(reachable.has(forbidden), `docai-preview must not reach ${forbidden}`).toBe(false);
     }
   });
 

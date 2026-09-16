@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "main": "expo-router/entry",
-  "description": "Expo React Native client. Thin by design: capture, review, and read. It may depend on @snap/api-contract (types only) and NOTHING else from this workspace — enforced by test/boundaries.test.ts.",
+  "description": "Expo React Native client. Thin by design: capture, review, and read. It may depend on @snap/api-contract (types only) and NOTHING else from this workspace \u2014 enforced by test/boundaries.test.ts.",
   "scripts": {
     "start": "expo start",
     "android": "expo run:android",
@@ -17,6 +17,7 @@
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",
     "@snap/api-contract": "workspace:*",
+    "@snap/docai-preview": "workspace:*",
     "expo": "~57.0.22",
     "expo-camera": "~57.0.5",
     "expo-constants": "~57.0.18",

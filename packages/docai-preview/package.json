@@ -1,0 +1,26 @@
+{
+  "name": "@snap/docai-preview",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Deterministic header-field structuring over DocDOM spans. No model, no network, zero runtime dependencies — the on-device preview's brain, and the server's second opinion.",
+  "license": "UNLICENSED",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "types": "./src/index.ts",
+  "sideEffects": false,
+  "files": ["src", "README.md"],
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@snap/api-contract": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.43",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.9"
+  }
+}

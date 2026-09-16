@@ -663,14 +663,26 @@ on the printed digits on both platforms; `npx expo prebuild` passes on both plat
 web still capture with the module absent; `pnpm -r typecheck` clean.
 *Depends on:* two floor devices.
 
-**OD-2 · DocDOM wire types into `@snap/api-contract`; docai re-exports** — `medior` · default.
+**OD-2 · DocDOM wire types into `@snap/api-contract`; docai re-exports** — ~~`medior` · default~~
+**DONE 2026-09-16.** One declaration of `Document` in the workspace, asserted by a new boundary
+test. Adding that test surfaced that `packages/docai` was missing from `WORKSPACE_DIRS`
+entirely, so no boundary rule had ever covered it — and the meta-test meant to catch that
+compared the list against a SECOND hardcoded list, both missing it. It now derives from the
+filesystem.
 *Do:* `packages/api-contract/src/docdom.ts` with the types from `packages/docai/src/docdom.ts`
 verbatim (no functions, no imports); docai re-exports the types and keeps `spansOf`, `spanIndex`,
 `unionBox`, `weakest`; `packages/docai/package.json` gains `@snap/api-contract`.
 *Done when:* `test/boundaries.test.ts` "api-contract imports nothing" still passes, all docai tests
 pass unchanged, one declaration of `Document` exists in the workspace.
 
-**OD-3 · `@snap/docai-preview` — the deterministic structurer** — `medior` · default.
+**OD-3 · `@snap/docai-preview` — the deterministic structurer** — ~~`medior` · default~~
+**DONE 2026-09-16.** `packages/docai-preview`, zero runtime dependencies, 24 tests. Every
+header rule from §3.4 implemented and pinned, and most of the tests pin an ABSTENTION: no
+"largest number on the page" fallback for the total, GST never computed as one eleventh when
+the paper does not print it, an ABN that fails mod-89 unrepresentable rather than filtered,
+day/month ambiguity flagged rather than resolved. `ALLOWED_FOR_MOBILE` gains it with the
+reason, and a boundary test asserts it has no runtime deps and cannot reach db / docai /
+tax-engine — verified by adding one and watching it fail.
 *Do:* new package, zero runtime dependencies; `structure(doc: Document): Record<path, GroundedField>`
 per §3.4; move `grounding.ts`'s `normalise` and `dateRenderings` here and re-export from docai;
 engine declarations per §3.6.
@@ -680,7 +692,10 @@ and GST; a test proves an ABN failing mod-89 comes back null; a test proves `tax
 emitted when not printed; `violatesLicenceFloor(deviceEngineSpecs)` returns `[]`.
 *Depends on:* OD-2.
 
-**OD-4 · Boundaries and licence-floor amendments** — `junior` · default.
+**OD-4 · Boundaries and licence-floor amendments** — ~~`junior` · default~~
+**Partly done 2026-09-16.** `ALLOWED_FOR_MOBILE`, `WORKSPACE_DIRS` and the no-runtime-deps
+assertion are in. The licence-floor run over the device engine declarations waits on OD-1,
+since there are no device engine specs to check until the native module declares them.
 *Do:* `ALLOWED_FOR_MOBILE` gains `@snap/docai-preview` with the reason in the comment; new
 assertions: `@snap/docai-preview` has no runtime deps and cannot reach `@snap/db`, `@snap/tax-engine`
 or `@snap/docai`; `WORKSPACE_DIRS` updated; a workspace test runs `violatesLicenceFloor` over the
