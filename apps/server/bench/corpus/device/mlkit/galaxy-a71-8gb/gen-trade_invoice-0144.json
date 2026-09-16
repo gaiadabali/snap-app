@@ -1,0 +1,3276 @@
+{
+  "version": "1.0.0",
+  "pages": [
+    {
+      "number": 1,
+      "width": 1439,
+      "height": 2313,
+      "source": "camera",
+      "restoration": [
+        "downscale"
+      ]
+    }
+  ],
+  "blocks": [
+    {
+      "id": "blk-p1-0",
+      "kind": "unknown",
+      "page": 1,
+      "order": 0,
+      "box": {
+        "x": 80.05563735961914,
+        "y": 174.0752534866333,
+        "width": 1264.8790702819824,
+        "height": 1976.8546028137207
+      },
+      "lines": [
+        {
+          "id": "ln-p1-0",
+          "order": 0,
+          "box": {
+            "x": 130.0904107093811,
+            "y": 174.0752534866333,
+            "width": 1210.8415150642395,
+            "height": 44.01902961730957
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l0-w0",
+              "text": "Southern",
+              "box": {
+                "x": 130.0904107093811,
+                "y": 174.0752534866333,
+                "width": 134.09319257736206,
+                "height": 34.01470470428467
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.9022042155265808,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l0-w1",
+              "text": "Cross",
+              "box": {
+                "x": 276.19194889068604,
+                "y": 178.07698345184326,
+                "width": 88.06120109558105,
+                "height": 30.012974739074707
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.9022042155265808,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l0-w2",
+              "text": "Logistics",
+              "box": {
+                "x": 376.26149559020996,
+                "y": 180.07784843444824,
+                "width": 134.09319257736206,
+                "height": 32.01383972167969
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.9022042155265808,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l0-w3",
+              "text": "Pty",
+              "box": {
+                "x": 522.3630337715149,
+                "y": 182.07871341705322,
+                "width": 46.031991481781006,
+                "height": 32.01383972167969
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.9022042155265808,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l0-w4",
+              "text": "Ltd",
+              "box": {
+                "x": 580.4033708572388,
+                "y": 184.0795783996582,
+                "width": 46.031991481781006,
+                "height": 30.012974739074707
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.9022042155265808,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l0-w5",
+              "text": "TAX",
+              "box": {
+                "x": 1148.7983961105347,
+                "y": 196.0847682952881,
+                "width": 52.03616428375244,
+                "height": 20.008649826049805
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.7132812738418579,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l0-w6",
+              "text": "INVOICE",
+              "box": {
+                "x": 1218.8470788002014,
+                "y": 196.0847682952881,
+                "width": 122.08484697341919,
+                "height": 24.010379791259766
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.7132812738418579,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-1",
+          "order": 1,
+          "box": {
+            "x": 126.08762884140015,
+            "y": 224.0968780517578,
+            "width": 282.19612169265747,
+            "height": 22.009514808654785
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l1-w0",
+              "text": "238",
+              "box": {
+                "x": 126.08762884140015,
+                "y": 226.0977430343628,
+                "width": 30.020864009857178,
+                "height": 16.006919860839844
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.7703450322151184,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l1-w1",
+              "text": "Hume",
+              "box": {
+                "x": 162.11266565322876,
+                "y": 226.0977430343628,
+                "width": 50.03477334976196,
+                "height": 16.006919860839844
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.7703450322151184,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l1-w2",
+              "text": "Hwy,",
+              "box": {
+                "x": 218.15161180496216,
+                "y": 226.0977430343628,
+                "width": 38.02642774581909,
+                "height": 18.007784843444824
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.7703450322151184,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l1-w3",
+              "text": "Bunbury",
+              "box": {
+                "x": 260.1808214187622,
+                "y": 226.0977430343628,
+                "width": 72.05007362365723,
+                "height": 18.007784843444824
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.7703450322151184,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l1-w4",
+              "text": "WA",
+              "box": {
+                "x": 338.23506784439087,
+                "y": 228.09860801696777,
+                "width": 28.0194730758667,
+                "height": 16.006919860839844
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.7703450322151184,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l1-w5",
+              "text": "6230",
+              "box": {
+                "x": 370.2573227882385,
+                "y": 228.09860801696777,
+                "width": 38.02642774581909,
+                "height": 18.007784843444824
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.7703450322151184,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-2",
+          "order": 2,
+          "box": {
+            "x": 1148.7983961105347,
+            "y": 238.10293292999268,
+            "width": 114.07928323745728,
+            "height": 16.006919860839844
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l2-w0",
+              "text": "Invoice",
+              "box": {
+                "x": 1148.7983961105347,
+                "y": 238.10293292999268,
+                "width": 58.04033708572388,
+                "height": 16.006919860839844
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.7750651240348816,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l2-w1",
+              "text": "49686",
+              "box": {
+                "x": 1212.84290599823,
+                "y": 238.10293292999268,
+                "width": 50.03477334976196,
+                "height": 16.006919860839844
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.7750651240348816,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-3",
+          "order": 3,
+          "box": {
+            "x": 128.08901977539062,
+            "y": 256.1107177734375,
+            "width": 1170.81369638443,
+            "height": 28.012109756469727
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l3-w0",
+              "text": "ABN",
+              "box": {
+                "x": 128.08901977539062,
+                "y": 256.1107177734375,
+                "width": 40.02781867980957,
+                "height": 18.007784843444824
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.828125,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l3-w1",
+              "text": "47377474951",
+              "box": {
+                "x": 172.11962032318115,
+                "y": 256.1107177734375,
+                "width": 110.07650136947632,
+                "height": 18.007784843444824
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.828125,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l3-w2",
+              "text": "Issued",
+              "box": {
+                "x": 1146.7970051765442,
+                "y": 262.11331272125244,
+                "width": 54.03755521774292,
+                "height": 20.008649826049805
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.7041015625,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l3-w3",
+              "text": "17I04/2026",
+              "box": {
+                "x": 1206.8387331962585,
+                "y": 264.1141777038574,
+                "width": 92.06398296356201,
+                "height": 22.009514808654785
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.7041015625,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-4",
+          "order": 4,
+          "box": {
+            "x": 126.08762884140015,
+            "y": 328.1418571472168,
+            "width": 130.0904107093811,
+            "height": 16.006919860839844
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l4-w0",
+              "text": "DE",
+              "box": {
+                "x": 126.08762884140015,
+                "y": 328.1418571472168,
+                "width": 24.016691207885742,
+                "height": 16.006919860839844
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8135653138160706,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l4-w1",
+              "text": "SCRIPTION",
+              "box": {
+                "x": 154.10710191726685,
+                "y": 328.1418571472168,
+                "width": 102.0709376335144,
+                "height": 16.006919860839844
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8135653138160706,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-5",
+          "order": 5,
+          "box": {
+            "x": 1198.8331694602966,
+            "y": 346.1496419906616,
+            "width": 142.09875631332397,
+            "height": 20.008649826049805
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l5-w0",
+              "text": "AMOUNT",
+              "box": {
+                "x": 1198.8331694602966,
+                "y": 346.1496419906616,
+                "width": 82.05702829360962,
+                "height": 18.007784843444824
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.7414772510528564,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l5-w1",
+              "text": "(AUD)",
+              "box": {
+                "x": 1288.8957614898682,
+                "y": 350.1513719558716,
+                "width": 52.03616428375244,
+                "height": 18.007784843444824
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.7414772510528564,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-6",
+          "order": 6,
+          "box": {
+            "x": 124.08623790740967,
+            "y": 370.1600217819214,
+            "width": 120.08345603942871,
+            "height": 28.012109756469727
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l6-w0",
+              "text": "Fuel",
+              "box": {
+                "x": 124.08623790740967,
+                "y": 370.1600217819214,
+                "width": 38.02642774581909,
+                "height": 24.010379791259766
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.7578125,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l6-w1",
+              "text": "levy",
+              "box": {
+                "x": 168.1168384552002,
+                "y": 374.16175174713135,
+                "width": 36.02503681182861,
+                "height": 22.009514808654785
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.7578125,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l6-w2",
+              "text": "(01)",
+              "box": {
+                "x": 210.14604806900024,
+                "y": 376.1626167297363,
+                "width": 34.023645877838135,
+                "height": 24.010379791259766
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.7578125,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-7",
+          "order": 7,
+          "box": {
+            "x": 1294.8999342918396,
+            "y": 400.1729965209961,
+            "width": 50.03477334976196,
+            "height": 16.006919860839844
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l7-w0",
+              "text": "76",
+              "box": {
+                "x": 1294.8999342918396,
+                "y": 400.1729965209961,
+                "width": 22.015300273895264,
+                "height": 16.006919860839844
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8798828125,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l7-w1",
+              "text": "50",
+              "box": {
+                "x": 1324.9207983016968,
+                "y": 400.1729965209961,
+                "width": 20.013909339904785,
+                "height": 16.006919860839844
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8798828125,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-8",
+          "order": 8,
+          "box": {
+            "x": 122.08484697341919,
+            "y": 428.1851062774658,
+            "width": 288.2002944946289,
+            "height": 28.012109756469727
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l8-w0",
+              "text": "Freight",
+              "box": {
+                "x": 122.08484697341919,
+                "y": 428.1851062774658,
+                "width": 66.04590082168579,
+                "height": 20.008649826049805
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.766676664352417,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l8-w1",
+              "text": "Sydney",
+              "box": {
+                "x": 194.13492059707642,
+                "y": 430.1859712600708,
+                "width": 70.04868268966675,
+                "height": 20.008649826049805
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.766676664352417,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l8-w2",
+              "text": "-",
+              "box": {
+                "x": 270.1877760887146,
+                "y": 434.18770122528076,
+                "width": 16.011127471923828,
+                "height": 18.007784843444824
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.766676664352417,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l8-w3",
+              "text": "Brisbane",
+              "box": {
+                "x": 294.20446729660034,
+                "y": 434.18770122528076,
+                "width": 80.05563735961914,
+                "height": 20.008649826049805
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.766676664352417,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l8-w4",
+              "text": "(02)",
+              "box": {
+                "x": 380.2642774581909,
+                "y": 436.18856620788574,
+                "width": 30.020864009857178,
+                "height": 20.008649826049805
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.766676664352417,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-9",
+          "order": 9,
+          "box": {
+            "x": 1282.8915886878967,
+            "y": 456.19721603393555,
+            "width": 62.043118953704834,
+            "height": 18.007784843444824
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l9-w0",
+              "text": "580.00",
+              "box": {
+                "x": 1282.8915886878967,
+                "y": 456.19721603393555,
+                "width": 62.043118953704834,
+                "height": 18.007784843444824
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.81640625,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-10",
+          "order": 10,
+          "box": {
+            "x": 120.08345603942871,
+            "y": 482.2084608078003,
+            "width": 212.14743900299072,
+            "height": 28.012109756469727
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l10-w0",
+              "text": "Depot",
+              "box": {
+                "x": 120.08345603942871,
+                "y": 482.2084608078003,
+                "width": 54.03755521774292,
+                "height": 24.010379791259766
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.854296863079071,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l10-w1",
+              "text": "handling",
+              "box": {
+                "x": 180.12518405914307,
+                "y": 484.2093257904053,
+                "width": 76.05285549163818,
+                "height": 26.011244773864746
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.854296863079071,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l10-w2",
+              "text": "fee",
+              "box": {
+                "x": 262.1822123527527,
+                "y": 486.21019077301025,
+                "width": 28.0194730758667,
+                "height": 24.010379791259766
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.854296863079071,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l10-w3",
+              "text": "(03)",
+              "box": {
+                "x": 296.2058582305908,
+                "y": 488.21105575561523,
+                "width": 36.02503681182861,
+                "height": 22.009514808654785
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.854296863079071,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-11",
+          "order": 11,
+          "box": {
+            "x": 1286.8943705558777,
+            "y": 512.221435546875,
+            "width": 56.0389461517334,
+            "height": 16.006919860839844
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l11-w0",
+              "text": "110.00",
+              "box": {
+                "x": 1286.8943705558777,
+                "y": 512.221435546875,
+                "width": 56.0389461517334,
+                "height": 16.006919860839844
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8326823115348816,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-12",
+          "order": 12,
+          "box": {
+            "x": 118.08206510543823,
+            "y": 540.2335453033447,
+            "width": 168.1168384552002,
+            "height": 22.009514808654785
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l12-w0",
+              "text": "Tail-ift",
+              "box": {
+                "x": 118.08206510543823,
+                "y": 540.2335453033447,
+                "width": 58.04033708572388,
+                "height": 20.008649826049805
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.6916118264198303,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l12-w1",
+              "text": "service",
+              "box": {
+                "x": 182.12657499313354,
+                "y": 542.2344102859497,
+                "width": 64.04450988769531,
+                "height": 20.008649826049805
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.6916118264198303,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l12-w2",
+              "text": "(04)",
+              "box": {
+                "x": 250.17386674880981,
+                "y": 544.2352752685547,
+                "width": 36.02503681182861,
+                "height": 18.007784843444824
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.6916118264198303,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-13",
+          "order": 13,
+          "box": {
+            "x": 1292.8985433578491,
+            "y": 568.2456550598145,
+            "width": 50.03477334976196,
+            "height": 16.006919860839844
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l13-w0",
+              "text": "65.00",
+              "box": {
+                "x": 1292.8985433578491,
+                "y": 568.2456550598145,
+                "width": 50.03477334976196,
+                "height": 16.006919860839844
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.875,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-14",
+          "order": 14,
+          "box": {
+            "x": 116.08067417144775,
+            "y": 596.2577648162842,
+            "width": 178.1237931251526,
+            "height": 24.010379791259766
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l14-w0",
+              "text": "Re-delivery",
+              "box": {
+                "x": 116.08067417144775,
+                "y": 596.2577648162842,
+                "width": 100.06954669952393,
+                "height": 24.010379791259766
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8107638955116272,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l14-w1",
+              "text": "fee",
+              "box": {
+                "x": 224.1557846069336,
+                "y": 600.2594947814941,
+                "width": 28.0194730758667,
+                "height": 20.008649826049805
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8107638955116272,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l14-w2",
+              "text": "(05)",
+              "box": {
+                "x": 260.1808214187622,
+                "y": 600.2594947814941,
+                "width": 34.023645877838135,
+                "height": 20.008649826049805
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8107638955116272,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-15",
+          "order": 15,
+          "box": {
+            "x": 1292.8985433578491,
+            "y": 624.2698745727539,
+            "width": 50.03477334976196,
+            "height": 16.006919860839844
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l15-w0",
+              "text": "95.00",
+              "box": {
+                "x": 1292.8985433578491,
+                "y": 624.2698745727539,
+                "width": 50.03477334976196,
+                "height": 16.006919860839844
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8515625,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-16",
+          "order": 16,
+          "box": {
+            "x": 116.08067417144775,
+            "y": 650.2811193466187,
+            "width": 210.14604806900024,
+            "height": 28.012109756469727
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l16-w0",
+              "text": "Depot",
+              "box": {
+                "x": 116.08067417144775,
+                "y": 650.2811193466187,
+                "width": 54.03755521774292,
+                "height": 22.009514808654785
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.846875011920929,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l16-w1",
+              "text": "handling",
+              "box": {
+                "x": 176.1224021911621,
+                "y": 652.2819843292236,
+                "width": 76.05285549163818,
+                "height": 24.010379791259766
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.846875011920929,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l16-w2",
+              "text": "fee",
+              "box": {
+                "x": 258.17943048477173,
+                "y": 656.2837142944336,
+                "width": 28.0194730758667,
+                "height": 20.008649826049805
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.846875011920929,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l16-w3",
+              "text": "(06)",
+              "box": {
+                "x": 292.20307636260986,
+                "y": 656.2837142944336,
+                "width": 34.023645877838135,
+                "height": 22.009514808654785
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.846875011920929,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-17",
+          "order": 17,
+          "box": {
+            "x": 1282.8915886878967,
+            "y": 678.2932291030884,
+            "width": 60.041728019714355,
+            "height": 18.007784843444824
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l17-w0",
+              "text": "110.00",
+              "box": {
+                "x": 1282.8915886878967,
+                "y": 678.2932291030884,
+                "width": 60.041728019714355,
+                "height": 18.007784843444824
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.767578125,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-18",
+          "order": 18,
+          "box": {
+            "x": 112.0778923034668,
+            "y": 706.3053388595581,
+            "width": 238.16552114486694,
+            "height": 28.012109756469727
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l18-w0",
+              "text": "After-hours",
+              "box": {
+                "x": 112.0778923034668,
+                "y": 706.3053388595581,
+                "width": 102.0709376335144,
+                "height": 24.010379791259766
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8321940302848816,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l18-w1",
+              "text": "surcharge",
+              "box": {
+                "x": 220.15300273895264,
+                "y": 710.3070688247681,
+                "width": 90.06259202957153,
+                "height": 22.009514808654785
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8321940302848816,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l18-w2",
+              "text": "(07)",
+              "box": {
+                "x": 316.2197675704956,
+                "y": 712.307933807373,
+                "width": 34.023645877838135,
+                "height": 22.009514808654785
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8321940302848816,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-19",
+          "order": 19,
+          "box": {
+            "x": 1280.8901977539062,
+            "y": 734.3174486160278,
+            "width": 60.041728019714355,
+            "height": 18.007784843444824
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l19-w0",
+              "text": "145.00",
+              "box": {
+                "x": 1280.8901977539062,
+                "y": 734.3174486160278,
+                "width": 60.041728019714355,
+                "height": 18.007784843444824
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.87109375,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-20",
+          "order": 20,
+          "box": {
+            "x": 112.0778923034668,
+            "y": 762.3295583724976,
+            "width": 310.21559476852417,
+            "height": 28.012109756469727
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l20-w0",
+              "text": "Freight",
+              "box": {
+                "x": 112.0778923034668,
+                "y": 762.3295583724976,
+                "width": 66.04590082168579,
+                "height": 22.009514808654785
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.819260835647583,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l20-w1",
+              "text": "Meibourne",
+              "box": {
+                "x": 186.1293568611145,
+                "y": 764.3304233551025,
+                "width": 96.06676483154297,
+                "height": 24.010379791259766
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.819260835647583,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l20-w2",
+              "text": "Sydney",
+              "box": {
+                "x": 314.2183766365051,
+                "y": 766.3312883377075,
+                "width": 66.04590082168579,
+                "height": 22.009514808654785
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.819260835647583,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l20-w3",
+              "text": "(08)",
+              "box": {
+                "x": 386.26845026016235,
+                "y": 770.3330183029175,
+                "width": 36.02503681182861,
+                "height": 20.008649826049805
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.819260835647583,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-21",
+          "order": 21,
+          "box": {
+            "x": 1278.8888068199158,
+            "y": 790.3416681289673,
+            "width": 62.043118953704834,
+            "height": 16.006919860839844
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l21-w0",
+              "text": "640.00",
+              "box": {
+                "x": 1278.8888068199158,
+                "y": 790.3416681289673,
+                "width": 62.043118953704834,
+                "height": 16.006919860839844
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.7727864384651184,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-22",
+          "order": 22,
+          "box": {
+            "x": 110.07650136947632,
+            "y": 818.353777885437,
+            "width": 180.12518405914307,
+            "height": 26.011244773864746
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l22-w0",
+              "text": "Re-delivery",
+              "box": {
+                "x": 110.07650136947632,
+                "y": 818.353777885437,
+                "width": 102.0709376335144,
+                "height": 24.010379791259766
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8029513955116272,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l22-w1",
+              "text": "fee",
+              "box": {
+                "x": 220.15300273895264,
+                "y": 822.355507850647,
+                "width": 28.0194730758667,
+                "height": 20.008649826049805
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8029513955116272,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l22-w2",
+              "text": "(09)",
+              "box": {
+                "x": 254.17664861679077,
+                "y": 822.355507850647,
+                "width": 36.02503681182861,
+                "height": 22.009514808654785
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8029513955116272,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-23",
+          "order": 23,
+          "box": {
+            "x": 1290.8971524238586,
+            "y": 846.3658876419067,
+            "width": 48.033382415771484,
+            "height": 18.007784843444824
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l23-w0",
+              "text": "95.00",
+              "box": {
+                "x": 1290.8971524238586,
+                "y": 846.3658876419067,
+                "width": 48.033382415771484,
+                "height": 18.007784843444824
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8382812738418579,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-24",
+          "order": 24,
+          "box": {
+            "x": 108.07511043548584,
+            "y": 876.3788623809814,
+            "width": 296.2058582305908,
+            "height": 26.011244773864746
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l24-w0",
+              "text": "Freight",
+              "box": {
+                "x": 108.07511043548584,
+                "y": 878.3797273635864,
+                "width": 62.043118953704834,
+                "height": 20.008649826049805
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.7919560074806213,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l24-w1",
+              "text": "Sydney",
+              "box": {
+                "x": 184.12796592712402,
+                "y": 878.3797273635864,
+                "width": 64.04450988769531,
+                "height": 22.009514808654785
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.7919560074806213,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l24-w2",
+              "text": "->",
+              "box": {
+                "x": 258.17943048477173,
+                "y": 880.3805923461914,
+                "width": 16.011127471923828,
+                "height": 20.008649826049805
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.7919560074806213,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l24-w3",
+              "text": "Brisbane",
+              "box": {
+                "x": 280.194730758667,
+                "y": 878.3797273635864,
+                "width": 82.05702829360962,
+                "height": 22.009514808654785
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.7919560074806213,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l24-w4",
+              "text": "(10)",
+              "box": {
+                "x": 368.25593185424805,
+                "y": 882.3814573287964,
+                "width": 36.02503681182861,
+                "height": 20.008649826049805
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.7919560074806213,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-25",
+          "order": 25,
+          "box": {
+            "x": 1276.8874158859253,
+            "y": 902.3901071548462,
+            "width": 62.043118953704834,
+            "height": 18.007784843444824
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l25-w0",
+              "text": "580",
+              "box": {
+                "x": 1276.8874158859253,
+                "y": 902.3901071548462,
+                "width": 38.02642774581909,
+                "height": 18.007784843444824
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8531249761581421,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l25-w1",
+              "text": "00",
+              "box": {
+                "x": 1316.9152345657349,
+                "y": 902.3901071548462,
+                "width": 22.015300273895264,
+                "height": 18.007784843444824
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8531249761581421,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-26",
+          "order": 26,
+          "box": {
+            "x": 114.07928323745728,
+            "y": 930.4022169113159,
+            "width": 302.21003103256226,
+            "height": 28.012109756469727
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l26-w0",
+              "text": "Freight",
+              "box": {
+                "x": 114.07928323745728,
+                "y": 932.4030818939209,
+                "width": 58.04033708572388,
+                "height": 22.009514808654785
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8006365895271301,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l26-w1",
+              "text": "Melbourne",
+              "box": {
+                "x": 182.12657499313354,
+                "y": 932.4030818939209,
+                "width": 96.06676483154297,
+                "height": 24.010379791259766
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8006365895271301,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l26-w2",
+              "text": ">",
+              "box": {
+                "x": 284.19751262664795,
+                "y": 934.4039468765259,
+                "width": 18.012518405914307,
+                "height": 22.009514808654785
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8006365895271301,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l26-w3",
+              "text": "Sydney",
+              "box": {
+                "x": 310.21559476852417,
+                "y": 934.4039468765259,
+                "width": 66.04590082168579,
+                "height": 24.010379791259766
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8006365895271301,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l26-w4",
+              "text": "(11)",
+              "box": {
+                "x": 384.2670593261719,
+                "y": 936.4048118591309,
+                "width": 32.022254943847656,
+                "height": 22.009514808654785
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8006365895271301,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-27",
+          "order": 27,
+          "box": {
+            "x": 1276.8874158859253,
+            "y": 958.4143266677856,
+            "width": 62.043118953704834,
+            "height": 18.007784843444824
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l27-w0",
+              "text": "640.00",
+              "box": {
+                "x": 1276.8874158859253,
+                "y": 958.4143266677856,
+                "width": 62.043118953704834,
+                "height": 18.007784843444824
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.7858073115348816,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-28",
+          "order": 28,
+          "box": {
+            "x": 106.07371950149536,
+            "y": 988.4273014068604,
+            "width": 226.15717554092407,
+            "height": 24.010379791259766
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l28-w0",
+              "text": "Insurance",
+              "box": {
+                "x": 106.07371950149536,
+                "y": 988.4273014068604,
+                "width": 90.06259202957153,
+                "height": 20.008649826049805
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8781960010528564,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l28-w1",
+              "text": "surcharge",
+              "box": {
+                "x": 200.13909339904785,
+                "y": 990.4281663894653,
+                "width": 92.06398296356201,
+                "height": 20.008649826049805
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8781960010528564,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l28-w2",
+              "text": "(12)",
+              "box": {
+                "x": 298.2072491645813,
+                "y": 992.4290313720703,
+                "width": 34.023645877838135,
+                "height": 20.008649826049805
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8781960010528564,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-29",
+          "order": 29,
+          "box": {
+            "x": 1286.8943705558777,
+            "y": 1016.4394111633301,
+            "width": 52.03616428375244,
+            "height": 16.006919860839844
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l29-w0",
+              "text": "42.50",
+              "box": {
+                "x": 1286.8943705558777,
+                "y": 1016.4394111633301,
+                "width": 52.03616428375244,
+                "height": 16.006919860839844
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.800000011920929,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-30",
+          "order": 30,
+          "box": {
+            "x": 104.07232856750488,
+            "y": 1044.4515209197998,
+            "width": 228.15856647491455,
+            "height": 24.010379791259766
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l30-w0",
+              "text": "Insurance",
+              "box": {
+                "x": 104.07232856750488,
+                "y": 1044.4515209197998,
+                "width": 90.06259202957153,
+                "height": 22.009514808654785
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.873046875,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l30-w1",
+              "text": "surcharge",
+              "box": {
+                "x": 200.13909339904785,
+                "y": 1046.4523859024048,
+                "width": 90.06259202957153,
+                "height": 22.009514808654785
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.873046875,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l30-w2",
+              "text": "(13)",
+              "box": {
+                "x": 296.2058582305908,
+                "y": 1048.4532508850098,
+                "width": 36.02503681182861,
+                "height": 20.008649826049805
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.873046875,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-31",
+          "order": 31,
+          "box": {
+            "x": 1286.8943705558777,
+            "y": 1072.4636306762695,
+            "width": 50.03477334976196,
+            "height": 16.006919860839844
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l31-w0",
+              "text": "42",
+              "box": {
+                "x": 1286.8943705558777,
+                "y": 1072.4636306762695,
+                "width": 22.015300273895264,
+                "height": 16.006919860839844
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8955078125,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l31-w1",
+              "text": "50",
+              "box": {
+                "x": 1316.9152345657349,
+                "y": 1072.4636306762695,
+                "width": 20.013909339904785,
+                "height": 16.006919860839844
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8955078125,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-32",
+          "order": 32,
+          "box": {
+            "x": 102.0709376335144,
+            "y": 1098.4748754501343,
+            "width": 222.15439367294312,
+            "height": 30.012974739074707
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l32-w0",
+              "text": "Insurance",
+              "box": {
+                "x": 102.0709376335144,
+                "y": 1098.4748754501343,
+                "width": 90.06259202957153,
+                "height": 26.011244773864746
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8510298132896423,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l32-w1",
+              "text": "surcharge",
+              "box": {
+                "x": 198.13770246505737,
+                "y": 1100.4757404327393,
+                "width": 90.06259202957153,
+                "height": 26.011244773864746
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8510298132896423,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l32-w2",
+              "text": "(14)",
+              "box": {
+                "x": 300.2086400985718,
+                "y": 1104.4774703979492,
+                "width": 24.016691207885742,
+                "height": 24.010379791259766
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8510298132896423,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-33",
+          "order": 33,
+          "box": {
+            "x": 1286.8943705558777,
+            "y": 1128.487850189209,
+            "width": 50.03477334976196,
+            "height": 16.006919860839844
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l33-w0",
+              "text": "42",
+              "box": {
+                "x": 1286.8943705558777,
+                "y": 1128.487850189209,
+                "width": 22.015300273895264,
+                "height": 16.006919860839844
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.9150390625,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l33-w1",
+              "text": "50",
+              "box": {
+                "x": 1314.9138436317444,
+                "y": 1128.487850189209,
+                "width": 22.015300273895264,
+                "height": 16.006919860839844
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.9150390625,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-34",
+          "order": 34,
+          "box": {
+            "x": 100.06954669952393,
+            "y": 1156.4999599456787,
+            "width": 298.2072491645813,
+            "height": 30.012974739074707
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l34-w0",
+              "text": "Freight",
+              "box": {
+                "x": 100.06954669952393,
+                "y": 1156.4999599456787,
+                "width": 68.04729175567627,
+                "height": 24.010379791259766
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8071469664573669,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l34-w1",
+              "text": "Sydney",
+              "box": {
+                "x": 176.1224021911621,
+                "y": 1158.5008249282837,
+                "width": 66.04590082168579,
+                "height": 24.010379791259766
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8071469664573669,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l34-w2",
+              "text": "->",
+              "box": {
+                "x": 250.17386674880981,
+                "y": 1160.5016899108887,
+                "width": 16.011127471923828,
+                "height": 24.010379791259766
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8071469664573669,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l34-w3",
+              "text": "Brisbane",
+              "box": {
+                "x": 274.19055795669556,
+                "y": 1160.5016899108887,
+                "width": 78.05424642562866,
+                "height": 26.011244773864746
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8071469664573669,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l34-w4",
+              "text": "(15)",
+              "box": {
+                "x": 362.2517590522766,
+                "y": 1164.5034198760986,
+                "width": 36.02503681182861,
+                "height": 22.009514808654785
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8071469664573669,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-35",
+          "order": 35,
+          "box": {
+            "x": 1274.8860249519348,
+            "y": 1184.5120697021484,
+            "width": 60.041728019714355,
+            "height": 18.007784843444824
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l35-w0",
+              "text": "580.00",
+              "box": {
+                "x": 1274.8860249519348,
+                "y": 1184.5120697021484,
+                "width": 60.041728019714355,
+                "height": 18.007784843444824
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8600260615348816,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-36",
+          "order": 36,
+          "box": {
+            "x": 100.06954669952393,
+            "y": 1216.5259094238281,
+            "width": 124.08623790740967,
+            "height": 22.009514808654785
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l36-w0",
+              "text": "Fuel",
+              "box": {
+                "x": 100.06954669952393,
+                "y": 1216.5259094238281,
+                "width": 42.02920961380005,
+                "height": 22.009514808654785
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8460286259651184,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l36-w1",
+              "text": "levy",
+              "box": {
+                "x": 146.10153818130493,
+                "y": 1216.5259094238281,
+                "width": 36.02503681182861,
+                "height": 22.009514808654785
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8460286259651184,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l36-w2",
+              "text": "(16)",
+              "box": {
+                "x": 188.13074779510498,
+                "y": 1216.5259094238281,
+                "width": 36.02503681182861,
+                "height": 22.009514808654785
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8460286259651184,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-37",
+          "order": 37,
+          "box": {
+            "x": 1284.8929796218872,
+            "y": 1240.536289215088,
+            "width": 48.033382415771484,
+            "height": 18.007784843444824
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l37-w0",
+              "text": "76.50",
+              "box": {
+                "x": 1284.8929796218872,
+                "y": 1240.536289215088,
+                "width": 48.033382415771484,
+                "height": 18.007784843444824
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.7632812261581421,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-38",
+          "order": 38,
+          "box": {
+            "x": 98.06815576553345,
+            "y": 1268.5483989715576,
+            "width": 240.16691207885742,
+            "height": 28.012109756469727
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l38-w0",
+              "text": "After-hours",
+              "box": {
+                "x": 98.06815576553345,
+                "y": 1268.5483989715576,
+                "width": 102.0709376335144,
+                "height": 24.010379791259766
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8728840947151184,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l38-w1",
+              "text": "surcharge",
+              "box": {
+                "x": 206.1432662010193,
+                "y": 1272.5501289367676,
+                "width": 90.06259202957153,
+                "height": 24.010379791259766
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8728840947151184,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l38-w2",
+              "text": "(17)",
+              "box": {
+                "x": 302.21003103256226,
+                "y": 1274.5509939193726,
+                "width": 36.02503681182861,
+                "height": 22.009514808654785
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8728840947151184,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-39",
+          "order": 39,
+          "box": {
+            "x": 1274.8860249519348,
+            "y": 1298.5613737106323,
+            "width": 60.041728019714355,
+            "height": 16.006919860839844
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l39-w0",
+              "text": "145.00",
+              "box": {
+                "x": 1274.8860249519348,
+                "y": 1298.5613737106323,
+                "width": 60.041728019714355,
+                "height": 16.006919860839844
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.9095051884651184,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-40",
+          "order": 40,
+          "box": {
+            "x": 96.06676483154297,
+            "y": 1326.573483467102,
+            "width": 296.2058582305908,
+            "height": 28.012109756469727
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l40-w0",
+              "text": "Freight",
+              "box": {
+                "x": 96.06676483154297,
+                "y": 1326.573483467102,
+                "width": 66.04590082168579,
+                "height": 22.009514808654785
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.7949942350387573,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l40-w1",
+              "text": "Sydney",
+              "box": {
+                "x": 172.11962032318115,
+                "y": 1328.574348449707,
+                "width": 68.04729175567627,
+                "height": 22.009514808654785
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.7949942350387573,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l40-w2",
+              "text": "->",
+              "box": {
+                "x": 246.17108488082886,
+                "y": 1330.575213432312,
+                "width": 16.011127471923828,
+                "height": 20.008649826049805
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.7949942350387573,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l40-w3",
+              "text": "Brisbane",
+              "box": {
+                "x": 270.1877760887146,
+                "y": 1330.575213432312,
+                "width": 80.05563735961914,
+                "height": 22.009514808654785
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.7949942350387573,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l40-w4",
+              "text": "(18)",
+              "box": {
+                "x": 358.24897718429565,
+                "y": 1332.576078414917,
+                "width": 34.023645877838135,
+                "height": 20.008649826049805
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.7949942350387573,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-41",
+          "order": 41,
+          "box": {
+            "x": 1272.8846340179443,
+            "y": 1354.5855932235718,
+            "width": 62.043118953704834,
+            "height": 18.007784843444824
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l41-w0",
+              "text": "580.00",
+              "box": {
+                "x": 1272.8846340179443,
+                "y": 1354.5855932235718,
+                "width": 62.043118953704834,
+                "height": 18.007784843444824
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.7623698115348816,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-42",
+          "order": 42,
+          "box": {
+            "x": 96.06676483154297,
+            "y": 1388.6002979278564,
+            "width": 200.13909339904785,
+            "height": 22.009514808654785
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l42-w0",
+              "text": "Waiting",
+              "box": {
+                "x": 96.06676483154297,
+                "y": 1388.6002979278564,
+                "width": 66.04590082168579,
+                "height": 22.009514808654785
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8299753069877625,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l42-w1",
+              "text": "time",
+              "box": {
+                "x": 170.11822938919067,
+                "y": 1388.6002979278564,
+                "width": 38.02642774581909,
+                "height": 22.009514808654785
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8299753069877625,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l42-w2",
+              "text": "2hrs",
+              "box": {
+                "x": 214.1488299369812,
+                "y": 1388.6002979278564,
+                "width": 40.02781867980957,
+                "height": 22.009514808654785
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8299753069877625,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l42-w3",
+              "text": "(19)",
+              "box": {
+                "x": 260.1808214187622,
+                "y": 1388.6002979278564,
+                "width": 36.02503681182861,
+                "height": 22.009514808654785
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8299753069877625,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-43",
+          "order": 43,
+          "box": {
+            "x": 1272.8846340179443,
+            "y": 1412.6106777191162,
+            "width": 60.041728019714355,
+            "height": 16.006919860839844
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l43-w0",
+              "text": "180.00",
+              "box": {
+                "x": 1272.8846340179443,
+                "y": 1412.6106777191162,
+                "width": 60.041728019714355,
+                "height": 16.006919860839844
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.80078125,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-44",
+          "order": 44,
+          "box": {
+            "x": 92.06398296356201,
+            "y": 1440.622787475586,
+            "width": 172.11962032318115,
+            "height": 24.010379791259766
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l44-w0",
+              "text": "Tal-ift",
+              "box": {
+                "x": 92.06398296356201,
+                "y": 1440.622787475586,
+                "width": 58.04033708572388,
+                "height": 20.008649826049805
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.751953125,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l44-w1",
+              "text": "service",
+              "box": {
+                "x": 156.10849285125732,
+                "y": 1442.623652458191,
+                "width": 66.04590082168579,
+                "height": 20.008649826049805
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.751953125,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l44-w2",
+              "text": "(20)",
+              "box": {
+                "x": 226.15717554092407,
+                "y": 1446.6253824234009,
+                "width": 38.02642774581909,
+                "height": 18.007784843444824
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.751953125,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-45",
+          "order": 45,
+          "box": {
+            "x": 1282.8915886878967,
+            "y": 1468.6348972320557,
+            "width": 50.03477334976196,
+            "height": 18.007784843444824
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l45-w0",
+              "text": "65.00",
+              "box": {
+                "x": 1282.8915886878967,
+                "y": 1468.6348972320557,
+                "width": 50.03477334976196,
+                "height": 18.007784843444824
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8843749761581421,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-46",
+          "order": 46,
+          "box": {
+            "x": 92.06398296356201,
+            "y": 1502.6496019363403,
+            "width": 124.08623790740967,
+            "height": 20.008649826049805
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l46-w0",
+              "text": "Fuel",
+              "box": {
+                "x": 92.06398296356201,
+                "y": 1502.6496019363403,
+                "width": 40.02781867980957,
+                "height": 20.008649826049805
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8391926884651184,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l46-w1",
+              "text": "levy",
+              "box": {
+                "x": 138.09597444534302,
+                "y": 1502.6496019363403,
+                "width": 38.02642774581909,
+                "height": 20.008649826049805
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8391926884651184,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l46-w2",
+              "text": "(21)",
+              "box": {
+                "x": 180.12518405914307,
+                "y": 1502.6496019363403,
+                "width": 36.02503681182861,
+                "height": 20.008649826049805
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8391926884651184,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-47",
+          "order": 47,
+          "box": {
+            "x": 1280.8901977539062,
+            "y": 1526.6599817276,
+            "width": 50.03477334976196,
+            "height": 16.006919860839844
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l47-w0",
+              "text": "76.50",
+              "box": {
+                "x": 1280.8901977539062,
+                "y": 1526.6599817276,
+                "width": 50.03477334976196,
+                "height": 16.006919860839844
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.7835937738418579,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-48",
+          "order": 48,
+          "box": {
+            "x": 88.06120109558105,
+            "y": 1556.6729564666748,
+            "width": 238.16552114486694,
+            "height": 22.009514808654785
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l48-w0",
+              "text": "After-hours",
+              "box": {
+                "x": 88.06120109558105,
+                "y": 1556.6729564666748,
+                "width": 102.0709376335144,
+                "height": 18.007784843444824
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.84619140625,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l48-w1",
+              "text": "surcharge",
+              "box": {
+                "x": 196.1363115310669,
+                "y": 1558.6738214492798,
+                "width": 92.06398296356201,
+                "height": 18.007784843444824
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.84619140625,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l48-w2",
+              "text": "(22)",
+              "box": {
+                "x": 294.20446729660034,
+                "y": 1560.6746864318848,
+                "width": 32.022254943847656,
+                "height": 18.007784843444824
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.84619140625,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-49",
+          "order": 49,
+          "box": {
+            "x": 1270.8832430839539,
+            "y": 1582.6842012405396,
+            "width": 60.041728019714355,
+            "height": 18.007784843444824
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l49-w0",
+              "text": "145.00",
+              "box": {
+                "x": 1270.8832430839539,
+                "y": 1582.6842012405396,
+                "width": 60.041728019714355,
+                "height": 18.007784843444824
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.857421875,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-50",
+          "order": 50,
+          "box": {
+            "x": 90.06259202957153,
+            "y": 1616.6989059448242,
+            "width": 122.08484697341919,
+            "height": 20.008649826049805
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l50-w0",
+              "text": "Fuel",
+              "box": {
+                "x": 90.06259202957153,
+                "y": 1616.6989059448242,
+                "width": 40.02781867980957,
+                "height": 20.008649826049805
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8831380009651184,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l50-w1",
+              "text": "levy",
+              "box": {
+                "x": 136.09458351135254,
+                "y": 1616.6989059448242,
+                "width": 34.023645877838135,
+                "height": 20.008649826049805
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8831380009651184,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l50-w2",
+              "text": "(23)",
+              "box": {
+                "x": 178.1237931251526,
+                "y": 1616.6989059448242,
+                "width": 34.023645877838135,
+                "height": 20.008649826049805
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8831380009651184,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-51",
+          "order": 51,
+          "box": {
+            "x": 1280.8901977539062,
+            "y": 1640.709285736084,
+            "width": 50.03477334976196,
+            "height": 16.006919860839844
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l51-w0",
+              "text": "76.50",
+              "box": {
+                "x": 1280.8901977539062,
+                "y": 1640.709285736084,
+                "width": 50.03477334976196,
+                "height": 16.006919860839844
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8343750238418579,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-52",
+          "order": 52,
+          "box": {
+            "x": 86.05981016159058,
+            "y": 1666.7205305099487,
+            "width": 180.12518405914307,
+            "height": 30.012974739074707
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l52-w0",
+              "text": "Re-delivery",
+              "box": {
+                "x": 86.05981016159058,
+                "y": 1666.7205305099487,
+                "width": 104.07232856750488,
+                "height": 26.011244773864746
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8315972089767456,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l52-w1",
+              "text": "fee",
+              "box": {
+                "x": 196.1363115310669,
+                "y": 1670.7222604751587,
+                "width": 28.0194730758667,
+                "height": 24.010379791259766
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8315972089767456,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l52-w2",
+              "text": "(24)",
+              "box": {
+                "x": 232.1613483428955,
+                "y": 1672.7231254577637,
+                "width": 34.023645877838135,
+                "height": 22.009514808654785
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8315972089767456,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-53",
+          "order": 53,
+          "box": {
+            "x": 1278.8888068199158,
+            "y": 1696.7335052490234,
+            "width": 50.03477334976196,
+            "height": 18.007784843444824
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l53-w0",
+              "text": "95.00",
+              "box": {
+                "x": 1278.8888068199158,
+                "y": 1696.7335052490234,
+                "width": 50.03477334976196,
+                "height": 18.007784843444824
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.796875,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-54",
+          "order": 54,
+          "box": {
+            "x": 84.0584192276001,
+            "y": 1724.7456150054932,
+            "width": 242.1683030128479,
+            "height": 28.012109756469727
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l54-w0",
+              "text": "After-hours",
+              "box": {
+                "x": 84.0584192276001,
+                "y": 1724.7456150054932,
+                "width": 102.0709376335144,
+                "height": 24.010379791259766
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8064778447151184,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l54-w1",
+              "text": "surcharge",
+              "box": {
+                "x": 192.13352966308594,
+                "y": 1728.7473449707031,
+                "width": 92.06398296356201,
+                "height": 24.010379791259766
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8064778447151184,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l54-w2",
+              "text": "(25)",
+              "box": {
+                "x": 290.2016854286194,
+                "y": 1732.749074935913,
+                "width": 36.02503681182861,
+                "height": 20.008649826049805
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8064778447151184,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-55",
+          "order": 55,
+          "box": {
+            "x": 1268.8818521499634,
+            "y": 1754.7585897445679,
+            "width": 60.041728019714355,
+            "height": 18.007784843444824
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l55-w0",
+              "text": "145.00",
+              "box": {
+                "x": 1268.8818521499634,
+                "y": 1754.7585897445679,
+                "width": 60.041728019714355,
+                "height": 18.007784843444824
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8411458134651184,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-56",
+          "order": 56,
+          "box": {
+            "x": 90.06259202957153,
+            "y": 1782.7706995010376,
+            "width": 308.2142038345337,
+            "height": 30.012974739074707
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l56-w0",
+              "text": "Freight",
+              "box": {
+                "x": 90.06259202957153,
+                "y": 1782.7706995010376,
+                "width": 58.04033708572388,
+                "height": 24.010379791259766
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8346354365348816,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l56-w1",
+              "text": "Melbourne>Sydney",
+              "box": {
+                "x": 158.1098837852478,
+                "y": 1784.7715644836426,
+                "width": 196.1363115310669,
+                "height": 28.012109756469727
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8346354365348816,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l56-w2",
+              "text": "(26)",
+              "box": {
+                "x": 362.2517590522766,
+                "y": 1790.7741594314575,
+                "width": 36.02503681182861,
+                "height": 22.009514808654785
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8346354365348816,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-57",
+          "order": 57,
+          "box": {
+            "x": 1266.880461215973,
+            "y": 1812.7836742401123,
+            "width": 62.043118953704834,
+            "height": 18.007784843444824
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l57-w0",
+              "text": "640.00",
+              "box": {
+                "x": 1266.880461215973,
+                "y": 1812.7836742401123,
+                "width": 62.043118953704834,
+                "height": 18.007784843444824
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8411458134651184,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-58",
+          "order": 58,
+          "box": {
+            "x": 82.05702829360962,
+            "y": 1842.796648979187,
+            "width": 160.11127471923828,
+            "height": 22.009514808654785
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l58-w0",
+              "text": "Pallet",
+              "box": {
+                "x": 82.05702829360962,
+                "y": 1844.797513961792,
+                "width": 52.03616428375244,
+                "height": 18.007784843444824
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.882568359375,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l58-w1",
+              "text": "hire",
+              "box": {
+                "x": 138.09597444534302,
+                "y": 1844.797513961792,
+                "width": 36.02503681182861,
+                "height": 18.007784843444824
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.882568359375,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l58-w2",
+              "text": "x4",
+              "box": {
+                "x": 180.12518405914307,
+                "y": 1844.797513961792,
+                "width": 20.013909339904785,
+                "height": 18.007784843444824
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.882568359375,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l58-w3",
+              "text": "(27)",
+              "box": {
+                "x": 208.14465713500977,
+                "y": 1846.798378944397,
+                "width": 34.023645877838135,
+                "height": 18.007784843444824
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.882568359375,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-59",
+          "order": 59,
+          "box": {
+            "x": 1276.8874158859253,
+            "y": 1870.8087587356567,
+            "width": 52.03616428375244,
+            "height": 16.006919860839844
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l59-w0",
+              "text": "88.00",
+              "box": {
+                "x": 1276.8874158859253,
+                "y": 1870.8087587356567,
+                "width": 52.03616428375244,
+                "height": 16.006919860839844
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8515625,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-60",
+          "order": 60,
+          "box": {
+            "x": 80.05563735961914,
+            "y": 1896.8200035095215,
+            "width": 126.08762884140015,
+            "height": 28.012109756469727
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l60-w0",
+              "text": "Fuel",
+              "box": {
+                "x": 80.05563735961914,
+                "y": 1896.8200035095215,
+                "width": 40.02781867980957,
+                "height": 24.010379791259766
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8141276240348816,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l60-w1",
+              "text": "levy",
+              "box": {
+                "x": 126.08762884140015,
+                "y": 1900.8217334747314,
+                "width": 36.02503681182861,
+                "height": 22.009514808654785
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8141276240348816,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l60-w2",
+              "text": "(28)",
+              "box": {
+                "x": 168.1168384552002,
+                "y": 1902.8225984573364,
+                "width": 38.02642774581909,
+                "height": 24.010379791259766
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8141276240348816,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-61",
+          "order": 61,
+          "box": {
+            "x": 1276.8874158859253,
+            "y": 1926.8329782485962,
+            "width": 50.03477334976196,
+            "height": 18.007784843444824
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l61-w0",
+              "text": "76",
+              "box": {
+                "x": 1276.8874158859253,
+                "y": 1926.8329782485962,
+                "width": 26.01808214187622,
+                "height": 18.007784843444824
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8955078125,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l61-w1",
+              "text": "50",
+              "box": {
+                "x": 1304.906888961792,
+                "y": 1926.8329782485962,
+                "width": 22.015300273895264,
+                "height": 18.007784843444824
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8955078125,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-62",
+          "order": 62,
+          "box": {
+            "x": 898.6245293617249,
+            "y": 1996.8632526397705,
+            "width": 428.2976598739624,
+            "height": 34.01470470428467
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l62-w0",
+              "text": "Subtotal",
+              "box": {
+                "x": 898.6245293617249,
+                "y": 1996.8632526397705,
+                "width": 70.04868268966675,
+                "height": 26.011244773864746
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.731370210647583,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l62-w1",
+              "text": "(inc)",
+              "box": {
+                "x": 976.6787757873535,
+                "y": 2000.8649826049805,
+                "width": 52.03616428375244,
+                "height": 26.011244773864746
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.731370210647583,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l62-w2",
+              "text": "6,233.00",
+              "box": {
+                "x": 1246.8665518760681,
+                "y": 2012.8701725006104,
+                "width": 80.05563735961914,
+                "height": 18.007784843444824
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8369140625,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-63",
+          "order": 63,
+          "box": {
+            "x": 892.6203565597534,
+            "y": 2054.888337135315,
+            "width": 42.02920961380005,
+            "height": 16.006919860839844
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l63-w0",
+              "text": "GST",
+              "box": {
+                "x": 892.6203565597534,
+                "y": 2054.888337135315,
+                "width": 42.02920961380005,
+                "height": 16.006919860839844
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.7864583134651184,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-64",
+          "order": 64,
+          "box": {
+            "x": 1262.877679347992,
+            "y": 2062.891797065735,
+            "width": 62.043118953704834,
+            "height": 16.006919860839844
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l64-w0",
+              "text": "566.64",
+              "box": {
+                "x": 1262.877679347992,
+                "y": 2062.891797065735,
+                "width": 62.043118953704834,
+                "height": 16.006919860839844
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8365885615348816,
+                "calibrated": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ln-p1-65",
+          "order": 65,
+          "box": {
+            "x": 892.6203565597534,
+            "y": 2122.9177465438843,
+            "width": 430.2990508079529,
+            "height": 28.012109756469727
+          },
+          "spans": [
+            {
+              "id": "sp-p1-l65-w0",
+              "text": "Total",
+              "box": {
+                "x": 892.6203565597534,
+                "y": 2122.9177465438843,
+                "width": 60.041728019714355,
+                "height": 22.009514808654785
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.78125,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l65-w1",
+              "text": "due",
+              "box": {
+                "x": 960.6676483154297,
+                "y": 2122.9177465438843,
+                "width": 44.03060054779053,
+                "height": 22.009514808654785
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.78125,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l65-w2",
+              "text": "$6,233.00",
+              "box": {
+                "x": 1210.8415150642395,
+                "y": 2128.920341491699,
+                "width": 112.0778923034668,
+                "height": 22.009514808654785
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8125,
+                "calibrated": false
+              }
+            }
+          ]
+        }
+      ],
+      "provenance": {
+        "engine": "device-mlkit",
+        "confidence": 1,
+        "calibrated": false
+      }
+    }
+  ],
+  "tables": [],
+  "figures": [],
+  "fields": [],
+  "unreadable": []
+}

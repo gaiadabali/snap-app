@@ -67,6 +67,32 @@ class Bench:
         self.timings: list[float] = []
         self.lock = threading.Lock()
         self.out_root: str | None = None
+        self.run_log: dict = {'device': device, 'documents': {}, 'device_reported': None}
+
+    def _flush_run_log(self, root: str) -> None:
+        """Rewrite the run log after every document, so a kill loses nothing."""
+        times = [t for d in self.run_log['documents'].values() for t in d['recogniseMs']]
+        summary = None
+        if times:
+            ordered = sorted(times)
+            summary = {
+                'pages': len(ordered),
+                'medianMs': ordered[len(ordered) // 2],
+                'p95Ms': ordered[min(len(ordered) - 1, int(0.95 * len(ordered)))],
+                'maxMs': ordered[-1],
+            }
+        ok, why = dev.may_decide_fit(self.device)
+        payload = {
+            **self.run_log,
+            'recognise_summary': summary,
+            # Carried IN the artefact, not just printed once. A timing file
+            # that does not say what it may conclude gets quoted as though it
+            # were the gate.
+            'may_decide_fit': ok,
+            'fit_reason': why,
+        }
+        with open(os.path.join(root, '_run.json'), 'w', encoding='utf-8') as f:
+            json.dump(payload, f, indent=2)
 
     def check_handset(self, reported: dict) -> str | None:
         """Refuse a handset that is not the one `--device` claims."""
@@ -110,8 +136,20 @@ class Bench:
             with open(os.path.join(root, f'{doc_id}.json'), 'w', encoding='utf-8') as f:
                 json.dump(merged, f, indent=2)
             self.written.append(doc_id)
-            self.timings.extend(
-                p.get('timings', {}).get('recogniseMs', 0.0) for p in got.values())
+            per_page = [p.get('timings', {}).get('recogniseMs', 0.0) for p in got.values()]
+            self.timings.extend(per_page)
+            # Persisted per document, NOT held until shutdown. The first full
+            # run lost every timing because the server was killed rather than
+            # interrupted, so the `finally` that printed them never ran --
+            # 300 documents of real handset measurement, gone, for want of a
+            # write. §6.4 asks for timings; keeping them only in memory meant
+            # the corpus could not answer for itself.
+            self.run_log['documents'][doc_id] = {
+                'recogniseMs': per_page,
+                'pages': len(per_page),
+            }
+            self.run_log['device_reported'] = payload['device']
+            self._flush_run_log(root)
             del self.pending[doc_id]
         return None
 
