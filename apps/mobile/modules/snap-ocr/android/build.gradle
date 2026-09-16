@@ -11,6 +11,18 @@ android {
     // ML Kit Text Recognition v2 requires API 23+; Expo SDK 57 already floors
     // at Android 7 (API 24), so this constrains nothing new.
     minSdkVersion 24
+
+    // Required, and the first build proved it: `expo-module-gradle-plugin`
+    // configures a maven publication for every module and reads
+    // `android.defaultConfig.versionName` to name it. Without these two the
+    // whole Gradle CONFIGURATION phase fails — before a single line of Kotlin
+    // is compiled — with "'android.defaultConfig.versionName' is not defined"
+    // attributed to `:expo`, several projects away from the actual cause.
+    //
+    // The project-level `version` above does not satisfy it; AGP does not map
+    // one onto the other.
+    versionCode 1
+    versionName '0.1.0'
   }
 }
 
