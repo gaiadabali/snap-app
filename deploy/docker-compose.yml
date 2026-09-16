@@ -108,12 +108,35 @@ services:
       # KEY=VALUE-file-on-disk shape apps/server/src/extraction/provider.ts
       # already reads (see readKeyFromEnvFile) — only the path changes.
       OLLAMA_ENV_FILE: /run/secrets/ollama.env
+      # THE LINE THAT TURNS THE OCR STAGE ON.
+      #
+      # `shadow.ts` reads this and returns immediately when it is unset —
+      # "absent config, absent feature". It has been unset everywhere since the
+      # stage was written, which is why every stored layout in
+      # apps/server/.storage read "docai-engine sidecar not reachable" and why
+      # D20's calibration had nothing to calibrate against.
+      #
+      # Set on the WORKER only, deliberately. Extraction runs here; the api
+      # container never calls the sidecar, so giving it the URL would widen the
+      # blast radius of a hung sidecar to every request-serving process.
+      #
+      # The shadow stage still cannot break extraction: every path either
+      # succeeds quietly or is caught and logged as one line, and it is bounded
+      # by DOCAI_SHADOW_TIMEOUT_MS. That contract is why this can be switched on
+      # without a staged rollout.
+      DOCAI_SIDECAR_URL: ${DOCAI_SIDECAR_URL:-http://docai:8088}
     volumes:
       - storage_data:/data/storage
       - ${OLLAMA_ENV_FILE_HOST:-/dev/null}:/run/secrets/ollama.env:ro
     depends_on:
       postgres:
         condition: service_healthy
+      # started, NOT service_healthy: the sidecar takes ~60s to load its models
+      # and the worker must not wait on it. A worker that is up with the
+      # sidecar still warming does exactly what it did before this service
+      # existed — shadow reads fail, are caught, and logged as one line.
+      docai:
+        condition: service_started
     networks: [snap-internal]
     healthcheck:
       test: ["CMD-SHELL", "pgrep -f scripts/worker.ts || exit 1"]
@@ -121,6 +144,49 @@ services:
       timeout: 5s
       retries: 10
       start_period: 15s
+
+  docai:
+    # The PP-OCRv5 OCR sidecar (services/docai-engine). Internal only: never
+    # published to the host, never reachable from outside the compose network.
+    # It answers /read with DocDOM-shaped spans and holds no state.
+    #
+    # WHY IT IS HERE NOW. docs/GAPS.md A1 reads as "run the sidecar once", but
+    # the load-bearing fact was that this service was not in this file at all
+    # and nothing set DOCAI_SIDECAR_URL, so the OCR stage had never executed in
+    # production. shadow.ts treats an unset URL as "feature absent" and returns
+    # silently — correct behaviour, and exactly why it went unnoticed.
+    build:
+      context: ../services/docai-engine
+      dockerfile: Dockerfile
+      args:
+        # Must match the runtime DOCAI_MODEL_TIER below, or the container
+        # downloads a second model set on first use and the build-time bake
+        # was wasted.
+        DOCAI_MODEL_TIER: ${DOCAI_MODEL_TIER:-mobile}
+    image: ${DOCAI_IMAGE:-snap-docai}:${IMAGE_TAG:-local}
+    restart: unless-stopped
+    environment:
+      DOCAI_MODEL_TIER: ${DOCAI_MODEL_TIER:-mobile}
+      DOCAI_DEVICE: ${DOCAI_DEVICE:-cpu}
+      # Stays FALSE. paddlepaddle 3.3.1's PIR executor throws
+      # ConvertPirAttribute2RuntimeAttribute on both PP-OCRv5 detection models
+      # with oneDNN enabled — verified, reproducible, and it leaves us with no
+      # CPU accelerator at all. docs/GAPS.md A4 evaluates OpenVINO as the
+      # alternative. Do not flip this without re-running that.
+      DOCAI_ENABLE_MKLDNN: ${DOCAI_ENABLE_MKLDNN:-false}
+      # Heuristic operating point, NOT a calibrated threshold — there is no
+      # gold-set-derived value yet (D20, docs/GAPS.md B3).
+      DOCAI_MIN_CONFIDENCE: ${DOCAI_MIN_CONFIDENCE:-0.3}
+    networks: [snap-internal]
+    healthcheck:
+      # start_period is generous because the model loads at process start, not
+      # lazily: a cold container is legitimately unhealthy for ~30-60s on a
+      # small VPS, and a tighter window would restart-loop it forever.
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8088/health | grep -q '\"ok\":true' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
 
   web:
     # Published on LOOPBACK ONLY, for a reverse proxy on this host.

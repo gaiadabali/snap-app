@@ -253,7 +253,7 @@ The point of the whole exercise. Against `docs/GAPS.md` and
 
 | Ticket | Why it is unblocked |
 |---|---|
-| **A1′** Deploy `docai-engine` as a service | Infrastructure. `services/docai-engine` is not in `deploy/docker-compose.yml` at all — that is the real A1 |
+| ~~**A1′**~~ **DONE 2026-09-16** | Dockerfile with weights baked in, `docai` compose service, `DOCAI_SIDECAR_URL` on the worker. Verified by reading `gen-supermarket-0043` through it: 84 spans, 0 unreadable, total/GST/ABN/both subtotals exact, median confidence 0.988 |
 | **A2** PP-OCRv6 tiers alongside v5 | Adding the tiers is code. *Adoption* needs Tier R; add them selectable and defer the verdict |
 | **A3** Whitespace-insensitive CER as headline | A reporting change in `ocr_score.py` |
 | **A4** OpenVINO evaluation | A *speed* measurement. Latency does not care whether the glyphs are real |

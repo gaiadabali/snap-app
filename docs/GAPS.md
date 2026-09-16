@@ -64,6 +64,30 @@ calibrate against.
 - **Do not:** let the shadow stage throw into the real path. `shadow.ts`'s header states the rule —
   every path either succeeds quietly or is caught and logged as one line.
 
+> **A1 was two tickets, and the bigger one was invisible.** "Bring the venv up and set the URL"
+> assumed the sidecar was deployable. It was not: `services/docai-engine` had **no Dockerfile**,
+> was **absent from `deploy/docker-compose.yml`**, and nothing anywhere set `DOCAI_SIDECAR_URL` —
+> so the OCR stage had never run in production and could not have. `shadow.ts` treats an unset URL
+> as "absent config, absent feature" and returns silently, which is correct and is also why no
+> alarm ever fired.
+>
+> **Closed 2026-09-16 (A1′).** `services/docai-engine/Dockerfile` (weights baked at build time, so
+> a cold container neither stalls on first request nor needs CDN egress — D17's air-gapped profile
+> forbids the latter outright), a `docai` service on the internal network, and
+> `DOCAI_SIDECAR_URL` set on the **worker only** (extraction runs there; the API never calls it).
+>
+> **Verified by running it**, not by reading it: image built, container healthy in 7.2 s, and a
+> factory-generated supermarket docket (`gen-supermarket-0043`, tier S) read in 9.1 s — 84 spans,
+> zero unreadable, and every field that matters found exactly: total `44.78`, GST `1.75`, ABN
+> `08293882425`, and both per-category subtotals `19.20` / `25.58`. Median span confidence 0.988,
+> minimum 0.647 — and the 0.647 is on the one genuine misread (a `*` recognised as `大`), which is
+> the engine being least sure precisely where it is wrong. That is the correlation D20 needs and
+> the first real evidence it exists. `calibrated: false` still, correctly — B3 is untouched.
+>
+> **Still open from A1 as written:** the two-page Phase 0 gate document has not been re-run through
+> capture → extraction against the deployed sidecar, so `document_layouts` does not yet hold its
+> rows. That needs a live capture, not a container.
+
 ### A2 — Move to PP-OCRv6
 
 **Implements D34. Depends on: A1.**

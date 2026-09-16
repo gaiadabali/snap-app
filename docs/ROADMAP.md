@@ -119,13 +119,15 @@ from that file is items #4 (no gold set) and #5 (no calibration), and those are
 the same tickets as `GAPS.md` B1 and B3. **The file should be deleted or
 reduced to a pointer.**
 
-**2. The OCR sidecar does not ship.** `GAPS.md` A1 treats the sidecar as a
-local run to perform. The larger fact is that **`services/docai-engine` is not
-in `deploy/docker-compose.yml` at all**, and `DOCAI_SIDECAR_URL` is optional in
-`config.ts` with nothing setting it. Locally, 3 of 5 stored layouts carry a
-`ppocr` engine and 2 still carry the transport error. So the OCR stage does not
-run in production, and A1 is not one ticket — it is "run it locally" plus "make
-it a deployable service".
+**2. ~~The OCR sidecar does not ship.~~ FIXED 2026-09-16.** `GAPS.md` A1 read as
+a local run to perform; the larger fact was that `services/docai-engine` had no
+Dockerfile, was absent from `deploy/docker-compose.yml` entirely, and nothing
+set `DOCAI_SIDECAR_URL` — so the OCR stage had never run in production.
+`shadow.ts` treats an unset URL as "absent feature" and returns silently, which
+is why it went unnoticed. Now a `docai` service with weights baked in, wired to
+the worker, verified by reading a real docket through it (`GAPS.md` A1). What
+remains is re-running the Phase 0 gate document through capture → extraction,
+which needs a live capture rather than a container.
 
 **3. `PLAN.md` open question O2 is answered.** `ECOSYSTEM.md` D32 settles it:
 one ecosystem account, a shared identity service the apps federate to, each app

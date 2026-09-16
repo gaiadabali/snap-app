@@ -269,6 +269,14 @@ target; `deploy/` holds everything.
 **Sizing.** 2 vCPU / 4 GB is comfortable. 2 GB works only if you deploy with
 `--pull` — see below.
 
+**Disk, since 2026-09-16.** The `docai` OCR sidecar image is **~2.4 GB**. Almost
+none of that is model weights (PP-OCRv5 mobile is ~20 MB, baked in at build);
+it is paddlepaddle and its CUDA-less runtime. Budget **10 GB of free disk**
+before deploying, and remember `deploy.sh` keeps previous image tags so
+rollback works — `docker image prune` deliberately is NOT run by the deploy
+script, because pruning is how a rollback target disappears. Prune by hand,
+keeping at least the currently-deployed and previous tags.
+
 ### First time
 
 ```bash

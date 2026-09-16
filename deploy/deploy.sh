@@ -42,11 +42,11 @@ COMPOSE=(docker compose -f "${HERE}/docker-compose.yml" --env-file "${HERE}/.env
 # Which services this host runs. Caddy is optional because a box that already
 # terminates TLS for other sites must not have a second thing fighting for
 # port 443.
-SERVICES=(api worker web mobile caddy)
-HEALTH_SERVICES=(postgres api worker web mobile caddy)
+SERVICES=(api worker docai web mobile caddy)
+HEALTH_SERVICES=(postgres api worker docai web mobile caddy)
 if [[ "${SKIP_CADDY:-0}" == "1" ]]; then
-  SERVICES=(api worker web mobile)
-  HEALTH_SERVICES=(postgres api worker web mobile)
+  SERVICES=(api worker docai web mobile)
+  HEALTH_SERVICES=(postgres api worker docai web mobile)
 fi
 ENV_FILE="${HERE}/.env"
 
@@ -85,7 +85,7 @@ esac
 if [[ "${PULL_MODE}" == "1" ]]; then
   # Named explicitly rather than defaulted: pulling the wrong registry's image
   # is a silent way to deploy something nobody reviewed.
-  [[ -n "${SERVER_IMAGE:-}" && -n "${WEB_IMAGE:-}" ]]     || fail "--pull needs SERVER_IMAGE and WEB_IMAGE in deploy/.env (e.g. ghcr.io/gaiadabali/snap-server)."
+  [[ -n "${SERVER_IMAGE:-}" && -n "${WEB_IMAGE:-}" && -n "${DOCAI_IMAGE:-}" ]]     || fail "--pull needs SERVER_IMAGE, WEB_IMAGE and DOCAI_IMAGE in deploy/.env (e.g. ghcr.io/gaiadabali/snap-server)."
   [[ -n "${IMAGE_TAG:-}" ]]     || fail "--pull needs IMAGE_TAG in deploy/.env naming an exact build (e.g. sha-1a2b3c4). Never 'latest' — a rollback must be able to name what it is rolling back to."
 fi
 
@@ -103,12 +103,12 @@ else
   if [[ "${PULL_MODE}" == "1" ]]; then
     export IMAGE_TAG
     log "Pulling prebuilt images ${SERVER_IMAGE}:${IMAGE_TAG} and ${WEB_IMAGE}:${IMAGE_TAG}"
-    "${COMPOSE[@]}" pull api worker web       || fail "pull failed. The repo is private — has this host run 'docker login ghcr.io'? Does the tag exist?"
+    "${COMPOSE[@]}" pull api worker docai web || fail "pull failed. The repo is private — has this host run 'docker login ghcr.io'? Does the tag exist?"
   else
     IMAGE_TAG="$(git rev-parse --short HEAD)"
     export IMAGE_TAG
     log "Building images at ${IMAGE_TAG} (use --pull on a small VPS; next build is memory-hungry)"
-    "${COMPOSE[@]}" build --pull api worker web
+    "${COMPOSE[@]}" build --pull api worker docai web
   fi
 
   log "Pulling postgres/caddy"
@@ -146,10 +146,18 @@ fi
 
 log "Waiting for containers to report healthy"
 for svc in "${HEALTH_SERVICES[@]}"; do
+  # Per-service budget. Everything here starts in seconds EXCEPT docai, which
+  # loads PP-OCRv5 into memory before it will answer /health at all: its
+  # healthcheck carries start_period 90s + interval 30s, so its first healthy
+  # report can legitimately land around 120s. The old flat 60x2s=120s budget
+  # sat exactly on that boundary and would have failed the deploy for a
+  # service behaving as designed.
+  if [[ "${svc}" == "docai" ]]; then max_tries=150; else max_tries=60; fi
+  budget=$(( max_tries * 2 ))
   tries=0
   until [[ "$(docker inspect -f '{{.State.Health.Status}}' "$("${COMPOSE[@]}" ps -q "${svc}")" 2>/dev/null)" == "healthy" ]]; do
     tries=$((tries + 1))
-    [[ "${tries}" -lt 60 ]] || fail "${svc} did not become healthy within 60s — check: docker compose -f deploy/docker-compose.yml logs ${svc}"
+    [[ "${tries}" -lt "${max_tries}" ]] || fail "${svc} did not become healthy within ${budget}s — check: docker compose -f deploy/docker-compose.yml logs ${svc}"
     sleep 2
   done
   log "${svc}: healthy"

@@ -1,0 +1,7 @@
+# The build context is this directory only. Keep the local venv and caches out
+# — .venv313 alone is well over a gigabyte and would be uploaded to the daemon
+# on every build for nothing.
+.venv*
+__pycache__/
+*.pyc
+README.md

@@ -47,6 +47,14 @@ jobs:
             dockerfile: apps/server/Dockerfile
           - name: snap-web
             dockerfile: apps/web/Dockerfile
+          - name: snap-docai
+            # The ONLY image whose context is not the repo root. Nothing in
+            # services/docai-engine needs the pnpm workspace — that is the
+            # TypeScript/Python seam working as intended, and narrowing the
+            # context also keeps ~180MB of generated bench corpus out of the
+            # build.
+            context: services/docai-engine
+            dockerfile: services/docai-engine/Dockerfile
           - name: snap-mobile
             dockerfile: apps/mobile/Dockerfile
             # Inlined at build time and unchangeable afterwards, so the staging
@@ -83,7 +91,10 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          context: .
+          context: ${{ matrix.context || '.' }}
+          # When context is not the repo root, `file` must still be repo-root
+          # relative — build-push-action resolves it against the workspace, not
+          # against context.
           file: ${{ matrix.dockerfile }}
           build-args: ${{ matrix.build_args }}
           push: true
