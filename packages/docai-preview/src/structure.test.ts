@@ -251,3 +251,41 @@ describe('abnIsValid', () => {
     expect(abnIsValid('')).toBe(false);
   });
 });
+
+describe('a card number is not part of the total', () => {
+  /** Lay out a payment line the way a docket does: label left, amount right. */
+  function paymentLine(label: string[], amount: string, gap: number): Document {
+    seq = 0;
+    let x = 0;
+    const spans = [...label, amount].map((t, i) => {
+      const s = span(t, x);
+      // The real gap on a right-aligned docket sits before the amount.
+      x += s.box.width + (i === label.length - 1 ? gap : 6);
+      return s;
+    });
+    return {
+      version: '1.0.0',
+      pages: [{ number: 1, width: 600, height: 80 }],
+      blocks: [{ id: 'b', kind: 'unknown', page: 1, order: 0,
+        box: { x: 0, y: 0, width: 600, height: 20 },
+        lines: [{ id: 'l', order: 0, box: { x: 0, y: 0, width: 600, height: 20 }, spans }] }],
+      tables: [], figures: [], fields: [], unreadable: [],
+    } as unknown as Document;
+  }
+
+  it('does not fuse a masked card number with the amount beside it', () => {
+    // The bug the first measurement found: `VISA ****4417   23.00` came back
+    // as `441723.00`, on every tier-S document carrying a card number.
+    const f = structure(paymentLine(['VISA', '****', '4417'], '23.00', 120), NOW)[
+      'header.payable_amount'
+    ];
+    expect(f?.value).toBe('23.00');
+  });
+
+  it('still joins a figure split across adjacent boxes', () => {
+    // The rule this adjacency check must not break: `$ 1 , 042.60` is four
+    // boxes separated by hairlines and is one number.
+    const f = structure(doc([['TOTAL', '$', '1', ',', '042.60']]), NOW)['header.payable_amount'];
+    expect(f?.value).toBe('1,042.60');
+  });
+});

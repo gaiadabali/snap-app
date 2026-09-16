@@ -1,0 +1,268 @@
+{
+  "manifest": "corpus/sample/manifest.json",
+  "tier_floor": "S",
+  "docdom_source": "server sidecar",
+  "device": null,
+  "per_field": {
+    "supplier_abn": {
+      "ABSTAIN_OK": 18,
+      "EXACT": 6
+    },
+    "total_inclusive": {
+      "EXACT": 8,
+      "WRONG": 9,
+      "MISS": 5,
+      "NORMALISED": 2
+    },
+    "gst_amount": {
+      "EXACT": 6,
+      "MISS": 4,
+      "ABSTAIN_OK": 10,
+      "WRONG": 3,
+      "NORMALISED": 1
+    },
+    "supplier_name": {
+      "WRONG": 6,
+      "NORMALISED": 6
+    },
+    "issue_date": {
+      "EXACT": 12
+    }
+  },
+  "shown": {
+    "total_inclusive": 19,
+    "gst_amount": 10,
+    "supplier_name": 12,
+    "issue_date": 12,
+    "supplier_abn": 6
+  },
+  "truth_present": {
+    "total_inclusive": 24,
+    "gst_amount": 14,
+    "supplier_name": 12,
+    "issue_date": 12,
+    "supplier_abn": 6
+  },
+  "corrections_per_100": 112.5,
+  "blank_form_baseline_per_100": 283.33333333333337,
+  "rows": [
+    {
+      "document": "tierp-cord-v2-0071",
+      "got": {
+        "supplier_abn": null,
+        "total_inclusive": "282,000",
+        "gst_amount": "25,637"
+      }
+    },
+    {
+      "document": "tierp-cord-v2-0039",
+      "got": {
+        "supplier_abn": null,
+        "total_inclusive": "50,000",
+        "gst_amount": null
+      }
+    },
+    {
+      "document": "tierp-cord-v2-0030",
+      "got": {
+        "supplier_abn": null,
+        "total_inclusive": null,
+        "gst_amount": null
+      }
+    },
+    {
+      "document": "tierp-cord-v2-0062",
+      "got": {
+        "supplier_abn": null,
+        "total_inclusive": null,
+        "gst_amount": null
+      }
+    },
+    {
+      "document": "tierp-cord-v2-0015",
+      "got": {
+        "supplier_abn": null,
+        "total_inclusive": "100,000",
+        "gst_amount": null
+      }
+    },
+    {
+      "document": "tierp-cord-v2-0042",
+      "got": {
+        "supplier_abn": null,
+        "total_inclusive": "0",
+        "gst_amount": null
+      }
+    },
+    {
+      "document": "tierp-cord-v2-0003",
+      "got": {
+        "supplier_abn": null,
+        "total_inclusive": "11,000",
+        "gst_amount": null
+      }
+    },
+    {
+      "document": "tierp-cord-v2-0009",
+      "got": {
+        "supplier_abn": null,
+        "total_inclusive": null,
+        "gst_amount": null
+      }
+    },
+    {
+      "document": "tierp-cord-v2-0066",
+      "got": {
+        "supplier_abn": null,
+        "total_inclusive": null,
+        "gst_amount": "142,358"
+      }
+    },
+    {
+      "document": "tierp-cord-v2-0028",
+      "got": {
+        "supplier_abn": null,
+        "total_inclusive": "132,636",
+        "gst_amount": "13,264"
+      }
+    },
+    {
+      "document": "tierp-cord-v2-0001",
+      "got": {
+        "supplier_abn": null,
+        "total_inclusive": "91000",
+        "gst_amount": null
+      }
+    },
+    {
+      "document": "tierp-cord-v2-0093",
+      "got": {
+        "supplier_abn": null,
+        "total_inclusive": null,
+        "gst_amount": "10"
+      }
+    },
+    {
+      "document": "gen-no_abn_van-0102",
+      "got": {
+        "supplier_name": "TOTAL $ 23.00",
+        "supplier_abn": null,
+        "issue_date": "2026-08-22",
+        "total_inclusive": "23.00",
+        "gst_amount": null
+      }
+    },
+    {
+      "document": "gen-supermarket-0043",
+      "got": {
+        "supplier_name": "RIVERTON FRESH MARKET",
+        "supplier_abn": "08293882425",
+        "issue_date": "2025-12-19",
+        "total_inclusive": "44.78",
+        "gst_amount": "1.75"
+      }
+    },
+    {
+      "document": "gen-no_abn_van-0029",
+      "got": {
+        "supplier_name": "TOTAL $ 16.50",
+        "supplier_abn": null,
+        "issue_date": "2026-09-18",
+        "total_inclusive": "16.50",
+        "gst_amount": null
+      }
+    },
+    {
+      "document": "gen-supermarket-0084",
+      "got": {
+        "supplier_name": "KALINDA GROCERS",
+        "supplier_abn": "76672752465",
+        "issue_date": "2026-08-04",
+        "total_inclusive": "2.73",
+        "gst_amount": "30.00"
+      }
+    },
+    {
+      "document": "gen-no_abn_van-0011",
+      "got": {
+        "supplier_name": "RIVERBANK SNACK TRAILER",
+        "supplier_abn": null,
+        "issue_date": "2026-01-04",
+        "total_inclusive": "8830",
+        "gst_amount": null
+      }
+    },
+    {
+      "document": "gen-cafe-0291",
+      "got": {
+        "supplier_name": "THE SIDINGS CAFE",
+        "supplier_abn": "26547496341",
+        "issue_date": "2026-08-31",
+        "total_inclusive": "21.50",
+        "gst_amount": "1.95"
+      }
+    },
+    {
+      "document": "receipt-noabn",
+      "got": {
+        "supplier_name": "TOTAL 8.50",
+        "supplier_abn": null,
+        "issue_date": "2026-09-06",
+        "total_inclusive": "10.00",
+        "gst_amount": null
+      }
+    },
+    {
+      "document": "invoice-multipage",
+      "got": {
+        "supplier_name": "# Description Amount ( AUD )",
+        "supplier_abn": "85129887341",
+        "issue_date": "2026-08-14",
+        "total_inclusive": "17,519.31",
+        "gst_amount": "1,592.66"
+      }
+    },
+    {
+      "document": "gen-no_abn_van-0006",
+      "got": {
+        "supplier_name": "TOTAL $ 11.70",
+        "supplier_abn": null,
+        "issue_date": "2026-09-07",
+        "total_inclusive": "11.70",
+        "gst_amount": null
+      }
+    },
+    {
+      "document": "gen-cafe-0016",
+      "got": {
+        "supplier_name": "RIVERGUM COFFEE HOUSE",
+        "supplier_abn": "51314757397",
+        "issue_date": "2026-02-12",
+        "total_inclusive": "4417",
+        "gst_amount": "29.90"
+      }
+    },
+    {
+      "document": "gen-no_abn_van-0082",
+      "got": {
+        "supplier_name": "CAPPUCCINO REG 5.00",
+        "supplier_abn": null,
+        "issue_date": "2026-01-25",
+        "total_inclusive": "4417",
+        "gst_amount": null
+      }
+    },
+    {
+      "document": "gen-trade_invoice-0020",
+      "got": {
+        "supplier_name": "Cavanagh Transport Pty Ltd TAX INVOICE",
+        "supplier_abn": "82926267200",
+        "issue_date": "2026-07-07",
+        "total_inclusive": "5,527.50",
+        "gst_amount": "502.50"
+      }
+    }
+  ],
+  "skipped": [],
+  "failures": []
+}

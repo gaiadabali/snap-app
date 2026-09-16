@@ -154,6 +154,15 @@ def main() -> int:
     counts = collections.defaultdict(collections.Counter)
     shown = collections.Counter()
     truth_present = collections.Counter()
+    # Per tier as well as overall. The structurer's rules are AUSTRALIAN — its
+    # keywords are TOTAL and GST and its ABN check is mod-89 — so holding it to
+    # §6.3's ceilings on Indonesian dockets would be scoring it against a
+    # distribution it was never built for. Tier P still earns its place here: it
+    # says whether the RECOGNISER can read real thermal print, which is the
+    # other half of the same question.
+    by_tier = collections.defaultdict(collections.Counter)
+    shown_t = collections.Counter()
+    truth_t = collections.Counter()
     rows, failures, skipped = [], [], []
 
     for i, d in enumerate(docs, 1):
@@ -186,7 +195,14 @@ def main() -> int:
                 truth_present[manifest_name] += 1
             if value is not None:
                 shown[manifest_name] += 1
-            counts[manifest_name][scoring.score_field(spec['compare'], spec['truth'], value)] += 1
+            outcome = scoring.score_field(spec['compare'], spec['truth'], value)
+            counts[manifest_name][outcome] += 1
+            tier = prov.tier_of(d)
+            by_tier[(tier, manifest_name)][outcome] += 1
+            if spec.get('truth') is not None:
+                truth_t[(tier, manifest_name)] += 1
+            if value is not None:
+                shown_t[(tier, manifest_name)] += 1
 
         rows.append({'document': d['id'], 'got': got})
         filled = sum(1 for v in got.values() if v is not None)
@@ -201,6 +217,27 @@ def main() -> int:
         print('  exported from a floor device (docs/ON-DEVICE.md §6.4 step 2).')
     print()
 
+    # Ceilings are judged on TIER S / R only — Australian-shaped documents.
+    tiers = sorted({prov.tier_of(d) for d in docs})
+    for tier in tiers:
+        judged = tier != 'P'
+        print(f"tier {tier}" + ('' if judged else '  (informational — non-Australian, rules not tuned for it)'))
+        print(f"  {'field':<18}{'fill':>7}{'wrong-shown':>13}"
+              + (f"{'ceiling':>18}{'verdict':>9}" if judged else ''))
+        for name in FIELD_MAP:
+            c = by_tier[(tier, name)]
+            if not c:
+                continue
+            n_t, n_s = truth_t[(tier, name)], shown_t[(tier, name)]
+            fill = (n_s / n_t) if n_t else float('nan')
+            wws = ((c['WRONG'] + c['HALLUCINATED']) / n_s) if n_s else 0.0
+            min_fill, max_wws = CEILINGS[name]
+            ok = (fill >= min_fill if n_t else True) and wws <= max_wws
+            tail = f"{f'>={min_fill:.0%} / <={max_wws:.0%}':>18}{'PASS' if ok else 'FAIL':>9}" if judged else ''
+            print(f"  {name:<18}{fill:>6.0%}{wws:>12.1%}{tail}")
+        print()
+
+    print('all tiers combined')
     print(f"{'field':<18}{'fill':>7}{'wrong-shown':>13}{'ceiling':>18}{'verdict':>9}")
     total_corrections = 0
     total_docs = max(1, len(rows))
@@ -222,7 +259,9 @@ def main() -> int:
     print()
     print(f'corrections per 100 documents: preview {actual:.0f}  vs  blank form {baseline:.0f}')
     if baseline > 0:
-        print(f'  reduction {1 - actual / baseline:+.0%} (§6.3 wants at least -50%)')
+        cut = 1 - actual / baseline
+        print(f'  {cut:.0%} FEWER corrections than a blank form '
+              f'(§6.3 wants at least 50% fewer) — {"meets" if cut >= 0.5 else "below"} the bar')
     if skipped:
         print(f'\n{len(skipped)} document(s) had no device DocDOM and were skipped')
     if failures:

@@ -1,0 +1,30 @@
+apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
+apply plugin: 'expo-module-gradle-plugin'
+
+group = 'com.gaiada.snapocr'
+version = '0.1.0'
+
+android {
+  namespace 'com.gaiada.snapocr'
+  defaultConfig {
+    // ML Kit Text Recognition v2 requires API 23+; Expo SDK 57 already floors
+    // at Android 7 (API 24), so this constrains nothing new.
+    minSdkVersion 24
+  }
+}
+
+dependencies {
+  // UNBUNDLED, and this line is a licence decision rather than a packaging one.
+  //
+  // `play-services-mlkit-text-recognition` ships a ~260KB stub and fetches the
+  // model through Google Play services, so NO proprietary weights enter the
+  // APK. The bundled artefact — `com.google.mlkit:text-recognition` — would put
+  // ~4MB of weights per script into the image and fail the D23 licence floor
+  // outright (docs/ON-DEVICE.md §5).
+  //
+  // Swapping this for the bundled coordinate is therefore not a performance
+  // tweak. Do not.
+  implementation 'com.google.android.gms:play-services-mlkit-text-recognition:19.0.1'
+  implementation 'com.google.android.gms:play-services-tasks:18.2.0'
+}
