@@ -60,9 +60,25 @@ jobs:
           # like a network fault on every screen.
           profile="${{ inputs.profile || 'preview' }}"
           url=$(python3 -c "import json;print(json.load(open('eas.json'))['build']['$profile'].get('env',{}).get('EXPO_PUBLIC_API_URL',''))")
-          if echo "$url" | grep -q 'REPLACE-WITH'; then
-            echo "::error::eas.json profile '$profile' still has a placeholder EXPO_PUBLIC_API_URL ($url). Set the real staging/production API hostname first — it is inlined at build time and cannot be changed after."
-            missing=1
+          # Checking for the literal string 'REPLACE-WITH' was not a check.
+          #
+          # The preview profile said https://staging.api.snapapps.au for months
+          # and that host has never existed; it contains no placeholder marker,
+          # so this passed it happily. An APK built against it would have failed
+          # every request with a DNS error that reads as "the server is down" —
+          # exactly the failure the comment above says this guard prevents.
+          #
+          # So ASK THE HOST. An empty URL is the deliberate fixtures-only demo
+          # mode and is left alone; anything else must answer /v1/ready before a
+          # build bakes it in permanently.
+          if [ -n "$url" ]; then
+            code=$(curl -s -o /dev/null -m 20 -w '%{http_code}' "$url/v1/ready" || echo 000)
+            if [ "$code" != "200" ]; then
+              echo "::error::eas.json profile '$profile' points at $url, which did not answer /v1/ready (got $code). It is inlined at build time and cannot be changed afterwards, so this would ship an app that cannot reach anything."
+              missing=1
+            else
+              echo "  $url answered /v1/ready"
+            fi
           fi
           [ "$missing" = "0" ] || exit 1
           echo "Prerequisites OK — building '$profile' against $url"

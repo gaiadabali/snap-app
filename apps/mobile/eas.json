@@ -43,16 +43,27 @@
       "//": [
         "An installable APK for putting the app in someone's hands. Points at",
         "staging; a preview build must never carry a production URL, because a",
-        "tester tapping Confirm would post to a real ledger."
+        "tester tapping Confirm would post to a real ledger.",
+        "",
+        "This said https://staging.api.snapapps.au until 2026-09-16, and that",
+        "host has never existed. The real staging API is the gaiada.com one",
+        "below; an APK built against the old value would have failed every",
+        "request with a DNS error that reads as 'the server is down'."
       ],
       "distribution": "internal",
       "android": { "buildType": "apk" },
-      "env": { "EXPO_PUBLIC_API_URL": "https://staging.api.snapapps.au" }
+      "env": { "EXPO_PUBLIC_API_URL": "https://snap-apps-api.gaiada.com" }
     },
 
     "production": {
+      "//": [
+        "There is no production API yet. This points at STAGING deliberately",
+        "rather than at a hostname nobody has registered — an unresolvable URL",
+        "baked into a release build is not safer than a staging one, it is just",
+        "harder to diagnose. Change this the day a production host exists."
+      ],
       "autoIncrement": true,
-      "env": { "EXPO_PUBLIC_API_URL": "https://api.snapapps.au" }
+      "env": { "EXPO_PUBLIC_API_URL": "https://snap-apps-api.gaiada.com" }
     }
   },
   "submit": {
