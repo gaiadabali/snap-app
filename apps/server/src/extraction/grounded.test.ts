@@ -99,9 +99,30 @@ describe('C2 — no span means null', () => {
     expect(r.unknownSpans).toEqual(['sp-does-not-exist']);
   });
 
-  it('rejects a run assembled from too many boxes', () => {
-    const many = Array.from({ length: 9 }, (_, i) => `s${(i % 5) + 1}`);
-    expect(resolve(doc(), { spans: many }).grounded).toBe(false);
+  it('rejects a run assembled from too many DISTINCT boxes', () => {
+    // Nine distinct spans, not nine references. The first version of this test
+    // repeated five ids nine times and passed only because the resolver did
+    // not yet deduplicate — once it did, nine references to five spans is five
+    // spans, which is correctly under the cap. The fixture was wrong, not the
+    // rule.
+    const wide = {
+      version: '1.0.0',
+      pages: [{ number: 1, width: 900, height: 200 }],
+      blocks: [{
+        id: 'b', kind: 'unknown', page: 1, order: 0,
+        box: { x: 0, y: 100, width: 900, height: 20 },
+        lines: [{
+          id: 'l', order: 0, box: { x: 0, y: 100, width: 900, height: 20 },
+          spans: Array.from({ length: 9 }, (_, i) => span(`w${i}`, String(i), i * 50)),
+        }],
+      }],
+      unreadable: [],
+    } as unknown as Document;
+
+    const nine = Array.from({ length: 9 }, (_, i) => `w${i}`);
+    expect(resolve(wide, { spans: nine }).grounded).toBe(false);
+    // Eight is the cap, and the cap is inclusive.
+    expect(resolve(wide, { spans: nine.slice(0, 8) }).grounded).toBe(true);
   });
 
   it('a field the OCR never read cannot come back with a value', () => {
@@ -164,5 +185,69 @@ describe('the catalogue the model chooses from', () => {
 
   it('is bounded, so a dense page cannot blow the prompt', () => {
     expect(renderSpanCatalogue(doc(), 3).split('\n').length).toBeLessThanOrEqual(4);
+  });
+});
+
+describe('a pointed date becomes ISO without the model converting it', () => {
+  const dated = (text: string): Document =>
+    ({
+      version: '1.0.0',
+      pages: [{ number: 1, width: 600, height: 800 }],
+      blocks: [{
+        id: 'b', kind: 'unknown', page: 1, order: 0,
+        box: { x: 0, y: 0, width: 600, height: 20 },
+        lines: [{
+          id: 'l', order: 0, box: { x: 0, y: 0, width: 300, height: 20 },
+          spans: [span('d1', text, 0)],
+        }],
+      }],
+      unreadable: [],
+    }) as unknown as Document;
+
+  it('reads every Australian day-first form the corpus prints', () => {
+    for (const [printed, expected] of [
+      ['22/08/2026', '2026-08-22'],
+      ['22 / 08 / 2026', '2026-08-22'],   // split across spans by the OCR
+      ['04/01/26', '2026-01-04'],
+      ['31-08-2026', '2026-08-31'],
+      ['19.12.2025', '2025-12-19'],
+      ['14 Aug 2026', '2026-08-14'],
+      ['2026-08-22', '2026-08-22'],
+    ] as const) {
+      const r = resolve(dated(printed), { spans: ['d1'] }, 'date');
+      expect(r.normalisedValue, printed).toBe(expected);
+      // The page's own text survives, for the review overlay to highlight.
+      expect(r.value).toBe(printed);
+    }
+  });
+
+  it('is day-first, never month-first', () => {
+    // 08/14/2026 is American. Guessing would re-introduce the ambiguity the
+    // date validator exists to catch, so month 14 is simply not a date.
+    expect(resolve(dated('08/14/2026'), { spans: ['d1'] }, 'date').normalisedValue).toBeNull();
+    // And the unambiguous case reads as 3 April, never 4 March.
+    expect(resolve(dated('03/04/2026'), { spans: ['d1'] }, 'date').normalisedValue)
+      .toBe('2026-04-03');
+  });
+
+  it('refuses a day the month does not have', () => {
+    expect(resolve(dated('31/02/2026'), { spans: ['d1'] }, 'date').normalisedValue).toBeNull();
+  });
+
+  it('refuses text that is not a date at all', () => {
+    const r = resolve(dated('TOTAL'), { spans: ['d1'] }, 'date');
+    expect(r.normalisedValue).toBeNull();
+    expect(r.value).toBe('TOTAL'); // still grounded — it points at something real
+  });
+});
+
+describe('a span named twice is a slip, not a repetition', () => {
+  it('deduplicates while preserving order', () => {
+    // A model repeated its references and produced `11 11 , , 000 000` for a
+    // total printed once. A span is a specific box; naming it twice cannot
+    // mean the value contains it twice.
+    const r = resolve(doc(), { spans: ['s2', 's3', 's2', 's3'] });
+    expect(r.value).toBe('$ 36.20');
+    expect(r.spanIds).toEqual(['s2', 's3']);
   });
 });

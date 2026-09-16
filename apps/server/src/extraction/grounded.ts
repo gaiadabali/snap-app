@@ -54,6 +54,19 @@ export type SpanRef = {
 export type GroundedValue = {
   /** Text of the referenced spans, joined. `null` when nothing was pointed at. */
   value: string | null;
+  /**
+   * The value in the form the document schema stores, when that differs.
+   *
+   * `value` is always the page's own text — that is the guarantee. But a date
+   * is stored as ISO, and a docket prints `22/08/2026`, so something has to
+   * convert. Doing it HERE keeps the conversion next to the evidence: the span
+   * text remains available for the review overlay to highlight, while the
+   * document gets the canonical form.
+   *
+   * `null` when the text could not be converted, which is C2 again — an
+   * unparseable date is not a date.
+   */
+  normalisedValue: string | null;
   spanIds: string[];
   box: Box | null;
   page: number | null;
@@ -82,6 +95,57 @@ function pageOf(doc: Document, spanId: string): number | null {
 }
 
 /**
+ * Australian day-first date forms, to ISO. `null` when it is not one.
+ *
+ * Day-first ONLY, deliberately. `grounding.ts` states the rule: a document
+ * printing `08/14/2026` is American, and guessing that here would silently
+ * re-introduce the month/day ambiguity the date validator exists to catch.
+ *
+ * The grounded prompt tells the model to point at the printed date and NOT to
+ * convert it, so this is where conversion belongs — and it is the reason the
+ * first pointing run scored 11 of 12 dates WRONG while every one of them had
+ * been pointed at correctly. `22 / 08 / 2026` is not `2026-08-22` to a string
+ * comparator, and the bug was in the reading of the answer, not the answer.
+ */
+const MONTHS = [
+  'jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec',
+];
+
+export function toIsoDate(raw: string | null): string | null {
+  if (!raw) return null;
+  // OCR splits a date across spans, so `22 / 08 / 2026` arrives spaced.
+  const text = raw.replace(/\s+/g, '').toLowerCase();
+
+  const numeric = /^(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{2}|\d{4})$/.exec(text);
+  if (numeric) {
+    const [, d, m, y] = numeric as unknown as [string, string, string, string];
+    const year = y.length === 2 ? 2000 + Number(y) : Number(y);
+    return iso(year, Number(m), Number(d));
+  }
+
+  const named = /^(\d{1,2})([a-z]{3,})(\d{2}|\d{4})$/.exec(text);
+  if (named) {
+    const [, d, name, y] = named as unknown as [string, string, string, string];
+    const m = MONTHS.indexOf(name.slice(0, 3)) + 1;
+    if (m === 0) return null;
+    const year = y.length === 2 ? 2000 + Number(y) : Number(y);
+    return iso(year, m, Number(d));
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
+  return null;
+}
+
+function iso(year: number, month: number, day: number): string | null {
+  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+  // Reject a day the month does not have — 31 February is not a date, and
+  // asserting it would be asserting something the paper cannot mean.
+  const probe = new Date(Date.UTC(year, month - 1, day));
+  if (probe.getUTCMonth() !== month - 1 || probe.getUTCDate() !== day) return null;
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
+/**
  * Resolve one span reference against the document.
  *
  * Every rejection below produces `grounded: false` and a null value, because
@@ -96,28 +160,40 @@ function pageOf(doc: Document, spanId: string): number | null {
  *  - **More spans than `MAX_SPAN_RUN`.** A value assembled from a dozen boxes
  *    is not evidence, it is a coincidence with extra steps.
  */
-export function resolve(doc: Document, ref: SpanRef | null | undefined): GroundedValue {
+export function resolve(
+  doc: Document,
+  ref: SpanRef | null | undefined,
+  kind: 'text' | 'date' = 'text',
+): GroundedValue {
   const empty: GroundedValue = {
-    value: null, spanIds: [], box: null, page: null,
+    value: null, normalisedValue: null, spanIds: [], box: null, page: null,
     confidence: 0, grounded: false, unknownSpans: [],
   };
   if (!ref || !Array.isArray(ref.spans) || ref.spans.length === 0) return empty;
 
   const index = spanIndex(doc);
-  const unknown = ref.spans.filter((id) => !index.has(id));
+  // A span is a specific box on the page, so naming it twice cannot mean the
+  // value contains it twice — it is a model slip. Deduplicating is semantic,
+  // not charitable: without it a repeated reference produced
+  // `11 11 , , 000 000` for a total printed once as `11,000`.
+  const ids = [...new Set(ref.spans)];
+  const unknown = ids.filter((id) => !index.has(id));
   if (unknown.length > 0) return { ...empty, unknownSpans: unknown };
-  if (ref.spans.length > MAX_SPAN_RUN) return empty;
+  if (ids.length > MAX_SPAN_RUN) return empty;
 
-  const spans = ref.spans.map((id) => index.get(id) as Span);
+  const spans = ids.map((id) => index.get(id) as Span);
   const boxes = spans.map((s) => s.box).filter(Boolean) as Box[];
 
+  // Joined with a single space and trimmed. The VALUE comes from the page,
+  // never from the model — that is the entire guarantee of this module.
+  const value = spans.map((s) => s.text).join(' ').replace(/\s+/g, ' ').trim() || null;
+
   return {
-    // Joined with a single space and trimmed. The VALUE comes from the page,
-    // never from the model — that is the entire guarantee of this module.
-    value: spans.map((s) => s.text).join(' ').replace(/\s+/g, ' ').trim() || null,
-    spanIds: [...ref.spans],
+    value,
+    normalisedValue: kind === 'date' ? toIsoDate(value) : value,
+    spanIds: ids,
     box: unionBox(boxes),
-    page: pageOf(doc, ref.spans[0] as string),
+    page: pageOf(doc, ids[0] as string),
     confidence: weakest(spans),
     grounded: true,
     unknownSpans: [],
@@ -155,7 +231,7 @@ export function resolveAll(
   let grounded = 0;
 
   for (const name of POINTED_FIELDS) {
-    const resolved = resolve(doc, refs[name]);
+    const resolved = resolve(doc, refs[name], name === 'issueDate' ? 'date' : 'text');
     fields[name] = resolved;
     unknown.push(...resolved.unknownSpans);
     // A field the model declined to point at is an abstention, not a failure:

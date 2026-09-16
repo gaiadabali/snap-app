@@ -121,7 +121,13 @@ def to_manifest_shape(resolved: dict, doc_fields: dict) -> dict:
     for manifest_name, pointed in POINTED.items():
         if manifest_name not in doc_fields:
             continue
-        out[manifest_name] = (resolved['fields'].get(pointed) or {}).get('value')
+        field = resolved['fields'].get(pointed) or {}
+        # `normalisedValue` is what the DOCUMENT would store, and what the
+        # manifest's truth is written in. Scoring `value` — the page's own text
+        # — marked 11 of 12 correctly-pointed dates WRONG, because
+        # "22 / 08 / 2026" is not "2026-08-22" to a string comparator. The
+        # answers were right; the reading of them was not.
+        out[manifest_name] = field.get('normalisedValue', field.get('value'))
     return out
 
 

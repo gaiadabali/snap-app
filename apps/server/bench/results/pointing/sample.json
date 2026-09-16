@@ -1,0 +1,642 @@
+{
+  "manifest": "corpus/sample/manifest.json",
+  "tier_floor": "S",
+  "per_field": {
+    "hosted:gemma4:31b|supplier_abn": {
+      "ABSTAIN_OK": 18,
+      "EXACT": 5,
+      "MISS": 1
+    },
+    "hosted:gemma4:31b|total_inclusive": {
+      "NORMALISED": 17,
+      "WRONG": 3,
+      "EXACT": 3,
+      "MISS": 1
+    },
+    "hosted:gemma4:31b|gst_amount": {
+      "NORMALISED": 5,
+      "MISS": 4,
+      "ABSTAIN_OK": 10,
+      "EXACT": 5
+    },
+    "hosted:gemma4:31b|supplier_name": {
+      "NORMALISED": 10,
+      "MISS": 1,
+      "EXACT": 1
+    },
+    "hosted:gemma4:31b|issue_date": {
+      "WRONG": 11,
+      "MISS": 1
+    },
+    "hosted:minimax-m3|supplier_abn": {
+      "ABSTAIN_OK": 18,
+      "MISS": 4,
+      "EXACT": 2
+    },
+    "hosted:minimax-m3|total_inclusive": {
+      "MISS": 9,
+      "NORMALISED": 11,
+      "WRONG": 2,
+      "EXACT": 2
+    },
+    "hosted:minimax-m3|gst_amount": {
+      "MISS": 9,
+      "WRONG": 1,
+      "NORMALISED": 2,
+      "ABSTAIN_OK": 10,
+      "EXACT": 2
+    },
+    "hosted:minimax-m3|supplier_name": {
+      "NORMALISED": 7,
+      "MISS": 4,
+      "EXACT": 1
+    },
+    "hosted:minimax-m3|issue_date": {
+      "WRONG": 8,
+      "MISS": 4
+    }
+  },
+  "unknown_spans": {
+    "hosted:gemma4:31b": 0,
+    "hosted:minimax-m3": 0
+  },
+  "results": [
+    {
+      "document": "tierp-cord-v2-0071",
+      "engine": "hosted:gemma4:31b",
+      "groundedRate": 1,
+      "unknownSpans": [],
+      "got": {
+        "supplier_abn": null,
+        "total_inclusive": "282 , 000",
+        "gst_amount": "25 , 637"
+      }
+    },
+    {
+      "document": "tierp-cord-v2-0039",
+      "engine": "hosted:gemma4:31b",
+      "groundedRate": 1,
+      "unknownSpans": [],
+      "got": {
+        "supplier_abn": null,
+        "total_inclusive": "16 , 500",
+        "gst_amount": "1.500"
+      }
+    },
+    {
+      "document": "tierp-cord-v2-0030",
+      "engine": "hosted:gemma4:31b",
+      "groundedRate": 1,
+      "unknownSpans": [],
+      "got": {
+        "supplier_abn": null,
+        "total_inclusive": "113.886",
+        "gst_amount": null
+      }
+    },
+    {
+      "document": "tierp-cord-v2-0062",
+      "engine": "hosted:gemma4:31b",
+      "groundedRate": 1,
+      "unknownSpans": [],
+      "got": {
+        "supplier_abn": null,
+        "total_inclusive": "40.690",
+        "gst_amount": null
+      }
+    },
+    {
+      "document": "tierp-cord-v2-0015",
+      "engine": "hosted:gemma4:31b",
+      "groundedRate": 1,
+      "unknownSpans": [],
+      "got": {
+        "supplier_abn": null,
+        "total_inclusive": "70 , 000",
+        "gst_amount": "6 , 364"
+      }
+    },
+    {
+      "document": "tierp-cord-v2-0042",
+      "engine": "hosted:gemma4:31b",
+      "groundedRate": 1,
+      "unknownSpans": [],
+      "got": {
+        "supplier_abn": null,
+        "total_inclusive": "88.000",
+        "gst_amount": null
+      }
+    },
+    {
+      "document": "tierp-cord-v2-0003",
+      "engine": "hosted:gemma4:31b",
+      "groundedRate": 1,
+      "unknownSpans": [],
+      "got": {
+        "supplier_abn": null,
+        "total_inclusive": "11 11 , , 000 000",
+        "gst_amount": null
+      }
+    },
+    {
+      "document": "tierp-cord-v2-0009",
+      "engine": "hosted:gemma4:31b",
+      "groundedRate": 1,
+      "unknownSpans": [],
+      "got": {
+        "supplier_abn": null,
+        "total_inclusive": "17 , 000",
+        "gst_amount": null
+      }
+    },
+    {
+      "document": "tierp-cord-v2-0066",
+      "engine": "hosted:gemma4:31b",
+      "groundedRate": 1,
+      "unknownSpans": [],
+      "got": {
+        "supplier_abn": null,
+        "total_inclusive": "1.565 938",
+        "gst_amount": "142 , 358"
+      }
+    },
+    {
+      "document": "tierp-cord-v2-0028",
+      "engine": "hosted:gemma4:31b",
+      "groundedRate": 1,
+      "unknownSpans": [],
+      "got": {
+        "supplier_abn": null,
+        "total_inclusive": "145 , 900",
+        "gst_amount": "13 , 264"
+      }
+    },
+    {
+      "document": "tierp-cord-v2-0001",
+      "engine": "hosted:gemma4:31b",
+      "groundedRate": 1,
+      "unknownSpans": [],
+      "got": {
+        "supplier_abn": null,
+        "total_inclusive": "91000",
+        "gst_amount": null
+      }
+    },
+    {
+      "document": "tierp-cord-v2-0093",
+      "engine": "hosted:gemma4:31b",
+      "groundedRate": 1,
+      "unknownSpans": [],
+      "got": {
+        "supplier_abn": null,
+        "total_inclusive": "250.690",
+        "gst_amount": null
+      }
+    },
+    {
+      "document": "gen-no_abn_van-0102",
+      "engine": "hosted:gemma4:31b",
+      "groundedRate": 1,
+      "unknownSpans": [],
+      "got": {
+        "supplier_name": "THE LITTLE FOOD TRUCK",
+        "supplier_abn": null,
+        "issue_date": "22 / 08 / 2026",
+        "total_inclusive": "$ 23.00",
+        "gst_amount": null
+      }
+    },
+    {
+      "document": "gen-supermarket-0043",
+      "engine": "hosted:gemma4:31b",
+      "groundedRate": 1,
+      "unknownSpans": [],
+      "got": {
+        "supplier_name": "RIVERTON FRESH MARKET",
+        "supplier_abn": "08293882425",
+        "issue_date": "19 / 12 / 2025",
+        "total_inclusive": "$ 44.78",
+        "gst_amount": "1.75"
+      }
+    },
+    {
+      "document": "gen-no_abn_van-0029",
+      "engine": "hosted:gemma4:31b",
+      "groundedRate": 1,
+      "unknownSpans": [],
+      "got": {
+        "supplier_name": "RIVERBANK SNACK TRAILER",
+        "supplier_abn": null,
+        "issue_date": "18 / 09 / 2026",
+        "total_inclusive": "$ 16.50",
+        "gst_amount": null
+      }
+    },
+    {
+      "document": "gen-supermarket-0084",
+      "engine": "hosted:gemma4:31b",
+      "groundedRate": 1,
+      "unknownSpans": [],
+      "got": {
+        "supplier_name": "KALINDA GROCERS",
+        "supplier_abn": "76672752465",
+        "issue_date": "04 / 08 / 2026",
+        "total_inclusive": "$ 51.28",
+        "gst_amount": "2.73"
+      }
+    },
+    {
+      "document": "gen-no_abn_van-0011",
+      "engine": "hosted:gemma4:31b",
+      "groundedRate": 1,
+      "unknownSpans": [],
+      "got": {
+        "supplier_name": "RIVERBANK SNACK TRAILER",
+        "supplier_abn": null,
+        "issue_date": "04 / 01 / 2026",
+        "total_inclusive": "13.90",
+        "gst_amount": null
+      }
+    },
+    {
+      "document": "gen-cafe-0291",
+      "engine": "hosted:gemma4:31b",
+      "groundedRate": 1,
+      "unknownSpans": [],
+      "got": {
+        "supplier_name": "THE SIDINGS CAFE",
+        "supplier_abn": "26547496341",
+        "issue_date": "31 / 08 / 2026",
+        "total_inclusive": "$ 21.50",
+        "gst_amount": "1.95"
+      }
+    },
+    {
+      "document": "receipt-noabn",
+      "engine": "hosted:gemma4:31b",
+      "groundedRate": 1,
+      "unknownSpans": [],
+      "got": {
+        "supplier_name": "ROADSIDE COFFEE VAN",
+        "supplier_abn": null,
+        "issue_date": "06 / 09 / 26",
+        "total_inclusive": "8.50",
+        "gst_amount": null
+      }
+    },
+    {
+      "document": "invoice-multipage",
+      "engine": "hosted:gemma4:31b",
+      "groundedRate": 1,
+      "unknownSpans": [],
+      "got": {
+        "supplier_name": null,
+        "supplier_abn": null,
+        "issue_date": null,
+        "total_inclusive": null,
+        "gst_amount": null
+      }
+    },
+    {
+      "document": "gen-no_abn_van-0006",
+      "engine": "hosted:gemma4:31b",
+      "groundedRate": 1,
+      "unknownSpans": [],
+      "got": {
+        "supplier_name": "RIVERBANK SNACK TRAILER",
+        "supplier_abn": null,
+        "issue_date": "07 / 09 / 2026",
+        "total_inclusive": "$ 11.70",
+        "gst_amount": null
+      }
+    },
+    {
+      "document": "gen-cafe-0016",
+      "engine": "hosted:gemma4:31b",
+      "groundedRate": 1,
+      "unknownSpans": [],
+      "got": {
+        "supplier_name": "RIVERGUM COFFEE HOUSE",
+        "supplier_abn": "51314757397",
+        "issue_date": "12 / 02 / 2026",
+        "total_inclusive": "$ 29.90",
+        "gst_amount": "2.72"
+      }
+    },
+    {
+      "document": "gen-no_abn_van-0082",
+      "engine": "hosted:gemma4:31b",
+      "groundedRate": 1,
+      "unknownSpans": [],
+      "got": {
+        "supplier_name": "ROADSIDE COFFEE VAN",
+        "supplier_abn": null,
+        "issue_date": "25 / 01 / 2026",
+        "total_inclusive": "$ 23.70",
+        "gst_amount": null
+      }
+    },
+    {
+      "document": "gen-trade_invoice-0020",
+      "engine": "hosted:gemma4:31b",
+      "groundedRate": 1,
+      "unknownSpans": [],
+      "got": {
+        "supplier_name": "Cavanagh Transport Pty Ltd",
+        "supplier_abn": "82926267200",
+        "issue_date": "07 / 07 / 2026",
+        "total_inclusive": "$ 5 , 527.50",
+        "gst_amount": "502.50"
+      }
+    },
+    {
+      "document": "tierp-cord-v2-0071",
+      "engine": "hosted:minimax-m3",
+      "groundedRate": 1,
+      "unknownSpans": [],
+      "got": {
+        "supplier_abn": null,
+        "total_inclusive": null,
+        "gst_amount": null
+      }
+    },
+    {
+      "document": "tierp-cord-v2-0039",
+      "engine": "hosted:minimax-m3",
+      "groundedRate": 1,
+      "unknownSpans": [],
+      "got": {
+        "supplier_abn": null,
+        "total_inclusive": "16 , 500",
+        "gst_amount": null
+      }
+    },
+    {
+      "document": "tierp-cord-v2-0030",
+      "engine": "hosted:minimax-m3",
+      "groundedRate": 1,
+      "unknownSpans": [],
+      "got": {
+        "supplier_abn": null,
+        "total_inclusive": null,
+        "gst_amount": null
+      }
+    },
+    {
+      "document": "tierp-cord-v2-0062",
+      "engine": "hosted:minimax-m3",
+      "groundedRate": 1,
+      "unknownSpans": [],
+      "got": {
+        "supplier_abn": null,
+        "total_inclusive": "40.690",
+        "gst_amount": "10.0007"
+      }
+    },
+    {
+      "document": "tierp-cord-v2-0015",
+      "engine": "hosted:minimax-m3",
+      "groundedRate": 1,
+      "unknownSpans": [],
+      "got": {
+        "supplier_abn": null,
+        "total_inclusive": "70 , 000",
+        "gst_amount": "6 , 364"
+      }
+    },
+    {
+      "document": "tierp-cord-v2-0042",
+      "engine": "hosted:minimax-m3",
+      "groundedRate": 1,
+      "unknownSpans": [],
+      "got": {
+        "supplier_abn": null,
+        "total_inclusive": null,
+        "gst_amount": null
+      }
+    },
+    {
+      "document": "tierp-cord-v2-0003",
+      "engine": "hosted:minimax-m3",
+      "groundedRate": 1,
+      "unknownSpans": [],
+      "got": {
+        "supplier_abn": null,
+        "total_inclusive": "11 , 000",
+        "gst_amount": null
+      }
+    },
+    {
+      "document": "tierp-cord-v2-0009",
+      "engine": "hosted:minimax-m3",
+      "groundedRate": 1,
+      "unknownSpans": [],
+      "got": {
+        "supplier_abn": null,
+        "total_inclusive": "17 , 000",
+        "gst_amount": null
+      }
+    },
+    {
+      "document": "tierp-cord-v2-0066",
+      "engine": "hosted:minimax-m3",
+      "groundedRate": 1,
+      "unknownSpans": [],
+      "got": {
+        "supplier_abn": null,
+        "total_inclusive": null,
+        "gst_amount": null
+      }
+    },
+    {
+      "document": "tierp-cord-v2-0028",
+      "engine": "hosted:minimax-m3",
+      "groundedRate": 1,
+      "unknownSpans": [],
+      "got": {
+        "supplier_abn": null,
+        "total_inclusive": "145 , 900",
+        "gst_amount": "13 , 264"
+      }
+    },
+    {
+      "document": "tierp-cord-v2-0001",
+      "engine": "hosted:minimax-m3",
+      "groundedRate": 1,
+      "unknownSpans": [],
+      "got": {
+        "supplier_abn": null,
+        "total_inclusive": "91000",
+        "gst_amount": null
+      }
+    },
+    {
+      "document": "tierp-cord-v2-0093",
+      "engine": "hosted:minimax-m3",
+      "groundedRate": 1,
+      "unknownSpans": [],
+      "got": {
+        "supplier_abn": null,
+        "total_inclusive": null,
+        "gst_amount": null
+      }
+    },
+    {
+      "document": "gen-no_abn_van-0102",
+      "engine": "hosted:minimax-m3",
+      "groundedRate": 1,
+      "unknownSpans": [],
+      "got": {
+        "supplier_name": "THE LITTLE FOOD TRUCK",
+        "supplier_abn": null,
+        "issue_date": "22 / 08 / 2026",
+        "total_inclusive": "$ 23.00",
+        "gst_amount": null
+      }
+    },
+    {
+      "document": "gen-supermarket-0043",
+      "engine": "hosted:minimax-m3",
+      "groundedRate": 1,
+      "unknownSpans": [],
+      "got": {
+        "supplier_name": null,
+        "supplier_abn": null,
+        "issue_date": null,
+        "total_inclusive": null,
+        "gst_amount": null
+      }
+    },
+    {
+      "document": "gen-no_abn_van-0029",
+      "engine": "hosted:minimax-m3",
+      "groundedRate": 1,
+      "unknownSpans": [],
+      "got": {
+        "supplier_name": "RIVERBANK SNACK TRAILER",
+        "supplier_abn": null,
+        "issue_date": "18 / 09 / 2026",
+        "total_inclusive": "$ 16.50",
+        "gst_amount": null
+      }
+    },
+    {
+      "document": "gen-supermarket-0084",
+      "engine": "hosted:minimax-m3",
+      "groundedRate": 1,
+      "unknownSpans": [],
+      "got": {
+        "supplier_name": null,
+        "supplier_abn": null,
+        "issue_date": null,
+        "total_inclusive": null,
+        "gst_amount": null
+      }
+    },
+    {
+      "document": "gen-no_abn_van-0011",
+      "engine": "hosted:minimax-m3",
+      "groundedRate": 1,
+      "unknownSpans": [],
+      "got": {
+        "supplier_name": "RIVERBANK SNACK TRAILER",
+        "supplier_abn": null,
+        "issue_date": "04 / 01 / 2026",
+        "total_inclusive": "$ 13.90",
+        "gst_amount": null
+      }
+    },
+    {
+      "document": "gen-cafe-0291",
+      "engine": "hosted:minimax-m3",
+      "groundedRate": 1,
+      "unknownSpans": [],
+      "got": {
+        "supplier_name": "THE SIDINGS CAFE",
+        "supplier_abn": "26547496341",
+        "issue_date": "31 / 08 / 2026",
+        "total_inclusive": "$ 21.50",
+        "gst_amount": "1.95"
+      }
+    },
+    {
+      "document": "receipt-noabn",
+      "engine": "hosted:minimax-m3",
+      "groundedRate": 1,
+      "unknownSpans": [],
+      "got": {
+        "supplier_name": "ROADSIDE COFFEE VAN",
+        "supplier_abn": null,
+        "issue_date": "06 / 09 / 26 06 : 14",
+        "total_inclusive": "8.50",
+        "gst_amount": null
+      }
+    },
+    {
+      "document": "invoice-multipage",
+      "engine": "hosted:minimax-m3",
+      "groundedRate": 1,
+      "unknownSpans": [],
+      "got": {
+        "supplier_name": null,
+        "supplier_abn": null,
+        "issue_date": null,
+        "total_inclusive": null,
+        "gst_amount": null
+      }
+    },
+    {
+      "document": "gen-no_abn_van-0006",
+      "engine": "hosted:minimax-m3",
+      "groundedRate": 1,
+      "unknownSpans": [],
+      "got": {
+        "supplier_name": "RIVERBANK SNACK TRAILER",
+        "supplier_abn": null,
+        "issue_date": "07 / 09 / 2026",
+        "total_inclusive": "$ 11.70",
+        "gst_amount": null
+      }
+    },
+    {
+      "document": "gen-cafe-0016",
+      "engine": "hosted:minimax-m3",
+      "groundedRate": 1,
+      "unknownSpans": [],
+      "got": {
+        "supplier_name": null,
+        "supplier_abn": null,
+        "issue_date": null,
+        "total_inclusive": null,
+        "gst_amount": null
+      }
+    },
+    {
+      "document": "gen-no_abn_van-0082",
+      "engine": "hosted:minimax-m3",
+      "groundedRate": 1,
+      "unknownSpans": [],
+      "got": {
+        "supplier_name": "ROADSIDE COFFEE VAN",
+        "supplier_abn": null,
+        "issue_date": "25 / 01 / 2026",
+        "total_inclusive": "$ 23.70",
+        "gst_amount": null
+      }
+    },
+    {
+      "document": "gen-trade_invoice-0020",
+      "engine": "hosted:minimax-m3",
+      "groundedRate": 1,
+      "unknownSpans": [],
+      "got": {
+        "supplier_name": "Cavanagh Transport Pty Ltd",
+        "supplier_abn": "82926267200",
+        "issue_date": "07 / 07 / 2026",
+        "total_inclusive": "$ 5 , 527.50",
+        "gst_amount": "502.50"
+      }
+    }
+  ],
+  "failures": []
+}
