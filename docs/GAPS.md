@@ -123,6 +123,38 @@ characters are perfect.
 - **Done when:** the results markdown leads with the whitespace-insensitive figure, strict is still
   present, and the file states in one line why they differ.
 
+> **DONE 2026-09-16** — `bench/results/ocr-a3/`, real sidecar run.
+>
+> | regions | headline | strict |
+> |---|---|---|
+> | **money / identifier / date** (5) | **0.0000** whitespace-insensitive | 0.0848 |
+> | **prose** (2) | — | **0.0192** strict |
+> | all 7 | 0.0000 | 0.0661 |
+>
+> **On every field carrying money or an identifier, PP-OCRv5 reads every
+> character correctly.** The 6.6% that has been quoted as this engine's error
+> rate was entirely the engine splitting `$1,042.60` into `$ 1 , 042.60` — where
+> it drew its boxes, not what it read.
+>
+> The split is per REGION KIND rather than global, which needed `kind` on each
+> truth region (`gen_ocr_corpus.py` now emits `money` / `identifier` / `date` /
+> `text`). Whitespace-insensitive leads only for figures; on prose a space is a
+> character the engine either read or did not, so strict is the honest number
+> there.
+>
+> **The explanatory sentence is conditional on the numbers**, because the effect
+> runs both ways: stripping whitespace also shortens the string, so a
+> substitution becomes a larger share of it. The flawed self-test fixture
+> reports strict 0.0143 against whitespace-insensitive 0.0182, and asserting
+> "the gap is split boxes" there would have been claiming a cause the numbers
+> contradict.
+>
+> Regenerating the truth manifest also **silently deleted its provenance block**
+> — the tier lived in the file rather than in the generator that writes it.
+> Caught immediately because `provenance.py` refuses a manifest without a tier,
+> which is the control doing exactly what it was built for. The generator now
+> emits it.
+
 ### A4 — Evaluate OpenVINO as the CPU backend
 
 **Depends on: A1. Effort: days, not hours.**

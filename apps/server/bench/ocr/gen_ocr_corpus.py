@@ -103,25 +103,25 @@ HTML = f"""<!doctype html><html><head><meta charset="utf-8"><style>
   .faint {{ color: #c9c9c9; }}
 </style></head><body>
   <div class="row"><span class="label">Supplier</span>
-    <span class="value" id="gt-supplier" data-gt="legible">Curragundi Rural Supplies Pty Ltd</span></div>
+    <span class="value" id="gt-supplier" data-kind="text" data-gt="legible">Curragundi Rural Supplies Pty Ltd</span></div>
   <div class="row"><span class="label">ABN</span>
-    <span class="value" id="gt-abn" data-gt="legible">{ABN_FORMATTED}</span></div>
+    <span class="value" id="gt-abn" data-kind="identifier" data-gt="legible">{ABN_FORMATTED}</span></div>
   <div class="row"><span class="label">Invoice date</span>
-    <span class="value" id="gt-date" data-gt="legible">14 August 2026</span></div>
+    <span class="value" id="gt-date" data-kind="date" data-gt="legible">14 August 2026</span></div>
   <div class="row"><span class="label">Line item</span>
-    <span class="value" id="gt-line" data-gt="legible">Fencing wire, 25kg roll x4</span></div>
+    <span class="value" id="gt-line" data-kind="text" data-gt="legible">Fencing wire, 25kg roll x4</span></div>
   <div class="row"><span class="label">Total (incl. GST)</span>
-    <span class="value" id="gt-total" data-gt="legible">$1,042.60</span></div>
+    <span class="value" id="gt-total" data-kind="money" data-gt="legible">$1,042.60</span></div>
   <div class="row"><span class="label">Authorised signature (redacted -- genuinely unreadable, not merely hard)</span>
     <span class="redact-wrap">
-      <span class="value" id="gt-signature" data-gt="illegible"
+      <span class="value" id="gt-signature" data-kind="text" data-gt="illegible"
             data-reason="opaque overlay -- the pixels carry no text at all">J. Whitfield</span>
       <span class="redact-box"></span>
     </span></div>
   <div class="row"><span class="label">Consignment note (blurred, and still read correctly)</span>
-    <span class="value smudge" id="gt-smudged" data-gt="legible">CN 88421-QX</span></div>
+    <span class="value smudge" id="gt-smudged" data-kind="identifier" data-gt="legible">CN 88421-QX</span></div>
   <div class="row"><span class="label">Carrier reference (low contrast, and still read correctly)</span>
-    <span class="value faint" id="gt-faint" data-gt="legible">REF 7741-BD</span></div>
+    <span class="value faint" id="gt-faint" data-kind="identifier" data-gt="legible">REF 7741-BD</span></div>
 </body></html>"""
 
 
@@ -149,6 +149,12 @@ def _measure(page) -> dict:
         # reasons and a scorer that cannot tell them apart cannot tell a
         # missed detection from a correct abstention.
         reason = handle.get_attribute('data-reason')
+        # What KIND of thing this region is, so the report can lead with the
+        # right error rate. PP-OCRv5 inserts whitespace inside figures —
+        # `$1,042.60` comes back as `$ 1 , 042.60` — so strict CER on a money
+        # region measures typography, not reading (docs/GAPS.md A3). On prose
+        # the strict figure is the honest one.
+        kind = handle.get_attribute('data-kind') or 'text'
         text = handle.text_content()
         bb = handle.bounding_box()
         if bb is None:
@@ -159,7 +165,8 @@ def _measure(page) -> dict:
             'width': round(bb['width'] * DEVICE_SCALE, 2),
             'height': round(bb['height'] * DEVICE_SCALE, 2),
         }
-        regions[el_id] = {'text': text, 'box': box, 'legible': legible, 'reason': reason}
+        regions[el_id] = {'text': text, 'kind': kind, 'box': box,
+                          'legible': legible, 'reason': reason}
     return regions
 
 
@@ -255,9 +262,29 @@ def generate():
             "ABSTAINED_CORRECTLY outcome can be honestly scored against. Self-validated by "
             "_validate() at generation time and again by validate_truth.py before every score run."
         ),
+        # Emitted here, NOT added to the file afterwards. The first version of
+        # this block was hand-added to the manifest and the next regeneration
+        # silently removed it — caught only because provenance.py refuses a
+        # manifest without a tier (docs/CORPUS.md §4). A generated file's
+        # metadata belongs in the generator.
+        'provenance': {
+            'tier': 'S',
+            'source': (
+                'gen_ocr_corpus.py: boxes read from Playwright bounding_box() on a rendered '
+                'DOM. Synthetic, so glyph edges are ideal -- this is the corpus that produced '
+                'detection recall 0.875 and CER 0.0661 (docs/OCR.md §8.1), and BOTH are '
+                'optimistic for that reason (docs/CORPUS.md §2).'
+            ),
+            'licence': 'ours',
+            'captured_in': None,
+            'pii_reviewed': True,
+        },
         'page': {'width': page_w, 'height': page_h, 'source_image': 'corpus/ocr-truth.png', 'device_scale': DEVICE_SCALE},
         'regions': [
-            {'id': rid, 'text': (r['text'] if r['legible'] else None), 'box': r['box'], 'legible': r['legible'],
+            {'id': rid, 'text': (r['text'] if r['legible'] else None),
+             # What kind of thing this region is, so the score report can lead
+             # with the right error rate — docs/GAPS.md A3.
+             'kind': r['kind'], 'box': r['box'], 'legible': r['legible'],
              'reason': None if r['legible'] else r['reason']}
             for rid, r in regions.items()
         ],

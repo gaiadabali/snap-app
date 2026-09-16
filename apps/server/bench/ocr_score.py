@@ -286,6 +286,7 @@ def score_document(
                 wer_values.append(w)
             per_region_text.append({
                 'truth_id': r['id'], 'truth_text': r['text'], 'grouped_text': combined,
+                'kind': r.get('kind', 'text'),
                 'cer_strict': c_strict, 'cer_whitespace_insensitive': c_ws, 'wer': w,
             })
             # Calibration uses the same whitespace-insensitive correctness the
@@ -427,13 +428,62 @@ def to_markdown(report: dict) -> str:
         cer_strict_s = f"{te['mean_cer_strict']:.4f}" if te['mean_cer_strict'] is not None else 'n/a'
         cer_ws_s = f"{te['mean_cer_whitespace_insensitive']:.4f}" if te['mean_cer_whitespace_insensitive'] is not None else 'n/a'
         wer_s = f"{te['mean_wer_matched']:.4f}" if te['mean_wer_matched'] is not None else 'n/a'
-        lines.append(f"- **CER** (mean over {te['n_matched_legible']} matched legible regions): "
-                      f"strict={cer_strict_s}  whitespace-insensitive={cer_ws_s} (drives CORRECT/CONFIDENT_WRONG below)")
+        # docs/GAPS.md A3: lead with the figure that measures READING.
+        #
+        # PP-OCRv5 reads `$1,042.60` as `$ 1 , 042.60`. On a money or identifier
+        # region the strict figure is measuring where the engine put its box
+        # boundaries, not whether it read the characters — §8.1 measured strict
+        # 0.0661 and whitespace-insensitive 0.0000 on the SAME seven regions.
+        # On prose, whitespace is semantic and strict is the honest number.
+        FIGURE_KINDS = {'money', 'identifier', 'date'}
+        figures = [pr for pr in te['per_region'] if pr.get('kind') in FIGURE_KINDS]
+        prose = [pr for pr in te['per_region'] if pr.get('kind') not in FIGURE_KINDS]
+        mean = lambda xs: (sum(xs) / len(xs)) if xs else None
+        fmt = lambda v: f'{v:.4f}' if v is not None else 'n/a'
+
+        fig_ws = mean([pr['cer_whitespace_insensitive'] for pr in figures
+                       if pr['cer_whitespace_insensitive'] is not None])
+        fig_strict = mean([pr['cer_strict'] for pr in figures if pr['cer_strict'] is not None])
+        prose_strict = mean([pr['cer_strict'] for pr in prose if pr['cer_strict'] is not None])
+
+        # The explanation is CONDITIONAL on the numbers, because it is only true
+        # in one direction. Stripping whitespace also shortens the string, so a
+        # substitution error becomes a larger fraction of it — the flawed
+        # self-test fixture reports strict 0.0143 against whitespace-insensitive
+        # 0.0182. Asserting "the gap is the engine splitting figures" there
+        # would be claiming a cause the numbers contradict, which is the exact
+        # habit this file exists to avoid.
+        if fig_ws is not None and fig_strict is not None and fig_ws < fig_strict:
+            why = (
+                f"Strict is {fmt(fig_strict)} on the same regions, and the difference is the "
+                f"engine splitting `$1,042.60` into `$ 1 , 042.60` — where it drew its boxes, "
+                f"not what it read (docs/GAPS.md A3)."
+            )
+        elif fig_ws is not None and fig_strict is not None and fig_ws > fig_strict:
+            why = (
+                f"Strict is LOWER here at {fmt(fig_strict)}, which means the errors are "
+                f"substitutions rather than split boxes: removing whitespace shortens the "
+                f"string, so the same wrong character is a larger share of it."
+            )
+        else:
+            why = f"Strict is {fmt(fig_strict)} on the same regions — no whitespace effect this run."
+        lines.append(
+            f"- **CER on money / identifier / date ({len(figures)} regions): "
+            f"{fmt(fig_ws)}** — whitespace-insensitive, and this is the headline. {why}"
+        )
+        lines.append(
+            f"- **CER on prose ({len(prose)} regions): {fmt(prose_strict)}** — strict, because "
+            f"in running text a space is a character the engine either read or did not."
+        )
+        lines.append(f"- CER over ALL {te['n_matched_legible']} matched legible regions: "
+                      f"strict={cer_strict_s}  whitespace-insensitive={cer_ws_s} "
+                      f"(the latter drives CORRECT/CONFIDENT_WRONG below)")
         lines.append(f"  - **WER**={wer_s} — noisy at word granularity here; a word-level engine's own box "
                       f"boundaries need not match this ground truth's word breaks, so this is reported but "
                       f"should not be read as a reading-accuracy regression signal on its own")
         for pr in te['per_region']:
-            lines.append(f"  - `{pr['truth_id']}`: truth={pr['truth_text']!r}  read={pr['grouped_text']!r}  "
+            lines.append(f"  - `{pr['truth_id']}` [{pr.get('kind','text')}]: truth={pr['truth_text']!r}  "
+                          f"read={pr['grouped_text']!r}  "
                           f"(cer_strict={pr['cer_strict']:.3f}, cer_ws={pr['cer_whitespace_insensitive']:.3f})")
         ab_s = s['abstention']
         lines.append(f"- **Abstention quality**: mean={ab_s['mean_quality']:.3f}  outcomes={ab_s['outcome_counts']}"
