@@ -49,3 +49,14 @@ Thumbs.db
 # Expo web export — build output of `pnpm --filter @snap/mobile export:web`.
 # Used to capture the marketing site's app screenshots (docs/WEB.md 4.6).
 .expo-export/
+
+# Agent / assistant scratch. These are one developer's local tooling — agent
+# definitions, session settings, design explorations rendered by a tool — and
+# they are not the project. They drift, they are large, and a reader looking
+# for how Snap Apps works should never find them first. Kept locally, ignored
+# here; the decisions they produced live in docs/ instead, which is the part
+# worth reviewing.
+.claude/
+.design-directions/
+CLAUDE.md
+AGENTS.md
