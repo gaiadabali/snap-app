@@ -98,6 +98,48 @@ def _box_from_quad(points: list[tuple[float, float]]) -> dict[str, Any]:
     return box
 
 
+
+def _rows_from_boxes(rec_boxes, n: int) -> list[list[int]]:
+    """Group detections into printed ROWS, each ordered left-to-right.
+
+    Two detections belong to the same row when their vertical extents overlap
+    by more than half the shorter one. Overlap rather than a fixed pixel
+    tolerance, because line height varies with type size on the same document —
+    a 15px total and an 11px footnote need different tolerances and an overlap
+    ratio supplies both.
+
+    Rows are returned top-to-bottom; indices within a row are left-to-right.
+    """
+    if n == 0:
+        return []
+
+    items = []
+    for i in range(n):
+        box = rec_boxes[i]
+        y0, y1 = float(box[1]), float(box[3])
+        if y1 < y0:
+            y0, y1 = y1, y0
+        items.append((i, float(box[0]), y0, y1))
+    items.sort(key=lambda it: (it[2], it[1]))
+
+    rows: list[list[tuple]] = []
+    for it in items:
+        placed = False
+        for row in rows:
+            ry0 = min(r[2] for r in row)
+            ry1 = max(r[3] for r in row)
+            overlap = min(ry1, it[3]) - max(ry0, it[2])
+            shorter = min(ry1 - ry0, it[3] - it[2])
+            if shorter > 0 and overlap > 0.5 * shorter:
+                row.append(it)
+                placed = True
+                break
+        if not placed:
+            rows.append([it])
+
+    rows.sort(key=lambda row: min(r[2] for r in row))
+    return [[r[0] for r in sorted(row, key=lambda r: r[1])] for row in rows]
+
 class OcrEngine:
     """Loads PP-OCRv5 once and answers DocDOM-shaped `read()` calls."""
 
@@ -164,85 +206,109 @@ class OcrEngine:
             text_word_regions = res.get("text_word_region", [None] * len(rec_texts))
 
             n = len(rec_texts)
-            # Reading order: top-to-bottom, then left-to-right. PaddleOCR's own
-            # order is usually already this, but we don't rely on "usually".
-            order_idx = sorted(
-                range(n),
-                key=lambda i: (float(rec_boxes[i][1]), float(rec_boxes[i][0])),
-            )
+            # Reading order, and ROW ASSEMBLY — see _rows_from_boxes.
+            #
+            # The previous version sorted by (y, x) on the RAW y, with a comment
+            # claiming "top-to-bottom, then left-to-right". A one-pixel
+            # difference defeats that: on a real docket `RIVERTON` was detected
+            # at y=151 and `FRESH MARKET` at y=150, so the supplier name came
+            # back as `FRESH`, `MARKET`, `RIVERTON` — right-to-left across what
+            # is one printed line.
+            #
+            # Worse than cosmetic. The detector also splits one printed line
+            # into SEPARATE detections, and each became its own DocDOM line;
+            # `groundValue` scans contiguous runs *within a line*, so a supplier
+            # name spread over two of them could never be grounded at all. Four
+            # of thirteen ungrounded true values in the first grounding
+            # measurement were exactly this.
+            #
+            # docs/OCR.md §4.4 lists "box merging, line assembly" among the
+            # things the stage owns rather than borrows. This is that.
+            rows = _rows_from_boxes(rec_boxes, n)
 
-            for line_no, i in enumerate(order_idx):
-                text = rec_texts[i]
-                score = float(rec_scores[i])
-                poly = [(float(px), float(py)) for px, py in rec_polys[i]]
-                abs_poly = [(px + offset_x, py + offset_y) for px, py in poly]
-                line_box = _box_from_quad(abs_poly)
+            for line_no, row in enumerate(rows):
+              row_spans: list[dict[str, Any]] = []
+              row_quads: list[list[tuple[float, float]]] = []
+              for i in row:
+                  text = rec_texts[i]
+                  score = float(rec_scores[i])
+                  poly = [(float(px), float(py)) for px, py in rec_polys[i]]
+                  abs_poly = [(px + offset_x, py + offset_y) for px, py in poly]
+                  line_box = _box_from_quad(abs_poly)
 
-                if not text.strip():
-                    unreadable.append(
-                        {"page": page_number, "box": line_box, "reason": "empty_recognition"}
-                    )
-                    continue
-                if score < MIN_CONFIDENCE:
-                    unreadable.append(
-                        {
-                            "page": page_number,
-                            "box": line_box,
-                            "reason": f"low_confidence:{score:.3f}",
-                        }
-                    )
-                    continue
+                  if not text.strip():
+                      unreadable.append(
+                          {"page": page_number, "box": line_box, "reason": "empty_recognition"}
+                      )
+                      continue
+                  if score < MIN_CONFIDENCE:
+                      unreadable.append(
+                          {
+                              "page": page_number,
+                              "box": line_box,
+                              "reason": f"low_confidence:{score:.3f}",
+                          }
+                      )
+                      continue
 
-                words = text_words[i]
-                word_regions = text_word_regions[i]
-                spans: list[dict[str, Any]] = []
-                if words and word_regions and len(words) == len(word_regions):
-                    span_no = 0
-                    for word, wregion in zip(words, word_regions):
-                        # Skip pure-whitespace word segments: they are gap
-                        # geometry the word-box heuristic invents between
-                        # words, not something the recogniser "read". Keeping
-                        # them would look like content it wasn't.
-                        if not word.strip():
-                            continue
-                        wpoly = [(float(px) + offset_x, float(py) + offset_y) for px, py in wregion]
-                        spans.append(
-                            {
-                                "id": f"sp-p{page_number}-l{line_no}-w{span_no}",
-                                "text": word,
-                                "box": _box_from_quad(wpoly),
-                                # Word segmentation carries the LINE's recognition
-                                # confidence — PP-OCRv5 is CTC over the whole
-                                # line and does not score sub-line units
-                                # independently. Repeating it is honest about
-                                # what was measured; it is not a new number.
-                                "provenance": {
-                                    "engine": ENGINE_ID,
-                                    "confidence": score,
-                                    "calibrated": False,
-                                },
-                            }
-                        )
-                        span_no += 1
-                if not spans:
-                    # No usable word segmentation (e.g. return_word_box gave
-                    # nothing for this script/line) — fall back to one span
-                    # for the whole line rather than dropping the reading.
-                    spans.append(
-                        {
-                            "id": f"sp-p{page_number}-l{line_no}-w0",
-                            "text": text,
-                            "box": line_box,
-                            "provenance": {
-                                "engine": ENGINE_ID,
-                                "confidence": score,
-                                "calibrated": False,
-                            },
-                        }
-                    )
+                  words = text_words[i]
+                  word_regions = text_word_regions[i]
+                  spans: list[dict[str, Any]] = []
+                  if words and word_regions and len(words) == len(word_regions):
+                      span_no = 0
+                      for word, wregion in zip(words, word_regions):
+                          # Skip pure-whitespace word segments: they are gap
+                          # geometry the word-box heuristic invents between
+                          # words, not something the recogniser "read". Keeping
+                          # them would look like content it wasn't.
+                          if not word.strip():
+                              continue
+                          wpoly = [(float(px) + offset_x, float(py) + offset_y) for px, py in wregion]
+                          spans.append(
+                              {
+                                  "id": f"sp-p{page_number}-l{line_no}-w{span_no}",
+                                  "text": word,
+                                  "box": _box_from_quad(wpoly),
+                                  # Word segmentation carries the LINE's recognition
+                                  # confidence — PP-OCRv5 is CTC over the whole
+                                  # line and does not score sub-line units
+                                  # independently. Repeating it is honest about
+                                  # what was measured; it is not a new number.
+                                  "provenance": {
+                                      "engine": ENGINE_ID,
+                                      "confidence": score,
+                                      "calibrated": False,
+                                  },
+                              }
+                          )
+                          span_no += 1
+                  if not spans:
+                      # No usable word segmentation (e.g. return_word_box gave
+                      # nothing for this script/line) — fall back to one span
+                      # for the whole line rather than dropping the reading.
+                      spans.append(
+                          {
+                              "id": f"sp-p{page_number}-l{line_no}-w0",
+                              "text": text,
+                              "box": line_box,
+                              "provenance": {
+                                  "engine": ENGINE_ID,
+                                  "confidence": score,
+                                  "calibrated": False,
+                              },
+                          }
+                      )
 
-                spans_by_line.append(spans)
-                line_boxes.append(line_box)
+                  row_spans.extend(spans)
+                  row_quads.append(abs_poly)
+
+              # One DocDOM line per printed ROW, spans left-to-right inside it.
+              if row_spans:
+                  row_spans.sort(key=lambda sp: sp["box"]["x"])
+                  for span_no, sp in enumerate(row_spans):
+                      sp["id"] = f"sp-p{page_number}-l{line_no}-w{span_no}"
+                  spans_by_line.append(row_spans)
+                  line_boxes.append(_box_from_quad([pt for q in row_quads for pt in q]))
 
         lines = [
             {

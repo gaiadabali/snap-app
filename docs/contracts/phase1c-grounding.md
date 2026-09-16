@@ -24,6 +24,50 @@ false.
 
 ---
 
+### Measured, 2026-09-16 — `bench/results/grounding/sample-final.json`
+
+The evidence this section asked for. `bench/grounding_score.py` grounds the
+corpus's **ground-truth** values — no model involved — so a true value that
+fails to ground is exactly a field enforcement would delete.
+
+| Corpus | grounded | false-positive rate of enforcement |
+|---|---|---|
+| **Tier S (Australian-shaped, 48 values)** | **48 / 48** | **0.0%** |
+| Tier P (Indonesian receipts, 20 values) | 13 / 20 | 35.0% |
+
+**On Australian-shaped documents grounding does not delete a single correct
+value, at every degradation level from clean to severe.** All seven tier P
+failures are the same thing: `grounding.ts`'s money normaliser reads `40.000`
+as forty, because in Australia a dot is a decimal point. That is correct for
+the documents this product processes and wrong for Indonesian ones, and it is
+**not** a defect to fix — widening it would make `110.00` and `11000` compare
+equal on an AU docket, which is worse than anything it buys.
+
+**Two defects were found on the way to this number, and both inflated it.**
+
+1. **The OCR stage split printed lines.** `_rows_from_boxes` did not exist;
+   detections were sorted by raw `(y, x)`, so `RIVERTON` at y=151 came *after*
+   `FRESH MARKET` at y=150 and each detection became its own DocDOM line.
+   `groundValue` scans runs *within a line*, so a supplier name spread across
+   two of them could never ground. Fixed in `services/docai-engine` by
+   assembling detections into printed rows on vertical overlap: 57 lines became
+   21 on a docket that has 21, and `header.supplier` went 66.7% → **100%**.
+2. **The measurement read page 1 only.** `invoice-multipage` puts its totals on
+   page 2 *by construction*, so the instrument reported them ungrounded. A bug
+   in the instrument being read as a finding about the engine.
+
+Before both fixes the headline was 19.1%. After, 10.3% overall and 0% on the
+corpus that matters.
+
+**This still does not promote `enforced` to true**, and the reason is the one
+this document already gives elsewhere: tier S is synthetic, and
+`docs/CORPUS.md` §2 records that rendered glyphs make recall optimistic. 0% on
+generated paper is a strong signal and not the same as 0% on a photographed
+Gundagai docket. **The decision stays blocked on tier R (`docs/GAPS.md` B1)** —
+but it is now blocked on one missing corpus rather than on an unknown.
+
+---
+
 ## 1. File ownership
 
 | Lane | Owns |

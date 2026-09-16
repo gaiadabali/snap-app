@@ -1,0 +1,110 @@
+{
+  "manifest": "corpus/sample/manifest.json",
+  "tier_floor": "S",
+  "per_field": {
+    "header.payable_amount": {
+      "grounded": 19,
+      "ungrounded": 5
+    },
+    "header.tax_amount": {
+      "grounded": 12,
+      "ungrounded": 2
+    },
+    "header.supplier": {
+      "grounded": 12,
+      "ungrounded": 0
+    },
+    "header.issue_date": {
+      "grounded": 12,
+      "ungrounded": 0
+    },
+    "header.supplier_abn": {
+      "grounded": 6,
+      "ungrounded": 0
+    }
+  },
+  "per_tier": {
+    "P": {
+      "grounded": 13,
+      "ungrounded": 7
+    },
+    "S": {
+      "grounded": 48,
+      "ungrounded": 0
+    }
+  },
+  "per_degradation": {
+    "n/a": {
+      "grounded": 21,
+      "ungrounded": 7
+    },
+    "clean": {
+      "grounded": 16,
+      "ungrounded": 0
+    },
+    "light": {
+      "grounded": 8,
+      "ungrounded": 0
+    },
+    "moderate": {
+      "grounded": 8,
+      "ungrounded": 0
+    },
+    "severe": {
+      "grounded": 8,
+      "ungrounded": 0
+    }
+  },
+  "ungrounded_rows": [
+    {
+      "document": "tierp-cord-v2-0039",
+      "tier": "P",
+      "degradation": "n/a",
+      "path": "header.tax_amount",
+      "value": "1,500"
+    },
+    {
+      "document": "tierp-cord-v2-0030",
+      "tier": "P",
+      "degradation": "n/a",
+      "path": "header.payable_amount",
+      "value": "113,886"
+    },
+    {
+      "document": "tierp-cord-v2-0062",
+      "tier": "P",
+      "degradation": "n/a",
+      "path": "header.payable_amount",
+      "value": "40,000"
+    },
+    {
+      "document": "tierp-cord-v2-0062",
+      "tier": "P",
+      "degradation": "n/a",
+      "path": "header.tax_amount",
+      "value": "3,636"
+    },
+    {
+      "document": "tierp-cord-v2-0042",
+      "tier": "P",
+      "degradation": "n/a",
+      "path": "header.payable_amount",
+      "value": "88,000"
+    },
+    {
+      "document": "tierp-cord-v2-0066",
+      "tier": "P",
+      "degradation": "n/a",
+      "path": "header.payable_amount",
+      "value": "1,565,938"
+    },
+    {
+      "document": "tierp-cord-v2-0093",
+      "tier": "P",
+      "degradation": "n/a",
+      "path": "header.payable_amount",
+      "value": "250,690"
+    }
+  ],
+  "failures": []
+}
