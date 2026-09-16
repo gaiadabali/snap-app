@@ -1,206 +1,240 @@
 import type { Metadata } from 'next';
 
-import { Badge, ButtonLink, Card, Container, SectionTitle } from '@/design/primitives';
+import {
+  ButtonLink,
+  LedgerRow,
+  Money,
+  Reveal,
+  Rule,
+  Section,
+  SectionHead,
+  Split,
+} from '@/design/primitives';
 
 import { ReceiptScanCard } from '../_components/receipt-scan-card';
-import { CameraIcon, FolderCheckIcon, LayersIcon, ScaleIcon } from '../_components/icons';
 
 export const metadata: Metadata = {
   title: 'How it works',
   description:
-    'The four-layer pipeline behind every scan: capture, extraction run, document, transaction — explained for a human, not an engineer.',
+    'Photograph a tax invoice and the GST is worked out, checked nine ways, and filed under the right ATO label — with the original kept as evidence.',
 };
 
-const STEPS = [
+/**
+ * Benefit-led, per `docs/DESIGN-HANDOFF.md` §12.6.
+ *
+ * The previous version of this page was the four internal layers — capture,
+ * extraction run, document, transaction — with prose around them. That is
+ * `docs/PLAN.md` §3's architecture diagram, and the reader does not have a
+ * pipeline problem. They have a Sunday problem and a "did I claim GST I was
+ * not entitled to" problem. Mechanism appears below only where it is the
+ * reason to believe a claim, never as the structure.
+ *
+ * Section forms vary deliberately and no two adjacent sections share one
+ * (§12.1): wide → measure → gutter → wide/void → gutter → measure.
+ */
+
+/** One invoice carried the whole way down the page. It reconciles: 75.00 + 7.50 = 82.50, and 82.50 ÷ 11 = 7.50. */
+const EX = {
+  supplier: 'Ironbark Trade Supplies',
+  abn: '84 731 502 664',
+  total: '82.50',
+  gst: '7.50',
+  net: '75.00',
+} as const;
+
+const WHAT_YOU_GET = [
   {
-    icon: CameraIcon,
-    tag: 'Capture',
-    title: 'You photograph the receipt',
-    body: (
-      <>
-        The camera checks focus and framing before it lets you upload — a blurry photo of a
-        crumpled receipt gets rejected on the spot, not three steps later. What gets stored is the
-        original image, untouched, forever. That's the copy that counts as evidence if the ATO ever
-        asks; a separate, lightly processed copy is what the model actually reads.
-      </>
-    ),
-    example: 'A photo of an Ironbark Trade Supplies invoice, taken at 7:41am on-site.',
+    code: 'G11',
+    label: 'The GST is worked out for you, per line',
+    note: 'Not the header total — every line. A supermarket docket for site lunch splits into the GST-free half and the taxable half, because only one of them is claimable.',
+    value: 'per line',
   },
   {
-    icon: LayersIcon,
-    tag: 'Extraction run',
-    title: 'A model reads it — and the read is versioned',
-    body: (
-      <>
-        Claude reads every field off the image — supplier, ABN, line items, GST — and attaches a
-        confidence score to each one. It's told explicitly: if it isn't sure, say so, don't guess.
-        Nine arithmetic and ATO-rule checks run immediately after. Anything uncertain, or anything
-        that fails a check, gets a second, stronger read automatically. This whole attempt is saved
-        as a numbered "run" — it's never edited in place, only ever superseded.
-      </>
-    ),
-    example:
-      'Run #1 reads the ABN as 84 731 502 664 (confidence 0.99), the GST as $7.50, and passes all nine validators on the first attempt.',
+    code: '1B',
+    label: 'You are told whether you can actually claim it',
+    note: 'A plain yes or no on whether the document is a valid tax invoice. That verdict decides whether the GST is claimable, and it is set by arithmetic and ATO rules — not by whether the total looked about right.',
+    value: 'yes / no',
   },
   {
-    icon: FolderCheckIcon,
-    tag: 'Document',
-    title: 'The best run becomes the record',
-    body: (
-      <>
-        The winning run's fields become the document you actually see — supplier, amounts, and a
-        plain yes/no: is this a valid tax invoice? That verdict is what decides whether its GST can
-        legally be claimed, and it's set by the validators, not by whether the total looked right at
-        a glance. If a later model re-reads the same image and does better, a new run is added and
-        the document quietly points at it — nothing about the old read is destroyed.
-      </>
-    ),
-    example: '"Ironbark Trade Supplies, $82.50, is_tax_invoice: true" — ready to become a transaction.',
+    code: 'D1–D5',
+    label: 'It lands under the right deduction label',
+    note: 'Sorted by what you do for a living. A sparky and a courier do not claim the same things, and the categories follow the occupation rather than a generic expense list.',
+    value: 'by trade',
   },
   {
-    icon: ScaleIcon,
-    tag: 'Transaction',
-    title: 'A balanced ledger entry is proposed',
-    body: (
-      <>
-        The document becomes a draft double-entry transaction — an expense split, a GST split, a
-        payment-method split — with the right BAS label already attached. You review and post it, or
-        it auto-posts if everything is high-confidence and clean. Once posted, it's locked: a later
-        re-extraction can't silently rewrite a number that's already on your BAS. It raises a review
-        task instead, and a human decides.
-      </>
-    ),
-    example: 'Motor Vehicle expense +$75.00, GST Receivable +$7.50, Credit Card −$82.50, tax code GST (G11 · 1B).',
+    code: 'SUM',
+    label: 'The books balance, or nothing is posted',
+    note: 'Every entry is double-entry and provably balanced — the splits sum to zero or the database refuses the write. There is no state where your ledger is quietly out.',
+    value: '= 0',
+  },
+] as const;
+
+const HONEST = [
+  {
+    q: 'What if it cannot read something?',
+    a: 'It says so, and asks you. A figure it is unsure of is flagged, never guessed at. That is the whole difference between this and a tool that fills the gap with something plausible and lets you find out at lodgement.',
+  },
+  {
+    q: 'Can a number on my BAS change behind my back?',
+    a: 'No. Once a transaction is posted it is locked. If a better read of the same photo disagrees later, it raises a task for you to look at — it cannot rewrite a figure you have already lodged.',
+  },
+  {
+    q: 'Why keep the original photo?',
+    a: 'The ATO accepts an electronic copy only where it is a true and clear reproduction of the original. So the photo you took is kept exactly as taken, forever, and a separate working copy is what gets read.',
+  },
+  {
+    q: 'What happens when you get a better model?',
+    a: 'Your whole history can be re-read by it. Each attempt is kept as its own numbered run rather than overwriting the last, so an improvement is visible as a change you can inspect — and never a silent correction.',
   },
 ] as const;
 
 export default function HowItWorksPage() {
   return (
     <>
-      <section className="border-b border-[var(--color-rule)]">
-        <Container width="wide" className="py-16">
-          <Badge tone="accent">The pipeline</Badge>
-          <h1 className="mt-4 max-w-[40ch] text-[34px] font-bold leading-[1.15] text-[var(--color-ink)] sm:text-[42px]">
-            One receipt, four layers, none of them destructive.
-          </h1>
-          <p className="mt-4 max-w-[62ch] text-[16px] leading-relaxed text-[var(--color-ink-muted)]">
-            Capture, extraction run, document, transaction. Each is its own database record, so
-            nothing has to be re-photographed and nothing gets silently overwritten — including six
-            months from now, when the model reading your receipts is better than the one that read
-            them today.
+      {/* 1 — wide. One idea at display size. */}
+      <Section form="wide" size="lg">
+        <Rule />
+        <Reveal variant="fade">
+          <div className="t-label mt-5 text-[var(--color-ink-muted)]">What happens</div>
+        </Reveal>
+        <Reveal>
+          <h1 className="t-display mt-5 max-w-[16ch]">Photograph it. That is the job done.</h1>
+        </Reveal>
+        <Reveal>
+          <p className="t-lede mt-8 max-w-[58ch] text-[var(--color-ink-muted)]">
+            You take one photo of a tax invoice. The GST comes back worked out line by line, checked
+            nine ways, and filed under the label it belongs to — with the original kept exactly as
+            you took it, in case anyone ever asks.
           </p>
-        </Container>
-      </section>
+        </Reveal>
+      </Section>
 
-      <section className="border-b border-[var(--color-rule)] bg-[var(--color-surface)]">
-        <Container width="wide" className="py-16">
-          <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
-            <div className="lg:sticky lg:top-24">
-              <SectionTitle
-                eyebrow="Follow one receipt"
-                title="An $82.50 invoice from a hardware supplier"
-                lede="The same example moves through every step on this page, ending as a posted, BAS-labelled ledger entry."
+      {/* 2 — measure. Prose that earns its length. */}
+      <Section form="measure" tone="surface">
+        <Rule />
+        <Reveal>
+          <h2 className="t-head mt-5 max-w-[20ch]">The part that costs you a Sunday</h2>
+        </Reveal>
+        <Reveal>
+          <p className="t-body mt-6 text-[var(--color-ink-muted)]">
+            It is not the photographing. It is working out which of forty dockets had GST on them,
+            which of those are valid tax invoices, what the GST-free portion of the supermarket run
+            was, and which column each one belongs in. Then doing it again next quarter.
+          </p>
+        </Reveal>
+        <Reveal>
+          <p className="t-body mt-4 text-[var(--color-ink-muted)]">
+            That work is arithmetic and rules. It is exactly the kind of thing a computer should
+            have finished before you have put your phone back in your pocket — and exactly the kind
+            of thing you cannot afford it to be approximately right about.
+          </p>
+        </Reveal>
+      </Section>
+
+      {/* 3 — gutter. The spine: enumerable things against their codes. */}
+      <Section code="G11" size="lg">
+        <SectionHead
+          kicker="What you get back"
+          title="Four things, every time, for every document"
+          lede="The codes in the margin are the real ATO labels these map to. They are the product's whole point, so they are also how this page is organised."
+        />
+        <div className="mt-10">
+          {WHAT_YOU_GET.map((row, i) => (
+            <LedgerRow
+              key={row.code}
+              code={row.code}
+              label={row.label}
+              note={row.note}
+              value={row.value}
+              emphasis
+              index={i}
+            />
+          ))}
+        </div>
+      </Section>
+
+      {/* 4 — wide + void. The single inverted band, on the sharpest claim. */}
+      <Section form="wide" tone="void" size="lg">
+        <Split
+          lead={
+            <>
+              <Rule tone="void" />
+              <Reveal variant="fade">
+                <div className="t-label mt-5 text-[var(--color-void-muted)]">One invoice</div>
+              </Reveal>
+              <Reveal>
+                <h2 className="t-head mt-4 max-w-[18ch] text-[var(--color-void-ink)]">
+                  It tells you when it is not sure
+                </h2>
+              </Reveal>
+              <Reveal>
+                <p className="t-lede mt-6 max-w-[48ch] text-[var(--color-void-muted)]">
+                  A confident wrong number is worse than a blank one. When a figure cannot be read
+                  cleanly, it is flagged and held back rather than filled in — and the ABN is
+                  checked against its own checksum, so a single mistyped digit is caught before it
+                  reaches your BAS.
+                </p>
+              </Reveal>
+            </>
+          }
+          aside={
+            <div className="lg:pt-10">
+              <LedgerRow tone="void" code="ABN" label={EX.supplier} note={EX.abn} value="valid" />
+              <LedgerRow tone="void" code="NET" label="Expense, ex-GST" value={<Money amount={EX.net} />} />
+              <LedgerRow tone="void" code="G11" label="GST on purchases" value={<Money amount={EX.gst} />} />
+              <LedgerRow
+                tone="void"
+                code="1B"
+                label="Claimable this quarter"
+                value={<Money amount={EX.gst} />}
+                emphasis
               />
-              <ReceiptScanCard className="mt-8 w-full max-w-[360px]" />
+              <LedgerRow tone="void" code="TOT" label="Invoice total" value={<Money amount={EX.total} />} emphasis />
             </div>
+          }
+        />
+      </Section>
 
-            <ol className="flex flex-col gap-6">
-              {STEPS.map((step, i) => (
-                <li key={step.tag}>
-                  <Card className="p-6">
-                    <div className="flex items-start gap-4">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-accent-soft)] font-mono text-[14px] font-bold text-[var(--color-accent)]">
-                        {i + 1}
-                      </div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2 text-[12.5px] font-semibold uppercase tracking-[0.06em] text-[var(--color-accent)]">
-                          <step.icon className="h-4 w-4" />
-                          {step.tag}
-                        </div>
-                        <h3 className="mt-1 text-[18px] font-bold text-[var(--color-ink)]">{step.title}</h3>
-                        <p className="mt-2 text-[14.5px] leading-relaxed text-[var(--color-ink-muted)]">
-                          {step.body}
-                        </p>
-                        <div className="mt-4 rounded-[var(--radius-md)] border border-dashed border-[var(--color-rule-strong)] bg-[var(--color-ground)] px-4 py-3">
-                          <div className="text-[11px] font-semibold uppercase tracking-[0.05em] text-[var(--color-ink-faint)]">
-                            In this example
-                          </div>
-                          <p className="mt-1 font-mono text-[12.5px] leading-relaxed text-[var(--color-ink-muted)]">
-                            {step.example}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </Card>
-                </li>
-              ))}
-            </ol>
-          </div>
-        </Container>
-      </section>
+      {/* 5 — gutter. Questions, asymmetric so it does not read as the grid above. */}
+      <Section code="ASK" tone="surface" size="lg">
+        <SectionHead kicker="Reasonable questions" title="The things worth asking before you trust it" />
+        <div className="mt-10 grid gap-x-12 gap-y-8 lg:grid-cols-2">
+          {HONEST.map((item, i) => (
+            <Reveal key={item.q} variant="deal" delay={i}>
+              <div>
+                <Rule tone="strong" animate={false} />
+                <h3 className="mt-4 text-[15px] font-medium text-[var(--color-ink)]">{item.q}</h3>
+                <p className="mt-2 text-[14px] leading-relaxed text-[var(--color-ink-muted)]">{item.a}</p>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+      </Section>
 
-      <section className="border-b border-[var(--color-rule)]">
-        <Container width="wide" className="py-16">
-          <SectionTitle eyebrow="Questions people actually ask" title="Why build it this way" />
-          <div className="mt-8 grid gap-6 sm:grid-cols-2">
-            <div>
-              <h3 className="text-[15px] font-bold text-[var(--color-ink)]">
-                Why keep the original photo forever?
-              </h3>
-              <p className="mt-2 text-[14px] leading-relaxed text-[var(--color-ink-muted)]">
-                The ATO accepts an electronic copy only where it's a true and clear reproduction of
-                the original. A recompressed or edited image isn't that. The original never changes;
-                only a derived copy is used for reading.
-              </p>
-            </div>
-            <div>
-              <h3 className="text-[15px] font-bold text-[var(--color-ink)]">
-                Why is a "run" a separate thing from the document?
-              </h3>
-              <p className="mt-2 text-[14px] leading-relaxed text-[var(--color-ink-muted)]">
-                Extraction quality moves with the model, not with your data. Keeping runs versioned
-                means a stronger model next year can re-read your entire history, and you can see
-                exactly what changed and why — never a silent correction.
-              </p>
-            </div>
-            <div>
-              <h3 className="text-[15px] font-bold text-[var(--color-ink)]">
-                What happens when a validator fails?
-              </h3>
-              <p className="mt-2 text-[14px] leading-relaxed text-[var(--color-ink-muted)]">
-                It escalates to a stronger model first. If it still fails, the document is marked{' '}
-                <Badge tone="warn">needs review</Badge> with the specific check named — never
-                posted as a guess.
-              </p>
-            </div>
-            <div>
-              <h3 className="text-[15px] font-bold text-[var(--color-ink)]">
-                Can a re-extraction change a number already on my BAS?
-              </h3>
-              <p className="mt-2 text-[14px] leading-relaxed text-[var(--color-ink-muted)]">
-                No. A posted transaction is locked. A better read of the same receipt raises a review
-                task for a human to apply — it never rewrites a lodged figure on its own.
-              </p>
-            </div>
-          </div>
-        </Container>
-      </section>
-
-      <section>
-        <Container width="wide" className="flex flex-col items-center gap-5 py-20 text-center">
-          <h2 className="max-w-[36ch] text-[26px] font-bold leading-tight text-[var(--color-ink)]">
-            See everything this pipeline produces
-          </h2>
-          <div className="flex flex-wrap justify-center gap-3">
-            <ButtonLink href="/features" size="lg">
-              Explore features
-            </ButtonLink>
-            <ButtonLink href="/register" size="lg" variant="secondary">
-              Get started free
-            </ButtonLink>
-          </div>
-        </Container>
-      </section>
+      {/* 6 — measure. Close on the reading column, with the real artefact. */}
+      <Section form="measure">
+        <Rule />
+        <Reveal>
+          <h2 className="t-head mt-5 max-w-[18ch]">Try it on one receipt</h2>
+        </Reveal>
+        <Reveal>
+          <p className="t-lede mt-6 text-[var(--color-ink-muted)]">
+            Twenty documents a month, free, no card. If it does not read your dockets properly, you
+            will know within one.
+          </p>
+        </Reveal>
+        <Reveal>
+          <ReceiptScanCard className="mt-10 w-full max-w-[360px]" />
+        </Reveal>
+        <div className="mt-10 flex flex-wrap gap-3">
+          <ButtonLink href="/register" size="lg">
+            Get started free
+          </ButtonLink>
+          <ButtonLink href="/features" size="lg" variant="secondary">
+            See what else it does
+          </ButtonLink>
+        </div>
+      </Section>
     </>
   );
 }

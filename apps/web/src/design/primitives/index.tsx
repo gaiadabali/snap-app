@@ -127,6 +127,7 @@ export function Section({
   children,
   tone = 'ground',
   size = 'md',
+  form = 'gutter',
   className,
   id,
 }: {
@@ -135,6 +136,23 @@ export function Section({
   children: ReactNode;
   tone?: 'ground' | 'surface' | 'void';
   size?: 'sm' | 'md' | 'lg';
+  /**
+   * The section's SHAPE — see `docs/DESIGN-HANDOFF.md` §12.1.
+   *
+   * **No two adjacent sections may share a form.** Alternating `tone` is not
+   * variation; it is the same shape in a different colour, and a page built
+   * that way is what got three design directions rejected as
+   * generated-looking. The metronome was fixed once inside `SectionHead` and
+   * simply moved up a level — eight sections, seven identical.
+   *
+   * - `gutter`  — the spine: `120px | 1fr` with the account code in the margin.
+   * - `wide`    — full measure, no gutter. One idea at display size.
+   * - `measure` — a single 68ch column, aligned to the content edge. Prose.
+   *
+   * `wide` and `measure` drop the gutter deliberately. That absence is what
+   * makes the gutter read as a choice rather than a frame.
+   */
+  form?: 'gutter' | 'wide' | 'measure';
   className?: string;
   id?: string;
 }) {
@@ -154,8 +172,24 @@ export function Section({
     md: 'py-14 md:py-20',
     lg: 'py-16 md:py-24',
   } as const;
+  const shell = cx(tones[tone], sizes[size], id && 'scroll-mt-24', className);
+
+  // No gutter: the content runs to the full measure, or to a reading column
+  // held at the same left edge the gutter forms establish (7.5rem + 3rem gap).
+  if (form !== 'gutter') {
+    return (
+      <section id={id} className={shell}>
+        <Container width="wide">
+          <div className={cx('min-w-0', form === 'measure' && 'max-w-[68ch] lg:ml-[10.5rem]')}>
+            {children}
+          </div>
+        </Container>
+      </section>
+    );
+  }
+
   return (
-    <section id={id} className={cx(tones[tone], sizes[size], id && 'scroll-mt-24', className)}>
+    <section id={id} className={shell}>
       <Container width="wide">
         <div className="grid gap-y-8 lg:grid-cols-[7.5rem_1fr] lg:gap-x-12">
           <div aria-hidden className="hidden lg:block">
@@ -174,6 +208,36 @@ export function Section({
         </div>
       </Container>
     </section>
+  );
+}
+
+/**
+ * A deliberately unequal two-up.
+ *
+ * 7/5, never 6/6. An even split reads as a template; the asymmetry is what
+ * stops a comparison section looking like the feature grid above it. The
+ * narrow side is the one carrying figures — a right-locked column of money
+ * wants less room than the prose explaining it, not the same.
+ */
+export function Split({
+  lead,
+  aside,
+  children,
+  className,
+}: {
+  lead: ReactNode;
+  aside: ReactNode;
+  children?: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={className}>
+      <div className="grid gap-x-12 gap-y-10 lg:grid-cols-[7fr_5fr]">
+        <div className="min-w-0">{lead}</div>
+        <div className="min-w-0">{aside}</div>
+      </div>
+      {children}
+    </div>
   );
 }
 

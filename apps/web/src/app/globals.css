@@ -196,6 +196,16 @@ body {
   line-height: 1.65;
 }
 
+/**
+ * Running body copy. Defined in the handoff's type scale (§6) but never
+ * implemented here, so pages that needed it were inlining `text-[15px]
+ * leading-relaxed` and drifting apart. One role, one place.
+ */
+.t-body {
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
 /* ── The scan line ───────────────────────────────────────────────────────
    The teaser's motif, reserved for capture/extraction imagery. */
 @keyframes scan-sweep {
