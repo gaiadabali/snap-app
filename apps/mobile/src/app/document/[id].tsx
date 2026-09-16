@@ -242,7 +242,32 @@ export default function DocumentScreen() {
             <Divider />
             <Field label="Excluding GST" value={formatAud(doc.taxExclusiveAmount)} />
             <Field label="GST" value={formatAud(doc.taxAmount)} hint="Exactly 1/11 of the taxable amount" />
-            {doc.gstFreeAmount ? (
+            {doc.taxSubtotals.length > 1 ? (
+              /* ── The split, and the reason this product exists ──
+                 One docket, two tax treatments. Hubdoc, Dext, myDeductions and
+                 Ozly all read a header total, so none of them can say which
+                 half is claimable (docs/MONETISATION.md §2). Shown as its own
+                 block rather than a footnote because it IS the feature.
+
+                 Every figure here is sent by the server. The screen adds
+                 nothing — docs/DESIGN-HANDOFF.md §3. */
+              <>
+                <Divider />
+                <Label>Split by tax treatment</Label>
+                {doc.taxSubtotals.map((s) => (
+                  <Field
+                    key={s.categoryCode}
+                    label={s.categoryCode === 'Z' ? 'GST-free' : 'Taxable'}
+                    value={formatAud(s.inclusiveAmount)}
+                    hint={
+                      s.categoryCode === 'Z'
+                        ? 'Fresh food and other GST-free items. No GST to claim on this portion.'
+                        : `Carries ${formatAud(s.taxAmount)} of GST`
+                    }
+                  />
+                ))}
+              </>
+            ) : doc.gstFreeAmount ? (
               <Field
                 label="GST-free portion"
                 value={formatAud(doc.gstFreeAmount)}

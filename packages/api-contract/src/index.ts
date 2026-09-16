@@ -316,6 +316,23 @@ export interface DocumentView {
   taxAmount: string;
   payableAmount: string;
   gstFreeAmount: string | null;
+  /**
+   * Per-category tax split — Peppol BG-23, and the capability no competitor
+   * has (`docs/MONETISATION.md` §2). Empty when the document carries a single
+   * tax treatment, or when its lines do not reconcile to the payable: an
+   * honest absence, never a guessed allocation.
+   *
+   * `taxableAmount` is the NET amount for the category (BT-116), matching what
+   * the ledger posts as the expense split.
+   */
+  taxSubtotals: Array<{
+    categoryCode: 'S' | 'Z';
+    rate: string;
+    taxableAmount: string;
+    taxAmount: string;
+    /** Net plus GST — what the docket printed. Sent, never added client-side. */
+    inclusiveAmount: string;
+  }>;
   isTaxInvoice: boolean;
   docType: 'tax_invoice' | 'receipt';
   category: string;

@@ -11,7 +11,7 @@
 import type { DemoShape } from '@/api/types';
 
 export const DEMO: DemoShape = {
-  "generatedAt": "2026-09-11T06:33:00.890Z",
+  "generatedAt": "2026-09-16T08:28:12.749Z",
   "rates": {
     "fy": "2025-26",
     "determination": "TD 2025/4"
@@ -38,7 +38,7 @@ export const DEMO: DemoShape = {
       "supplierName": "Ampol Foodary Marulan",
       "supplierAbn": "51824753556",
       "supplierAbnValid": true,
-      "issueDate": "2026-09-11",
+      "issueDate": "2026-09-16",
       "currency": "AUD",
       "taxExclusiveAmount": "170.3909",
       "taxAmount": "17.0391",
@@ -77,6 +77,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.96
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "170.3909",
+          "taxAmount": "17.0391",
+          "inclusiveAmount": "187.4300"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -86,7 +95,7 @@ export const DEMO: DemoShape = {
           "source": "capture"
         }
       ],
-      "imageCapturedAt": "2026-09-11",
+      "imageCapturedAt": "2026-09-16",
       "workspace": "business",
       "workspaceId": "ws_marsh_transport",
       "capturedByName": "Kate Marsh",
@@ -98,7 +107,7 @@ export const DEMO: DemoShape = {
       "supplierName": "BP Truckstop Gundagai",
       "supplierAbn": "33051775556",
       "supplierAbnValid": true,
-      "issueDate": "2026-09-10",
+      "issueDate": "2026-09-15",
       "currency": "AUD",
       "taxExclusiveAmount": "221.0000",
       "taxAmount": "22.1000",
@@ -137,6 +146,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.95
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "221.0000",
+          "taxAmount": "22.1000",
+          "inclusiveAmount": "243.1000"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -146,7 +164,7 @@ export const DEMO: DemoShape = {
           "source": "capture"
         }
       ],
-      "imageCapturedAt": "2026-09-10",
+      "imageCapturedAt": "2026-09-15",
       "workspace": "business",
       "workspaceId": "ws_marsh_transport",
       "capturedByName": "Sam Oyelaran",
@@ -158,7 +176,7 @@ export const DEMO: DemoShape = {
       "supplierName": "Coles Broadway",
       "supplierAbn": null,
       "supplierAbnValid": false,
-      "issueDate": "2026-09-10",
+      "issueDate": "2026-09-15",
       "currency": "AUD",
       "taxExclusiveAmount": "79.2973",
       "taxAmount": "3.3827",
@@ -178,63 +196,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "45.4700",
+          "amount": "45.4700",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "82.6800",
-          "amount": "82.6800",
+          "unitPrice": "37.2100",
+          "amount": "37.2100",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
         }
       ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
+      "taxSubtotals": [
         {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-09-10",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Kate Marsh",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0010",
-      "supplierName": "BP Rosebery",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-09-10",
-      "currency": "AUD",
-      "taxExclusiveAmount": "68.1455",
-      "taxAmount": "6.8145",
-      "payableAmount": "74.9600",
-      "gstFreeAmount": null,
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Fuel",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": true,
-      "findings": [],
-      "lines": [
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "33.8273",
+          "taxAmount": "3.3827",
+          "inclusiveAmount": "37.2100"
+        },
         {
-          "lineNumber": 1,
-          "description": "Fuel",
-          "quantity": 1,
-          "unitPrice": "74.9600",
-          "amount": "74.9600",
-          "gstFree": false,
-          "category": "Fuel",
-          "confidence": 0.93
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "45.4700",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "45.4700"
         }
       ],
       "linesBalance": true,
@@ -246,7 +240,7 @@ export const DEMO: DemoShape = {
           "source": "capture"
         }
       ],
-      "imageCapturedAt": "2026-09-10",
+      "imageCapturedAt": "2026-09-15",
       "workspace": "personal",
       "workspaceId": "ws_marsh_household",
       "capturedByName": "Kate Marsh",
@@ -258,7 +252,7 @@ export const DEMO: DemoShape = {
       "supplierName": "Beaurepaires Orange",
       "supplierAbn": "51824753556",
       "supplierAbnValid": true,
-      "issueDate": "2026-09-09",
+      "issueDate": "2026-09-14",
       "currency": "AUD",
       "taxExclusiveAmount": "1680.0000",
       "taxAmount": "168.0000",
@@ -317,6 +311,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.91
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "1680.0000",
+          "taxAmount": "168.0000",
+          "inclusiveAmount": "1848.0000"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -326,7 +329,7 @@ export const DEMO: DemoShape = {
           "source": "capture"
         }
       ],
-      "imageCapturedAt": "2026-09-09",
+      "imageCapturedAt": "2026-09-14",
       "workspace": "business",
       "workspaceId": "ws_marsh_transport",
       "capturedByName": "Dan Whitby",
@@ -334,169 +337,19 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "pd_0001",
-      "supplierName": "ALDI Marrickville",
+      "id": "pd_0013",
+      "supplierName": "AGL top-up",
       "supplierAbn": null,
       "supplierAbnValid": false,
-      "issueDate": "2026-09-09",
+      "issueDate": "2026-09-14",
       "currency": "AUD",
-      "taxExclusiveAmount": "120.1745",
-      "taxAmount": "5.1255",
-      "payableAmount": "125.3000",
-      "gstFreeAmount": "68.9200",
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Groceries",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": false,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Groceries",
-          "quantity": 1,
-          "unitPrice": "125.3000",
-          "amount": "125.3000",
-          "gstFree": false,
-          "category": "Groceries",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-09-09",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Jem Marsh",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0003",
-      "supplierName": "ALDI Marrickville",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-09-09",
-      "currency": "AUD",
-      "taxExclusiveAmount": "54.8500",
-      "taxAmount": "2.3400",
-      "payableAmount": "57.1900",
-      "gstFreeAmount": "31.4500",
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Groceries",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": true,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Groceries",
-          "quantity": 1,
-          "unitPrice": "57.1900",
-          "amount": "57.1900",
-          "gstFree": false,
-          "category": "Groceries",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-09-09",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Jem Marsh",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0004",
-      "supplierName": "Woolworths Metro",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-09-09",
-      "currency": "AUD",
-      "taxExclusiveAmount": "65.4673",
-      "taxAmount": "2.7927",
-      "payableAmount": "68.2600",
-      "gstFreeAmount": "37.5400",
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Groceries",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": true,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Groceries",
-          "quantity": 1,
-          "unitPrice": "68.2600",
-          "amount": "68.2600",
-          "gstFree": false,
-          "category": "Groceries",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-09-09",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Kate Marsh",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0014",
-      "supplierName": "Bunnings Warehouse",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-09-09",
-      "currency": "AUD",
-      "taxExclusiveAmount": "100.9000",
-      "taxAmount": "10.0900",
-      "payableAmount": "110.9900",
+      "taxExclusiveAmount": "244.1273",
+      "taxAmount": "24.4127",
+      "payableAmount": "268.5400",
       "gstFreeAmount": null,
       "isTaxInvoice": false,
       "docType": "receipt",
-      "category": "Home",
+      "category": "Bills & utilities",
       "engineRowId": "personal",
       "reviewStatus": "auto_accepted",
       "confidenceOverall": 0.96,
@@ -508,13 +361,22 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
-          "description": "Home",
+          "description": "Bills & utilities",
           "quantity": 1,
-          "unitPrice": "110.9900",
-          "amount": "110.9900",
+          "unitPrice": "268.5400",
+          "amount": "268.5400",
           "gstFree": false,
-          "category": "Home",
+          "category": "Bills & utilities",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "244.1273",
+          "taxAmount": "24.4127",
+          "inclusiveAmount": "268.5400"
         }
       ],
       "linesBalance": true,
@@ -526,10 +388,10 @@ export const DEMO: DemoShape = {
           "source": "capture"
         }
       ],
-      "imageCapturedAt": "2026-09-09",
+      "imageCapturedAt": "2026-09-14",
       "workspace": "personal",
       "workspaceId": "ws_marsh_household",
-      "capturedByName": "Kate Marsh",
+      "capturedByName": "Jem Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -538,7 +400,7 @@ export const DEMO: DemoShape = {
       "supplierName": "Repco Auto Parts Goulburn",
       "supplierAbn": "33051775556",
       "supplierAbnValid": true,
-      "issueDate": "2026-09-08",
+      "issueDate": "2026-09-13",
       "currency": "AUD",
       "taxExclusiveAmount": "283.6364",
       "taxAmount": "28.3636",
@@ -587,6 +449,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.95
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "283.6364",
+          "taxAmount": "28.3636",
+          "inclusiveAmount": "312.0000"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -596,7 +467,7 @@ export const DEMO: DemoShape = {
           "source": "capture"
         }
       ],
-      "imageCapturedAt": "2026-09-08",
+      "imageCapturedAt": "2026-09-13",
       "workspace": "business",
       "workspaceId": "ws_marsh_transport",
       "capturedByName": "Kate Marsh",
@@ -608,7 +479,7 @@ export const DEMO: DemoShape = {
       "supplierName": "Highway Motor Inn Dubbo",
       "supplierAbn": "33051775556",
       "supplierAbnValid": true,
-      "issueDate": "2026-09-08",
+      "issueDate": "2026-09-13",
       "currency": "AUD",
       "taxExclusiveAmount": "131.8182",
       "taxAmount": "13.1818",
@@ -647,6 +518,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.94
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "131.8182",
+          "taxAmount": "13.1818",
+          "inclusiveAmount": "145.0000"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -656,7 +536,7 @@ export const DEMO: DemoShape = {
           "source": "capture"
         }
       ],
-      "imageCapturedAt": "2026-09-08",
+      "imageCapturedAt": "2026-09-13",
       "workspace": "business",
       "workspaceId": "ws_marsh_transport",
       "capturedByName": "Sam Oyelaran",
@@ -664,22 +544,22 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0002",
-      "supplierName": "Telstra",
+      "id": "pd_0001",
+      "supplierName": "ALDI Marrickville",
       "supplierAbn": null,
       "supplierAbnValid": false,
-      "issueDate": "2026-09-08",
+      "issueDate": "2026-09-13",
       "currency": "AUD",
-      "taxExclusiveAmount": "77.2727",
-      "taxAmount": "7.7273",
-      "payableAmount": "85.0000",
-      "gstFreeAmount": null,
+      "taxExclusiveAmount": "120.1745",
+      "taxAmount": "5.1255",
+      "payableAmount": "125.3000",
+      "gstFreeAmount": "68.9200",
       "isTaxInvoice": false,
       "docType": "receipt",
-      "category": "Bills & utilities",
+      "category": "Groceries",
       "engineRowId": "personal",
       "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.98,
+      "confidenceOverall": 0.96,
       "note": null,
       "complianceFailures": [],
       "gstAtRisk": null,
@@ -688,13 +568,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
-          "description": "Bills & utilities",
+          "description": "Groceries (GST-free)",
           "quantity": 1,
-          "unitPrice": "85.0000",
-          "amount": "85.0000",
+          "unitPrice": "68.9200",
+          "amount": "68.9200",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
+          "description": "Groceries",
+          "quantity": 1,
+          "unitPrice": "56.3800",
+          "amount": "56.3800",
           "gstFree": false,
-          "category": "Bills & utilities",
-          "confidence": 0.95
+          "category": "Groceries",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "51.2545",
+          "taxAmount": "5.1255",
+          "inclusiveAmount": "56.3800"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "68.9200",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "68.9200"
         }
       ],
       "linesBalance": true,
@@ -706,7 +612,277 @@ export const DEMO: DemoShape = {
           "source": "capture"
         }
       ],
-      "imageCapturedAt": "2026-09-08",
+      "imageCapturedAt": "2026-09-13",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Jem Marsh",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0003",
+      "supplierName": "ALDI Marrickville",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-09-13",
+      "currency": "AUD",
+      "taxExclusiveAmount": "54.8500",
+      "taxAmount": "2.3400",
+      "payableAmount": "57.1900",
+      "gstFreeAmount": "31.4500",
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Groceries",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": true,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "31.4500",
+          "amount": "31.4500",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
+          "description": "Groceries",
+          "quantity": 1,
+          "unitPrice": "25.7400",
+          "amount": "25.7400",
+          "gstFree": false,
+          "category": "Groceries",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "23.4000",
+          "taxAmount": "2.3400",
+          "inclusiveAmount": "25.7400"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "31.4500",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "31.4500"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-09-13",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Jem Marsh",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0004",
+      "supplierName": "Woolworths Metro",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-09-13",
+      "currency": "AUD",
+      "taxExclusiveAmount": "65.4673",
+      "taxAmount": "2.7927",
+      "payableAmount": "68.2600",
+      "gstFreeAmount": "37.5400",
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Groceries",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": true,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "37.5400",
+          "amount": "37.5400",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
+          "description": "Groceries",
+          "quantity": 1,
+          "unitPrice": "30.7200",
+          "amount": "30.7200",
+          "gstFree": false,
+          "category": "Groceries",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "27.9273",
+          "taxAmount": "2.7927",
+          "inclusiveAmount": "30.7200"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "37.5400",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "37.5400"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-09-13",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Kate Marsh",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0012",
+      "supplierName": "BP Rosebery",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-09-13",
+      "currency": "AUD",
+      "taxExclusiveAmount": "84.0636",
+      "taxAmount": "8.4064",
+      "payableAmount": "92.4700",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Fuel",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": false,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Fuel",
+          "quantity": 1,
+          "unitPrice": "92.4700",
+          "amount": "92.4700",
+          "gstFree": false,
+          "category": "Fuel",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "84.0636",
+          "taxAmount": "8.4064",
+          "inclusiveAmount": "92.4700"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-09-13",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Kate Marsh",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0016",
+      "supplierName": "JB Hi-Fi",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-09-13",
+      "currency": "AUD",
+      "taxExclusiveAmount": "107.3000",
+      "taxAmount": "10.7300",
+      "payableAmount": "118.0300",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Shopping",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": false,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Shopping",
+          "quantity": 1,
+          "unitPrice": "118.0300",
+          "amount": "118.0300",
+          "gstFree": false,
+          "category": "Shopping",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "107.3000",
+          "taxAmount": "10.7300",
+          "inclusiveAmount": "118.0300"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-09-13",
       "workspace": "personal",
       "workspaceId": "ws_marsh_household",
       "capturedByName": "Kate Marsh",
@@ -718,7 +894,7 @@ export const DEMO: DemoShape = {
       "supplierName": "Coles Express Yass",
       "supplierAbn": "51824753556",
       "supplierAbnValid": true,
-      "issueDate": "2026-09-07",
+      "issueDate": "2026-09-12",
       "currency": "AUD",
       "taxExclusiveAmount": "80.3273",
       "taxAmount": "3.8727",
@@ -740,8 +916,8 @@ export const DEMO: DemoShape = {
           "lineNumber": 1,
           "description": "Hot food",
           "quantity": 1,
-          "unitPrice": "46.3100",
-          "amount": "46.3100",
+          "unitPrice": "31.2400",
+          "amount": "31.2400",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
@@ -750,8 +926,8 @@ export const DEMO: DemoShape = {
           "lineNumber": 2,
           "description": "Coffee",
           "quantity": 1,
-          "unitPrice": "16.8400",
-          "amount": "16.8400",
+          "unitPrice": "11.3600",
+          "amount": "11.3600",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
@@ -760,11 +936,27 @@ export const DEMO: DemoShape = {
           "lineNumber": 3,
           "description": "Fresh fruit",
           "quantity": 1,
-          "unitPrice": "21.0500",
-          "amount": "21.0500",
+          "unitPrice": "41.6000",
+          "amount": "41.6000",
           "gstFree": true,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "38.7273",
+          "taxAmount": "3.8727",
+          "inclusiveAmount": "42.6000"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "41.6000",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "41.6000"
         }
       ],
       "linesBalance": true,
@@ -776,7 +968,7 @@ export const DEMO: DemoShape = {
           "source": "capture"
         }
       ],
-      "imageCapturedAt": "2026-09-07",
+      "imageCapturedAt": "2026-09-12",
       "workspace": "business",
       "workspaceId": "ws_marsh_transport",
       "capturedByName": "Dan Whitby",
@@ -788,7 +980,7 @@ export const DEMO: DemoShape = {
       "supplierName": "Roadside Coffee Van",
       "supplierAbn": null,
       "supplierAbnValid": false,
-      "issueDate": "2026-09-07",
+      "issueDate": "2026-09-12",
       "currency": "AUD",
       "taxExclusiveAmount": "7.7273",
       "taxAmount": "0.7727",
@@ -855,6 +1047,7 @@ export const DEMO: DemoShape = {
           "confidence": 0.69
         }
       ],
+      "taxSubtotals": [],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -864,7 +1057,7 @@ export const DEMO: DemoShape = {
           "source": "capture"
         }
       ],
-      "imageCapturedAt": "2026-09-07",
+      "imageCapturedAt": "2026-09-12",
       "workspace": "business",
       "workspaceId": "ws_marsh_transport",
       "capturedByName": "Kate Marsh",
@@ -873,36 +1066,62 @@ export const DEMO: DemoShape = {
     },
     {
       "id": "pd_0005",
-      "supplierName": "Guzman y Gomez",
+      "supplierName": "ALDI Marrickville",
       "supplierAbn": null,
       "supplierAbnValid": false,
-      "issueDate": "2026-09-07",
+      "issueDate": "2026-09-12",
       "currency": "AUD",
-      "taxExclusiveAmount": "64.3818",
-      "taxAmount": "6.4382",
-      "payableAmount": "70.8200",
-      "gstFreeAmount": null,
+      "taxExclusiveAmount": "162.3836",
+      "taxAmount": "6.9264",
+      "payableAmount": "169.3100",
+      "gstFreeAmount": "93.1200",
       "isTaxInvoice": false,
       "docType": "receipt",
-      "category": "Eating out",
+      "category": "Groceries",
       "engineRowId": "personal",
       "reviewStatus": "auto_accepted",
       "confidenceOverall": 0.96,
       "note": null,
       "complianceFailures": [],
       "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": true,
+      "belowTaxInvoiceThreshold": false,
       "findings": [],
       "lines": [
         {
           "lineNumber": 1,
-          "description": "Eating out",
+          "description": "Groceries (GST-free)",
           "quantity": 1,
-          "unitPrice": "70.8200",
-          "amount": "70.8200",
-          "gstFree": false,
-          "category": "Eating out",
+          "unitPrice": "93.1200",
+          "amount": "93.1200",
+          "gstFree": true,
+          "category": "Groceries",
           "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
+          "description": "Groceries",
+          "quantity": 1,
+          "unitPrice": "76.1900",
+          "amount": "76.1900",
+          "gstFree": false,
+          "category": "Groceries",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "69.2636",
+          "taxAmount": "6.9264",
+          "inclusiveAmount": "76.1900"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "93.1200",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "93.1200"
         }
       ],
       "linesBalance": true,
@@ -914,10 +1133,69 @@ export const DEMO: DemoShape = {
           "source": "capture"
         }
       ],
-      "imageCapturedAt": "2026-09-07",
+      "imageCapturedAt": "2026-09-12",
       "workspace": "personal",
       "workspaceId": "ws_marsh_household",
       "capturedByName": "Jem Marsh",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "sub_0002",
+      "supplierName": "Spotify Premium",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-09-12",
+      "currency": "AUD",
+      "taxExclusiveAmount": "12.7182",
+      "taxAmount": "1.2718",
+      "payableAmount": "13.9900",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Fun",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.98,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": true,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Fun",
+          "quantity": 1,
+          "unitPrice": "13.9900",
+          "amount": "13.9900",
+          "gstFree": false,
+          "category": "Fun",
+          "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "12.7182",
+          "taxAmount": "1.2718",
+          "inclusiveAmount": "13.9900"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-09-12",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Kate Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -926,7 +1204,7 @@ export const DEMO: DemoShape = {
       "supplierName": "Coin Laundry Parkes",
       "supplierAbn": null,
       "supplierAbnValid": false,
-      "issueDate": "2026-09-06",
+      "issueDate": "2026-09-11",
       "currency": "AUD",
       "taxExclusiveAmount": "10.9091",
       "taxAmount": "1.0909",
@@ -973,6 +1251,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.65
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "10.9091",
+          "taxAmount": "1.0909",
+          "inclusiveAmount": "12.0000"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -982,10 +1269,69 @@ export const DEMO: DemoShape = {
           "source": "capture"
         }
       ],
-      "imageCapturedAt": "2026-09-06",
+      "imageCapturedAt": "2026-09-11",
       "workspace": "business",
       "workspaceId": "ws_marsh_transport",
       "capturedByName": "Sam Oyelaran",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0011",
+      "supplierName": "Uber",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-09-11",
+      "currency": "AUD",
+      "taxExclusiveAmount": "32.9818",
+      "taxAmount": "3.2982",
+      "payableAmount": "36.2800",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Transport",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": true,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Transport",
+          "quantity": 1,
+          "unitPrice": "36.2800",
+          "amount": "36.2800",
+          "gstFree": false,
+          "category": "Transport",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "32.9818",
+          "taxAmount": "3.2982",
+          "inclusiveAmount": "36.2800"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-09-11",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Jem Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -994,7 +1340,7 @@ export const DEMO: DemoShape = {
       "supplierName": "Shell Coles Express Dubbo",
       "supplierAbn": "33051775556",
       "supplierAbnValid": true,
-      "issueDate": "2026-09-05",
+      "issueDate": "2026-09-10",
       "currency": "AUD",
       "taxExclusiveAmount": "192.5909",
       "taxAmount": "19.2591",
@@ -1033,6 +1379,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.96
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "192.5909",
+          "taxAmount": "19.2591",
+          "inclusiveAmount": "211.8500"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -1042,7 +1397,7 @@ export const DEMO: DemoShape = {
           "source": "capture"
         }
       ],
-      "imageCapturedAt": "2026-09-05",
+      "imageCapturedAt": "2026-09-10",
       "workspace": "business",
       "workspaceId": "ws_marsh_transport",
       "capturedByName": "Dan Whitby",
@@ -1050,69 +1405,19 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "pd_0013",
-      "supplierName": "Kmart",
+      "id": "pd_0014",
+      "supplierName": "Newtown Dental",
       "supplierAbn": null,
       "supplierAbnValid": false,
-      "issueDate": "2026-09-05",
+      "issueDate": "2026-09-10",
       "currency": "AUD",
-      "taxExclusiveAmount": "149.2091",
-      "taxAmount": "14.9209",
-      "payableAmount": "164.1300",
-      "gstFreeAmount": null,
+      "taxExclusiveAmount": "28.4900",
+      "taxAmount": "0.0000",
+      "payableAmount": "28.4900",
+      "gstFreeAmount": "28.4900",
       "isTaxInvoice": false,
       "docType": "receipt",
-      "category": "Shopping",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": false,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Shopping",
-          "quantity": 1,
-          "unitPrice": "164.1300",
-          "amount": "164.1300",
-          "gstFree": false,
-          "category": "Shopping",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-09-05",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Jem Marsh",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0015",
-      "supplierName": "Marrickville Bowlo",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-09-05",
-      "currency": "AUD",
-      "taxExclusiveAmount": "50.4909",
-      "taxAmount": "5.0491",
-      "payableAmount": "55.5400",
-      "gstFreeAmount": null,
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Fun",
+      "category": "Health",
       "engineRowId": "personal",
       "reviewStatus": "auto_accepted",
       "confidenceOverall": 0.96,
@@ -1124,13 +1429,32 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
-          "description": "Fun",
+          "description": "Health (GST-free)",
           "quantity": 1,
-          "unitPrice": "55.5400",
-          "amount": "55.5400",
-          "gstFree": false,
-          "category": "Fun",
+          "unitPrice": "28.4900",
+          "amount": "28.4900",
+          "gstFree": true,
+          "category": "Health",
           "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
+          "description": "Health",
+          "quantity": 1,
+          "unitPrice": "0.0000",
+          "amount": "0.0000",
+          "gstFree": false,
+          "category": "Health",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "28.4900",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "28.4900"
         }
       ],
       "linesBalance": true,
@@ -1142,10 +1466,10 @@ export const DEMO: DemoShape = {
           "source": "capture"
         }
       ],
-      "imageCapturedAt": "2026-09-05",
+      "imageCapturedAt": "2026-09-10",
       "workspace": "personal",
       "workspaceId": "ws_marsh_household",
-      "capturedByName": "Jem Marsh",
+      "capturedByName": "Kate Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -1154,7 +1478,7 @@ export const DEMO: DemoShape = {
       "supplierName": "Bunnings Warehouse Wagga",
       "supplierAbn": "51824753556",
       "supplierAbnValid": true,
-      "issueDate": "2026-09-04",
+      "issueDate": "2026-09-09",
       "currency": "AUD",
       "taxExclusiveAmount": "61.6364",
       "taxAmount": "6.1636",
@@ -1193,6 +1517,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.95
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "61.6364",
+          "taxAmount": "6.1636",
+          "inclusiveAmount": "67.8000"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -1202,109 +1535,9 @@ export const DEMO: DemoShape = {
           "source": "capture"
         }
       ],
-      "imageCapturedAt": "2026-09-04",
+      "imageCapturedAt": "2026-09-09",
       "workspace": "business",
       "workspaceId": "ws_marsh_transport",
-      "capturedByName": "Kate Marsh",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0006",
-      "supplierName": "Cafe Ambrosia",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-09-04",
-      "currency": "AUD",
-      "taxExclusiveAmount": "74.6273",
-      "taxAmount": "7.4627",
-      "payableAmount": "82.0900",
-      "gstFreeAmount": null,
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Eating out",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": true,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Eating out",
-          "quantity": 1,
-          "unitPrice": "82.0900",
-          "amount": "82.0900",
-          "gstFree": false,
-          "category": "Eating out",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-09-04",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Kate Marsh",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "sub_0001",
-      "supplierName": "Netflix",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-09-04",
-      "currency": "AUD",
-      "taxExclusiveAmount": "17.2636",
-      "taxAmount": "1.7264",
-      "payableAmount": "18.9900",
-      "gstFreeAmount": null,
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Fun",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.98,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": true,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Fun",
-          "quantity": 1,
-          "unitPrice": "18.9900",
-          "amount": "18.9900",
-          "gstFree": false,
-          "category": "Fun",
-          "confidence": 0.95
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-09-04",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
       "capturedByName": "Kate Marsh",
       "visibility": "shared",
       "version": 1
@@ -1314,7 +1547,7 @@ export const DEMO: DemoShape = {
       "supplierName": "Linfox Weighbridge Cafe",
       "supplierAbn": null,
       "supplierAbnValid": false,
-      "issueDate": "2026-09-03",
+      "issueDate": "2026-09-08",
       "currency": "AUD",
       "taxExclusiveAmount": "25.8182",
       "taxAmount": "2.5818",
@@ -1381,6 +1614,7 @@ export const DEMO: DemoShape = {
           "confidence": 0.67
         }
       ],
+      "taxSubtotals": [],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -1390,7 +1624,7 @@ export const DEMO: DemoShape = {
           "source": "capture"
         }
       ],
-      "imageCapturedAt": "2026-09-03",
+      "imageCapturedAt": "2026-09-08",
       "workspace": "business",
       "workspaceId": "ws_marsh_transport",
       "capturedByName": "Sam Oyelaran",
@@ -1398,22 +1632,22 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "pd_0011",
-      "supplierName": "AGL top-up",
+      "id": "sub_0003",
+      "supplierName": "Telstra",
       "supplierAbn": null,
       "supplierAbnValid": false,
-      "issueDate": "2026-09-03",
+      "issueDate": "2026-09-08",
       "currency": "AUD",
-      "taxExclusiveAmount": "170.4182",
-      "taxAmount": "17.0418",
-      "payableAmount": "187.4600",
+      "taxExclusiveAmount": "77.2727",
+      "taxAmount": "7.7273",
+      "payableAmount": "85.0000",
       "gstFreeAmount": null,
       "isTaxInvoice": false,
       "docType": "receipt",
       "category": "Bills & utilities",
       "engineRowId": "personal",
       "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
+      "confidenceOverall": 0.98,
       "note": null,
       "complianceFailures": [],
       "gstAtRisk": null,
@@ -1424,11 +1658,20 @@ export const DEMO: DemoShape = {
           "lineNumber": 1,
           "description": "Bills & utilities",
           "quantity": 1,
-          "unitPrice": "187.4600",
-          "amount": "187.4600",
+          "unitPrice": "85.0000",
+          "amount": "85.0000",
           "gstFree": false,
           "category": "Bills & utilities",
-          "confidence": 0.93
+          "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "77.2727",
+          "taxAmount": "7.7273",
+          "inclusiveAmount": "85.0000"
         }
       ],
       "linesBalance": true,
@@ -1440,10 +1683,10 @@ export const DEMO: DemoShape = {
           "source": "capture"
         }
       ],
-      "imageCapturedAt": "2026-09-03",
+      "imageCapturedAt": "2026-09-08",
       "workspace": "personal",
       "workspaceId": "ws_marsh_household",
-      "capturedByName": "Jem Marsh",
+      "capturedByName": "Kate Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -1452,7 +1695,7 @@ export const DEMO: DemoShape = {
       "supplierName": "NRMA Truck Insurance",
       "supplierAbn": "51824753556",
       "supplierAbnValid": true,
-      "issueDate": "2026-09-02",
+      "issueDate": "2026-09-07",
       "currency": "AUD",
       "taxExclusiveAmount": "674.5455",
       "taxAmount": "67.4545",
@@ -1491,6 +1734,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.96
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "674.5455",
+          "taxAmount": "67.4545",
+          "inclusiveAmount": "742.0000"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -1500,7 +1752,7 @@ export const DEMO: DemoShape = {
           "source": "capture"
         }
       ],
-      "imageCapturedAt": "2026-09-02",
+      "imageCapturedAt": "2026-09-07",
       "workspace": "business",
       "workspaceId": "ws_marsh_transport",
       "capturedByName": "Dan Whitby",
@@ -1508,65 +1760,15 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "pd_0007",
-      "supplierName": "Cafe Ambrosia",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-09-02",
-      "currency": "AUD",
-      "taxExclusiveAmount": "55.7727",
-      "taxAmount": "5.5773",
-      "payableAmount": "61.3500",
-      "gstFreeAmount": null,
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Eating out",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": true,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Eating out",
-          "quantity": 1,
-          "unitPrice": "61.3500",
-          "amount": "61.3500",
-          "gstFree": false,
-          "category": "Eating out",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-09-02",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Jem Marsh",
-      "visibility": "private",
-      "version": 1
-    },
-    {
-      "id": "pd_0009",
+      "id": "pd_0010",
       "supplierName": "Linkt Tolls",
       "supplierAbn": null,
       "supplierAbnValid": false,
-      "issueDate": "2026-09-02",
+      "issueDate": "2026-09-07",
       "currency": "AUD",
-      "taxExclusiveAmount": "13.1455",
-      "taxAmount": "1.3145",
-      "payableAmount": "14.4600",
+      "taxExclusiveAmount": "33.7364",
+      "taxAmount": "3.3736",
+      "payableAmount": "37.1100",
       "gstFreeAmount": null,
       "isTaxInvoice": false,
       "docType": "receipt",
@@ -1584,11 +1786,20 @@ export const DEMO: DemoShape = {
           "lineNumber": 1,
           "description": "Transport",
           "quantity": 1,
-          "unitPrice": "14.4600",
-          "amount": "14.4600",
+          "unitPrice": "37.1100",
+          "amount": "37.1100",
           "gstFree": false,
           "category": "Transport",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "33.7364",
+          "taxAmount": "3.3736",
+          "inclusiveAmount": "37.1100"
         }
       ],
       "linesBalance": true,
@@ -1600,30 +1811,30 @@ export const DEMO: DemoShape = {
           "source": "capture"
         }
       ],
-      "imageCapturedAt": "2026-09-02",
+      "imageCapturedAt": "2026-09-07",
       "workspace": "personal",
       "workspaceId": "ws_marsh_household",
-      "capturedByName": "Jem Marsh",
+      "capturedByName": "Kate Marsh",
       "visibility": "shared",
       "version": 1
     },
     {
-      "id": "sub_0003",
-      "supplierName": "Anytime Fitness",
+      "id": "pd_0015",
+      "supplierName": "JB Hi-Fi",
       "supplierAbn": null,
       "supplierAbnValid": false,
-      "issueDate": "2026-09-02",
+      "issueDate": "2026-09-07",
       "currency": "AUD",
-      "taxExclusiveAmount": "62.7273",
-      "taxAmount": "6.2727",
-      "payableAmount": "69.0000",
+      "taxExclusiveAmount": "63.3909",
+      "taxAmount": "6.3391",
+      "payableAmount": "69.7300",
       "gstFreeAmount": null,
       "isTaxInvoice": false,
       "docType": "receipt",
-      "category": "Health",
+      "category": "Shopping",
       "engineRowId": "personal",
       "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.98,
+      "confidenceOverall": 0.96,
       "note": null,
       "complianceFailures": [],
       "gstAtRisk": null,
@@ -1632,13 +1843,22 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
-          "description": "Health",
+          "description": "Shopping",
           "quantity": 1,
-          "unitPrice": "69.0000",
-          "amount": "69.0000",
+          "unitPrice": "69.7300",
+          "amount": "69.7300",
           "gstFree": false,
-          "category": "Health",
-          "confidence": 0.95
+          "category": "Shopping",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "63.3909",
+          "taxAmount": "6.3391",
+          "inclusiveAmount": "69.7300"
         }
       ],
       "linesBalance": true,
@@ -1650,10 +1870,10 @@ export const DEMO: DemoShape = {
           "source": "capture"
         }
       ],
-      "imageCapturedAt": "2026-09-02",
+      "imageCapturedAt": "2026-09-07",
       "workspace": "personal",
       "workspaceId": "ws_marsh_household",
-      "capturedByName": "Kate Marsh",
+      "capturedByName": "Jem Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -1662,7 +1882,7 @@ export const DEMO: DemoShape = {
       "supplierName": "Total Truck Wash Tamworth",
       "supplierAbn": null,
       "supplierAbnValid": false,
-      "issueDate": "2026-09-01",
+      "issueDate": "2026-09-06",
       "currency": "AUD",
       "taxExclusiveAmount": "31.8182",
       "taxAmount": "3.1818",
@@ -1719,6 +1939,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.63
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "31.8182",
+          "taxAmount": "3.1818",
+          "inclusiveAmount": "35.0000"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -1728,7 +1957,7 @@ export const DEMO: DemoShape = {
           "source": "capture"
         }
       ],
-      "imageCapturedAt": "2026-09-01",
+      "imageCapturedAt": "2026-09-06",
       "workspace": "business",
       "workspaceId": "ws_marsh_transport",
       "capturedByName": "Kate Marsh",
@@ -1736,19 +1965,19 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "pd_0008",
-      "supplierName": "Linkt Tolls",
+      "id": "pd_0006",
+      "supplierName": "Cafe Ambrosia",
       "supplierAbn": null,
       "supplierAbnValid": false,
-      "issueDate": "2026-09-01",
+      "issueDate": "2026-09-06",
       "currency": "AUD",
-      "taxExclusiveAmount": "10.0455",
-      "taxAmount": "1.0045",
-      "payableAmount": "11.0500",
+      "taxExclusiveAmount": "74.6273",
+      "taxAmount": "7.4627",
+      "payableAmount": "82.0900",
       "gstFreeAmount": null,
       "isTaxInvoice": false,
       "docType": "receipt",
-      "category": "Transport",
+      "category": "Eating out",
       "engineRowId": "personal",
       "reviewStatus": "auto_accepted",
       "confidenceOverall": 0.96,
@@ -1760,13 +1989,22 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
-          "description": "Transport",
+          "description": "Eating out",
           "quantity": 1,
-          "unitPrice": "11.0500",
-          "amount": "11.0500",
+          "unitPrice": "82.0900",
+          "amount": "82.0900",
           "gstFree": false,
-          "category": "Transport",
+          "category": "Eating out",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "74.6273",
+          "taxAmount": "7.4627",
+          "inclusiveAmount": "82.0900"
         }
       ],
       "linesBalance": true,
@@ -1778,57 +2016,7 @@ export const DEMO: DemoShape = {
           "source": "capture"
         }
       ],
-      "imageCapturedAt": "2026-09-01",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Kate Marsh",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0012",
-      "supplierName": "GP gap payment",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-09-01",
-      "currency": "AUD",
-      "taxExclusiveAmount": "90.3000",
-      "taxAmount": "0.0000",
-      "payableAmount": "90.3000",
-      "gstFreeAmount": "90.3000",
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Health",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": false,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Health",
-          "quantity": 1,
-          "unitPrice": "90.3000",
-          "amount": "90.3000",
-          "gstFree": false,
-          "category": "Health",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-09-01",
+      "imageCapturedAt": "2026-09-06",
       "workspace": "personal",
       "workspaceId": "ws_marsh_household",
       "capturedByName": "Kate Marsh",
@@ -1840,7 +2028,7 @@ export const DEMO: DemoShape = {
       "supplierName": "Kmart Dubbo",
       "supplierAbn": "33051775556",
       "supplierAbnValid": true,
-      "issueDate": "2026-08-31",
+      "issueDate": "2026-09-05",
       "currency": "AUD",
       "taxExclusiveAmount": "109.0000",
       "taxAmount": "10.9000",
@@ -1879,6 +2067,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.92
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "109.0000",
+          "taxAmount": "10.9000",
+          "inclusiveAmount": "119.9000"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -1888,10 +2085,69 @@ export const DEMO: DemoShape = {
           "source": "capture"
         }
       ],
-      "imageCapturedAt": "2026-08-31",
+      "imageCapturedAt": "2026-09-05",
       "workspace": "business",
       "workspaceId": "ws_marsh_transport",
       "capturedByName": "Sam Oyelaran",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0018",
+      "supplierName": "Event Cinemas",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-09-05",
+      "currency": "AUD",
+      "taxExclusiveAmount": "28.8818",
+      "taxAmount": "2.8882",
+      "payableAmount": "31.7700",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Fun",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": true,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Fun",
+          "quantity": 1,
+          "unitPrice": "31.7700",
+          "amount": "31.7700",
+          "gstFree": false,
+          "category": "Fun",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "28.8818",
+          "taxAmount": "2.8882",
+          "inclusiveAmount": "31.7700"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-09-05",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Kate Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -1900,7 +2156,7 @@ export const DEMO: DemoShape = {
       "supplierName": "Caltex Woolworths Forbes",
       "supplierAbn": "51824753556",
       "supplierAbnValid": true,
-      "issueDate": "2026-08-30",
+      "issueDate": "2026-09-04",
       "currency": "AUD",
       "taxExclusiveAmount": "180.5636",
       "taxAmount": "18.0564",
@@ -1939,6 +2195,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.96
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "180.5636",
+          "taxAmount": "18.0564",
+          "inclusiveAmount": "198.6200"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -1948,10 +2213,69 @@ export const DEMO: DemoShape = {
           "source": "capture"
         }
       ],
-      "imageCapturedAt": "2026-08-30",
+      "imageCapturedAt": "2026-09-04",
       "workspace": "business",
       "workspaceId": "ws_marsh_transport",
       "capturedByName": "Dan Whitby",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "sub_0001",
+      "supplierName": "Netflix",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-09-04",
+      "currency": "AUD",
+      "taxExclusiveAmount": "17.2636",
+      "taxAmount": "1.7264",
+      "payableAmount": "18.9900",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Fun",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.98,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": true,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Fun",
+          "quantity": 1,
+          "unitPrice": "18.9900",
+          "amount": "18.9900",
+          "gstFree": false,
+          "category": "Fun",
+          "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "17.2636",
+          "taxAmount": "1.7264",
+          "inclusiveAmount": "18.9900"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-09-04",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Kate Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -1960,7 +2284,7 @@ export const DEMO: DemoShape = {
       "supplierName": "Servo Pie Shop Narrandera",
       "supplierAbn": null,
       "supplierAbnValid": false,
-      "issueDate": "2026-08-29",
+      "issueDate": "2026-09-03",
       "currency": "AUD",
       "taxExclusiveAmount": "15.2727",
       "taxAmount": "1.5273",
@@ -2027,6 +2351,7 @@ export const DEMO: DemoShape = {
           "confidence": 0.68
         }
       ],
+      "taxSubtotals": [],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -2036,7 +2361,7 @@ export const DEMO: DemoShape = {
           "source": "capture"
         }
       ],
-      "imageCapturedAt": "2026-08-29",
+      "imageCapturedAt": "2026-09-03",
       "workspace": "business",
       "workspaceId": "ws_marsh_transport",
       "capturedByName": "Kate Marsh",
@@ -2044,11 +2369,70 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
+      "id": "pd_0007",
+      "supplierName": "Cafe Ambrosia",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-09-03",
+      "currency": "AUD",
+      "taxExclusiveAmount": "55.7727",
+      "taxAmount": "5.5773",
+      "payableAmount": "61.3500",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Eating out",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": true,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Eating out",
+          "quantity": 1,
+          "unitPrice": "61.3500",
+          "amount": "61.3500",
+          "gstFree": false,
+          "category": "Eating out",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "55.7727",
+          "taxAmount": "5.5773",
+          "inclusiveAmount": "61.3500"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-09-03",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Jem Marsh",
+      "visibility": "private",
+      "version": 1
+    },
+    {
       "id": "doc_17",
       "supplierName": "Mitchell Motor Inn Bathurst",
       "supplierAbn": "33051775556",
       "supplierAbnValid": true,
-      "issueDate": "2026-08-28",
+      "issueDate": "2026-09-02",
       "currency": "AUD",
       "taxExclusiveAmount": "143.6364",
       "taxAmount": "14.3636",
@@ -2087,6 +2471,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.94
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "143.6364",
+          "taxAmount": "14.3636",
+          "inclusiveAmount": "158.0000"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -2096,7 +2489,7 @@ export const DEMO: DemoShape = {
           "source": "capture"
         }
       ],
-      "imageCapturedAt": "2026-08-28",
+      "imageCapturedAt": "2026-09-02",
       "workspace": "business",
       "workspaceId": "ws_marsh_transport",
       "capturedByName": "Sam Oyelaran",
@@ -2104,19 +2497,19 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "pd_0024",
-      "supplierName": "Coles Broadway",
+      "id": "pd_0009",
+      "supplierName": "Linkt Tolls",
       "supplierAbn": null,
       "supplierAbnValid": false,
-      "issueDate": "2026-08-28",
+      "issueDate": "2026-09-02",
       "currency": "AUD",
-      "taxExclusiveAmount": "54.1218",
-      "taxAmount": "2.3082",
-      "payableAmount": "56.4300",
-      "gstFreeAmount": "31.0400",
+      "taxExclusiveAmount": "13.1455",
+      "taxAmount": "1.3145",
+      "payableAmount": "14.4600",
+      "gstFreeAmount": null,
       "isTaxInvoice": false,
       "docType": "receipt",
-      "category": "Groceries",
+      "category": "Transport",
       "engineRowId": "personal",
       "reviewStatus": "auto_accepted",
       "confidenceOverall": 0.96,
@@ -2128,13 +2521,22 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
-          "description": "Groceries",
+          "description": "Transport",
           "quantity": 1,
-          "unitPrice": "56.4300",
-          "amount": "56.4300",
+          "unitPrice": "14.4600",
+          "amount": "14.4600",
           "gstFree": false,
-          "category": "Groceries",
+          "category": "Transport",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "13.1455",
+          "taxAmount": "1.3145",
+          "inclusiveAmount": "14.4600"
         }
       ],
       "linesBalance": true,
@@ -2146,23 +2548,23 @@ export const DEMO: DemoShape = {
           "source": "capture"
         }
       ],
-      "imageCapturedAt": "2026-08-28",
+      "imageCapturedAt": "2026-09-02",
       "workspace": "personal",
       "workspaceId": "ws_marsh_household",
-      "capturedByName": "Kate Marsh",
+      "capturedByName": "Jem Marsh",
       "visibility": "shared",
       "version": 1
     },
     {
-      "id": "pd_0051",
+      "id": "pd_0017",
       "supplierName": "IKEA Tempe",
       "supplierAbn": null,
       "supplierAbnValid": false,
-      "issueDate": "2026-08-28",
+      "issueDate": "2026-09-02",
       "currency": "AUD",
-      "taxExclusiveAmount": "117.2364",
-      "taxAmount": "11.7236",
-      "payableAmount": "128.9600",
+      "taxExclusiveAmount": "111.5182",
+      "taxAmount": "11.1518",
+      "payableAmount": "122.6700",
       "gstFreeAmount": null,
       "isTaxInvoice": false,
       "docType": "receipt",
@@ -2180,11 +2582,20 @@ export const DEMO: DemoShape = {
           "lineNumber": 1,
           "description": "Home",
           "quantity": 1,
-          "unitPrice": "128.9600",
-          "amount": "128.9600",
+          "unitPrice": "122.6700",
+          "amount": "122.6700",
           "gstFree": false,
           "category": "Home",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "111.5182",
+          "taxAmount": "11.1518",
+          "inclusiveAmount": "122.6700"
         }
       ],
       "linesBalance": true,
@@ -2196,10 +2607,69 @@ export const DEMO: DemoShape = {
           "source": "capture"
         }
       ],
-      "imageCapturedAt": "2026-08-28",
+      "imageCapturedAt": "2026-09-02",
       "workspace": "personal",
       "workspaceId": "ws_marsh_household",
       "capturedByName": "Jem Marsh",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "sub_0004",
+      "supplierName": "Anytime Fitness",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-09-02",
+      "currency": "AUD",
+      "taxExclusiveAmount": "62.7273",
+      "taxAmount": "6.2727",
+      "payableAmount": "69.0000",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Health",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.98,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": true,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Health",
+          "quantity": 1,
+          "unitPrice": "69.0000",
+          "amount": "69.0000",
+          "gstFree": false,
+          "category": "Health",
+          "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "62.7273",
+          "taxAmount": "6.2727",
+          "inclusiveAmount": "69.0000"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-09-02",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Kate Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -2208,7 +2678,7 @@ export const DEMO: DemoShape = {
       "supplierName": "Transurban Linkt Tolls",
       "supplierAbn": "51824753556",
       "supplierAbnValid": true,
-      "issueDate": "2026-08-27",
+      "issueDate": "2026-09-01",
       "currency": "AUD",
       "taxExclusiveAmount": "375.0455",
       "taxAmount": "37.5045",
@@ -2237,6 +2707,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.96
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "375.0455",
+          "taxAmount": "37.5045",
+          "inclusiveAmount": "412.5500"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -2246,10 +2725,69 @@ export const DEMO: DemoShape = {
           "source": "capture"
         }
       ],
-      "imageCapturedAt": "2026-08-27",
+      "imageCapturedAt": "2026-09-01",
       "workspace": "business",
       "workspaceId": "ws_marsh_transport",
       "capturedByName": "Dan Whitby",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0008",
+      "supplierName": "Guzman y Gomez",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-09-01",
+      "currency": "AUD",
+      "taxExclusiveAmount": "38.1091",
+      "taxAmount": "3.8109",
+      "payableAmount": "41.9200",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Eating out",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": true,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Eating out",
+          "quantity": 1,
+          "unitPrice": "41.9200",
+          "amount": "41.9200",
+          "gstFree": false,
+          "category": "Eating out",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "38.1091",
+          "taxAmount": "3.8109",
+          "inclusiveAmount": "41.9200"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-09-01",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Kate Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -2258,7 +2796,7 @@ export const DEMO: DemoShape = {
       "supplierName": "Telstra Mobile",
       "supplierAbn": "33051775556",
       "supplierAbnValid": true,
-      "issueDate": "2026-08-26",
+      "issueDate": "2026-08-31",
       "currency": "AUD",
       "taxExclusiveAmount": "77.2727",
       "taxAmount": "7.7273",
@@ -2297,6 +2835,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.96
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "77.2727",
+          "taxAmount": "7.7273",
+          "inclusiveAmount": "85.0000"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -2306,59 +2853,9 @@ export const DEMO: DemoShape = {
           "source": "capture"
         }
       ],
-      "imageCapturedAt": "2026-08-26",
+      "imageCapturedAt": "2026-08-31",
       "workspace": "business",
       "workspaceId": "ws_marsh_transport",
-      "capturedByName": "Kate Marsh",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0030",
-      "supplierName": "Guzman y Gomez",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-08-26",
-      "currency": "AUD",
-      "taxExclusiveAmount": "74.5545",
-      "taxAmount": "7.4555",
-      "payableAmount": "82.0100",
-      "gstFreeAmount": null,
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Eating out",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": true,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Eating out",
-          "quantity": 1,
-          "unitPrice": "82.0100",
-          "amount": "82.0100",
-          "gstFree": false,
-          "category": "Eating out",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-08-26",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
       "capturedByName": "Kate Marsh",
       "visibility": "shared",
       "version": 1
@@ -2368,7 +2865,7 @@ export const DEMO: DemoShape = {
       "supplierName": "Bridgestone Service Wagga",
       "supplierAbn": "51824753556",
       "supplierAbnValid": true,
-      "issueDate": "2026-08-25",
+      "issueDate": "2026-08-30",
       "currency": "AUD",
       "taxExclusiveAmount": "567.7273",
       "taxAmount": "56.7727",
@@ -2417,6 +2914,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.94
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "567.7273",
+          "taxAmount": "56.7727",
+          "inclusiveAmount": "624.5000"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -2426,10 +2932,398 @@ export const DEMO: DemoShape = {
           "source": "capture"
         }
       ],
-      "imageCapturedAt": "2026-08-25",
+      "imageCapturedAt": "2026-08-30",
       "workspace": "business",
       "workspaceId": "ws_marsh_transport",
       "capturedByName": "Sam Oyelaran",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0024",
+      "supplierName": "Coles Broadway",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-08-28",
+      "currency": "AUD",
+      "taxExclusiveAmount": "54.1218",
+      "taxAmount": "2.3082",
+      "payableAmount": "56.4300",
+      "gstFreeAmount": "31.0400",
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Groceries",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": true,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "31.0400",
+          "amount": "31.0400",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
+          "description": "Groceries",
+          "quantity": 1,
+          "unitPrice": "25.3900",
+          "amount": "25.3900",
+          "gstFree": false,
+          "category": "Groceries",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "23.0818",
+          "taxAmount": "2.3082",
+          "inclusiveAmount": "25.3900"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "31.0400",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "31.0400"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-08-28",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Kate Marsh",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0046",
+      "supplierName": "Sydney Water",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-08-27",
+      "currency": "AUD",
+      "taxExclusiveAmount": "115.5727",
+      "taxAmount": "11.5573",
+      "payableAmount": "127.1300",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Bills & utilities",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": false,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Bills & utilities",
+          "quantity": 1,
+          "unitPrice": "127.1300",
+          "amount": "127.1300",
+          "gstFree": false,
+          "category": "Bills & utilities",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "115.5727",
+          "taxAmount": "11.5573",
+          "inclusiveAmount": "127.1300"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-08-27",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Kate Marsh",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0028",
+      "supplierName": "IGA Local",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-08-26",
+      "currency": "AUD",
+      "taxExclusiveAmount": "174.0755",
+      "taxAmount": "7.4245",
+      "payableAmount": "181.5000",
+      "gstFreeAmount": "99.8300",
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Groceries",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": false,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "99.8300",
+          "amount": "99.8300",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
+          "description": "Groceries",
+          "quantity": 1,
+          "unitPrice": "81.6700",
+          "amount": "81.6700",
+          "gstFree": false,
+          "category": "Groceries",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "74.2455",
+          "taxAmount": "7.4245",
+          "inclusiveAmount": "81.6700"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "99.8300",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "99.8300"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-08-26",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Kate Marsh",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0030",
+      "supplierName": "Guzman y Gomez",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-08-26",
+      "currency": "AUD",
+      "taxExclusiveAmount": "74.5545",
+      "taxAmount": "7.4555",
+      "payableAmount": "82.0100",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Eating out",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": true,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Eating out",
+          "quantity": 1,
+          "unitPrice": "82.0100",
+          "amount": "82.0100",
+          "gstFree": false,
+          "category": "Eating out",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "74.5545",
+          "taxAmount": "7.4555",
+          "inclusiveAmount": "82.0100"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-08-26",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Kate Marsh",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0033",
+      "supplierName": "Domino's Pizza",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-08-26",
+      "currency": "AUD",
+      "taxExclusiveAmount": "84.6182",
+      "taxAmount": "8.4618",
+      "payableAmount": "93.0800",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Eating out",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": false,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Eating out",
+          "quantity": 1,
+          "unitPrice": "93.0800",
+          "amount": "93.0800",
+          "gstFree": false,
+          "category": "Eating out",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "84.6182",
+          "taxAmount": "8.4618",
+          "inclusiveAmount": "93.0800"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-08-26",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Jem Marsh",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0054",
+      "supplierName": "Marrickville Bowlo",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-08-26",
+      "currency": "AUD",
+      "taxExclusiveAmount": "59.6727",
+      "taxAmount": "5.9673",
+      "payableAmount": "65.6400",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Fun",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": true,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Fun",
+          "quantity": 1,
+          "unitPrice": "65.6400",
+          "amount": "65.6400",
+          "gstFree": false,
+          "category": "Fun",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "59.6727",
+          "taxAmount": "5.9673",
+          "inclusiveAmount": "65.6400"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-08-26",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Kate Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -2467,54 +3361,13 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
+      "taxSubtotals": [
         {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-08-25",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Jem Marsh",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0047",
-      "supplierName": "Big W",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-08-25",
-      "currency": "AUD",
-      "taxExclusiveAmount": "210.3455",
-      "taxAmount": "21.0345",
-      "payableAmount": "231.3800",
-      "gstFreeAmount": null,
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Shopping",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": false,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Shopping",
-          "quantity": 1,
-          "unitPrice": "231.3800",
-          "amount": "231.3800",
-          "gstFree": false,
-          "category": "Shopping",
-          "confidence": 0.93
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "18.2636",
+          "taxAmount": "1.8264",
+          "inclusiveAmount": "20.0900"
         }
       ],
       "linesBalance": true,
@@ -2530,56 +3383,6 @@ export const DEMO: DemoShape = {
       "workspace": "personal",
       "workspaceId": "ws_marsh_household",
       "capturedByName": "Jem Marsh",
-      "visibility": "private",
-      "version": 1
-    },
-    {
-      "id": "pd_0048",
-      "supplierName": "JB Hi-Fi",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-08-25",
-      "currency": "AUD",
-      "taxExclusiveAmount": "123.8545",
-      "taxAmount": "12.3855",
-      "payableAmount": "136.2400",
-      "gstFreeAmount": null,
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Shopping",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": false,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Shopping",
-          "quantity": 1,
-          "unitPrice": "136.2400",
-          "amount": "136.2400",
-          "gstFree": false,
-          "category": "Shopping",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-08-25",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Kate Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -2608,13 +3411,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "52.9800",
+          "amount": "52.9800",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "96.3300",
-          "amount": "96.3300",
+          "unitPrice": "43.3500",
+          "amount": "43.3500",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "39.4091",
+          "taxAmount": "3.9409",
+          "inclusiveAmount": "43.3500"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "52.9800",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "52.9800"
         }
       ],
       "linesBalance": true,
@@ -2667,6 +3496,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "14.4455",
+          "taxAmount": "1.4445",
+          "inclusiveAmount": "15.8900"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -2680,6 +3518,65 @@ export const DEMO: DemoShape = {
       "workspace": "personal",
       "workspaceId": "ws_marsh_household",
       "capturedByName": "Jem Marsh",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0050",
+      "supplierName": "Kmart",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-08-24",
+      "currency": "AUD",
+      "taxExclusiveAmount": "101.8091",
+      "taxAmount": "10.1809",
+      "payableAmount": "111.9900",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Shopping",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": false,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Shopping",
+          "quantity": 1,
+          "unitPrice": "111.9900",
+          "amount": "111.9900",
+          "gstFree": false,
+          "category": "Shopping",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "101.8091",
+          "taxAmount": "10.1809",
+          "inclusiveAmount": "111.9900"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-08-24",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Kate Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -2715,6 +3612,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Truck parts & maintenance",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "305.1636",
+          "taxAmount": "30.5164",
+          "inclusiveAmount": "335.6800"
         }
       ],
       "linesBalance": true,
@@ -2758,13 +3664,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "3.8900",
+          "amount": "3.8900",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "12.9700",
-          "amount": "12.9700",
+          "unitPrice": "9.0800",
+          "amount": "9.0800",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "8.2545",
+          "taxAmount": "0.8255",
+          "inclusiveAmount": "9.0800"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "3.8900",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "3.8900"
         }
       ],
       "linesBalance": true,
@@ -2817,6 +3749,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "84.0364",
+          "taxAmount": "8.4036",
+          "inclusiveAmount": "92.4400"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -2858,13 +3799,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "71.2300",
+          "amount": "71.2300",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "129.5000",
-          "amount": "129.5000",
+          "unitPrice": "58.2700",
+          "amount": "58.2700",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "52.9727",
+          "taxAmount": "5.2973",
+          "inclusiveAmount": "58.2700"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "71.2300",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "71.2300"
         }
       ],
       "linesBalance": true,
@@ -2884,19 +3851,19 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "pd_0028",
-      "supplierName": "Thai Riffic",
+      "id": "pd_0042",
+      "supplierName": "7-Eleven Redfern",
       "supplierAbn": null,
       "supplierAbnValid": false,
       "issueDate": "2026-08-23",
       "currency": "AUD",
-      "taxExclusiveAmount": "80.6545",
-      "taxAmount": "8.0655",
-      "payableAmount": "88.7200",
+      "taxExclusiveAmount": "77.7636",
+      "taxAmount": "7.7764",
+      "payableAmount": "85.5400",
       "gstFreeAmount": null,
       "isTaxInvoice": false,
       "docType": "receipt",
-      "category": "Eating out",
+      "category": "Fuel",
       "engineRowId": "personal",
       "reviewStatus": "auto_accepted",
       "confidenceOverall": 0.96,
@@ -2908,13 +3875,22 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
-          "description": "Eating out",
+          "description": "Fuel",
           "quantity": 1,
-          "unitPrice": "88.7200",
-          "amount": "88.7200",
+          "unitPrice": "85.5400",
+          "amount": "85.5400",
           "gstFree": false,
-          "category": "Eating out",
+          "category": "Fuel",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "77.7636",
+          "taxAmount": "7.7764",
+          "inclusiveAmount": "85.5400"
         }
       ],
       "linesBalance": true,
@@ -2930,56 +3906,6 @@ export const DEMO: DemoShape = {
       "workspace": "personal",
       "workspaceId": "ws_marsh_household",
       "capturedByName": "Kate Marsh",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0033",
-      "supplierName": "Linkt Tolls",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-08-23",
-      "currency": "AUD",
-      "taxExclusiveAmount": "55.5545",
-      "taxAmount": "5.5555",
-      "payableAmount": "61.1100",
-      "gstFreeAmount": null,
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Transport",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": true,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Transport",
-          "quantity": 1,
-          "unitPrice": "61.1100",
-          "amount": "61.1100",
-          "gstFree": false,
-          "category": "Transport",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-08-23",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Jem Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -3017,6 +3943,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "359.5909",
+          "taxAmount": "35.9591",
+          "inclusiveAmount": "395.5500"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -3034,57 +3969,7 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "pd_0045",
-      "supplierName": "Chemist Warehouse",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-08-22",
-      "currency": "AUD",
-      "taxExclusiveAmount": "108.9600",
-      "taxAmount": "0.0000",
-      "payableAmount": "108.9600",
-      "gstFreeAmount": "108.9600",
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Health",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": false,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Health",
-          "quantity": 1,
-          "unitPrice": "108.9600",
-          "amount": "108.9600",
-          "gstFree": false,
-          "category": "Health",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-08-22",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Jem Marsh",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "sub_0008",
+      "id": "sub_0009",
       "supplierName": "NRMA Car Insurance",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -3115,6 +4000,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Bills & utilities",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "86.0000",
+          "taxAmount": "8.6000",
+          "inclusiveAmount": "94.6000"
         }
       ],
       "linesBalance": true,
@@ -3167,6 +4061,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "159.4727",
+          "taxAmount": "15.9473",
+          "inclusiveAmount": "175.4200"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -3208,13 +4111,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "9.2100",
+          "amount": "9.2100",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "30.7000",
-          "amount": "30.7000",
+          "unitPrice": "21.4900",
+          "amount": "21.4900",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "19.5364",
+          "taxAmount": "1.9536",
+          "inclusiveAmount": "21.4900"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "9.2100",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "9.2100"
         }
       ],
       "linesBalance": true,
@@ -3267,6 +4196,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "829.9818",
+          "taxAmount": "82.9982",
+          "inclusiveAmount": "912.9800"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -3308,13 +4246,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "28.1900",
+          "amount": "28.1900",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "51.2600",
-          "amount": "51.2600",
+          "unitPrice": "23.0700",
+          "amount": "23.0700",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "20.9727",
+          "taxAmount": "2.0973",
+          "inclusiveAmount": "23.0700"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "28.1900",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "28.1900"
         }
       ],
       "linesBalance": true,
@@ -3334,69 +4298,19 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "pd_0026",
-      "supplierName": "Domino's Pizza",
+      "id": "pd_0044",
+      "supplierName": "7-Eleven Redfern",
       "supplierAbn": null,
       "supplierAbnValid": false,
       "issueDate": "2026-08-20",
       "currency": "AUD",
-      "taxExclusiveAmount": "29.0000",
-      "taxAmount": "2.9000",
-      "payableAmount": "31.9000",
+      "taxExclusiveAmount": "105.5091",
+      "taxAmount": "10.5509",
+      "payableAmount": "116.0600",
       "gstFreeAmount": null,
       "isTaxInvoice": false,
       "docType": "receipt",
-      "category": "Eating out",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": true,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Eating out",
-          "quantity": 1,
-          "unitPrice": "31.9000",
-          "amount": "31.9000",
-          "gstFree": false,
-          "category": "Eating out",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-08-20",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Kate Marsh",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0042",
-      "supplierName": "Sydney Water",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-08-20",
-      "currency": "AUD",
-      "taxExclusiveAmount": "268.5364",
-      "taxAmount": "26.8536",
-      "payableAmount": "295.3900",
-      "gstFreeAmount": null,
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Bills & utilities",
+      "category": "Fuel",
       "engineRowId": "personal",
       "reviewStatus": "auto_accepted",
       "confidenceOverall": 0.96,
@@ -3408,13 +4322,22 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
-          "description": "Bills & utilities",
+          "description": "Fuel",
           "quantity": 1,
-          "unitPrice": "295.3900",
-          "amount": "295.3900",
+          "unitPrice": "116.0600",
+          "amount": "116.0600",
           "gstFree": false,
-          "category": "Bills & utilities",
+          "category": "Fuel",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "105.5091",
+          "taxAmount": "10.5509",
+          "inclusiveAmount": "116.0600"
         }
       ],
       "linesBalance": true,
@@ -3435,36 +4358,45 @@ export const DEMO: DemoShape = {
     },
     {
       "id": "pd_0039",
-      "supplierName": "Ampol Alexandria",
+      "supplierName": "Linkt Tolls",
       "supplierAbn": null,
       "supplierAbnValid": false,
       "issueDate": "2026-08-19",
       "currency": "AUD",
-      "taxExclusiveAmount": "88.7636",
-      "taxAmount": "8.8764",
-      "payableAmount": "97.6400",
+      "taxExclusiveAmount": "55.9636",
+      "taxAmount": "5.5964",
+      "payableAmount": "61.5600",
       "gstFreeAmount": null,
       "isTaxInvoice": false,
       "docType": "receipt",
-      "category": "Fuel",
+      "category": "Transport",
       "engineRowId": "personal",
       "reviewStatus": "auto_accepted",
       "confidenceOverall": 0.96,
       "note": null,
       "complianceFailures": [],
       "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": false,
+      "belowTaxInvoiceThreshold": true,
       "findings": [],
       "lines": [
         {
           "lineNumber": 1,
-          "description": "Fuel",
+          "description": "Transport",
           "quantity": 1,
-          "unitPrice": "97.6400",
-          "amount": "97.6400",
+          "unitPrice": "61.5600",
+          "amount": "61.5600",
           "gstFree": false,
-          "category": "Fuel",
+          "category": "Transport",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "55.9636",
+          "taxAmount": "5.5964",
+          "inclusiveAmount": "61.5600"
         }
       ],
       "linesBalance": true,
@@ -3517,6 +4449,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "162.5818",
+          "taxAmount": "16.2582",
+          "inclusiveAmount": "178.8400"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -3558,13 +4499,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "13.0900",
+          "amount": "13.0900",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "43.6500",
-          "amount": "43.6500",
+          "unitPrice": "30.5600",
+          "amount": "30.5600",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "27.7818",
+          "taxAmount": "2.7782",
+          "inclusiveAmount": "30.5600"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "13.0900",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "13.0900"
         }
       ],
       "linesBalance": true,
@@ -3608,13 +4575,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "11.2400",
+          "amount": "11.2400",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "37.4700",
-          "amount": "37.4700",
+          "unitPrice": "26.2300",
+          "amount": "26.2300",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "23.8455",
+          "taxAmount": "2.3845",
+          "inclusiveAmount": "26.2300"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "11.2400",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "11.2400"
         }
       ],
       "linesBalance": true,
@@ -3658,13 +4651,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "35.9900",
+          "amount": "35.9900",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "65.4300",
-          "amount": "65.4300",
+          "unitPrice": "29.4400",
+          "amount": "29.4400",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "26.7636",
+          "taxAmount": "2.6764",
+          "inclusiveAmount": "29.4400"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "35.9900",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "35.9900"
         }
       ],
       "linesBalance": true,
@@ -3681,56 +4700,6 @@ export const DEMO: DemoShape = {
       "workspaceId": "ws_marsh_household",
       "capturedByName": "Kate Marsh",
       "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0027",
-      "supplierName": "Domino's Pizza",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-08-18",
-      "currency": "AUD",
-      "taxExclusiveAmount": "40.4636",
-      "taxAmount": "4.0464",
-      "payableAmount": "44.5100",
-      "gstFreeAmount": null,
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Eating out",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": true,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Eating out",
-          "quantity": 1,
-          "unitPrice": "44.5100",
-          "amount": "44.5100",
-          "gstFree": false,
-          "category": "Eating out",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-08-18",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Jem Marsh",
-      "visibility": "private",
       "version": 1
     },
     {
@@ -3767,6 +4736,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "26.4364",
+          "taxAmount": "2.6436",
+          "inclusiveAmount": "29.0800"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -3780,6 +4758,65 @@ export const DEMO: DemoShape = {
       "workspace": "personal",
       "workspaceId": "ws_marsh_household",
       "capturedByName": "Jem Marsh",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0034",
+      "supplierName": "Guzman y Gomez",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-08-18",
+      "currency": "AUD",
+      "taxExclusiveAmount": "65.8182",
+      "taxAmount": "6.5818",
+      "payableAmount": "72.4000",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Eating out",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": true,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Eating out",
+          "quantity": 1,
+          "unitPrice": "72.4000",
+          "amount": "72.4000",
+          "gstFree": false,
+          "category": "Eating out",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "65.8182",
+          "taxAmount": "6.5818",
+          "inclusiveAmount": "72.4000"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-08-18",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Kate Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -3817,6 +4854,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "26.3909",
+          "taxAmount": "2.6391",
+          "inclusiveAmount": "29.0300"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -3834,7 +4880,7 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0007",
+      "id": "sub_0008",
       "supplierName": "Origin Energy",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -3867,6 +4913,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.95
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "129.8182",
+          "taxAmount": "12.9818",
+          "inclusiveAmount": "142.8000"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -3877,56 +4932,6 @@ export const DEMO: DemoShape = {
         }
       ],
       "imageCapturedAt": "2026-08-18",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Kate Marsh",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0016",
-      "supplierName": "Woolworths Metro",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-08-17",
-      "currency": "AUD",
-      "taxExclusiveAmount": "159.8418",
-      "taxAmount": "6.8182",
-      "payableAmount": "166.6600",
-      "gstFreeAmount": "91.6600",
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Groceries",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": false,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Groceries",
-          "quantity": 1,
-          "unitPrice": "166.6600",
-          "amount": "166.6600",
-          "gstFree": false,
-          "category": "Groceries",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-08-17",
       "workspace": "personal",
       "workspaceId": "ws_marsh_household",
       "capturedByName": "Kate Marsh",
@@ -3967,6 +4972,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "81.4091",
+          "taxAmount": "8.1409",
+          "inclusiveAmount": "89.5500"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -3984,69 +4998,19 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "pd_0017",
-      "supplierName": "Woolworths Metro",
+      "id": "pd_0040",
+      "supplierName": "Opal top-up",
       "supplierAbn": null,
       "supplierAbnValid": false,
       "issueDate": "2026-08-16",
       "currency": "AUD",
-      "taxExclusiveAmount": "165.8655",
-      "taxAmount": "7.0745",
-      "payableAmount": "172.9400",
-      "gstFreeAmount": "95.1200",
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Groceries",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": false,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Groceries",
-          "quantity": 1,
-          "unitPrice": "172.9400",
-          "amount": "172.9400",
-          "gstFree": false,
-          "category": "Groceries",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-08-16",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Jem Marsh",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0046",
-      "supplierName": "Kmart",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-08-16",
-      "currency": "AUD",
-      "taxExclusiveAmount": "66.3909",
-      "taxAmount": "6.6391",
-      "payableAmount": "73.0300",
+      "taxExclusiveAmount": "15.8455",
+      "taxAmount": "1.5845",
+      "payableAmount": "17.4300",
       "gstFreeAmount": null,
       "isTaxInvoice": false,
       "docType": "receipt",
-      "category": "Shopping",
+      "category": "Transport",
       "engineRowId": "personal",
       "reviewStatus": "auto_accepted",
       "confidenceOverall": 0.96,
@@ -4058,13 +5022,22 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
-          "description": "Shopping",
+          "description": "Transport",
           "quantity": 1,
-          "unitPrice": "73.0300",
-          "amount": "73.0300",
+          "unitPrice": "17.4300",
+          "amount": "17.4300",
           "gstFree": false,
-          "category": "Shopping",
+          "category": "Transport",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "15.8455",
+          "taxAmount": "1.5845",
+          "inclusiveAmount": "17.4300"
         }
       ],
       "linesBalance": true,
@@ -4080,6 +5053,65 @@ export const DEMO: DemoShape = {
       "workspace": "personal",
       "workspaceId": "ws_marsh_household",
       "capturedByName": "Kate Marsh",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0051",
+      "supplierName": "Big W",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-08-16",
+      "currency": "AUD",
+      "taxExclusiveAmount": "196.3273",
+      "taxAmount": "19.6327",
+      "payableAmount": "215.9600",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Shopping",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": false,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Shopping",
+          "quantity": 1,
+          "unitPrice": "215.9600",
+          "amount": "215.9600",
+          "gstFree": false,
+          "category": "Shopping",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "196.3273",
+          "taxAmount": "19.6327",
+          "inclusiveAmount": "215.9600"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-08-16",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Jem Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -4117,6 +5149,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "151.9364",
+          "taxAmount": "15.1936",
+          "inclusiveAmount": "167.1300"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -4130,6 +5171,65 @@ export const DEMO: DemoShape = {
       "workspace": "business",
       "workspaceId": "ws_marsh_transport",
       "capturedByName": "Sam Oyelaran",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0052",
+      "supplierName": "Bunnings Warehouse",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-08-15",
+      "currency": "AUD",
+      "taxExclusiveAmount": "82.6727",
+      "taxAmount": "8.2673",
+      "payableAmount": "90.9400",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Home",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": false,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Home",
+          "quantity": 1,
+          "unitPrice": "90.9400",
+          "amount": "90.9400",
+          "gstFree": false,
+          "category": "Home",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "82.6727",
+          "taxAmount": "8.2673",
+          "inclusiveAmount": "90.9400"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-08-15",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Kate Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -4165,6 +5265,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fuel",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "179.3182",
+          "taxAmount": "17.9318",
+          "inclusiveAmount": "197.2500"
         }
       ],
       "linesBalance": true,
@@ -4217,6 +5326,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "144.6000",
+          "taxAmount": "14.4600",
+          "inclusiveAmount": "159.0600"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -4230,6 +5348,144 @@ export const DEMO: DemoShape = {
       "workspace": "business",
       "workspaceId": "ws_marsh_transport",
       "capturedByName": "Sam Oyelaran",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0048",
+      "supplierName": "GP gap payment",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-08-14",
+      "currency": "AUD",
+      "taxExclusiveAmount": "191.3700",
+      "taxAmount": "0.0000",
+      "payableAmount": "191.3700",
+      "gstFreeAmount": "191.3700",
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Health",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": false,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Health (GST-free)",
+          "quantity": 1,
+          "unitPrice": "191.3700",
+          "amount": "191.3700",
+          "gstFree": true,
+          "category": "Health",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
+          "description": "Health",
+          "quantity": 1,
+          "unitPrice": "0.0000",
+          "amount": "0.0000",
+          "gstFree": false,
+          "category": "Health",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "191.3700",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "191.3700"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-08-14",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Kate Marsh",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0049",
+      "supplierName": "Chemist Warehouse",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-08-14",
+      "currency": "AUD",
+      "taxExclusiveAmount": "134.0500",
+      "taxAmount": "0.0000",
+      "payableAmount": "134.0500",
+      "gstFreeAmount": "134.0500",
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Health",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": false,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Health (GST-free)",
+          "quantity": 1,
+          "unitPrice": "134.0500",
+          "amount": "134.0500",
+          "gstFree": true,
+          "category": "Health",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
+          "description": "Health",
+          "quantity": 1,
+          "unitPrice": "0.0000",
+          "amount": "0.0000",
+          "gstFree": false,
+          "category": "Health",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "134.0500",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "134.0500"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-08-14",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Jem Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -4265,6 +5521,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fuel",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "191.2455",
+          "taxAmount": "19.1245",
+          "inclusiveAmount": "210.3700"
         }
       ],
       "linesBalance": true,
@@ -4317,54 +5582,13 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
+      "taxSubtotals": [
         {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-08-13",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Kate Marsh",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0052",
-      "supplierName": "Event Cinemas",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-08-13",
-      "currency": "AUD",
-      "taxExclusiveAmount": "54.7182",
-      "taxAmount": "5.4718",
-      "payableAmount": "60.1900",
-      "gstFreeAmount": null,
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Fun",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": true,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Fun",
-          "quantity": 1,
-          "unitPrice": "60.1900",
-          "amount": "60.1900",
-          "gstFree": false,
-          "category": "Fun",
-          "confidence": 0.93
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "21.5545",
+          "taxAmount": "2.1555",
+          "inclusiveAmount": "23.7100"
         }
       ],
       "linesBalance": true,
@@ -4417,6 +5641,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "170.1000",
+          "taxAmount": "17.0100",
+          "inclusiveAmount": "187.1100"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -4434,37 +5667,46 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "pd_0044",
-      "supplierName": "Chemist Warehouse",
+      "id": "pd_0041",
+      "supplierName": "Opal top-up",
       "supplierAbn": null,
       "supplierAbnValid": false,
       "issueDate": "2026-08-12",
       "currency": "AUD",
-      "taxExclusiveAmount": "169.2500",
-      "taxAmount": "0.0000",
-      "payableAmount": "169.2500",
-      "gstFreeAmount": "169.2500",
+      "taxExclusiveAmount": "39.9364",
+      "taxAmount": "3.9936",
+      "payableAmount": "43.9300",
+      "gstFreeAmount": null,
       "isTaxInvoice": false,
       "docType": "receipt",
-      "category": "Health",
+      "category": "Transport",
       "engineRowId": "personal",
       "reviewStatus": "auto_accepted",
       "confidenceOverall": 0.96,
       "note": null,
       "complianceFailures": [],
       "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": false,
+      "belowTaxInvoiceThreshold": true,
       "findings": [],
       "lines": [
         {
           "lineNumber": 1,
-          "description": "Health",
+          "description": "Transport",
           "quantity": 1,
-          "unitPrice": "169.2500",
-          "amount": "169.2500",
+          "unitPrice": "43.9300",
+          "amount": "43.9300",
           "gstFree": false,
-          "category": "Health",
+          "category": "Transport",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "39.9364",
+          "taxAmount": "3.9936",
+          "inclusiveAmount": "43.9300"
         }
       ],
       "linesBalance": true,
@@ -4479,12 +5721,12 @@ export const DEMO: DemoShape = {
       "imageCapturedAt": "2026-08-12",
       "workspace": "personal",
       "workspaceId": "ws_marsh_household",
-      "capturedByName": "Kate Marsh",
+      "capturedByName": "Jem Marsh",
       "visibility": "shared",
       "version": 1
     },
     {
-      "id": "sub_0005",
+      "id": "sub_0006",
       "supplierName": "Spotify Premium",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -4517,6 +5759,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.95
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "12.7182",
+          "taxAmount": "1.2718",
+          "inclusiveAmount": "13.9900"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -4534,16 +5785,16 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "pd_0018",
+      "id": "pd_0027",
       "supplierName": "ALDI Marrickville",
       "supplierAbn": null,
       "supplierAbnValid": false,
       "issueDate": "2026-08-11",
       "currency": "AUD",
-      "taxExclusiveAmount": "71.1355",
-      "taxAmount": "3.0345",
-      "payableAmount": "74.1700",
-      "gstFreeAmount": "40.7900",
+      "taxExclusiveAmount": "166.5273",
+      "taxAmount": "7.1027",
+      "payableAmount": "173.6300",
+      "gstFreeAmount": "95.5000",
       "isTaxInvoice": false,
       "docType": "receipt",
       "category": "Groceries",
@@ -4553,18 +5804,44 @@ export const DEMO: DemoShape = {
       "note": null,
       "complianceFailures": [],
       "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": true,
+      "belowTaxInvoiceThreshold": false,
       "findings": [],
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "95.5000",
+          "amount": "95.5000",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "74.1700",
-          "amount": "74.1700",
+          "unitPrice": "78.1300",
+          "amount": "78.1300",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "71.0273",
+          "taxAmount": "7.1027",
+          "inclusiveAmount": "78.1300"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "95.5000",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "95.5000"
         }
       ],
       "linesBalance": true,
@@ -4579,24 +5856,24 @@ export const DEMO: DemoShape = {
       "imageCapturedAt": "2026-08-11",
       "workspace": "personal",
       "workspaceId": "ws_marsh_household",
-      "capturedByName": "Kate Marsh",
-      "visibility": "shared",
+      "capturedByName": "Jem Marsh",
+      "visibility": "private",
       "version": 1
     },
     {
       "id": "pd_0035",
-      "supplierName": "Linkt Tolls",
+      "supplierName": "Cafe Ambrosia",
       "supplierAbn": null,
       "supplierAbnValid": false,
       "issueDate": "2026-08-11",
       "currency": "AUD",
-      "taxExclusiveAmount": "28.0455",
-      "taxAmount": "2.8045",
-      "payableAmount": "30.8500",
+      "taxExclusiveAmount": "73.0364",
+      "taxAmount": "7.3036",
+      "payableAmount": "80.3400",
       "gstFreeAmount": null,
       "isTaxInvoice": false,
       "docType": "receipt",
-      "category": "Transport",
+      "category": "Eating out",
       "engineRowId": "personal",
       "reviewStatus": "auto_accepted",
       "confidenceOverall": 0.96,
@@ -4608,13 +5885,81 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
-          "description": "Transport",
+          "description": "Eating out",
           "quantity": 1,
-          "unitPrice": "30.8500",
-          "amount": "30.8500",
+          "unitPrice": "80.3400",
+          "amount": "80.3400",
           "gstFree": false,
-          "category": "Transport",
+          "category": "Eating out",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "73.0364",
+          "taxAmount": "7.3036",
+          "inclusiveAmount": "80.3400"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-08-11",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Jem Marsh",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0043",
+      "supplierName": "Ampol Alexandria",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-08-11",
+      "currency": "AUD",
+      "taxExclusiveAmount": "73.1000",
+      "taxAmount": "7.3100",
+      "payableAmount": "80.4100",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Fuel",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": true,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Fuel",
+          "quantity": 1,
+          "unitPrice": "80.4100",
+          "amount": "80.4100",
+          "gstFree": false,
+          "category": "Fuel",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "73.1000",
+          "taxAmount": "7.3100",
+          "inclusiveAmount": "80.4100"
         }
       ],
       "linesBalance": true,
@@ -4667,6 +6012,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "83.4545",
+          "taxAmount": "8.3455",
+          "inclusiveAmount": "91.8000"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -4680,6 +6034,82 @@ export const DEMO: DemoShape = {
       "workspace": "business",
       "workspaceId": "ws_marsh_transport",
       "capturedByName": "Kate Marsh",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0025",
+      "supplierName": "Woolworths Metro",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-08-10",
+      "currency": "AUD",
+      "taxExclusiveAmount": "188.9218",
+      "taxAmount": "8.0582",
+      "payableAmount": "196.9800",
+      "gstFreeAmount": "108.3400",
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Groceries",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": false,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "108.3400",
+          "amount": "108.3400",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
+          "description": "Groceries",
+          "quantity": 1,
+          "unitPrice": "88.6400",
+          "amount": "88.6400",
+          "gstFree": false,
+          "category": "Groceries",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "80.5818",
+          "taxAmount": "8.0582",
+          "inclusiveAmount": "88.6400"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "108.3400",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "108.3400"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-08-10",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Jem Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -4715,6 +6145,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fuel",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "148.5545",
+          "taxAmount": "14.8555",
+          "inclusiveAmount": "163.4100"
         }
       ],
       "linesBalance": true,
@@ -4767,6 +6206,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "220.1636",
+          "taxAmount": "22.0164",
+          "inclusiveAmount": "242.1800"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -4817,6 +6265,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "254.8364",
+          "taxAmount": "25.4836",
+          "inclusiveAmount": "280.3200"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -4834,7 +6291,66 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0006",
+      "id": "pd_0055",
+      "supplierName": "Marrickville Bowlo",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-08-09",
+      "currency": "AUD",
+      "taxExclusiveAmount": "65.4818",
+      "taxAmount": "6.5482",
+      "payableAmount": "72.0300",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Fun",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": true,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Fun",
+          "quantity": 1,
+          "unitPrice": "72.0300",
+          "amount": "72.0300",
+          "gstFree": false,
+          "category": "Fun",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "65.4818",
+          "taxAmount": "6.5482",
+          "inclusiveAmount": "72.0300"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-08-09",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Jem Marsh",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "sub_0007",
       "supplierName": "Telstra",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -4867,6 +6383,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.95
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "77.2727",
+          "taxAmount": "7.7273",
+          "inclusiveAmount": "85.0000"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -4884,37 +6409,63 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "pd_0053",
-      "supplierName": "Event Cinemas",
+      "id": "pd_0026",
+      "supplierName": "ALDI Marrickville",
       "supplierAbn": null,
       "supplierAbnValid": false,
       "issueDate": "2026-08-07",
       "currency": "AUD",
-      "taxExclusiveAmount": "30.9636",
-      "taxAmount": "3.0964",
-      "payableAmount": "34.0600",
-      "gstFreeAmount": null,
+      "taxExclusiveAmount": "112.3100",
+      "taxAmount": "4.7900",
+      "payableAmount": "117.1000",
+      "gstFreeAmount": "64.4100",
       "isTaxInvoice": false,
       "docType": "receipt",
-      "category": "Fun",
+      "category": "Groceries",
       "engineRowId": "personal",
       "reviewStatus": "auto_accepted",
       "confidenceOverall": 0.96,
       "note": null,
       "complianceFailures": [],
       "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": true,
+      "belowTaxInvoiceThreshold": false,
       "findings": [],
       "lines": [
         {
           "lineNumber": 1,
-          "description": "Fun",
+          "description": "Groceries (GST-free)",
           "quantity": 1,
-          "unitPrice": "34.0600",
-          "amount": "34.0600",
-          "gstFree": false,
-          "category": "Fun",
+          "unitPrice": "64.4100",
+          "amount": "64.4100",
+          "gstFree": true,
+          "category": "Groceries",
           "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
+          "description": "Groceries",
+          "quantity": 1,
+          "unitPrice": "52.6900",
+          "amount": "52.6900",
+          "gstFree": false,
+          "category": "Groceries",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "47.9000",
+          "taxAmount": "4.7900",
+          "inclusiveAmount": "52.6900"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "64.4100",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "64.4100"
         }
       ],
       "linesBalance": true,
@@ -4929,7 +6480,7 @@ export const DEMO: DemoShape = {
       "imageCapturedAt": "2026-08-07",
       "workspace": "personal",
       "workspaceId": "ws_marsh_household",
-      "capturedByName": "Jem Marsh",
+      "capturedByName": "Kate Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -4967,6 +6518,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "170.4364",
+          "taxAmount": "17.0436",
+          "inclusiveAmount": "187.4800"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -4984,15 +6544,15 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "pd_0041",
-      "supplierName": "7-Eleven Redfern",
+      "id": "pd_0045",
+      "supplierName": "BP Rosebery",
       "supplierAbn": null,
       "supplierAbnValid": false,
       "issueDate": "2026-08-06",
       "currency": "AUD",
-      "taxExclusiveAmount": "71.8727",
-      "taxAmount": "7.1873",
-      "payableAmount": "79.0600",
+      "taxExclusiveAmount": "73.6909",
+      "taxAmount": "7.3691",
+      "payableAmount": "81.0600",
       "gstFreeAmount": null,
       "isTaxInvoice": false,
       "docType": "receipt",
@@ -5010,11 +6570,79 @@ export const DEMO: DemoShape = {
           "lineNumber": 1,
           "description": "Fuel",
           "quantity": 1,
-          "unitPrice": "79.0600",
-          "amount": "79.0600",
+          "unitPrice": "81.0600",
+          "amount": "81.0600",
           "gstFree": false,
           "category": "Fuel",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "73.6909",
+          "taxAmount": "7.3691",
+          "inclusiveAmount": "81.0600"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-08-06",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Jem Marsh",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0053",
+      "supplierName": "Bunnings Warehouse",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-08-06",
+      "currency": "AUD",
+      "taxExclusiveAmount": "81.2909",
+      "taxAmount": "8.1291",
+      "payableAmount": "89.4200",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Home",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": false,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Home",
+          "quantity": 1,
+          "unitPrice": "89.4200",
+          "amount": "89.4200",
+          "gstFree": false,
+          "category": "Home",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "81.2909",
+          "taxAmount": "8.1291",
+          "inclusiveAmount": "89.4200"
         }
       ],
       "linesBalance": true,
@@ -5067,6 +6695,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "93.4818",
+          "taxAmount": "9.3482",
+          "inclusiveAmount": "102.8300"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -5117,6 +6754,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "79.6364",
+          "taxAmount": "7.9636",
+          "inclusiveAmount": "87.6000"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -5130,56 +6776,6 @@ export const DEMO: DemoShape = {
       "workspace": "personal",
       "workspaceId": "ws_marsh_household",
       "capturedByName": "Kate Marsh",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0043",
-      "supplierName": "AGL top-up",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-08-05",
-      "currency": "AUD",
-      "taxExclusiveAmount": "139.9182",
-      "taxAmount": "13.9918",
-      "payableAmount": "153.9100",
-      "gstFreeAmount": null,
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Bills & utilities",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": false,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Bills & utilities",
-          "quantity": 1,
-          "unitPrice": "153.9100",
-          "amount": "153.9100",
-          "gstFree": false,
-          "category": "Bills & utilities",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-08-05",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Jem Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -5208,13 +6804,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "8.5600",
+          "amount": "8.5600",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "28.5300",
-          "amount": "28.5300",
+          "unitPrice": "19.9700",
+          "amount": "19.9700",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "18.1545",
+          "taxAmount": "1.8155",
+          "inclusiveAmount": "19.9700"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "8.5600",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "8.5600"
         }
       ],
       "linesBalance": true,
@@ -5258,13 +6880,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "13.2400",
+          "amount": "13.2400",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "44.1400",
-          "amount": "44.1400",
+          "unitPrice": "30.9000",
+          "amount": "30.9000",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "28.0909",
+          "taxAmount": "2.8091",
+          "inclusiveAmount": "30.9000"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "13.2400",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "13.2400"
         }
       ],
       "linesBalance": true,
@@ -5284,7 +6932,7 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0004",
+      "id": "sub_0005",
       "supplierName": "Netflix",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -5315,6 +6963,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fun",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "17.2636",
+          "taxAmount": "1.7264",
+          "inclusiveAmount": "18.9900"
         }
       ],
       "linesBalance": true,
@@ -5358,13 +7015,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "10.6200",
+          "amount": "10.6200",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "35.4000",
-          "amount": "35.4000",
+          "unitPrice": "24.7800",
+          "amount": "24.7800",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "22.5273",
+          "taxAmount": "2.2527",
+          "inclusiveAmount": "24.7800"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "10.6200",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "10.6200"
         }
       ],
       "linesBalance": true,
@@ -5417,6 +7100,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "728.5091",
+          "taxAmount": "72.8509",
+          "inclusiveAmount": "801.3600"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -5430,56 +7122,6 @@ export const DEMO: DemoShape = {
       "workspace": "business",
       "workspaceId": "ws_marsh_transport",
       "capturedByName": "Sam Oyelaran",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0040",
-      "supplierName": "BP Rosebery",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-08-03",
-      "currency": "AUD",
-      "taxExclusiveAmount": "81.7909",
-      "taxAmount": "8.1791",
-      "payableAmount": "89.9700",
-      "gstFreeAmount": null,
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Fuel",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": false,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Fuel",
-          "quantity": 1,
-          "unitPrice": "89.9700",
-          "amount": "89.9700",
-          "gstFree": false,
-          "category": "Fuel",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-08-03",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Kate Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -5515,6 +7157,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fuel",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "182.1000",
+          "taxAmount": "18.2100",
+          "inclusiveAmount": "200.3100"
         }
       ],
       "linesBalance": true,
@@ -5567,6 +7218,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "156.8000",
+          "taxAmount": "15.6800",
+          "inclusiveAmount": "172.4800"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -5617,6 +7277,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "173.1636",
+          "taxAmount": "17.3164",
+          "inclusiveAmount": "190.4800"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -5658,63 +7327,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "76.0400",
+          "amount": "76.0400",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "138.2500",
-          "amount": "138.2500",
+          "unitPrice": "62.2100",
+          "amount": "62.2100",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
         }
       ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
+      "taxSubtotals": [
         {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-08-02",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Kate Marsh",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0034",
-      "supplierName": "Linkt Tolls",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-08-02",
-      "currency": "AUD",
-      "taxExclusiveAmount": "40.4636",
-      "taxAmount": "4.0464",
-      "payableAmount": "44.5100",
-      "gstFreeAmount": null,
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Transport",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": true,
-      "findings": [],
-      "lines": [
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "56.5545",
+          "taxAmount": "5.6555",
+          "inclusiveAmount": "62.2100"
+        },
         {
-          "lineNumber": 1,
-          "description": "Transport",
-          "quantity": 1,
-          "unitPrice": "44.5100",
-          "amount": "44.5100",
-          "gstFree": false,
-          "category": "Transport",
-          "confidence": 0.93
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "76.0400",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "76.0400"
         }
       ],
       "linesBalance": true,
@@ -5734,57 +7379,7 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "pd_0050",
-      "supplierName": "IKEA Tempe",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-08-02",
-      "currency": "AUD",
-      "taxExclusiveAmount": "164.1818",
-      "taxAmount": "16.4182",
-      "payableAmount": "180.6000",
-      "gstFreeAmount": null,
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Home",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": false,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Home",
-          "quantity": 1,
-          "unitPrice": "180.6000",
-          "amount": "180.6000",
-          "gstFree": false,
-          "category": "Home",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-08-02",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Kate Marsh",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "sub_0009",
+      "id": "sub_0010",
       "supplierName": "Anytime Fitness",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -5815,6 +7410,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Health",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "62.7273",
+          "taxAmount": "6.2727",
+          "inclusiveAmount": "69.0000"
         }
       ],
       "linesBalance": true,
@@ -5867,6 +7471,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "243.1091",
+          "taxAmount": "24.3109",
+          "inclusiveAmount": "267.4200"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -5884,69 +7497,19 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "pd_0025",
-      "supplierName": "Thai Riffic",
+      "id": "pd_0047",
+      "supplierName": "AGL top-up",
       "supplierAbn": null,
       "supplierAbnValid": false,
       "issueDate": "2026-08-01",
       "currency": "AUD",
-      "taxExclusiveAmount": "36.5909",
-      "taxAmount": "3.6591",
-      "payableAmount": "40.2500",
+      "taxExclusiveAmount": "192.7455",
+      "taxAmount": "19.2745",
+      "payableAmount": "212.0200",
       "gstFreeAmount": null,
       "isTaxInvoice": false,
       "docType": "receipt",
-      "category": "Eating out",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": true,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Eating out",
-          "quantity": 1,
-          "unitPrice": "40.2500",
-          "amount": "40.2500",
-          "gstFree": false,
-          "category": "Eating out",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-08-01",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Jem Marsh",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0049",
-      "supplierName": "Kmart",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-08-01",
-      "currency": "AUD",
-      "taxExclusiveAmount": "119.8455",
-      "taxAmount": "11.9845",
-      "payableAmount": "131.8300",
-      "gstFreeAmount": null,
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Shopping",
+      "category": "Bills & utilities",
       "engineRowId": "personal",
       "reviewStatus": "auto_accepted",
       "confidenceOverall": 0.96,
@@ -5958,13 +7521,22 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
-          "description": "Shopping",
+          "description": "Bills & utilities",
           "quantity": 1,
-          "unitPrice": "131.8300",
-          "amount": "131.8300",
+          "unitPrice": "212.0200",
+          "amount": "212.0200",
           "gstFree": false,
-          "category": "Shopping",
+          "category": "Bills & utilities",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "192.7455",
+          "taxAmount": "19.2745",
+          "inclusiveAmount": "212.0200"
         }
       ],
       "linesBalance": true,
@@ -5980,7 +7552,7 @@ export const DEMO: DemoShape = {
       "workspace": "personal",
       "workspaceId": "ws_marsh_household",
       "capturedByName": "Jem Marsh",
-      "visibility": "shared",
+      "visibility": "private",
       "version": 1
     },
     {
@@ -6008,13 +7580,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "100.5800",
+          "amount": "100.5800",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "182.8700",
-          "amount": "182.8700",
+          "unitPrice": "82.2900",
+          "amount": "82.2900",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "74.8091",
+          "taxAmount": "7.4809",
+          "inclusiveAmount": "82.2900"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "100.5800",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "100.5800"
         }
       ],
       "linesBalance": true,
@@ -6067,6 +7665,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "39.0727",
+          "taxAmount": "3.9073",
+          "inclusiveAmount": "42.9800"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -6080,6 +7687,65 @@ export const DEMO: DemoShape = {
       "workspace": "personal",
       "workspaceId": "ws_marsh_household",
       "capturedByName": "Kate Marsh",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0077",
+      "supplierName": "Uber",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-07-28",
+      "currency": "AUD",
+      "taxExclusiveAmount": "58.1091",
+      "taxAmount": "5.8109",
+      "payableAmount": "63.9200",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Transport",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": true,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Transport",
+          "quantity": 1,
+          "unitPrice": "63.9200",
+          "amount": "63.9200",
+          "gstFree": false,
+          "category": "Transport",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "58.1091",
+          "taxAmount": "5.8109",
+          "inclusiveAmount": "63.9200"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-07-28",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Jem Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -6115,6 +7781,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Truck parts & maintenance",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "705.9364",
+          "taxAmount": "70.5936",
+          "inclusiveAmount": "776.5300"
         }
       ],
       "linesBalance": true,
@@ -6158,13 +7833,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "11.6700",
+          "amount": "11.6700",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "38.9000",
-          "amount": "38.9000",
+          "unitPrice": "27.2300",
+          "amount": "27.2300",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "24.7545",
+          "taxAmount": "2.4755",
+          "inclusiveAmount": "27.2300"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "11.6700",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "11.6700"
         }
       ],
       "linesBalance": true,
@@ -6217,6 +7918,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "23.8182",
+          "taxAmount": "2.3818",
+          "inclusiveAmount": "26.2000"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -6258,13 +7968,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "13.3000",
+          "amount": "13.3000",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "44.3400",
-          "amount": "44.3400",
+          "unitPrice": "31.0400",
+          "amount": "31.0400",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "28.2182",
+          "taxAmount": "2.8218",
+          "inclusiveAmount": "31.0400"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "13.3000",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "13.3000"
         }
       ],
       "linesBalance": true,
@@ -6284,37 +8020,56 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "pd_0081",
-      "supplierName": "AGL top-up",
+      "id": "pd_0085",
+      "supplierName": "Chemist Warehouse",
       "supplierAbn": null,
       "supplierAbnValid": false,
       "issueDate": "2026-07-24",
       "currency": "AUD",
-      "taxExclusiveAmount": "258.3909",
-      "taxAmount": "25.8391",
-      "payableAmount": "284.2300",
-      "gstFreeAmount": null,
+      "taxExclusiveAmount": "81.5500",
+      "taxAmount": "0.0000",
+      "payableAmount": "81.5500",
+      "gstFreeAmount": "81.5500",
       "isTaxInvoice": false,
       "docType": "receipt",
-      "category": "Bills & utilities",
+      "category": "Health",
       "engineRowId": "personal",
       "reviewStatus": "auto_accepted",
       "confidenceOverall": 0.96,
       "note": null,
       "complianceFailures": [],
       "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": false,
+      "belowTaxInvoiceThreshold": true,
       "findings": [],
       "lines": [
         {
           "lineNumber": 1,
-          "description": "Bills & utilities",
+          "description": "Health (GST-free)",
           "quantity": 1,
-          "unitPrice": "284.2300",
-          "amount": "284.2300",
-          "gstFree": false,
-          "category": "Bills & utilities",
+          "unitPrice": "81.5500",
+          "amount": "81.5500",
+          "gstFree": true,
+          "category": "Health",
           "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
+          "description": "Health",
+          "quantity": 1,
+          "unitPrice": "0.0000",
+          "amount": "0.0000",
+          "gstFree": false,
+          "category": "Health",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "81.5500",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "81.5500"
         }
       ],
       "linesBalance": true,
@@ -6367,6 +8122,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "196.5273",
+          "taxAmount": "19.6527",
+          "inclusiveAmount": "216.1800"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -6377,56 +8141,6 @@ export const DEMO: DemoShape = {
         }
       ],
       "imageCapturedAt": "2026-07-24",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Kate Marsh",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0088",
-      "supplierName": "IKEA Tempe",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-07-23",
-      "currency": "AUD",
-      "taxExclusiveAmount": "93.1091",
-      "taxAmount": "9.3109",
-      "payableAmount": "102.4200",
-      "gstFreeAmount": null,
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Home",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": false,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Home",
-          "quantity": 1,
-          "unitPrice": "102.4200",
-          "amount": "102.4200",
-          "gstFree": false,
-          "category": "Home",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-07-23",
       "workspace": "personal",
       "workspaceId": "ws_marsh_household",
       "capturedByName": "Kate Marsh",
@@ -6465,6 +8179,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Truck parts & maintenance",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "448.7273",
+          "taxAmount": "44.8727",
+          "inclusiveAmount": "493.6000"
         }
       ],
       "linesBalance": true,
@@ -6517,6 +8240,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "87.9818",
+          "taxAmount": "8.7982",
+          "inclusiveAmount": "96.7800"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -6558,13 +8290,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "96.4900",
+          "amount": "96.4900",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "175.4300",
-          "amount": "175.4300",
+          "unitPrice": "78.9400",
+          "amount": "78.9400",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "71.7636",
+          "taxAmount": "7.1764",
+          "inclusiveAmount": "78.9400"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "96.4900",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "96.4900"
         }
       ],
       "linesBalance": true,
@@ -6584,7 +8342,83 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0014",
+      "id": "pd_0065",
+      "supplierName": "Woolworths Metro",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-07-22",
+      "currency": "AUD",
+      "taxExclusiveAmount": "181.2873",
+      "taxAmount": "7.7327",
+      "payableAmount": "189.0200",
+      "gstFreeAmount": "103.9600",
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Groceries",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": false,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "103.9600",
+          "amount": "103.9600",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
+          "description": "Groceries",
+          "quantity": 1,
+          "unitPrice": "85.0600",
+          "amount": "85.0600",
+          "gstFree": false,
+          "category": "Groceries",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "77.3273",
+          "taxAmount": "7.7327",
+          "inclusiveAmount": "85.0600"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "103.9600",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "103.9600"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-07-22",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Jem Marsh",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "sub_0015",
       "supplierName": "NRMA Car Insurance",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -6615,6 +8449,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Bills & utilities",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "86.0000",
+          "taxAmount": "8.6000",
+          "inclusiveAmount": "94.6000"
         }
       ],
       "linesBalance": true,
@@ -6667,6 +8510,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "242.7091",
+          "taxAmount": "24.2709",
+          "inclusiveAmount": "266.9800"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -6715,6 +8567,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Eating out",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "69.1182",
+          "taxAmount": "6.9118",
+          "inclusiveAmount": "76.0300"
         }
       ],
       "linesBalance": true,
@@ -6767,6 +8628,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "43.5636",
+          "taxAmount": "4.3564",
+          "inclusiveAmount": "47.9200"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -6780,6 +8650,65 @@ export const DEMO: DemoShape = {
       "workspace": "personal",
       "workspaceId": "ws_marsh_household",
       "capturedByName": "Kate Marsh",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0081",
+      "supplierName": "7-Eleven Redfern",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-07-21",
+      "currency": "AUD",
+      "taxExclusiveAmount": "85.0636",
+      "taxAmount": "8.5064",
+      "payableAmount": "93.5700",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Fuel",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": false,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Fuel",
+          "quantity": 1,
+          "unitPrice": "93.5700",
+          "amount": "93.5700",
+          "gstFree": false,
+          "category": "Fuel",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "85.0636",
+          "taxAmount": "8.5064",
+          "inclusiveAmount": "93.5700"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-07-21",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Jem Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -6808,13 +8737,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "84.7200",
+          "amount": "84.7200",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "154.0300",
-          "amount": "154.0300",
+          "unitPrice": "69.3100",
+          "amount": "69.3100",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "63.0091",
+          "taxAmount": "6.3009",
+          "inclusiveAmount": "69.3100"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "84.7200",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "84.7200"
         }
       ],
       "linesBalance": true,
@@ -6867,6 +8822,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "273.3727",
+          "taxAmount": "27.3373",
+          "inclusiveAmount": "300.7100"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -6917,6 +8881,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "154.9545",
+          "taxAmount": "15.4955",
+          "inclusiveAmount": "170.4500"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -6930,56 +8903,6 @@ export const DEMO: DemoShape = {
       "workspace": "business",
       "workspaceId": "ws_marsh_transport",
       "capturedByName": "Sam Oyelaran",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0055",
-      "supplierName": "ALDI Marrickville",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-07-19",
-      "currency": "AUD",
-      "taxExclusiveAmount": "77.2736",
-      "taxAmount": "3.2964",
-      "payableAmount": "80.5700",
-      "gstFreeAmount": "44.3100",
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Groceries",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": true,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Groceries",
-          "quantity": 1,
-          "unitPrice": "80.5700",
-          "amount": "80.5700",
-          "gstFree": false,
-          "category": "Groceries",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-07-19",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Jem Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -7008,13 +8931,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "23.8300",
+          "amount": "23.8300",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "43.3200",
-          "amount": "43.3200",
+          "unitPrice": "19.4900",
+          "amount": "19.4900",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "17.7182",
+          "taxAmount": "1.7718",
+          "inclusiveAmount": "19.4900"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "23.8300",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "23.8300"
         }
       ],
       "linesBalance": true,
@@ -7034,37 +8983,46 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "pd_0080",
-      "supplierName": "AGL top-up",
+      "id": "pd_0073",
+      "supplierName": "Thai Riffic",
       "supplierAbn": null,
       "supplierAbnValid": false,
       "issueDate": "2026-07-19",
       "currency": "AUD",
-      "taxExclusiveAmount": "179.6273",
-      "taxAmount": "17.9627",
-      "payableAmount": "197.5900",
+      "taxExclusiveAmount": "38.7000",
+      "taxAmount": "3.8700",
+      "payableAmount": "42.5700",
       "gstFreeAmount": null,
       "isTaxInvoice": false,
       "docType": "receipt",
-      "category": "Bills & utilities",
+      "category": "Eating out",
       "engineRowId": "personal",
       "reviewStatus": "auto_accepted",
       "confidenceOverall": 0.96,
       "note": null,
       "complianceFailures": [],
       "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": false,
+      "belowTaxInvoiceThreshold": true,
       "findings": [],
       "lines": [
         {
           "lineNumber": 1,
-          "description": "Bills & utilities",
+          "description": "Eating out",
           "quantity": 1,
-          "unitPrice": "197.5900",
-          "amount": "197.5900",
+          "unitPrice": "42.5700",
+          "amount": "42.5700",
           "gstFree": false,
-          "category": "Bills & utilities",
+          "category": "Eating out",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "38.7000",
+          "taxAmount": "3.8700",
+          "inclusiveAmount": "42.5700"
         }
       ],
       "linesBalance": true,
@@ -7079,7 +9037,125 @@ export const DEMO: DemoShape = {
       "imageCapturedAt": "2026-07-19",
       "workspace": "personal",
       "workspaceId": "ws_marsh_household",
-      "capturedByName": "Kate Marsh",
+      "capturedByName": "Jem Marsh",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0083",
+      "supplierName": "Sydney Water",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-07-19",
+      "currency": "AUD",
+      "taxExclusiveAmount": "66.4000",
+      "taxAmount": "6.6400",
+      "payableAmount": "73.0400",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Bills & utilities",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": true,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Bills & utilities",
+          "quantity": 1,
+          "unitPrice": "73.0400",
+          "amount": "73.0400",
+          "gstFree": false,
+          "category": "Bills & utilities",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "66.4000",
+          "taxAmount": "6.6400",
+          "inclusiveAmount": "73.0400"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-07-19",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Jem Marsh",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0091",
+      "supplierName": "Marrickville Bowlo",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-07-19",
+      "currency": "AUD",
+      "taxExclusiveAmount": "72.5727",
+      "taxAmount": "7.2573",
+      "payableAmount": "79.8300",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Fun",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": true,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Fun",
+          "quantity": 1,
+          "unitPrice": "79.8300",
+          "amount": "79.8300",
+          "gstFree": false,
+          "category": "Fun",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "72.5727",
+          "taxAmount": "7.2573",
+          "inclusiveAmount": "79.8300"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-07-19",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Jem Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -7108,13 +9184,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "5.9900",
+          "amount": "5.9900",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "19.9700",
-          "amount": "19.9700",
+          "unitPrice": "13.9800",
+          "amount": "13.9800",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "12.7091",
+          "taxAmount": "1.2709",
+          "inclusiveAmount": "13.9800"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "5.9900",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "5.9900"
         }
       ],
       "linesBalance": true,
@@ -7158,13 +9260,174 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "28.0800",
+          "amount": "28.0800",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "51.0500",
-          "amount": "51.0500",
+          "unitPrice": "22.9700",
+          "amount": "22.9700",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "20.8818",
+          "taxAmount": "2.0882",
+          "inclusiveAmount": "22.9700"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "28.0800",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "28.0800"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-07-18",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Jem Marsh",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0064",
+      "supplierName": "Woolworths Metro",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-07-18",
+      "currency": "AUD",
+      "taxExclusiveAmount": "160.6673",
+      "taxAmount": "6.8527",
+      "payableAmount": "167.5200",
+      "gstFreeAmount": "92.1400",
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Groceries",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": false,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "92.1400",
+          "amount": "92.1400",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
+          "description": "Groceries",
+          "quantity": 1,
+          "unitPrice": "75.3800",
+          "amount": "75.3800",
+          "gstFree": false,
+          "category": "Groceries",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "68.5273",
+          "taxAmount": "6.8527",
+          "inclusiveAmount": "75.3800"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "92.1400",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "92.1400"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-07-18",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Kate Marsh",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0071",
+      "supplierName": "Thai Riffic",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-07-18",
+      "currency": "AUD",
+      "taxExclusiveAmount": "75.1273",
+      "taxAmount": "7.5127",
+      "payableAmount": "82.6400",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Eating out",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": false,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Eating out",
+          "quantity": 1,
+          "unitPrice": "82.6400",
+          "amount": "82.6400",
+          "gstFree": false,
+          "category": "Eating out",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "75.1273",
+          "taxAmount": "7.5127",
+          "inclusiveAmount": "82.6400"
         }
       ],
       "linesBalance": true,
@@ -7217,6 +9480,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "79.1727",
+          "taxAmount": "7.9173",
+          "inclusiveAmount": "87.0900"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -7234,7 +9506,7 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0013",
+      "id": "sub_0014",
       "supplierName": "Origin Energy",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -7265,6 +9537,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Bills & utilities",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "129.8182",
+          "taxAmount": "12.9818",
+          "inclusiveAmount": "142.8000"
         }
       ],
       "linesBalance": true,
@@ -7308,13 +9589,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "5.1100",
+          "amount": "5.1100",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "17.0400",
-          "amount": "17.0400",
+          "unitPrice": "11.9300",
+          "amount": "11.9300",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "10.8455",
+          "taxAmount": "1.0845",
+          "inclusiveAmount": "11.9300"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "5.1100",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "5.1100"
         }
       ],
       "linesBalance": true,
@@ -7358,13 +9665,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "15.2400",
+          "amount": "15.2400",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "50.8100",
-          "amount": "50.8100",
+          "unitPrice": "35.5700",
+          "amount": "35.5700",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "32.3364",
+          "taxAmount": "3.2336",
+          "inclusiveAmount": "35.5700"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "15.2400",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "15.2400"
         }
       ],
       "linesBalance": true,
@@ -7384,69 +9717,19 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "pd_0071",
-      "supplierName": "Opal top-up",
+      "id": "pd_0082",
+      "supplierName": "AGL top-up",
       "supplierAbn": null,
       "supplierAbnValid": false,
       "issueDate": "2026-07-17",
       "currency": "AUD",
-      "taxExclusiveAmount": "44.0818",
-      "taxAmount": "4.4082",
-      "payableAmount": "48.4900",
+      "taxExclusiveAmount": "136.9364",
+      "taxAmount": "13.6936",
+      "payableAmount": "150.6300",
       "gstFreeAmount": null,
       "isTaxInvoice": false,
       "docType": "receipt",
-      "category": "Transport",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": true,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Transport",
-          "quantity": 1,
-          "unitPrice": "48.4900",
-          "amount": "48.4900",
-          "gstFree": false,
-          "category": "Transport",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-07-17",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Jem Marsh",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0077",
-      "supplierName": "7-Eleven Redfern",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-07-17",
-      "currency": "AUD",
-      "taxExclusiveAmount": "114.3818",
-      "taxAmount": "11.4382",
-      "payableAmount": "125.8200",
-      "gstFreeAmount": null,
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Fuel",
+      "category": "Bills & utilities",
       "engineRowId": "personal",
       "reviewStatus": "auto_accepted",
       "confidenceOverall": 0.96,
@@ -7458,13 +9741,22 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
-          "description": "Fuel",
+          "description": "Bills & utilities",
           "quantity": 1,
-          "unitPrice": "125.8200",
-          "amount": "125.8200",
+          "unitPrice": "150.6300",
+          "amount": "150.6300",
           "gstFree": false,
-          "category": "Fuel",
+          "category": "Bills & utilities",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "136.9364",
+          "taxAmount": "13.6936",
+          "inclusiveAmount": "150.6300"
         }
       ],
       "linesBalance": true,
@@ -7479,7 +9771,7 @@ export const DEMO: DemoShape = {
       "imageCapturedAt": "2026-07-17",
       "workspace": "personal",
       "workspaceId": "ws_marsh_household",
-      "capturedByName": "Jem Marsh",
+      "capturedByName": "Kate Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -7515,6 +9807,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Truck parts & maintenance",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "792.7636",
+          "taxAmount": "79.2764",
+          "inclusiveAmount": "872.0400"
         }
       ],
       "linesBalance": true,
@@ -7567,54 +9868,13 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
+      "taxSubtotals": [
         {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-07-16",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Kate Marsh",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0082",
-      "supplierName": "Chemist Warehouse",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-07-16",
-      "currency": "AUD",
-      "taxExclusiveAmount": "153.9900",
-      "taxAmount": "0.0000",
-      "payableAmount": "153.9900",
-      "gstFreeAmount": "153.9900",
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Health",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": false,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Health",
-          "quantity": 1,
-          "unitPrice": "153.9900",
-          "amount": "153.9900",
-          "gstFree": false,
-          "category": "Health",
-          "confidence": 0.93
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "16.6909",
+          "taxAmount": "1.6691",
+          "inclusiveAmount": "18.3600"
         }
       ],
       "linesBalance": true,
@@ -7658,13 +9918,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "12.6100",
+          "amount": "12.6100",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "42.0400",
-          "amount": "42.0400",
+          "unitPrice": "29.4300",
+          "amount": "29.4300",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "26.7545",
+          "taxAmount": "2.6755",
+          "inclusiveAmount": "29.4300"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "12.6100",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "12.6100"
         }
       ],
       "linesBalance": true,
@@ -7684,65 +9970,15 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "pd_0054",
-      "supplierName": "ALDI Marrickville",
+      "id": "pd_0078",
+      "supplierName": "Uber",
       "supplierAbn": null,
       "supplierAbnValid": false,
       "issueDate": "2026-07-15",
       "currency": "AUD",
-      "taxExclusiveAmount": "187.7136",
-      "taxAmount": "8.0064",
-      "payableAmount": "195.7200",
-      "gstFreeAmount": "107.6500",
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Groceries",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": false,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Groceries",
-          "quantity": 1,
-          "unitPrice": "195.7200",
-          "amount": "195.7200",
-          "gstFree": false,
-          "category": "Groceries",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-07-15",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Kate Marsh",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0073",
-      "supplierName": "Linkt Tolls",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-07-15",
-      "currency": "AUD",
-      "taxExclusiveAmount": "45.1909",
-      "taxAmount": "4.5191",
-      "payableAmount": "49.7100",
+      "taxExclusiveAmount": "52.6545",
+      "taxAmount": "5.2655",
+      "payableAmount": "57.9200",
       "gstFreeAmount": null,
       "isTaxInvoice": false,
       "docType": "receipt",
@@ -7760,61 +9996,20 @@ export const DEMO: DemoShape = {
           "lineNumber": 1,
           "description": "Transport",
           "quantity": 1,
-          "unitPrice": "49.7100",
-          "amount": "49.7100",
+          "unitPrice": "57.9200",
+          "amount": "57.9200",
           "gstFree": false,
           "category": "Transport",
           "confidence": 0.93
         }
       ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
+      "taxSubtotals": [
         {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-07-15",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Jem Marsh",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0078",
-      "supplierName": "Ampol Alexandria",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-07-15",
-      "currency": "AUD",
-      "taxExclusiveAmount": "84.6091",
-      "taxAmount": "8.4609",
-      "payableAmount": "93.0700",
-      "gstFreeAmount": null,
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Fuel",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": false,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Fuel",
-          "quantity": 1,
-          "unitPrice": "93.0700",
-          "amount": "93.0700",
-          "gstFree": false,
-          "category": "Fuel",
-          "confidence": 0.93
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "52.6545",
+          "taxAmount": "5.2655",
+          "inclusiveAmount": "57.9200"
         }
       ],
       "linesBalance": true,
@@ -7831,56 +10026,6 @@ export const DEMO: DemoShape = {
       "workspaceId": "ws_marsh_household",
       "capturedByName": "Kate Marsh",
       "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0087",
-      "supplierName": "IKEA Tempe",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-07-15",
-      "currency": "AUD",
-      "taxExclusiveAmount": "33.1364",
-      "taxAmount": "3.3136",
-      "payableAmount": "36.4500",
-      "gstFreeAmount": null,
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Home",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": true,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Home",
-          "quantity": 1,
-          "unitPrice": "36.4500",
-          "amount": "36.4500",
-          "gstFree": false,
-          "category": "Home",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-07-15",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Jem Marsh",
-      "visibility": "private",
       "version": 1
     },
     {
@@ -7908,13 +10053,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "11.3600",
+          "amount": "11.3600",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "37.8800",
-          "amount": "37.8800",
+          "unitPrice": "26.5200",
+          "amount": "26.5200",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "24.1091",
+          "taxAmount": "2.4109",
+          "inclusiveAmount": "26.5200"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "11.3600",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "11.3600"
         }
       ],
       "linesBalance": true,
@@ -7967,6 +10138,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "768.0091",
+          "taxAmount": "76.8009",
+          "inclusiveAmount": "844.8100"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -7980,6 +10160,65 @@ export const DEMO: DemoShape = {
       "workspace": "business",
       "workspaceId": "ws_marsh_transport",
       "capturedByName": "Sam Oyelaran",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0080",
+      "supplierName": "BP Rosebery",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-07-14",
+      "currency": "AUD",
+      "taxExclusiveAmount": "101.4364",
+      "taxAmount": "10.1436",
+      "payableAmount": "111.5800",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Fuel",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": false,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Fuel",
+          "quantity": 1,
+          "unitPrice": "111.5800",
+          "amount": "111.5800",
+          "gstFree": false,
+          "category": "Fuel",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "101.4364",
+          "taxAmount": "10.1436",
+          "inclusiveAmount": "111.5800"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-07-14",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Kate Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -8015,6 +10254,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fuel",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "211.7091",
+          "taxAmount": "21.1709",
+          "inclusiveAmount": "232.8800"
         }
       ],
       "linesBalance": true,
@@ -8067,6 +10315,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "163.3818",
+          "taxAmount": "16.3382",
+          "inclusiveAmount": "179.7200"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -8117,6 +10374,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "64.0636",
+          "taxAmount": "6.4064",
+          "inclusiveAmount": "70.4700"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -8134,7 +10400,7 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0011",
+      "id": "sub_0012",
       "supplierName": "Spotify Premium",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -8165,6 +10431,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fun",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "12.7182",
+          "taxAmount": "1.2718",
+          "inclusiveAmount": "13.9900"
         }
       ],
       "linesBalance": true,
@@ -8208,13 +10483,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "14.9700",
+          "amount": "14.9700",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "49.9000",
-          "amount": "49.9000",
+          "unitPrice": "34.9300",
+          "amount": "34.9300",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "31.7545",
+          "taxAmount": "3.1755",
+          "inclusiveAmount": "34.9300"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "14.9700",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "14.9700"
         }
       ],
       "linesBalance": true,
@@ -8230,6 +10531,124 @@ export const DEMO: DemoShape = {
       "workspace": "business",
       "workspaceId": "ws_marsh_transport",
       "capturedByName": "Sam Oyelaran",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0088",
+      "supplierName": "Big W",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-07-11",
+      "currency": "AUD",
+      "taxExclusiveAmount": "183.8364",
+      "taxAmount": "18.3836",
+      "payableAmount": "202.2200",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Shopping",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": false,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Shopping",
+          "quantity": 1,
+          "unitPrice": "202.2200",
+          "amount": "202.2200",
+          "gstFree": false,
+          "category": "Shopping",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "183.8364",
+          "taxAmount": "18.3836",
+          "inclusiveAmount": "202.2200"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-07-11",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Kate Marsh",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0089",
+      "supplierName": "Bunnings Warehouse",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-07-10",
+      "currency": "AUD",
+      "taxExclusiveAmount": "165.4909",
+      "taxAmount": "16.5491",
+      "payableAmount": "182.0400",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Home",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": false,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Home",
+          "quantity": 1,
+          "unitPrice": "182.0400",
+          "amount": "182.0400",
+          "gstFree": false,
+          "category": "Home",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "165.4909",
+          "taxAmount": "16.5491",
+          "inclusiveAmount": "182.0400"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-07-10",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Jem Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -8267,6 +10686,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "17.6455",
+          "taxAmount": "1.7645",
+          "inclusiveAmount": "19.4100"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -8281,106 +10709,6 @@ export const DEMO: DemoShape = {
       "workspaceId": "ws_marsh_household",
       "capturedByName": "Jem Marsh",
       "visibility": "private",
-      "version": 1
-    },
-    {
-      "id": "pd_0072",
-      "supplierName": "Uber",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-07-09",
-      "currency": "AUD",
-      "taxExclusiveAmount": "11.2545",
-      "taxAmount": "1.1255",
-      "payableAmount": "12.3800",
-      "gstFreeAmount": null,
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Transport",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": true,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Transport",
-          "quantity": 1,
-          "unitPrice": "12.3800",
-          "amount": "12.3800",
-          "gstFree": false,
-          "category": "Transport",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-07-09",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Kate Marsh",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0084",
-      "supplierName": "Uniqlo",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-07-09",
-      "currency": "AUD",
-      "taxExclusiveAmount": "52.2091",
-      "taxAmount": "5.2209",
-      "payableAmount": "57.4300",
-      "gstFreeAmount": null,
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Shopping",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": true,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Shopping",
-          "quantity": 1,
-          "unitPrice": "57.4300",
-          "amount": "57.4300",
-          "gstFree": false,
-          "category": "Shopping",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-07-09",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Kate Marsh",
-      "visibility": "shared",
       "version": 1
     },
     {
@@ -8415,6 +10743,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fuel",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "247.4727",
+          "taxAmount": "24.7473",
+          "inclusiveAmount": "272.2200"
         }
       ],
       "linesBalance": true,
@@ -8467,6 +10804,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "257.9364",
+          "taxAmount": "25.7936",
+          "inclusiveAmount": "283.7300"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -8484,57 +10830,7 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "pd_0090",
-      "supplierName": "Event Cinemas",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-07-08",
-      "currency": "AUD",
-      "taxExclusiveAmount": "26.7636",
-      "taxAmount": "2.6764",
-      "payableAmount": "29.4400",
-      "gstFreeAmount": null,
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Fun",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": true,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Fun",
-          "quantity": 1,
-          "unitPrice": "29.4400",
-          "amount": "29.4400",
-          "gstFree": false,
-          "category": "Fun",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-07-08",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Kate Marsh",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "sub_0012",
+      "id": "sub_0013",
       "supplierName": "Telstra",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -8565,6 +10861,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Bills & utilities",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "77.2727",
+          "taxAmount": "7.7273",
+          "inclusiveAmount": "85.0000"
         }
       ],
       "linesBalance": true,
@@ -8617,6 +10922,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "159.5545",
+          "taxAmount": "15.9555",
+          "inclusiveAmount": "175.5100"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -8658,13 +10972,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "21.9400",
+          "amount": "21.9400",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "39.8900",
-          "amount": "39.8900",
+          "unitPrice": "17.9500",
+          "amount": "17.9500",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "16.3182",
+          "taxAmount": "1.6318",
+          "inclusiveAmount": "17.9500"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "21.9400",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "21.9400"
         }
       ],
       "linesBalance": true,
@@ -8717,6 +11057,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "223.6091",
+          "taxAmount": "22.3609",
+          "inclusiveAmount": "245.9700"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -8767,6 +11116,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "166.4545",
+          "taxAmount": "16.6455",
+          "inclusiveAmount": "183.1000"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -8808,13 +11166,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "6.3900",
+          "amount": "6.3900",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "21.3100",
-          "amount": "21.3100",
+          "unitPrice": "14.9200",
+          "amount": "14.9200",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "13.5636",
+          "taxAmount": "1.3564",
+          "inclusiveAmount": "14.9200"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "6.3900",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "6.3900"
         }
       ],
       "linesBalance": true,
@@ -8834,37 +11218,46 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "pd_0089",
-      "supplierName": "Marrickville Bowlo",
+      "id": "pd_0090",
+      "supplierName": "Bunnings Warehouse",
       "supplierAbn": null,
       "supplierAbnValid": false,
       "issueDate": "2026-07-05",
       "currency": "AUD",
-      "taxExclusiveAmount": "43.4727",
-      "taxAmount": "4.3473",
-      "payableAmount": "47.8200",
+      "taxExclusiveAmount": "146.5909",
+      "taxAmount": "14.6591",
+      "payableAmount": "161.2500",
       "gstFreeAmount": null,
       "isTaxInvoice": false,
       "docType": "receipt",
-      "category": "Fun",
+      "category": "Home",
       "engineRowId": "personal",
       "reviewStatus": "auto_accepted",
       "confidenceOverall": 0.96,
       "note": null,
       "complianceFailures": [],
       "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": true,
+      "belowTaxInvoiceThreshold": false,
       "findings": [],
       "lines": [
         {
           "lineNumber": 1,
-          "description": "Fun",
+          "description": "Home",
           "quantity": 1,
-          "unitPrice": "47.8200",
-          "amount": "47.8200",
+          "unitPrice": "161.2500",
+          "amount": "161.2500",
           "gstFree": false,
-          "category": "Fun",
+          "category": "Home",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "146.5909",
+          "taxAmount": "14.6591",
+          "inclusiveAmount": "161.2500"
         }
       ],
       "linesBalance": true,
@@ -8879,7 +11272,7 @@ export const DEMO: DemoShape = {
       "imageCapturedAt": "2026-07-05",
       "workspace": "personal",
       "workspaceId": "ws_marsh_household",
-      "capturedByName": "Jem Marsh",
+      "capturedByName": "Kate Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -8917,6 +11310,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "95.1636",
+          "taxAmount": "9.5164",
+          "inclusiveAmount": "104.6800"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -8930,106 +11332,6 @@ export const DEMO: DemoShape = {
       "workspace": "business",
       "workspaceId": "ws_marsh_transport",
       "capturedByName": "Dan Whitby",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0064",
-      "supplierName": "Domino's Pizza",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-07-04",
-      "currency": "AUD",
-      "taxExclusiveAmount": "61.0636",
-      "taxAmount": "6.1064",
-      "payableAmount": "67.1700",
-      "gstFreeAmount": null,
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Eating out",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": true,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Eating out",
-          "quantity": 1,
-          "unitPrice": "67.1700",
-          "amount": "67.1700",
-          "gstFree": false,
-          "category": "Eating out",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-07-04",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Kate Marsh",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0065",
-      "supplierName": "Thai Riffic",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-07-04",
-      "currency": "AUD",
-      "taxExclusiveAmount": "73.2091",
-      "taxAmount": "7.3209",
-      "payableAmount": "80.5300",
-      "gstFreeAmount": null,
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Eating out",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": true,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Eating out",
-          "quantity": 1,
-          "unitPrice": "80.5300",
-          "amount": "80.5300",
-          "gstFree": false,
-          "category": "Eating out",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-07-04",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Jem Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -9067,6 +11369,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "60.0636",
+          "taxAmount": "6.0064",
+          "inclusiveAmount": "66.0700"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -9084,16 +11395,16 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "pd_0083",
-      "supplierName": "GP gap payment",
+      "id": "pd_0084",
+      "supplierName": "Chemist Warehouse",
       "supplierAbn": null,
       "supplierAbnValid": false,
       "issueDate": "2026-07-04",
       "currency": "AUD",
-      "taxExclusiveAmount": "169.0000",
+      "taxExclusiveAmount": "72.4900",
       "taxAmount": "0.0000",
-      "payableAmount": "169.0000",
-      "gstFreeAmount": "169.0000",
+      "payableAmount": "72.4900",
+      "gstFreeAmount": "72.4900",
       "isTaxInvoice": false,
       "docType": "receipt",
       "category": "Health",
@@ -9103,18 +11414,37 @@ export const DEMO: DemoShape = {
       "note": null,
       "complianceFailures": [],
       "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": false,
+      "belowTaxInvoiceThreshold": true,
       "findings": [],
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Health (GST-free)",
+          "quantity": 1,
+          "unitPrice": "72.4900",
+          "amount": "72.4900",
+          "gstFree": true,
+          "category": "Health",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Health",
           "quantity": 1,
-          "unitPrice": "169.0000",
-          "amount": "169.0000",
+          "unitPrice": "0.0000",
+          "amount": "0.0000",
           "gstFree": false,
           "category": "Health",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "72.4900",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "72.4900"
         }
       ],
       "linesBalance": true,
@@ -9129,12 +11459,12 @@ export const DEMO: DemoShape = {
       "imageCapturedAt": "2026-07-04",
       "workspace": "personal",
       "workspaceId": "ws_marsh_household",
-      "capturedByName": "Jem Marsh",
+      "capturedByName": "Kate Marsh",
       "visibility": "shared",
       "version": 1
     },
     {
-      "id": "sub_0010",
+      "id": "sub_0011",
       "supplierName": "Netflix",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -9165,6 +11495,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fun",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "17.2636",
+          "taxAmount": "1.7264",
+          "inclusiveAmount": "18.9900"
         }
       ],
       "linesBalance": true,
@@ -9217,6 +11556,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "138.9727",
+          "taxAmount": "13.8973",
+          "inclusiveAmount": "152.8700"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -9267,6 +11615,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "67.3455",
+          "taxAmount": "6.7345",
+          "inclusiveAmount": "74.0800"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -9284,37 +11641,46 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "pd_0085",
-      "supplierName": "Big W",
+      "id": "pd_0092",
+      "supplierName": "Event Cinemas",
       "supplierAbn": null,
       "supplierAbnValid": false,
       "issueDate": "2026-07-03",
       "currency": "AUD",
-      "taxExclusiveAmount": "214.8182",
-      "taxAmount": "21.4818",
-      "payableAmount": "236.3000",
+      "taxExclusiveAmount": "22.2545",
+      "taxAmount": "2.2255",
+      "payableAmount": "24.4800",
       "gstFreeAmount": null,
       "isTaxInvoice": false,
       "docType": "receipt",
-      "category": "Shopping",
+      "category": "Fun",
       "engineRowId": "personal",
       "reviewStatus": "auto_accepted",
       "confidenceOverall": 0.96,
       "note": null,
       "complianceFailures": [],
       "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": false,
+      "belowTaxInvoiceThreshold": true,
       "findings": [],
       "lines": [
         {
           "lineNumber": 1,
-          "description": "Shopping",
+          "description": "Fun",
           "quantity": 1,
-          "unitPrice": "236.3000",
-          "amount": "236.3000",
+          "unitPrice": "24.4800",
+          "amount": "24.4800",
           "gstFree": false,
-          "category": "Shopping",
+          "category": "Fun",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "22.2545",
+          "taxAmount": "2.2255",
+          "inclusiveAmount": "24.4800"
         }
       ],
       "linesBalance": true,
@@ -9329,7 +11695,7 @@ export const DEMO: DemoShape = {
       "imageCapturedAt": "2026-07-03",
       "workspace": "personal",
       "workspaceId": "ws_marsh_household",
-      "capturedByName": "Jem Marsh",
+      "capturedByName": "Kate Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -9358,13 +11724,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "9.4500",
+          "amount": "9.4500",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "31.5000",
-          "amount": "31.5000",
+          "unitPrice": "22.0500",
+          "amount": "22.0500",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "20.0455",
+          "taxAmount": "2.0045",
+          "inclusiveAmount": "22.0500"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "9.4500",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "9.4500"
         }
       ],
       "linesBalance": true,
@@ -9417,6 +11809,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "448.0455",
+          "taxAmount": "44.8045",
+          "inclusiveAmount": "492.8500"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -9458,13 +11859,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "31.7800",
+          "amount": "31.7800",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "57.7800",
-          "amount": "57.7800",
+          "unitPrice": "26.0000",
+          "amount": "26.0000",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "23.6364",
+          "taxAmount": "2.3636",
+          "inclusiveAmount": "26.0000"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "31.7800",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "31.7800"
         }
       ],
       "linesBalance": true,
@@ -9484,7 +11911,66 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0015",
+      "id": "pd_0072",
+      "supplierName": "Cafe Ambrosia",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-07-02",
+      "currency": "AUD",
+      "taxExclusiveAmount": "21.4000",
+      "taxAmount": "2.1400",
+      "payableAmount": "23.5400",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Eating out",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": true,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Eating out",
+          "quantity": 1,
+          "unitPrice": "23.5400",
+          "amount": "23.5400",
+          "gstFree": false,
+          "category": "Eating out",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "21.4000",
+          "taxAmount": "2.1400",
+          "inclusiveAmount": "23.5400"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-07-02",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Kate Marsh",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "sub_0016",
       "supplierName": "Anytime Fitness",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -9515,6 +12001,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Health",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "62.7273",
+          "taxAmount": "6.2727",
+          "inclusiveAmount": "69.0000"
         }
       ],
       "linesBalance": true,
@@ -9567,6 +12062,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "241.2364",
+          "taxAmount": "24.1236",
+          "inclusiveAmount": "265.3600"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -9585,36 +12089,62 @@ export const DEMO: DemoShape = {
     },
     {
       "id": "pd_0063",
-      "supplierName": "Domino's Pizza",
+      "supplierName": "Woolworths Metro",
       "supplierAbn": null,
       "supplierAbnValid": false,
       "issueDate": "2026-07-01",
       "currency": "AUD",
-      "taxExclusiveAmount": "13.0545",
-      "taxAmount": "1.3055",
-      "payableAmount": "14.3600",
-      "gstFreeAmount": null,
+      "taxExclusiveAmount": "159.0273",
+      "taxAmount": "6.7827",
+      "payableAmount": "165.8100",
+      "gstFreeAmount": "91.2000",
       "isTaxInvoice": false,
       "docType": "receipt",
-      "category": "Eating out",
+      "category": "Groceries",
       "engineRowId": "personal",
       "reviewStatus": "auto_accepted",
       "confidenceOverall": 0.96,
       "note": null,
       "complianceFailures": [],
       "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": true,
+      "belowTaxInvoiceThreshold": false,
       "findings": [],
       "lines": [
         {
           "lineNumber": 1,
-          "description": "Eating out",
+          "description": "Groceries (GST-free)",
           "quantity": 1,
-          "unitPrice": "14.3600",
-          "amount": "14.3600",
-          "gstFree": false,
-          "category": "Eating out",
+          "unitPrice": "91.2000",
+          "amount": "91.2000",
+          "gstFree": true,
+          "category": "Groceries",
           "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
+          "description": "Groceries",
+          "quantity": 1,
+          "unitPrice": "74.6100",
+          "amount": "74.6100",
+          "gstFree": false,
+          "category": "Groceries",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "67.8273",
+          "taxAmount": "6.7827",
+          "inclusiveAmount": "74.6100"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "91.2000",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "91.2000"
         }
       ],
       "linesBalance": true,
@@ -9631,6 +12161,65 @@ export const DEMO: DemoShape = {
       "workspaceId": "ws_marsh_household",
       "capturedByName": "Jem Marsh",
       "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0087",
+      "supplierName": "JB Hi-Fi",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-07-01",
+      "currency": "AUD",
+      "taxExclusiveAmount": "173.8636",
+      "taxAmount": "17.3864",
+      "payableAmount": "191.2500",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Shopping",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": false,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Shopping",
+          "quantity": 1,
+          "unitPrice": "191.2500",
+          "amount": "191.2500",
+          "gstFree": false,
+          "category": "Shopping",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "173.8636",
+          "taxAmount": "17.3864",
+          "inclusiveAmount": "191.2500"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-07-01",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Jem Marsh",
+      "visibility": "private",
       "version": 1
     },
     {
@@ -9665,6 +12254,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fuel",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "173.9909",
+          "taxAmount": "17.3991",
+          "inclusiveAmount": "191.3900"
         }
       ],
       "linesBalance": true,
@@ -9708,13 +12306,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "10.0700",
+          "amount": "10.0700",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "33.5600",
-          "amount": "33.5600",
+          "unitPrice": "23.4900",
+          "amount": "23.4900",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "21.3545",
+          "taxAmount": "2.1355",
+          "inclusiveAmount": "23.4900"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "10.0700",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "10.0700"
         }
       ],
       "linesBalance": true,
@@ -9730,56 +12354,6 @@ export const DEMO: DemoShape = {
       "workspace": "business",
       "workspaceId": "ws_marsh_transport",
       "capturedByName": "Sam Oyelaran",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0119",
-      "supplierName": "Chemist Warehouse",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-06-27",
-      "currency": "AUD",
-      "taxExclusiveAmount": "215.3200",
-      "taxAmount": "0.0000",
-      "payableAmount": "215.3200",
-      "gstFreeAmount": "215.3200",
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Health",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": false,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Health",
-          "quantity": 1,
-          "unitPrice": "215.3200",
-          "amount": "215.3200",
-          "gstFree": false,
-          "category": "Health",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-06-27",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Jem Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -9815,6 +12389,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fuel",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "211.1091",
+          "taxAmount": "21.1109",
+          "inclusiveAmount": "232.2200"
         }
       ],
       "linesBalance": true,
@@ -9867,6 +12450,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "219.9091",
+          "taxAmount": "21.9909",
+          "inclusiveAmount": "241.9000"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -9915,6 +12507,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fuel",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "191.2273",
+          "taxAmount": "19.1227",
+          "inclusiveAmount": "210.3500"
         }
       ],
       "linesBalance": true,
@@ -9967,6 +12568,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "754.5545",
+          "taxAmount": "75.4555",
+          "inclusiveAmount": "830.0100"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -9979,156 +12589,6 @@ export const DEMO: DemoShape = {
       "imageCapturedAt": "2026-06-26",
       "workspace": "business",
       "workspaceId": "ws_marsh_transport",
-      "capturedByName": "Kate Marsh",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0109",
-      "supplierName": "Uber",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-06-26",
-      "currency": "AUD",
-      "taxExclusiveAmount": "36.2364",
-      "taxAmount": "3.6236",
-      "payableAmount": "39.8600",
-      "gstFreeAmount": null,
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Transport",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": true,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Transport",
-          "quantity": 1,
-          "unitPrice": "39.8600",
-          "amount": "39.8600",
-          "gstFree": false,
-          "category": "Transport",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-06-26",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Jem Marsh",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0113",
-      "supplierName": "Ampol Alexandria",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-06-26",
-      "currency": "AUD",
-      "taxExclusiveAmount": "66.6727",
-      "taxAmount": "6.6673",
-      "payableAmount": "73.3400",
-      "gstFreeAmount": null,
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Fuel",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": true,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Fuel",
-          "quantity": 1,
-          "unitPrice": "73.3400",
-          "amount": "73.3400",
-          "gstFree": false,
-          "category": "Fuel",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-06-26",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Jem Marsh",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0120",
-      "supplierName": "Uniqlo",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-06-26",
-      "currency": "AUD",
-      "taxExclusiveAmount": "79.7818",
-      "taxAmount": "7.9782",
-      "payableAmount": "87.7600",
-      "gstFreeAmount": null,
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Shopping",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": false,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Shopping",
-          "quantity": 1,
-          "unitPrice": "87.7600",
-          "amount": "87.7600",
-          "gstFree": false,
-          "category": "Shopping",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-06-26",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
       "capturedByName": "Kate Marsh",
       "visibility": "shared",
       "version": 1
@@ -10158,13 +12618,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "29.8500",
+          "amount": "29.8500",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "54.2800",
-          "amount": "54.2800",
+          "unitPrice": "24.4300",
+          "amount": "24.4300",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "22.2091",
+          "taxAmount": "2.2209",
+          "inclusiveAmount": "24.4300"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "29.8500",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "29.8500"
         }
       ],
       "linesBalance": true,
@@ -10208,13 +12694,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "98.6700",
+          "amount": "98.6700",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "179.4000",
-          "amount": "179.4000",
+          "unitPrice": "80.7300",
+          "amount": "80.7300",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "73.3909",
+          "taxAmount": "7.3391",
+          "inclusiveAmount": "80.7300"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "98.6700",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "98.6700"
         }
       ],
       "linesBalance": true,
@@ -10234,87 +12746,46 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "pd_0121",
-      "supplierName": "Big W",
+      "id": "pd_0119",
+      "supplierName": "AGL top-up",
       "supplierAbn": null,
       "supplierAbnValid": false,
       "issueDate": "2026-06-25",
       "currency": "AUD",
-      "taxExclusiveAmount": "54.4818",
-      "taxAmount": "5.4482",
-      "payableAmount": "59.9300",
+      "taxExclusiveAmount": "118.6636",
+      "taxAmount": "11.8664",
+      "payableAmount": "130.5300",
       "gstFreeAmount": null,
       "isTaxInvoice": false,
       "docType": "receipt",
-      "category": "Shopping",
+      "category": "Bills & utilities",
       "engineRowId": "personal",
       "reviewStatus": "auto_accepted",
       "confidenceOverall": 0.96,
       "note": null,
       "complianceFailures": [],
       "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": true,
+      "belowTaxInvoiceThreshold": false,
       "findings": [],
       "lines": [
         {
           "lineNumber": 1,
-          "description": "Shopping",
+          "description": "Bills & utilities",
           "quantity": 1,
-          "unitPrice": "59.9300",
-          "amount": "59.9300",
+          "unitPrice": "130.5300",
+          "amount": "130.5300",
           "gstFree": false,
-          "category": "Shopping",
+          "category": "Bills & utilities",
           "confidence": 0.93
         }
       ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
+      "taxSubtotals": [
         {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-06-25",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Jem Marsh",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0125",
-      "supplierName": "Marrickville Bowlo",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-06-25",
-      "currency": "AUD",
-      "taxExclusiveAmount": "39.4000",
-      "taxAmount": "3.9400",
-      "payableAmount": "43.3400",
-      "gstFreeAmount": null,
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Fun",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": true,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Fun",
-          "quantity": 1,
-          "unitPrice": "43.3400",
-          "amount": "43.3400",
-          "gstFree": false,
-          "category": "Fun",
-          "confidence": 0.93
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "118.6636",
+          "taxAmount": "11.8664",
+          "inclusiveAmount": "130.5300"
         }
       ],
       "linesBalance": true,
@@ -10367,6 +12838,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "223.7000",
+          "taxAmount": "22.3700",
+          "inclusiveAmount": "246.0700"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -10415,6 +12895,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fuel",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "233.5818",
+          "taxAmount": "23.3582",
+          "inclusiveAmount": "256.9400"
         }
       ],
       "linesBalance": true,
@@ -10467,6 +12956,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "46.7636",
+          "taxAmount": "4.6764",
+          "inclusiveAmount": "51.4400"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -10480,6 +12978,82 @@ export const DEMO: DemoShape = {
       "workspace": "personal",
       "workspaceId": "ws_marsh_household",
       "capturedByName": "Kate Marsh",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0101",
+      "supplierName": "Coles Broadway",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-06-23",
+      "currency": "AUD",
+      "taxExclusiveAmount": "137.2655",
+      "taxAmount": "5.8545",
+      "payableAmount": "143.1200",
+      "gstFreeAmount": "78.7200",
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Groceries",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": false,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "78.7200",
+          "amount": "78.7200",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
+          "description": "Groceries",
+          "quantity": 1,
+          "unitPrice": "64.4000",
+          "amount": "64.4000",
+          "gstFree": false,
+          "category": "Groceries",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "58.5455",
+          "taxAmount": "5.8545",
+          "inclusiveAmount": "64.4000"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "78.7200",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "78.7200"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-06-23",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Jem Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -10515,6 +13089,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fuel",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "209.2545",
+          "taxAmount": "20.9255",
+          "inclusiveAmount": "230.1800"
         }
       ],
       "linesBalance": true,
@@ -10567,6 +13150,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "57.1636",
+          "taxAmount": "5.7164",
+          "inclusiveAmount": "62.8800"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -10617,6 +13209,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "75.4364",
+          "taxAmount": "7.5436",
+          "inclusiveAmount": "82.9800"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -10634,7 +13235,66 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0020",
+      "id": "pd_0118",
+      "supplierName": "AGL top-up",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-06-22",
+      "currency": "AUD",
+      "taxExclusiveAmount": "155.9091",
+      "taxAmount": "15.5909",
+      "payableAmount": "171.5000",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Bills & utilities",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": false,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Bills & utilities",
+          "quantity": 1,
+          "unitPrice": "171.5000",
+          "amount": "171.5000",
+          "gstFree": false,
+          "category": "Bills & utilities",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "155.9091",
+          "taxAmount": "15.5909",
+          "inclusiveAmount": "171.5000"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-06-22",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Kate Marsh",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "sub_0021",
       "supplierName": "NRMA Car Insurance",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -10665,6 +13325,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Bills & utilities",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "86.0000",
+          "taxAmount": "8.6000",
+          "inclusiveAmount": "94.6000"
         }
       ],
       "linesBalance": true,
@@ -10717,6 +13386,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "188.6818",
+          "taxAmount": "18.8682",
+          "inclusiveAmount": "207.5500"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -10758,13 +13436,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "7.3800",
+          "amount": "7.3800",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "24.6100",
-          "amount": "24.6100",
+          "unitPrice": "17.2300",
+          "amount": "17.2300",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "15.6636",
+          "taxAmount": "1.5664",
+          "inclusiveAmount": "17.2300"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "7.3800",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "7.3800"
         }
       ],
       "linesBalance": true,
@@ -10817,6 +13521,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "45.4455",
+          "taxAmount": "4.5445",
+          "inclusiveAmount": "49.9900"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -10827,56 +13540,6 @@ export const DEMO: DemoShape = {
         }
       ],
       "imageCapturedAt": "2026-06-21",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Jem Marsh",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0091",
-      "supplierName": "Woolworths Metro",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-06-20",
-      "currency": "AUD",
-      "taxExclusiveAmount": "143.0009",
-      "taxAmount": "6.0991",
-      "payableAmount": "149.1000",
-      "gstFreeAmount": "82.0100",
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Groceries",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": false,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Groceries",
-          "quantity": 1,
-          "unitPrice": "149.1000",
-          "amount": "149.1000",
-          "gstFree": false,
-          "category": "Groceries",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-06-20",
       "workspace": "personal",
       "workspaceId": "ws_marsh_household",
       "capturedByName": "Jem Marsh",
@@ -10915,6 +13578,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Eating out",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "37.1636",
+          "taxAmount": "3.7164",
+          "inclusiveAmount": "40.8800"
         }
       ],
       "linesBalance": true,
@@ -10967,6 +13639,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "10.9909",
+          "taxAmount": "1.0991",
+          "inclusiveAmount": "12.0900"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -11008,13 +13689,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "10.8200",
+          "amount": "10.8200",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "36.0600",
-          "amount": "36.0600",
+          "unitPrice": "25.2400",
+          "amount": "25.2400",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "22.9455",
+          "taxAmount": "2.2945",
+          "inclusiveAmount": "25.2400"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "10.8200",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "10.8200"
         }
       ],
       "linesBalance": true,
@@ -11058,13 +13765,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "6.8700",
+          "amount": "6.8700",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "22.8900",
-          "amount": "22.8900",
+          "unitPrice": "16.0200",
+          "amount": "16.0200",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "14.5636",
+          "taxAmount": "1.4564",
+          "inclusiveAmount": "16.0200"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "6.8700",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "6.8700"
         }
       ],
       "linesBalance": true,
@@ -11117,6 +13850,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "61.0000",
+          "taxAmount": "6.1000",
+          "inclusiveAmount": "67.1000"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -11134,37 +13876,46 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "pd_0118",
-      "supplierName": "Chemist Warehouse",
+      "id": "pd_0108",
+      "supplierName": "Cafe Ambrosia",
       "supplierAbn": null,
       "supplierAbnValid": false,
       "issueDate": "2026-06-19",
       "currency": "AUD",
-      "taxExclusiveAmount": "196.5000",
-      "taxAmount": "0.0000",
-      "payableAmount": "196.5000",
-      "gstFreeAmount": "196.5000",
+      "taxExclusiveAmount": "63.7000",
+      "taxAmount": "6.3700",
+      "payableAmount": "70.0700",
+      "gstFreeAmount": null,
       "isTaxInvoice": false,
       "docType": "receipt",
-      "category": "Health",
+      "category": "Eating out",
       "engineRowId": "personal",
       "reviewStatus": "auto_accepted",
       "confidenceOverall": 0.96,
       "note": null,
       "complianceFailures": [],
       "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": false,
+      "belowTaxInvoiceThreshold": true,
       "findings": [],
       "lines": [
         {
           "lineNumber": 1,
-          "description": "Health",
+          "description": "Eating out",
           "quantity": 1,
-          "unitPrice": "196.5000",
-          "amount": "196.5000",
+          "unitPrice": "70.0700",
+          "amount": "70.0700",
           "gstFree": false,
-          "category": "Health",
+          "category": "Eating out",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "63.7000",
+          "taxAmount": "6.3700",
+          "inclusiveAmount": "70.0700"
         }
       ],
       "linesBalance": true,
@@ -11184,15 +13935,15 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "pd_0114",
-      "supplierName": "Ampol Alexandria",
+      "id": "pd_0117",
+      "supplierName": "BP Rosebery",
       "supplierAbn": null,
       "supplierAbnValid": false,
       "issueDate": "2026-06-18",
       "currency": "AUD",
-      "taxExclusiveAmount": "58.7273",
-      "taxAmount": "5.8727",
-      "payableAmount": "64.6000",
+      "taxExclusiveAmount": "100.3091",
+      "taxAmount": "10.0309",
+      "payableAmount": "110.3400",
       "gstFreeAmount": null,
       "isTaxInvoice": false,
       "docType": "receipt",
@@ -11203,18 +13954,86 @@ export const DEMO: DemoShape = {
       "note": null,
       "complianceFailures": [],
       "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": true,
+      "belowTaxInvoiceThreshold": false,
       "findings": [],
       "lines": [
         {
           "lineNumber": 1,
           "description": "Fuel",
           "quantity": 1,
-          "unitPrice": "64.6000",
-          "amount": "64.6000",
+          "unitPrice": "110.3400",
+          "amount": "110.3400",
           "gstFree": false,
           "category": "Fuel",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "100.3091",
+          "taxAmount": "10.0309",
+          "inclusiveAmount": "110.3400"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-06-18",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Jem Marsh",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0124",
+      "supplierName": "JB Hi-Fi",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-06-18",
+      "currency": "AUD",
+      "taxExclusiveAmount": "165.6000",
+      "taxAmount": "16.5600",
+      "payableAmount": "182.1600",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Shopping",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": false,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Shopping",
+          "quantity": 1,
+          "unitPrice": "182.1600",
+          "amount": "182.1600",
+          "gstFree": false,
+          "category": "Shopping",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "165.6000",
+          "taxAmount": "16.5600",
+          "inclusiveAmount": "182.1600"
         }
       ],
       "linesBalance": true,
@@ -11234,7 +14053,7 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0019",
+      "id": "sub_0020",
       "supplierName": "Origin Energy",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -11265,6 +14084,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Bills & utilities",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "129.8182",
+          "taxAmount": "12.9818",
+          "inclusiveAmount": "142.8000"
         }
       ],
       "linesBalance": true,
@@ -11308,13 +14136,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "8.5600",
+          "amount": "8.5600",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "28.5500",
-          "amount": "28.5500",
+          "unitPrice": "19.9900",
+          "amount": "19.9900",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "18.1727",
+          "taxAmount": "1.8173",
+          "inclusiveAmount": "19.9900"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "8.5600",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "8.5600"
         }
       ],
       "linesBalance": true,
@@ -11367,6 +14221,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "62.9636",
+          "taxAmount": "6.2964",
+          "inclusiveAmount": "69.2600"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -11384,37 +14247,46 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "pd_0124",
-      "supplierName": "IKEA Tempe",
+      "id": "pd_0128",
+      "supplierName": "Marrickville Bowlo",
       "supplierAbn": null,
       "supplierAbnValid": false,
       "issueDate": "2026-06-17",
       "currency": "AUD",
-      "taxExclusiveAmount": "139.8000",
-      "taxAmount": "13.9800",
-      "payableAmount": "153.7800",
+      "taxExclusiveAmount": "70.2091",
+      "taxAmount": "7.0209",
+      "payableAmount": "77.2300",
       "gstFreeAmount": null,
       "isTaxInvoice": false,
       "docType": "receipt",
-      "category": "Home",
+      "category": "Fun",
       "engineRowId": "personal",
       "reviewStatus": "auto_accepted",
       "confidenceOverall": 0.96,
       "note": null,
       "complianceFailures": [],
       "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": false,
+      "belowTaxInvoiceThreshold": true,
       "findings": [],
       "lines": [
         {
           "lineNumber": 1,
-          "description": "Home",
+          "description": "Fun",
           "quantity": 1,
-          "unitPrice": "153.7800",
-          "amount": "153.7800",
+          "unitPrice": "77.2300",
+          "amount": "77.2300",
           "gstFree": false,
-          "category": "Home",
+          "category": "Fun",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "70.2091",
+          "taxAmount": "7.0209",
+          "inclusiveAmount": "77.2300"
         }
       ],
       "linesBalance": true,
@@ -11467,6 +14339,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "169.9091",
+          "taxAmount": "16.9909",
+          "inclusiveAmount": "186.9000"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -11515,6 +14396,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Truck parts & maintenance",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "512.3000",
+          "taxAmount": "51.2300",
+          "inclusiveAmount": "563.5300"
         }
       ],
       "linesBalance": true,
@@ -11567,6 +14457,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "329.1727",
+          "taxAmount": "32.9173",
+          "inclusiveAmount": "362.0900"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -11608,13 +14507,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "19.1200",
+          "amount": "19.1200",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "34.7700",
-          "amount": "34.7700",
+          "unitPrice": "15.6500",
+          "amount": "15.6500",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "14.2273",
+          "taxAmount": "1.4227",
+          "inclusiveAmount": "15.6500"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "19.1200",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "19.1200"
         }
       ],
       "linesBalance": true,
@@ -11630,6 +14555,82 @@ export const DEMO: DemoShape = {
       "workspace": "personal",
       "workspaceId": "ws_marsh_household",
       "capturedByName": "Jem Marsh",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0102",
+      "supplierName": "Coles Broadway",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-06-15",
+      "currency": "AUD",
+      "taxExclusiveAmount": "56.2218",
+      "taxAmount": "2.3982",
+      "payableAmount": "58.6200",
+      "gstFreeAmount": "32.2400",
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Groceries",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": true,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "32.2400",
+          "amount": "32.2400",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
+          "description": "Groceries",
+          "quantity": 1,
+          "unitPrice": "26.3800",
+          "amount": "26.3800",
+          "gstFree": false,
+          "category": "Groceries",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "23.9818",
+          "taxAmount": "2.3982",
+          "inclusiveAmount": "26.3800"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "32.2400",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "32.2400"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-06-15",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Kate Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -11665,6 +14666,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Eating out",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "86.9636",
+          "taxAmount": "8.6964",
+          "inclusiveAmount": "95.6600"
         }
       ],
       "linesBalance": true,
@@ -11717,6 +14727,133 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "72.8818",
+          "taxAmount": "7.2882",
+          "inclusiveAmount": "80.1700"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-06-15",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Jem Marsh",
+      "visibility": "private",
+      "version": 1
+    },
+    {
+      "id": "pd_0126",
+      "supplierName": "Bunnings Warehouse",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-06-15",
+      "currency": "AUD",
+      "taxExclusiveAmount": "158.9091",
+      "taxAmount": "15.8909",
+      "payableAmount": "174.8000",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Home",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": false,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Home",
+          "quantity": 1,
+          "unitPrice": "174.8000",
+          "amount": "174.8000",
+          "gstFree": false,
+          "category": "Home",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "158.9091",
+          "taxAmount": "15.8909",
+          "inclusiveAmount": "174.8000"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-06-15",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Kate Marsh",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0127",
+      "supplierName": "Marrickville Bowlo",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-06-15",
+      "currency": "AUD",
+      "taxExclusiveAmount": "63.0091",
+      "taxAmount": "6.3009",
+      "payableAmount": "69.3100",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Fun",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": true,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Fun",
+          "quantity": 1,
+          "unitPrice": "69.3100",
+          "amount": "69.3100",
+          "gstFree": false,
+          "category": "Fun",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "63.0091",
+          "taxAmount": "6.3009",
+          "inclusiveAmount": "69.3100"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -11758,13 +14895,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "99.1900",
+          "amount": "99.1900",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "180.3500",
-          "amount": "180.3500",
+          "unitPrice": "81.1600",
+          "amount": "81.1600",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "73.7818",
+          "taxAmount": "7.3782",
+          "inclusiveAmount": "81.1600"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "99.1900",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "99.1900"
         }
       ],
       "linesBalance": true,
@@ -11808,13 +14971,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "24.8500",
+          "amount": "24.8500",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "45.1900",
-          "amount": "45.1900",
+          "unitPrice": "20.3400",
+          "amount": "20.3400",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "18.4909",
+          "taxAmount": "1.8491",
+          "inclusiveAmount": "20.3400"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "24.8500",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "24.8500"
         }
       ],
       "linesBalance": true,
@@ -11830,6 +15019,65 @@ export const DEMO: DemoShape = {
       "workspace": "personal",
       "workspaceId": "ws_marsh_household",
       "capturedByName": "Kate Marsh",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0109",
+      "supplierName": "Domino's Pizza",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-06-14",
+      "currency": "AUD",
+      "taxExclusiveAmount": "16.8000",
+      "taxAmount": "1.6800",
+      "payableAmount": "18.4800",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Eating out",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": true,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Eating out",
+          "quantity": 1,
+          "unitPrice": "18.4800",
+          "amount": "18.4800",
+          "gstFree": false,
+          "category": "Eating out",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "16.8000",
+          "taxAmount": "1.6800",
+          "inclusiveAmount": "18.4800"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-06-14",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Jem Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -11867,6 +15115,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "21.7455",
+          "taxAmount": "2.1745",
+          "inclusiveAmount": "23.9200"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -11885,18 +15142,18 @@ export const DEMO: DemoShape = {
     },
     {
       "id": "pd_0116",
-      "supplierName": "AGL top-up",
+      "supplierName": "BP Rosebery",
       "supplierAbn": null,
       "supplierAbnValid": false,
       "issueDate": "2026-06-14",
       "currency": "AUD",
-      "taxExclusiveAmount": "178.2818",
-      "taxAmount": "17.8282",
-      "payableAmount": "196.1100",
+      "taxExclusiveAmount": "96.6727",
+      "taxAmount": "9.6673",
+      "payableAmount": "106.3400",
       "gstFreeAmount": null,
       "isTaxInvoice": false,
       "docType": "receipt",
-      "category": "Bills & utilities",
+      "category": "Fuel",
       "engineRowId": "personal",
       "reviewStatus": "auto_accepted",
       "confidenceOverall": 0.96,
@@ -11908,13 +15165,22 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
-          "description": "Bills & utilities",
+          "description": "Fuel",
           "quantity": 1,
-          "unitPrice": "196.1100",
-          "amount": "196.1100",
+          "unitPrice": "106.3400",
+          "amount": "106.3400",
           "gstFree": false,
-          "category": "Bills & utilities",
+          "category": "Fuel",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "96.6727",
+          "taxAmount": "9.6673",
+          "inclusiveAmount": "106.3400"
         }
       ],
       "linesBalance": true,
@@ -11934,37 +15200,46 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "pd_0126",
-      "supplierName": "Event Cinemas",
+      "id": "pd_0123",
+      "supplierName": "Uniqlo",
       "supplierAbn": null,
       "supplierAbnValid": false,
-      "issueDate": "2026-06-13",
+      "issueDate": "2026-06-14",
       "currency": "AUD",
-      "taxExclusiveAmount": "60.0273",
-      "taxAmount": "6.0027",
-      "payableAmount": "66.0300",
+      "taxExclusiveAmount": "177.6091",
+      "taxAmount": "17.7609",
+      "payableAmount": "195.3700",
       "gstFreeAmount": null,
       "isTaxInvoice": false,
       "docType": "receipt",
-      "category": "Fun",
+      "category": "Shopping",
       "engineRowId": "personal",
       "reviewStatus": "auto_accepted",
       "confidenceOverall": 0.96,
       "note": null,
       "complianceFailures": [],
       "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": true,
+      "belowTaxInvoiceThreshold": false,
       "findings": [],
       "lines": [
         {
           "lineNumber": 1,
-          "description": "Fun",
+          "description": "Shopping",
           "quantity": 1,
-          "unitPrice": "66.0300",
-          "amount": "66.0300",
+          "unitPrice": "195.3700",
+          "amount": "195.3700",
           "gstFree": false,
-          "category": "Fun",
+          "category": "Shopping",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "177.6091",
+          "taxAmount": "17.7609",
+          "inclusiveAmount": "195.3700"
         }
       ],
       "linesBalance": true,
@@ -11976,10 +15251,10 @@ export const DEMO: DemoShape = {
           "source": "capture"
         }
       ],
-      "imageCapturedAt": "2026-06-13",
+      "imageCapturedAt": "2026-06-14",
       "workspace": "personal",
       "workspaceId": "ws_marsh_household",
-      "capturedByName": "Kate Marsh",
+      "capturedByName": "Jem Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -12015,6 +15290,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fuel",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "225.2909",
+          "taxAmount": "22.5291",
+          "inclusiveAmount": "247.8200"
         }
       ],
       "linesBalance": true,
@@ -12058,13 +15342,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "74.4300",
+          "amount": "74.4300",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "135.3200",
-          "amount": "135.3200",
+          "unitPrice": "60.8900",
+          "amount": "60.8900",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "55.3545",
+          "taxAmount": "5.5355",
+          "inclusiveAmount": "60.8900"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "74.4300",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "74.4300"
         }
       ],
       "linesBalance": true,
@@ -12108,13 +15418,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "95.9400",
+          "amount": "95.9400",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "174.4400",
-          "amount": "174.4400",
+          "unitPrice": "78.5000",
+          "amount": "78.5000",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "71.3636",
+          "taxAmount": "7.1364",
+          "inclusiveAmount": "78.5000"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "95.9400",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "95.9400"
         }
       ],
       "linesBalance": true,
@@ -12134,7 +15470,7 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0017",
+      "id": "sub_0018",
       "supplierName": "Spotify Premium",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -12165,6 +15501,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fun",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "12.7182",
+          "taxAmount": "1.2718",
+          "inclusiveAmount": "13.9900"
         }
       ],
       "linesBalance": true,
@@ -12208,13 +15553,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "15.2500",
+          "amount": "15.2500",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "50.8200",
-          "amount": "50.8200",
+          "unitPrice": "35.5700",
+          "amount": "35.5700",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "32.3364",
+          "taxAmount": "3.2336",
+          "inclusiveAmount": "35.5700"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "15.2500",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "15.2500"
         }
       ],
       "linesBalance": true,
@@ -12267,6 +15638,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "167.8091",
+          "taxAmount": "16.7809",
+          "inclusiveAmount": "184.5900"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -12280,156 +15660,6 @@ export const DEMO: DemoShape = {
       "workspace": "business",
       "workspaceId": "ws_marsh_transport",
       "capturedByName": "Sam Oyelaran",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0101",
-      "supplierName": "Guzman y Gomez",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-06-10",
-      "currency": "AUD",
-      "taxExclusiveAmount": "78.4455",
-      "taxAmount": "7.8445",
-      "payableAmount": "86.2900",
-      "gstFreeAmount": null,
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Eating out",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": false,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Eating out",
-          "quantity": 1,
-          "unitPrice": "86.2900",
-          "amount": "86.2900",
-          "gstFree": false,
-          "category": "Eating out",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-06-10",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Jem Marsh",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0117",
-      "supplierName": "Sydney Water",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-06-10",
-      "currency": "AUD",
-      "taxExclusiveAmount": "230.2455",
-      "taxAmount": "23.0245",
-      "payableAmount": "253.2700",
-      "gstFreeAmount": null,
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Bills & utilities",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": false,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Bills & utilities",
-          "quantity": 1,
-          "unitPrice": "253.2700",
-          "amount": "253.2700",
-          "gstFree": false,
-          "category": "Bills & utilities",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-06-10",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Jem Marsh",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0123",
-      "supplierName": "IKEA Tempe",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-06-10",
-      "currency": "AUD",
-      "taxExclusiveAmount": "113.5000",
-      "taxAmount": "11.3500",
-      "payableAmount": "124.8500",
-      "gstFreeAmount": null,
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Home",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": false,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Home",
-          "quantity": 1,
-          "unitPrice": "124.8500",
-          "amount": "124.8500",
-          "gstFree": false,
-          "category": "Home",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-06-10",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Jem Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -12465,6 +15695,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fuel",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "243.2091",
+          "taxAmount": "24.3209",
+          "inclusiveAmount": "267.5300"
         }
       ],
       "linesBalance": true,
@@ -12508,13 +15747,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "15.4000",
+          "amount": "15.4000",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "51.3400",
-          "amount": "51.3400",
+          "unitPrice": "35.9400",
+          "amount": "35.9400",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "32.6727",
+          "taxAmount": "3.2673",
+          "inclusiveAmount": "35.9400"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "15.4000",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "15.4000"
         }
       ],
       "linesBalance": true,
@@ -12558,13 +15823,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "4.2800",
+          "amount": "4.2800",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "14.2800",
-          "amount": "14.2800",
+          "unitPrice": "10.0000",
+          "amount": "10.0000",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "9.0909",
+          "taxAmount": "0.9091",
+          "inclusiveAmount": "10.0000"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "4.2800",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "4.2800"
         }
       ],
       "linesBalance": true,
@@ -12617,6 +15908,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "166.1091",
+          "taxAmount": "16.6109",
+          "inclusiveAmount": "182.7200"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -12634,19 +15934,19 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "pd_0102",
-      "supplierName": "Thai Riffic",
+      "id": "pd_0120",
+      "supplierName": "GP gap payment",
       "supplierAbn": null,
       "supplierAbnValid": false,
       "issueDate": "2026-06-08",
       "currency": "AUD",
-      "taxExclusiveAmount": "53.7273",
-      "taxAmount": "5.3727",
-      "payableAmount": "59.1000",
-      "gstFreeAmount": null,
+      "taxExclusiveAmount": "64.8100",
+      "taxAmount": "0.0000",
+      "payableAmount": "64.8100",
+      "gstFreeAmount": "64.8100",
       "isTaxInvoice": false,
       "docType": "receipt",
-      "category": "Eating out",
+      "category": "Health",
       "engineRowId": "personal",
       "reviewStatus": "auto_accepted",
       "confidenceOverall": 0.96,
@@ -12658,13 +15958,32 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
-          "description": "Eating out",
+          "description": "Health (GST-free)",
           "quantity": 1,
-          "unitPrice": "59.1000",
-          "amount": "59.1000",
-          "gstFree": false,
-          "category": "Eating out",
+          "unitPrice": "64.8100",
+          "amount": "64.8100",
+          "gstFree": true,
+          "category": "Health",
           "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
+          "description": "Health",
+          "quantity": 1,
+          "unitPrice": "0.0000",
+          "amount": "0.0000",
+          "gstFree": false,
+          "category": "Health",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "64.8100",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "64.8100"
         }
       ],
       "linesBalance": true,
@@ -12684,37 +16003,46 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "pd_0108",
-      "supplierName": "Opal top-up",
+      "id": "pd_0125",
+      "supplierName": "IKEA Tempe",
       "supplierAbn": null,
       "supplierAbnValid": false,
       "issueDate": "2026-06-08",
       "currency": "AUD",
-      "taxExclusiveAmount": "45.8909",
-      "taxAmount": "4.5891",
-      "payableAmount": "50.4800",
+      "taxExclusiveAmount": "159.9364",
+      "taxAmount": "15.9936",
+      "payableAmount": "175.9300",
       "gstFreeAmount": null,
       "isTaxInvoice": false,
       "docType": "receipt",
-      "category": "Transport",
+      "category": "Home",
       "engineRowId": "personal",
       "reviewStatus": "auto_accepted",
       "confidenceOverall": 0.96,
       "note": null,
       "complianceFailures": [],
       "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": true,
+      "belowTaxInvoiceThreshold": false,
       "findings": [],
       "lines": [
         {
           "lineNumber": 1,
-          "description": "Transport",
+          "description": "Home",
           "quantity": 1,
-          "unitPrice": "50.4800",
-          "amount": "50.4800",
+          "unitPrice": "175.9300",
+          "amount": "175.9300",
           "gstFree": false,
-          "category": "Transport",
+          "category": "Home",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "159.9364",
+          "taxAmount": "15.9936",
+          "inclusiveAmount": "175.9300"
         }
       ],
       "linesBalance": true,
@@ -12729,12 +16057,12 @@ export const DEMO: DemoShape = {
       "imageCapturedAt": "2026-06-08",
       "workspace": "personal",
       "workspaceId": "ws_marsh_household",
-      "capturedByName": "Kate Marsh",
+      "capturedByName": "Jem Marsh",
       "visibility": "shared",
       "version": 1
     },
     {
-      "id": "sub_0018",
+      "id": "sub_0019",
       "supplierName": "Telstra",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -12765,6 +16093,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Bills & utilities",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "77.2727",
+          "taxAmount": "7.7273",
+          "inclusiveAmount": "85.0000"
         }
       ],
       "linesBalance": true,
@@ -12817,6 +16154,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "256.8636",
+          "taxAmount": "25.6864",
+          "inclusiveAmount": "282.5500"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -12858,13 +16204,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "4.6800",
+          "amount": "4.6800",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "15.6100",
-          "amount": "15.6100",
+          "unitPrice": "10.9300",
+          "amount": "10.9300",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "9.9364",
+          "taxAmount": "0.9936",
+          "inclusiveAmount": "10.9300"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "4.6800",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "4.6800"
         }
       ],
       "linesBalance": true,
@@ -12880,56 +16252,6 @@ export const DEMO: DemoShape = {
       "workspace": "business",
       "workspaceId": "ws_marsh_transport",
       "capturedByName": "Sam Oyelaran",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0092",
-      "supplierName": "IGA Local",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-06-07",
-      "currency": "AUD",
-      "taxExclusiveAmount": "45.9309",
-      "taxAmount": "1.9591",
-      "payableAmount": "47.8900",
-      "gstFreeAmount": "26.3400",
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Groceries",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": true,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Groceries",
-          "quantity": 1,
-          "unitPrice": "47.8900",
-          "amount": "47.8900",
-          "gstFree": false,
-          "category": "Groceries",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-06-07",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Kate Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -12958,13 +16280,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "65.8600",
+          "amount": "65.8600",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "119.7500",
-          "amount": "119.7500",
+          "unitPrice": "53.8900",
+          "amount": "53.8900",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "48.9909",
+          "taxAmount": "4.8991",
+          "inclusiveAmount": "53.8900"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "65.8600",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "65.8600"
         }
       ],
       "linesBalance": true,
@@ -12977,6 +16325,134 @@ export const DEMO: DemoShape = {
         }
       ],
       "imageCapturedAt": "2026-06-07",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Jem Marsh",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0113",
+      "supplierName": "Linkt Tolls",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-06-07",
+      "currency": "AUD",
+      "taxExclusiveAmount": "23.2091",
+      "taxAmount": "2.3209",
+      "payableAmount": "25.5300",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Transport",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": true,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Transport",
+          "quantity": 1,
+          "unitPrice": "25.5300",
+          "amount": "25.5300",
+          "gstFree": false,
+          "category": "Transport",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "23.2091",
+          "taxAmount": "2.3209",
+          "inclusiveAmount": "25.5300"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-06-07",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Jem Marsh",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0121",
+      "supplierName": "GP gap payment",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-06-05",
+      "currency": "AUD",
+      "taxExclusiveAmount": "131.3100",
+      "taxAmount": "0.0000",
+      "payableAmount": "131.3100",
+      "gstFreeAmount": "131.3100",
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Health",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": false,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Health (GST-free)",
+          "quantity": 1,
+          "unitPrice": "131.3100",
+          "amount": "131.3100",
+          "gstFree": true,
+          "category": "Health",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
+          "description": "Health",
+          "quantity": 1,
+          "unitPrice": "0.0000",
+          "amount": "0.0000",
+          "gstFree": false,
+          "category": "Health",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "131.3100",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "131.3100"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-06-05",
       "workspace": "personal",
       "workspaceId": "ws_marsh_household",
       "capturedByName": "Jem Marsh",
@@ -13017,6 +16493,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "89.6364",
+          "taxAmount": "8.9636",
+          "inclusiveAmount": "98.6000"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -13034,7 +16519,66 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0016",
+      "id": "pd_0114",
+      "supplierName": "Uber",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-06-04",
+      "currency": "AUD",
+      "taxExclusiveAmount": "21.1182",
+      "taxAmount": "2.1118",
+      "payableAmount": "23.2300",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Transport",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": true,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Transport",
+          "quantity": 1,
+          "unitPrice": "23.2300",
+          "amount": "23.2300",
+          "gstFree": false,
+          "category": "Transport",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "21.1182",
+          "taxAmount": "2.1118",
+          "inclusiveAmount": "23.2300"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-06-04",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Kate Marsh",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "sub_0017",
       "supplierName": "Netflix",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -13065,6 +16609,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fun",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "17.2636",
+          "taxAmount": "1.7264",
+          "inclusiveAmount": "18.9900"
         }
       ],
       "linesBalance": true,
@@ -13117,6 +16670,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "160.0091",
+          "taxAmount": "16.0009",
+          "inclusiveAmount": "176.0100"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -13167,6 +16729,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "1110.5364",
+          "taxAmount": "111.0536",
+          "inclusiveAmount": "1221.5900"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -13208,13 +16779,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "7.1600",
+          "amount": "7.1600",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "23.8600",
-          "amount": "23.8600",
+          "unitPrice": "16.7000",
+          "amount": "16.7000",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "15.1818",
+          "taxAmount": "1.5182",
+          "inclusiveAmount": "16.7000"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "7.1600",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "7.1600"
         }
       ],
       "linesBalance": true,
@@ -13234,7 +16831,7 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0021",
+      "id": "sub_0022",
       "supplierName": "Anytime Fitness",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -13265,6 +16862,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Health",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "62.7273",
+          "taxAmount": "6.2727",
+          "inclusiveAmount": "69.0000"
         }
       ],
       "linesBalance": true,
@@ -13317,6 +16923,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "782.4727",
+          "taxAmount": "78.2473",
+          "inclusiveAmount": "860.7200"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -13365,6 +16980,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Shopping",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "106.1545",
+          "taxAmount": "10.6155",
+          "inclusiveAmount": "116.7700"
         }
       ],
       "linesBalance": true,
@@ -13417,6 +17041,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "151.2000",
+          "taxAmount": "15.1200",
+          "inclusiveAmount": "166.3200"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -13465,6 +17098,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Insurance",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "768.0091",
+          "taxAmount": "76.8009",
+          "inclusiveAmount": "844.8100"
         }
       ],
       "linesBalance": true,
@@ -13517,6 +17159,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "72.6818",
+          "taxAmount": "7.2682",
+          "inclusiveAmount": "79.9500"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -13530,6 +17181,134 @@ export const DEMO: DemoShape = {
       "workspace": "business",
       "workspaceId": "ws_marsh_transport",
       "capturedByName": "Sam Oyelaran",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0152",
+      "supplierName": "Ampol Alexandria",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-05-28",
+      "currency": "AUD",
+      "taxExclusiveAmount": "56.4818",
+      "taxAmount": "5.6482",
+      "payableAmount": "62.1300",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Fuel",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": true,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Fuel",
+          "quantity": 1,
+          "unitPrice": "62.1300",
+          "amount": "62.1300",
+          "gstFree": false,
+          "category": "Fuel",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "56.4818",
+          "taxAmount": "5.6482",
+          "inclusiveAmount": "62.1300"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-05-28",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Kate Marsh",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0155",
+      "supplierName": "Chemist Warehouse",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-05-28",
+      "currency": "AUD",
+      "taxExclusiveAmount": "66.5600",
+      "taxAmount": "0.0000",
+      "payableAmount": "66.5600",
+      "gstFreeAmount": "66.5600",
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Health",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": true,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Health (GST-free)",
+          "quantity": 1,
+          "unitPrice": "66.5600",
+          "amount": "66.5600",
+          "gstFree": true,
+          "category": "Health",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
+          "description": "Health",
+          "quantity": 1,
+          "unitPrice": "0.0000",
+          "amount": "0.0000",
+          "gstFree": false,
+          "category": "Health",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "66.5600",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "66.5600"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-05-28",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Jem Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -13565,6 +17344,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fuel",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "180.1273",
+          "taxAmount": "18.0127",
+          "inclusiveAmount": "198.1400"
         }
       ],
       "linesBalance": true,
@@ -13617,6 +17405,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "78.3364",
+          "taxAmount": "7.8336",
+          "inclusiveAmount": "86.1700"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -13630,56 +17427,6 @@ export const DEMO: DemoShape = {
       "workspace": "personal",
       "workspaceId": "ws_marsh_household",
       "capturedByName": "Kate Marsh",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0161",
-      "supplierName": "Marrickville Bowlo",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-05-27",
-      "currency": "AUD",
-      "taxExclusiveAmount": "47.0091",
-      "taxAmount": "4.7009",
-      "payableAmount": "51.7100",
-      "gstFreeAmount": null,
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Fun",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": true,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Fun",
-          "quantity": 1,
-          "unitPrice": "51.7100",
-          "amount": "51.7100",
-          "gstFree": false,
-          "category": "Fun",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-05-27",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Jem Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -13717,6 +17464,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "146.8455",
+          "taxAmount": "14.6845",
+          "inclusiveAmount": "161.5300"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -13730,56 +17486,6 @@ export const DEMO: DemoShape = {
       "workspace": "business",
       "workspaceId": "ws_marsh_transport",
       "capturedByName": "Sam Oyelaran",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0158",
-      "supplierName": "IKEA Tempe",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-05-26",
-      "currency": "AUD",
-      "taxExclusiveAmount": "128.7545",
-      "taxAmount": "12.8755",
-      "payableAmount": "141.6300",
-      "gstFreeAmount": null,
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Home",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": false,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Home",
-          "quantity": 1,
-          "unitPrice": "141.6300",
-          "amount": "141.6300",
-          "gstFree": false,
-          "category": "Home",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-05-26",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Kate Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -13817,6 +17523,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "191.3636",
+          "taxAmount": "19.1364",
+          "inclusiveAmount": "210.5000"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -13830,6 +17545,124 @@ export const DEMO: DemoShape = {
       "workspace": "business",
       "workspaceId": "ws_marsh_transport",
       "capturedByName": "Dan Whitby",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0153",
+      "supplierName": "Sydney Water",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-05-25",
+      "currency": "AUD",
+      "taxExclusiveAmount": "237.7364",
+      "taxAmount": "23.7736",
+      "payableAmount": "261.5100",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Bills & utilities",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": false,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Bills & utilities",
+          "quantity": 1,
+          "unitPrice": "261.5100",
+          "amount": "261.5100",
+          "gstFree": false,
+          "category": "Bills & utilities",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "237.7364",
+          "taxAmount": "23.7736",
+          "inclusiveAmount": "261.5100"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-05-25",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Jem Marsh",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0159",
+      "supplierName": "Uniqlo",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-05-25",
+      "currency": "AUD",
+      "taxExclusiveAmount": "212.5455",
+      "taxAmount": "21.2545",
+      "payableAmount": "233.8000",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Shopping",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": false,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Shopping",
+          "quantity": 1,
+          "unitPrice": "233.8000",
+          "amount": "233.8000",
+          "gstFree": false,
+          "category": "Shopping",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "212.5455",
+          "taxAmount": "21.2545",
+          "inclusiveAmount": "233.8000"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-05-25",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Jem Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -13865,6 +17698,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fuel",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "220.5545",
+          "taxAmount": "22.0555",
+          "inclusiveAmount": "242.6100"
         }
       ],
       "linesBalance": true,
@@ -13908,13 +17750,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "102.5900",
+          "amount": "102.5900",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "186.5200",
-          "amount": "186.5200",
+          "unitPrice": "83.9300",
+          "amount": "83.9300",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "76.3000",
+          "taxAmount": "7.6300",
+          "inclusiveAmount": "83.9300"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "102.5900",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "102.5900"
         }
       ],
       "linesBalance": true,
@@ -13967,6 +17835,74 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "61.4727",
+          "taxAmount": "6.1473",
+          "inclusiveAmount": "67.6200"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-05-24",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Kate Marsh",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0160",
+      "supplierName": "Big W",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-05-24",
+      "currency": "AUD",
+      "taxExclusiveAmount": "208.0636",
+      "taxAmount": "20.8064",
+      "payableAmount": "228.8700",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Shopping",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": false,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Shopping",
+          "quantity": 1,
+          "unitPrice": "228.8700",
+          "amount": "228.8700",
+          "gstFree": false,
+          "category": "Shopping",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "208.0636",
+          "taxAmount": "20.8064",
+          "inclusiveAmount": "228.8700"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -14017,6 +17953,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "152.2091",
+          "taxAmount": "15.2209",
+          "inclusiveAmount": "167.4300"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -14034,37 +17979,46 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "pd_0127",
-      "supplierName": "ALDI Marrickville",
+      "id": "pd_0147",
+      "supplierName": "Uber",
       "supplierAbn": null,
       "supplierAbnValid": false,
       "issueDate": "2026-05-23",
       "currency": "AUD",
-      "taxExclusiveAmount": "119.7136",
-      "taxAmount": "5.1064",
-      "payableAmount": "124.8200",
-      "gstFreeAmount": "68.6500",
+      "taxExclusiveAmount": "62.4545",
+      "taxAmount": "6.2455",
+      "payableAmount": "68.7000",
+      "gstFreeAmount": null,
       "isTaxInvoice": false,
       "docType": "receipt",
-      "category": "Groceries",
+      "category": "Transport",
       "engineRowId": "personal",
       "reviewStatus": "auto_accepted",
       "confidenceOverall": 0.96,
       "note": null,
       "complianceFailures": [],
       "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": false,
+      "belowTaxInvoiceThreshold": true,
       "findings": [],
       "lines": [
         {
           "lineNumber": 1,
-          "description": "Groceries",
+          "description": "Transport",
           "quantity": 1,
-          "unitPrice": "124.8200",
-          "amount": "124.8200",
+          "unitPrice": "68.7000",
+          "amount": "68.7000",
           "gstFree": false,
-          "category": "Groceries",
+          "category": "Transport",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "62.4545",
+          "taxAmount": "6.2455",
+          "inclusiveAmount": "68.7000"
         }
       ],
       "linesBalance": true,
@@ -14081,6 +18035,75 @@ export const DEMO: DemoShape = {
       "workspaceId": "ws_marsh_household",
       "capturedByName": "Jem Marsh",
       "visibility": "private",
+      "version": 1
+    },
+    {
+      "id": "pd_0156",
+      "supplierName": "Newtown Dental",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-05-23",
+      "currency": "AUD",
+      "taxExclusiveAmount": "193.7000",
+      "taxAmount": "0.0000",
+      "payableAmount": "193.7000",
+      "gstFreeAmount": "193.7000",
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Health",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": false,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Health (GST-free)",
+          "quantity": 1,
+          "unitPrice": "193.7000",
+          "amount": "193.7000",
+          "gstFree": true,
+          "category": "Health",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
+          "description": "Health",
+          "quantity": 1,
+          "unitPrice": "0.0000",
+          "amount": "0.0000",
+          "gstFree": false,
+          "category": "Health",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "193.7000",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "193.7000"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-05-23",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Kate Marsh",
+      "visibility": "shared",
       "version": 1
     },
     {
@@ -14115,6 +18138,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fuel",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "212.3545",
+          "taxAmount": "21.2355",
+          "inclusiveAmount": "233.5900"
         }
       ],
       "linesBalance": true,
@@ -14167,6 +18199,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "152.6909",
+          "taxAmount": "15.2691",
+          "inclusiveAmount": "167.9600"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -14180,56 +18221,6 @@ export const DEMO: DemoShape = {
       "workspace": "business",
       "workspaceId": "ws_marsh_transport",
       "capturedByName": "Sam Oyelaran",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0136",
-      "supplierName": "Domino's Pizza",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-05-22",
-      "currency": "AUD",
-      "taxExclusiveAmount": "41.5364",
-      "taxAmount": "4.1536",
-      "payableAmount": "45.6900",
-      "gstFreeAmount": null,
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Eating out",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": true,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Eating out",
-          "quantity": 1,
-          "unitPrice": "45.6900",
-          "amount": "45.6900",
-          "gstFree": false,
-          "category": "Eating out",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-05-22",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Kate Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -14265,6 +18256,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Eating out",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "25.0364",
+          "taxAmount": "2.5036",
+          "inclusiveAmount": "27.5400"
         }
       ],
       "linesBalance": true,
@@ -14317,6 +18317,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "19.4545",
+          "taxAmount": "1.9455",
+          "inclusiveAmount": "21.4000"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -14334,7 +18343,66 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0026",
+      "id": "pd_0154",
+      "supplierName": "Sydney Water",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-05-22",
+      "currency": "AUD",
+      "taxExclusiveAmount": "296.5636",
+      "taxAmount": "29.6564",
+      "payableAmount": "326.2200",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Bills & utilities",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": false,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Bills & utilities",
+          "quantity": 1,
+          "unitPrice": "326.2200",
+          "amount": "326.2200",
+          "gstFree": false,
+          "category": "Bills & utilities",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "296.5636",
+          "taxAmount": "29.6564",
+          "inclusiveAmount": "326.2200"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-05-22",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Kate Marsh",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "sub_0027",
       "supplierName": "NRMA Car Insurance",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -14365,6 +18433,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Bills & utilities",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "86.0000",
+          "taxAmount": "8.6000",
+          "inclusiveAmount": "94.6000"
         }
       ],
       "linesBalance": true,
@@ -14417,6 +18494,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "750.2455",
+          "taxAmount": "75.0245",
+          "inclusiveAmount": "825.2700"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -14458,13 +18544,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "5.5800",
+          "amount": "5.5800",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "18.6100",
-          "amount": "18.6100",
+          "unitPrice": "13.0300",
+          "amount": "13.0300",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "11.8455",
+          "taxAmount": "1.1845",
+          "inclusiveAmount": "13.0300"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "5.5800",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "5.5800"
         }
       ],
       "linesBalance": true,
@@ -14517,6 +18629,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "84.4636",
+          "taxAmount": "8.4464",
+          "inclusiveAmount": "92.9100"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -14529,6 +18650,65 @@ export const DEMO: DemoShape = {
       "imageCapturedAt": "2026-05-21",
       "workspace": "business",
       "workspaceId": "ws_marsh_transport",
+      "capturedByName": "Kate Marsh",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0162",
+      "supplierName": "Bunnings Warehouse",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-05-21",
+      "currency": "AUD",
+      "taxExclusiveAmount": "139.2182",
+      "taxAmount": "13.9218",
+      "payableAmount": "153.1400",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Home",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": false,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Home",
+          "quantity": 1,
+          "unitPrice": "153.1400",
+          "amount": "153.1400",
+          "gstFree": false,
+          "category": "Home",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "139.2182",
+          "taxAmount": "13.9218",
+          "inclusiveAmount": "153.1400"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-05-21",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
       "capturedByName": "Kate Marsh",
       "visibility": "shared",
       "version": 1
@@ -14565,6 +18745,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fuel",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "152.7364",
+          "taxAmount": "15.2736",
+          "inclusiveAmount": "168.0100"
         }
       ],
       "linesBalance": true,
@@ -14617,6 +18806,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "62.6455",
+          "taxAmount": "6.2645",
+          "inclusiveAmount": "68.9100"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -14634,37 +18832,46 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "pd_0160",
-      "supplierName": "Marrickville Bowlo",
+      "id": "pd_0143",
+      "supplierName": "Thai Riffic",
       "supplierAbn": null,
       "supplierAbnValid": false,
       "issueDate": "2026-05-20",
       "currency": "AUD",
-      "taxExclusiveAmount": "95.3273",
-      "taxAmount": "9.5327",
-      "payableAmount": "104.8600",
+      "taxExclusiveAmount": "22.3909",
+      "taxAmount": "2.2391",
+      "payableAmount": "24.6300",
       "gstFreeAmount": null,
       "isTaxInvoice": false,
       "docType": "receipt",
-      "category": "Fun",
+      "category": "Eating out",
       "engineRowId": "personal",
       "reviewStatus": "auto_accepted",
       "confidenceOverall": 0.96,
       "note": null,
       "complianceFailures": [],
       "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": false,
+      "belowTaxInvoiceThreshold": true,
       "findings": [],
       "lines": [
         {
           "lineNumber": 1,
-          "description": "Fun",
+          "description": "Eating out",
           "quantity": 1,
-          "unitPrice": "104.8600",
-          "amount": "104.8600",
+          "unitPrice": "24.6300",
+          "amount": "24.6300",
           "gstFree": false,
-          "category": "Fun",
+          "category": "Eating out",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "22.3909",
+          "taxAmount": "2.2391",
+          "inclusiveAmount": "24.6300"
         }
       ],
       "linesBalance": true,
@@ -14679,7 +18886,7 @@ export const DEMO: DemoShape = {
       "imageCapturedAt": "2026-05-20",
       "workspace": "personal",
       "workspaceId": "ws_marsh_household",
-      "capturedByName": "Kate Marsh",
+      "capturedByName": "Jem Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -14715,6 +18922,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fuel",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "185.9273",
+          "taxAmount": "18.5927",
+          "inclusiveAmount": "204.5200"
         }
       ],
       "linesBalance": true,
@@ -14767,6 +18983,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "252.6000",
+          "taxAmount": "25.2600",
+          "inclusiveAmount": "277.8600"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -14808,13 +19033,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "8.3200",
+          "amount": "8.3200",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "27.7200",
-          "amount": "27.7200",
+          "unitPrice": "19.4000",
+          "amount": "19.4000",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "17.6364",
+          "taxAmount": "1.7636",
+          "inclusiveAmount": "19.4000"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "8.3200",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "8.3200"
         }
       ],
       "linesBalance": true,
@@ -14867,6 +19118,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "351.6727",
+          "taxAmount": "35.1673",
+          "inclusiveAmount": "386.8400"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -14917,6 +19177,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "236.5545",
+          "taxAmount": "23.6555",
+          "inclusiveAmount": "260.2100"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -14934,57 +19203,7 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "pd_0128",
-      "supplierName": "Woolworths Metro",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-05-18",
-      "currency": "AUD",
-      "taxExclusiveAmount": "130.3791",
-      "taxAmount": "5.5609",
-      "payableAmount": "135.9400",
-      "gstFreeAmount": "74.7700",
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Groceries",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": false,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Groceries",
-          "quantity": 1,
-          "unitPrice": "135.9400",
-          "amount": "135.9400",
-          "gstFree": false,
-          "category": "Groceries",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-05-18",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Kate Marsh",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "sub_0025",
+      "id": "sub_0026",
       "supplierName": "Origin Energy",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -15015,6 +19234,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Bills & utilities",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "129.8182",
+          "taxAmount": "12.9818",
+          "inclusiveAmount": "142.8000"
         }
       ],
       "linesBalance": true,
@@ -15067,6 +19295,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "249.9727",
+          "taxAmount": "24.9973",
+          "inclusiveAmount": "274.9700"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -15108,13 +19345,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "10.6400",
+          "amount": "10.6400",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "35.4800",
-          "amount": "35.4800",
+          "unitPrice": "24.8400",
+          "amount": "24.8400",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "22.5818",
+          "taxAmount": "2.2582",
+          "inclusiveAmount": "24.8400"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "10.6400",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "10.6400"
         }
       ],
       "linesBalance": true,
@@ -15158,13 +19421,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "106.1600",
+          "amount": "106.1600",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "193.0100",
-          "amount": "193.0100",
+          "unitPrice": "86.8500",
+          "amount": "86.8500",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "78.9545",
+          "taxAmount": "7.8955",
+          "inclusiveAmount": "86.8500"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "106.1600",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "106.1600"
         }
       ],
       "linesBalance": true,
@@ -15180,6 +19469,65 @@ export const DEMO: DemoShape = {
       "workspace": "personal",
       "workspaceId": "ws_marsh_household",
       "capturedByName": "Jem Marsh",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0158",
+      "supplierName": "Big W",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-05-17",
+      "currency": "AUD",
+      "taxExclusiveAmount": "151.4091",
+      "taxAmount": "15.1409",
+      "payableAmount": "166.5500",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Shopping",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": false,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Shopping",
+          "quantity": 1,
+          "unitPrice": "166.5500",
+          "amount": "166.5500",
+          "gstFree": false,
+          "category": "Shopping",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "151.4091",
+          "taxAmount": "15.1409",
+          "inclusiveAmount": "166.5500"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-05-17",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Kate Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -15208,213 +19556,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "87.6700",
+          "amount": "87.6700",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "159.4000",
-          "amount": "159.4000",
+          "unitPrice": "71.7300",
+          "amount": "71.7300",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
         }
       ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
+      "taxSubtotals": [
         {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-05-16",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Jem Marsh",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0143",
-      "supplierName": "Linkt Tolls",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-05-16",
-      "currency": "AUD",
-      "taxExclusiveAmount": "46.4091",
-      "taxAmount": "4.6409",
-      "payableAmount": "51.0500",
-      "gstFreeAmount": null,
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Transport",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": true,
-      "findings": [],
-      "lines": [
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "65.2091",
+          "taxAmount": "6.5209",
+          "inclusiveAmount": "71.7300"
+        },
         {
-          "lineNumber": 1,
-          "description": "Transport",
-          "quantity": 1,
-          "unitPrice": "51.0500",
-          "amount": "51.0500",
-          "gstFree": false,
-          "category": "Transport",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-05-16",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Jem Marsh",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0144",
-      "supplierName": "Uber",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-05-16",
-      "currency": "AUD",
-      "taxExclusiveAmount": "14.8364",
-      "taxAmount": "1.4836",
-      "payableAmount": "16.3200",
-      "gstFreeAmount": null,
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Transport",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": true,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Transport",
-          "quantity": 1,
-          "unitPrice": "16.3200",
-          "amount": "16.3200",
-          "gstFree": false,
-          "category": "Transport",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-05-16",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Kate Marsh",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0147",
-      "supplierName": "BP Rosebery",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-05-16",
-      "currency": "AUD",
-      "taxExclusiveAmount": "102.2909",
-      "taxAmount": "10.2291",
-      "payableAmount": "112.5200",
-      "gstFreeAmount": null,
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Fuel",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": false,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Fuel",
-          "quantity": 1,
-          "unitPrice": "112.5200",
-          "amount": "112.5200",
-          "gstFree": false,
-          "category": "Fuel",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-05-16",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Jem Marsh",
-      "visibility": "private",
-      "version": 1
-    },
-    {
-      "id": "pd_0151",
-      "supplierName": "Sydney Water",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-05-16",
-      "currency": "AUD",
-      "taxExclusiveAmount": "88.4909",
-      "taxAmount": "8.8491",
-      "payableAmount": "97.3400",
-      "gstFreeAmount": null,
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Bills & utilities",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": false,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Bills & utilities",
-          "quantity": 1,
-          "unitPrice": "97.3400",
-          "amount": "97.3400",
-          "gstFree": false,
-          "category": "Bills & utilities",
-          "confidence": 0.93
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "87.6700",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "87.6700"
         }
       ],
       "linesBalance": true,
@@ -15458,13 +19632,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "3.7200",
+          "amount": "3.7200",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "12.3900",
-          "amount": "12.3900",
+          "unitPrice": "8.6700",
+          "amount": "8.6700",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "7.8818",
+          "taxAmount": "0.7882",
+          "inclusiveAmount": "8.6700"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "3.7200",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "3.7200"
         }
       ],
       "linesBalance": true,
@@ -15517,6 +19717,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "150.2545",
+          "taxAmount": "15.0255",
+          "inclusiveAmount": "165.2800"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -15530,56 +19739,6 @@ export const DEMO: DemoShape = {
       "workspace": "business",
       "workspaceId": "ws_marsh_transport",
       "capturedByName": "Dan Whitby",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0156",
-      "supplierName": "Big W",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-05-15",
-      "currency": "AUD",
-      "taxExclusiveAmount": "202.5818",
-      "taxAmount": "20.2582",
-      "payableAmount": "222.8400",
-      "gstFreeAmount": null,
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Shopping",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": false,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Shopping",
-          "quantity": 1,
-          "unitPrice": "222.8400",
-          "amount": "222.8400",
-          "gstFree": false,
-          "category": "Shopping",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-05-15",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Kate Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -15615,6 +19774,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Shopping",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "176.2091",
+          "taxAmount": "17.6209",
+          "inclusiveAmount": "193.8300"
         }
       ],
       "linesBalance": true,
@@ -15667,6 +19835,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "177.8364",
+          "taxAmount": "17.7836",
+          "inclusiveAmount": "195.6200"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -15717,6 +19894,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "158.9182",
+          "taxAmount": "15.8918",
+          "inclusiveAmount": "174.8100"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -15758,13 +19944,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "57.0100",
+          "amount": "57.0100",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "103.6600",
-          "amount": "103.6600",
+          "unitPrice": "46.6500",
+          "amount": "46.6500",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "42.4091",
+          "taxAmount": "4.2409",
+          "inclusiveAmount": "46.6500"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "57.0100",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "57.0100"
         }
       ],
       "linesBalance": true,
@@ -15784,37 +19996,46 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "pd_0159",
-      "supplierName": "IKEA Tempe",
+      "id": "pd_0148",
+      "supplierName": "Opal top-up",
       "supplierAbn": null,
       "supplierAbnValid": false,
-      "issueDate": "2026-05-13",
+      "issueDate": "2026-05-14",
       "currency": "AUD",
-      "taxExclusiveAmount": "179.9545",
-      "taxAmount": "17.9955",
-      "payableAmount": "197.9500",
+      "taxExclusiveAmount": "29.0364",
+      "taxAmount": "2.9036",
+      "payableAmount": "31.9400",
       "gstFreeAmount": null,
       "isTaxInvoice": false,
       "docType": "receipt",
-      "category": "Home",
+      "category": "Transport",
       "engineRowId": "personal",
       "reviewStatus": "auto_accepted",
       "confidenceOverall": 0.96,
       "note": null,
       "complianceFailures": [],
       "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": false,
+      "belowTaxInvoiceThreshold": true,
       "findings": [],
       "lines": [
         {
           "lineNumber": 1,
-          "description": "Home",
+          "description": "Transport",
           "quantity": 1,
-          "unitPrice": "197.9500",
-          "amount": "197.9500",
+          "unitPrice": "31.9400",
+          "amount": "31.9400",
           "gstFree": false,
-          "category": "Home",
+          "category": "Transport",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "29.0364",
+          "taxAmount": "2.9036",
+          "inclusiveAmount": "31.9400"
         }
       ],
       "linesBalance": true,
@@ -15826,10 +20047,10 @@ export const DEMO: DemoShape = {
           "source": "capture"
         }
       ],
-      "imageCapturedAt": "2026-05-13",
+      "imageCapturedAt": "2026-05-14",
       "workspace": "personal",
       "workspaceId": "ws_marsh_household",
-      "capturedByName": "Jem Marsh",
+      "capturedByName": "Kate Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -15867,6 +20088,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "151.8909",
+          "taxAmount": "15.1891",
+          "inclusiveAmount": "167.0800"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -15884,7 +20114,7 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0023",
+      "id": "sub_0024",
       "supplierName": "Spotify Premium",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -15915,6 +20145,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fun",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "12.7182",
+          "taxAmount": "1.2718",
+          "inclusiveAmount": "13.9900"
         }
       ],
       "linesBalance": true,
@@ -15958,13 +20197,174 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "101.7900",
+          "amount": "101.7900",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "185.0700",
-          "amount": "185.0700",
+          "unitPrice": "83.2800",
+          "amount": "83.2800",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "75.7091",
+          "taxAmount": "7.5709",
+          "inclusiveAmount": "83.2800"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "101.7900",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "101.7900"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-05-11",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Jem Marsh",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0136",
+      "supplierName": "IGA Local",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-05-11",
+      "currency": "AUD",
+      "taxExclusiveAmount": "93.7036",
+      "taxAmount": "3.9964",
+      "payableAmount": "97.7000",
+      "gstFreeAmount": "53.7400",
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Groceries",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": false,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "53.7400",
+          "amount": "53.7400",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
+          "description": "Groceries",
+          "quantity": 1,
+          "unitPrice": "43.9600",
+          "amount": "43.9600",
+          "gstFree": false,
+          "category": "Groceries",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "39.9636",
+          "taxAmount": "3.9964",
+          "inclusiveAmount": "43.9600"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "53.7400",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "53.7400"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-05-11",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Kate Marsh",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0161",
+      "supplierName": "IKEA Tempe",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-05-11",
+      "currency": "AUD",
+      "taxExclusiveAmount": "114.6364",
+      "taxAmount": "11.4636",
+      "payableAmount": "126.1000",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Home",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": false,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Home",
+          "quantity": 1,
+          "unitPrice": "126.1000",
+          "amount": "126.1000",
+          "gstFree": false,
+          "category": "Home",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "114.6364",
+          "taxAmount": "11.4636",
+          "inclusiveAmount": "126.1000"
         }
       ],
       "linesBalance": true,
@@ -16017,6 +20417,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "228.9727",
+          "taxAmount": "22.8973",
+          "inclusiveAmount": "251.8700"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -16058,13 +20467,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "7.1400",
+          "amount": "7.1400",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "23.8100",
-          "amount": "23.8100",
+          "unitPrice": "16.6700",
+          "amount": "16.6700",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "15.1545",
+          "taxAmount": "1.5155",
+          "inclusiveAmount": "16.6700"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "7.1400",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "7.1400"
         }
       ],
       "linesBalance": true,
@@ -16084,87 +20519,46 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "pd_0155",
-      "supplierName": "Big W",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-05-10",
-      "currency": "AUD",
-      "taxExclusiveAmount": "247.0818",
-      "taxAmount": "24.7082",
-      "payableAmount": "271.7900",
-      "gstFreeAmount": null,
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Shopping",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": false,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Shopping",
-          "quantity": 1,
-          "unitPrice": "271.7900",
-          "amount": "271.7900",
-          "gstFree": false,
-          "category": "Shopping",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-05-10",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Jem Marsh",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0148",
-      "supplierName": "7-Eleven Redfern",
+      "id": "pd_0149",
+      "supplierName": "Opal top-up",
       "supplierAbn": null,
       "supplierAbnValid": false,
       "issueDate": "2026-05-09",
       "currency": "AUD",
-      "taxExclusiveAmount": "82.4091",
-      "taxAmount": "8.2409",
-      "payableAmount": "90.6500",
+      "taxExclusiveAmount": "46.4636",
+      "taxAmount": "4.6464",
+      "payableAmount": "51.1100",
       "gstFreeAmount": null,
       "isTaxInvoice": false,
       "docType": "receipt",
-      "category": "Fuel",
+      "category": "Transport",
       "engineRowId": "personal",
       "reviewStatus": "auto_accepted",
       "confidenceOverall": 0.96,
       "note": null,
       "complianceFailures": [],
       "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": false,
+      "belowTaxInvoiceThreshold": true,
       "findings": [],
       "lines": [
         {
           "lineNumber": 1,
-          "description": "Fuel",
+          "description": "Transport",
           "quantity": 1,
-          "unitPrice": "90.6500",
-          "amount": "90.6500",
+          "unitPrice": "51.1100",
+          "amount": "51.1100",
           "gstFree": false,
-          "category": "Fuel",
+          "category": "Transport",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "46.4636",
+          "taxAmount": "4.6464",
+          "inclusiveAmount": "51.1100"
         }
       ],
       "linesBalance": true,
@@ -16179,7 +20573,66 @@ export const DEMO: DemoShape = {
       "imageCapturedAt": "2026-05-09",
       "workspace": "personal",
       "workspaceId": "ws_marsh_household",
-      "capturedByName": "Kate Marsh",
+      "capturedByName": "Jem Marsh",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0163",
+      "supplierName": "Event Cinemas",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-05-09",
+      "currency": "AUD",
+      "taxExclusiveAmount": "26.1455",
+      "taxAmount": "2.6145",
+      "payableAmount": "28.7600",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Fun",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": true,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Fun",
+          "quantity": 1,
+          "unitPrice": "28.7600",
+          "amount": "28.7600",
+          "gstFree": false,
+          "category": "Fun",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "26.1455",
+          "taxAmount": "2.6145",
+          "inclusiveAmount": "28.7600"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-05-09",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Jem Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -16215,6 +20668,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Truck parts & maintenance",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "555.4545",
+          "taxAmount": "55.5455",
+          "inclusiveAmount": "611.0000"
         }
       ],
       "linesBalance": true,
@@ -16258,13 +20720,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "5.3800",
+          "amount": "5.3800",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "17.9400",
-          "amount": "17.9400",
+          "unitPrice": "12.5600",
+          "amount": "12.5600",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "11.4182",
+          "taxAmount": "1.1418",
+          "inclusiveAmount": "12.5600"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "5.3800",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "5.3800"
         }
       ],
       "linesBalance": true,
@@ -16308,13 +20796,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "88.0800",
+          "amount": "88.0800",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "160.1400",
-          "amount": "160.1400",
+          "unitPrice": "72.0600",
+          "amount": "72.0600",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "65.5091",
+          "taxAmount": "6.5509",
+          "inclusiveAmount": "72.0600"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "88.0800",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "88.0800"
         }
       ],
       "linesBalance": true,
@@ -16358,13 +20872,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "46.4500",
+          "amount": "46.4500",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "84.4600",
-          "amount": "84.4600",
+          "unitPrice": "38.0100",
+          "amount": "38.0100",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "34.5545",
+          "taxAmount": "3.4555",
+          "inclusiveAmount": "38.0100"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "46.4500",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "46.4500"
         }
       ],
       "linesBalance": true,
@@ -16384,7 +20924,7 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0024",
+      "id": "sub_0025",
       "supplierName": "Telstra",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -16415,6 +20955,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Bills & utilities",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "77.2727",
+          "taxAmount": "7.7273",
+          "inclusiveAmount": "85.0000"
         }
       ],
       "linesBalance": true,
@@ -16467,6 +21016,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "31.3091",
+          "taxAmount": "3.1309",
+          "inclusiveAmount": "34.4400"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -16484,87 +21042,46 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "pd_0153",
-      "supplierName": "GP gap payment",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-05-07",
-      "currency": "AUD",
-      "taxExclusiveAmount": "215.9600",
-      "taxAmount": "0.0000",
-      "payableAmount": "215.9600",
-      "gstFreeAmount": "215.9600",
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Health",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": false,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Health",
-          "quantity": 1,
-          "unitPrice": "215.9600",
-          "amount": "215.9600",
-          "gstFree": false,
-          "category": "Health",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-05-07",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Jem Marsh",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0152",
-      "supplierName": "Sydney Water",
+      "id": "pd_0151",
+      "supplierName": "BP Rosebery",
       "supplierAbn": null,
       "supplierAbnValid": false,
       "issueDate": "2026-05-06",
       "currency": "AUD",
-      "taxExclusiveAmount": "348.0364",
-      "taxAmount": "34.8036",
-      "payableAmount": "382.8400",
+      "taxExclusiveAmount": "71.2091",
+      "taxAmount": "7.1209",
+      "payableAmount": "78.3300",
       "gstFreeAmount": null,
       "isTaxInvoice": false,
       "docType": "receipt",
-      "category": "Bills & utilities",
+      "category": "Fuel",
       "engineRowId": "personal",
       "reviewStatus": "auto_accepted",
       "confidenceOverall": 0.96,
       "note": null,
       "complianceFailures": [],
       "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": false,
+      "belowTaxInvoiceThreshold": true,
       "findings": [],
       "lines": [
         {
           "lineNumber": 1,
-          "description": "Bills & utilities",
+          "description": "Fuel",
           "quantity": 1,
-          "unitPrice": "382.8400",
-          "amount": "382.8400",
+          "unitPrice": "78.3300",
+          "amount": "78.3300",
           "gstFree": false,
-          "category": "Bills & utilities",
+          "category": "Fuel",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "71.2091",
+          "taxAmount": "7.1209",
+          "inclusiveAmount": "78.3300"
         }
       ],
       "linesBalance": true,
@@ -16579,7 +21096,7 @@ export const DEMO: DemoShape = {
       "imageCapturedAt": "2026-05-06",
       "workspace": "personal",
       "workspaceId": "ws_marsh_household",
-      "capturedByName": "Kate Marsh",
+      "capturedByName": "Jem Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -16615,6 +21132,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Truck parts & maintenance",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "868.5545",
+          "taxAmount": "86.8555",
+          "inclusiveAmount": "955.4100"
         }
       ],
       "linesBalance": true,
@@ -16658,13 +21184,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "14.2500",
+          "amount": "14.2500",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "47.5100",
-          "amount": "47.5100",
+          "unitPrice": "33.2600",
+          "amount": "33.2600",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "30.2364",
+          "taxAmount": "3.0236",
+          "inclusiveAmount": "33.2600"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "14.2500",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "14.2500"
         }
       ],
       "linesBalance": true,
@@ -16717,6 +21269,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "43.8636",
+          "taxAmount": "4.3864",
+          "inclusiveAmount": "48.2500"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -16734,19 +21295,19 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "pd_0149",
-      "supplierName": "Ampol Alexandria",
+      "id": "pd_0164",
+      "supplierName": "Marrickville Bowlo",
       "supplierAbn": null,
       "supplierAbnValid": false,
       "issueDate": "2026-05-05",
       "currency": "AUD",
-      "taxExclusiveAmount": "69.2091",
-      "taxAmount": "6.9209",
-      "payableAmount": "76.1300",
+      "taxExclusiveAmount": "61.6000",
+      "taxAmount": "6.1600",
+      "payableAmount": "67.7600",
       "gstFreeAmount": null,
       "isTaxInvoice": false,
       "docType": "receipt",
-      "category": "Fuel",
+      "category": "Fun",
       "engineRowId": "personal",
       "reviewStatus": "auto_accepted",
       "confidenceOverall": 0.96,
@@ -16758,63 +21319,22 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
-          "description": "Fuel",
+          "description": "Fun",
           "quantity": 1,
-          "unitPrice": "76.1300",
-          "amount": "76.1300",
+          "unitPrice": "67.7600",
+          "amount": "67.7600",
           "gstFree": false,
-          "category": "Fuel",
+          "category": "Fun",
           "confidence": 0.93
         }
       ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
+      "taxSubtotals": [
         {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-05-05",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Jem Marsh",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0154",
-      "supplierName": "GP gap payment",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-05-05",
-      "currency": "AUD",
-      "taxExclusiveAmount": "190.3500",
-      "taxAmount": "0.0000",
-      "payableAmount": "190.3500",
-      "gstFreeAmount": "190.3500",
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Health",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": false,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Health",
-          "quantity": 1,
-          "unitPrice": "190.3500",
-          "amount": "190.3500",
-          "gstFree": false,
-          "category": "Health",
-          "confidence": 0.93
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "61.6000",
+          "taxAmount": "6.1600",
+          "inclusiveAmount": "67.7600"
         }
       ],
       "linesBalance": true,
@@ -16867,6 +21387,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "87.9818",
+          "taxAmount": "8.7982",
+          "inclusiveAmount": "96.7800"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -16880,6 +21409,65 @@ export const DEMO: DemoShape = {
       "workspace": "business",
       "workspaceId": "ws_marsh_transport",
       "capturedByName": "Sam Oyelaran",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0144",
+      "supplierName": "Thai Riffic",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-05-04",
+      "currency": "AUD",
+      "taxExclusiveAmount": "88.6455",
+      "taxAmount": "8.8645",
+      "payableAmount": "97.5100",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Eating out",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": false,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Eating out",
+          "quantity": 1,
+          "unitPrice": "97.5100",
+          "amount": "97.5100",
+          "gstFree": false,
+          "category": "Eating out",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "88.6455",
+          "taxAmount": "8.8645",
+          "inclusiveAmount": "97.5100"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-05-04",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Kate Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -16917,6 +21505,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "89.1182",
+          "taxAmount": "8.9118",
+          "inclusiveAmount": "98.0300"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -16934,7 +21531,7 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0022",
+      "id": "sub_0023",
       "supplierName": "Netflix",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -16965,6 +21562,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fun",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "17.2636",
+          "taxAmount": "1.7264",
+          "inclusiveAmount": "18.9900"
         }
       ],
       "linesBalance": true,
@@ -17008,13 +21614,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "14.1500",
+          "amount": "14.1500",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "47.1700",
-          "amount": "47.1700",
+          "unitPrice": "33.0200",
+          "amount": "33.0200",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "30.0182",
+          "taxAmount": "3.0018",
+          "inclusiveAmount": "33.0200"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "14.1500",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "14.1500"
         }
       ],
       "linesBalance": true,
@@ -17067,6 +21699,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "61.2455",
+          "taxAmount": "6.1245",
+          "inclusiveAmount": "67.3700"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -17084,7 +21725,7 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0027",
+      "id": "sub_0028",
       "supplierName": "Anytime Fitness",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -17115,6 +21756,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Health",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "62.7273",
+          "taxAmount": "6.2727",
+          "inclusiveAmount": "69.0000"
         }
       ],
       "linesBalance": true,
@@ -17167,6 +21817,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "16.3364",
+          "taxAmount": "1.6336",
+          "inclusiveAmount": "17.9700"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -17217,6 +21876,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "141.1091",
+          "taxAmount": "14.1109",
+          "inclusiveAmount": "155.2200"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -17230,106 +21898,6 @@ export const DEMO: DemoShape = {
       "workspace": "business",
       "workspaceId": "ws_marsh_transport",
       "capturedByName": "Sam Oyelaran",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0162",
-      "supplierName": "Woolworths Metro",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-04-27",
-      "currency": "AUD",
-      "taxExclusiveAmount": "87.0955",
-      "taxAmount": "3.7145",
-      "payableAmount": "90.8100",
-      "gstFreeAmount": "49.9500",
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Groceries",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": false,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Groceries",
-          "quantity": 1,
-          "unitPrice": "90.8100",
-          "amount": "90.8100",
-          "gstFree": false,
-          "category": "Groceries",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-04-27",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Kate Marsh",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0181",
-      "supplierName": "Linkt Tolls",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-04-27",
-      "currency": "AUD",
-      "taxExclusiveAmount": "53.4091",
-      "taxAmount": "5.3409",
-      "payableAmount": "58.7500",
-      "gstFreeAmount": null,
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Transport",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": true,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Transport",
-          "quantity": 1,
-          "unitPrice": "58.7500",
-          "amount": "58.7500",
-          "gstFree": false,
-          "category": "Transport",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-04-27",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Jem Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -17365,6 +21933,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Truck parts & maintenance",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "249.5818",
+          "taxAmount": "24.9582",
+          "inclusiveAmount": "274.5400"
         }
       ],
       "linesBalance": true,
@@ -17417,6 +21994,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "83.4545",
+          "taxAmount": "8.3455",
+          "inclusiveAmount": "91.8000"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -17458,13 +22044,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "14.9300",
+          "amount": "14.9300",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "27.1400",
-          "amount": "27.1400",
+          "unitPrice": "12.2100",
+          "amount": "12.2100",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "11.1000",
+          "taxAmount": "1.1100",
+          "inclusiveAmount": "12.2100"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "14.9300",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "14.9300"
         }
       ],
       "linesBalance": true,
@@ -17517,54 +22129,13 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
+      "taxSubtotals": [
         {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-04-26",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Kate Marsh",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0180",
-      "supplierName": "Uber",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-04-26",
-      "currency": "AUD",
-      "taxExclusiveAmount": "49.8909",
-      "taxAmount": "4.9891",
-      "payableAmount": "54.8800",
-      "gstFreeAmount": null,
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Transport",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": true,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Transport",
-          "quantity": 1,
-          "unitPrice": "54.8800",
-          "amount": "54.8800",
-          "gstFree": false,
-          "category": "Transport",
-          "confidence": 0.93
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "76.8727",
+          "taxAmount": "7.6873",
+          "inclusiveAmount": "84.5600"
         }
       ],
       "linesBalance": true,
@@ -17584,15 +22155,15 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "pd_0173",
+      "id": "pd_0181",
       "supplierName": "Domino's Pizza",
       "supplierAbn": null,
       "supplierAbnValid": false,
       "issueDate": "2026-04-25",
       "currency": "AUD",
-      "taxExclusiveAmount": "24.1818",
-      "taxAmount": "2.4182",
-      "payableAmount": "26.6000",
+      "taxExclusiveAmount": "42.5182",
+      "taxAmount": "4.2518",
+      "payableAmount": "46.7700",
       "gstFreeAmount": null,
       "isTaxInvoice": false,
       "docType": "receipt",
@@ -17610,11 +22181,20 @@ export const DEMO: DemoShape = {
           "lineNumber": 1,
           "description": "Eating out",
           "quantity": 1,
-          "unitPrice": "26.6000",
-          "amount": "26.6000",
+          "unitPrice": "46.7700",
+          "amount": "46.7700",
           "gstFree": false,
           "category": "Eating out",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "42.5182",
+          "taxAmount": "4.2518",
+          "inclusiveAmount": "46.7700"
         }
       ],
       "linesBalance": true,
@@ -17631,56 +22211,6 @@ export const DEMO: DemoShape = {
       "workspaceId": "ws_marsh_household",
       "capturedByName": "Jem Marsh",
       "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0187",
-      "supplierName": "Ampol Alexandria",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-04-25",
-      "currency": "AUD",
-      "taxExclusiveAmount": "90.5727",
-      "taxAmount": "9.0573",
-      "payableAmount": "99.6300",
-      "gstFreeAmount": null,
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Fuel",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": false,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Fuel",
-          "quantity": 1,
-          "unitPrice": "99.6300",
-          "amount": "99.6300",
-          "gstFree": false,
-          "category": "Fuel",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-04-25",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Jem Marsh",
-      "visibility": "private",
       "version": 1
     },
     {
@@ -17708,13 +22238,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "3.0800",
+          "amount": "3.0800",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "10.2700",
-          "amount": "10.2700",
+          "unitPrice": "7.1900",
+          "amount": "7.1900",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "6.5364",
+          "taxAmount": "0.6536",
+          "inclusiveAmount": "7.1900"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "3.0800",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "3.0800"
         }
       ],
       "linesBalance": true,
@@ -17729,6 +22285,65 @@ export const DEMO: DemoShape = {
       "imageCapturedAt": "2026-04-24",
       "workspace": "business",
       "workspaceId": "ws_marsh_transport",
+      "capturedByName": "Kate Marsh",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0190",
+      "supplierName": "AGL top-up",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-04-24",
+      "currency": "AUD",
+      "taxExclusiveAmount": "172.1727",
+      "taxAmount": "17.2173",
+      "payableAmount": "189.3900",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Bills & utilities",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": false,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Bills & utilities",
+          "quantity": 1,
+          "unitPrice": "189.3900",
+          "amount": "189.3900",
+          "gstFree": false,
+          "category": "Bills & utilities",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "172.1727",
+          "taxAmount": "17.2173",
+          "inclusiveAmount": "189.3900"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-04-24",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
       "capturedByName": "Kate Marsh",
       "visibility": "shared",
       "version": 1
@@ -17758,13 +22373,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "7.9300",
+          "amount": "7.9300",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "26.4300",
-          "amount": "26.4300",
+          "unitPrice": "18.5000",
+          "amount": "18.5000",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "16.8182",
+          "taxAmount": "1.6818",
+          "inclusiveAmount": "18.5000"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "7.9300",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "7.9300"
         }
       ],
       "linesBalance": true,
@@ -17780,6 +22421,124 @@ export const DEMO: DemoShape = {
       "workspace": "business",
       "workspaceId": "ws_marsh_transport",
       "capturedByName": "Dan Whitby",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0180",
+      "supplierName": "Domino's Pizza",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-04-23",
+      "currency": "AUD",
+      "taxExclusiveAmount": "45.6182",
+      "taxAmount": "4.5618",
+      "payableAmount": "50.1800",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Eating out",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": true,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Eating out",
+          "quantity": 1,
+          "unitPrice": "50.1800",
+          "amount": "50.1800",
+          "gstFree": false,
+          "category": "Eating out",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "45.6182",
+          "taxAmount": "4.5618",
+          "inclusiveAmount": "50.1800"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-04-23",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Kate Marsh",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0199",
+      "supplierName": "Marrickville Bowlo",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-04-23",
+      "currency": "AUD",
+      "taxExclusiveAmount": "64.2909",
+      "taxAmount": "6.4291",
+      "payableAmount": "70.7200",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Fun",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": true,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Fun",
+          "quantity": 1,
+          "unitPrice": "70.7200",
+          "amount": "70.7200",
+          "gstFree": false,
+          "category": "Fun",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "64.2909",
+          "taxAmount": "6.4291",
+          "inclusiveAmount": "70.7200"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-04-23",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Jem Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -17815,6 +22574,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fuel",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "251.4091",
+          "taxAmount": "25.1409",
+          "inclusiveAmount": "276.5500"
         }
       ],
       "linesBalance": true,
@@ -17867,6 +22635,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "154.9545",
+          "taxAmount": "15.4955",
+          "inclusiveAmount": "170.4500"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -17908,13 +22685,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "59.3000",
+          "amount": "59.3000",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "107.8100",
-          "amount": "107.8100",
+          "unitPrice": "48.5100",
+          "amount": "48.5100",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "44.1000",
+          "taxAmount": "4.4100",
+          "inclusiveAmount": "48.5100"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "59.3000",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "59.3000"
         }
       ],
       "linesBalance": true,
@@ -17958,13 +22761,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "97.9300",
+          "amount": "97.9300",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "178.0600",
-          "amount": "178.0600",
+          "unitPrice": "80.1300",
+          "amount": "80.1300",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "72.8455",
+          "taxAmount": "7.2845",
+          "inclusiveAmount": "80.1300"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "97.9300",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "97.9300"
         }
       ],
       "linesBalance": true,
@@ -17984,19 +22813,19 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "pd_0192",
-      "supplierName": "Uniqlo",
+      "id": "pd_0191",
+      "supplierName": "AGL top-up",
       "supplierAbn": null,
       "supplierAbnValid": false,
       "issueDate": "2026-04-22",
       "currency": "AUD",
-      "taxExclusiveAmount": "119.9000",
-      "taxAmount": "11.9900",
-      "payableAmount": "131.8900",
+      "taxExclusiveAmount": "257.3545",
+      "taxAmount": "25.7355",
+      "payableAmount": "283.0900",
       "gstFreeAmount": null,
       "isTaxInvoice": false,
       "docType": "receipt",
-      "category": "Shopping",
+      "category": "Bills & utilities",
       "engineRowId": "personal",
       "reviewStatus": "auto_accepted",
       "confidenceOverall": 0.96,
@@ -18008,13 +22837,22 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
-          "description": "Shopping",
+          "description": "Bills & utilities",
           "quantity": 1,
-          "unitPrice": "131.8900",
-          "amount": "131.8900",
+          "unitPrice": "283.0900",
+          "amount": "283.0900",
           "gstFree": false,
-          "category": "Shopping",
+          "category": "Bills & utilities",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "257.3545",
+          "taxAmount": "25.7355",
+          "inclusiveAmount": "283.0900"
         }
       ],
       "linesBalance": true,
@@ -18029,12 +22867,12 @@ export const DEMO: DemoShape = {
       "imageCapturedAt": "2026-04-22",
       "workspace": "personal",
       "workspaceId": "ws_marsh_household",
-      "capturedByName": "Kate Marsh",
+      "capturedByName": "Jem Marsh",
       "visibility": "shared",
       "version": 1
     },
     {
-      "id": "sub_0032",
+      "id": "sub_0033",
       "supplierName": "NRMA Car Insurance",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -18065,6 +22903,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Bills & utilities",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "86.0000",
+          "taxAmount": "8.6000",
+          "inclusiveAmount": "94.6000"
         }
       ],
       "linesBalance": true,
@@ -18108,13 +22955,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "12.3800",
+          "amount": "12.3800",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "41.2800",
-          "amount": "41.2800",
+          "unitPrice": "28.9000",
+          "amount": "28.9000",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "26.2727",
+          "taxAmount": "2.6273",
+          "inclusiveAmount": "28.9000"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "12.3800",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "12.3800"
         }
       ],
       "linesBalance": true,
@@ -18158,13 +23031,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "4.4600",
+          "amount": "4.4600",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "14.8800",
-          "amount": "14.8800",
+          "unitPrice": "10.4200",
+          "amount": "10.4200",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "9.4727",
+          "taxAmount": "0.9473",
+          "inclusiveAmount": "10.4200"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "4.4600",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "4.4600"
         }
       ],
       "linesBalance": true,
@@ -18184,19 +23083,19 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "pd_0190",
-      "supplierName": "GP gap payment",
+      "id": "pd_0189",
+      "supplierName": "BP Rosebery",
       "supplierAbn": null,
       "supplierAbnValid": false,
       "issueDate": "2026-04-21",
       "currency": "AUD",
-      "taxExclusiveAmount": "194.8400",
-      "taxAmount": "0.0000",
-      "payableAmount": "194.8400",
-      "gstFreeAmount": "194.8400",
+      "taxExclusiveAmount": "95.8636",
+      "taxAmount": "9.5864",
+      "payableAmount": "105.4500",
+      "gstFreeAmount": null,
       "isTaxInvoice": false,
       "docType": "receipt",
-      "category": "Health",
+      "category": "Fuel",
       "engineRowId": "personal",
       "reviewStatus": "auto_accepted",
       "confidenceOverall": 0.96,
@@ -18208,13 +23107,22 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
-          "description": "Health",
+          "description": "Fuel",
           "quantity": 1,
-          "unitPrice": "194.8400",
-          "amount": "194.8400",
+          "unitPrice": "105.4500",
+          "amount": "105.4500",
           "gstFree": false,
-          "category": "Health",
+          "category": "Fuel",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "95.8636",
+          "taxAmount": "9.5864",
+          "inclusiveAmount": "105.4500"
         }
       ],
       "linesBalance": true,
@@ -18229,7 +23137,7 @@ export const DEMO: DemoShape = {
       "imageCapturedAt": "2026-04-21",
       "workspace": "personal",
       "workspaceId": "ws_marsh_household",
-      "capturedByName": "Kate Marsh",
+      "capturedByName": "Jem Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -18267,6 +23175,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "228.4091",
+          "taxAmount": "22.8409",
+          "inclusiveAmount": "251.2500"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -18284,19 +23201,78 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "pd_0191",
-      "supplierName": "GP gap payment",
+      "id": "pd_0187",
+      "supplierName": "Linkt Tolls",
       "supplierAbn": null,
       "supplierAbnValid": false,
       "issueDate": "2026-04-20",
       "currency": "AUD",
-      "taxExclusiveAmount": "181.9900",
-      "taxAmount": "0.0000",
-      "payableAmount": "181.9900",
-      "gstFreeAmount": "181.9900",
+      "taxExclusiveAmount": "45.8273",
+      "taxAmount": "4.5827",
+      "payableAmount": "50.4100",
+      "gstFreeAmount": null,
       "isTaxInvoice": false,
       "docType": "receipt",
-      "category": "Health",
+      "category": "Transport",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": true,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Transport",
+          "quantity": 1,
+          "unitPrice": "50.4100",
+          "amount": "50.4100",
+          "gstFree": false,
+          "category": "Transport",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "45.8273",
+          "taxAmount": "4.5827",
+          "inclusiveAmount": "50.4100"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-04-20",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Jem Marsh",
+      "visibility": "private",
+      "version": 1
+    },
+    {
+      "id": "pd_0195",
+      "supplierName": "Kmart",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-04-20",
+      "currency": "AUD",
+      "taxExclusiveAmount": "202.3727",
+      "taxAmount": "20.2373",
+      "payableAmount": "222.6100",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Shopping",
       "engineRowId": "personal",
       "reviewStatus": "auto_accepted",
       "confidenceOverall": 0.96,
@@ -18308,13 +23284,22 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
-          "description": "Health",
+          "description": "Shopping",
           "quantity": 1,
-          "unitPrice": "181.9900",
-          "amount": "181.9900",
+          "unitPrice": "222.6100",
+          "amount": "222.6100",
           "gstFree": false,
-          "category": "Health",
+          "category": "Shopping",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "202.3727",
+          "taxAmount": "20.2373",
+          "inclusiveAmount": "222.6100"
         }
       ],
       "linesBalance": true,
@@ -18367,6 +23352,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "167.9273",
+          "taxAmount": "16.7927",
+          "inclusiveAmount": "184.7200"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -18377,56 +23371,6 @@ export const DEMO: DemoShape = {
         }
       ],
       "imageCapturedAt": "2026-04-20",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Kate Marsh",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0164",
-      "supplierName": "ALDI Marrickville",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-04-19",
-      "currency": "AUD",
-      "taxExclusiveAmount": "49.0191",
-      "taxAmount": "2.0909",
-      "payableAmount": "51.1100",
-      "gstFreeAmount": "28.1100",
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Groceries",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": true,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Groceries",
-          "quantity": 1,
-          "unitPrice": "51.1100",
-          "amount": "51.1100",
-          "gstFree": false,
-          "category": "Groceries",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-04-19",
       "workspace": "personal",
       "workspaceId": "ws_marsh_household",
       "capturedByName": "Kate Marsh",
@@ -18467,6 +23411,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "30.6636",
+          "taxAmount": "3.0664",
+          "inclusiveAmount": "33.7300"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -18480,6 +23433,65 @@ export const DEMO: DemoShape = {
       "workspace": "personal",
       "workspaceId": "ws_marsh_household",
       "capturedByName": "Kate Marsh",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0197",
+      "supplierName": "Bunnings Warehouse",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-04-19",
+      "currency": "AUD",
+      "taxExclusiveAmount": "64.5182",
+      "taxAmount": "6.4518",
+      "payableAmount": "70.9700",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Home",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": true,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Home",
+          "quantity": 1,
+          "unitPrice": "70.9700",
+          "amount": "70.9700",
+          "gstFree": false,
+          "category": "Home",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "64.5182",
+          "taxAmount": "6.4518",
+          "inclusiveAmount": "70.9700"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-04-19",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Jem Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -18515,6 +23527,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Truck parts & maintenance",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "472.2727",
+          "taxAmount": "47.2273",
+          "inclusiveAmount": "519.5000"
         }
       ],
       "linesBalance": true,
@@ -18567,6 +23588,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "151.9818",
+          "taxAmount": "15.1982",
+          "inclusiveAmount": "167.1800"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -18615,6 +23645,74 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Eating out",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "69.0818",
+          "taxAmount": "6.9082",
+          "inclusiveAmount": "75.9900"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-04-18",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Kate Marsh",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0188",
+      "supplierName": "BP Rosebery",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-04-18",
+      "currency": "AUD",
+      "taxExclusiveAmount": "85.4455",
+      "taxAmount": "8.5445",
+      "payableAmount": "93.9900",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Fuel",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": false,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Fuel",
+          "quantity": 1,
+          "unitPrice": "93.9900",
+          "amount": "93.9900",
+          "gstFree": false,
+          "category": "Fuel",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "85.4455",
+          "taxAmount": "8.5445",
+          "inclusiveAmount": "93.9900"
         }
       ],
       "linesBalance": true,
@@ -18667,6 +23765,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "207.3182",
+          "taxAmount": "20.7318",
+          "inclusiveAmount": "228.0500"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -18684,7 +23791,7 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0031",
+      "id": "sub_0032",
       "supplierName": "Origin Energy",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -18715,6 +23822,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Bills & utilities",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "129.8182",
+          "taxAmount": "12.9818",
+          "inclusiveAmount": "142.8000"
         }
       ],
       "linesBalance": true,
@@ -18767,6 +23883,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "196.7091",
+          "taxAmount": "19.6709",
+          "inclusiveAmount": "216.3800"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -18808,13 +23933,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "8.7400",
+          "amount": "8.7400",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "29.1400",
-          "amount": "29.1400",
+          "unitPrice": "20.4000",
+          "amount": "20.4000",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "18.5455",
+          "taxAmount": "1.8545",
+          "inclusiveAmount": "20.4000"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "8.7400",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "8.7400"
         }
       ],
       "linesBalance": true,
@@ -18834,19 +23985,19 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "pd_0188",
-      "supplierName": "AGL top-up",
+      "id": "pd_0172",
+      "supplierName": "Woolworths Metro",
       "supplierAbn": null,
       "supplierAbnValid": false,
       "issueDate": "2026-04-17",
       "currency": "AUD",
-      "taxExclusiveAmount": "218.6545",
-      "taxAmount": "21.8655",
-      "payableAmount": "240.5200",
-      "gstFreeAmount": null,
+      "taxExclusiveAmount": "149.6564",
+      "taxAmount": "6.3836",
+      "payableAmount": "156.0400",
+      "gstFreeAmount": "85.8200",
       "isTaxInvoice": false,
       "docType": "receipt",
-      "category": "Bills & utilities",
+      "category": "Groceries",
       "engineRowId": "personal",
       "reviewStatus": "auto_accepted",
       "confidenceOverall": 0.96,
@@ -18858,13 +24009,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
-          "description": "Bills & utilities",
+          "description": "Groceries (GST-free)",
           "quantity": 1,
-          "unitPrice": "240.5200",
-          "amount": "240.5200",
-          "gstFree": false,
-          "category": "Bills & utilities",
+          "unitPrice": "85.8200",
+          "amount": "85.8200",
+          "gstFree": true,
+          "category": "Groceries",
           "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
+          "description": "Groceries",
+          "quantity": 1,
+          "unitPrice": "70.2200",
+          "amount": "70.2200",
+          "gstFree": false,
+          "category": "Groceries",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "63.8364",
+          "taxAmount": "6.3836",
+          "inclusiveAmount": "70.2200"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "85.8200",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "85.8200"
         }
       ],
       "linesBalance": true,
@@ -18917,6 +24094,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "147.3273",
+          "taxAmount": "14.7327",
+          "inclusiveAmount": "162.0600"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -18965,6 +24151,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fuel",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "216.7636",
+          "taxAmount": "21.6764",
+          "inclusiveAmount": "238.4400"
         }
       ],
       "linesBalance": true,
@@ -19017,6 +24212,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "160.4455",
+          "taxAmount": "16.0445",
+          "inclusiveAmount": "176.4900"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -19065,6 +24269,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fuel",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "178.6636",
+          "taxAmount": "17.8664",
+          "inclusiveAmount": "196.5300"
         }
       ],
       "linesBalance": true,
@@ -19117,6 +24330,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "129.9727",
+          "taxAmount": "12.9973",
+          "inclusiveAmount": "142.9700"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -19165,6 +24387,84 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Transport",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "58.3364",
+          "taxAmount": "5.8336",
+          "inclusiveAmount": "64.1700"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-04-14",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Kate Marsh",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0192",
+      "supplierName": "GP gap payment",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-04-14",
+      "currency": "AUD",
+      "taxExclusiveAmount": "140.2500",
+      "taxAmount": "0.0000",
+      "payableAmount": "140.2500",
+      "gstFreeAmount": "140.2500",
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Health",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": false,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Health (GST-free)",
+          "quantity": 1,
+          "unitPrice": "140.2500",
+          "amount": "140.2500",
+          "gstFree": true,
+          "category": "Health",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
+          "description": "Health",
+          "quantity": 1,
+          "unitPrice": "0.0000",
+          "amount": "0.0000",
+          "gstFree": false,
+          "category": "Health",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "140.2500",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "140.2500"
         }
       ],
       "linesBalance": true,
@@ -19217,6 +24517,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "170.0000",
+          "taxAmount": "17.0000",
+          "inclusiveAmount": "187.0000"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -19234,57 +24543,7 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "pd_0189",
-      "supplierName": "Sydney Water",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-04-12",
-      "currency": "AUD",
-      "taxExclusiveAmount": "249.5000",
-      "taxAmount": "24.9500",
-      "payableAmount": "274.4500",
-      "gstFreeAmount": null,
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Bills & utilities",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": false,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Bills & utilities",
-          "quantity": 1,
-          "unitPrice": "274.4500",
-          "amount": "274.4500",
-          "gstFree": false,
-          "category": "Bills & utilities",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-04-12",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Jem Marsh",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "sub_0029",
+      "id": "sub_0030",
       "supplierName": "Spotify Premium",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -19315,6 +24574,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fun",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "12.7182",
+          "taxAmount": "1.2718",
+          "inclusiveAmount": "13.9900"
         }
       ],
       "linesBalance": true,
@@ -19367,6 +24635,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "160.9545",
+          "taxAmount": "16.0955",
+          "inclusiveAmount": "177.0500"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -19408,13 +24685,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "27.8300",
+          "amount": "27.8300",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "50.6000",
-          "amount": "50.6000",
+          "unitPrice": "22.7700",
+          "amount": "22.7700",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "20.7000",
+          "taxAmount": "2.0700",
+          "inclusiveAmount": "22.7700"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "27.8300",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "27.8300"
         }
       ],
       "linesBalance": true,
@@ -19467,6 +24770,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "46.1091",
+          "taxAmount": "4.6109",
+          "inclusiveAmount": "50.7200"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -19517,54 +24829,13 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
+      "taxSubtotals": [
         {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-04-11",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Kate Marsh",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0186",
-      "supplierName": "7-Eleven Redfern",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-04-11",
-      "currency": "AUD",
-      "taxExclusiveAmount": "66.7727",
-      "taxAmount": "6.6773",
-      "payableAmount": "73.4500",
-      "gstFreeAmount": null,
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Fuel",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": true,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Fuel",
-          "quantity": 1,
-          "unitPrice": "73.4500",
-          "amount": "73.4500",
-          "gstFree": false,
-          "category": "Fuel",
-          "confidence": 0.93
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "46.2545",
+          "taxAmount": "4.6255",
+          "inclusiveAmount": "50.8800"
         }
       ],
       "linesBalance": true,
@@ -19617,6 +24888,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "42.3000",
+          "taxAmount": "4.2300",
+          "inclusiveAmount": "46.5300"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -19665,6 +24945,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fuel",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "162.7818",
+          "taxAmount": "16.2782",
+          "inclusiveAmount": "179.0600"
         }
       ],
       "linesBalance": true,
@@ -19717,6 +25006,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "319.8273",
+          "taxAmount": "31.9827",
+          "inclusiveAmount": "351.8100"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -19758,13 +25056,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "14.2400",
+          "amount": "14.2400",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "47.4700",
-          "amount": "47.4700",
+          "unitPrice": "33.2300",
+          "amount": "33.2300",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "30.2091",
+          "taxAmount": "3.0209",
+          "inclusiveAmount": "33.2300"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "14.2400",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "14.2400"
         }
       ],
       "linesBalance": true,
@@ -19817,6 +25141,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "728.5091",
+          "taxAmount": "72.8509",
+          "inclusiveAmount": "801.3600"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -19830,56 +25163,6 @@ export const DEMO: DemoShape = {
       "workspace": "business",
       "workspaceId": "ws_marsh_transport",
       "capturedByName": "Sam Oyelaran",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0163",
-      "supplierName": "ALDI Marrickville",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-04-09",
-      "currency": "AUD",
-      "taxExclusiveAmount": "74.7227",
-      "taxAmount": "3.1873",
-      "payableAmount": "77.9100",
-      "gstFreeAmount": "42.8500",
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Groceries",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": true,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Groceries",
-          "quantity": 1,
-          "unitPrice": "77.9100",
-          "amount": "77.9100",
-          "gstFree": false,
-          "category": "Groceries",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-04-09",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Jem Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -19908,13 +25191,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "107.5900",
+          "amount": "107.5900",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "195.6100",
-          "amount": "195.6100",
+          "unitPrice": "88.0200",
+          "amount": "88.0200",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "80.0182",
+          "taxAmount": "8.0018",
+          "inclusiveAmount": "88.0200"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "107.5900",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "107.5900"
         }
       ],
       "linesBalance": true,
@@ -19967,6 +25276,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "70.3182",
+          "taxAmount": "7.0318",
+          "inclusiveAmount": "77.3500"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -19980,6 +25298,65 @@ export const DEMO: DemoShape = {
       "workspace": "personal",
       "workspaceId": "ws_marsh_household",
       "capturedByName": "Jem Marsh",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0186",
+      "supplierName": "Uber",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-04-09",
+      "currency": "AUD",
+      "taxExclusiveAmount": "46.4364",
+      "taxAmount": "4.6436",
+      "payableAmount": "51.0800",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Transport",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": true,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Transport",
+          "quantity": 1,
+          "unitPrice": "51.0800",
+          "amount": "51.0800",
+          "gstFree": false,
+          "category": "Transport",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "46.4364",
+          "taxAmount": "4.6436",
+          "inclusiveAmount": "51.0800"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-04-09",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Kate Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -20017,6 +25394,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "86.7818",
+          "taxAmount": "8.6782",
+          "inclusiveAmount": "95.4600"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -20034,7 +25420,7 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0030",
+      "id": "sub_0031",
       "supplierName": "Telstra",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -20065,6 +25451,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Bills & utilities",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "77.2727",
+          "taxAmount": "7.7273",
+          "inclusiveAmount": "85.0000"
         }
       ],
       "linesBalance": true,
@@ -20108,13 +25503,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "10.9100",
+          "amount": "10.9100",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "36.3800",
-          "amount": "36.3800",
+          "unitPrice": "25.4700",
+          "amount": "25.4700",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "23.1545",
+          "taxAmount": "2.3155",
+          "inclusiveAmount": "25.4700"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "10.9100",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "10.9100"
         }
       ],
       "linesBalance": true,
@@ -20167,6 +25588,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "354.3091",
+          "taxAmount": "35.4309",
+          "inclusiveAmount": "389.7400"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -20208,13 +25638,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "18.3800",
+          "amount": "18.3800",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "33.4200",
-          "amount": "33.4200",
+          "unitPrice": "15.0400",
+          "amount": "15.0400",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "13.6727",
+          "taxAmount": "1.3673",
+          "inclusiveAmount": "15.0400"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "18.3800",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "18.3800"
         }
       ],
       "linesBalance": true,
@@ -20258,13 +25714,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "4.5700",
+          "amount": "4.5700",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "15.2300",
-          "amount": "15.2300",
+          "unitPrice": "10.6600",
+          "amount": "10.6600",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "9.6909",
+          "taxAmount": "0.9691",
+          "inclusiveAmount": "10.6600"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "4.5700",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "4.5700"
         }
       ],
       "linesBalance": true,
@@ -20317,6 +25799,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "64.6545",
+          "taxAmount": "6.4655",
+          "inclusiveAmount": "71.1200"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -20334,19 +25825,95 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "pd_0197",
-      "supplierName": "Event Cinemas",
+      "id": "pd_0173",
+      "supplierName": "IGA Local",
       "supplierAbn": null,
       "supplierAbnValid": false,
       "issueDate": "2026-04-05",
       "currency": "AUD",
-      "taxExclusiveAmount": "65.5091",
-      "taxAmount": "6.5509",
-      "payableAmount": "72.0600",
+      "taxExclusiveAmount": "103.3327",
+      "taxAmount": "4.4073",
+      "payableAmount": "107.7400",
+      "gstFreeAmount": "59.2600",
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Groceries",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": false,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "59.2600",
+          "amount": "59.2600",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
+          "description": "Groceries",
+          "quantity": 1,
+          "unitPrice": "48.4800",
+          "amount": "48.4800",
+          "gstFree": false,
+          "category": "Groceries",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "44.0727",
+          "taxAmount": "4.4073",
+          "inclusiveAmount": "48.4800"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "59.2600",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "59.2600"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-04-05",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Jem Marsh",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0185",
+      "supplierName": "Opal top-up",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-04-05",
+      "currency": "AUD",
+      "taxExclusiveAmount": "24.6636",
+      "taxAmount": "2.4664",
+      "payableAmount": "27.1300",
       "gstFreeAmount": null,
       "isTaxInvoice": false,
       "docType": "receipt",
-      "category": "Fun",
+      "category": "Transport",
       "engineRowId": "personal",
       "reviewStatus": "auto_accepted",
       "confidenceOverall": 0.96,
@@ -20358,13 +25925,22 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
-          "description": "Fun",
+          "description": "Transport",
           "quantity": 1,
-          "unitPrice": "72.0600",
-          "amount": "72.0600",
+          "unitPrice": "27.1300",
+          "amount": "27.1300",
           "gstFree": false,
-          "category": "Fun",
+          "category": "Transport",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "24.6636",
+          "taxAmount": "2.4664",
+          "inclusiveAmount": "27.1300"
         }
       ],
       "linesBalance": true,
@@ -20408,13 +25984,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "12.3900",
+          "amount": "12.3900",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "41.3100",
-          "amount": "41.3100",
+          "unitPrice": "28.9200",
+          "amount": "28.9200",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "26.2909",
+          "taxAmount": "2.6291",
+          "inclusiveAmount": "28.9200"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "12.3900",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "12.3900"
         }
       ],
       "linesBalance": true,
@@ -20435,36 +26037,55 @@ export const DEMO: DemoShape = {
     },
     {
       "id": "pd_0193",
-      "supplierName": "Kmart",
+      "supplierName": "Chemist Warehouse",
       "supplierAbn": null,
       "supplierAbnValid": false,
       "issueDate": "2026-04-04",
       "currency": "AUD",
-      "taxExclusiveAmount": "42.8273",
-      "taxAmount": "4.2827",
-      "payableAmount": "47.1100",
-      "gstFreeAmount": null,
+      "taxExclusiveAmount": "107.5200",
+      "taxAmount": "0.0000",
+      "payableAmount": "107.5200",
+      "gstFreeAmount": "107.5200",
       "isTaxInvoice": false,
       "docType": "receipt",
-      "category": "Shopping",
+      "category": "Health",
       "engineRowId": "personal",
       "reviewStatus": "auto_accepted",
       "confidenceOverall": 0.96,
       "note": null,
       "complianceFailures": [],
       "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": true,
+      "belowTaxInvoiceThreshold": false,
       "findings": [],
       "lines": [
         {
           "lineNumber": 1,
-          "description": "Shopping",
+          "description": "Health (GST-free)",
           "quantity": 1,
-          "unitPrice": "47.1100",
-          "amount": "47.1100",
-          "gstFree": false,
-          "category": "Shopping",
+          "unitPrice": "107.5200",
+          "amount": "107.5200",
+          "gstFree": true,
+          "category": "Health",
           "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
+          "description": "Health",
+          "quantity": 1,
+          "unitPrice": "0.0000",
+          "amount": "0.0000",
+          "gstFree": false,
+          "category": "Health",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "107.5200",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "107.5200"
         }
       ],
       "linesBalance": true,
@@ -20484,7 +26105,7 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0028",
+      "id": "sub_0029",
       "supplierName": "Netflix",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -20517,6 +26138,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.95
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "17.2636",
+          "taxAmount": "1.7264",
+          "inclusiveAmount": "18.9900"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -20530,56 +26160,6 @@ export const DEMO: DemoShape = {
       "workspace": "personal",
       "workspaceId": "ws_marsh_household",
       "capturedByName": "Kate Marsh",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0185",
-      "supplierName": "7-Eleven Redfern",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-04-03",
-      "currency": "AUD",
-      "taxExclusiveAmount": "56.3909",
-      "taxAmount": "5.6391",
-      "payableAmount": "62.0300",
-      "gstFreeAmount": null,
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Fuel",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": true,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Fuel",
-          "quantity": 1,
-          "unitPrice": "62.0300",
-          "amount": "62.0300",
-          "gstFree": false,
-          "category": "Fuel",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-04-03",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Jem Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -20615,6 +26195,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fuel",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "166.4273",
+          "taxAmount": "16.6427",
+          "inclusiveAmount": "183.0700"
         }
       ],
       "linesBalance": true,
@@ -20658,13 +26247,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "37.2300",
+          "amount": "37.2300",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "67.6900",
-          "amount": "67.6900",
+          "unitPrice": "30.4600",
+          "amount": "30.4600",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "27.6909",
+          "taxAmount": "2.7691",
+          "inclusiveAmount": "30.4600"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "37.2300",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "37.2300"
         }
       ],
       "linesBalance": true,
@@ -20681,56 +26296,6 @@ export const DEMO: DemoShape = {
       "workspaceId": "ws_marsh_household",
       "capturedByName": "Jem Marsh",
       "visibility": "private",
-      "version": 1
-    },
-    {
-      "id": "pd_0172",
-      "supplierName": "Cafe Ambrosia",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-04-02",
-      "currency": "AUD",
-      "taxExclusiveAmount": "56.9909",
-      "taxAmount": "5.6991",
-      "payableAmount": "62.6900",
-      "gstFreeAmount": null,
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Eating out",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": true,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Eating out",
-          "quantity": 1,
-          "unitPrice": "62.6900",
-          "amount": "62.6900",
-          "gstFree": false,
-          "category": "Eating out",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-04-02",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Kate Marsh",
-      "visibility": "shared",
       "version": 1
     },
     {
@@ -20767,6 +26332,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "13.5545",
+          "taxAmount": "1.3555",
+          "inclusiveAmount": "14.9100"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -20784,7 +26358,7 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0033",
+      "id": "sub_0034",
       "supplierName": "Anytime Fitness",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -20817,6 +26391,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.95
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "62.7273",
+          "taxAmount": "6.2727",
+          "inclusiveAmount": "69.0000"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -20830,56 +26413,6 @@ export const DEMO: DemoShape = {
       "workspace": "personal",
       "workspaceId": "ws_marsh_household",
       "capturedByName": "Kate Marsh",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0195",
-      "supplierName": "Bunnings Warehouse",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-04-01",
-      "currency": "AUD",
-      "taxExclusiveAmount": "143.9455",
-      "taxAmount": "14.3945",
-      "payableAmount": "158.3400",
-      "gstFreeAmount": null,
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Home",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": false,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Home",
-          "quantity": 1,
-          "unitPrice": "158.3400",
-          "amount": "158.3400",
-          "gstFree": false,
-          "category": "Home",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-04-01",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Jem Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -20915,6 +26448,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fuel",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "181.7182",
+          "taxAmount": "18.1718",
+          "inclusiveAmount": "199.8900"
         }
       ],
       "linesBalance": true,
@@ -20958,13 +26500,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "7.9000",
+          "amount": "7.9000",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "26.3300",
-          "amount": "26.3300",
+          "unitPrice": "18.4300",
+          "amount": "18.4300",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "16.7545",
+          "taxAmount": "1.6755",
+          "inclusiveAmount": "18.4300"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "7.9000",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "7.9000"
         }
       ],
       "linesBalance": true,
@@ -20980,56 +26548,6 @@ export const DEMO: DemoShape = {
       "workspace": "business",
       "workspaceId": "ws_marsh_transport",
       "capturedByName": "Dan Whitby",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0230",
-      "supplierName": "Event Cinemas",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-03-28",
-      "currency": "AUD",
-      "taxExclusiveAmount": "43.1364",
-      "taxAmount": "4.3136",
-      "payableAmount": "47.4500",
-      "gstFreeAmount": null,
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Fun",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": true,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Fun",
-          "quantity": 1,
-          "unitPrice": "47.4500",
-          "amount": "47.4500",
-          "gstFree": false,
-          "category": "Fun",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-03-28",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Kate Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -21067,6 +26585,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "137.4091",
+          "taxAmount": "13.7409",
+          "inclusiveAmount": "151.1500"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -21080,56 +26607,6 @@ export const DEMO: DemoShape = {
       "workspace": "business",
       "workspaceId": "ws_marsh_transport",
       "capturedByName": "Sam Oyelaran",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0225",
-      "supplierName": "JB Hi-Fi",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-03-26",
-      "currency": "AUD",
-      "taxExclusiveAmount": "85.5909",
-      "taxAmount": "8.5591",
-      "payableAmount": "94.1500",
-      "gstFreeAmount": null,
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Shopping",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": false,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Shopping",
-          "quantity": 1,
-          "unitPrice": "94.1500",
-          "amount": "94.1500",
-          "gstFree": false,
-          "category": "Shopping",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-03-26",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Jem Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -21165,6 +26642,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fun",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "73.4455",
+          "taxAmount": "7.3445",
+          "inclusiveAmount": "80.7900"
         }
       ],
       "linesBalance": true,
@@ -21217,6 +26703,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "153.9364",
+          "taxAmount": "15.3936",
+          "inclusiveAmount": "169.3300"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -21258,13 +26753,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "54.4100",
+          "amount": "54.4100",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "98.9300",
-          "amount": "98.9300",
+          "unitPrice": "44.5200",
+          "amount": "44.5200",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "40.4727",
+          "taxAmount": "4.0473",
+          "inclusiveAmount": "44.5200"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "54.4100",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "54.4100"
         }
       ],
       "linesBalance": true,
@@ -21317,6 +26838,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "33.7182",
+          "taxAmount": "3.3718",
+          "inclusiveAmount": "37.0900"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -21365,6 +26895,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Eating out",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "26.0545",
+          "taxAmount": "2.6055",
+          "inclusiveAmount": "28.6600"
         }
       ],
       "linesBalance": true,
@@ -21417,6 +26956,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "35.2273",
+          "taxAmount": "3.5227",
+          "inclusiveAmount": "38.7500"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -21430,6 +26978,65 @@ export const DEMO: DemoShape = {
       "workspace": "personal",
       "workspaceId": "ws_marsh_household",
       "capturedByName": "Jem Marsh",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0222",
+      "supplierName": "Ampol Alexandria",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-03-24",
+      "currency": "AUD",
+      "taxExclusiveAmount": "77.3909",
+      "taxAmount": "7.7391",
+      "payableAmount": "85.1300",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Fuel",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": false,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Fuel",
+          "quantity": 1,
+          "unitPrice": "85.1300",
+          "amount": "85.1300",
+          "gstFree": false,
+          "category": "Fuel",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "77.3909",
+          "taxAmount": "7.7391",
+          "inclusiveAmount": "85.1300"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-03-24",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Kate Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -21465,6 +27072,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fuel",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "151.4818",
+          "taxAmount": "15.1482",
+          "inclusiveAmount": "166.6300"
         }
       ],
       "linesBalance": true,
@@ -21517,6 +27133,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "141.5000",
+          "taxAmount": "14.1500",
+          "inclusiveAmount": "155.6500"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -21558,13 +27183,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "5.0400",
+          "amount": "5.0400",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "16.8100",
-          "amount": "16.8100",
+          "unitPrice": "11.7700",
+          "amount": "11.7700",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "10.7000",
+          "taxAmount": "1.0700",
+          "inclusiveAmount": "11.7700"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "5.0400",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "5.0400"
         }
       ],
       "linesBalance": true,
@@ -21584,57 +27235,7 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "pd_0208",
-      "supplierName": "Guzman y Gomez",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-03-22",
-      "currency": "AUD",
-      "taxExclusiveAmount": "25.4727",
-      "taxAmount": "2.5473",
-      "payableAmount": "28.0200",
-      "gstFreeAmount": null,
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Eating out",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": true,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Eating out",
-          "quantity": 1,
-          "unitPrice": "28.0200",
-          "amount": "28.0200",
-          "gstFree": false,
-          "category": "Eating out",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-03-22",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Kate Marsh",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "sub_0038",
+      "id": "sub_0039",
       "supplierName": "NRMA Car Insurance",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -21665,6 +27266,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Bills & utilities",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "86.0000",
+          "taxAmount": "8.6000",
+          "inclusiveAmount": "94.6000"
         }
       ],
       "linesBalance": true,
@@ -21717,6 +27327,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "195.9545",
+          "taxAmount": "19.5955",
+          "inclusiveAmount": "215.5500"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -21767,6 +27386,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "125.7727",
+          "taxAmount": "12.5773",
+          "inclusiveAmount": "138.3500"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -21808,13 +27436,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "74.5100",
+          "amount": "74.5100",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "135.4800",
-          "amount": "135.4800",
+          "unitPrice": "60.9700",
+          "amount": "60.9700",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "55.4273",
+          "taxAmount": "5.5427",
+          "inclusiveAmount": "60.9700"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "74.5100",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "74.5100"
         }
       ],
       "linesBalance": true,
@@ -21867,6 +27521,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "18.0636",
+          "taxAmount": "1.8064",
+          "inclusiveAmount": "19.8700"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -21884,15 +27547,15 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "pd_0221",
+      "id": "pd_0223",
       "supplierName": "AGL top-up",
       "supplierAbn": null,
       "supplierAbnValid": false,
-      "issueDate": "2026-03-21",
+      "issueDate": "2026-03-20",
       "currency": "AUD",
-      "taxExclusiveAmount": "29.5091",
-      "taxAmount": "2.9509",
-      "payableAmount": "32.4600",
+      "taxExclusiveAmount": "165.4182",
+      "taxAmount": "16.5418",
+      "payableAmount": "181.9600",
       "gstFreeAmount": null,
       "isTaxInvoice": false,
       "docType": "receipt",
@@ -21903,18 +27566,27 @@ export const DEMO: DemoShape = {
       "note": null,
       "complianceFailures": [],
       "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": true,
+      "belowTaxInvoiceThreshold": false,
       "findings": [],
       "lines": [
         {
           "lineNumber": 1,
           "description": "Bills & utilities",
           "quantity": 1,
-          "unitPrice": "32.4600",
-          "amount": "32.4600",
+          "unitPrice": "181.9600",
+          "amount": "181.9600",
           "gstFree": false,
           "category": "Bills & utilities",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "165.4182",
+          "taxAmount": "16.5418",
+          "inclusiveAmount": "181.9600"
         }
       ],
       "linesBalance": true,
@@ -21926,7 +27598,7 @@ export const DEMO: DemoShape = {
           "source": "capture"
         }
       ],
-      "imageCapturedAt": "2026-03-21",
+      "imageCapturedAt": "2026-03-20",
       "workspace": "personal",
       "workspaceId": "ws_marsh_household",
       "capturedByName": "Jem Marsh",
@@ -21965,6 +27637,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Truck parts & maintenance",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "1213.5091",
+          "taxAmount": "121.3509",
+          "inclusiveAmount": "1334.8600"
         }
       ],
       "linesBalance": true,
@@ -22017,6 +27698,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "674.5455",
+          "taxAmount": "67.4545",
+          "inclusiveAmount": "742.0000"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -22030,56 +27720,6 @@ export const DEMO: DemoShape = {
       "workspace": "business",
       "workspaceId": "ws_marsh_transport",
       "capturedByName": "Kate Marsh",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0199",
-      "supplierName": "ALDI Marrickville",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-03-19",
-      "currency": "AUD",
-      "taxExclusiveAmount": "147.0191",
-      "taxAmount": "6.2709",
-      "payableAmount": "153.2900",
-      "gstFreeAmount": "84.3100",
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Groceries",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": false,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Groceries",
-          "quantity": 1,
-          "unitPrice": "153.2900",
-          "amount": "153.2900",
-          "gstFree": false,
-          "category": "Groceries",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-03-19",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Jem Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -22108,13 +27748,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "35.3800",
+          "amount": "35.3800",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "64.3300",
-          "amount": "64.3300",
+          "unitPrice": "28.9500",
+          "amount": "28.9500",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "26.3182",
+          "taxAmount": "2.6318",
+          "inclusiveAmount": "28.9500"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "35.3800",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "35.3800"
         }
       ],
       "linesBalance": true,
@@ -22130,56 +27796,6 @@ export const DEMO: DemoShape = {
       "workspace": "personal",
       "workspaceId": "ws_marsh_household",
       "capturedByName": "Jem Marsh",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0228",
-      "supplierName": "Bunnings Warehouse",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-03-19",
-      "currency": "AUD",
-      "taxExclusiveAmount": "58.3091",
-      "taxAmount": "5.8309",
-      "payableAmount": "64.1400",
-      "gstFreeAmount": null,
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Home",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": true,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Home",
-          "quantity": 1,
-          "unitPrice": "64.1400",
-          "amount": "64.1400",
-          "gstFree": false,
-          "category": "Home",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-03-19",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Kate Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -22208,13 +27824,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "5.9900",
+          "amount": "5.9900",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "19.9700",
-          "amount": "19.9700",
+          "unitPrice": "13.9800",
+          "amount": "13.9800",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "12.7091",
+          "taxAmount": "1.2709",
+          "inclusiveAmount": "13.9800"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "5.9900",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "5.9900"
         }
       ],
       "linesBalance": true,
@@ -22267,6 +27909,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "350.1909",
+          "taxAmount": "35.0191",
+          "inclusiveAmount": "385.2100"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -22317,6 +27968,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "50.5636",
+          "taxAmount": "5.0564",
+          "inclusiveAmount": "55.6200"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -22334,107 +27994,7 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "pd_0223",
-      "supplierName": "GP gap payment",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-03-18",
-      "currency": "AUD",
-      "taxExclusiveAmount": "151.4800",
-      "taxAmount": "0.0000",
-      "payableAmount": "151.4800",
-      "gstFreeAmount": "151.4800",
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Health",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": false,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Health",
-          "quantity": 1,
-          "unitPrice": "151.4800",
-          "amount": "151.4800",
-          "gstFree": false,
-          "category": "Health",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-03-18",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Jem Marsh",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0224",
-      "supplierName": "Chemist Warehouse",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-03-18",
-      "currency": "AUD",
-      "taxExclusiveAmount": "30.5300",
-      "taxAmount": "0.0000",
-      "payableAmount": "30.5300",
-      "gstFreeAmount": "30.5300",
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Health",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": true,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Health",
-          "quantity": 1,
-          "unitPrice": "30.5300",
-          "amount": "30.5300",
-          "gstFree": false,
-          "category": "Health",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-03-18",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Kate Marsh",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "sub_0037",
+      "id": "sub_0038",
       "supplierName": "Origin Energy",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -22465,6 +28025,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Bills & utilities",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "129.8182",
+          "taxAmount": "12.9818",
+          "inclusiveAmount": "142.8000"
         }
       ],
       "linesBalance": true,
@@ -22517,6 +28086,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "134.1364",
+          "taxAmount": "13.4136",
+          "inclusiveAmount": "147.5500"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -22567,6 +28145,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "134.2636",
+          "taxAmount": "13.4264",
+          "inclusiveAmount": "147.6900"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -22608,13 +28195,108 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "19.8200",
+          "amount": "19.8200",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "36.0400",
-          "amount": "36.0400",
+          "unitPrice": "16.2200",
+          "amount": "16.2200",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "14.7455",
+          "taxAmount": "1.4745",
+          "inclusiveAmount": "16.2200"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "19.8200",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "19.8200"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-03-16",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Kate Marsh",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0226",
+      "supplierName": "Newtown Dental",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-03-16",
+      "currency": "AUD",
+      "taxExclusiveAmount": "141.5000",
+      "taxAmount": "0.0000",
+      "payableAmount": "141.5000",
+      "gstFreeAmount": "141.5000",
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Health",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": false,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Health (GST-free)",
+          "quantity": 1,
+          "unitPrice": "141.5000",
+          "amount": "141.5000",
+          "gstFree": true,
+          "category": "Health",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
+          "description": "Health",
+          "quantity": 1,
+          "unitPrice": "0.0000",
+          "amount": "0.0000",
+          "gstFree": false,
+          "category": "Health",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "141.5000",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "141.5000"
         }
       ],
       "linesBalance": true,
@@ -22658,13 +28340,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "13.3100",
+          "amount": "13.3100",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "44.3800",
-          "amount": "44.3800",
+          "unitPrice": "31.0700",
+          "amount": "31.0700",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "28.2455",
+          "taxAmount": "2.8245",
+          "inclusiveAmount": "31.0700"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "13.3100",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "13.3100"
         }
       ],
       "linesBalance": true,
@@ -22717,6 +28425,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "132.6273",
+          "taxAmount": "13.2627",
+          "inclusiveAmount": "145.8900"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -22730,6 +28447,65 @@ export const DEMO: DemoShape = {
       "workspace": "business",
       "workspaceId": "ws_marsh_transport",
       "capturedByName": "Dan Whitby",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0219",
+      "supplierName": "Opal top-up",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-03-14",
+      "currency": "AUD",
+      "taxExclusiveAmount": "31.0545",
+      "taxAmount": "3.1055",
+      "payableAmount": "34.1600",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Transport",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": true,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Transport",
+          "quantity": 1,
+          "unitPrice": "34.1600",
+          "amount": "34.1600",
+          "gstFree": false,
+          "category": "Transport",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "31.0545",
+          "taxAmount": "3.1055",
+          "inclusiveAmount": "34.1600"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-03-14",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Jem Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -22765,6 +28541,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Shopping",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "214.6818",
+          "taxAmount": "21.4682",
+          "inclusiveAmount": "236.1500"
         }
       ],
       "linesBalance": true,
@@ -22817,6 +28602,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "164.4364",
+          "taxAmount": "16.4436",
+          "inclusiveAmount": "180.8800"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -22858,13 +28652,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "85.9500",
+          "amount": "85.9500",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "156.2800",
-          "amount": "156.2800",
+          "unitPrice": "70.3300",
+          "amount": "70.3300",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "63.9364",
+          "taxAmount": "6.3936",
+          "inclusiveAmount": "70.3300"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "85.9500",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "85.9500"
         }
       ],
       "linesBalance": true,
@@ -22908,63 +28728,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "54.8000",
+          "amount": "54.8000",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "99.6300",
-          "amount": "99.6300",
+          "unitPrice": "44.8300",
+          "amount": "44.8300",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
         }
       ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
+      "taxSubtotals": [
         {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-03-13",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Kate Marsh",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0226",
-      "supplierName": "Kmart",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-03-13",
-      "currency": "AUD",
-      "taxExclusiveAmount": "129.7182",
-      "taxAmount": "12.9718",
-      "payableAmount": "142.6900",
-      "gstFreeAmount": null,
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Shopping",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": false,
-      "findings": [],
-      "lines": [
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "40.7545",
+          "taxAmount": "4.0755",
+          "inclusiveAmount": "44.8300"
+        },
         {
-          "lineNumber": 1,
-          "description": "Shopping",
-          "quantity": 1,
-          "unitPrice": "142.6900",
-          "amount": "142.6900",
-          "gstFree": false,
-          "category": "Shopping",
-          "confidence": 0.93
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "54.8000",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "54.8000"
         }
       ],
       "linesBalance": true,
@@ -23017,6 +28813,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "334.0545",
+          "taxAmount": "33.4055",
+          "inclusiveAmount": "367.4600"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -23065,6 +28870,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Truck parts & maintenance",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "118.0455",
+          "taxAmount": "11.8045",
+          "inclusiveAmount": "129.8500"
         }
       ],
       "linesBalance": true,
@@ -23117,6 +28931,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "33.0818",
+          "taxAmount": "3.3082",
+          "inclusiveAmount": "36.3900"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -23134,7 +28957,66 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0035",
+      "id": "pd_0230",
+      "supplierName": "IKEA Tempe",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-03-12",
+      "currency": "AUD",
+      "taxExclusiveAmount": "148.3545",
+      "taxAmount": "14.8355",
+      "payableAmount": "163.1900",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Home",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": false,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Home",
+          "quantity": 1,
+          "unitPrice": "163.1900",
+          "amount": "163.1900",
+          "gstFree": false,
+          "category": "Home",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "148.3545",
+          "taxAmount": "14.8355",
+          "inclusiveAmount": "163.1900"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-03-12",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Kate Marsh",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "sub_0036",
       "supplierName": "Spotify Premium",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -23165,6 +29047,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fun",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "12.7182",
+          "taxAmount": "1.2718",
+          "inclusiveAmount": "13.9900"
         }
       ],
       "linesBalance": true,
@@ -23217,6 +29108,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "21.2182",
+          "taxAmount": "2.1218",
+          "inclusiveAmount": "23.3400"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -23258,13 +29158,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "9.4700",
+          "amount": "9.4700",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "31.5800",
-          "amount": "31.5800",
+          "unitPrice": "22.1100",
+          "amount": "22.1100",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "20.1000",
+          "taxAmount": "2.0100",
+          "inclusiveAmount": "22.1100"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "9.4700",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "9.4700"
         }
       ],
       "linesBalance": true,
@@ -23280,6 +29206,75 @@ export const DEMO: DemoShape = {
       "workspace": "business",
       "workspaceId": "ws_marsh_transport",
       "capturedByName": "Sam Oyelaran",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0225",
+      "supplierName": "GP gap payment",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-03-10",
+      "currency": "AUD",
+      "taxExclusiveAmount": "120.5900",
+      "taxAmount": "0.0000",
+      "payableAmount": "120.5900",
+      "gstFreeAmount": "120.5900",
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Health",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": false,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Health (GST-free)",
+          "quantity": 1,
+          "unitPrice": "120.5900",
+          "amount": "120.5900",
+          "gstFree": true,
+          "category": "Health",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
+          "description": "Health",
+          "quantity": 1,
+          "unitPrice": "0.0000",
+          "amount": "0.0000",
+          "gstFree": false,
+          "category": "Health",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "120.5900",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "120.5900"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-03-10",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Jem Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -23308,13 +29303,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "11.3400",
+          "amount": "11.3400",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "37.7900",
-          "amount": "37.7900",
+          "unitPrice": "26.4500",
+          "amount": "26.4500",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "24.0455",
+          "taxAmount": "2.4045",
+          "inclusiveAmount": "26.4500"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "11.3400",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "11.3400"
         }
       ],
       "linesBalance": true,
@@ -23334,7 +29355,7 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0036",
+      "id": "sub_0037",
       "supplierName": "Telstra",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -23365,6 +29386,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Bills & utilities",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "77.2727",
+          "taxAmount": "7.7273",
+          "inclusiveAmount": "85.0000"
         }
       ],
       "linesBalance": true,
@@ -23408,13 +29438,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "96.7400",
+          "amount": "96.7400",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "175.8900",
-          "amount": "175.8900",
+          "unitPrice": "79.1500",
+          "amount": "79.1500",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "71.9545",
+          "taxAmount": "7.1955",
+          "inclusiveAmount": "79.1500"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "96.7400",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "96.7400"
         }
       ],
       "linesBalance": true,
@@ -23434,19 +29490,19 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "pd_0222",
-      "supplierName": "AGL top-up",
+      "id": "pd_0228",
+      "supplierName": "JB Hi-Fi",
       "supplierAbn": null,
       "supplierAbnValid": false,
       "issueDate": "2026-03-07",
       "currency": "AUD",
-      "taxExclusiveAmount": "262.1091",
-      "taxAmount": "26.2109",
-      "payableAmount": "288.3200",
+      "taxExclusiveAmount": "91.1636",
+      "taxAmount": "9.1164",
+      "payableAmount": "100.2800",
       "gstFreeAmount": null,
       "isTaxInvoice": false,
       "docType": "receipt",
-      "category": "Bills & utilities",
+      "category": "Shopping",
       "engineRowId": "personal",
       "reviewStatus": "auto_accepted",
       "confidenceOverall": 0.96,
@@ -23458,13 +29514,22 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
-          "description": "Bills & utilities",
+          "description": "Shopping",
           "quantity": 1,
-          "unitPrice": "288.3200",
-          "amount": "288.3200",
+          "unitPrice": "100.2800",
+          "amount": "100.2800",
           "gstFree": false,
-          "category": "Bills & utilities",
+          "category": "Shopping",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "91.1636",
+          "taxAmount": "9.1164",
+          "inclusiveAmount": "100.2800"
         }
       ],
       "linesBalance": true,
@@ -23517,6 +29582,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "145.3182",
+          "taxAmount": "14.5318",
+          "inclusiveAmount": "159.8500"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -23530,6 +29604,65 @@ export const DEMO: DemoShape = {
       "workspace": "personal",
       "workspaceId": "ws_marsh_household",
       "capturedByName": "Jem Marsh",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0232",
+      "supplierName": "Marrickville Bowlo",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-03-07",
+      "currency": "AUD",
+      "taxExclusiveAmount": "56.9455",
+      "taxAmount": "5.6945",
+      "payableAmount": "62.6400",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Fun",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": true,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Fun",
+          "quantity": 1,
+          "unitPrice": "62.6400",
+          "amount": "62.6400",
+          "gstFree": false,
+          "category": "Fun",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "56.9455",
+          "taxAmount": "5.6945",
+          "inclusiveAmount": "62.6400"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-03-07",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Kate Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -23558,13 +29691,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "12.6100",
+          "amount": "12.6100",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "42.0500",
-          "amount": "42.0500",
+          "unitPrice": "29.4400",
+          "amount": "29.4400",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "26.7636",
+          "taxAmount": "2.6764",
+          "inclusiveAmount": "29.4400"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "12.6100",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "12.6100"
         }
       ],
       "linesBalance": true,
@@ -23617,6 +29776,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "136.6909",
+          "taxAmount": "13.6691",
+          "inclusiveAmount": "150.3600"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -23658,13 +29826,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "38.0700",
+          "amount": "38.0700",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "69.2100",
-          "amount": "69.2100",
+          "unitPrice": "31.1400",
+          "amount": "31.1400",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "28.3091",
+          "taxAmount": "2.8309",
+          "inclusiveAmount": "31.1400"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "38.0700",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "38.0700"
         }
       ],
       "linesBalance": true,
@@ -23684,19 +29878,19 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "pd_0214",
-      "supplierName": "Opal top-up",
+      "id": "pd_0208",
+      "supplierName": "IGA Local",
       "supplierAbn": null,
       "supplierAbnValid": false,
       "issueDate": "2026-03-06",
       "currency": "AUD",
-      "taxExclusiveAmount": "14.0091",
-      "taxAmount": "1.4009",
-      "payableAmount": "15.4100",
-      "gstFreeAmount": null,
+      "taxExclusiveAmount": "23.5455",
+      "taxAmount": "1.0045",
+      "payableAmount": "24.5500",
+      "gstFreeAmount": "13.5000",
       "isTaxInvoice": false,
       "docType": "receipt",
-      "category": "Transport",
+      "category": "Groceries",
       "engineRowId": "personal",
       "reviewStatus": "auto_accepted",
       "confidenceOverall": 0.96,
@@ -23708,13 +29902,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
-          "description": "Transport",
+          "description": "Groceries (GST-free)",
           "quantity": 1,
-          "unitPrice": "15.4100",
-          "amount": "15.4100",
-          "gstFree": false,
-          "category": "Transport",
+          "unitPrice": "13.5000",
+          "amount": "13.5000",
+          "gstFree": true,
+          "category": "Groceries",
           "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
+          "description": "Groceries",
+          "quantity": 1,
+          "unitPrice": "11.0500",
+          "amount": "11.0500",
+          "gstFree": false,
+          "category": "Groceries",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "10.0455",
+          "taxAmount": "1.0045",
+          "inclusiveAmount": "11.0500"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "13.5000",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "13.5000"
         }
       ],
       "linesBalance": true,
@@ -23767,6 +29987,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "17.8727",
+          "taxAmount": "1.7873",
+          "inclusiveAmount": "19.6600"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -23817,6 +30046,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "233.9818",
+          "taxAmount": "23.3982",
+          "inclusiveAmount": "257.3800"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -23858,13 +30096,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "8.8700",
+          "amount": "8.8700",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "29.5600",
-          "amount": "29.5600",
+          "unitPrice": "20.6900",
+          "amount": "20.6900",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "18.8091",
+          "taxAmount": "1.8809",
+          "inclusiveAmount": "20.6900"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "8.8700",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "8.8700"
         }
       ],
       "linesBalance": true,
@@ -23884,19 +30148,19 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "pd_0219",
-      "supplierName": "7-Eleven Redfern",
+      "id": "pd_0214",
+      "supplierName": "Guzman y Gomez",
       "supplierAbn": null,
       "supplierAbnValid": false,
       "issueDate": "2026-03-04",
       "currency": "AUD",
-      "taxExclusiveAmount": "71.5909",
-      "taxAmount": "7.1591",
-      "payableAmount": "78.7500",
+      "taxExclusiveAmount": "16.5909",
+      "taxAmount": "1.6591",
+      "payableAmount": "18.2500",
       "gstFreeAmount": null,
       "isTaxInvoice": false,
       "docType": "receipt",
-      "category": "Fuel",
+      "category": "Eating out",
       "engineRowId": "personal",
       "reviewStatus": "auto_accepted",
       "confidenceOverall": 0.96,
@@ -23908,13 +30172,22 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
-          "description": "Fuel",
+          "description": "Eating out",
           "quantity": 1,
-          "unitPrice": "78.7500",
-          "amount": "78.7500",
+          "unitPrice": "18.2500",
+          "amount": "18.2500",
           "gstFree": false,
-          "category": "Fuel",
+          "category": "Eating out",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "16.5909",
+          "taxAmount": "1.6591",
+          "inclusiveAmount": "18.2500"
         }
       ],
       "linesBalance": true,
@@ -23929,7 +30202,66 @@ export const DEMO: DemoShape = {
       "imageCapturedAt": "2026-03-04",
       "workspace": "personal",
       "workspaceId": "ws_marsh_household",
-      "capturedByName": "Jem Marsh",
+      "capturedByName": "Kate Marsh",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0218",
+      "supplierName": "Opal top-up",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-03-04",
+      "currency": "AUD",
+      "taxExclusiveAmount": "31.0636",
+      "taxAmount": "3.1064",
+      "payableAmount": "34.1700",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Transport",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": true,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Transport",
+          "quantity": 1,
+          "unitPrice": "34.1700",
+          "amount": "34.1700",
+          "gstFree": false,
+          "category": "Transport",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "31.0636",
+          "taxAmount": "3.1064",
+          "inclusiveAmount": "34.1700"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-03-04",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Kate Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -23967,6 +30299,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "69.6091",
+          "taxAmount": "6.9609",
+          "inclusiveAmount": "76.5700"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -23984,7 +30325,7 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0034",
+      "id": "sub_0035",
       "supplierName": "Netflix",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -24015,6 +30356,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fun",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "17.2636",
+          "taxAmount": "1.7264",
+          "inclusiveAmount": "18.9900"
         }
       ],
       "linesBalance": true,
@@ -24067,6 +30417,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "77.2727",
+          "taxAmount": "7.7273",
+          "inclusiveAmount": "85.0000"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -24115,6 +30474,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Truck cleaning supplies",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "29.6182",
+          "taxAmount": "2.9618",
+          "inclusiveAmount": "32.5800"
         }
       ],
       "linesBalance": true,
@@ -24167,6 +30535,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "210.3455",
+          "taxAmount": "21.0345",
+          "inclusiveAmount": "231.3800"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -24215,6 +30592,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fuel",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "236.5727",
+          "taxAmount": "23.6573",
+          "inclusiveAmount": "260.2300"
         }
       ],
       "linesBalance": true,
@@ -24267,6 +30653,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "51.8000",
+          "taxAmount": "5.1800",
+          "inclusiveAmount": "56.9800"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -24284,7 +30679,125 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0039",
+      "id": "pd_0221",
+      "supplierName": "7-Eleven Redfern",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-03-02",
+      "currency": "AUD",
+      "taxExclusiveAmount": "61.1000",
+      "taxAmount": "6.1100",
+      "payableAmount": "67.2100",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Fuel",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": true,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Fuel",
+          "quantity": 1,
+          "unitPrice": "67.2100",
+          "amount": "67.2100",
+          "gstFree": false,
+          "category": "Fuel",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "61.1000",
+          "taxAmount": "6.1100",
+          "inclusiveAmount": "67.2100"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-03-02",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Jem Marsh",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "pd_0224",
+      "supplierName": "AGL top-up",
+      "supplierAbn": null,
+      "supplierAbnValid": false,
+      "issueDate": "2026-03-02",
+      "currency": "AUD",
+      "taxExclusiveAmount": "251.9818",
+      "taxAmount": "25.1982",
+      "payableAmount": "277.1800",
+      "gstFreeAmount": null,
+      "isTaxInvoice": false,
+      "docType": "receipt",
+      "category": "Bills & utilities",
+      "engineRowId": "personal",
+      "reviewStatus": "auto_accepted",
+      "confidenceOverall": 0.96,
+      "note": null,
+      "complianceFailures": [],
+      "gstAtRisk": null,
+      "belowTaxInvoiceThreshold": false,
+      "findings": [],
+      "lines": [
+        {
+          "lineNumber": 1,
+          "description": "Bills & utilities",
+          "quantity": 1,
+          "unitPrice": "277.1800",
+          "amount": "277.1800",
+          "gstFree": false,
+          "category": "Bills & utilities",
+          "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "251.9818",
+          "taxAmount": "25.1982",
+          "inclusiveAmount": "277.1800"
+        }
+      ],
+      "linesBalance": true,
+      "imageUrl": null,
+      "pages": [
+        {
+          "pageNumber": 1,
+          "imageUrl": "",
+          "source": "capture"
+        }
+      ],
+      "imageCapturedAt": "2026-03-02",
+      "workspace": "personal",
+      "workspaceId": "ws_marsh_household",
+      "capturedByName": "Kate Marsh",
+      "visibility": "shared",
+      "version": 1
+    },
+    {
+      "id": "sub_0040",
       "supplierName": "Anytime Fitness",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -24315,6 +30828,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Health",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "62.7273",
+          "taxAmount": "6.2727",
+          "inclusiveAmount": "69.0000"
         }
       ],
       "linesBalance": true,
@@ -24367,6 +30889,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "219.3455",
+          "taxAmount": "21.9345",
+          "inclusiveAmount": "241.2800"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -24380,56 +30911,6 @@ export const DEMO: DemoShape = {
       "workspace": "business",
       "workspaceId": "ws_marsh_transport",
       "capturedByName": "Sam Oyelaran",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0218",
-      "supplierName": "BP Rosebery",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-03-01",
-      "currency": "AUD",
-      "taxExclusiveAmount": "50.7364",
-      "taxAmount": "5.0736",
-      "payableAmount": "55.8100",
-      "gstFreeAmount": null,
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Fuel",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": true,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Fuel",
-          "quantity": 1,
-          "unitPrice": "55.8100",
-          "amount": "55.8100",
-          "gstFree": false,
-          "category": "Fuel",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-03-01",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Kate Marsh",
       "visibility": "shared",
       "version": 1
     },
@@ -24465,6 +30946,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Accommodation",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "148.0455",
+          "taxAmount": "14.8045",
+          "inclusiveAmount": "162.8500"
         }
       ],
       "linesBalance": true,
@@ -24508,13 +30998,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "52.3300",
+          "amount": "52.3300",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "95.1500",
-          "amount": "95.1500",
+          "unitPrice": "42.8200",
+          "amount": "42.8200",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "38.9273",
+          "taxAmount": "3.8927",
+          "inclusiveAmount": "42.8200"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "52.3300",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "52.3300"
         }
       ],
       "linesBalance": true,
@@ -24567,6 +31083,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "154.0364",
+          "taxAmount": "15.4036",
+          "inclusiveAmount": "169.4400"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -24608,13 +31133,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "9.6600",
+          "amount": "9.6600",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "32.2100",
-          "amount": "32.2100",
+          "unitPrice": "22.5500",
+          "amount": "22.5500",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "20.5000",
+          "taxAmount": "2.0500",
+          "inclusiveAmount": "22.5500"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "9.6600",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "9.6600"
         }
       ],
       "linesBalance": true,
@@ -24658,13 +31209,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "3.3900",
+          "amount": "3.3900",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "11.2900",
-          "amount": "11.2900",
+          "unitPrice": "7.9000",
+          "amount": "7.9000",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "7.1818",
+          "taxAmount": "0.7182",
+          "inclusiveAmount": "7.9000"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "3.3900",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "3.3900"
         }
       ],
       "linesBalance": true,
@@ -24708,13 +31285,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "32.6300",
+          "amount": "32.6300",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "59.3200",
-          "amount": "59.3200",
+          "unitPrice": "26.6900",
+          "amount": "26.6900",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "24.2636",
+          "taxAmount": "2.4264",
+          "inclusiveAmount": "26.6900"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "32.6300",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "32.6300"
         }
       ],
       "linesBalance": true,
@@ -24758,13 +31361,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "22.6300",
+          "amount": "22.6300",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "41.1500",
-          "amount": "41.1500",
+          "unitPrice": "18.5200",
+          "amount": "18.5200",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "16.8364",
+          "taxAmount": "1.6836",
+          "inclusiveAmount": "18.5200"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "22.6300",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "22.6300"
         }
       ],
       "linesBalance": true,
@@ -24817,6 +31446,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "29.8273",
+          "taxAmount": "2.9827",
+          "inclusiveAmount": "32.8100"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -24867,6 +31505,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "78.0636",
+          "taxAmount": "7.8064",
+          "inclusiveAmount": "85.8700"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -24908,13 +31555,32 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
-          "description": "Health",
+          "description": "Health (GST-free)",
           "quantity": 1,
           "unitPrice": "21.2600",
           "amount": "21.2600",
+          "gstFree": true,
+          "category": "Health",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
+          "description": "Health",
+          "quantity": 1,
+          "unitPrice": "0.0000",
+          "amount": "0.0000",
           "gstFree": false,
           "category": "Health",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "21.2600",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "21.2600"
         }
       ],
       "linesBalance": true,
@@ -24967,6 +31633,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "74.7364",
+          "taxAmount": "7.4736",
+          "inclusiveAmount": "82.2100"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -25015,6 +31690,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fuel",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "200.7455",
+          "taxAmount": "20.0745",
+          "inclusiveAmount": "220.8200"
         }
       ],
       "linesBalance": true,
@@ -25067,6 +31751,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "123.3000",
+          "taxAmount": "12.3300",
+          "inclusiveAmount": "135.6300"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -25115,6 +31808,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Tolls",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "387.1182",
+          "taxAmount": "38.7118",
+          "inclusiveAmount": "425.8300"
         }
       ],
       "linesBalance": true,
@@ -25167,6 +31869,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "53.4273",
+          "taxAmount": "5.3427",
+          "inclusiveAmount": "58.7700"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -25215,6 +31926,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Transport",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "35.1818",
+          "taxAmount": "3.5182",
+          "inclusiveAmount": "38.7000"
         }
       ],
       "linesBalance": true,
@@ -25267,6 +31987,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "137.6818",
+          "taxAmount": "13.7682",
+          "inclusiveAmount": "151.4500"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -25317,6 +32046,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "55.7000",
+          "taxAmount": "5.5700",
+          "inclusiveAmount": "61.2700"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -25334,7 +32072,7 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0044",
+      "id": "sub_0045",
       "supplierName": "NRMA Car Insurance",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -25365,6 +32103,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Bills & utilities",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "86.0000",
+          "taxAmount": "8.6000",
+          "inclusiveAmount": "94.6000"
         }
       ],
       "linesBalance": true,
@@ -25408,13 +32155,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "3.5900",
+          "amount": "3.5900",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "11.9800",
-          "amount": "11.9800",
+          "unitPrice": "8.3900",
+          "amount": "8.3900",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "7.6273",
+          "taxAmount": "0.7627",
+          "inclusiveAmount": "8.3900"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "3.5900",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "3.5900"
         }
       ],
       "linesBalance": true,
@@ -25467,6 +32240,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "189.9636",
+          "taxAmount": "18.9964",
+          "inclusiveAmount": "208.9600"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -25517,6 +32299,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "139.2091",
+          "taxAmount": "13.9209",
+          "inclusiveAmount": "153.1300"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -25558,13 +32349,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "5.0500",
+          "amount": "5.0500",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "16.8300",
-          "amount": "16.8300",
+          "unitPrice": "11.7800",
+          "amount": "11.7800",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "10.7091",
+          "taxAmount": "1.0709",
+          "inclusiveAmount": "11.7800"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "5.0500",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "5.0500"
         }
       ],
       "linesBalance": true,
@@ -25608,13 +32425,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "88.2900",
+          "amount": "88.2900",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "160.5200",
-          "amount": "160.5200",
+          "unitPrice": "72.2300",
+          "amount": "72.2300",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "65.6636",
+          "taxAmount": "6.5664",
+          "inclusiveAmount": "72.2300"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "88.2900",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "88.2900"
         }
       ],
       "linesBalance": true,
@@ -25627,56 +32470,6 @@ export const DEMO: DemoShape = {
         }
       ],
       "imageCapturedAt": "2026-02-20",
-      "workspace": "personal",
-      "workspaceId": "ws_marsh_household",
-      "capturedByName": "Kate Marsh",
-      "visibility": "shared",
-      "version": 1
-    },
-    {
-      "id": "pd_0232",
-      "supplierName": "Coles Broadway",
-      "supplierAbn": null,
-      "supplierAbnValid": false,
-      "issueDate": "2026-02-19",
-      "currency": "AUD",
-      "taxExclusiveAmount": "53.5273",
-      "taxAmount": "2.2827",
-      "payableAmount": "55.8100",
-      "gstFreeAmount": "30.7000",
-      "isTaxInvoice": false,
-      "docType": "receipt",
-      "category": "Groceries",
-      "engineRowId": "personal",
-      "reviewStatus": "auto_accepted",
-      "confidenceOverall": 0.96,
-      "note": null,
-      "complianceFailures": [],
-      "gstAtRisk": null,
-      "belowTaxInvoiceThreshold": true,
-      "findings": [],
-      "lines": [
-        {
-          "lineNumber": 1,
-          "description": "Groceries",
-          "quantity": 1,
-          "unitPrice": "55.8100",
-          "amount": "55.8100",
-          "gstFree": false,
-          "category": "Groceries",
-          "confidence": 0.93
-        }
-      ],
-      "linesBalance": true,
-      "imageUrl": null,
-      "pages": [
-        {
-          "pageNumber": 1,
-          "imageUrl": "",
-          "source": "capture"
-        }
-      ],
-      "imageCapturedAt": "2026-02-19",
       "workspace": "personal",
       "workspaceId": "ws_marsh_household",
       "capturedByName": "Kate Marsh",
@@ -25715,6 +32508,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fuel",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "51.1727",
+          "taxAmount": "5.1173",
+          "inclusiveAmount": "56.2900"
         }
       ],
       "linesBalance": true,
@@ -25767,6 +32569,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "62.3182",
+          "taxAmount": "6.2318",
+          "inclusiveAmount": "68.5500"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -25784,7 +32595,7 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0043",
+      "id": "sub_0044",
       "supplierName": "Origin Energy",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -25815,6 +32626,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Bills & utilities",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "129.8182",
+          "taxAmount": "12.9818",
+          "inclusiveAmount": "142.8000"
         }
       ],
       "linesBalance": true,
@@ -25867,6 +32687,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "199.4727",
+          "taxAmount": "19.9473",
+          "inclusiveAmount": "219.4200"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -25908,13 +32737,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "55.8900",
+          "amount": "55.8900",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "101.6100",
-          "amount": "101.6100",
+          "unitPrice": "45.7200",
+          "amount": "45.7200",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "41.5636",
+          "taxAmount": "4.1564",
+          "inclusiveAmount": "45.7200"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "55.8900",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "55.8900"
         }
       ],
       "linesBalance": true,
@@ -25967,6 +32822,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "192.5727",
+          "taxAmount": "19.2573",
+          "inclusiveAmount": "211.8300"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -26015,6 +32879,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fuel",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "134.4364",
+          "taxAmount": "13.4436",
+          "inclusiveAmount": "147.8800"
         }
       ],
       "linesBalance": true,
@@ -26067,6 +32940,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "627.0545",
+          "taxAmount": "62.7055",
+          "inclusiveAmount": "689.7600"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -26115,6 +32997,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Truck cleaning supplies",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "46.6000",
+          "taxAmount": "4.6600",
+          "inclusiveAmount": "51.2600"
         }
       ],
       "linesBalance": true,
@@ -26167,6 +33058,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "60.6273",
+          "taxAmount": "6.0627",
+          "inclusiveAmount": "66.6900"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -26217,6 +33117,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "152.3727",
+          "taxAmount": "15.2373",
+          "inclusiveAmount": "167.6100"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -26258,13 +33167,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "2.5900",
+          "amount": "2.5900",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "8.6400",
-          "amount": "8.6400",
+          "unitPrice": "6.0500",
+          "amount": "6.0500",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "5.5000",
+          "taxAmount": "0.5500",
+          "inclusiveAmount": "6.0500"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "2.5900",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "2.5900"
         }
       ],
       "linesBalance": true,
@@ -26317,6 +33252,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "71.0909",
+          "taxAmount": "7.1091",
+          "inclusiveAmount": "78.2000"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -26367,6 +33311,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "62.8727",
+          "taxAmount": "6.2873",
+          "inclusiveAmount": "69.1600"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -26408,13 +33361,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "3.3400",
+          "amount": "3.3400",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "11.1400",
-          "amount": "11.1400",
+          "unitPrice": "7.8000",
+          "amount": "7.8000",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "7.0909",
+          "taxAmount": "0.7091",
+          "inclusiveAmount": "7.8000"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "3.3400",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "3.3400"
         }
       ],
       "linesBalance": true,
@@ -26467,6 +33446,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "48.3818",
+          "taxAmount": "4.8382",
+          "inclusiveAmount": "53.2200"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -26517,6 +33505,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "71.0818",
+          "taxAmount": "7.1082",
+          "inclusiveAmount": "78.1900"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -26558,13 +33555,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "28.9400",
+          "amount": "28.9400",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "52.6200",
-          "amount": "52.6200",
+          "unitPrice": "23.6800",
+          "amount": "23.6800",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "21.5273",
+          "taxAmount": "2.1527",
+          "inclusiveAmount": "23.6800"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "28.9400",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "28.9400"
         }
       ],
       "linesBalance": true,
@@ -26617,6 +33640,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "114.2364",
+          "taxAmount": "11.4236",
+          "inclusiveAmount": "125.6600"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -26634,7 +33666,7 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0041",
+      "id": "sub_0042",
       "supplierName": "Spotify Premium",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -26665,6 +33697,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fun",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "12.7182",
+          "taxAmount": "1.2718",
+          "inclusiveAmount": "13.9900"
         }
       ],
       "linesBalance": true,
@@ -26708,13 +33749,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "6.9000",
+          "amount": "6.9000",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "22.9900",
-          "amount": "22.9900",
+          "unitPrice": "16.0900",
+          "amount": "16.0900",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "14.6273",
+          "taxAmount": "1.4627",
+          "inclusiveAmount": "16.0900"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "6.9000",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "6.9000"
         }
       ],
       "linesBalance": true,
@@ -26767,6 +33834,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "620.5818",
+          "taxAmount": "62.0582",
+          "inclusiveAmount": "682.6400"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -26808,13 +33884,32 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
-          "description": "Health",
+          "description": "Health (GST-free)",
           "quantity": 1,
           "unitPrice": "82.6300",
           "amount": "82.6300",
+          "gstFree": true,
+          "category": "Health",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
+          "description": "Health",
+          "quantity": 1,
+          "unitPrice": "0.0000",
+          "amount": "0.0000",
           "gstFree": false,
           "category": "Health",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "82.6300",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "82.6300"
         }
       ],
       "linesBalance": true,
@@ -26867,6 +33962,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "150.1818",
+          "taxAmount": "15.0182",
+          "inclusiveAmount": "165.2000"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -26915,6 +34019,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fuel",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "197.9455",
+          "taxAmount": "19.7945",
+          "inclusiveAmount": "217.7400"
         }
       ],
       "linesBalance": true,
@@ -26967,6 +34080,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "1045.2273",
+          "taxAmount": "104.5227",
+          "inclusiveAmount": "1149.7500"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -27015,6 +34137,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Accommodation",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "121.2000",
+          "taxAmount": "12.1200",
+          "inclusiveAmount": "133.3200"
         }
       ],
       "linesBalance": true,
@@ -27067,6 +34198,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "115.7273",
+          "taxAmount": "11.5727",
+          "inclusiveAmount": "127.3000"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -27115,6 +34255,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fun",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "30.4182",
+          "taxAmount": "3.0418",
+          "inclusiveAmount": "33.4600"
         }
       ],
       "linesBalance": true,
@@ -27167,6 +34316,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "72.3182",
+          "taxAmount": "7.2318",
+          "inclusiveAmount": "79.5500"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -27184,7 +34342,7 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0042",
+      "id": "sub_0043",
       "supplierName": "Telstra",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -27215,6 +34373,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Bills & utilities",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "77.2727",
+          "taxAmount": "7.7273",
+          "inclusiveAmount": "85.0000"
         }
       ],
       "linesBalance": true,
@@ -27267,6 +34434,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "156.3636",
+          "taxAmount": "15.6364",
+          "inclusiveAmount": "172.0000"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -27308,13 +34484,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "2.9500",
+          "amount": "2.9500",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "9.8400",
-          "amount": "9.8400",
+          "unitPrice": "6.8900",
+          "amount": "6.8900",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "6.2636",
+          "taxAmount": "0.6264",
+          "inclusiveAmount": "6.8900"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "2.9500",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "2.9500"
         }
       ],
       "linesBalance": true,
@@ -27367,6 +34569,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "54.9909",
+          "taxAmount": "5.4991",
+          "inclusiveAmount": "60.4900"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -27415,6 +34626,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Bills & utilities",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "151.9818",
+          "taxAmount": "15.1982",
+          "inclusiveAmount": "167.1800"
         }
       ],
       "linesBalance": true,
@@ -27467,6 +34687,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "86.2545",
+          "taxAmount": "8.6255",
+          "inclusiveAmount": "94.8800"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -27508,13 +34737,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "18.0300",
+          "amount": "18.0300",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "32.7900",
-          "amount": "32.7900",
+          "unitPrice": "14.7600",
+          "amount": "14.7600",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "13.4182",
+          "taxAmount": "1.3418",
+          "inclusiveAmount": "14.7600"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "18.0300",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "18.0300"
         }
       ],
       "linesBalance": true,
@@ -27567,6 +34822,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "237.3727",
+          "taxAmount": "23.7373",
+          "inclusiveAmount": "261.1100"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -27584,7 +34848,7 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0040",
+      "id": "sub_0041",
       "supplierName": "Netflix",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -27615,6 +34879,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fun",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "17.2636",
+          "taxAmount": "1.7264",
+          "inclusiveAmount": "18.9900"
         }
       ],
       "linesBalance": true,
@@ -27658,13 +34931,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "54.2000",
+          "amount": "54.2000",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "98.5500",
-          "amount": "98.5500",
+          "unitPrice": "44.3500",
+          "amount": "44.3500",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "40.3182",
+          "taxAmount": "4.0318",
+          "inclusiveAmount": "44.3500"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "54.2000",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "54.2000"
         }
       ],
       "linesBalance": true,
@@ -27717,6 +35016,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "61.7727",
+          "taxAmount": "6.1773",
+          "inclusiveAmount": "67.9500"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -27765,6 +35073,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Transport",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "36.5545",
+          "taxAmount": "3.6555",
+          "inclusiveAmount": "40.2100"
         }
       ],
       "linesBalance": true,
@@ -27817,6 +35134,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "145.2818",
+          "taxAmount": "14.5282",
+          "inclusiveAmount": "159.8100"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -27858,13 +35184,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "3.0200",
+          "amount": "3.0200",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "10.0600",
-          "amount": "10.0600",
+          "unitPrice": "7.0400",
+          "amount": "7.0400",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "6.4000",
+          "taxAmount": "0.6400",
+          "inclusiveAmount": "7.0400"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "3.0200",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "3.0200"
         }
       ],
       "linesBalance": true,
@@ -27884,7 +35236,7 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0045",
+      "id": "sub_0046",
       "supplierName": "Anytime Fitness",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -27915,6 +35267,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Health",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "62.7273",
+          "taxAmount": "6.2727",
+          "inclusiveAmount": "69.0000"
         }
       ],
       "linesBalance": true,
@@ -27967,6 +35328,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "217.0182",
+          "taxAmount": "21.7018",
+          "inclusiveAmount": "238.7200"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -28017,6 +35387,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "1035.7000",
+          "taxAmount": "103.5700",
+          "inclusiveAmount": "1139.2700"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -28058,13 +35437,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "5.6000",
+          "amount": "5.6000",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "18.6800",
-          "amount": "18.6800",
+          "unitPrice": "13.0800",
+          "amount": "13.0800",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "11.8909",
+          "taxAmount": "1.1891",
+          "inclusiveAmount": "13.0800"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "5.6000",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "5.6000"
         }
       ],
       "linesBalance": true,
@@ -28117,6 +35522,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "41.1000",
+          "taxAmount": "4.1100",
+          "inclusiveAmount": "45.2100"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -28165,6 +35579,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Truck parts & maintenance",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "1005.6636",
+          "taxAmount": "100.5664",
+          "inclusiveAmount": "1106.2300"
         }
       ],
       "linesBalance": true,
@@ -28217,6 +35640,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "184.0545",
+          "taxAmount": "18.4055",
+          "inclusiveAmount": "202.4600"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -28258,13 +35690,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "8.2700",
+          "amount": "8.2700",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "27.5800",
-          "amount": "27.5800",
+          "unitPrice": "19.3100",
+          "amount": "19.3100",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "17.5545",
+          "taxAmount": "1.7555",
+          "inclusiveAmount": "19.3100"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "8.2700",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "8.2700"
         }
       ],
       "linesBalance": true,
@@ -28317,6 +35775,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "15.7818",
+          "taxAmount": "1.5782",
+          "inclusiveAmount": "17.3600"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -28367,6 +35834,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "164.2091",
+          "taxAmount": "16.4209",
+          "inclusiveAmount": "180.6300"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -28408,13 +35884,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "53.8200",
+          "amount": "53.8200",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "97.8500",
-          "amount": "97.8500",
+          "unitPrice": "44.0300",
+          "amount": "44.0300",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "40.0273",
+          "taxAmount": "4.0027",
+          "inclusiveAmount": "44.0300"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "53.8200",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "53.8200"
         }
       ],
       "linesBalance": true,
@@ -28467,6 +35969,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "111.6091",
+          "taxAmount": "11.1609",
+          "inclusiveAmount": "122.7700"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -28517,6 +36028,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "116.9636",
+          "taxAmount": "11.6964",
+          "inclusiveAmount": "128.6600"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -28558,13 +36078,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "82.2300",
+          "amount": "82.2300",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "149.5000",
-          "amount": "149.5000",
+          "unitPrice": "67.2700",
+          "amount": "67.2700",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "61.1545",
+          "taxAmount": "6.1155",
+          "inclusiveAmount": "67.2700"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "82.2300",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "82.2300"
         }
       ],
       "linesBalance": true,
@@ -28617,6 +36163,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "113.8727",
+          "taxAmount": "11.3873",
+          "inclusiveAmount": "125.2600"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -28667,6 +36222,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "26.8727",
+          "taxAmount": "2.6873",
+          "inclusiveAmount": "29.5600"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -28684,7 +36248,7 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0050",
+      "id": "sub_0051",
       "supplierName": "NRMA Car Insurance",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -28715,6 +36279,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Bills & utilities",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "86.0000",
+          "taxAmount": "8.6000",
+          "inclusiveAmount": "94.6000"
         }
       ],
       "linesBalance": true,
@@ -28767,6 +36340,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "70.8909",
+          "taxAmount": "7.0891",
+          "inclusiveAmount": "77.9800"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -28808,13 +36390,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "49.9800",
+          "amount": "49.9800",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "90.8700",
-          "amount": "90.8700",
+          "unitPrice": "40.8900",
+          "amount": "40.8900",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "37.1727",
+          "taxAmount": "3.7173",
+          "inclusiveAmount": "40.8900"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "49.9800",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "49.9800"
         }
       ],
       "linesBalance": true,
@@ -28858,13 +36466,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "40.6000",
+          "amount": "40.6000",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "73.8100",
-          "amount": "73.8100",
+          "unitPrice": "33.2100",
+          "amount": "33.2100",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "30.1909",
+          "taxAmount": "3.0191",
+          "inclusiveAmount": "33.2100"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "40.6000",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "40.6000"
         }
       ],
       "linesBalance": true,
@@ -28908,13 +36542,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "62.2100",
+          "amount": "62.2100",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "113.1100",
-          "amount": "113.1100",
+          "unitPrice": "50.9000",
+          "amount": "50.9000",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "46.2727",
+          "taxAmount": "4.6273",
+          "inclusiveAmount": "50.9000"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "62.2100",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "62.2100"
         }
       ],
       "linesBalance": true,
@@ -28967,6 +36627,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "17.0636",
+          "taxAmount": "1.7064",
+          "inclusiveAmount": "18.7700"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -29015,6 +36684,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Home",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "151.4273",
+          "taxAmount": "15.1427",
+          "inclusiveAmount": "166.5700"
         }
       ],
       "linesBalance": true,
@@ -29067,6 +36745,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "106.9091",
+          "taxAmount": "10.6909",
+          "inclusiveAmount": "117.6000"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -29108,13 +36795,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "75.5600",
+          "amount": "75.5600",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "137.3900",
-          "amount": "137.3900",
+          "unitPrice": "61.8300",
+          "amount": "61.8300",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "56.2091",
+          "taxAmount": "5.6209",
+          "inclusiveAmount": "61.8300"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "75.5600",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "75.5600"
         }
       ],
       "linesBalance": true,
@@ -29158,13 +36871,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "11.7300",
+          "amount": "11.7300",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "39.1000",
-          "amount": "39.1000",
+          "unitPrice": "27.3700",
+          "amount": "27.3700",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "24.8818",
+          "taxAmount": "2.4882",
+          "inclusiveAmount": "27.3700"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "11.7300",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "11.7300"
         }
       ],
       "linesBalance": true,
@@ -29208,13 +36947,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "8.5600",
+          "amount": "8.5600",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "28.5300",
-          "amount": "28.5300",
+          "unitPrice": "19.9700",
+          "amount": "19.9700",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "18.1545",
+          "taxAmount": "1.8155",
+          "inclusiveAmount": "19.9700"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "8.5600",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "8.5600"
         }
       ],
       "linesBalance": true,
@@ -29258,13 +37023,32 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
-          "description": "Health",
+          "description": "Health (GST-free)",
           "quantity": 1,
           "unitPrice": "159.3000",
           "amount": "159.3000",
+          "gstFree": true,
+          "category": "Health",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
+          "description": "Health",
+          "quantity": 1,
+          "unitPrice": "0.0000",
+          "amount": "0.0000",
           "gstFree": false,
           "category": "Health",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "159.3000",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "159.3000"
         }
       ],
       "linesBalance": true,
@@ -29317,6 +37101,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "112.1909",
+          "taxAmount": "11.2191",
+          "inclusiveAmount": "123.4100"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -29365,6 +37158,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Transport",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "19.3455",
+          "taxAmount": "1.9345",
+          "inclusiveAmount": "21.2800"
         }
       ],
       "linesBalance": true,
@@ -29417,6 +37219,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "34.3818",
+          "taxAmount": "3.4382",
+          "inclusiveAmount": "37.8200"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -29434,7 +37245,7 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0049",
+      "id": "sub_0050",
       "supplierName": "Origin Energy",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -29465,6 +37276,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Bills & utilities",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "129.8182",
+          "taxAmount": "12.9818",
+          "inclusiveAmount": "142.8000"
         }
       ],
       "linesBalance": true,
@@ -29508,13 +37328,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "6.6400",
+          "amount": "6.6400",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "22.1400",
-          "amount": "22.1400",
+          "unitPrice": "15.5000",
+          "amount": "15.5000",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "14.0909",
+          "taxAmount": "1.4091",
+          "inclusiveAmount": "15.5000"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "6.6400",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "6.6400"
         }
       ],
       "linesBalance": true,
@@ -29567,6 +37413,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "120.0182",
+          "taxAmount": "12.0018",
+          "inclusiveAmount": "132.0200"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -29615,6 +37470,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Transport",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "46.6182",
+          "taxAmount": "4.6618",
+          "inclusiveAmount": "51.2800"
         }
       ],
       "linesBalance": true,
@@ -29667,6 +37531,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "37.7273",
+          "taxAmount": "3.7727",
+          "inclusiveAmount": "41.5000"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -29708,13 +37581,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "4.2400",
+          "amount": "4.2400",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "14.1300",
-          "amount": "14.1300",
+          "unitPrice": "9.8900",
+          "amount": "9.8900",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "8.9909",
+          "taxAmount": "0.8991",
+          "inclusiveAmount": "9.8900"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "4.2400",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "4.2400"
         }
       ],
       "linesBalance": true,
@@ -29767,6 +37666,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "36.5364",
+          "taxAmount": "3.6536",
+          "inclusiveAmount": "40.1900"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -29815,6 +37723,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Transport",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "26.7364",
+          "taxAmount": "2.6736",
+          "inclusiveAmount": "29.4100"
         }
       ],
       "linesBalance": true,
@@ -29867,6 +37784,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "18.7818",
+          "taxAmount": "1.8782",
+          "inclusiveAmount": "20.6600"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -29908,13 +37834,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "41.6100",
+          "amount": "41.6100",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "75.6500",
-          "amount": "75.6500",
+          "unitPrice": "34.0400",
+          "amount": "34.0400",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "30.9455",
+          "taxAmount": "3.0945",
+          "inclusiveAmount": "34.0400"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "41.6100",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "41.6100"
         }
       ],
       "linesBalance": true,
@@ -29967,6 +37919,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "58.7182",
+          "taxAmount": "5.8718",
+          "inclusiveAmount": "64.5900"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -30015,6 +37976,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Transport",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "7.6909",
+          "taxAmount": "0.7691",
+          "inclusiveAmount": "8.4600"
         }
       ],
       "linesBalance": true,
@@ -30067,6 +38037,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "171.0091",
+          "taxAmount": "17.1009",
+          "inclusiveAmount": "188.1100"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -30117,6 +38096,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "253.9545",
+          "taxAmount": "25.3955",
+          "inclusiveAmount": "279.3500"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -30158,13 +38146,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "3.9100",
+          "amount": "3.9100",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "13.0200",
-          "amount": "13.0200",
+          "unitPrice": "9.1100",
+          "amount": "9.1100",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "8.2818",
+          "taxAmount": "0.8282",
+          "inclusiveAmount": "9.1100"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "3.9100",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "3.9100"
         }
       ],
       "linesBalance": true,
@@ -30217,6 +38231,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "66.5636",
+          "taxAmount": "6.6564",
+          "inclusiveAmount": "73.2200"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -30258,13 +38281,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "35.3500",
+          "amount": "35.3500",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "64.2700",
-          "amount": "64.2700",
+          "unitPrice": "28.9200",
+          "amount": "28.9200",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "26.2909",
+          "taxAmount": "2.6291",
+          "inclusiveAmount": "28.9200"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "35.3500",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "35.3500"
         }
       ],
       "linesBalance": true,
@@ -30308,13 +38357,32 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
-          "description": "Health",
+          "description": "Health (GST-free)",
           "quantity": 1,
           "unitPrice": "64.3400",
           "amount": "64.3400",
+          "gstFree": true,
+          "category": "Health",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
+          "description": "Health",
+          "quantity": 1,
+          "unitPrice": "0.0000",
+          "amount": "0.0000",
           "gstFree": false,
           "category": "Health",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "64.3400",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "64.3400"
         }
       ],
       "linesBalance": true,
@@ -30334,7 +38402,7 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0047",
+      "id": "sub_0048",
       "supplierName": "Spotify Premium",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -30365,6 +38433,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fun",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "12.7182",
+          "taxAmount": "1.2718",
+          "inclusiveAmount": "13.9900"
         }
       ],
       "linesBalance": true,
@@ -30417,6 +38494,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "117.2636",
+          "taxAmount": "11.7264",
+          "inclusiveAmount": "128.9900"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -30465,6 +38551,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fun",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "20.6000",
+          "taxAmount": "2.0600",
+          "inclusiveAmount": "22.6600"
         }
       ],
       "linesBalance": true,
@@ -30517,6 +38612,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "439.5909",
+          "taxAmount": "43.9591",
+          "inclusiveAmount": "483.5500"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -30565,6 +38669,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Truck parts & maintenance",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "302.0636",
+          "taxAmount": "30.2064",
+          "inclusiveAmount": "332.2700"
         }
       ],
       "linesBalance": true,
@@ -30617,6 +38730,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "232.4818",
+          "taxAmount": "23.2482",
+          "inclusiveAmount": "255.7300"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -30665,6 +38787,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Home",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "105.0818",
+          "taxAmount": "10.5082",
+          "inclusiveAmount": "115.5900"
         }
       ],
       "linesBalance": true,
@@ -30717,6 +38848,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "12.0727",
+          "taxAmount": "1.2073",
+          "inclusiveAmount": "13.2800"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -30734,7 +38874,7 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0048",
+      "id": "sub_0049",
       "supplierName": "Telstra",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -30765,6 +38905,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Bills & utilities",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "77.2727",
+          "taxAmount": "7.7273",
+          "inclusiveAmount": "85.0000"
         }
       ],
       "linesBalance": true,
@@ -30808,13 +38957,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "15.6600",
+          "amount": "15.6600",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "28.4700",
-          "amount": "28.4700",
+          "unitPrice": "12.8100",
+          "amount": "12.8100",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "11.6455",
+          "taxAmount": "1.1645",
+          "inclusiveAmount": "12.8100"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "15.6600",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "15.6600"
         }
       ],
       "linesBalance": true,
@@ -30858,13 +39033,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "41.2800",
+          "amount": "41.2800",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "75.0500",
-          "amount": "75.0500",
+          "unitPrice": "33.7700",
+          "amount": "33.7700",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "30.7000",
+          "taxAmount": "3.0700",
+          "inclusiveAmount": "33.7700"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "41.2800",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "41.2800"
         }
       ],
       "linesBalance": true,
@@ -30917,6 +39118,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "79.2818",
+          "taxAmount": "7.9282",
+          "inclusiveAmount": "87.2100"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -30965,6 +39175,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Bills & utilities",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "137.3727",
+          "taxAmount": "13.7373",
+          "inclusiveAmount": "151.1100"
         }
       ],
       "linesBalance": true,
@@ -31017,6 +39236,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "132.6364",
+          "taxAmount": "13.2636",
+          "inclusiveAmount": "145.9000"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -31058,13 +39286,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "3.4100",
+          "amount": "3.4100",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "11.3600",
-          "amount": "11.3600",
+          "unitPrice": "7.9500",
+          "amount": "7.9500",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "7.2273",
+          "taxAmount": "0.7227",
+          "inclusiveAmount": "7.9500"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "3.4100",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "3.4100"
         }
       ],
       "linesBalance": true,
@@ -31108,13 +39362,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "6.5500",
+          "amount": "6.5500",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "21.8300",
-          "amount": "21.8300",
+          "unitPrice": "15.2800",
+          "amount": "15.2800",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "13.8909",
+          "taxAmount": "1.3891",
+          "inclusiveAmount": "15.2800"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "6.5500",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "6.5500"
         }
       ],
       "linesBalance": true,
@@ -31167,6 +39447,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "581.0818",
+          "taxAmount": "58.1082",
+          "inclusiveAmount": "639.1900"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -31215,6 +39504,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fuel",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "56.4182",
+          "taxAmount": "5.6418",
+          "inclusiveAmount": "62.0600"
         }
       ],
       "linesBalance": true,
@@ -31267,6 +39565,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "16.3091",
+          "taxAmount": "1.6309",
+          "inclusiveAmount": "17.9400"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -31315,6 +39622,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Tolls",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "244.6818",
+          "taxAmount": "24.4682",
+          "inclusiveAmount": "269.1500"
         }
       ],
       "linesBalance": true,
@@ -31367,6 +39683,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "40.9727",
+          "taxAmount": "4.0973",
+          "inclusiveAmount": "45.0700"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -31408,13 +39733,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "68.1000",
+          "amount": "68.1000",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "123.8200",
-          "amount": "123.8200",
+          "unitPrice": "55.7200",
+          "amount": "55.7200",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "50.6545",
+          "taxAmount": "5.0655",
+          "inclusiveAmount": "55.7200"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "68.1000",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "68.1000"
         }
       ],
       "linesBalance": true,
@@ -31434,7 +39785,7 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0046",
+      "id": "sub_0047",
       "supplierName": "Netflix",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -31465,6 +39816,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fun",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "17.2636",
+          "taxAmount": "1.7264",
+          "inclusiveAmount": "18.9900"
         }
       ],
       "linesBalance": true,
@@ -31517,6 +39877,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "98.2818",
+          "taxAmount": "9.8282",
+          "inclusiveAmount": "108.1100"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -31567,6 +39936,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "74.9182",
+          "taxAmount": "7.4918",
+          "inclusiveAmount": "82.4100"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -31584,7 +39962,7 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0051",
+      "id": "sub_0052",
       "supplierName": "Anytime Fitness",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -31615,6 +39993,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Health",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "62.7273",
+          "taxAmount": "6.2727",
+          "inclusiveAmount": "69.0000"
         }
       ],
       "linesBalance": true,
@@ -31667,6 +40054,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "132.4273",
+          "taxAmount": "13.2427",
+          "inclusiveAmount": "145.6700"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -31715,6 +40111,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Eating out",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "33.5182",
+          "taxAmount": "3.3518",
+          "inclusiveAmount": "36.8700"
         }
       ],
       "linesBalance": true,
@@ -31767,6 +40172,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "48.8000",
+          "taxAmount": "4.8800",
+          "inclusiveAmount": "53.6800"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -31815,6 +40229,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fuel",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "68.9909",
+          "taxAmount": "6.8991",
+          "inclusiveAmount": "75.8900"
         }
       ],
       "linesBalance": true,
@@ -31867,6 +40290,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "111.2909",
+          "taxAmount": "11.1291",
+          "inclusiveAmount": "122.4200"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -31908,13 +40340,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "26.9900",
+          "amount": "26.9900",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "49.0700",
-          "amount": "49.0700",
+          "unitPrice": "22.0800",
+          "amount": "22.0800",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "20.0727",
+          "taxAmount": "2.0073",
+          "inclusiveAmount": "22.0800"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "26.9900",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "26.9900"
         }
       ],
       "linesBalance": true,
@@ -31967,6 +40425,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "63.9636",
+          "taxAmount": "6.3964",
+          "inclusiveAmount": "70.3600"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -32015,6 +40482,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Bills & utilities",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "145.3091",
+          "taxAmount": "14.5309",
+          "inclusiveAmount": "159.8400"
         }
       ],
       "linesBalance": true,
@@ -32067,6 +40543,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "336.8636",
+          "taxAmount": "33.6864",
+          "inclusiveAmount": "370.5500"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -32115,6 +40600,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Eating out",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "38.3000",
+          "taxAmount": "3.8300",
+          "inclusiveAmount": "42.1300"
         }
       ],
       "linesBalance": true,
@@ -32167,6 +40661,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "14.5727",
+          "taxAmount": "1.4573",
+          "inclusiveAmount": "16.0300"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -32208,13 +40711,32 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
-          "description": "Health",
+          "description": "Health (GST-free)",
           "quantity": 1,
           "unitPrice": "170.7900",
           "amount": "170.7900",
+          "gstFree": true,
+          "category": "Health",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
+          "description": "Health",
+          "quantity": 1,
+          "unitPrice": "0.0000",
+          "amount": "0.0000",
           "gstFree": false,
           "category": "Health",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "170.7900",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "170.7900"
         }
       ],
       "linesBalance": true,
@@ -32267,6 +40789,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "114.8636",
+          "taxAmount": "11.4864",
+          "inclusiveAmount": "126.3500"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -32308,13 +40839,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "9.5800",
+          "amount": "9.5800",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "31.9500",
-          "amount": "31.9500",
+          "unitPrice": "22.3700",
+          "amount": "22.3700",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "20.3364",
+          "taxAmount": "2.0336",
+          "inclusiveAmount": "22.3700"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "9.5800",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "9.5800"
         }
       ],
       "linesBalance": true,
@@ -32367,6 +40924,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "125.2636",
+          "taxAmount": "12.5264",
+          "inclusiveAmount": "137.7900"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -32415,6 +40981,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Truck cleaning supplies",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "55.1545",
+          "taxAmount": "5.5155",
+          "inclusiveAmount": "60.6700"
         }
       ],
       "linesBalance": true,
@@ -32467,6 +41042,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "19.2182",
+          "taxAmount": "1.9218",
+          "inclusiveAmount": "21.1400"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -32517,6 +41101,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "25.4545",
+          "taxAmount": "2.5455",
+          "inclusiveAmount": "28.0000"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -32558,13 +41151,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "3.4300",
+          "amount": "3.4300",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "11.4200",
-          "amount": "11.4200",
+          "unitPrice": "7.9900",
+          "amount": "7.9900",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "7.2636",
+          "taxAmount": "0.7264",
+          "inclusiveAmount": "7.9900"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "3.4300",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "3.4300"
         }
       ],
       "linesBalance": true,
@@ -32608,13 +41227,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "73.1100",
+          "amount": "73.1100",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "132.9200",
-          "amount": "132.9200",
+          "unitPrice": "59.8100",
+          "amount": "59.8100",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "54.3727",
+          "taxAmount": "5.4373",
+          "inclusiveAmount": "59.8100"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "73.1100",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "73.1100"
         }
       ],
       "linesBalance": true,
@@ -32667,6 +41312,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "41.9455",
+          "taxAmount": "4.1945",
+          "inclusiveAmount": "46.1400"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -32717,6 +41371,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "119.8909",
+          "taxAmount": "11.9891",
+          "inclusiveAmount": "131.8800"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -32758,13 +41421,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "82.2400",
+          "amount": "82.2400",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "149.5200",
-          "amount": "149.5200",
+          "unitPrice": "67.2800",
+          "amount": "67.2800",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "61.1636",
+          "taxAmount": "6.1164",
+          "inclusiveAmount": "67.2800"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "82.2400",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "82.2400"
         }
       ],
       "linesBalance": true,
@@ -32808,13 +41497,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "6.6600",
+          "amount": "6.6600",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "22.2000",
-          "amount": "22.2000",
+          "unitPrice": "15.5400",
+          "amount": "15.5400",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "14.1273",
+          "taxAmount": "1.4127",
+          "inclusiveAmount": "15.5400"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "6.6600",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "6.6600"
         }
       ],
       "linesBalance": true,
@@ -32867,6 +41582,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "122.1636",
+          "taxAmount": "12.2164",
+          "inclusiveAmount": "134.3800"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -32908,13 +41632,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "77.0700",
+          "amount": "77.0700",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "140.1200",
-          "amount": "140.1200",
+          "unitPrice": "63.0500",
+          "amount": "63.0500",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "57.3182",
+          "taxAmount": "5.7318",
+          "inclusiveAmount": "63.0500"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "77.0700",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "77.0700"
         }
       ],
       "linesBalance": true,
@@ -32934,7 +41684,7 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0056",
+      "id": "sub_0057",
       "supplierName": "NRMA Car Insurance",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -32965,6 +41715,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Bills & utilities",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "86.0000",
+          "taxAmount": "8.6000",
+          "inclusiveAmount": "94.6000"
         }
       ],
       "linesBalance": true,
@@ -33008,13 +41767,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "3.9600",
+          "amount": "3.9600",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "13.1900",
-          "amount": "13.1900",
+          "unitPrice": "9.2300",
+          "amount": "9.2300",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "8.3909",
+          "taxAmount": "0.8391",
+          "inclusiveAmount": "9.2300"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "3.9600",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "3.9600"
         }
       ],
       "linesBalance": true,
@@ -33067,6 +41852,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "52.1636",
+          "taxAmount": "5.2164",
+          "inclusiveAmount": "57.3800"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -33115,6 +41909,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fuel",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "66.4273",
+          "taxAmount": "6.6427",
+          "inclusiveAmount": "73.0700"
         }
       ],
       "linesBalance": true,
@@ -33167,6 +41970,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "64.3273",
+          "taxAmount": "6.4327",
+          "inclusiveAmount": "70.7600"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -33208,13 +42020,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "54.8100",
+          "amount": "54.8100",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "99.6500",
-          "amount": "99.6500",
+          "unitPrice": "44.8400",
+          "amount": "44.8400",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "40.7636",
+          "taxAmount": "4.0764",
+          "inclusiveAmount": "44.8400"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "54.8100",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "54.8100"
         }
       ],
       "linesBalance": true,
@@ -33258,13 +42096,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "10.2800",
+          "amount": "10.2800",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "34.2600",
-          "amount": "34.2600",
+          "unitPrice": "23.9800",
+          "amount": "23.9800",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "21.8000",
+          "taxAmount": "2.1800",
+          "inclusiveAmount": "23.9800"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "10.2800",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "10.2800"
         }
       ],
       "linesBalance": true,
@@ -33317,6 +42181,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "120.5273",
+          "taxAmount": "12.0527",
+          "inclusiveAmount": "132.5800"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -33334,7 +42207,7 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0055",
+      "id": "sub_0056",
       "supplierName": "Origin Energy",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -33365,6 +42238,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Bills & utilities",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "129.8182",
+          "taxAmount": "12.9818",
+          "inclusiveAmount": "142.8000"
         }
       ],
       "linesBalance": true,
@@ -33417,6 +42299,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "322.4909",
+          "taxAmount": "32.2491",
+          "inclusiveAmount": "354.7400"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -33465,6 +42356,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Transport",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "44.0636",
+          "taxAmount": "4.4064",
+          "inclusiveAmount": "48.4700"
         }
       ],
       "linesBalance": true,
@@ -33517,6 +42417,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "128.3909",
+          "taxAmount": "12.8391",
+          "inclusiveAmount": "141.2300"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -33565,6 +42474,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Transport",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "14.1000",
+          "taxAmount": "1.4100",
+          "inclusiveAmount": "15.5100"
         }
       ],
       "linesBalance": true,
@@ -33617,6 +42535,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "56.7909",
+          "taxAmount": "5.6791",
+          "inclusiveAmount": "62.4700"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -33665,6 +42592,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fuel",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "195.9000",
+          "taxAmount": "19.5900",
+          "inclusiveAmount": "215.4900"
         }
       ],
       "linesBalance": true,
@@ -33717,6 +42653,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "122.8727",
+          "taxAmount": "12.2873",
+          "inclusiveAmount": "135.1600"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -33758,13 +42703,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "7.5300",
+          "amount": "7.5300",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "25.1000",
-          "amount": "25.1000",
+          "unitPrice": "17.5700",
+          "amount": "17.5700",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "15.9727",
+          "taxAmount": "1.5973",
+          "inclusiveAmount": "17.5700"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "7.5300",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "7.5300"
         }
       ],
       "linesBalance": true,
@@ -33817,6 +42788,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "178.3818",
+          "taxAmount": "17.8382",
+          "inclusiveAmount": "196.2200"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -33865,6 +42845,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fuel",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "123.0182",
+          "taxAmount": "12.3018",
+          "inclusiveAmount": "135.3200"
         }
       ],
       "linesBalance": true,
@@ -33917,6 +42906,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "94.5909",
+          "taxAmount": "9.4591",
+          "inclusiveAmount": "104.0500"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -33965,6 +42963,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Truck parts & maintenance",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "782.2727",
+          "taxAmount": "78.2273",
+          "inclusiveAmount": "860.5000"
         }
       ],
       "linesBalance": true,
@@ -34017,6 +43024,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "64.9091",
+          "taxAmount": "6.4909",
+          "inclusiveAmount": "71.4000"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -34058,13 +43074,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "69.6500",
+          "amount": "69.6500",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "126.6400",
-          "amount": "126.6400",
+          "unitPrice": "56.9900",
+          "amount": "56.9900",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "51.8091",
+          "taxAmount": "5.1809",
+          "inclusiveAmount": "56.9900"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "69.6500",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "69.6500"
         }
       ],
       "linesBalance": true,
@@ -34117,6 +43159,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "70.1727",
+          "taxAmount": "7.0173",
+          "inclusiveAmount": "77.1900"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -34134,7 +43185,7 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0053",
+      "id": "sub_0054",
       "supplierName": "Spotify Premium",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -34165,6 +43216,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fun",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "12.7182",
+          "taxAmount": "1.2718",
+          "inclusiveAmount": "13.9900"
         }
       ],
       "linesBalance": true,
@@ -34217,6 +43277,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "59.5545",
+          "taxAmount": "5.9555",
+          "inclusiveAmount": "65.5100"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -34265,6 +43334,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fuel",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "145.0000",
+          "taxAmount": "14.5000",
+          "inclusiveAmount": "159.5000"
         }
       ],
       "linesBalance": true,
@@ -34317,6 +43395,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "50.3182",
+          "taxAmount": "5.0318",
+          "inclusiveAmount": "55.3500"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -34367,6 +43454,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "86.3273",
+          "taxAmount": "8.6327",
+          "inclusiveAmount": "94.9600"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -34408,13 +43504,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "6.9800",
+          "amount": "6.9800",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "23.2800",
-          "amount": "23.2800",
+          "unitPrice": "16.3000",
+          "amount": "16.3000",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "14.8182",
+          "taxAmount": "1.4818",
+          "inclusiveAmount": "16.3000"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "6.9800",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "6.9800"
         }
       ],
       "linesBalance": true,
@@ -34458,13 +43580,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "11.0700",
+          "amount": "11.0700",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "36.9000",
-          "amount": "36.9000",
+          "unitPrice": "25.8300",
+          "amount": "25.8300",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "23.4818",
+          "taxAmount": "2.3482",
+          "inclusiveAmount": "25.8300"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "11.0700",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "11.0700"
         }
       ],
       "linesBalance": true,
@@ -34508,13 +43656,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "9.1300",
+          "amount": "9.1300",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "30.4400",
-          "amount": "30.4400",
+          "unitPrice": "21.3100",
+          "amount": "21.3100",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "19.3727",
+          "taxAmount": "1.9373",
+          "inclusiveAmount": "21.3100"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "9.1300",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "9.1300"
         }
       ],
       "linesBalance": true,
@@ -34558,13 +43732,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "67.8100",
+          "amount": "67.8100",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "123.2900",
-          "amount": "123.2900",
+          "unitPrice": "55.4800",
+          "amount": "55.4800",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "50.4364",
+          "taxAmount": "5.0436",
+          "inclusiveAmount": "55.4800"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "67.8100",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "67.8100"
         }
       ],
       "linesBalance": true,
@@ -34617,6 +43817,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "19.5000",
+          "taxAmount": "1.9500",
+          "inclusiveAmount": "21.4500"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -34634,7 +43843,7 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0054",
+      "id": "sub_0055",
       "supplierName": "Telstra",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -34665,6 +43874,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Bills & utilities",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "77.2727",
+          "taxAmount": "7.7273",
+          "inclusiveAmount": "85.0000"
         }
       ],
       "linesBalance": true,
@@ -34717,6 +43935,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "134.4455",
+          "taxAmount": "13.4445",
+          "inclusiveAmount": "147.8900"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -34765,6 +43992,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fuel",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "190.2909",
+          "taxAmount": "19.0291",
+          "inclusiveAmount": "209.3200"
         }
       ],
       "linesBalance": true,
@@ -34817,6 +44053,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "145.0364",
+          "taxAmount": "14.5036",
+          "inclusiveAmount": "159.5400"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -34865,6 +44110,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fuel",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "124.2818",
+          "taxAmount": "12.4282",
+          "inclusiveAmount": "136.7100"
         }
       ],
       "linesBalance": true,
@@ -34917,6 +44171,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "123.8182",
+          "taxAmount": "12.3818",
+          "inclusiveAmount": "136.2000"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -34965,6 +44228,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Transport",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "14.6091",
+          "taxAmount": "1.4609",
+          "inclusiveAmount": "16.0700"
         }
       ],
       "linesBalance": true,
@@ -35017,6 +44289,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "176.8909",
+          "taxAmount": "17.6891",
+          "inclusiveAmount": "194.5800"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -35065,6 +44346,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Accommodation",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "101.6273",
+          "taxAmount": "10.1627",
+          "inclusiveAmount": "111.7900"
         }
       ],
       "linesBalance": true,
@@ -35117,6 +44407,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "67.2000",
+          "taxAmount": "6.7200",
+          "inclusiveAmount": "73.9200"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -35167,6 +44466,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "106.1727",
+          "taxAmount": "10.6173",
+          "inclusiveAmount": "116.7900"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -35184,7 +44492,7 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0052",
+      "id": "sub_0053",
       "supplierName": "Netflix",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -35215,6 +44523,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fun",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "17.2636",
+          "taxAmount": "1.7264",
+          "inclusiveAmount": "18.9900"
         }
       ],
       "linesBalance": true,
@@ -35258,13 +44575,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "52.8800",
+          "amount": "52.8800",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "96.1400",
-          "amount": "96.1400",
+          "unitPrice": "43.2600",
+          "amount": "43.2600",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "39.3273",
+          "taxAmount": "3.9327",
+          "inclusiveAmount": "43.2600"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "52.8800",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "52.8800"
         }
       ],
       "linesBalance": true,
@@ -35317,6 +44660,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "55.6455",
+          "taxAmount": "5.5645",
+          "inclusiveAmount": "61.2100"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -35367,6 +44719,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "11.9727",
+          "taxAmount": "1.1973",
+          "inclusiveAmount": "13.1700"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -35408,13 +44769,32 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
-          "description": "Health",
+          "description": "Health (GST-free)",
           "quantity": 1,
           "unitPrice": "55.4600",
           "amount": "55.4600",
+          "gstFree": true,
+          "category": "Health",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
+          "description": "Health",
+          "quantity": 1,
+          "unitPrice": "0.0000",
+          "amount": "0.0000",
           "gstFree": false,
           "category": "Health",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "55.4600",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "55.4600"
         }
       ],
       "linesBalance": true,
@@ -35434,7 +44814,7 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0057",
+      "id": "sub_0058",
       "supplierName": "Anytime Fitness",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -35465,6 +44845,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Health",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "62.7273",
+          "taxAmount": "6.2727",
+          "inclusiveAmount": "69.0000"
         }
       ],
       "linesBalance": true,
@@ -35517,6 +44906,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "611.7182",
+          "taxAmount": "61.1718",
+          "inclusiveAmount": "672.8900"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -35565,6 +44963,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Insurance",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "566.6182",
+          "taxAmount": "56.6618",
+          "inclusiveAmount": "623.2800"
         }
       ],
       "linesBalance": true,
@@ -35617,6 +45024,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "10.3727",
+          "taxAmount": "1.0373",
+          "inclusiveAmount": "11.4100"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -35667,6 +45083,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "47.7727",
+          "taxAmount": "4.7773",
+          "inclusiveAmount": "52.5500"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -35708,13 +45133,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "6.0700",
+          "amount": "6.0700",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "20.2200",
-          "amount": "20.2200",
+          "unitPrice": "14.1500",
+          "amount": "14.1500",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "12.8636",
+          "taxAmount": "1.2864",
+          "inclusiveAmount": "14.1500"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "6.0700",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "6.0700"
         }
       ],
       "linesBalance": true,
@@ -35767,6 +45218,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "20.4909",
+          "taxAmount": "2.0491",
+          "inclusiveAmount": "22.5400"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -35815,6 +45275,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fun",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "28.6818",
+          "taxAmount": "2.8682",
+          "inclusiveAmount": "31.5500"
         }
       ],
       "linesBalance": true,
@@ -35867,6 +45336,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "142.8909",
+          "taxAmount": "14.2891",
+          "inclusiveAmount": "157.1800"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -35917,6 +45395,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "135.8273",
+          "taxAmount": "13.5827",
+          "inclusiveAmount": "149.4100"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -35958,13 +45445,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "7.2000",
+          "amount": "7.2000",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "24.0100",
-          "amount": "24.0100",
+          "unitPrice": "16.8100",
+          "amount": "16.8100",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "15.2818",
+          "taxAmount": "1.5282",
+          "inclusiveAmount": "16.8100"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "7.2000",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "7.2000"
         }
       ],
       "linesBalance": true,
@@ -36008,13 +45521,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "10.6400",
+          "amount": "10.6400",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "35.4700",
-          "amount": "35.4700",
+          "unitPrice": "24.8300",
+          "amount": "24.8300",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "22.5727",
+          "taxAmount": "2.2573",
+          "inclusiveAmount": "24.8300"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "10.6400",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "10.6400"
         }
       ],
       "linesBalance": true,
@@ -36067,6 +45606,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "24.5727",
+          "taxAmount": "2.4573",
+          "inclusiveAmount": "27.0300"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -36115,6 +45663,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fuel",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "82.8818",
+          "taxAmount": "8.2882",
+          "inclusiveAmount": "91.1700"
         }
       ],
       "linesBalance": true,
@@ -36167,6 +45724,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "113.5091",
+          "taxAmount": "11.3509",
+          "inclusiveAmount": "124.8600"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -36215,6 +45781,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Transport",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "23.6091",
+          "taxAmount": "2.3609",
+          "inclusiveAmount": "25.9700"
         }
       ],
       "linesBalance": true,
@@ -36267,6 +45842,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "185.2182",
+          "taxAmount": "18.5218",
+          "inclusiveAmount": "203.7400"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -36317,6 +45901,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "202.3273",
+          "taxAmount": "20.2327",
+          "inclusiveAmount": "222.5600"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -36358,13 +45951,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "61.5900",
+          "amount": "61.5900",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "111.9800",
-          "amount": "111.9800",
+          "unitPrice": "50.3900",
+          "amount": "50.3900",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "45.8091",
+          "taxAmount": "4.5809",
+          "inclusiveAmount": "50.3900"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "61.5900",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "61.5900"
         }
       ],
       "linesBalance": true,
@@ -36408,13 +46027,32 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
-          "description": "Health",
+          "description": "Health (GST-free)",
           "quantity": 1,
           "unitPrice": "42.7900",
           "amount": "42.7900",
+          "gstFree": true,
+          "category": "Health",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
+          "description": "Health",
+          "quantity": 1,
+          "unitPrice": "0.0000",
+          "amount": "0.0000",
           "gstFree": false,
           "category": "Health",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "42.7900",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "42.7900"
         }
       ],
       "linesBalance": true,
@@ -36467,6 +46105,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "62.3182",
+          "taxAmount": "6.2318",
+          "inclusiveAmount": "68.5500"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -36515,6 +46162,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Home",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "122.1636",
+          "taxAmount": "12.2164",
+          "inclusiveAmount": "134.3800"
         }
       ],
       "linesBalance": true,
@@ -36567,6 +46223,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "62.9909",
+          "taxAmount": "6.2991",
+          "inclusiveAmount": "69.2900"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -36584,7 +46249,7 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0062",
+      "id": "sub_0063",
       "supplierName": "NRMA Car Insurance",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -36615,6 +46280,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Bills & utilities",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "86.0000",
+          "taxAmount": "8.6000",
+          "inclusiveAmount": "94.6000"
         }
       ],
       "linesBalance": true,
@@ -36667,6 +46341,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "191.7000",
+          "taxAmount": "19.1700",
+          "inclusiveAmount": "210.8700"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -36717,6 +46400,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "299.0909",
+          "taxAmount": "29.9091",
+          "inclusiveAmount": "329.0000"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -36758,13 +46450,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "17.8500",
+          "amount": "17.8500",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "32.4500",
-          "amount": "32.4500",
+          "unitPrice": "14.6000",
+          "amount": "14.6000",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "13.2727",
+          "taxAmount": "1.3273",
+          "inclusiveAmount": "14.6000"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "17.8500",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "17.8500"
         }
       ],
       "linesBalance": true,
@@ -36817,6 +46535,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "50.8909",
+          "taxAmount": "5.0891",
+          "inclusiveAmount": "55.9800"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -36865,6 +46592,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Eating out",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "24.9000",
+          "taxAmount": "2.4900",
+          "inclusiveAmount": "27.3900"
         }
       ],
       "linesBalance": true,
@@ -36917,6 +46653,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "130.4000",
+          "taxAmount": "13.0400",
+          "inclusiveAmount": "143.4400"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -36958,13 +46703,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "9.8000",
+          "amount": "9.8000",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "32.6800",
-          "amount": "32.6800",
+          "unitPrice": "22.8800",
+          "amount": "22.8800",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "20.8000",
+          "taxAmount": "2.0800",
+          "inclusiveAmount": "22.8800"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "9.8000",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "9.8000"
         }
       ],
       "linesBalance": true,
@@ -37017,6 +46788,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "195.7091",
+          "taxAmount": "19.5709",
+          "inclusiveAmount": "215.2800"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -37065,6 +46845,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fuel",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "198.5000",
+          "taxAmount": "19.8500",
+          "inclusiveAmount": "218.3500"
         }
       ],
       "linesBalance": true,
@@ -37117,6 +46906,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "161.6545",
+          "taxAmount": "16.1655",
+          "inclusiveAmount": "177.8200"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -37134,7 +46932,7 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0061",
+      "id": "sub_0062",
       "supplierName": "Origin Energy",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -37165,6 +46963,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Bills & utilities",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "129.8182",
+          "taxAmount": "12.9818",
+          "inclusiveAmount": "142.8000"
         }
       ],
       "linesBalance": true,
@@ -37217,6 +47024,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "70.3727",
+          "taxAmount": "7.0373",
+          "inclusiveAmount": "77.4100"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -37265,6 +47081,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Insurance",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "581.0818",
+          "taxAmount": "58.1082",
+          "inclusiveAmount": "639.1900"
         }
       ],
       "linesBalance": true,
@@ -37317,6 +47142,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "24.2909",
+          "taxAmount": "2.4291",
+          "inclusiveAmount": "26.7200"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -37365,6 +47199,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Eating out",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "20.1273",
+          "taxAmount": "2.0127",
+          "inclusiveAmount": "22.1400"
         }
       ],
       "linesBalance": true,
@@ -37417,6 +47260,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "243.2636",
+          "taxAmount": "24.3264",
+          "inclusiveAmount": "267.5900"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -37465,6 +47317,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Truck cleaning supplies",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "40.1273",
+          "taxAmount": "4.0127",
+          "inclusiveAmount": "44.1400"
         }
       ],
       "linesBalance": true,
@@ -37517,6 +47378,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "28.5364",
+          "taxAmount": "2.8536",
+          "inclusiveAmount": "31.3900"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -37565,6 +47435,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Eating out",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "24.9818",
+          "taxAmount": "2.4982",
+          "inclusiveAmount": "27.4800"
         }
       ],
       "linesBalance": true,
@@ -37617,6 +47496,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "223.6455",
+          "taxAmount": "22.3645",
+          "inclusiveAmount": "246.0100"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -37667,6 +47555,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "161.6091",
+          "taxAmount": "16.1609",
+          "inclusiveAmount": "177.7700"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -37708,13 +47605,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "54.6700",
+          "amount": "54.6700",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "99.4000",
-          "amount": "99.4000",
+          "unitPrice": "44.7300",
+          "amount": "44.7300",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "40.6636",
+          "taxAmount": "4.0664",
+          "inclusiveAmount": "44.7300"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "54.6700",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "54.6700"
         }
       ],
       "linesBalance": true,
@@ -37767,6 +47690,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "163.0182",
+          "taxAmount": "16.3018",
+          "inclusiveAmount": "179.3200"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -37817,6 +47749,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "72.5364",
+          "taxAmount": "7.2536",
+          "inclusiveAmount": "79.7900"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -37858,13 +47799,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "64.1400",
+          "amount": "64.1400",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "116.6200",
-          "amount": "116.6200",
+          "unitPrice": "52.4800",
+          "amount": "52.4800",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "47.7091",
+          "taxAmount": "4.7709",
+          "inclusiveAmount": "52.4800"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "64.1400",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "64.1400"
         }
       ],
       "linesBalance": true,
@@ -37917,6 +47884,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "34.0545",
+          "taxAmount": "3.4055",
+          "inclusiveAmount": "37.4600"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -37934,7 +47910,7 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0059",
+      "id": "sub_0060",
       "supplierName": "Spotify Premium",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -37965,6 +47941,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fun",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "12.7182",
+          "taxAmount": "1.2718",
+          "inclusiveAmount": "13.9900"
         }
       ],
       "linesBalance": true,
@@ -38008,13 +47993,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "5.1100",
+          "amount": "5.1100",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "17.0300",
-          "amount": "17.0300",
+          "unitPrice": "11.9200",
+          "amount": "11.9200",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "10.8364",
+          "taxAmount": "1.0836",
+          "inclusiveAmount": "11.9200"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "5.1100",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "5.1100"
         }
       ],
       "linesBalance": true,
@@ -38058,13 +48069,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "76.4600",
+          "amount": "76.4600",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "139.0200",
-          "amount": "139.0200",
+          "unitPrice": "62.5600",
+          "amount": "62.5600",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "56.8727",
+          "taxAmount": "5.6873",
+          "inclusiveAmount": "62.5600"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "76.4600",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "76.4600"
         }
       ],
       "linesBalance": true,
@@ -38117,6 +48154,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "22.8364",
+          "taxAmount": "2.2836",
+          "inclusiveAmount": "25.1200"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -38165,6 +48211,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Home",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "113.7818",
+          "taxAmount": "11.3782",
+          "inclusiveAmount": "125.1600"
         }
       ],
       "linesBalance": true,
@@ -38217,6 +48272,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "161.4727",
+          "taxAmount": "16.1473",
+          "inclusiveAmount": "177.6200"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -38265,6 +48329,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Phone & internet",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "66.5636",
+          "taxAmount": "6.6564",
+          "inclusiveAmount": "73.2200"
         }
       ],
       "linesBalance": true,
@@ -38317,6 +48390,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "122.0727",
+          "taxAmount": "12.2073",
+          "inclusiveAmount": "134.2800"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -38358,13 +48440,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "44.7200",
+          "amount": "44.7200",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "81.3000",
-          "amount": "81.3000",
+          "unitPrice": "36.5800",
+          "amount": "36.5800",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "33.2545",
+          "taxAmount": "3.3255",
+          "inclusiveAmount": "36.5800"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "44.7200",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "44.7200"
         }
       ],
       "linesBalance": true,
@@ -38408,13 +48516,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "26.3800",
+          "amount": "26.3800",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "47.9700",
-          "amount": "47.9700",
+          "unitPrice": "21.5900",
+          "amount": "21.5900",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "19.6273",
+          "taxAmount": "1.9627",
+          "inclusiveAmount": "21.5900"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "26.3800",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "26.3800"
         }
       ],
       "linesBalance": true,
@@ -38434,7 +48568,7 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0060",
+      "id": "sub_0061",
       "supplierName": "Telstra",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -38465,6 +48599,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Bills & utilities",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "77.2727",
+          "taxAmount": "7.7273",
+          "inclusiveAmount": "85.0000"
         }
       ],
       "linesBalance": true,
@@ -38517,6 +48660,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "106.2545",
+          "taxAmount": "10.6255",
+          "inclusiveAmount": "116.8800"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -38567,6 +48719,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "74.1636",
+          "taxAmount": "7.4164",
+          "inclusiveAmount": "81.5800"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -38608,13 +48769,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "15.9300",
+          "amount": "15.9300",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "28.9600",
-          "amount": "28.9600",
+          "unitPrice": "13.0300",
+          "amount": "13.0300",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "11.8455",
+          "taxAmount": "1.1845",
+          "inclusiveAmount": "13.0300"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "15.9300",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "15.9300"
         }
       ],
       "linesBalance": true,
@@ -38667,6 +48854,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "25.5818",
+          "taxAmount": "2.5582",
+          "inclusiveAmount": "28.1400"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -38717,6 +48913,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "130.0909",
+          "taxAmount": "13.0091",
+          "inclusiveAmount": "143.1000"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -38758,13 +48963,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "5.2100",
+          "amount": "5.2100",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "17.3500",
-          "amount": "17.3500",
+          "unitPrice": "12.1400",
+          "amount": "12.1400",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "11.0364",
+          "taxAmount": "1.1036",
+          "inclusiveAmount": "12.1400"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "5.2100",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "5.2100"
         }
       ],
       "linesBalance": true,
@@ -38808,13 +49039,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "6.1200",
+          "amount": "6.1200",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "20.4100",
-          "amount": "20.4100",
+          "unitPrice": "14.2900",
+          "amount": "14.2900",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "12.9909",
+          "taxAmount": "1.2991",
+          "inclusiveAmount": "14.2900"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "6.1200",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "6.1200"
         }
       ],
       "linesBalance": true,
@@ -38858,13 +49115,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "2.6400",
+          "amount": "2.6400",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "8.8100",
-          "amount": "8.8100",
+          "unitPrice": "6.1700",
+          "amount": "6.1700",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "5.6091",
+          "taxAmount": "0.5609",
+          "inclusiveAmount": "6.1700"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "2.6400",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "2.6400"
         }
       ],
       "linesBalance": true,
@@ -38884,7 +49167,7 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0058",
+      "id": "sub_0059",
       "supplierName": "Netflix",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -38915,6 +49198,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fun",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "17.2636",
+          "taxAmount": "1.7264",
+          "inclusiveAmount": "18.9900"
         }
       ],
       "linesBalance": true,
@@ -38967,6 +49259,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "205.2818",
+          "taxAmount": "20.5282",
+          "inclusiveAmount": "225.8100"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -39008,13 +49309,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "62.5800",
+          "amount": "62.5800",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "113.7800",
-          "amount": "113.7800",
+          "unitPrice": "51.2000",
+          "amount": "51.2000",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "46.5455",
+          "taxAmount": "4.6545",
+          "inclusiveAmount": "51.2000"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "62.5800",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "62.5800"
         }
       ],
       "linesBalance": true,
@@ -39058,13 +49385,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "80.9500",
+          "amount": "80.9500",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "147.1800",
-          "amount": "147.1800",
+          "unitPrice": "66.2300",
+          "amount": "66.2300",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "60.2091",
+          "taxAmount": "6.0209",
+          "inclusiveAmount": "66.2300"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "80.9500",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "80.9500"
         }
       ],
       "linesBalance": true,
@@ -39117,6 +49470,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "43.6636",
+          "taxAmount": "4.3664",
+          "inclusiveAmount": "48.0300"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -39167,6 +49529,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "218.0727",
+          "taxAmount": "21.8073",
+          "inclusiveAmount": "239.8800"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -39184,7 +49555,7 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0063",
+      "id": "sub_0064",
       "supplierName": "Anytime Fitness",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -39215,6 +49586,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Health",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "62.7273",
+          "taxAmount": "6.2727",
+          "inclusiveAmount": "69.0000"
         }
       ],
       "linesBalance": true,
@@ -39258,13 +49638,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "14.3400",
+          "amount": "14.3400",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "26.0700",
-          "amount": "26.0700",
+          "unitPrice": "11.7300",
+          "amount": "11.7300",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "10.6636",
+          "taxAmount": "1.0664",
+          "inclusiveAmount": "11.7300"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "14.3400",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "14.3400"
         }
       ],
       "linesBalance": true,
@@ -39308,13 +49714,32 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
-          "description": "Health",
+          "description": "Health (GST-free)",
           "quantity": 1,
           "unitPrice": "167.3500",
           "amount": "167.3500",
+          "gstFree": true,
+          "category": "Health",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
+          "description": "Health",
+          "quantity": 1,
+          "unitPrice": "0.0000",
+          "amount": "0.0000",
           "gstFree": false,
           "category": "Health",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "167.3500",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "167.3500"
         }
       ],
       "linesBalance": true,
@@ -39358,13 +49783,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "74.7100",
+          "amount": "74.7100",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "135.8400",
-          "amount": "135.8400",
+          "unitPrice": "61.1300",
+          "amount": "61.1300",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "55.5727",
+          "taxAmount": "5.5573",
+          "inclusiveAmount": "61.1300"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "74.7100",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "74.7100"
         }
       ],
       "linesBalance": true,
@@ -39417,6 +49868,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "205.6636",
+          "taxAmount": "20.5664",
+          "inclusiveAmount": "226.2300"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -39465,6 +49925,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fuel",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "74.1455",
+          "taxAmount": "7.4145",
+          "inclusiveAmount": "81.5600"
         }
       ],
       "linesBalance": true,
@@ -39517,6 +49986,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "201.1182",
+          "taxAmount": "20.1118",
+          "inclusiveAmount": "221.2300"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -39567,6 +50045,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "125.0455",
+          "taxAmount": "12.5045",
+          "inclusiveAmount": "137.5500"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -39608,13 +50095,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "8.4900",
+          "amount": "8.4900",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "28.2900",
-          "amount": "28.2900",
+          "unitPrice": "19.8000",
+          "amount": "19.8000",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "18.0000",
+          "taxAmount": "1.8000",
+          "inclusiveAmount": "19.8000"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "8.4900",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "8.4900"
         }
       ],
       "linesBalance": true,
@@ -39667,6 +50180,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "34.0091",
+          "taxAmount": "3.4009",
+          "inclusiveAmount": "37.4100"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -39717,6 +50239,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "64.7909",
+          "taxAmount": "6.4791",
+          "inclusiveAmount": "71.2700"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -39758,13 +50289,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "3.2300",
+          "amount": "3.2300",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "10.7700",
-          "amount": "10.7700",
+          "unitPrice": "7.5400",
+          "amount": "7.5400",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "6.8545",
+          "taxAmount": "0.6855",
+          "inclusiveAmount": "7.5400"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "3.2300",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "3.2300"
         }
       ],
       "linesBalance": true,
@@ -39808,13 +50365,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "40.3400",
+          "amount": "40.3400",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "73.3500",
-          "amount": "73.3500",
+          "unitPrice": "33.0100",
+          "amount": "33.0100",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "30.0091",
+          "taxAmount": "3.0009",
+          "inclusiveAmount": "33.0100"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "40.3400",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "40.3400"
         }
       ],
       "linesBalance": true,
@@ -39867,6 +50450,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "42.5636",
+          "taxAmount": "4.2564",
+          "inclusiveAmount": "46.8200"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -39908,13 +50500,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "8.2300",
+          "amount": "8.2300",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "27.4400",
-          "amount": "27.4400",
+          "unitPrice": "19.2100",
+          "amount": "19.2100",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "17.4636",
+          "taxAmount": "1.7464",
+          "inclusiveAmount": "19.2100"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "8.2300",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "8.2300"
         }
       ],
       "linesBalance": true,
@@ -39958,13 +50576,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "20.9600",
+          "amount": "20.9600",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "38.1000",
-          "amount": "38.1000",
+          "unitPrice": "17.1400",
+          "amount": "17.1400",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "15.5818",
+          "taxAmount": "1.5582",
+          "inclusiveAmount": "17.1400"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "20.9600",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "20.9600"
         }
       ],
       "linesBalance": true,
@@ -40008,13 +50652,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "31.1700",
+          "amount": "31.1700",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "56.6700",
-          "amount": "56.6700",
+          "unitPrice": "25.5000",
+          "amount": "25.5000",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "23.1818",
+          "taxAmount": "2.3182",
+          "inclusiveAmount": "25.5000"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "31.1700",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "31.1700"
         }
       ],
       "linesBalance": true,
@@ -40067,6 +50737,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "27.6364",
+          "taxAmount": "2.7636",
+          "inclusiveAmount": "30.4000"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -40115,6 +50794,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Shopping",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "57.3727",
+          "taxAmount": "5.7373",
+          "inclusiveAmount": "63.1100"
         }
       ],
       "linesBalance": true,
@@ -40167,6 +50855,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "99.8727",
+          "taxAmount": "9.9873",
+          "inclusiveAmount": "109.8600"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -40217,6 +50914,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "135.2273",
+          "taxAmount": "13.5227",
+          "inclusiveAmount": "148.7500"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -40258,13 +50964,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "2.5500",
+          "amount": "2.5500",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "8.4900",
-          "amount": "8.4900",
+          "unitPrice": "5.9400",
+          "amount": "5.9400",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "5.4000",
+          "taxAmount": "0.5400",
+          "inclusiveAmount": "5.9400"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "2.5500",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "2.5500"
         }
       ],
       "linesBalance": true,
@@ -40317,6 +51049,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "39.8364",
+          "taxAmount": "3.9836",
+          "inclusiveAmount": "43.8200"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -40367,6 +51108,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "178.5182",
+          "taxAmount": "17.8518",
+          "inclusiveAmount": "196.3700"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -40408,13 +51158,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "8.9400",
+          "amount": "8.9400",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "29.8100",
-          "amount": "29.8100",
+          "unitPrice": "20.8700",
+          "amount": "20.8700",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "18.9727",
+          "taxAmount": "1.8973",
+          "inclusiveAmount": "20.8700"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "8.9400",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "8.9400"
         }
       ],
       "linesBalance": true,
@@ -40467,6 +51243,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "28.3364",
+          "taxAmount": "2.8336",
+          "inclusiveAmount": "31.1700"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -40508,13 +51293,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "29.0600",
+          "amount": "29.0600",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "52.8400",
-          "amount": "52.8400",
+          "unitPrice": "23.7800",
+          "amount": "23.7800",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "21.6182",
+          "taxAmount": "2.1618",
+          "inclusiveAmount": "23.7800"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "29.0600",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "29.0600"
         }
       ],
       "linesBalance": true,
@@ -40567,6 +51378,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "65.3818",
+          "taxAmount": "6.5382",
+          "inclusiveAmount": "71.9200"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -40584,7 +51404,7 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0068",
+      "id": "sub_0069",
       "supplierName": "NRMA Car Insurance",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -40615,6 +51435,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Bills & utilities",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "86.0000",
+          "taxAmount": "8.6000",
+          "inclusiveAmount": "94.6000"
         }
       ],
       "linesBalance": true,
@@ -40667,6 +51496,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "147.3000",
+          "taxAmount": "14.7300",
+          "inclusiveAmount": "162.0300"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -40708,13 +51546,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "11.9800",
+          "amount": "11.9800",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "39.9200",
-          "amount": "39.9200",
+          "unitPrice": "27.9400",
+          "amount": "27.9400",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "25.4000",
+          "taxAmount": "2.5400",
+          "inclusiveAmount": "27.9400"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "11.9800",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "11.9800"
         }
       ],
       "linesBalance": true,
@@ -40758,13 +51622,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "12.1100",
+          "amount": "12.1100",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "40.3500",
-          "amount": "40.3500",
+          "unitPrice": "28.2400",
+          "amount": "28.2400",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "25.6727",
+          "taxAmount": "2.5673",
+          "inclusiveAmount": "28.2400"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "12.1100",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "12.1100"
         }
       ],
       "linesBalance": true,
@@ -40808,13 +51698,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "4.2900",
+          "amount": "4.2900",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "14.3100",
-          "amount": "14.3100",
+          "unitPrice": "10.0200",
+          "amount": "10.0200",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "9.1091",
+          "taxAmount": "0.9109",
+          "inclusiveAmount": "10.0200"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "4.2900",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "4.2900"
         }
       ],
       "linesBalance": true,
@@ -40867,6 +51783,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "620.5818",
+          "taxAmount": "62.0582",
+          "inclusiveAmount": "682.6400"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -40908,13 +51833,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "54.2100",
+          "amount": "54.2100",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "98.5600",
-          "amount": "98.5600",
+          "unitPrice": "44.3500",
+          "amount": "44.3500",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "40.3182",
+          "taxAmount": "4.0318",
+          "inclusiveAmount": "44.3500"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "54.2100",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "54.2100"
         }
       ],
       "linesBalance": true,
@@ -40967,6 +51918,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "15.2000",
+          "taxAmount": "1.5200",
+          "inclusiveAmount": "16.7200"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -41008,13 +51968,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "47.9800",
+          "amount": "47.9800",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "87.2300",
-          "amount": "87.2300",
+          "unitPrice": "39.2500",
+          "amount": "39.2500",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "35.6818",
+          "taxAmount": "3.5682",
+          "inclusiveAmount": "39.2500"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "47.9800",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "47.9800"
         }
       ],
       "linesBalance": true,
@@ -41067,6 +52053,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "136.6455",
+          "taxAmount": "13.6645",
+          "inclusiveAmount": "150.3100"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -41115,6 +52110,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Shopping",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "196.2000",
+          "taxAmount": "19.6200",
+          "inclusiveAmount": "215.8200"
         }
       ],
       "linesBalance": true,
@@ -41167,6 +52171,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "134.6727",
+          "taxAmount": "13.4673",
+          "inclusiveAmount": "148.1400"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -41208,13 +52221,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "59.1800",
+          "amount": "59.1800",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "107.6000",
-          "amount": "107.6000",
+          "unitPrice": "48.4200",
+          "amount": "48.4200",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "44.0182",
+          "taxAmount": "4.4018",
+          "inclusiveAmount": "48.4200"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "59.1800",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "59.1800"
         }
       ],
       "linesBalance": true,
@@ -41258,13 +52297,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "43.8700",
+          "amount": "43.8700",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "79.7700",
-          "amount": "79.7700",
+          "unitPrice": "35.9000",
+          "amount": "35.9000",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "32.6364",
+          "taxAmount": "3.2636",
+          "inclusiveAmount": "35.9000"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "43.8700",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "43.8700"
         }
       ],
       "linesBalance": true,
@@ -41317,6 +52382,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "29.9182",
+          "taxAmount": "2.9918",
+          "inclusiveAmount": "32.9100"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -41365,6 +52439,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Eating out",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "22.7000",
+          "taxAmount": "2.2700",
+          "inclusiveAmount": "24.9700"
         }
       ],
       "linesBalance": true,
@@ -41417,6 +52500,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "42.8273",
+          "taxAmount": "4.2827",
+          "inclusiveAmount": "47.1100"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -41467,6 +52559,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "58.5182",
+          "taxAmount": "5.8518",
+          "inclusiveAmount": "64.3700"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -41484,7 +52585,7 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0067",
+      "id": "sub_0068",
       "supplierName": "Origin Energy",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -41515,6 +52616,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Bills & utilities",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "129.8182",
+          "taxAmount": "12.9818",
+          "inclusiveAmount": "142.8000"
         }
       ],
       "linesBalance": true,
@@ -41558,13 +52668,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "18.5900",
+          "amount": "18.5900",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "33.8000",
-          "amount": "33.8000",
+          "unitPrice": "15.2100",
+          "amount": "15.2100",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "13.8273",
+          "taxAmount": "1.3827",
+          "inclusiveAmount": "15.2100"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "18.5900",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "18.5900"
         }
       ],
       "linesBalance": true,
@@ -41617,6 +52753,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "68.6636",
+          "taxAmount": "6.8664",
+          "inclusiveAmount": "75.5300"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -41665,6 +52810,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Accommodation",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "132.0364",
+          "taxAmount": "13.2036",
+          "inclusiveAmount": "145.2400"
         }
       ],
       "linesBalance": true,
@@ -41717,6 +52871,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "65.5818",
+          "taxAmount": "6.5582",
+          "inclusiveAmount": "72.1400"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -41765,6 +52928,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Transport",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "8.9091",
+          "taxAmount": "0.8909",
+          "inclusiveAmount": "9.8000"
         }
       ],
       "linesBalance": true,
@@ -41817,6 +52989,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "17.7182",
+          "taxAmount": "1.7718",
+          "inclusiveAmount": "19.4900"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -41867,6 +53048,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "906.7182",
+          "taxAmount": "90.6718",
+          "inclusiveAmount": "997.3900"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -41908,13 +53098,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "7.9300",
+          "amount": "7.9300",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "26.4200",
-          "amount": "26.4200",
+          "unitPrice": "18.4900",
+          "amount": "18.4900",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "16.8091",
+          "taxAmount": "1.6809",
+          "inclusiveAmount": "18.4900"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "7.9300",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "7.9300"
         }
       ],
       "linesBalance": true,
@@ -41958,13 +53174,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "4.4600",
+          "amount": "4.4600",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "14.8500",
-          "amount": "14.8500",
+          "unitPrice": "10.3900",
+          "amount": "10.3900",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "9.4455",
+          "taxAmount": "0.9445",
+          "inclusiveAmount": "10.3900"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "4.4600",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "4.4600"
         }
       ],
       "linesBalance": true,
@@ -42017,6 +53259,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "176.7182",
+          "taxAmount": "17.6718",
+          "inclusiveAmount": "194.3900"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -42034,7 +53285,7 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0065",
+      "id": "sub_0066",
       "supplierName": "Spotify Premium",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -42065,6 +53316,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fun",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "12.7182",
+          "taxAmount": "1.2718",
+          "inclusiveAmount": "13.9900"
         }
       ],
       "linesBalance": true,
@@ -42117,6 +53377,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "138.1273",
+          "taxAmount": "13.8127",
+          "inclusiveAmount": "151.9400"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -42165,6 +53434,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fun",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "21.6273",
+          "taxAmount": "2.1627",
+          "inclusiveAmount": "23.7900"
         }
       ],
       "linesBalance": true,
@@ -42217,6 +53495,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "71.0909",
+          "taxAmount": "7.1091",
+          "inclusiveAmount": "78.2000"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -42265,6 +53552,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Home",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "66.0273",
+          "taxAmount": "6.6027",
+          "inclusiveAmount": "72.6300"
         }
       ],
       "linesBalance": true,
@@ -42317,6 +53613,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "191.2000",
+          "taxAmount": "19.1200",
+          "inclusiveAmount": "210.3200"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -42367,6 +53672,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "70.1364",
+          "taxAmount": "7.0136",
+          "inclusiveAmount": "77.1500"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -42384,7 +53698,7 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0066",
+      "id": "sub_0067",
       "supplierName": "Telstra",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -42415,6 +53729,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Bills & utilities",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "77.2727",
+          "taxAmount": "7.7273",
+          "inclusiveAmount": "85.0000"
         }
       ],
       "linesBalance": true,
@@ -42458,13 +53781,32 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
-          "description": "Health",
+          "description": "Health (GST-free)",
           "quantity": 1,
           "unitPrice": "62.8900",
           "amount": "62.8900",
+          "gstFree": true,
+          "category": "Health",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
+          "description": "Health",
+          "quantity": 1,
+          "unitPrice": "0.0000",
+          "amount": "0.0000",
           "gstFree": false,
           "category": "Health",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "62.8900",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "62.8900"
         }
       ],
       "linesBalance": true,
@@ -42517,6 +53859,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "73.2909",
+          "taxAmount": "7.3291",
+          "inclusiveAmount": "80.6200"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -42558,13 +53909,32 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
-          "description": "Health",
+          "description": "Health (GST-free)",
           "quantity": 1,
           "unitPrice": "159.7300",
           "amount": "159.7300",
+          "gstFree": true,
+          "category": "Health",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
+          "description": "Health",
+          "quantity": 1,
+          "unitPrice": "0.0000",
+          "amount": "0.0000",
           "gstFree": false,
           "category": "Health",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "159.7300",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "159.7300"
         }
       ],
       "linesBalance": true,
@@ -42608,13 +53978,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "7.6300",
+          "amount": "7.6300",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "25.4400",
-          "amount": "25.4400",
+          "unitPrice": "17.8100",
+          "amount": "17.8100",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "16.1909",
+          "taxAmount": "1.6191",
+          "inclusiveAmount": "17.8100"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "7.6300",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "7.6300"
         }
       ],
       "linesBalance": true,
@@ -42667,6 +54063,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "114.6636",
+          "taxAmount": "11.4664",
+          "inclusiveAmount": "126.1300"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -42684,7 +54089,7 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0064",
+      "id": "sub_0065",
       "supplierName": "Netflix",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -42715,6 +54120,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fun",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "17.2636",
+          "taxAmount": "1.7264",
+          "inclusiveAmount": "18.9900"
         }
       ],
       "linesBalance": true,
@@ -42767,6 +54181,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "800.5000",
+          "taxAmount": "80.0500",
+          "inclusiveAmount": "880.5500"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -42815,6 +54238,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Tolls",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "338.4455",
+          "taxAmount": "33.8445",
+          "inclusiveAmount": "372.2900"
         }
       ],
       "linesBalance": true,
@@ -42867,6 +54299,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "51.5182",
+          "taxAmount": "5.1518",
+          "inclusiveAmount": "56.6700"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -42884,7 +54325,7 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0069",
+      "id": "sub_0070",
       "supplierName": "Anytime Fitness",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -42915,6 +54356,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Health",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "62.7273",
+          "taxAmount": "6.2727",
+          "inclusiveAmount": "69.0000"
         }
       ],
       "linesBalance": true,
@@ -42967,6 +54417,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "197.8455",
+          "taxAmount": "19.7845",
+          "inclusiveAmount": "217.6300"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -43015,6 +54474,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Eating out",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "56.6000",
+          "taxAmount": "5.6600",
+          "inclusiveAmount": "62.2600"
         }
       ],
       "linesBalance": true,
@@ -43067,6 +54535,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "218.4364",
+          "taxAmount": "21.8436",
+          "inclusiveAmount": "240.2800"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -43117,6 +54594,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "221.8727",
+          "taxAmount": "22.1873",
+          "inclusiveAmount": "244.0600"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -43158,13 +54644,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "12.5800",
+          "amount": "12.5800",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "41.9300",
-          "amount": "41.9300",
+          "unitPrice": "29.3500",
+          "amount": "29.3500",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "26.6818",
+          "taxAmount": "2.6682",
+          "inclusiveAmount": "29.3500"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "12.5800",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "12.5800"
         }
       ],
       "linesBalance": true,
@@ -43208,13 +54720,32 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
-          "description": "Health",
+          "description": "Health (GST-free)",
           "quantity": 1,
           "unitPrice": "193.7600",
           "amount": "193.7600",
+          "gstFree": true,
+          "category": "Health",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
+          "description": "Health",
+          "quantity": 1,
+          "unitPrice": "0.0000",
+          "amount": "0.0000",
           "gstFree": false,
           "category": "Health",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "193.7600",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "193.7600"
         }
       ],
       "linesBalance": true,
@@ -43267,6 +54798,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "211.7636",
+          "taxAmount": "21.1764",
+          "inclusiveAmount": "232.9400"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -43308,13 +54848,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "24.2000",
+          "amount": "24.2000",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "44.0000",
-          "amount": "44.0000",
+          "unitPrice": "19.8000",
+          "amount": "19.8000",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "18.0000",
+          "taxAmount": "1.8000",
+          "inclusiveAmount": "19.8000"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "24.2000",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "24.2000"
         }
       ],
       "linesBalance": true,
@@ -43367,6 +54933,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "23.1000",
+          "taxAmount": "2.3100",
+          "inclusiveAmount": "25.4100"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -43415,6 +54990,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Transport",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "55.2000",
+          "taxAmount": "5.5200",
+          "inclusiveAmount": "60.7200"
         }
       ],
       "linesBalance": true,
@@ -43467,6 +55051,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "70.5273",
+          "taxAmount": "7.0527",
+          "inclusiveAmount": "77.5800"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -43515,6 +55108,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fuel",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "213.7909",
+          "taxAmount": "21.3791",
+          "inclusiveAmount": "235.1700"
         }
       ],
       "linesBalance": true,
@@ -43567,6 +55169,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "974.2545",
+          "taxAmount": "97.4255",
+          "inclusiveAmount": "1071.6800"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -43608,13 +55219,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "99.5000",
+          "amount": "99.5000",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "180.9100",
-          "amount": "180.9100",
+          "unitPrice": "81.4100",
+          "amount": "81.4100",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "74.0091",
+          "taxAmount": "7.4009",
+          "inclusiveAmount": "81.4100"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "99.5000",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "99.5000"
         }
       ],
       "linesBalance": true,
@@ -43667,6 +55304,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "45.8545",
+          "taxAmount": "4.5855",
+          "inclusiveAmount": "50.4400"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -43715,6 +55361,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Accommodation",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "139.9636",
+          "taxAmount": "13.9964",
+          "inclusiveAmount": "153.9600"
         }
       ],
       "linesBalance": true,
@@ -43767,6 +55422,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "61.9909",
+          "taxAmount": "6.1991",
+          "inclusiveAmount": "68.1900"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -43815,6 +55479,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Transport",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "29.6000",
+          "taxAmount": "2.9600",
+          "inclusiveAmount": "32.5600"
         }
       ],
       "linesBalance": true,
@@ -43867,6 +55540,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "268.8545",
+          "taxAmount": "26.8855",
+          "inclusiveAmount": "295.7400"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -43917,6 +55599,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "83.7182",
+          "taxAmount": "8.3718",
+          "inclusiveAmount": "92.0900"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -43934,7 +55625,7 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0074",
+      "id": "sub_0075",
       "supplierName": "NRMA Car Insurance",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -43965,6 +55656,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Bills & utilities",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "86.0000",
+          "taxAmount": "8.6000",
+          "inclusiveAmount": "94.6000"
         }
       ],
       "linesBalance": true,
@@ -44008,13 +55708,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "11.9700",
+          "amount": "11.9700",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "39.8900",
-          "amount": "39.8900",
+          "unitPrice": "27.9200",
+          "amount": "27.9200",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "25.3818",
+          "taxAmount": "2.5382",
+          "inclusiveAmount": "27.9200"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "11.9700",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "11.9700"
         }
       ],
       "linesBalance": true,
@@ -44058,13 +55784,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "74.9900",
+          "amount": "74.9900",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "136.3400",
-          "amount": "136.3400",
+          "unitPrice": "61.3500",
+          "amount": "61.3500",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "55.7727",
+          "taxAmount": "5.5773",
+          "inclusiveAmount": "61.3500"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "74.9900",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "74.9900"
         }
       ],
       "linesBalance": true,
@@ -44117,6 +55869,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "133.8455",
+          "taxAmount": "13.3845",
+          "inclusiveAmount": "147.2300"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -44165,6 +55926,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Accommodation",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "121.7545",
+          "taxAmount": "12.1755",
+          "inclusiveAmount": "133.9300"
         }
       ],
       "linesBalance": true,
@@ -44217,6 +55987,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "22.9273",
+          "taxAmount": "2.2927",
+          "inclusiveAmount": "25.2200"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -44265,6 +56044,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Tolls",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "384.5636",
+          "taxAmount": "38.4564",
+          "inclusiveAmount": "423.0200"
         }
       ],
       "linesBalance": true,
@@ -44317,6 +56105,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "18.4364",
+          "taxAmount": "1.8436",
+          "inclusiveAmount": "20.2800"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -44367,6 +56164,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "58.4818",
+          "taxAmount": "5.8482",
+          "inclusiveAmount": "64.3300"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -44384,7 +56190,7 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0073",
+      "id": "sub_0074",
       "supplierName": "Origin Energy",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -44415,6 +56221,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Bills & utilities",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "129.8182",
+          "taxAmount": "12.9818",
+          "inclusiveAmount": "142.8000"
         }
       ],
       "linesBalance": true,
@@ -44458,13 +56273,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "46.5600",
+          "amount": "46.5600",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "84.6500",
-          "amount": "84.6500",
+          "unitPrice": "38.0900",
+          "amount": "38.0900",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "34.6273",
+          "taxAmount": "3.4627",
+          "inclusiveAmount": "38.0900"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "46.5600",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "46.5600"
         }
       ],
       "linesBalance": true,
@@ -44508,13 +56349,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "9.5900",
+          "amount": "9.5900",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "31.9600",
-          "amount": "31.9600",
+          "unitPrice": "22.3700",
+          "amount": "22.3700",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "20.3364",
+          "taxAmount": "2.0336",
+          "inclusiveAmount": "22.3700"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "9.5900",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "9.5900"
         }
       ],
       "linesBalance": true,
@@ -44567,6 +56434,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "77.2727",
+          "taxAmount": "7.7273",
+          "inclusiveAmount": "85.0000"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -44617,6 +56493,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "148.7182",
+          "taxAmount": "14.8718",
+          "inclusiveAmount": "163.5900"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -44658,13 +56543,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "13.3500",
+          "amount": "13.3500",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "44.4900",
-          "amount": "44.4900",
+          "unitPrice": "31.1400",
+          "amount": "31.1400",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "28.3091",
+          "taxAmount": "2.8309",
+          "inclusiveAmount": "31.1400"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "13.3500",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "13.3500"
         }
       ],
       "linesBalance": true,
@@ -44708,13 +56619,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "12.9600",
+          "amount": "12.9600",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "43.2100",
-          "amount": "43.2100",
+          "unitPrice": "30.2500",
+          "amount": "30.2500",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "27.5000",
+          "taxAmount": "2.7500",
+          "inclusiveAmount": "30.2500"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "12.9600",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "12.9600"
         }
       ],
       "linesBalance": true,
@@ -44758,13 +56695,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "63.9800",
+          "amount": "63.9800",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "116.3300",
-          "amount": "116.3300",
+          "unitPrice": "52.3500",
+          "amount": "52.3500",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "47.5909",
+          "taxAmount": "4.7591",
+          "inclusiveAmount": "52.3500"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "63.9800",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "63.9800"
         }
       ],
       "linesBalance": true,
@@ -44808,13 +56771,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "56.1200",
+          "amount": "56.1200",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "102.0300",
-          "amount": "102.0300",
+          "unitPrice": "45.9100",
+          "amount": "45.9100",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "41.7364",
+          "taxAmount": "4.1736",
+          "inclusiveAmount": "45.9100"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "56.1200",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "56.1200"
         }
       ],
       "linesBalance": true,
@@ -44858,13 +56847,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "3.6300",
+          "amount": "3.6300",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "12.1100",
-          "amount": "12.1100",
+          "unitPrice": "8.4800",
+          "amount": "8.4800",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "7.7091",
+          "taxAmount": "0.7709",
+          "inclusiveAmount": "8.4800"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "3.6300",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "3.6300"
         }
       ],
       "linesBalance": true,
@@ -44908,13 +56923,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "81.0400",
+          "amount": "81.0400",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "147.3500",
-          "amount": "147.3500",
+          "unitPrice": "66.3100",
+          "amount": "66.3100",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "60.2818",
+          "taxAmount": "6.0282",
+          "inclusiveAmount": "66.3100"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "81.0400",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "81.0400"
         }
       ],
       "linesBalance": true,
@@ -44967,6 +57008,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "15.0727",
+          "taxAmount": "1.5073",
+          "inclusiveAmount": "16.5800"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -45015,6 +57065,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Truck parts & maintenance",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "1079.2091",
+          "taxAmount": "107.9209",
+          "inclusiveAmount": "1187.1300"
         }
       ],
       "linesBalance": true,
@@ -45067,6 +57126,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "128.2727",
+          "taxAmount": "12.8273",
+          "inclusiveAmount": "141.1000"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -45084,7 +57152,7 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0071",
+      "id": "sub_0072",
       "supplierName": "Spotify Premium",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -45115,6 +57183,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fun",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "12.7182",
+          "taxAmount": "1.2718",
+          "inclusiveAmount": "13.9900"
         }
       ],
       "linesBalance": true,
@@ -45167,6 +57244,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "13.8091",
+          "taxAmount": "1.3809",
+          "inclusiveAmount": "15.1900"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -45217,6 +57303,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "115.6636",
+          "taxAmount": "11.5664",
+          "inclusiveAmount": "127.2300"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -45258,13 +57353,32 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
-          "description": "Health",
+          "description": "Health (GST-free)",
           "quantity": 1,
           "unitPrice": "141.5500",
           "amount": "141.5500",
+          "gstFree": true,
+          "category": "Health",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
+          "description": "Health",
+          "quantity": 1,
+          "unitPrice": "0.0000",
+          "amount": "0.0000",
           "gstFree": false,
           "category": "Health",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "141.5500",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "141.5500"
         }
       ],
       "linesBalance": true,
@@ -45317,6 +57431,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "195.5091",
+          "taxAmount": "19.5509",
+          "inclusiveAmount": "215.0600"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -45367,6 +57490,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "898.0636",
+          "taxAmount": "89.8064",
+          "inclusiveAmount": "987.8700"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -45408,13 +57540,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "13.7500",
+          "amount": "13.7500",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "45.8400",
-          "amount": "45.8400",
+          "unitPrice": "32.0900",
+          "amount": "32.0900",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "29.1727",
+          "taxAmount": "2.9173",
+          "inclusiveAmount": "32.0900"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "13.7500",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "13.7500"
         }
       ],
       "linesBalance": true,
@@ -45467,6 +57625,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "674.5455",
+          "taxAmount": "67.4545",
+          "inclusiveAmount": "742.0000"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -45515,6 +57682,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Home",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "96.4909",
+          "taxAmount": "9.6491",
+          "inclusiveAmount": "106.1400"
         }
       ],
       "linesBalance": true,
@@ -45567,6 +57743,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "156.2364",
+          "taxAmount": "15.6236",
+          "inclusiveAmount": "171.8600"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -45617,6 +57802,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "83.8909",
+          "taxAmount": "8.3891",
+          "inclusiveAmount": "92.2800"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -45634,7 +57828,7 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0072",
+      "id": "sub_0073",
       "supplierName": "Telstra",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -45665,6 +57859,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Bills & utilities",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "77.2727",
+          "taxAmount": "7.7273",
+          "inclusiveAmount": "85.0000"
         }
       ],
       "linesBalance": true,
@@ -45717,6 +57920,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "232.4182",
+          "taxAmount": "23.2418",
+          "inclusiveAmount": "255.6600"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -45758,13 +57970,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "4.3500",
+          "amount": "4.3500",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "14.5100",
-          "amount": "14.5100",
+          "unitPrice": "10.1600",
+          "amount": "10.1600",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "9.2364",
+          "taxAmount": "0.9236",
+          "inclusiveAmount": "10.1600"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "4.3500",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "4.3500"
         }
       ],
       "linesBalance": true,
@@ -45808,13 +58046,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "56.6800",
+          "amount": "56.6800",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "103.0500",
-          "amount": "103.0500",
+          "unitPrice": "46.3700",
+          "amount": "46.3700",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "42.1545",
+          "taxAmount": "4.2155",
+          "inclusiveAmount": "46.3700"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "56.6800",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "56.6800"
         }
       ],
       "linesBalance": true,
@@ -45867,6 +58131,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "27.5091",
+          "taxAmount": "2.7509",
+          "inclusiveAmount": "30.2600"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -45908,13 +58181,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Meals on the road (GST-free)",
+          "quantity": 1,
+          "unitPrice": "3.2500",
+          "amount": "3.2500",
+          "gstFree": true,
+          "category": "Meals on the road",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Meals on the road",
           "quantity": 1,
-          "unitPrice": "10.8300",
-          "amount": "10.8300",
+          "unitPrice": "7.5800",
+          "amount": "7.5800",
           "gstFree": false,
           "category": "Meals on the road",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "6.8909",
+          "taxAmount": "0.6891",
+          "inclusiveAmount": "7.5800"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "3.2500",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "3.2500"
         }
       ],
       "linesBalance": true,
@@ -45967,6 +58266,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "49.6182",
+          "taxAmount": "4.9618",
+          "inclusiveAmount": "54.5800"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -46015,6 +58323,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fuel",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "141.7545",
+          "taxAmount": "14.1755",
+          "inclusiveAmount": "155.9300"
         }
       ],
       "linesBalance": true,
@@ -46067,6 +58384,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "72.4182",
+          "taxAmount": "7.2418",
+          "inclusiveAmount": "79.6600"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -46115,6 +58441,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Eating out",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "26.7091",
+          "taxAmount": "2.6709",
+          "inclusiveAmount": "29.3800"
         }
       ],
       "linesBalance": true,
@@ -46167,6 +58502,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "232.9545",
+          "taxAmount": "23.2955",
+          "inclusiveAmount": "256.2500"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -46184,7 +58528,7 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0070",
+      "id": "sub_0071",
       "supplierName": "Netflix",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -46215,6 +58559,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Fun",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "17.2636",
+          "taxAmount": "1.7264",
+          "inclusiveAmount": "18.9900"
         }
       ],
       "linesBalance": true,
@@ -46267,6 +58620,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "164.9636",
+          "taxAmount": "16.4964",
+          "inclusiveAmount": "181.4600"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -46308,13 +58670,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "72.2800",
+          "amount": "72.2800",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "131.4100",
-          "amount": "131.4100",
+          "unitPrice": "59.1300",
+          "amount": "59.1300",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "53.7545",
+          "taxAmount": "5.3755",
+          "inclusiveAmount": "59.1300"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "72.2800",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "72.2800"
         }
       ],
       "linesBalance": true,
@@ -46358,13 +58746,39 @@ export const DEMO: DemoShape = {
       "lines": [
         {
           "lineNumber": 1,
+          "description": "Groceries (GST-free)",
+          "quantity": 1,
+          "unitPrice": "60.8700",
+          "amount": "60.8700",
+          "gstFree": true,
+          "category": "Groceries",
+          "confidence": 0.93
+        },
+        {
+          "lineNumber": 2,
           "description": "Groceries",
           "quantity": 1,
-          "unitPrice": "110.6800",
-          "amount": "110.6800",
+          "unitPrice": "49.8100",
+          "amount": "49.8100",
           "gstFree": false,
           "category": "Groceries",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "45.2818",
+          "taxAmount": "4.5282",
+          "inclusiveAmount": "49.8100"
+        },
+        {
+          "categoryCode": "Z",
+          "rate": "0.0000",
+          "taxableAmount": "60.8700",
+          "taxAmount": "0.0000",
+          "inclusiveAmount": "60.8700"
         }
       ],
       "linesBalance": true,
@@ -46417,6 +58831,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "41.7727",
+          "taxAmount": "4.1773",
+          "inclusiveAmount": "45.9500"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -46465,6 +58888,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Accommodation",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "152.0636",
+          "taxAmount": "15.2064",
+          "inclusiveAmount": "167.2700"
         }
       ],
       "linesBalance": true,
@@ -46517,6 +58949,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "77.9818",
+          "taxAmount": "7.7982",
+          "inclusiveAmount": "85.7800"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -46534,7 +58975,7 @@ export const DEMO: DemoShape = {
       "version": 1
     },
     {
-      "id": "sub_0075",
+      "id": "sub_0076",
       "supplierName": "Anytime Fitness",
       "supplierAbn": null,
       "supplierAbnValid": false,
@@ -46565,6 +59006,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Health",
           "confidence": 0.95
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "62.7273",
+          "taxAmount": "6.2727",
+          "inclusiveAmount": "69.0000"
         }
       ],
       "linesBalance": true,
@@ -46617,6 +59067,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "131.3818",
+          "taxAmount": "13.1382",
+          "inclusiveAmount": "144.5200"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -46665,6 +59124,15 @@ export const DEMO: DemoShape = {
           "gstFree": false,
           "category": "Transport",
           "confidence": 0.93
+        }
+      ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "54.4545",
+          "taxAmount": "5.4455",
+          "inclusiveAmount": "59.9000"
         }
       ],
       "linesBalance": true,
@@ -46717,6 +59185,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "78.7818",
+          "taxAmount": "7.8782",
+          "inclusiveAmount": "86.6600"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -46767,6 +59244,15 @@ export const DEMO: DemoShape = {
           "confidence": 0.93
         }
       ],
+      "taxSubtotals": [
+        {
+          "categoryCode": "S",
+          "rate": "10.0000",
+          "taxableAmount": "114.8455",
+          "taxAmount": "11.4845",
+          "inclusiveAmount": "126.3300"
+        }
+      ],
       "linesBalance": true,
       "imageUrl": null,
       "pages": [
@@ -46807,8 +59293,8 @@ export const DEMO: DemoShape = {
       "displayName": "Kate Marsh",
       "email": "kate@marshtransport.example",
       "role": "owner",
-      "joinedAt": "2025-07-18",
-      "lastActiveAt": "2026-09-11"
+      "joinedAt": "2025-07-23",
+      "lastActiveAt": "2026-09-16"
     },
     {
       "workspaceId": "ws_marsh_transport",
@@ -46816,8 +59302,8 @@ export const DEMO: DemoShape = {
       "displayName": "Sam Oyelaran",
       "email": "sam@marshtransport.example",
       "role": "admin",
-      "joinedAt": "2025-11-15",
-      "lastActiveAt": "2026-09-10"
+      "joinedAt": "2025-11-20",
+      "lastActiveAt": "2026-09-15"
     },
     {
       "workspaceId": "ws_marsh_transport",
@@ -46825,8 +59311,8 @@ export const DEMO: DemoShape = {
       "displayName": "Dan Whitby",
       "email": "dan@marshtransport.example",
       "role": "member",
-      "joinedAt": "2026-06-07",
-      "lastActiveAt": "2026-09-09"
+      "joinedAt": "2026-06-12",
+      "lastActiveAt": "2026-09-14"
     },
     {
       "workspaceId": "ws_marsh_transport",
@@ -46834,8 +59320,8 @@ export const DEMO: DemoShape = {
       "displayName": "Priya Nandan",
       "email": "priya@marshaccountants.example",
       "role": "readonly",
-      "joinedAt": "2026-07-09",
-      "lastActiveAt": "2026-09-02"
+      "joinedAt": "2026-07-14",
+      "lastActiveAt": "2026-09-07"
     },
     {
       "workspaceId": "ws_marsh_household",
@@ -46843,8 +59329,8 @@ export const DEMO: DemoShape = {
       "displayName": "Kate Marsh",
       "email": "kate@marshtransport.example",
       "role": "owner",
-      "joinedAt": "2025-08-07",
-      "lastActiveAt": "2026-09-11"
+      "joinedAt": "2025-08-12",
+      "lastActiveAt": "2026-09-16"
     },
     {
       "workspaceId": "ws_marsh_household",
@@ -46852,8 +59338,8 @@ export const DEMO: DemoShape = {
       "displayName": "Jem Marsh",
       "email": "jem@example.com",
       "role": "admin",
-      "joinedAt": "2025-08-27",
-      "lastActiveAt": "2026-09-10"
+      "joinedAt": "2025-09-01",
+      "lastActiveAt": "2026-09-15"
     }
   ],
   "invitations": [
@@ -46862,8 +59348,8 @@ export const DEMO: DemoShape = {
       "email": "noah@marshtransport.example",
       "role": "member",
       "invitedByName": "Kate Marsh",
-      "createdAt": "2026-09-09",
-      "expiresAt": "2026-09-16"
+      "createdAt": "2026-09-14",
+      "expiresAt": "2026-09-21"
     }
   ],
   "bills": [
@@ -46871,8 +59357,8 @@ export const DEMO: DemoShape = {
       "id": "bill_01",
       "supplierName": "Shell Card Australia",
       "reference": "SC-88412",
-      "issueDate": "2026-09-05",
-      "dueDate": "2026-10-05",
+      "issueDate": "2026-09-10",
+      "dueDate": "2026-10-10",
       "totalAmount": "3184.6000",
       "gstAmount": "289.5091",
       "amountPaid": "0.0000",
@@ -46884,8 +59370,8 @@ export const DEMO: DemoShape = {
       "id": "bill_02",
       "supplierName": "Bridgestone Service Wagga",
       "reference": "BSW-2201",
-      "issueDate": "2026-08-30",
-      "dueDate": "2026-09-13",
+      "issueDate": "2026-09-04",
+      "dueDate": "2026-09-18",
       "totalAmount": "1980.0000",
       "gstAmount": "180.0000",
       "amountPaid": "0.0000",
@@ -46897,8 +59383,8 @@ export const DEMO: DemoShape = {
       "id": "bill_03",
       "supplierName": "NRMA Truck Insurance",
       "reference": "POL-449021",
-      "issueDate": "2026-08-02",
-      "dueDate": "2026-08-16",
+      "issueDate": "2026-08-07",
+      "dueDate": "2026-08-21",
       "totalAmount": "742.0000",
       "gstAmount": "67.4545",
       "amountPaid": "0.0000",
@@ -46910,8 +59396,8 @@ export const DEMO: DemoShape = {
       "id": "bill_04",
       "supplierName": "Transurban Linkt",
       "reference": "LNK-77120",
-      "issueDate": "2026-09-08",
-      "dueDate": "2026-09-29",
+      "issueDate": "2026-09-13",
+      "dueDate": "2026-10-04",
       "totalAmount": "412.5500",
       "gstAmount": "37.5045",
       "amountPaid": "0.0000",
@@ -46923,8 +59409,8 @@ export const DEMO: DemoShape = {
       "id": "bill_05",
       "supplierName": "Telstra Business",
       "reference": "TB-30918",
-      "issueDate": "2026-08-21",
-      "dueDate": "2026-09-04",
+      "issueDate": "2026-08-26",
+      "dueDate": "2026-09-09",
       "totalAmount": "185.0000",
       "gstAmount": "16.8182",
       "amountPaid": "185.0000",
@@ -46939,7 +59425,7 @@ export const DEMO: DemoShape = {
       "invoiceId": "inv_1041",
       "invoiceNumber": "INV-1041",
       "partyName": "Riverina Produce Transport",
-      "date": "2026-09-05",
+      "date": "2026-09-10",
       "amount": "1023.0000",
       "method": "bank",
       "reference": "EFT INV-1041"
@@ -46949,7 +59435,7 @@ export const DEMO: DemoShape = {
       "invoiceId": "inv_1039",
       "invoiceNumber": "INV-1039",
       "partyName": "Northline Freight Co",
-      "date": "2026-08-14",
+      "date": "2026-08-19",
       "amount": "3180.1000",
       "method": "bank",
       "reference": "EFT INV-1039"
@@ -47548,7 +60034,7 @@ export const DEMO: DemoShape = {
   "trips": [
     {
       "id": "trip_001",
-      "date": "2026-09-11",
+      "date": "2026-09-16",
       "fromPlace": "Goulburn depot",
       "toPlace": "Sydney markets",
       "km": 196,
@@ -47557,7 +60043,7 @@ export const DEMO: DemoShape = {
     },
     {
       "id": "trip_002",
-      "date": "2026-09-10",
+      "date": "2026-09-15",
       "fromPlace": "Sydney markets",
       "toPlace": "Goulburn depot",
       "km": 196,
@@ -47566,7 +60052,7 @@ export const DEMO: DemoShape = {
     },
     {
       "id": "trip_003",
-      "date": "2026-09-08",
+      "date": "2026-09-13",
       "fromPlace": "Goulburn depot",
       "toPlace": "Wagga Wagga",
       "km": 248,
@@ -47575,7 +60061,7 @@ export const DEMO: DemoShape = {
     },
     {
       "id": "trip_004",
-      "date": "2026-09-07",
+      "date": "2026-09-12",
       "fromPlace": "Wagga Wagga",
       "toPlace": "Dubbo",
       "km": 322,
@@ -47584,7 +60070,7 @@ export const DEMO: DemoShape = {
     },
     {
       "id": "trip_005",
-      "date": "2026-09-05",
+      "date": "2026-09-10",
       "fromPlace": "Dubbo",
       "toPlace": "Goulburn depot",
       "km": 412,
@@ -47593,7 +60079,7 @@ export const DEMO: DemoShape = {
     },
     {
       "id": "trip_006",
-      "date": "2026-09-02",
+      "date": "2026-09-07",
       "fromPlace": "Goulburn depot",
       "toPlace": "Bathurst",
       "km": 168,
@@ -47602,7 +60088,7 @@ export const DEMO: DemoShape = {
     },
     {
       "id": "trip_007",
-      "date": "2026-08-31",
+      "date": "2026-09-05",
       "fromPlace": "Home",
       "toPlace": "Goulburn depot",
       "km": 14,
@@ -47611,7 +60097,7 @@ export const DEMO: DemoShape = {
     },
     {
       "id": "trip_008",
-      "date": "2026-08-28",
+      "date": "2026-09-02",
       "fromPlace": "Goulburn depot",
       "toPlace": "Orange",
       "km": 214,
@@ -47620,7 +60106,7 @@ export const DEMO: DemoShape = {
     },
     {
       "id": "trip_009",
-      "date": "2026-08-24",
+      "date": "2026-08-29",
       "fromPlace": "Orange",
       "toPlace": "Goulburn depot",
       "km": 214,
@@ -47629,7 +60115,7 @@ export const DEMO: DemoShape = {
     },
     {
       "id": "trip_010",
-      "date": "2026-08-19",
+      "date": "2026-08-24",
       "fromPlace": "Goulburn depot",
       "toPlace": "Canberra",
       "km": 92,
@@ -47649,7 +60135,7 @@ export const DEMO: DemoShape = {
       "itemName": "Load restraint straps",
       "kind": "count",
       "quantity": 42,
-      "at": "2026-08-12",
+      "at": "2026-08-17",
       "note": "Opening count",
       "byName": "Sam Oyelaran"
     },
@@ -47659,7 +60145,7 @@ export const DEMO: DemoShape = {
       "itemName": "Load restraint straps",
       "kind": "sale",
       "quantity": -7,
-      "at": "2026-09-05",
+      "at": "2026-09-10",
       "note": "Fitted to trailer",
       "byName": "Dan Whitby"
     },
@@ -47669,7 +60155,7 @@ export const DEMO: DemoShape = {
       "itemName": "Corner protectors",
       "kind": "count",
       "quantity": 6,
-      "at": "2026-08-11",
+      "at": "2026-08-16",
       "note": "Opening count",
       "byName": "Sam Oyelaran"
     },
@@ -47679,7 +60165,7 @@ export const DEMO: DemoShape = {
       "itemName": "Corner protectors",
       "kind": "sale",
       "quantity": -1,
-      "at": "2026-09-04",
+      "at": "2026-09-09",
       "note": "Fitted to trailer",
       "byName": "Dan Whitby"
     },
@@ -47689,7 +60175,7 @@ export const DEMO: DemoShape = {
       "itemName": "Heavy-duty tarp",
       "kind": "count",
       "quantity": 0,
-      "at": "2026-08-10",
+      "at": "2026-08-15",
       "note": "Opening count",
       "byName": "Sam Oyelaran"
     },
@@ -47699,7 +60185,7 @@ export const DEMO: DemoShape = {
       "itemName": "Heavy-duty tarp",
       "kind": "sale",
       "quantity": -1,
-      "at": "2026-09-03",
+      "at": "2026-09-08",
       "note": "Fitted to trailer",
       "byName": "Dan Whitby"
     }
@@ -47710,7 +60196,7 @@ export const DEMO: DemoShape = {
       "name": "Queensland trip",
       "target": "4800.0000",
       "saved": "2150.0000",
-      "targetDate": "2027-04-11",
+      "targetDate": "2027-04-16",
       "perMonth": "378.5700",
       "done": false
     },
@@ -47728,7 +60214,7 @@ export const DEMO: DemoShape = {
       "name": "Jem's bike",
       "target": "900.0000",
       "saved": "900.0000",
-      "targetDate": "2026-11-11",
+      "targetDate": "2026-11-16",
       "perMonth": null,
       "done": true
     }
@@ -47768,12 +60254,12 @@ export const DEMO: DemoShape = {
     "priceCents": 4900,
     "realtime": true,
     "scanQuota": 200,
-    "scansUsed": 31,
-    "scansRemaining": 169,
+    "scansUsed": 40,
+    "scansRemaining": 160,
     "seatLimit": 5,
     "seatsUsed": 4,
     "retentionMonths": 84,
-    "periodEnds": "2026-10-11",
+    "periodEnds": "2026-10-16",
     "firmName": "Marsh & Co Accountants"
   },
   "settings": {
@@ -47878,8 +60364,8 @@ export const DEMO: DemoShape = {
       "status": "draft",
       "partyId": "pty_hay",
       "partyName": "Hay Plains Grain",
-      "issueDate": "2026-09-11",
-      "dueDate": "2026-09-25",
+      "issueDate": "2026-09-16",
+      "dueDate": "2026-09-30",
       "lines": [
         {
           "lineNumber": 1,
@@ -47906,8 +60392,8 @@ export const DEMO: DemoShape = {
       "status": "sent",
       "partyId": "pty_northfreight",
       "partyName": "Northline Freight Co",
-      "issueDate": "2026-09-09",
-      "dueDate": "2026-09-23",
+      "issueDate": "2026-09-14",
+      "dueDate": "2026-09-28",
       "lines": [
         {
           "lineNumber": 1,
@@ -47945,8 +60431,8 @@ export const DEMO: DemoShape = {
       "status": "sent",
       "partyId": "pty_hay",
       "partyName": "Hay Plains Grain",
-      "issueDate": "2026-09-08",
-      "dueDate": "2026-10-08",
+      "issueDate": "2026-09-13",
+      "dueDate": "2026-10-13",
       "lines": [
         {
           "lineNumber": 1,
@@ -47984,8 +60470,8 @@ export const DEMO: DemoShape = {
       "status": "paid",
       "partyId": "pty_riverina",
       "partyName": "Riverina Produce Transport",
-      "issueDate": "2026-09-05",
-      "dueDate": "2026-09-19",
+      "issueDate": "2026-09-10",
+      "dueDate": "2026-09-24",
       "lines": [
         {
           "lineNumber": 1,
@@ -48015,6 +60501,45 @@ export const DEMO: DemoShape = {
       "totalAmount": "1023.0000",
       "amountPaid": "1023.0000",
       "amountDue": "0.0000"
+    },
+    {
+      "id": "inv_1040",
+      "number": "INV-1040",
+      "kind": "invoice",
+      "status": "overdue",
+      "partyId": "pty_gundagai",
+      "partyName": "Gundagai Cold Storage",
+      "issueDate": "2026-08-26",
+      "dueDate": "2026-09-09",
+      "lines": [
+        {
+          "lineNumber": 1,
+          "itemId": "itm_refrig",
+          "description": "Refrigerated surcharge",
+          "unit": "trip",
+          "quantity": 3,
+          "unitPrice": "240.0000",
+          "netAmount": "720.0000",
+          "gstAmount": "72.0000",
+          "totalAmount": "792.0000"
+        },
+        {
+          "lineNumber": 2,
+          "itemId": "itm_pallet",
+          "description": "Pallet handling",
+          "unit": "ea",
+          "quantity": 26,
+          "unitPrice": "14.5000",
+          "netAmount": "377.0000",
+          "gstAmount": "37.7000",
+          "totalAmount": "414.7000"
+        }
+      ],
+      "netAmount": "1097.0000",
+      "gstAmount": "109.7000",
+      "totalAmount": "1206.7000",
+      "amountPaid": "0.0000",
+      "amountDue": "1206.7000"
     },
     {
       "id": "inv_h0001",
@@ -48073,45 +60598,6 @@ export const DEMO: DemoShape = {
       "amountDue": "0.0000"
     },
     {
-      "id": "inv_1040",
-      "number": "INV-1040",
-      "kind": "invoice",
-      "status": "overdue",
-      "partyId": "pty_gundagai",
-      "partyName": "Gundagai Cold Storage",
-      "issueDate": "2026-08-21",
-      "dueDate": "2026-09-04",
-      "lines": [
-        {
-          "lineNumber": 1,
-          "itemId": "itm_refrig",
-          "description": "Refrigerated surcharge",
-          "unit": "trip",
-          "quantity": 3,
-          "unitPrice": "240.0000",
-          "netAmount": "720.0000",
-          "gstAmount": "72.0000",
-          "totalAmount": "792.0000"
-        },
-        {
-          "lineNumber": 2,
-          "itemId": "itm_pallet",
-          "description": "Pallet handling",
-          "unit": "ea",
-          "quantity": 26,
-          "unitPrice": "14.5000",
-          "netAmount": "377.0000",
-          "gstAmount": "37.7000",
-          "totalAmount": "414.7000"
-        }
-      ],
-      "netAmount": "1097.0000",
-      "gstAmount": "109.7000",
-      "totalAmount": "1206.7000",
-      "amountPaid": "0.0000",
-      "amountDue": "1206.7000"
-    },
-    {
       "id": "inv_h0005",
       "number": "INV-0905",
       "kind": "invoice",
@@ -48146,8 +60632,8 @@ export const DEMO: DemoShape = {
       "status": "paid",
       "partyId": "pty_northfreight",
       "partyName": "Northline Freight Co",
-      "issueDate": "2026-08-14",
-      "dueDate": "2026-08-28",
+      "issueDate": "2026-08-19",
+      "dueDate": "2026-09-02",
       "lines": [
         {
           "lineNumber": 1,
@@ -49909,8 +62395,8 @@ export const DEMO: DemoShape = {
     "planCode": "practice",
     "realtime": true,
     "scanQuota": 200,
-    "scansUsed": 31,
-    "scansRemaining": 169,
+    "scansUsed": 40,
+    "scansRemaining": 160,
     "firmName": "Marsh & Co Accountants"
   }
 };

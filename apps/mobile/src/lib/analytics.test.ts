@@ -38,6 +38,9 @@ function doc(over: Partial<DocumentView> & { issueDate: string; payableAmount: s
     taxExclusiveAmount: '0.0000',
     taxAmount: '0.0000',
     gstFreeAmount: null,
+    // These analytics never read the per-category split; an empty array is the
+    // honest default for a fixture that asserts nothing about tax treatment.
+    taxSubtotals: [],
     isTaxInvoice: false,
     docType: 'receipt',
     category: 'Groceries',

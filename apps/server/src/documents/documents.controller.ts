@@ -56,6 +56,7 @@ import { abnIsValid, validate } from '../extraction/validators.js';
 import { getCaptureForDocument } from '../repo.js';
 import { get as readObject } from '../storage.js';
 import { issueImageToken } from '../tokens.js';
+import { gstFreeAmount, taxSubtotalsFromLines } from '../extraction/tax-subtotals';
 
 /* ── DTOs ────────────────────────────────────────────────────────────────── */
 
@@ -178,9 +179,19 @@ export function toWire(document: DocumentRow, lines: LineRow[], pages: CapturePa
   const failures = compliance.failures ?? [];
   const findings: ExtractionFinding[] = compliance.findings ?? [];
   const payable = document.payable_amount ?? '0';
-  const gstFree = lines
-    .filter((l) => l.gst_category_code === 'Z')
-    .reduce((acc, l) => acc + Number(l.line_net_amount ?? 0), 0);
+
+  // Derived from the lines with EXACT decimal arithmetic. The previous version
+  // was `reduce((acc, l) => acc + Number(l.line_net_amount), 0)` — float
+  // arithmetic on money, against docs/PLAN.md principle 4, on precisely the
+  // figure the per-category wedge depends on.
+  const taxSubtotals = taxSubtotalsFromLines(
+    lines.map((l) => ({
+      amount: l.line_net_amount,
+      gstFree: l.gst_category_code === 'Z',
+    })),
+    document.tax_amount,
+    payable,
+  );
 
   const wireLines = lines.map((l) => ({
     lineNumber: l.line_number,
@@ -205,7 +216,8 @@ export function toWire(document: DocumentRow, lines: LineRow[], pages: CapturePa
     taxExclusiveAmount: document.tax_exclusive_amount ?? '0.0000',
     taxAmount: document.tax_amount ?? '0.0000',
     payableAmount: payable,
-    gstFreeAmount: gstFree > 0 ? gstFree.toFixed(4) : null,
+    gstFreeAmount: gstFreeAmount(taxSubtotals),
+    taxSubtotals,
     isTaxInvoice: document.is_tax_invoice,
     docType: document.is_tax_invoice ? ('tax_invoice' as const) : ('receipt' as const),
     // Categorisation is a later phase; until then the deduction row is unset

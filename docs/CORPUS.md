@@ -260,7 +260,7 @@ The point of the whole exercise. Against `docs/GAPS.md` and
 | **B4** `corrections per 100` as a column | Deriving it from `scoring.py` is one column. §4's control stops it being quoted early |
 | **C1** Extractor points at spans instead of reading | **Architectural, not statistical.** Feeding DocDOM spans + image and asking which span carries each field is a prompt and type change, testable on Tier S |
 | **C2** No span means null | A code path with a test. The cleanest possible synthetic test |
-| **E1** Per-category GST in the review UI and BAS pack | Needs no measurement at all. **The wedge** |
+| ~~**E1**~~ **DONE 2026-09-16** | `document_tax_subtotals` had been in the schema since migration 0004 and was **never written**, so `proposeTransaction`'s fallback refused every mixed docket as `ambiguous_tax_categories` — the wedge case could not reach the ledger at all. Now derived exactly, persisted, served, and shown on the review screen. BAS pack waits on D34 |
 | **OD-1** `snap-ocr` local Expo module | Needs two floor devices, not AU paper |
 | **OD-2** DocDOM types into `@snap/api-contract` | Pure refactor |
 | **OD-3** `@snap/docai-preview` structurer | Its unit tests are explicitly specified against the synthetic fixtures |

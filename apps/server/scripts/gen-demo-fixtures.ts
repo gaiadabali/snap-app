@@ -24,6 +24,8 @@ import {
   type WorksheetInputs,
 } from '@snap/tax-engine';
 
+import { taxSubtotalsFromLines } from '../src/extraction/tax-subtotals';
+
 const OUT = join(
   dirname(fileURLToPath(import.meta.url)),
   '..', '..', 'mobile', 'src', 'fixtures', 'demo.ts',
@@ -173,6 +175,22 @@ const LINE_TEMPLATES: Record<string, LineSpec[]> = {
 };
 
 /** Scaled-integer split so the parts sum to the whole, to the last cent. */
+/**
+ * The per-category tax split for a demo document — Peppol BG-23.
+ *
+ * Calls the SAME function the server calls (`taxSubtotalsFromLines`), rather
+ * than computing a demo-only variant. A fixture that disagrees with production
+ * is a fixture that hides the bug production has, and the mobile app is built
+ * against these figures.
+ */
+function subtotalsFor(
+  lines: Array<{ amount: string; gstFree: boolean }>,
+  taxAmount: string,
+  payableAmount: string,
+) {
+  return taxSubtotalsFromLines(lines, taxAmount, payableAmount);
+}
+
 function splitExact(total: Money, shares: number[]): Money[] {
   const units = BigInt(Math.round(Number(total) * 10000));
   const out: bigint[] = [];
@@ -195,10 +213,59 @@ function splitExact(total: Money, shares: number[]): Money[] {
   });
 }
 
-function linesFor(category: string, total: Money, confidence: number, detailed: boolean) {
-  const template = detailed
+/**
+ * Lines for a demo document, made to AGREE with its own GST.
+ *
+ * `gstFreePortion` is the document's GST-free amount, which the seed states and
+ * from which the document's GST is computed. The lines have to add up to the
+ * same story, and they did not: `doc_06` is a $84.20 docket whose seed says
+ * $41.60 is GST-free, while its line template marks 25% — $21.05 — so its
+ * printed GST was one eleventh of $42.60 against lines claiming $63.15 was
+ * taxable. Nothing looked broken, because both figures reconcile to the
+ * payable independently.
+ *
+ * `docs/WEB.md` §2: worked examples must actually reconcile. This rescales the
+ * template's shares so the GST-free lines sum to EXACTLY the stated portion,
+ * leaving every document total — and therefore every figure on the marketing
+ * site — unchanged. Where a template has no GST-free line but the document
+ * claims a portion (the single-line historical documents), the line is split in
+ * two, which is also a truer picture of a grocery shop.
+ */
+function linesFor(
+  category: string,
+  total: Money,
+  confidence: number,
+  detailed: boolean,
+  gstFreePortion: Money = money.ZERO,
+) {
+  let template = detailed
     ? (LINE_TEMPLATES[category] ?? [{ description: category, qty: 1, share: 1 }])
     : [{ description: category, qty: 1, share: 1 }];
+
+  const wantsFree = money.compare(gstFreePortion, money.ZERO) > 0;
+  if (wantsFree) {
+    const freeShare = Number(gstFreePortion) / Number(total);
+    const templateFree = template.filter((t) => t.gstFree === true);
+    if (templateFree.length === 0) {
+      // No GST-free line to carry it: split the category in two rather than
+      // leaving the document asserting a portion no line accounts for.
+      template = [
+        { description: `${category} (GST-free)`, qty: 1, share: freeShare, gstFree: true },
+        { description: category, qty: 1, share: 1 - freeShare },
+      ];
+    } else {
+      // Rescale: GST-free lines take exactly `freeShare` between them, the rest
+      // share what remains, both in their original proportions.
+      const freeTotal = templateFree.reduce((a, t) => a + t.share, 0);
+      const taxedTotal = template.filter((t) => t.gstFree !== true).reduce((a, t) => a + t.share, 0);
+      template = template.map((t) =>
+        t.gstFree === true
+          ? { ...t, share: (t.share / freeTotal) * freeShare }
+          : { ...t, share: taxedTotal === 0 ? 0 : (t.share / taxedTotal) * (1 - freeShare) },
+      );
+    }
+  }
+
   const amounts = splitExact(total, template.map((t) => t.share));
   return template.map((t, i) => {
     const amount = amounts[i]!;
@@ -333,7 +400,10 @@ const docs = SEEDS.map((s, i) => {
     /** Under $82.50 the ATO does not require a tax invoice at all. */
     belowTaxInvoiceThreshold: belowThreshold,
     findings: findingsFor(failures, inclusive, belowThreshold),
-    lines: linesFor(s.category, inclusive, s.confidence, true),
+    lines: linesFor(s.category, inclusive, s.confidence, true, gstFree),
+    taxSubtotals: subtotalsFor(
+      linesFor(s.category, inclusive, s.confidence, true, gstFree), gst, inclusive,
+    ),
     linesBalance: true,
     // No photographs ship in the repo, so the demo has no stored original for
     // a seeded document; the review screen renders a facsimile from the
@@ -500,7 +570,10 @@ function generate(
           // One line for a historical docket: enough to be a real document,
           // small enough that a year of them does not bloat the bundle.
           findings: [],
-          lines: linesFor(t.category, inclusive, 0.96, false),
+          lines: linesFor(t.category, inclusive, 0.96, false, gstFree),
+          taxSubtotals: subtotalsFor(
+            linesFor(t.category, inclusive, 0.96, false, gstFree), gst, inclusive,
+          ),
           linesBalance: true,
           imageUrl: null,
           pages: [{ pageNumber: 1, imageUrl: '', source: 'capture' as const }],
@@ -579,7 +652,10 @@ const subscriptionDocs: GenDoc[] = [];
         gstAtRisk: null,
         belowTaxInvoiceThreshold: money.compare(inclusive, TAX_INVOICE_THRESHOLD) < 0,
         findings: [],
-        lines: linesFor(sub.category, inclusive, 0.98, false),
+        lines: linesFor(sub.category, inclusive, 0.98, false, gstFree),
+        taxSubtotals: subtotalsFor(
+          linesFor(sub.category, inclusive, 0.98, false, gstFree), gst, inclusive,
+        ),
         linesBalance: true,
         imageUrl: null,
         pages: [{ pageNumber: 1, imageUrl: '', source: 'capture' as const }],

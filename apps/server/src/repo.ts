@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
+import { taxSubtotalsFromLines } from './extraction/tax-subtotals';
 
 import { NotAMemberError, listWorkspacesFor, withTenant, withTenantAs, type Tx } from '@snap/db';
 import type {
@@ -1277,6 +1278,35 @@ export async function saveExtraction(
           ${line.description.value ?? 'Item'}, ${line.quantity.value ?? 1},
           ${line.unitPrice.value ?? line.amount.value}, ${line.amount.value},
           ${line.gstFree.value === true ? 'Z' : 'S'}, ${line.amount.confidence}
+        )
+      `);
+    }
+
+    // ── Per-category tax subtotals (Peppol BG-23) ─────────────────────────
+    //
+    // `document_tax_subtotals` has existed since migration 0004 and nothing
+    // ever wrote to it. That was not a dormant table: `proposeTransaction`
+    // falls back to header totals when there are no subtotals, and that
+    // fallback REFUSES a document carrying more than one tax treatment
+    // (`ambiguous_tax_categories`). So the mixed GST/GST-free docket that is
+    // the product's entire wedge could not be posted to the ledger at all.
+    //
+    // Replaced as a set with the lines, for the same reason they are: a split
+    // that describes a previous reading of this document is not something
+    // anybody can audit.
+    await tx.execute(sql`delete from document_tax_subtotals where document_id = ${documentId}`);
+    const subtotals = taxSubtotalsFromLines(
+      e.lines.map((l) => ({ amount: l.amount.value, gstFree: l.gstFree.value === true })),
+      e.taxAmount.value,
+      e.payableAmount.value,
+    );
+    for (const s of subtotals) {
+      await tx.execute(sql`
+        insert into document_tax_subtotals (
+          id, tenant_id, document_id, category_code, rate, taxable_amount, tax_amount
+        ) values (
+          ${randomUUID()}, ${tenantId}, ${documentId},
+          ${s.categoryCode}, ${s.rate}, ${s.taxableAmount}, ${s.taxAmount}
         )
       `);
     }
