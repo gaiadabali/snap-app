@@ -60,3 +60,11 @@ Thumbs.db
 .design-directions/
 CLAUDE.md
 AGENTS.md
+
+# Generated tier-S corpus images (apps/server/bench/factory). ~180MB for 300
+# documents, and derived: `python -m factory.generate --seed <n>` rebuilds them.
+# The MANIFEST beside them IS committed, because it is the ground truth and it
+# is small. That split is only safe because truth is chosen BEFORE rendering
+# (docs/CORPUS.md §5.2) — a re-render that shifts a pixel cannot make the
+# manifest wrong, so the images need not be byte-reproducible.
+apps/server/bench/corpus/generated/*.png

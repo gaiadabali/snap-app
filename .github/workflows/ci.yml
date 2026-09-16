@@ -114,10 +114,16 @@ jobs:
       # These tests need no database, no sidecar and no model — they assert
       # that the corpus declares what it is evidence FOR, and that the headline
       # metric REFUSES below tier R (docs/CORPUS.md §4).
-      - name: Corpus provenance control
+      # The factory tests are here for a sharper reason than the others: every
+      # accuracy figure the engine ever reports is scored against what the
+      # factory emits, so an arithmetic slip there does not fail — it grades the
+      # engine against the wrong answer and the engine looks wrong when it was
+      # right. They need no browser (rendering is not exercised here, only the
+      # truth), so they cost seconds.
+      - name: Corpus provenance control and factory truth
         working-directory: apps/server/bench
         run: |
-          python3 -m unittest test_provenance -v
+          python3 -m unittest test_provenance factory.test_documents -v
           python3 provenance.py
 
       - name: Database suite

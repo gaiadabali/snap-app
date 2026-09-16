@@ -88,8 +88,17 @@ Rules:
 - If a field is not legible or not printed, return null. NEVER guess a value."""
 
 
-def load_manifest():
-    with open(os.path.join(HERE, 'manifest.json'), encoding='utf-8') as f:
+def load_manifest(path: str | None = None):
+    """Load a manifest. Defaults to the committed four-document one.
+
+    `--manifest corpus/generated/manifest.json` points the harness at the
+    factory's tier-S corpus instead (docs/CORPUS.md §5). Both go through the
+    same two controls below, because a generated corpus is not a trusted one.
+    """
+    path = path or os.path.join(HERE, 'manifest.json')
+    if not os.path.isabs(path):
+        path = os.path.join(HERE, path)
+    with open(path, encoding='utf-8') as f:
         manifest = json.load(f)
     # Durable fix, not a one-time patch: a ground-truth ABN that fails its own
     # checksum makes the corpus unable to prove anything about the mod-89
@@ -374,9 +383,12 @@ def main():
                      help='also probe paddleocr/docling/llamaparse (report not-run if unavailable)')
     ap.add_argument('--dry-run', action='store_true', help='exercise the harness without calling any engine')
     ap.add_argument('--out-dir', default=os.path.join(HERE, 'results'))
+    ap.add_argument('--manifest', default=None,
+                    help='manifest to score against (default: bench/manifest.json). '
+                         'Use corpus/generated/manifest.json for the factory corpus.')
     args = ap.parse_args()
 
-    manifest = load_manifest()
+    manifest = load_manifest(args.manifest)
     engines = build_engines(args.models, args.other_engines)
 
     report = evaluate(manifest, engines, args.docs, args.repeats, args.timeout, args.dry_run)
