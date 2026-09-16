@@ -45,6 +45,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+import devices as dev
 import provenance as prov  # noqa: E402
 import scoring  # noqa: E402
 
@@ -139,6 +140,16 @@ def main() -> int:
     ap.add_argument('--out', default=None)
     args = ap.parse_args()
 
+    # A label satisfied the check below without ever being read. Classify it,
+    # so "which phone" becomes a fact the report is bound by rather than a
+    # string printed at the top of it.
+    if args.device:
+        try:
+            dev.get(args.device)
+        except dev.UnknownDevice as exc:
+            print(f'REFUSED: {exc}', file=sys.stderr)
+            return 2
+
     if args.docdom_dir and not args.device:
         print('REFUSED: --docdom-dir needs --device. docs/ON-DEVICE.md §1.2 pins the floor at a '
               '4GB Galaxy A16 5G and a 4GB iPhone 11/12 because a flagship produces numbers that '
@@ -212,6 +223,7 @@ def main() -> int:
     print()
     print(prov.banner(prov.weakest_tier(docs)))
     print(f'DocDOM source: {source}')
+    print(dev.banner(args.device))
     if not args.docdom_dir:
         print('  Structurer only — this measures the RULES, not the phone. OD-6 needs DocDOMs')
         print('  exported from a floor device (docs/ON-DEVICE.md §6.4 step 2).')
@@ -275,6 +287,9 @@ def main() -> int:
         json.dump({
             'manifest': args.manifest, 'tier_floor': prov.weakest_tier(docs),
             'docdom_source': source, 'device': args.device,
+            'device_role': dev.role_of(args.device) if args.device else None,
+            'device_may_decide_fit': dev.may_decide_fit(args.device)[0] if args.device else None,
+            'device_fit_reason': dev.may_decide_fit(args.device)[1] if args.device else None,
             'per_field': {k: dict(v) for k, v in counts.items()},
             'shown': dict(shown), 'truth_present': dict(truth_present),
             'corrections_per_100': actual, 'blank_form_baseline_per_100': baseline,
