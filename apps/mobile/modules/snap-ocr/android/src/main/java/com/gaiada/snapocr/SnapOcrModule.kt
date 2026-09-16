@@ -137,7 +137,15 @@ class SnapOcrModule : Module() {
         "kind" to "unknown",
         "page" to 1,
         "order" to 0,
-        "box" to unionOf(lines.map { it["box"] as Map<String, Any> }),
+        // Union the DETECTIONS, not the assembled lines. Reaching back into
+        // the line maps meant casting `Any?` out of a `Map<String, Any>` --
+        // the compiler's only complaint about this file, and a real one: the
+        // cast is unchecked, so a future change to the shape `assembleRows`
+        // returns would compile cleanly and throw ClassCastException on a
+        // phone. A row's box is already the union of its detections, so a
+        // union of unions is the same rectangle by construction, and this
+        // spelling is type-checked.
+        "box" to unionOf(detections.map { it.box }),
         "lines" to lines,
         "provenance" to provenance(1.0),
       ),
