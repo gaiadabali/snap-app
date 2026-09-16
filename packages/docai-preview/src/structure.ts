@@ -233,7 +233,14 @@ const DOC_TYPE = /\*+|\b(TAX\s*INVOICE|INVOICE|RECEIPT|STATEMENT|ADJUSTMENT\s*NO
 // testing rather than the pattern being loosened, so `PRICES PLUS` is still a
 // business name and not a heading.
 const TABLE_HEADER = /\b(DESCRIPTION|QTY|QUANTITY|UNIT|RATE|PRICE|AMOUNT|ITEM|CODE|DETAILS|SUBTOTAL)\b/i;
-const despaced = (text: string) => text.replace(/\s+/g, '');
+// Join only letter-to-letter, never letter-to-digit.
+//
+// Collapsing every space turned `DE SCRIPTION 11.00` into `DESCRIPTION11.00`,
+// where `\bDESCRIPTION\b` does not match because a digit follows — so the
+// heading survived and became the supplier on 17 hardware invoices. Joining
+// only across letters gives `DESCRIPTION 11.00`, which matches, while
+// `PRICES PLUS` becomes `PRICESPLUS` and still does NOT match `\bPRICE\b`.
+const despaced = (text: string) => text.replace(/(?<=[A-Za-z])\s+(?=[A-Za-z])/g, '');
 // A printed date, or an operator / till stamp. `18/01/2026 Op: TRENT` is 32%
 // digits so the digit-ratio filter passed it, and its box was TALLER than the
 // supplier's, so sorting by height chose it.
@@ -410,7 +417,24 @@ function saysTaxInvoice(lines: PositionedLine[]): PreviewField {
   return { ...ABSENT, value: 'false', normalisedValue: 'false' };
 }
 
-const ADDRESSY = /\b(ST|STREET|RD|ROAD|HWY|HIGHWAY|AVE|AVENUE|PO\s*BOX|NSW|VIC|QLD|WA|SA|TAS|NT|ACT)\b|\d{4}$/i;
+// An address, which needs a SHAPE and not merely a street word.
+//
+// This matched a bare `\bSTREET\b`, so `Brennan Street Grocery` — a real
+// supplier, appearing on 11 dockets in the corpus — was filtered out as an
+// address and the rule fell through to the date stamp beneath it. Australian
+// businesses are full of street names: Brennan Street Grocery, Hume Highway
+// Motors, Parkes Road Auto.
+//
+// A street line has a NUMBER in front of the street word (`387 Hume Hwy`), or
+// carries a state, or ends in a postcode. A name does none of those.
+const ADDRESSY =
+  /\b\d{1,5}[A-Za-z]?[\s,]+[A-Za-z'\-. ]{2,30}\b(ST|STREET|RD|ROAD|HWY|HIGHWAY|AVE|AVENUE|LANE|LN|PDE|PARADE|CRES|CRESCENT|CT|COURT|DR|DRIVE|PL|PLACE|TCE|TERRACE)\b|\bPO\s*BOX\b|\b(NSW|VIC|QLD|WA|SA|TAS|NT|ACT)\b|\b\d{4}\s*$/i;
+// The word boundary on that postcode is load-bearing. Without it `\d{4}$`
+// matched the TAIL of any longer number, so the row
+// `Cavanagh Transport Pty Ltd Invoice 59263` — the supplier, merged with the
+// invoice number by the recogniser — was filtered out as an address, and the
+// rule fell through to a line item. `59263` has no boundary before its last
+// four digits; a real postcode in `Shepparton VIC 3630` does.
 const CONTACTY = /\b(PH|PHONE|FAX|EMAIL|WWW|HTTP|ABN|ACN)\b|@|\.com|\.au/i;
 
 function supplier(lines: PositionedLine[]): PreviewField {
@@ -452,9 +476,8 @@ function supplier(lines: PositionedLine[]): PreviewField {
   const maxY = Math.max(...ys);
   const cutoff = minY + Math.max(1, (maxY - minY) * 0.25);
   const top = candidates.filter((l) => l.y <= cutoff);
-  const pool = top.length > 0 ? top : candidates;
 
-  const named = pool
+  const nameable = (pool: typeof candidates) => pool
     .filter((l) => !ADDRESSY.test(l.stripped) && !CONTACTY.test(l.stripped))
     // Not mostly digits — that is a receipt number, not a business.
     .filter((l) => (l.stripped.replace(/\D/g, '').length / l.stripped.length) < 0.4)
@@ -465,6 +488,15 @@ function supplier(lines: PositionedLine[]): PreviewField {
     .filter((l) => !GST_WORDS.test(l.stripped))
     .filter((l) => !TABLE_HEADER.test(despaced(l.stripped)))
     .filter((l) => !DATEY.test(l.stripped));
+
+  // Widen to the whole document when the header band holds nothing nameable.
+  //
+  // The band is the top 25% of content, and narrowing to it BEFORE filtering
+  // meant a header made entirely of a banner, an address and a date stamp
+  // returned ABSENT while the business name sat just below the cut. Filtering
+  // first and widening second keeps the preference for the top of the docket
+  // without letting the band veto an answer the rest of the page can supply.
+  const named = nameable(top).length > 0 ? nameable(top) : nameable(candidates);
 
   if (named.length === 0) return ABSENT;
 
