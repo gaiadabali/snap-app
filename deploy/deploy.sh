@@ -50,6 +50,11 @@ if [[ "${SKIP_CADDY:-0}" == "1" ]]; then
 fi
 ENV_FILE="${HERE}/.env"
 
+# Set to 1 when the OCR sidecar could not be fetched or started. The rollout
+# then proceeds without it — see the pull step for why an optional shadow-stage
+# reader must never be able to abort a deploy of the website and API.
+DOCAI_DEGRADED=0
+
 log()  { echo "==> $*"; }
 fail() { echo "FAILED: $*" >&2; exit 1; }
 
@@ -85,7 +90,25 @@ esac
 if [[ "${PULL_MODE}" == "1" ]]; then
   # Named explicitly rather than defaulted: pulling the wrong registry's image
   # is a silent way to deploy something nobody reviewed.
-  [[ -n "${SERVER_IMAGE:-}" && -n "${WEB_IMAGE:-}" && -n "${DOCAI_IMAGE:-}" ]]     || fail "--pull needs SERVER_IMAGE, WEB_IMAGE and DOCAI_IMAGE in deploy/.env (e.g. ghcr.io/gaiadabali/snap-server)."
+  [[ -n "${SERVER_IMAGE:-}" && -n "${WEB_IMAGE:-}" ]]     || fail "--pull needs SERVER_IMAGE and WEB_IMAGE in deploy/.env (e.g. ghcr.io/gaiadabali/snap-server)."
+
+  # DOCAI_IMAGE is DERIVED, not demanded. Requiring it outright would have
+  # broken continuous deploy on every existing host the moment this shipped:
+  # the poller runs `deploy.sh --pull` against a deploy/.env that predates the
+  # sidecar, and a hard requirement fails before anything is pulled.
+  #
+  # Deriving from SERVER_IMAGE's own registry and owner is safe in a way a
+  # blanket default would not be. The rule this file states elsewhere — "named
+  # explicitly rather than defaulted: pulling the wrong registry's image is a
+  # silent way to deploy something nobody reviewed" — guards against pulling
+  # from somewhere UNREVIEWED. This cannot: it is the same registry, same
+  # owner, same tag, published by the same workflow run. Set DOCAI_IMAGE
+  # explicitly to override.
+  if [[ -z "${DOCAI_IMAGE:-}" ]]; then
+    DOCAI_IMAGE="${SERVER_IMAGE%/*}/snap-docai"
+    export DOCAI_IMAGE
+    log "DOCAI_IMAGE not set; derived ${DOCAI_IMAGE} from SERVER_IMAGE"
+  fi
   [[ -n "${IMAGE_TAG:-}" ]]     || fail "--pull needs IMAGE_TAG in deploy/.env naming an exact build (e.g. sha-1a2b3c4). Never 'latest' — a rollback must be able to name what it is rolling back to."
 fi
 
@@ -103,7 +126,25 @@ else
   if [[ "${PULL_MODE}" == "1" ]]; then
     export IMAGE_TAG
     log "Pulling prebuilt images ${SERVER_IMAGE}:${IMAGE_TAG} and ${WEB_IMAGE}:${IMAGE_TAG}"
-    "${COMPOSE[@]}" pull api worker docai web || fail "pull failed. The repo is private — has this host run 'docker login ghcr.io'? Does the tag exist?"
+    "${COMPOSE[@]}" pull api worker web || fail "pull failed. The repo is private — has this host run 'docker login ghcr.io'? Does the tag exist?"
+
+    # docai is pulled SEPARATELY and NON-FATALLY, and this is deliberate.
+    #
+    # The OCR sidecar is a shadow-stage dependency: `shadow.ts` treats an
+    # unreachable sidecar as "absent config, absent feature" and the extraction
+    # path is unchanged without it. The image is also ~2.4GB, which on a small
+    # VPS is the single most likely thing here to fail on disk.
+    #
+    # Aborting the whole rollout — website, API, migrations — because an
+    # OPTIONAL reader could not be fetched would be strictly worse than
+    # deploying without it. So: warn loudly, carry on, and let the health check
+    # below report it.
+    if ! "${COMPOSE[@]}" pull docai; then
+      DOCAI_DEGRADED=1
+      log "WARNING: could not pull ${DOCAI_IMAGE}:${IMAGE_TAG}. Continuing WITHOUT the OCR sidecar."
+      log "         The shadow stage will report 'sidecar not reachable' and extraction is unaffected."
+      log "         Check disk (the image is ~2.4GB) and 'docker login ghcr.io'."
+    fi
   else
     IMAGE_TAG="$(git rev-parse --short HEAD)"
     export IMAGE_TAG
@@ -132,6 +173,18 @@ else
   APP_DB_PASSWORD="${APP_DB_PASSWORD:?APP_DB_PASSWORD must be set in deploy/.env}" \
     node "${REPO_ROOT}/packages/db/scripts/db.mjs" appuser
 
+  # A missing docai image would make `up -d` fail for the whole set, which is
+  # the abort this script just went to some trouble to avoid. Drop it instead.
+  #
+  # Rebuilt element by element rather than with `${arr[@]/docai}`: that form
+  # SUBSTITUTES an empty string rather than removing the element, and
+  # `docker compose up -d api worker "" web` is an error about an empty service
+  # name — trading one abort for a more confusing one.
+  if [[ "${DOCAI_DEGRADED}" == "1" ]]; then
+    filtered=(); for s in "${SERVICES[@]}";        do [[ "${s}" == "docai" ]] || filtered+=("${s}"); done; SERVICES=("${filtered[@]}")
+    filtered=(); for s in "${HEALTH_SERVICES[@]}"; do [[ "${s}" == "docai" ]] || filtered+=("${s}"); done; HEALTH_SERVICES=("${filtered[@]}")
+  fi
+
   log "Starting ${SERVICES[*]} at image tag ${IMAGE_TAG}"
   "${COMPOSE[@]}" up -d "${SERVICES[@]}"
 
@@ -146,6 +199,10 @@ fi
 
 log "Waiting for containers to report healthy"
 for svc in "${HEALTH_SERVICES[@]}"; do
+  # Belt and braces: the degraded path rebuilds these arrays cleanly, so an
+  # empty element should be impossible. Skipping one costs nothing and beats
+  # asking docker about a service with no name.
+  [[ -n "${svc}" ]] || continue
   # Per-service budget. Everything here starts in seconds EXCEPT docai, which
   # loads PP-OCRv5 into memory before it will answer /health at all: its
   # healthcheck carries start_period 90s + interval 30s, so its first healthy
@@ -155,12 +212,22 @@ for svc in "${HEALTH_SERVICES[@]}"; do
   if [[ "${svc}" == "docai" ]]; then max_tries=150; else max_tries=60; fi
   budget=$(( max_tries * 2 ))
   tries=0
+  unhealthy=0
   until [[ "$(docker inspect -f '{{.State.Health.Status}}' "$("${COMPOSE[@]}" ps -q "${svc}")" 2>/dev/null)" == "healthy" ]]; do
     tries=$((tries + 1))
-    [[ "${tries}" -lt "${max_tries}" ]] || fail "${svc} did not become healthy within ${budget}s — check: docker compose -f deploy/docker-compose.yml logs ${svc}"
+    if [[ "${tries}" -ge "${max_tries}" ]]; then
+      # Every service here is load-bearing EXCEPT docai — see the pull step.
+      if [[ "${svc}" == "docai" ]]; then
+        unhealthy=1
+        log "WARNING: docai did not become healthy within ${budget}s. Deploying WITHOUT the OCR sidecar."
+        log "         Extraction is unaffected; the shadow stage degrades to absent. Logs: docker compose -f deploy/docker-compose.yml logs docai"
+        break
+      fi
+      fail "${svc} did not become healthy within ${budget}s — check: docker compose -f deploy/docker-compose.yml logs ${svc}"
+    fi
     sleep 2
   done
-  log "${svc}: healthy"
+  [[ "${unhealthy}" == "1" ]] || log "${svc}: healthy"
 done
 
 # ── The two checks docs/DEPLOY.md §7 says are worth doing by hand ──────────

@@ -269,6 +269,16 @@ target; `deploy/` holds everything.
 **Sizing.** 2 vCPU / 4 GB is comfortable. 2 GB works only if you deploy with
 `--pull` — see below.
 
+**The OCR sidecar cannot break a deploy.** `docai` is pulled, started and
+health-checked **non-fatally**: if the image will not fetch or the container
+will not come up, `deploy.sh` warns, drops it from the rollout and deploys
+everything else. That is not leniency — `shadow.ts` treats an unreachable
+sidecar as *absent config, absent feature*, so extraction is genuinely
+unaffected, and aborting a website and API rollout over an optional reader
+would be strictly worse. `DOCAI_IMAGE` is likewise derived from `SERVER_IMAGE`
+when unset, so a host whose `deploy/.env` predates the sidecar keeps deploying
+without an edit.
+
 **Disk, since 2026-09-16.** The `docai` OCR sidecar image is **~2.4 GB**. Almost
 none of that is model weights (PP-OCRv5 mobile is ~20 MB, baked in at build);
 it is paddlepaddle and its CUDA-less runtime. Budget **10 GB of free disk**
