@@ -1,0 +1,6189 @@
+{
+  "generated_at": "2026-09-16T07:42:27.098341+00:00",
+  "prompt_version": "v1",
+  "dry_run": false,
+  "documents": [
+    "tierp-cord-v2-0071",
+    "tierp-cord-v2-0039",
+    "tierp-cord-v2-0030",
+    "tierp-cord-v2-0062",
+    "tierp-cord-v2-0015",
+    "tierp-cord-v2-0042",
+    "tierp-cord-v2-0003",
+    "tierp-cord-v2-0009",
+    "tierp-cord-v2-0066",
+    "tierp-cord-v2-0028",
+    "tierp-cord-v2-0001",
+    "tierp-cord-v2-0093",
+    "gen-no_abn_van-0102",
+    "gen-supermarket-0043",
+    "gen-no_abn_van-0029",
+    "gen-supermarket-0084",
+    "gen-no_abn_van-0011",
+    "gen-cafe-0291",
+    "receipt-noabn",
+    "invoice-multipage",
+    "gen-no_abn_van-0006",
+    "gen-cafe-0016",
+    "gen-no_abn_van-0082",
+    "gen-trade_invoice-0020"
+  ],
+  "tier_floor": "S",
+  "tier_breakdown": {
+    "S": 12,
+    "P": 12,
+    "R": 0
+  },
+  "engines_run": [
+    "hosted:gemma4:31b",
+    "hosted:minimax-m3"
+  ],
+  "engines_skipped": {
+    "paddleocr-pp-structurev3": "paddleocr not installed (pip install paddleocr paddlepaddle)",
+    "docling": "docling not installed (pip install docling)",
+    "llamaparse": "llama-cloud-services not installed AND LLAMA_CLOUD_API_KEY not set"
+  },
+  "results": [
+    {
+      "document": "tierp-cord-v2-0071",
+      "engine": "hosted:gemma4:31b",
+      "requested_runs": 2,
+      "completed_runs": 2,
+      "errors": [],
+      "median_seconds": 2.8456671237945557,
+      "seconds_all": [
+        2.169372081756592,
+        3.5219621658325195
+      ],
+      "field_outcomes_by_run": {
+        "total_inclusive": [
+          "EXACT",
+          "EXACT"
+        ],
+        "gst_amount": [
+          "MISS",
+          "MISS"
+        ],
+        "supplier_abn": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "parsed_by_run": [
+        {
+          "supplier_name": "PIZZA HUT",
+          "supplier_abn": null,
+          "issue_date": null,
+          "total_inclusive": "282,000",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 6,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "CHOCO PUFF",
+              "amount": "29,091"
+            },
+            {
+              "description": "CREAMY BEEF CLS FTC",
+              "amount": "42,727"
+            },
+            {
+              "description": "NEW ORIENTAL CHK RICE",
+              "amount": "34,545"
+            },
+            {
+              "description": "LIPTON PITCHER",
+              "amount": "54,545"
+            },
+            {
+              "description": "SC/P SUPER SUPREME",
+              "amount": "47,273"
+            },
+            {
+              "description": "CB/P BLACK PEPP BEEF",
+              "amount": "48,182"
+            }
+          ]
+        },
+        {
+          "supplier_name": "PIZZA HUT",
+          "supplier_abn": null,
+          "issue_date": null,
+          "total_inclusive": "282,000",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 6,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "CHOCO PUFF",
+              "amount": "29,091"
+            },
+            {
+              "description": "CREAMY BEEF CLS FTC",
+              "amount": "42,727"
+            },
+            {
+              "description": "NEW ORIENTAL CHK RICE",
+              "amount": "34,545"
+            },
+            {
+              "description": "LIPTON PITCHER",
+              "amount": "54,545"
+            },
+            {
+              "description": "SC/P SUPER SUPREME",
+              "amount": "47,273"
+            },
+            {
+              "description": "CB/P BLACK PEPP BEEF",
+              "amount": "48,182"
+            }
+          ]
+        }
+      ],
+      "field_outcome_mode": {
+        "total_inclusive": "EXACT",
+        "gst_amount": "MISS",
+        "supplier_abn": "ABSTAIN_OK",
+        "is_tax_invoice": "EXACT",
+        "page_count": "EXACT",
+        "line_count": "EXACT"
+      },
+      "lines_total": 6,
+      "lines_matched_median": 6.0,
+      "parse_failures": 0,
+      "sample_raw_output": "```json\n{\"supplier_name\":\"PIZZA HUT\",\"supplier_abn\":null,\"issue_date\":null,\"total_inclusive\":\"282,000\",\"gst_amount\":null,\"is_tax_invoice\":false,\"line_count\":6,\"page_count\":1,\"lines\":[{\"description\":\"CHOCO PUFF\",\"amount\":\"29,091\"},{\"description\":\"CREAMY BEEF CLS FTC\",\"amount\":\"42,727\"},{\"description\":\"NEW ORIENTAL CHK RICE\",\"amount\":\"34,545\"},{\"description\":\"LIPTON PITCHER\",\"amount\":\"54,545\"},{\"description\":\"SC/P SUPER SUPREME\",\"amount\":\"47,273\"},{\"description\":\"CB/P BLACK PEPP BEEF\",\"amount\":\"48,182\"}]}\n```"
+    },
+    {
+      "document": "tierp-cord-v2-0039",
+      "engine": "hosted:gemma4:31b",
+      "requested_runs": 2,
+      "completed_runs": 2,
+      "errors": [],
+      "median_seconds": 6.52287483215332,
+      "seconds_all": [
+        6.452885150909424,
+        6.592864513397217
+      ],
+      "field_outcomes_by_run": {
+        "total_inclusive": [
+          "EXACT",
+          "EXACT"
+        ],
+        "gst_amount": [
+          "MISS",
+          "MISS"
+        ],
+        "supplier_abn": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "parsed_by_run": [
+        {
+          "supplier_name": "KFC",
+          "supplier_abn": null,
+          "issue_date": null,
+          "total_inclusive": "16,500",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 1,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "Chicken HCC, 1Pcs",
+              "amount": "15.000"
+            }
+          ]
+        },
+        {
+          "supplier_name": "KFC",
+          "supplier_abn": null,
+          "issue_date": null,
+          "total_inclusive": "16,500",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 1,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "Chicken HCC, 1Pcs",
+              "amount": "15.000"
+            }
+          ]
+        }
+      ],
+      "field_outcome_mode": {
+        "total_inclusive": "EXACT",
+        "gst_amount": "MISS",
+        "supplier_abn": "ABSTAIN_OK",
+        "is_tax_invoice": "EXACT",
+        "page_count": "EXACT",
+        "line_count": "EXACT"
+      },
+      "lines_total": 1,
+      "lines_matched_median": 1.0,
+      "parse_failures": 0,
+      "sample_raw_output": "```json\n{\"supplier_name\":\"KFC\",\"supplier_abn\":null,\"issue_date\":null,\"total_inclusive\":\"16,500\",\"gst_amount\":null,\"is_tax_invoice\":false,\"line_count\":1,\"page_count\":1,\"lines\":[{\"description\":\"Chicken HCC, 1Pcs\",\"amount\":\"15.000\"}]}\n```"
+    },
+    {
+      "document": "tierp-cord-v2-0030",
+      "engine": "hosted:gemma4:31b",
+      "requested_runs": 2,
+      "completed_runs": 2,
+      "errors": [],
+      "median_seconds": 11.111575245857239,
+      "seconds_all": [
+        10.234629392623901,
+        11.988521099090576
+      ],
+      "field_outcomes_by_run": {
+        "total_inclusive": [
+          "NORMALISED",
+          "NORMALISED"
+        ],
+        "gst_amount": [
+          "MISS",
+          "MISS"
+        ],
+        "supplier_abn": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "parsed_by_run": [
+        {
+          "supplier_name": null,
+          "supplier_abn": null,
+          "issue_date": null,
+          "total_inclusive": "113.886",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 2,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "SALMON PESTO",
+              "amount": "85.500"
+            },
+            {
+              "description": "SALMON PESTO",
+              "amount": "85.500"
+            }
+          ]
+        },
+        {
+          "supplier_name": null,
+          "supplier_abn": null,
+          "issue_date": null,
+          "total_inclusive": "113.886",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 2,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "SALMON PESTO",
+              "amount": "85.500"
+            },
+            {
+              "description": "SALMON PESTO",
+              "amount": "85.500"
+            }
+          ]
+        }
+      ],
+      "field_outcome_mode": {
+        "total_inclusive": "NORMALISED",
+        "gst_amount": "MISS",
+        "supplier_abn": "ABSTAIN_OK",
+        "is_tax_invoice": "EXACT",
+        "page_count": "EXACT",
+        "line_count": "EXACT"
+      },
+      "lines_total": 2,
+      "lines_matched_median": 0.0,
+      "parse_failures": 0,
+      "sample_raw_output": "```json\n{\"supplier_name\":null,\"supplier_abn\":null,\"issue_date\":null,\"total_inclusive\":\"113.886\",\"gst_amount\":null,\"is_tax_invoice\":false,\"line_count\":2,\"page_count\":1,\"lines\":[{\"description\":\"SALMON PESTO\",\"amount\":\"85.500\"},{\"description\":\"SALMON PESTO\",\"amount\":\"85.500\"}]}\n```"
+    },
+    {
+      "document": "tierp-cord-v2-0062",
+      "engine": "hosted:gemma4:31b",
+      "requested_runs": 2,
+      "completed_runs": 2,
+      "errors": [],
+      "median_seconds": 7.089637994766235,
+      "seconds_all": [
+        3.4370157718658447,
+        10.742260217666626
+      ],
+      "field_outcomes_by_run": {
+        "total_inclusive": [
+          "NORMALISED",
+          "NORMALISED"
+        ],
+        "gst_amount": [
+          "MISS",
+          "MISS"
+        ],
+        "supplier_abn": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "parsed_by_run": [
+        {
+          "supplier_name": null,
+          "supplier_abn": null,
+          "issue_date": null,
+          "total_inclusive": "40.000",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 2,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "PILLOW DURIA",
+              "amount": "36.364"
+            },
+            {
+              "description": "PLASTIK 25",
+              "amount": "0"
+            }
+          ]
+        },
+        {
+          "supplier_name": null,
+          "supplier_abn": null,
+          "issue_date": null,
+          "total_inclusive": "40.000",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 2,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "PILLOW DURIA",
+              "amount": "36.364"
+            },
+            {
+              "description": "PLASTIK 25",
+              "amount": "0"
+            }
+          ]
+        }
+      ],
+      "field_outcome_mode": {
+        "total_inclusive": "NORMALISED",
+        "gst_amount": "MISS",
+        "supplier_abn": "ABSTAIN_OK",
+        "is_tax_invoice": "EXACT",
+        "page_count": "EXACT",
+        "line_count": "EXACT"
+      },
+      "lines_total": 2,
+      "lines_matched_median": 1.0,
+      "parse_failures": 0,
+      "sample_raw_output": "```json\n{\"supplier_name\":null,\"supplier_abn\":null,\"issue_date\":null,\"total_inclusive\":\"40.000\",\"gst_amount\":null,\"is_tax_invoice\":false,\"line_count\":2,\"page_count\":1,\"lines\":[{\"description\":\"PILLOW DURIA\",\"amount\":\"36.364\"},{\"description\":\"PLASTIK 25\",\"amount\":\"0\"}]}\n```"
+    },
+    {
+      "document": "tierp-cord-v2-0015",
+      "engine": "hosted:gemma4:31b",
+      "requested_runs": 2,
+      "completed_runs": 2,
+      "errors": [],
+      "median_seconds": 3.959926724433899,
+      "seconds_all": [
+        3.921880006790161,
+        3.9979734420776367
+      ],
+      "field_outcomes_by_run": {
+        "total_inclusive": [
+          "EXACT",
+          "EXACT"
+        ],
+        "gst_amount": [
+          "MISS",
+          "MISS"
+        ],
+        "supplier_abn": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "WRONG",
+          "WRONG"
+        ]
+      },
+      "parsed_by_run": [
+        {
+          "supplier_name": null,
+          "supplier_abn": null,
+          "issue_date": null,
+          "total_inclusive": "70,000",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 5,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "[LG] BLACK SAKURA",
+              "amount": "59,091"
+            },
+            {
+              "description": "LONGAN",
+              "amount": "0"
+            },
+            {
+              "description": "ROASTED ALMOND",
+              "amount": "0"
+            },
+            {
+              "description": "MANGGO",
+              "amount": "0"
+            },
+            {
+              "description": "MINERAL WATER (bundling) 5k",
+              "amount": "4,545"
+            }
+          ]
+        },
+        {
+          "supplier_name": null,
+          "supplier_abn": null,
+          "issue_date": null,
+          "total_inclusive": "70,000",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 5,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "[LG] BLACK SAKURA",
+              "amount": "59,091"
+            },
+            {
+              "description": "LONGAN",
+              "amount": "0"
+            },
+            {
+              "description": "ROASTED ALMOND",
+              "amount": "0"
+            },
+            {
+              "description": "MANGGO",
+              "amount": "0"
+            },
+            {
+              "description": "MINERAL WATER (bundling) 5k",
+              "amount": "4,545"
+            }
+          ]
+        }
+      ],
+      "field_outcome_mode": {
+        "total_inclusive": "EXACT",
+        "gst_amount": "MISS",
+        "supplier_abn": "ABSTAIN_OK",
+        "is_tax_invoice": "EXACT",
+        "page_count": "EXACT",
+        "line_count": "WRONG"
+      },
+      "lines_total": 2,
+      "lines_matched_median": 2.0,
+      "parse_failures": 0,
+      "sample_raw_output": "```json\n{\"supplier_name\":null,\"supplier_abn\":null,\"issue_date\":null,\"total_inclusive\":\"70,000\",\"gst_amount\":null,\"is_tax_invoice\":false,\"line_count\":5,\"page_count\":1,\"lines\":[{\"description\":\"[LG] BLACK SAKURA\",\"amount\":\"59,091\"},{\"description\":\"LONGAN\",\"amount\":\"0\"},{\"description\":\"ROASTED ALMOND\",\"amount\":\"0\"},{\"description\":\"MANGGO\",\"amount\":\"0\"},{\"description\":\"MINERAL WATER (bundling) 5k\",\"amount\":\"4,545\"}]}\n```"
+    },
+    {
+      "document": "tierp-cord-v2-0042",
+      "engine": "hosted:gemma4:31b",
+      "requested_runs": 2,
+      "completed_runs": 2,
+      "errors": [],
+      "median_seconds": 3.1337260007858276,
+      "seconds_all": [
+        3.0329344272613525,
+        3.2345175743103027
+      ],
+      "field_outcomes_by_run": {
+        "total_inclusive": [
+          "NORMALISED",
+          "NORMALISED"
+        ],
+        "gst_amount": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "supplier_abn": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "parsed_by_run": [
+        {
+          "supplier_name": "XXI cafe",
+          "supplier_abn": null,
+          "issue_date": null,
+          "total_inclusive": "88.000",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 4,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "Lemon Tea (L).",
+              "amount": "25.000"
+            },
+            {
+              "description": "Mike & Ike Original",
+              "amount": "28.000"
+            },
+            {
+              "description": "Mike & Berry",
+              "amount": "28.000"
+            },
+            {
+              "description": "Roti Keju Manis.",
+              "amount": "7.000"
+            }
+          ]
+        },
+        {
+          "supplier_name": "XXI cafe",
+          "supplier_abn": null,
+          "issue_date": null,
+          "total_inclusive": "88.000",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 4,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "Lemon Tea (L).",
+              "amount": "25.000"
+            },
+            {
+              "description": "Mike & Ike Original",
+              "amount": "28.000"
+            },
+            {
+              "description": "Mike & Berry",
+              "amount": "28.000"
+            },
+            {
+              "description": "Roti Keju Manis.",
+              "amount": "7.000"
+            }
+          ]
+        }
+      ],
+      "field_outcome_mode": {
+        "total_inclusive": "NORMALISED",
+        "gst_amount": "ABSTAIN_OK",
+        "supplier_abn": "ABSTAIN_OK",
+        "is_tax_invoice": "EXACT",
+        "page_count": "EXACT",
+        "line_count": "EXACT"
+      },
+      "lines_total": 4,
+      "lines_matched_median": 4.0,
+      "parse_failures": 0,
+      "sample_raw_output": "```json\n{\"supplier_name\":\"XXI cafe\",\"supplier_abn\":null,\"issue_date\":null,\"total_inclusive\":\"88.000\",\"gst_amount\":null,\"is_tax_invoice\":false,\"line_count\":4,\"page_count\":1,\"lines\":[{\"description\":\"Lemon Tea (L).\",\"amount\":\"25.000\"},{\"description\":\"Mike & Ike Original\",\"amount\":\"28.000\"},{\"description\":\"Mike & Berry\",\"amount\":\"28.000\"},{\"description\":\"Roti Keju Manis.\",\"amount\":\"7.000\"}]}\n```"
+    },
+    {
+      "document": "tierp-cord-v2-0003",
+      "engine": "hosted:gemma4:31b",
+      "requested_runs": 2,
+      "completed_runs": 2,
+      "errors": [],
+      "median_seconds": 2.6871163845062256,
+      "seconds_all": [
+        2.799809694290161,
+        2.57442307472229
+      ],
+      "field_outcomes_by_run": {
+        "total_inclusive": [
+          "EXACT",
+          "EXACT"
+        ],
+        "gst_amount": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "supplier_abn": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "parsed_by_run": [
+        {
+          "supplier_name": "Dynamic Bakery & Cafe",
+          "supplier_abn": null,
+          "issue_date": null,
+          "total_inclusive": "11,000",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 1,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "DONAT GULA",
+              "amount": "11,000"
+            }
+          ]
+        },
+        {
+          "supplier_name": "Dynamic Bakery & Cafe",
+          "supplier_abn": null,
+          "issue_date": null,
+          "total_inclusive": "11,000",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 1,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "DONAT GULA",
+              "amount": "11,000"
+            }
+          ]
+        }
+      ],
+      "field_outcome_mode": {
+        "total_inclusive": "EXACT",
+        "gst_amount": "ABSTAIN_OK",
+        "supplier_abn": "ABSTAIN_OK",
+        "is_tax_invoice": "EXACT",
+        "page_count": "EXACT",
+        "line_count": "EXACT"
+      },
+      "lines_total": 1,
+      "lines_matched_median": 1.0,
+      "parse_failures": 0,
+      "sample_raw_output": "```json\n{\"supplier_name\":\"Dynamic Bakery & Cafe\",\"supplier_abn\":null,\"issue_date\":null,\"total_inclusive\":\"11,000\",\"gst_amount\":null,\"is_tax_invoice\":false,\"line_count\":1,\"page_count\":1,\"lines\":[{\"description\":\"DONAT GULA\",\"amount\":\"11,000\"}]}\n```"
+    },
+    {
+      "document": "tierp-cord-v2-0009",
+      "engine": "hosted:gemma4:31b",
+      "requested_runs": 2,
+      "completed_runs": 2,
+      "errors": [],
+      "median_seconds": 6.145662188529968,
+      "seconds_all": [
+        2.396193742752075,
+        9.895130634307861
+      ],
+      "field_outcomes_by_run": {
+        "total_inclusive": [
+          "EXACT",
+          "EXACT"
+        ],
+        "gst_amount": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "supplier_abn": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "parsed_by_run": [
+        {
+          "supplier_name": "Auntie Anne's",
+          "supplier_abn": null,
+          "issue_date": null,
+          "total_inclusive": "17,000",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 1,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "CINNAMON SUGAR",
+              "amount": "17,000"
+            }
+          ]
+        },
+        {
+          "supplier_name": "Auntie Anne's",
+          "supplier_abn": null,
+          "issue_date": null,
+          "total_inclusive": "17,000",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 1,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "CINNAMON SUGAR",
+              "amount": "17,000"
+            }
+          ]
+        }
+      ],
+      "field_outcome_mode": {
+        "total_inclusive": "EXACT",
+        "gst_amount": "ABSTAIN_OK",
+        "supplier_abn": "ABSTAIN_OK",
+        "is_tax_invoice": "EXACT",
+        "page_count": "EXACT",
+        "line_count": "EXACT"
+      },
+      "lines_total": 1,
+      "lines_matched_median": 1.0,
+      "parse_failures": 0,
+      "sample_raw_output": "```json\n{\"supplier_name\":\"Auntie Anne's\",\"supplier_abn\":null,\"issue_date\":null,\"total_inclusive\":\"17,000\",\"gst_amount\":null,\"is_tax_invoice\":false,\"line_count\":1,\"page_count\":1,\"lines\":[{\"description\":\"CINNAMON SUGAR\",\"amount\":\"17,000\"}]}\n```"
+    },
+    {
+      "document": "tierp-cord-v2-0066",
+      "engine": "hosted:gemma4:31b",
+      "requested_runs": 2,
+      "completed_runs": 2,
+      "errors": [],
+      "median_seconds": 4.685332298278809,
+      "seconds_all": [
+        4.007877588272095,
+        5.3627870082855225
+      ],
+      "field_outcomes_by_run": {
+        "total_inclusive": [
+          "EXACT",
+          "EXACT"
+        ],
+        "gst_amount": [
+          "MISS",
+          "MISS"
+        ],
+        "supplier_abn": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "parsed_by_run": [
+        {
+          "supplier_name": null,
+          "supplier_abn": null,
+          "issue_date": null,
+          "total_inclusive": "1,565,938",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 7,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "UDANG RE",
+              "amount": "432,000"
+            },
+            {
+              "description": "AYM GR JUN NJAN",
+              "amount": "108,000"
+            },
+            {
+              "description": "SAPO TH SEAFOOD",
+              "amount": "172,000"
+            },
+            {
+              "description": "POCAI 3",
+              "amount": "222,000"
+            },
+            {
+              "description": "GURAME FILLET M ASAM MANIS",
+              "amount": "163,000"
+            },
+            {
+              "description": "BIHUN GORENG JJ",
+              "amount": "116,000"
+            },
+            {
+              "description": "ICED TEA",
+              "amount": "60,000"
+            },
+            {
+              "description": "NASI PUTIH",
+              "amount": "70,000"
+            }
+          ]
+        },
+        {
+          "supplier_name": null,
+          "supplier_abn": null,
+          "issue_date": null,
+          "total_inclusive": "1,565,938",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 7,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "UDANG RE",
+              "amount": "432,000"
+            },
+            {
+              "description": "AYM GR JUN NJAN",
+              "amount": "108,000"
+            },
+            {
+              "description": "SAPO TH SEAFOOD",
+              "amount": "172,000"
+            },
+            {
+              "description": "POCAI 3",
+              "amount": "222,000"
+            },
+            {
+              "description": "GURAME FILLET M ASAM MANIS",
+              "amount": "163,000"
+            },
+            {
+              "description": "BIHUN GORENG JJ",
+              "amount": "116,000"
+            },
+            {
+              "description": "ICED TEA",
+              "amount": "60,000"
+            },
+            {
+              "description": "NASI PUTIH",
+              "amount": "70,000"
+            }
+          ]
+        }
+      ],
+      "field_outcome_mode": {
+        "total_inclusive": "EXACT",
+        "gst_amount": "MISS",
+        "supplier_abn": "ABSTAIN_OK",
+        "is_tax_invoice": "EXACT",
+        "page_count": "EXACT"
+      },
+      "lines_total": 8,
+      "lines_matched_median": 7.0,
+      "parse_failures": 0,
+      "sample_raw_output": "```json\n{\"supplier_name\":null,\"supplier_abn\":null,\"issue_date\":null,\"total_inclusive\":\"1,565,938\",\"gst_amount\":null,\"is_tax_invoice\":false,\"line_count\":7,\"page_count\":1,\"lines\":[{\"description\":\"UDANG RE\",\"amount\":\"432,000\"},{\"description\":\"AYM GR JUN NJAN\",\"amount\":\"108,000\"},{\"description\":\"SAPO TH SEAFOOD\",\"amount\":\"172,000\"},{\"description\":\"POCAI 3\",\"amount\":\"222,000\"},{\"description\":\"GURAME FILLET M ASAM MANIS\",\"amount\":\"163,000\"},{\"description\":\"BIHUN GORENG JJ\",\"amount\":\"116,000\"},{\"description\":\"ICED TEA\",\"amount\":\"60,000\"},{\"description\":\"NASI PUTIH\",\"amount\":\"70,000\"}]}\n```"
+    },
+    {
+      "document": "tierp-cord-v2-0028",
+      "engine": "hosted:gemma4:31b",
+      "requested_runs": 2,
+      "completed_runs": 2,
+      "errors": [],
+      "median_seconds": 3.117735981941223,
+      "seconds_all": [
+        4.057214975357056,
+        2.1782569885253906
+      ],
+      "field_outcomes_by_run": {
+        "total_inclusive": [
+          "EXACT",
+          "EXACT"
+        ],
+        "gst_amount": [
+          "MISS",
+          "MISS"
+        ],
+        "supplier_abn": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "WRONG",
+          "WRONG"
+        ]
+      },
+      "parsed_by_run": [
+        {
+          "supplier_name": null,
+          "supplier_abn": null,
+          "issue_date": null,
+          "total_inclusive": "145,900",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 7,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "COLD OCHA",
+              "amount": "10,909"
+            },
+            {
+              "description": "BCA PROMO",
+              "amount": "54,455"
+            },
+            {
+              "description": "ABURA UDON SPICY",
+              "amount": "0"
+            },
+            {
+              "description": "KAKE UDON",
+              "amount": "0"
+            },
+            {
+              "description": "SKEWERED SHUMAI",
+              "amount": "12,727"
+            },
+            {
+              "description": "SKEWERED TOFU ROLL",
+              "amount": "12,727"
+            },
+            {
+              "description": "EBI TEMPURA",
+              "amount": "13,636"
+            },
+            {
+              "description": "KITSUNE UDON (KIDS)",
+              "amount": "28,182"
+            }
+          ]
+        },
+        {
+          "supplier_name": null,
+          "supplier_abn": null,
+          "issue_date": null,
+          "total_inclusive": "145,900",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 7,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "COLD OCHA",
+              "amount": "10,909"
+            },
+            {
+              "description": "BCA PROMO",
+              "amount": "54,455"
+            },
+            {
+              "description": "ABURA UDON SPICY",
+              "amount": "0"
+            },
+            {
+              "description": "KAKE UDON",
+              "amount": "0"
+            },
+            {
+              "description": "SKEWERED SHUMAI",
+              "amount": "12,727"
+            },
+            {
+              "description": "SKEWERED TOFU ROLL",
+              "amount": "12,727"
+            },
+            {
+              "description": "EBI TEMPURA",
+              "amount": "13,636"
+            },
+            {
+              "description": "KITSUNE UDON (KIDS)",
+              "amount": "28,182"
+            }
+          ]
+        }
+      ],
+      "field_outcome_mode": {
+        "total_inclusive": "EXACT",
+        "gst_amount": "MISS",
+        "supplier_abn": "ABSTAIN_OK",
+        "is_tax_invoice": "EXACT",
+        "page_count": "EXACT",
+        "line_count": "WRONG"
+      },
+      "lines_total": 6,
+      "lines_matched_median": 6.0,
+      "parse_failures": 0,
+      "sample_raw_output": "```json\n{\"supplier_name\":null,\"supplier_abn\":null,\"issue_date\":null,\"total_inclusive\":\"145,900\",\"gst_amount\":null,\"is_tax_invoice\":false,\"line_count\":7,\"page_count\":1,\"lines\":[{\"description\":\"COLD OCHA\",\"amount\":\"10,909\"},{\"description\":\"BCA PROMO\",\"amount\":\"54,455\"},{\"description\":\"ABURA UDON SPICY\",\"amount\":\"0\"},{\"description\":\"KAKE UDON\",\"amount\":\"0\"},{\"description\":\"SKEWERED SHUMAI\",\"amount\":\"12,727\"},{\"description\":\"SKEWERED TOFU ROLL\",\"amount\":\"12,727\"},{\"description\":\"EBI TEMPURA\",\"amount\":\"13,636\"},{\"description\":\"KITSUNE UDON (KIDS)\",\"amount\":\"28,182\"}]}\n```"
+    },
+    {
+      "document": "tierp-cord-v2-0001",
+      "engine": "hosted:gemma4:31b",
+      "requested_runs": 2,
+      "completed_runs": 2,
+      "errors": [],
+      "median_seconds": 2.791393280029297,
+      "seconds_all": [
+        3.1193172931671143,
+        2.4634692668914795
+      ],
+      "field_outcomes_by_run": {
+        "total_inclusive": [
+          "EXACT",
+          "EXACT"
+        ],
+        "gst_amount": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "supplier_abn": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "parsed_by_run": [
+        {
+          "supplier_name": null,
+          "supplier_abn": null,
+          "issue_date": null,
+          "total_inclusive": "91000",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 3,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "J.STB PROMO",
+              "amount": "17500"
+            },
+            {
+              "description": "Y.B.BAT",
+              "amount": "46000"
+            },
+            {
+              "description": "Y.BASO PROM",
+              "amount": "27500"
+            }
+          ]
+        },
+        {
+          "supplier_name": null,
+          "supplier_abn": null,
+          "issue_date": null,
+          "total_inclusive": "91000",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 3,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "J.STB PROMO",
+              "amount": "17500"
+            },
+            {
+              "description": "Y.B.BAT",
+              "amount": "46000"
+            },
+            {
+              "description": "Y.BASO PROM",
+              "amount": "27500"
+            }
+          ]
+        }
+      ],
+      "field_outcome_mode": {
+        "total_inclusive": "EXACT",
+        "gst_amount": "ABSTAIN_OK",
+        "supplier_abn": "ABSTAIN_OK",
+        "is_tax_invoice": "EXACT",
+        "page_count": "EXACT",
+        "line_count": "EXACT"
+      },
+      "lines_total": 3,
+      "lines_matched_median": 3.0,
+      "parse_failures": 0,
+      "sample_raw_output": "```json\n{\"supplier_name\":null,\"supplier_abn\":null,\"issue_date\":null,\"total_inclusive\":\"91000\",\"gst_amount\":null,\"is_tax_invoice\":false,\"line_count\":3,\"page_count\":1,\"lines\":[{\"description\":\"J.STB PROMO\",\"amount\":\"17500\"},{\"description\":\"Y.B.BAT\",\"amount\":\"46000\"},{\"description\":\"Y.BASO PROM\",\"amount\":\"27500\"}]}\n```"
+    },
+    {
+      "document": "tierp-cord-v2-0093",
+      "engine": "hosted:gemma4:31b",
+      "requested_runs": 2,
+      "completed_runs": 2,
+      "errors": [],
+      "median_seconds": 8.013697862625122,
+      "seconds_all": [
+        8.046952724456787,
+        7.980443000793457
+      ],
+      "field_outcomes_by_run": {
+        "total_inclusive": [
+          "NORMALISED",
+          "NORMALISED"
+        ],
+        "gst_amount": [
+          "MISS",
+          "MISS"
+        ],
+        "supplier_abn": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "parsed_by_run": [
+        {
+          "supplier_name": "Daniele",
+          "supplier_abn": null,
+          "issue_date": null,
+          "total_inclusive": "250.690",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 3,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "BLACK PEPPER MEATBALL PAS",
+              "amount": "79.000"
+            },
+            {
+              "description": "TRUFFLE CREAM",
+              "amount": "59.000"
+            },
+            {
+              "description": "EARL GREY MILK TEA",
+              "amount": "215.000"
+            }
+          ]
+        },
+        {
+          "supplier_name": "Daniele",
+          "supplier_abn": null,
+          "issue_date": null,
+          "total_inclusive": "250.690",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 3,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "BLACK PEPPER MEATBALL PAS",
+              "amount": "79.000"
+            },
+            {
+              "description": "TRUFFLE CREAM",
+              "amount": "59.000"
+            },
+            {
+              "description": "EARL GREY MILK TEA",
+              "amount": "215.000"
+            }
+          ]
+        }
+      ],
+      "field_outcome_mode": {
+        "total_inclusive": "NORMALISED",
+        "gst_amount": "MISS",
+        "supplier_abn": "ABSTAIN_OK",
+        "is_tax_invoice": "EXACT",
+        "page_count": "EXACT",
+        "line_count": "EXACT"
+      },
+      "lines_total": 3,
+      "lines_matched_median": 0.0,
+      "parse_failures": 0,
+      "sample_raw_output": "```json\n{\"supplier_name\":\"Daniele\",\"supplier_abn\":null,\"issue_date\":null,\"total_inclusive\":\"250.690\",\"gst_amount\":null,\"is_tax_invoice\":false,\"line_count\":3,\"page_count\":1,\"lines\":[{\"description\":\"BLACK PEPPER MEATBALL PAS\",\"amount\":\"79.000\"},{\"description\":\"TRUFFLE CREAM\",\"amount\":\"59.000\"},{\"description\":\"EARL GREY MILK TEA\",\"amount\":\"215.000\"}]}\n```"
+    },
+    {
+      "document": "gen-no_abn_van-0102",
+      "engine": "hosted:gemma4:31b",
+      "requested_runs": 2,
+      "completed_runs": 2,
+      "errors": [],
+      "median_seconds": 1.9426778554916382,
+      "seconds_all": [
+        1.7372856140136719,
+        2.1480700969696045
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "NORMALISED",
+          "NORMALISED"
+        ],
+        "supplier_abn": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "issue_date": [
+          "EXACT",
+          "EXACT"
+        ],
+        "total_inclusive": [
+          "EXACT",
+          "EXACT"
+        ],
+        "gst_amount": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "parsed_by_run": [
+        {
+          "supplier_name": "THE LITTLE FOOD TRUCK",
+          "supplier_abn": null,
+          "issue_date": "2026-08-22",
+          "total_inclusive": "23.00",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 3,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "BACON EGG ROLL",
+              "amount": "12.50"
+            },
+            {
+              "description": "FLAT WHITE LGE",
+              "amount": "5.50"
+            },
+            {
+              "description": "BANANA BREAD",
+              "amount": "5.00"
+            }
+          ]
+        },
+        {
+          "supplier_name": "THE LITTLE FOOD TRUCK",
+          "supplier_abn": null,
+          "issue_date": "2026-08-22",
+          "total_inclusive": "23.00",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 3,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "BACON EGG ROLL",
+              "amount": "12.50"
+            },
+            {
+              "description": "FLAT WHITE LGE",
+              "amount": "5.50"
+            },
+            {
+              "description": "BANANA BREAD",
+              "amount": "5.00"
+            }
+          ]
+        }
+      ],
+      "field_outcome_mode": {
+        "supplier_name": "NORMALISED",
+        "supplier_abn": "ABSTAIN_OK",
+        "issue_date": "EXACT",
+        "total_inclusive": "EXACT",
+        "gst_amount": "ABSTAIN_OK",
+        "is_tax_invoice": "EXACT",
+        "line_count": "EXACT",
+        "page_count": "EXACT"
+      },
+      "lines_total": 3,
+      "lines_matched_median": 3.0,
+      "parse_failures": 0,
+      "sample_raw_output": "{\"supplier_name\":\"THE LITTLE FOOD TRUCK\",\"supplier_abn\":null,\"issue_date\":\"2026-08-22\",\"total_inclusive\":\"23.00\",\"gst_amount\":null,\"is_tax_invoice\":false,\"line_count\":3,\"page_count\":1,\"lines\":[{\"description\":\"BACON EGG ROLL\",\"amount\":\"12.50\"},{\"description\":\"FLAT WHITE LGE\",\"amount\":\"5.50\"},{\"description\":\"BANANA BREAD\",\"amount\":\"5.00\"}]}"
+    },
+    {
+      "document": "gen-supermarket-0043",
+      "engine": "hosted:gemma4:31b",
+      "requested_runs": 2,
+      "completed_runs": 2,
+      "errors": [],
+      "median_seconds": 2.475798487663269,
+      "seconds_all": [
+        2.4820022583007812,
+        2.469594717025757
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "NORMALISED",
+          "NORMALISED"
+        ],
+        "supplier_abn": [
+          "EXACT",
+          "EXACT"
+        ],
+        "issue_date": [
+          "EXACT",
+          "EXACT"
+        ],
+        "total_inclusive": [
+          "EXACT",
+          "EXACT"
+        ],
+        "gst_amount": [
+          "EXACT",
+          "EXACT"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "parsed_by_run": [
+        {
+          "supplier_name": "RIVERTON FRESH MARKET",
+          "supplier_abn": "08293882425",
+          "issue_date": "2025-12-19",
+          "total_inclusive": "44.78",
+          "gst_amount": "1.75",
+          "is_tax_invoice": true,
+          "line_count": 9,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "SMITHS CHIPS 170G",
+              "amount": "4.50"
+            },
+            {
+              "description": "CHICKEN BREAST 1KG",
+              "amount": "12.00"
+            },
+            {
+              "description": "WHITE RICE 1KG",
+              "amount": "3.20"
+            },
+            {
+              "description": "FULL CREAM MILK 2L",
+              "amount": "3.30"
+            },
+            {
+              "description": "ENERGY DRINK 500ML",
+              "amount": "4.30"
+            },
+            {
+              "description": "BANANAS 1.2KG",
+              "amount": "4.68"
+            },
+            {
+              "description": "PAPER TOWEL 2PK",
+              "amount": "5.50"
+            },
+            {
+              "description": "ICE 2KG",
+              "amount": "4.90"
+            },
+            {
+              "description": "PLAIN FLOUR 1KG",
+              "amount": "2.40"
+            }
+          ]
+        },
+        {
+          "supplier_name": "RIVERTON FRESH MARKET",
+          "supplier_abn": "08293882425",
+          "issue_date": "2025-12-19",
+          "total_inclusive": "44.78",
+          "gst_amount": "1.75",
+          "is_tax_invoice": true,
+          "line_count": 9,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "SMITHS CHIPS 170G",
+              "amount": "4.50"
+            },
+            {
+              "description": "CHICKEN BREAST 1KG",
+              "amount": "12.00"
+            },
+            {
+              "description": "WHITE RICE 1KG",
+              "amount": "3.20"
+            },
+            {
+              "description": "FULL CREAM MILK 2L",
+              "amount": "3.30"
+            },
+            {
+              "description": "ENERGY DRINK 500ML",
+              "amount": "4.30"
+            },
+            {
+              "description": "BANANAS 1.2KG",
+              "amount": "4.68"
+            },
+            {
+              "description": "PAPER TOWEL 2PK",
+              "amount": "5.50"
+            },
+            {
+              "description": "ICE 2KG",
+              "amount": "4.90"
+            },
+            {
+              "description": "PLAIN FLOUR 1KG",
+              "amount": "2.40"
+            }
+          ]
+        }
+      ],
+      "field_outcome_mode": {
+        "supplier_name": "NORMALISED",
+        "supplier_abn": "EXACT",
+        "issue_date": "EXACT",
+        "total_inclusive": "EXACT",
+        "gst_amount": "EXACT",
+        "is_tax_invoice": "EXACT",
+        "line_count": "EXACT",
+        "page_count": "EXACT"
+      },
+      "lines_total": 9,
+      "lines_matched_median": 9.0,
+      "parse_failures": 0,
+      "sample_raw_output": "```json\n{\"supplier_name\":\"RIVERTON FRESH MARKET\",\"supplier_abn\":\"08293882425\",\"issue_date\":\"2025-12-19\",\"total_inclusive\":\"44.78\",\"gst_amount\":\"1.75\",\"is_tax_invoice\":true,\"line_count\":9,\"page_count\":1,\"lines\":[{\"description\":\"SMITHS CHIPS 170G\",\"amount\":\"4.50\"},{\"description\":\"CHICKEN BREAST 1KG\",\"amount\":\"12.00\"},{\"description\":\"WHITE RICE 1KG\",\"amount\":\"3.20\"},{\"description\":\"FULL CREAM MILK 2L\",\"amount\":\"3.30\"},{\"description\":\"ENERGY DRINK 500ML\",\"amount\":\"4.30\"},{\"description\":\"BANANAS 1.2KG\",\"amount\":\"4.68\"},{\"description\":\"PAPER TOWEL 2PK\",\"amount\":\"5.50\"},{\"description\":\"ICE 2KG\",\"amou"
+    },
+    {
+      "document": "gen-no_abn_van-0029",
+      "engine": "hosted:gemma4:31b",
+      "requested_runs": 2,
+      "completed_runs": 2,
+      "errors": [],
+      "median_seconds": 2.862892508506775,
+      "seconds_all": [
+        2.8629062175750732,
+        2.8628787994384766
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "NORMALISED",
+          "NORMALISED"
+        ],
+        "supplier_abn": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "issue_date": [
+          "EXACT",
+          "EXACT"
+        ],
+        "total_inclusive": [
+          "EXACT",
+          "EXACT"
+        ],
+        "gst_amount": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "parsed_by_run": [
+        {
+          "supplier_name": "RIVERBANK SNACK TRAILER",
+          "supplier_abn": null,
+          "issue_date": "2026-09-18",
+          "total_inclusive": "16.50",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 3,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "ICED LATTE",
+              "amount": "6.20"
+            },
+            {
+              "description": "FLAT WHITE LGE",
+              "amount": "5.50"
+            },
+            {
+              "description": "CAPPUCCINO REG",
+              "amount": "4.80"
+            }
+          ]
+        },
+        {
+          "supplier_name": "RIVERBANK SNACK TRAILER",
+          "supplier_abn": null,
+          "issue_date": "2026-09-18",
+          "total_inclusive": "16.50",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 3,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "ICED LATTE",
+              "amount": "6.20"
+            },
+            {
+              "description": "FLAT WHITE LGE",
+              "amount": "5.50"
+            },
+            {
+              "description": "CAPPUCCINO REG",
+              "amount": "4.80"
+            }
+          ]
+        }
+      ],
+      "field_outcome_mode": {
+        "supplier_name": "NORMALISED",
+        "supplier_abn": "ABSTAIN_OK",
+        "issue_date": "EXACT",
+        "total_inclusive": "EXACT",
+        "gst_amount": "ABSTAIN_OK",
+        "is_tax_invoice": "EXACT",
+        "line_count": "EXACT",
+        "page_count": "EXACT"
+      },
+      "lines_total": 3,
+      "lines_matched_median": 3.0,
+      "parse_failures": 0,
+      "sample_raw_output": "```json\n{\"supplier_name\":\"RIVERBANK SNACK TRAILER\",\"supplier_abn\":null,\"issue_date\":\"2026-09-18\",\"total_inclusive\":\"16.50\",\"gst_amount\":null,\"is_tax_invoice\":false,\"line_count\":3,\"page_count\":1,\"lines\":[{\"description\":\"ICED LATTE\",\"amount\":\"6.20\"},{\"description\":\"FLAT WHITE LGE\",\"amount\":\"5.50\"},{\"description\":\"CAPPUCCINO REG\",\"amount\":\"4.80\"}]}\n```"
+    },
+    {
+      "document": "gen-supermarket-0084",
+      "engine": "hosted:gemma4:31b",
+      "requested_runs": 2,
+      "completed_runs": 2,
+      "errors": [],
+      "median_seconds": 4.002921462059021,
+      "seconds_all": [
+        3.5485615730285645,
+        4.4572813510894775
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "NORMALISED",
+          "NORMALISED"
+        ],
+        "supplier_abn": [
+          "EXACT",
+          "EXACT"
+        ],
+        "issue_date": [
+          "EXACT",
+          "EXACT"
+        ],
+        "total_inclusive": [
+          "EXACT",
+          "EXACT"
+        ],
+        "gst_amount": [
+          "EXACT",
+          "EXACT"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "WRONG",
+          "WRONG"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "parsed_by_run": [
+        {
+          "supplier_name": "KALINDA GROCERS",
+          "supplier_abn": "76672752465",
+          "issue_date": "2026-08-04",
+          "total_inclusive": "51.28",
+          "gst_amount": "2.73",
+          "is_tax_invoice": true,
+          "line_count": 11,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "TOMATOES 500G",
+              "amount": "4.50"
+            },
+            {
+              "description": "BANANAS 1.2KG",
+              "amount": "4.68"
+            },
+            {
+              "description": "SMITHS CHIPS 170G",
+              "amount": "4.50"
+            },
+            {
+              "description": "TIM TAMS 200G",
+              "amount": "4.20"
+            },
+            {
+              "description": "DISHWASHING LIQUID",
+              "amount": "4.80"
+            },
+            {
+              "description": "LAUNDRY POWDER 1KG",
+              "amount": "11.00"
+            },
+            {
+              "description": "FREE RANGE EGGS 12",
+              "amount": "7.50"
+            },
+            {
+              "description": "PLAIN FLOUR 1KG",
+              "amount": "2.40"
+            },
+            {
+              "description": "PAPER TOWEL 2PK",
+              "amount": "5.50"
+            },
+            {
+              "description": "CARROTS 1KG",
+              "amount": "2.20"
+            }
+          ]
+        },
+        {
+          "supplier_name": "KALINDA GROCERS",
+          "supplier_abn": "76672752465",
+          "issue_date": "2026-08-04",
+          "total_inclusive": "51.28",
+          "gst_amount": "2.73",
+          "is_tax_invoice": true,
+          "line_count": 11,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "TOMATOES 500G",
+              "amount": "4.50"
+            },
+            {
+              "description": "BANANAS 1.2KG",
+              "amount": "4.68"
+            },
+            {
+              "description": "SMITHS CHIPS 170G",
+              "amount": "4.50"
+            },
+            {
+              "description": "TIM TAMS 200G",
+              "amount": "4.20"
+            },
+            {
+              "description": "DISHWASHING LIQUID",
+              "amount": "4.80"
+            },
+            {
+              "description": "LAUNDRY POWDER 1KG",
+              "amount": "11.00"
+            },
+            {
+              "description": "FREE RANGE EGGS 12",
+              "amount": "7.50"
+            },
+            {
+              "description": "PLAIN FLOUR 1KG",
+              "amount": "2.40"
+            },
+            {
+              "description": "PAPER TOWEL 2PK",
+              "amount": "5.50"
+            },
+            {
+              "description": "CARROTS 1KG",
+              "amount": "2.20"
+            }
+          ]
+        }
+      ],
+      "field_outcome_mode": {
+        "supplier_name": "NORMALISED",
+        "supplier_abn": "EXACT",
+        "issue_date": "EXACT",
+        "total_inclusive": "EXACT",
+        "gst_amount": "EXACT",
+        "is_tax_invoice": "EXACT",
+        "line_count": "WRONG",
+        "page_count": "EXACT"
+      },
+      "lines_total": 10,
+      "lines_matched_median": 10.0,
+      "parse_failures": 0,
+      "sample_raw_output": "```json\n{\"supplier_name\":\"KALINDA GROCERS\",\"supplier_abn\":\"76672752465\",\"issue_date\":\"2026-08-04\",\"total_inclusive\":\"51.28\",\"gst_amount\":\"2.73\",\"is_tax_invoice\":true,\"line_count\":11,\"page_count\":1,\"lines\":[{\"description\":\"TOMATOES 500G\",\"amount\":\"4.50\"},{\"description\":\"BANANAS 1.2KG\",\"amount\":\"4.68\"},{\"description\":\"SMITHS CHIPS 170G\",\"amount\":\"4.50\"},{\"description\":\"TIM TAMS 200G\",\"amount\":\"4.20\"},{\"description\":\"DISHWASHING LIQUID\",\"amount\":\"4.80\"},{\"description\":\"LAUNDRY POWDER 1KG\",\"amount\":\"11.00\"},{\"description\":\"FREE RANGE EGGS 12\",\"amount\":\"7.50\"},{\"description\":\"PLAIN FLOUR 1KG\",\"amou"
+    },
+    {
+      "document": "gen-no_abn_van-0011",
+      "engine": "hosted:gemma4:31b",
+      "requested_runs": 2,
+      "completed_runs": 2,
+      "errors": [],
+      "median_seconds": 4.012930274009705,
+      "seconds_all": [
+        5.35057258605957,
+        2.675287961959839
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "NORMALISED",
+          "NORMALISED"
+        ],
+        "supplier_abn": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "issue_date": [
+          "EXACT",
+          "EXACT"
+        ],
+        "total_inclusive": [
+          "EXACT",
+          "EXACT"
+        ],
+        "gst_amount": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "parsed_by_run": [
+        {
+          "supplier_name": "RIVERBANK SNACK TRAILER",
+          "supplier_abn": null,
+          "issue_date": "2026-01-04",
+          "total_inclusive": "13.90",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 1,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "CHICKEN WRAP",
+              "amount": "13.90"
+            }
+          ]
+        },
+        {
+          "supplier_name": "RIVERBANK SNACK TRAILER",
+          "supplier_abn": null,
+          "issue_date": "2026-01-04",
+          "total_inclusive": "13.90",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 1,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "CHICKEN WRAP",
+              "amount": "13.90"
+            }
+          ]
+        }
+      ],
+      "field_outcome_mode": {
+        "supplier_name": "NORMALISED",
+        "supplier_abn": "ABSTAIN_OK",
+        "issue_date": "EXACT",
+        "total_inclusive": "EXACT",
+        "gst_amount": "ABSTAIN_OK",
+        "is_tax_invoice": "EXACT",
+        "line_count": "EXACT",
+        "page_count": "EXACT"
+      },
+      "lines_total": 1,
+      "lines_matched_median": 1.0,
+      "parse_failures": 0,
+      "sample_raw_output": "```json\n{\"supplier_name\":\"RIVERBANK SNACK TRAILER\",\"supplier_abn\":null,\"issue_date\":\"2026-01-04\",\"total_inclusive\":\"13.90\",\"gst_amount\":null,\"is_tax_invoice\":false,\"line_count\":1,\"page_count\":1,\"lines\":[{\"description\":\"CHICKEN WRAP\",\"amount\":\"13.90\"}]}\n```"
+    },
+    {
+      "document": "gen-cafe-0291",
+      "engine": "hosted:gemma4:31b",
+      "requested_runs": 2,
+      "completed_runs": 2,
+      "errors": [],
+      "median_seconds": 3.772260069847107,
+      "seconds_all": [
+        3.4297592639923096,
+        4.114760875701904
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "NORMALISED",
+          "NORMALISED"
+        ],
+        "supplier_abn": [
+          "EXACT",
+          "EXACT"
+        ],
+        "issue_date": [
+          "EXACT",
+          "EXACT"
+        ],
+        "total_inclusive": [
+          "EXACT",
+          "EXACT"
+        ],
+        "gst_amount": [
+          "EXACT",
+          "EXACT"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "parsed_by_run": [
+        {
+          "supplier_name": "THE SIDINGS CAFE",
+          "supplier_abn": "26547496341",
+          "issue_date": "2026-08-31",
+          "total_inclusive": "21.50",
+          "gst_amount": "1.95",
+          "is_tax_invoice": true,
+          "line_count": 4,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "CAPPUCCINO REG",
+              "amount": "4.80"
+            },
+            {
+              "description": "ICED LATTE",
+              "amount": "6.20"
+            },
+            {
+              "description": "FLAT WHITE LGE",
+              "amount": "5.50"
+            },
+            {
+              "description": "BANANA BREAD",
+              "amount": "5.00"
+            }
+          ]
+        },
+        {
+          "supplier_name": "THE SIDINGS CAFE",
+          "supplier_abn": "26547496341",
+          "issue_date": "2026-08-31",
+          "total_inclusive": "21.50",
+          "gst_amount": "1.95",
+          "is_tax_invoice": true,
+          "line_count": 4,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "CAPPUCCINO REG",
+              "amount": "4.80"
+            },
+            {
+              "description": "ICED LATTE",
+              "amount": "6.20"
+            },
+            {
+              "description": "FLAT WHITE LGE",
+              "amount": "5.50"
+            },
+            {
+              "description": "BANANA BREAD",
+              "amount": "5.00"
+            }
+          ]
+        }
+      ],
+      "field_outcome_mode": {
+        "supplier_name": "NORMALISED",
+        "supplier_abn": "EXACT",
+        "issue_date": "EXACT",
+        "total_inclusive": "EXACT",
+        "gst_amount": "EXACT",
+        "is_tax_invoice": "EXACT",
+        "line_count": "EXACT",
+        "page_count": "EXACT"
+      },
+      "lines_total": 4,
+      "lines_matched_median": 4.0,
+      "parse_failures": 0,
+      "sample_raw_output": "```json\n{\"supplier_name\":\"THE SIDINGS CAFE\",\"supplier_abn\":\"26547496341\",\"issue_date\":\"2026-08-31\",\"total_inclusive\":\"21.50\",\"gst_amount\":\"1.95\",\"is_tax_invoice\":true,\"line_count\":4,\"page_count\":1,\"lines\":[{\"description\":\"CAPPUCCINO REG\",\"amount\":\"4.80\"},{\"description\":\"ICED LATTE\",\"amount\":\"6.20\"},{\"description\":\"FLAT WHITE LGE\",\"amount\":\"5.50\"},{\"description\":\"BANANA BREAD\",\"amount\":\"5.00\"}]}\n```"
+    },
+    {
+      "document": "receipt-noabn",
+      "engine": "hosted:gemma4:31b",
+      "requested_runs": 2,
+      "completed_runs": 2,
+      "errors": [],
+      "median_seconds": 2.0407183170318604,
+      "seconds_all": [
+        2.0295779705047607,
+        2.05185866355896
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "NORMALISED",
+          "NORMALISED"
+        ],
+        "supplier_abn": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "issue_date": [
+          "WRONG",
+          "WRONG"
+        ],
+        "total_inclusive": [
+          "EXACT",
+          "EXACT"
+        ],
+        "gst_amount": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "parsed_by_run": [
+        {
+          "supplier_name": "ROADSIDE COFFEE VAN",
+          "supplier_abn": null,
+          "issue_date": "2006-09-26",
+          "total_inclusive": "8.50",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 2,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "FLAT WHITE LGE",
+              "amount": "5.50"
+            },
+            {
+              "description": "BANANA BREAD",
+              "amount": "3.00"
+            }
+          ]
+        },
+        {
+          "supplier_name": "ROADSIDE COFFEE VAN",
+          "supplier_abn": null,
+          "issue_date": "2006-09-26",
+          "total_inclusive": "8.50",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 2,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "FLAT WHITE LGE",
+              "amount": "5.50"
+            },
+            {
+              "description": "BANANA BREAD",
+              "amount": "3.00"
+            }
+          ]
+        }
+      ],
+      "field_outcome_mode": {
+        "supplier_name": "NORMALISED",
+        "supplier_abn": "ABSTAIN_OK",
+        "issue_date": "WRONG",
+        "total_inclusive": "EXACT",
+        "gst_amount": "ABSTAIN_OK",
+        "is_tax_invoice": "EXACT",
+        "line_count": "EXACT",
+        "page_count": "EXACT"
+      },
+      "lines_total": 2,
+      "lines_matched_median": 2.0,
+      "parse_failures": 0,
+      "sample_raw_output": "```json\n{\"supplier_name\":\"ROADSIDE COFFEE VAN\",\"supplier_abn\":null,\"issue_date\":\"2006-09-26\",\"total_inclusive\":\"8.50\",\"gst_amount\":null,\"is_tax_invoice\":false,\"line_count\":2,\"page_count\":1,\"lines\":[{\"description\":\"FLAT WHITE LGE\",\"amount\":\"5.50\"},{\"description\":\"BANANA BREAD\",\"amount\":\"3.00\"}]}\n```"
+    },
+    {
+      "document": "invoice-multipage",
+      "engine": "hosted:gemma4:31b",
+      "requested_runs": 2,
+      "completed_runs": 2,
+      "errors": [],
+      "median_seconds": 4.459252834320068,
+      "seconds_all": [
+        4.559822082519531,
+        4.3586835861206055
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "EXACT",
+          "EXACT"
+        ],
+        "supplier_abn": [
+          "WRONG",
+          "WRONG"
+        ],
+        "issue_date": [
+          "EXACT",
+          "EXACT"
+        ],
+        "total_inclusive": [
+          "EXACT",
+          "EXACT"
+        ],
+        "gst_amount": [
+          "EXACT",
+          "EXACT"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "parsed_by_run": [
+        {
+          "supplier_name": "Southern Cross Logistics Pty Ltd",
+          "supplier_abn": "85129887841",
+          "issue_date": "2026-08-14",
+          "total_inclusive": "17519.31",
+          "gst_amount": "1592.66",
+          "is_tax_invoice": true,
+          "line_count": 40,
+          "page_count": 2,
+          "lines": [
+            {
+              "description": "Freight: Melbourne -> Sydney (14/08)",
+              "amount": "640.00"
+            },
+            {
+              "description": "Freight: Sydney -> Brisbane (14/08)",
+              "amount": "715.50"
+            },
+            {
+              "description": "Freight: Brisbane -> Cairns (14/08)",
+              "amount": "980.00"
+            },
+            {
+              "description": "Freight: Cairns -> Townsville (14/08)",
+              "amount": "410.25"
+            },
+            {
+              "description": "Freight: Townsville -> Darwin (14/08)",
+              "amount": "1120.00"
+            },
+            {
+              "description": "Freight: Darwin -> Alice Springs (14/08)",
+              "amount": "890.75"
+            },
+            {
+              "description": "Freight: Alice Springs -> Adelaide (14/08)",
+              "amount": "960.00"
+            },
+            {
+              "description": "Freight: Adelaide -> Perth (14/08)",
+              "amount": "1340.50"
+            },
+            {
+              "description": "Freight: Perth -> Kalgoorlie (14/08)",
+              "amount": "505.00"
+            },
+            {
+              "description": "Freight: Kalgoorlie -> Adelaide (14/08)",
+              "amount": "960.00"
+            },
+            {
+              "description": "Fuel levy \u2014 Melbourne run",
+              "amount": "88.40"
+            },
+            {
+              "description": "Fuel levy \u2014 Sydney run",
+              "amount": "92.10"
+            },
+            {
+              "description": "Fuel levy \u2014 Brisbane run",
+              "amount": "104.60"
+            },
+            {
+              "description": "Fuel levy \u2014 Cairns run",
+              "amount": "61.30"
+            },
+            {
+              "description": "Fuel levy \u2014 Darwin run",
+              "amount": "130.25"
+            },
+            {
+              "description": "Pallet hire (40 pallets)",
+              "amount": "220.00"
+            },
+            {
+              "description": "Pallet hire (18 pallets)",
+              "amount": "99.00"
+            },
+            {
+              "description": "Tail-lift surcharge",
+              "amount": "75.00"
+            },
+            {
+              "description": "After-hours delivery surcharge",
+              "amount": "150.00"
+            },
+            {
+              "description": "Waiting time \u2014 Brisbane depot (2.5h)",
+              "amount": "187.50"
+            },
+            {
+              "description": "Waiting time \u2014 Perth depot (1h)",
+              "amount": "75.00"
+            },
+            {
+              "description": "Insurance \u2014 high-value load",
+              "amount": "240.00"
+            },
+            {
+              "description": "Depot handling fee x3",
+              "amount": "165.00"
+            },
+            {
+              "description": "Interstate compliance fee",
+              "amount": "130.00"
+            },
+            {
+              "description": "Freight: Adelaide -> Melbourne (15/08)",
+              "amount": "705.00"
+            },
+            {
+              "description": "Freight: Melbourne -> Hobart (ferry) (15/08)",
+              "amount": "1180.00"
+            },
+            {
+              "description": "Freight: Hobart -> Launceston (15/08)",
+              "amount": "340.00"
+            },
+            {
+              "description": "Freight: Launceston -> Melbourne (ferry) (16/08)",
+              "amount": "1180.00"
+            },
+            {
+              "description": "Freight: Melbourne -> Geelong (16/08)",
+              "amount": "210.00"
+            },
+            {
+              "description": "Freight: Geelong -> Ballarat (16/08)",
+              "amount": "260.00"
+            },
+            {
+              "description": "Freight: Ballarat -> Bendigo (16/08)",
+              "amount": "230.00"
+            },
+            {
+              "description": "Freight: Bendigo -> Mildura (16/08)",
+              "amount": "480.00"
+            },
+            {
+              "description": "Fuel levy \u2014 Adelaide run",
+              "amount": "76.50"
+            },
+            {
+              "description": "Fuel levy \u2014 Tasmania run",
+              "amount": "210.00"
+            },
+            {
+              "description": "Fuel levy \u2014 regional Victoria run",
+              "amount": "98.00"
+            },
+            {
+              "description": "Pallet hire (24 pallets)",
+              "amount": "132.00"
+            },
+            {
+              "description": "Refrigeration surcharge \u2014 Tasmania run",
+              "amount": "165.00"
+            },
+            {
+              "description": "Ferry booking fee x2",
+              "amount": "90.00"
+            },
+            {
+              "description": "Weekend loading fee",
+              "amount": "120.00"
+            },
+            {
+              "description": "Depot handling fee x2",
+              "amount": "110.00"
+            }
+          ]
+        },
+        {
+          "supplier_name": "Southern Cross Logistics Pty Ltd",
+          "supplier_abn": "85129887841",
+          "issue_date": "2026-08-14",
+          "total_inclusive": "17519.31",
+          "gst_amount": "1592.66",
+          "is_tax_invoice": true,
+          "line_count": 40,
+          "page_count": 2,
+          "lines": [
+            {
+              "description": "Freight: Melbourne -> Sydney (14/08)",
+              "amount": "640.00"
+            },
+            {
+              "description": "Freight: Sydney -> Brisbane (14/08)",
+              "amount": "715.50"
+            },
+            {
+              "description": "Freight: Brisbane -> Cairns (14/08)",
+              "amount": "980.00"
+            },
+            {
+              "description": "Freight: Cairns -> Townsville (14/08)",
+              "amount": "410.25"
+            },
+            {
+              "description": "Freight: Townsville -> Darwin (14/08)",
+              "amount": "1120.00"
+            },
+            {
+              "description": "Freight: Darwin -> Alice Springs (14/08)",
+              "amount": "890.75"
+            },
+            {
+              "description": "Freight: Alice Springs -> Adelaide (14/08)",
+              "amount": "960.00"
+            },
+            {
+              "description": "Freight: Adelaide -> Perth (14/08)",
+              "amount": "1340.50"
+            },
+            {
+              "description": "Freight: Perth -> Kalgoorlie (14/08)",
+              "amount": "505.00"
+            },
+            {
+              "description": "Freight: Kalgoorlie -> Adelaide (14/08)",
+              "amount": "960.00"
+            },
+            {
+              "description": "Fuel levy \u2014 Melbourne run",
+              "amount": "88.40"
+            },
+            {
+              "description": "Fuel levy \u2014 Sydney run",
+              "amount": "92.10"
+            },
+            {
+              "description": "Fuel levy \u2014 Brisbane run",
+              "amount": "104.60"
+            },
+            {
+              "description": "Fuel levy \u2014 Cairns run",
+              "amount": "61.30"
+            },
+            {
+              "description": "Fuel levy \u2014 Darwin run",
+              "amount": "130.25"
+            },
+            {
+              "description": "Pallet hire (40 pallets)",
+              "amount": "220.00"
+            },
+            {
+              "description": "Pallet hire (18 pallets)",
+              "amount": "99.00"
+            },
+            {
+              "description": "Tail-lift surcharge",
+              "amount": "75.00"
+            },
+            {
+              "description": "After-hours delivery surcharge",
+              "amount": "150.00"
+            },
+            {
+              "description": "Waiting time \u2014 Brisbane depot (2.5h)",
+              "amount": "187.50"
+            },
+            {
+              "description": "Waiting time \u2014 Perth depot (1h)",
+              "amount": "75.00"
+            },
+            {
+              "description": "Insurance \u2014 high-value load",
+              "amount": "240.00"
+            },
+            {
+              "description": "Depot handling fee x3",
+              "amount": "165.00"
+            },
+            {
+              "description": "Interstate compliance fee",
+              "amount": "130.00"
+            },
+            {
+              "description": "Freight: Adelaide -> Melbourne (15/08)",
+              "amount": "705.00"
+            },
+            {
+              "description": "Freight: Melbourne -> Hobart (ferry) (15/08)",
+              "amount": "1180.00"
+            },
+            {
+              "description": "Freight: Hobart -> Launceston (15/08)",
+              "amount": "340.00"
+            },
+            {
+              "description": "Freight: Launceston -> Melbourne (ferry) (16/08)",
+              "amount": "1180.00"
+            },
+            {
+              "description": "Freight: Melbourne -> Geelong (16/08)",
+              "amount": "210.00"
+            },
+            {
+              "description": "Freight: Geelong -> Ballarat (16/08)",
+              "amount": "260.00"
+            },
+            {
+              "description": "Freight: Ballarat -> Bendigo (16/08)",
+              "amount": "230.00"
+            },
+            {
+              "description": "Freight: Bendigo -> Mildura (16/08)",
+              "amount": "480.00"
+            },
+            {
+              "description": "Fuel levy \u2014 Adelaide run",
+              "amount": "76.50"
+            },
+            {
+              "description": "Fuel levy \u2014 Tasmania run",
+              "amount": "210.00"
+            },
+            {
+              "description": "Fuel levy \u2014 regional Victoria run",
+              "amount": "98.00"
+            },
+            {
+              "description": "Pallet hire (24 pallets)",
+              "amount": "132.00"
+            },
+            {
+              "description": "Refrigeration surcharge \u2014 Tasmania run",
+              "amount": "165.00"
+            },
+            {
+              "description": "Ferry booking fee x2",
+              "amount": "90.00"
+            },
+            {
+              "description": "Weekend loading fee",
+              "amount": "120.00"
+            },
+            {
+              "description": "Depot handling fee x2",
+              "amount": "110.00"
+            }
+          ]
+        }
+      ],
+      "field_outcome_mode": {
+        "supplier_name": "EXACT",
+        "supplier_abn": "WRONG",
+        "issue_date": "EXACT",
+        "total_inclusive": "EXACT",
+        "gst_amount": "EXACT",
+        "is_tax_invoice": "EXACT",
+        "line_count": "EXACT",
+        "page_count": "EXACT"
+      },
+      "lines_total": 3,
+      "lines_matched_median": 3.0,
+      "parse_failures": 0,
+      "sample_raw_output": "```json\n{\"supplier_name\":\"Southern Cross Logistics Pty Ltd\",\"supplier_abn\":\"85129887841\",\"issue_date\":\"2026-08-14\",\"total_inclusive\":\"17519.31\",\"gst_amount\":\"1592.66\",\"is_tax_invoice\":true,\"line_count\":40,\"page_count\":2,\"lines\":[{\"description\":\"Freight: Melbourne -> Sydney (14/08)\",\"amount\":\"640.00\"},{\"description\":\"Freight: Sydney -> Brisbane (14/08)\",\"amount\":\"715.50\"},{\"description\":\"Freight: Brisbane -> Cairns (14/08)\",\"amount\":\"980.00\"},{\"description\":\"Freight: Cairns -> Townsville (14/08)\",\"amount\":\"410.25\"},{\"description\":\"Freight: Townsville -> Darwin (14/08)\",\"amount\":\"1120.00\"},{\"des"
+    },
+    {
+      "document": "gen-no_abn_van-0006",
+      "engine": "hosted:gemma4:31b",
+      "requested_runs": 2,
+      "completed_runs": 2,
+      "errors": [],
+      "median_seconds": 2.316627621650696,
+      "seconds_all": [
+        2.286738872528076,
+        2.3465163707733154
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "NORMALISED",
+          "NORMALISED"
+        ],
+        "supplier_abn": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "issue_date": [
+          "EXACT",
+          "EXACT"
+        ],
+        "total_inclusive": [
+          "EXACT",
+          "EXACT"
+        ],
+        "gst_amount": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "parsed_by_run": [
+        {
+          "supplier_name": "RIVERBANK SNACK TRAILER",
+          "supplier_abn": null,
+          "issue_date": "2026-09-07",
+          "total_inclusive": "11.70",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 2,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "FLAT WHITE LGE",
+              "amount": "5.50"
+            },
+            {
+              "description": "ICED LATTE",
+              "amount": "6.20"
+            }
+          ]
+        },
+        {
+          "supplier_name": "RIVERBANK SNACK TRAILER",
+          "supplier_abn": null,
+          "issue_date": "2026-09-07",
+          "total_inclusive": "11.70",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 2,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "FLAT WHITE LGE",
+              "amount": "5.50"
+            },
+            {
+              "description": "ICED LATTE",
+              "amount": "6.20"
+            }
+          ]
+        }
+      ],
+      "field_outcome_mode": {
+        "supplier_name": "NORMALISED",
+        "supplier_abn": "ABSTAIN_OK",
+        "issue_date": "EXACT",
+        "total_inclusive": "EXACT",
+        "gst_amount": "ABSTAIN_OK",
+        "is_tax_invoice": "EXACT",
+        "line_count": "EXACT",
+        "page_count": "EXACT"
+      },
+      "lines_total": 2,
+      "lines_matched_median": 2.0,
+      "parse_failures": 0,
+      "sample_raw_output": "```json\n{\"supplier_name\":\"RIVERBANK SNACK TRAILER\",\"supplier_abn\":null,\"issue_date\":\"2026-09-07\",\"total_inclusive\":\"11.70\",\"gst_amount\":null,\"is_tax_invoice\":false,\"line_count\":2,\"page_count\":1,\"lines\":[{\"description\":\"FLAT WHITE LGE\",\"amount\":\"5.50\"},{\"description\":\"ICED LATTE\",\"amount\":\"6.20\"}]}\n```"
+    },
+    {
+      "document": "gen-cafe-0016",
+      "engine": "hosted:gemma4:31b",
+      "requested_runs": 2,
+      "completed_runs": 2,
+      "errors": [],
+      "median_seconds": 2.8298250436782837,
+      "seconds_all": [
+        2.732215404510498,
+        2.9274346828460693
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "NORMALISED",
+          "NORMALISED"
+        ],
+        "supplier_abn": [
+          "EXACT",
+          "EXACT"
+        ],
+        "issue_date": [
+          "EXACT",
+          "EXACT"
+        ],
+        "total_inclusive": [
+          "EXACT",
+          "EXACT"
+        ],
+        "gst_amount": [
+          "EXACT",
+          "EXACT"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "parsed_by_run": [
+        {
+          "supplier_name": "RIVERGUM COFFEE HOUSE",
+          "supplier_abn": "51314757397",
+          "issue_date": "2026-02-12",
+          "total_inclusive": "29.90",
+          "gst_amount": "2.72",
+          "is_tax_invoice": true,
+          "line_count": 4,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "BANANA BREAD",
+              "amount": "5.00"
+            },
+            {
+              "description": "ICED LATTE",
+              "amount": "6.20"
+            },
+            {
+              "description": "CAPPUCCINO REG",
+              "amount": "4.80"
+            },
+            {
+              "description": "CHICKEN WRAP",
+              "amount": "13.90"
+            }
+          ]
+        },
+        {
+          "supplier_name": "RIVERGUM COFFEE HOUSE",
+          "supplier_abn": "51314757397",
+          "issue_date": "2026-02-12",
+          "total_inclusive": "29.90",
+          "gst_amount": "2.72",
+          "is_tax_invoice": true,
+          "line_count": 4,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "BANANA BREAD",
+              "amount": "5.00"
+            },
+            {
+              "description": "ICED LATTE",
+              "amount": "6.20"
+            },
+            {
+              "description": "CAPPUCCINO REG",
+              "amount": "4.80"
+            },
+            {
+              "description": "CHICKEN WRAP",
+              "amount": "13.90"
+            }
+          ]
+        }
+      ],
+      "field_outcome_mode": {
+        "supplier_name": "NORMALISED",
+        "supplier_abn": "EXACT",
+        "issue_date": "EXACT",
+        "total_inclusive": "EXACT",
+        "gst_amount": "EXACT",
+        "is_tax_invoice": "EXACT",
+        "line_count": "EXACT",
+        "page_count": "EXACT"
+      },
+      "lines_total": 4,
+      "lines_matched_median": 4.0,
+      "parse_failures": 0,
+      "sample_raw_output": "```json\n{\"supplier_name\":\"RIVERGUM COFFEE HOUSE\",\"supplier_abn\":\"51314757397\",\"issue_date\":\"2026-02-12\",\"total_inclusive\":\"29.90\",\"gst_amount\":\"2.72\",\"is_tax_invoice\":true,\"line_count\":4,\"page_count\":1,\"lines\":[{\"description\":\"BANANA BREAD\",\"amount\":\"5.00\"},{\"description\":\"ICED LATTE\",\"amount\":\"6.20\"},{\"description\":\"CAPPUCCINO REG\",\"amount\":\"4.80\"},{\"description\":\"CHICKEN WRAP\",\"amount\":\"13.90\"}]}\n```"
+    },
+    {
+      "document": "gen-no_abn_van-0082",
+      "engine": "hosted:gemma4:31b",
+      "requested_runs": 2,
+      "completed_runs": 2,
+      "errors": [],
+      "median_seconds": 1.8911737203598022,
+      "seconds_all": [
+        1.8999793529510498,
+        1.8823680877685547
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "NORMALISED",
+          "NORMALISED"
+        ],
+        "supplier_abn": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "issue_date": [
+          "EXACT",
+          "EXACT"
+        ],
+        "total_inclusive": [
+          "EXACT",
+          "EXACT"
+        ],
+        "gst_amount": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "parsed_by_run": [
+        {
+          "supplier_name": "ROADSIDE COFFEE VAN",
+          "supplier_abn": null,
+          "issue_date": "2026-01-25",
+          "total_inclusive": "23.70",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 3,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "CHICKEN WRAP",
+              "amount": "13.90"
+            },
+            {
+              "description": "BANANA BREAD",
+              "amount": "5.00"
+            },
+            {
+              "description": "CAPPUCCINO REG",
+              "amount": "4.80"
+            }
+          ]
+        },
+        {
+          "supplier_name": "ROADSIDE COFFEE VAN",
+          "supplier_abn": null,
+          "issue_date": "2026-01-25",
+          "total_inclusive": "23.70",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 3,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "CHICKEN WRAP",
+              "amount": "13.90"
+            },
+            {
+              "description": "BANANA BREAD",
+              "amount": "5.00"
+            },
+            {
+              "description": "CAPPUCCINO REG",
+              "amount": "4.80"
+            }
+          ]
+        }
+      ],
+      "field_outcome_mode": {
+        "supplier_name": "NORMALISED",
+        "supplier_abn": "ABSTAIN_OK",
+        "issue_date": "EXACT",
+        "total_inclusive": "EXACT",
+        "gst_amount": "ABSTAIN_OK",
+        "is_tax_invoice": "EXACT",
+        "line_count": "EXACT",
+        "page_count": "EXACT"
+      },
+      "lines_total": 3,
+      "lines_matched_median": 3.0,
+      "parse_failures": 0,
+      "sample_raw_output": "{\"supplier_name\":\"ROADSIDE COFFEE VAN\",\"supplier_abn\":null,\"issue_date\":\"2026-01-25\",\"total_inclusive\":\"23.70\",\"gst_amount\":null,\"is_tax_invoice\":false,\"line_count\":3,\"page_count\":1,\"lines\":[{\"description\":\"CHICKEN WRAP\",\"amount\":\"13.90\"},{\"description\":\"BANANA BREAD\",\"amount\":\"5.00\"},{\"description\":\"CAPPUCCINO REG\",\"amount\":\"4.80\"}]}"
+    },
+    {
+      "document": "gen-trade_invoice-0020",
+      "engine": "hosted:gemma4:31b",
+      "requested_runs": 2,
+      "completed_runs": 2,
+      "errors": [],
+      "median_seconds": 3.8708711862564087,
+      "seconds_all": [
+        3.930645227432251,
+        3.8110971450805664
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "EXACT",
+          "EXACT"
+        ],
+        "supplier_abn": [
+          "EXACT",
+          "EXACT"
+        ],
+        "issue_date": [
+          "EXACT",
+          "EXACT"
+        ],
+        "total_inclusive": [
+          "EXACT",
+          "EXACT"
+        ],
+        "gst_amount": [
+          "EXACT",
+          "EXACT"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "parsed_by_run": [
+        {
+          "supplier_name": "Cavanagh Transport Pty Ltd",
+          "supplier_abn": "82926267200",
+          "issue_date": "2026-07-07",
+          "total_inclusive": "5527.50",
+          "gst_amount": "502.50",
+          "is_tax_invoice": true,
+          "line_count": 22,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "Depot handling fee (01)",
+              "amount": "110.00"
+            },
+            {
+              "description": "Insurance surcharge (02)",
+              "amount": "42.50"
+            },
+            {
+              "description": "Depot handling fee (03)",
+              "amount": "110.00"
+            },
+            {
+              "description": "Fuel levy (04)",
+              "amount": "76.50"
+            },
+            {
+              "description": "Waiting time 2hrs (05)",
+              "amount": "180.00"
+            },
+            {
+              "description": "Freight: Melbourne -> Sydney (06)",
+              "amount": "640.00"
+            },
+            {
+              "description": "Fuel levy (07)",
+              "amount": "76.50"
+            },
+            {
+              "description": "Freight: Sydney -> Brisbane (08)",
+              "amount": "580.00"
+            },
+            {
+              "description": "Pallet hire x4 (09)",
+              "amount": "88.00"
+            },
+            {
+              "description": "Insurance surcharge (10)",
+              "amount": "42.50"
+            },
+            {
+              "description": "After-hours surcharge (11)",
+              "amount": "145.00"
+            },
+            {
+              "description": "Freight: Sydney -> Brisbane (12)",
+              "amount": "580.00"
+            },
+            {
+              "description": "Fuel levy (13)",
+              "amount": "76.50"
+            },
+            {
+              "description": "After-hours surcharge (14)",
+              "amount": "145.00"
+            },
+            {
+              "description": "Waiting time 2hrs (15)",
+              "amount": "180.00"
+            },
+            {
+              "description": "Freight: Melbourne -> Sydney (16)",
+              "amount": "640.00"
+            },
+            {
+              "description": "Waiting time 2hrs (17)",
+              "amount": "180.00"
+            },
+            {
+              "description": "Tail-lift service (18)",
+              "amount": "65.00"
+            },
+            {
+              "description": "After-hours surcharge (19)",
+              "amount": "145.00"
+            },
+            {
+              "description": "Freight: Melbourne -> Sydney (20)",
+              "amount": "640.00"
+            },
+            {
+              "description": "After-hours surcharge (21)",
+              "amount": "145.00"
+            },
+            {
+              "description": "Freight: Melbourne -> Sydney (22)",
+              "amount": "640.00"
+            }
+          ]
+        },
+        {
+          "supplier_name": "Cavanagh Transport Pty Ltd",
+          "supplier_abn": "82926267200",
+          "issue_date": "2026-07-07",
+          "total_inclusive": "5527.50",
+          "gst_amount": "502.50",
+          "is_tax_invoice": true,
+          "line_count": 22,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "Depot handling fee (01)",
+              "amount": "110.00"
+            },
+            {
+              "description": "Insurance surcharge (02)",
+              "amount": "42.50"
+            },
+            {
+              "description": "Depot handling fee (03)",
+              "amount": "110.00"
+            },
+            {
+              "description": "Fuel levy (04)",
+              "amount": "76.50"
+            },
+            {
+              "description": "Waiting time 2hrs (05)",
+              "amount": "180.00"
+            },
+            {
+              "description": "Freight: Melbourne -> Sydney (06)",
+              "amount": "640.00"
+            },
+            {
+              "description": "Fuel levy (07)",
+              "amount": "76.50"
+            },
+            {
+              "description": "Freight: Sydney -> Brisbane (08)",
+              "amount": "580.00"
+            },
+            {
+              "description": "Pallet hire x4 (09)",
+              "amount": "88.00"
+            },
+            {
+              "description": "Insurance surcharge (10)",
+              "amount": "42.50"
+            },
+            {
+              "description": "After-hours surcharge (11)",
+              "amount": "145.00"
+            },
+            {
+              "description": "Freight: Sydney -> Brisbane (12)",
+              "amount": "580.00"
+            },
+            {
+              "description": "Fuel levy (13)",
+              "amount": "76.50"
+            },
+            {
+              "description": "After-hours surcharge (14)",
+              "amount": "145.00"
+            },
+            {
+              "description": "Waiting time 2hrs (15)",
+              "amount": "180.00"
+            },
+            {
+              "description": "Freight: Melbourne -> Sydney (16)",
+              "amount": "640.00"
+            },
+            {
+              "description": "Waiting time 2hrs (17)",
+              "amount": "180.00"
+            },
+            {
+              "description": "Tail-lift service (18)",
+              "amount": "65.00"
+            },
+            {
+              "description": "After-hours surcharge (19)",
+              "amount": "145.00"
+            },
+            {
+              "description": "Freight: Melbourne -> Sydney (20)",
+              "amount": "640.00"
+            },
+            {
+              "description": "After-hours surcharge (21)",
+              "amount": "145.00"
+            },
+            {
+              "description": "Freight: Melbourne -> Sydney (22)",
+              "amount": "640.00"
+            }
+          ]
+        }
+      ],
+      "field_outcome_mode": {
+        "supplier_name": "EXACT",
+        "supplier_abn": "EXACT",
+        "issue_date": "EXACT",
+        "total_inclusive": "EXACT",
+        "gst_amount": "EXACT",
+        "is_tax_invoice": "EXACT",
+        "line_count": "EXACT",
+        "page_count": "EXACT"
+      },
+      "lines_total": 22,
+      "lines_matched_median": 22.0,
+      "parse_failures": 0,
+      "sample_raw_output": "```json\n{\"supplier_name\":\"Cavanagh Transport Pty Ltd\",\"supplier_abn\":\"82926267200\",\"issue_date\":\"2026-07-07\",\"total_inclusive\":\"5527.50\",\"gst_amount\":\"502.50\",\"is_tax_invoice\":true,\"line_count\":22,\"page_count\":1,\"lines\":[{\"description\":\"Depot handling fee (01)\",\"amount\":\"110.00\"},{\"description\":\"Insurance surcharge (02)\",\"amount\":\"42.50\"},{\"description\":\"Depot handling fee (03)\",\"amount\":\"110.00\"},{\"description\":\"Fuel levy (04)\",\"amount\":\"76.50\"},{\"description\":\"Waiting time 2hrs (05)\",\"amount\":\"180.00\"},{\"description\":\"Freight: Melbourne -> Sydney (06)\",\"amount\":\"640.00\"},{\"description\":\"Fuel"
+    },
+    {
+      "document": "tierp-cord-v2-0071",
+      "engine": "hosted:minimax-m3",
+      "requested_runs": 2,
+      "completed_runs": 2,
+      "errors": [],
+      "median_seconds": 6.763906240463257,
+      "seconds_all": [
+        6.612982749938965,
+        6.914829730987549
+      ],
+      "field_outcomes_by_run": {
+        "total_inclusive": [
+          "NORMALISED",
+          "NORMALISED"
+        ],
+        "gst_amount": [
+          "NORMALISED",
+          "NORMALISED"
+        ],
+        "supplier_abn": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "parsed_by_run": [
+        {
+          "supplier_name": null,
+          "supplier_abn": null,
+          "issue_date": null,
+          "total_inclusive": "282000",
+          "gst_amount": "25637",
+          "is_tax_invoice": false,
+          "line_count": 6,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "1 CHOCO PUFF",
+              "amount": "29091"
+            },
+            {
+              "description": "1 CREAMY BEEF CLS FTC",
+              "amount": "42727"
+            },
+            {
+              "description": "1 NEW ORIENTAL CHK RICE",
+              "amount": "34545"
+            },
+            {
+              "description": "1 LIPTON PITCHER",
+              "amount": "54545"
+            },
+            {
+              "description": "1 SC/P SUPER SUPREME",
+              "amount": "47273"
+            },
+            {
+              "description": "1 CB/P BLACK PEPP BEEF",
+              "amount": "48182"
+            }
+          ]
+        },
+        {
+          "supplier_name": null,
+          "supplier_abn": null,
+          "issue_date": null,
+          "total_inclusive": "282000",
+          "gst_amount": "25637",
+          "is_tax_invoice": false,
+          "line_count": 6,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "CHOCO PUFF",
+              "amount": "29091"
+            },
+            {
+              "description": "CREAMY BEEF CLS FTC",
+              "amount": "42727"
+            },
+            {
+              "description": "NEW ORIENTAL CHK RICE",
+              "amount": "34545"
+            },
+            {
+              "description": "LIPTON PITCHER",
+              "amount": "54545"
+            },
+            {
+              "description": "SC/P SUPER SUPREME",
+              "amount": "47273"
+            },
+            {
+              "description": "CB/P BLACK PEPP BEEF",
+              "amount": "48182"
+            }
+          ]
+        }
+      ],
+      "field_outcome_mode": {
+        "total_inclusive": "NORMALISED",
+        "gst_amount": "NORMALISED",
+        "supplier_abn": "ABSTAIN_OK",
+        "is_tax_invoice": "EXACT",
+        "page_count": "EXACT",
+        "line_count": "EXACT"
+      },
+      "lines_total": 6,
+      "lines_matched_median": 6.0,
+      "parse_failures": 0,
+      "sample_raw_output": "{\"supplier_name\":null,\"supplier_abn\":null,\"issue_date\":null,\"total_inclusive\":\"282000\",\"gst_amount\":\"25637\",\"is_tax_invoice\":false,\"line_count\":6,\"page_count\":1,\"lines\":[{\"description\":\"1 CHOCO PUFF\",\"amount\":\"29091\"},{\"description\":\"1 CREAMY BEEF CLS FTC\",\"amount\":\"42727\"},{\"description\":\"1 NEW ORIENTAL CHK RICE\",\"amount\":\"34545\"},{\"description\":\"1 LIPTON PITCHER\",\"amount\":\"54545\"},{\"description\":\"1 SC/P SUPER SUPREME\",\"amount\":\"47273\"},{\"description\":\"1 CB/P BLACK PEPP BEEF\",\"amount\":\"48182\"}]}"
+    },
+    {
+      "document": "tierp-cord-v2-0039",
+      "engine": "hosted:minimax-m3",
+      "requested_runs": 2,
+      "completed_runs": 2,
+      "errors": [],
+      "median_seconds": 12.570366859436035,
+      "seconds_all": [
+        15.581872701644897,
+        9.558861017227173
+      ],
+      "field_outcomes_by_run": {
+        "total_inclusive": [
+          "NORMALISED",
+          "NORMALISED"
+        ],
+        "gst_amount": [
+          "MISS",
+          "MISS"
+        ],
+        "supplier_abn": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "parsed_by_run": [
+        {
+          "supplier_name": null,
+          "supplier_abn": null,
+          "issue_date": null,
+          "total_inclusive": "16500",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 1,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "Chicken HCC, 1Pcs",
+              "amount": "15000"
+            }
+          ]
+        },
+        {
+          "supplier_name": "KFC",
+          "supplier_abn": null,
+          "issue_date": null,
+          "total_inclusive": "16.500",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 1,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "Chicken HCC, 1Pcs",
+              "amount": "15.000"
+            }
+          ]
+        }
+      ],
+      "field_outcome_mode": {
+        "total_inclusive": "NORMALISED",
+        "gst_amount": "MISS",
+        "supplier_abn": "ABSTAIN_OK",
+        "is_tax_invoice": "EXACT",
+        "page_count": "EXACT",
+        "line_count": "EXACT"
+      },
+      "lines_total": 1,
+      "lines_matched_median": 0.5,
+      "parse_failures": 0,
+      "sample_raw_output": "{\"supplier_name\":null,\"supplier_abn\":null,\"issue_date\":null,\"total_inclusive\":\"16500\",\"gst_amount\":null,\"is_tax_invoice\":false,\"line_count\":1,\"page_count\":1,\"lines\":[{\"description\":\"Chicken HCC, 1Pcs\",\"amount\":\"15000\"}]}"
+    },
+    {
+      "document": "tierp-cord-v2-0030",
+      "engine": "hosted:minimax-m3",
+      "requested_runs": 2,
+      "completed_runs": 2,
+      "errors": [],
+      "median_seconds": 16.993759870529175,
+      "seconds_all": [
+        12.49709153175354,
+        21.49042820930481
+      ],
+      "field_outcomes_by_run": {
+        "total_inclusive": [
+          "NORMALISED",
+          "NORMALISED"
+        ],
+        "gst_amount": [
+          "MISS",
+          "MISS"
+        ],
+        "supplier_abn": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "WRONG",
+          "WRONG"
+        ]
+      },
+      "parsed_by_run": [
+        {
+          "supplier_name": null,
+          "supplier_abn": null,
+          "issue_date": null,
+          "total_inclusive": "113886",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 3,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "SALMON PESTO",
+              "amount": "85500"
+            },
+            {
+              "description": "SALMON PESTO",
+              "amount": "85500"
+            },
+            {
+              "description": "Disc -100%(ITM06)",
+              "amount": "-85500"
+            }
+          ]
+        },
+        {
+          "supplier_name": null,
+          "supplier_abn": null,
+          "issue_date": null,
+          "total_inclusive": "113886",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 3,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "SALMON PESTO",
+              "amount": "85500"
+            },
+            {
+              "description": "SALMON PESTO",
+              "amount": "85500"
+            },
+            {
+              "description": "Disc -100%(ITM06)",
+              "amount": "-85500"
+            }
+          ]
+        }
+      ],
+      "field_outcome_mode": {
+        "total_inclusive": "NORMALISED",
+        "gst_amount": "MISS",
+        "supplier_abn": "ABSTAIN_OK",
+        "is_tax_invoice": "EXACT",
+        "page_count": "EXACT",
+        "line_count": "WRONG"
+      },
+      "lines_total": 2,
+      "lines_matched_median": 2.0,
+      "parse_failures": 0,
+      "sample_raw_output": "{\"supplier_name\":null,\"supplier_abn\":null,\"issue_date\":null,\"total_inclusive\":\"113886\",\"gst_amount\":null,\"is_tax_invoice\":false,\"line_count\":3,\"page_count\":1,\"lines\":[{\"description\":\"SALMON PESTO\",\"amount\":\"85500\"},{\"description\":\"SALMON PESTO\",\"amount\":\"85500\"},{\"description\":\"Disc -100%(ITM06)\",\"amount\":\"-85500\"}]}"
+    },
+    {
+      "document": "tierp-cord-v2-0062",
+      "engine": "hosted:minimax-m3",
+      "requested_runs": 2,
+      "completed_runs": 2,
+      "errors": [],
+      "median_seconds": 10.689305543899536,
+      "seconds_all": [
+        6.448179006576538,
+        14.930432081222534
+      ],
+      "field_outcomes_by_run": {
+        "total_inclusive": [
+          "NORMALISED",
+          "NORMALISED"
+        ],
+        "gst_amount": [
+          "MISS",
+          "MISS"
+        ],
+        "supplier_abn": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "parsed_by_run": [
+        {
+          "supplier_name": null,
+          "supplier_abn": null,
+          "issue_date": null,
+          "total_inclusive": "40.000",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 2,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "PILLOW BURLA",
+              "amount": "36.364"
+            },
+            {
+              "description": "PLASTIK 25",
+              "amount": "0"
+            }
+          ]
+        },
+        {
+          "supplier_name": null,
+          "supplier_abn": null,
+          "issue_date": null,
+          "total_inclusive": "40000",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 2,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "PILLOW DUNIA",
+              "amount": "36364"
+            },
+            {
+              "description": "PLASTIK 25",
+              "amount": "0"
+            }
+          ]
+        }
+      ],
+      "field_outcome_mode": {
+        "total_inclusive": "NORMALISED",
+        "gst_amount": "MISS",
+        "supplier_abn": "ABSTAIN_OK",
+        "is_tax_invoice": "EXACT",
+        "page_count": "EXACT",
+        "line_count": "EXACT"
+      },
+      "lines_total": 2,
+      "lines_matched_median": 1.5,
+      "parse_failures": 0,
+      "sample_raw_output": "{\"supplier_name\":null,\"supplier_abn\":null,\"issue_date\":null,\"total_inclusive\":\"40.000\",\"gst_amount\":null,\"is_tax_invoice\":false,\"line_count\":2,\"page_count\":1,\"lines\":[{\"description\":\"PILLOW BURLA\",\"amount\":\"36.364\"},{\"description\":\"PLASTIK 25\",\"amount\":\"0\"}]}"
+    },
+    {
+      "document": "tierp-cord-v2-0015",
+      "engine": "hosted:minimax-m3",
+      "requested_runs": 2,
+      "completed_runs": 2,
+      "errors": [],
+      "median_seconds": 8.11070692539215,
+      "seconds_all": [
+        8.734707593917847,
+        7.486706256866455
+      ],
+      "field_outcomes_by_run": {
+        "total_inclusive": [
+          "NORMALISED",
+          "NORMALISED"
+        ],
+        "gst_amount": [
+          "MISS",
+          "MISS"
+        ],
+        "supplier_abn": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "WRONG",
+          "WRONG"
+        ]
+      },
+      "parsed_by_run": [
+        {
+          "supplier_name": null,
+          "supplier_abn": null,
+          "issue_date": null,
+          "total_inclusive": "70000",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 5,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "[LG] BLACK SAKURA",
+              "amount": "59091"
+            },
+            {
+              "description": "LONGAN",
+              "amount": "0"
+            },
+            {
+              "description": "ROASTED ALMOND",
+              "amount": "0"
+            },
+            {
+              "description": "MANGGO",
+              "amount": "0"
+            },
+            {
+              "description": "MINERAL WATER (bundling) 5k",
+              "amount": "4545"
+            }
+          ]
+        },
+        {
+          "supplier_name": null,
+          "supplier_abn": null,
+          "issue_date": null,
+          "total_inclusive": "70000",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 5,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "[LG] BLACK SAKURA",
+              "amount": "59091"
+            },
+            {
+              "description": "LONGAN",
+              "amount": "0"
+            },
+            {
+              "description": "ROASTED ALMOND",
+              "amount": "0"
+            },
+            {
+              "description": "MANGGO",
+              "amount": "0"
+            },
+            {
+              "description": "MINERAL WATER (bundling) 5k",
+              "amount": "4545"
+            }
+          ]
+        }
+      ],
+      "field_outcome_mode": {
+        "total_inclusive": "NORMALISED",
+        "gst_amount": "MISS",
+        "supplier_abn": "ABSTAIN_OK",
+        "is_tax_invoice": "EXACT",
+        "page_count": "EXACT",
+        "line_count": "WRONG"
+      },
+      "lines_total": 2,
+      "lines_matched_median": 2.0,
+      "parse_failures": 0,
+      "sample_raw_output": "{\"supplier_name\":null,\"supplier_abn\":null,\"issue_date\":null,\"total_inclusive\":\"70000\",\"gst_amount\":null,\"is_tax_invoice\":false,\"line_count\":5,\"page_count\":1,\"lines\":[{\"description\":\"[LG] BLACK SAKURA\",\"amount\":\"59091\"},{\"description\":\"LONGAN\",\"amount\":\"0\"},{\"description\":\"ROASTED ALMOND\",\"amount\":\"0\"},{\"description\":\"MANGGO\",\"amount\":\"0\"},{\"description\":\"MINERAL WATER (bundling) 5k\",\"amount\":\"4545\"}]}"
+    },
+    {
+      "document": "tierp-cord-v2-0042",
+      "engine": "hosted:minimax-m3",
+      "requested_runs": 2,
+      "completed_runs": 2,
+      "errors": [],
+      "median_seconds": 10.15897810459137,
+      "seconds_all": [
+        11.57319688796997,
+        8.744759321212769
+      ],
+      "field_outcomes_by_run": {
+        "total_inclusive": [
+          "NORMALISED",
+          "NORMALISED"
+        ],
+        "gst_amount": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "supplier_abn": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "parsed_by_run": [
+        {
+          "supplier_name": null,
+          "supplier_abn": null,
+          "issue_date": null,
+          "total_inclusive": "88.000",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 4,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "Lemon Tea (L)",
+              "amount": "25.000"
+            },
+            {
+              "description": "Mike & Ike Original",
+              "amount": "28.000"
+            },
+            {
+              "description": "Mike & Berry",
+              "amount": "28.000"
+            },
+            {
+              "description": "Roti Keju Manis",
+              "amount": "7.000"
+            }
+          ]
+        },
+        {
+          "supplier_name": "XXI cafe",
+          "supplier_abn": null,
+          "issue_date": null,
+          "total_inclusive": "88.000",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 4,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "Lemon Tea (L).",
+              "amount": "25.000"
+            },
+            {
+              "description": "Mike & Ike Original",
+              "amount": "28.000"
+            },
+            {
+              "description": "Mike & Berry",
+              "amount": "28.000"
+            },
+            {
+              "description": "Roti Keju Manis.",
+              "amount": "7.000"
+            }
+          ]
+        }
+      ],
+      "field_outcome_mode": {
+        "total_inclusive": "NORMALISED",
+        "gst_amount": "ABSTAIN_OK",
+        "supplier_abn": "ABSTAIN_OK",
+        "is_tax_invoice": "EXACT",
+        "page_count": "EXACT",
+        "line_count": "EXACT"
+      },
+      "lines_total": 4,
+      "lines_matched_median": 4.0,
+      "parse_failures": 0,
+      "sample_raw_output": "```json\n{\"supplier_name\":null,\"supplier_abn\":null,\"issue_date\":null,\"total_inclusive\":\"88.000\",\"gst_amount\":null,\"is_tax_invoice\":false,\"line_count\":4,\"page_count\":1,\"lines\":[{\"description\":\"Lemon Tea (L)\",\"amount\":\"25.000\"},{\"description\":\"Mike & Ike Original\",\"amount\":\"28.000\"},{\"description\":\"Mike & Berry\",\"amount\":\"28.000\"},{\"description\":\"Roti Keju Manis\",\"amount\":\"7.000\"}]}\n```"
+    },
+    {
+      "document": "tierp-cord-v2-0003",
+      "engine": "hosted:minimax-m3",
+      "requested_runs": 2,
+      "completed_runs": 2,
+      "errors": [],
+      "median_seconds": 8.587831139564514,
+      "seconds_all": [
+        5.702298879623413,
+        11.473363399505615
+      ],
+      "field_outcomes_by_run": {
+        "total_inclusive": [
+          "NORMALISED",
+          "NORMALISED"
+        ],
+        "gst_amount": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "supplier_abn": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "parsed_by_run": [
+        {
+          "supplier_name": "Bakery & Cafe Dynamic",
+          "supplier_abn": null,
+          "issue_date": null,
+          "total_inclusive": "11000",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 1,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "DONAT GULA",
+              "amount": "11000"
+            }
+          ]
+        },
+        {
+          "supplier_name": "Dynamic",
+          "supplier_abn": null,
+          "issue_date": null,
+          "total_inclusive": "11000",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 1,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "DONAT GULA",
+              "amount": "11000"
+            }
+          ]
+        }
+      ],
+      "field_outcome_mode": {
+        "total_inclusive": "NORMALISED",
+        "gst_amount": "ABSTAIN_OK",
+        "supplier_abn": "ABSTAIN_OK",
+        "is_tax_invoice": "EXACT",
+        "page_count": "EXACT",
+        "line_count": "EXACT"
+      },
+      "lines_total": 1,
+      "lines_matched_median": 1.0,
+      "parse_failures": 0,
+      "sample_raw_output": "{\"supplier_name\":\"Bakery & Cafe Dynamic\",\"supplier_abn\":null,\"issue_date\":null,\"total_inclusive\":\"11000\",\"gst_amount\":null,\"is_tax_invoice\":false,\"line_count\":1,\"page_count\":1,\"lines\":[{\"description\":\"DONAT GULA\",\"amount\":\"11000\"}]}"
+    },
+    {
+      "document": "tierp-cord-v2-0009",
+      "engine": "hosted:minimax-m3",
+      "requested_runs": 2,
+      "completed_runs": 2,
+      "errors": [],
+      "median_seconds": 7.93124532699585,
+      "seconds_all": [
+        8.539131879806519,
+        7.323358774185181
+      ],
+      "field_outcomes_by_run": {
+        "total_inclusive": [
+          "NORMALISED",
+          "NORMALISED"
+        ],
+        "gst_amount": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "supplier_abn": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "parsed_by_run": [
+        {
+          "supplier_name": "Auntie Anne's",
+          "supplier_abn": null,
+          "issue_date": null,
+          "total_inclusive": "17.000",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 1,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "CINNAMON SUGAR",
+              "amount": "17.000"
+            }
+          ]
+        },
+        {
+          "supplier_name": "Auntie Anne's",
+          "supplier_abn": null,
+          "issue_date": null,
+          "total_inclusive": "17000",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 1,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "CINNAMON SUGAR",
+              "amount": "17000"
+            }
+          ]
+        }
+      ],
+      "field_outcome_mode": {
+        "total_inclusive": "NORMALISED",
+        "gst_amount": "ABSTAIN_OK",
+        "supplier_abn": "ABSTAIN_OK",
+        "is_tax_invoice": "EXACT",
+        "page_count": "EXACT",
+        "line_count": "EXACT"
+      },
+      "lines_total": 1,
+      "lines_matched_median": 0.5,
+      "parse_failures": 0,
+      "sample_raw_output": "{\"supplier_name\":\"Auntie Anne's\",\"supplier_abn\":null,\"issue_date\":null,\"total_inclusive\":\"17.000\",\"gst_amount\":null,\"is_tax_invoice\":false,\"line_count\":1,\"page_count\":1,\"lines\":[{\"description\":\"CINNAMON SUGAR\",\"amount\":\"17.000\"}]}"
+    },
+    {
+      "document": "tierp-cord-v2-0066",
+      "engine": "hosted:minimax-m3",
+      "requested_runs": 2,
+      "completed_runs": 2,
+      "errors": [],
+      "median_seconds": 21.722567439079285,
+      "seconds_all": [
+        24.522012948989868,
+        18.9231219291687
+      ],
+      "field_outcomes_by_run": {
+        "total_inclusive": [
+          "NORMALISED",
+          "NORMALISED"
+        ],
+        "gst_amount": [
+          "NORMALISED",
+          "NORMALISED"
+        ],
+        "supplier_abn": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "parsed_by_run": [
+        {
+          "supplier_name": null,
+          "supplier_abn": null,
+          "issue_date": null,
+          "total_inclusive": "1565.938",
+          "gst_amount": "142.358",
+          "is_tax_invoice": false,
+          "line_count": 8,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "UDANG RE",
+              "amount": "432.000"
+            },
+            {
+              "description": "AYM GR JUN NJAN",
+              "amount": "108.000"
+            },
+            {
+              "description": "SAPO TH SEAFOOD",
+              "amount": "172.000"
+            },
+            {
+              "description": "POCAI 3",
+              "amount": "222.000"
+            },
+            {
+              "description": "GURAME FILLET M ASAM MANIS",
+              "amount": "163.000"
+            },
+            {
+              "description": "BIHUN GORENG JJ",
+              "amount": "116.000"
+            },
+            {
+              "description": "ICED TEA",
+              "amount": "60.000"
+            },
+            {
+              "description": "NASI PUTIH",
+              "amount": "70.000"
+            }
+          ]
+        },
+        {
+          "supplier_name": null,
+          "supplier_abn": null,
+          "issue_date": null,
+          "total_inclusive": "1565938",
+          "gst_amount": "142358",
+          "is_tax_invoice": false,
+          "line_count": 8,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "2 UDANG RE =LARGE=",
+              "amount": "432000"
+            },
+            {
+              "description": "1 AYM GR JUN NJAN =MEDIUM=",
+              "amount": "108000"
+            },
+            {
+              "description": "1 SAPO TH SEAFOOD =LARGE=",
+              "amount": "172000"
+            },
+            {
+              "description": "2 POCAI 3 =MEDIUM=",
+              "amount": "222000"
+            },
+            {
+              "description": "1 GURAME FILLET M ASAM MANIS",
+              "amount": "163000"
+            },
+            {
+              "description": "1 BIHUN GORENG JJ =LARGE=",
+              "amount": "116000"
+            },
+            {
+              "description": "5 ICED TEA",
+              "amount": "60000"
+            },
+            {
+              "description": "7 NASI PUTIH",
+              "amount": "70000"
+            }
+          ]
+        }
+      ],
+      "field_outcome_mode": {
+        "total_inclusive": "NORMALISED",
+        "gst_amount": "NORMALISED",
+        "supplier_abn": "ABSTAIN_OK",
+        "is_tax_invoice": "EXACT",
+        "page_count": "EXACT"
+      },
+      "lines_total": 8,
+      "lines_matched_median": 4.0,
+      "parse_failures": 0,
+      "sample_raw_output": "{\"supplier_name\":null,\"supplier_abn\":null,\"issue_date\":null,\"total_inclusive\":\"1565.938\",\"gst_amount\":\"142.358\",\"is_tax_invoice\":false,\"line_count\":8,\"page_count\":1,\"lines\":[{\"description\":\"UDANG RE\",\"amount\":\"432.000\"},{\"description\":\"AYM GR JUN NJAN\",\"amount\":\"108.000\"},{\"description\":\"SAPO TH SEAFOOD\",\"amount\":\"172.000\"},{\"description\":\"POCAI 3\",\"amount\":\"222.000\"},{\"description\":\"GURAME FILLET M ASAM MANIS\",\"amount\":\"163.000\"},{\"description\":\"BIHUN GORENG JJ\",\"amount\":\"116.000\"},{\"description\":\"ICED TEA\",\"amount\":\"60.000\"},{\"description\":\"NASI PUTIH\",\"amount\":\"70.000\"}]}"
+    },
+    {
+      "document": "tierp-cord-v2-0028",
+      "engine": "hosted:minimax-m3",
+      "requested_runs": 2,
+      "completed_runs": 2,
+      "errors": [],
+      "median_seconds": 15.106098055839539,
+      "seconds_all": [
+        18.561336517333984,
+        11.650859594345093
+      ],
+      "field_outcomes_by_run": {
+        "total_inclusive": [
+          "NORMALISED",
+          "NORMALISED"
+        ],
+        "gst_amount": [
+          "MISS",
+          "MISS"
+        ],
+        "supplier_abn": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "WRONG",
+          "WRONG"
+        ]
+      },
+      "parsed_by_run": [
+        {
+          "supplier_name": null,
+          "supplier_abn": null,
+          "issue_date": null,
+          "total_inclusive": "145900",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 8,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "COLD OCHA",
+              "amount": "10909"
+            },
+            {
+              "description": "BCA PROMO",
+              "amount": "54455"
+            },
+            {
+              "description": "H-ABURA UDON SPICY",
+              "amount": "0"
+            },
+            {
+              "description": "H-KAKE UDON",
+              "amount": "0"
+            },
+            {
+              "description": "SKEWERED SHUMAI",
+              "amount": "12727"
+            },
+            {
+              "description": "SKEWERED TOFU ROLL",
+              "amount": "12727"
+            },
+            {
+              "description": "EBI TEMPURA",
+              "amount": "13636"
+            },
+            {
+              "description": "KITSUNE UDON (KIDS)",
+              "amount": "28182"
+            }
+          ]
+        },
+        {
+          "supplier_name": null,
+          "supplier_abn": null,
+          "issue_date": null,
+          "total_inclusive": "145900",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 8,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "COLD OCHA",
+              "amount": "10909"
+            },
+            {
+              "description": "BCA PROMO",
+              "amount": "54455"
+            },
+            {
+              "description": "I-ABURA UDON SPICY",
+              "amount": "0"
+            },
+            {
+              "description": "I-KAKE UDON",
+              "amount": "0"
+            },
+            {
+              "description": "SKEWERED SHUMAI",
+              "amount": "12727"
+            },
+            {
+              "description": "SKEWERED TOFU ROLL",
+              "amount": "12727"
+            },
+            {
+              "description": "EBI TEMPURA",
+              "amount": "13636"
+            },
+            {
+              "description": "KITSUNE UDON (KIDS)",
+              "amount": "28182"
+            }
+          ]
+        }
+      ],
+      "field_outcome_mode": {
+        "total_inclusive": "NORMALISED",
+        "gst_amount": "MISS",
+        "supplier_abn": "ABSTAIN_OK",
+        "is_tax_invoice": "EXACT",
+        "page_count": "EXACT",
+        "line_count": "WRONG"
+      },
+      "lines_total": 6,
+      "lines_matched_median": 6.0,
+      "parse_failures": 0,
+      "sample_raw_output": "{\"supplier_name\":null,\"supplier_abn\":null,\"issue_date\":null,\"total_inclusive\":\"145900\",\"gst_amount\":null,\"is_tax_invoice\":false,\"line_count\":8,\"page_count\":1,\"lines\":[{\"description\":\"COLD OCHA\",\"amount\":\"10909\"},{\"description\":\"BCA PROMO\",\"amount\":\"54455\"},{\"description\":\"H-ABURA UDON SPICY\",\"amount\":\"0\"},{\"description\":\"H-KAKE UDON\",\"amount\":\"0\"},{\"description\":\"SKEWERED SHUMAI\",\"amount\":\"12727\"},{\"description\":\"SKEWERED TOFU ROLL\",\"amount\":\"12727\"},{\"description\":\"EBI TEMPURA\",\"amount\":\"13636\"},{\"description\":\"KITSUNE UDON (KIDS)\",\"amount\":\"28182\"}]}"
+    },
+    {
+      "document": "tierp-cord-v2-0001",
+      "engine": "hosted:minimax-m3",
+      "requested_runs": 2,
+      "completed_runs": 2,
+      "errors": [],
+      "median_seconds": 7.683497309684753,
+      "seconds_all": [
+        6.905017614364624,
+        8.461977005004883
+      ],
+      "field_outcomes_by_run": {
+        "total_inclusive": [
+          "EXACT",
+          "EXACT"
+        ],
+        "gst_amount": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "supplier_abn": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "parsed_by_run": [
+        {
+          "supplier_name": null,
+          "supplier_abn": null,
+          "issue_date": null,
+          "total_inclusive": "91000",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 3,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "J.STB PROMO",
+              "amount": "17500"
+            },
+            {
+              "description": "Y.B.BAT",
+              "amount": "46000"
+            },
+            {
+              "description": "Y.BASO PROM",
+              "amount": "27500"
+            }
+          ]
+        },
+        {
+          "supplier_name": null,
+          "supplier_abn": null,
+          "issue_date": null,
+          "total_inclusive": "91000",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 3,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "J.STB PROMO",
+              "amount": "17500"
+            },
+            {
+              "description": "Y.B.BAT",
+              "amount": "46000"
+            },
+            {
+              "description": "Y.BASO PROM",
+              "amount": "27500"
+            }
+          ]
+        }
+      ],
+      "field_outcome_mode": {
+        "total_inclusive": "EXACT",
+        "gst_amount": "ABSTAIN_OK",
+        "supplier_abn": "ABSTAIN_OK",
+        "is_tax_invoice": "EXACT",
+        "page_count": "EXACT",
+        "line_count": "EXACT"
+      },
+      "lines_total": 3,
+      "lines_matched_median": 3.0,
+      "parse_failures": 0,
+      "sample_raw_output": "{\"supplier_name\":null,\"supplier_abn\":null,\"issue_date\":null,\"total_inclusive\":\"91000\",\"gst_amount\":null,\"is_tax_invoice\":false,\"line_count\":3,\"page_count\":1,\"lines\":[{\"description\":\"J.STB PROMO\",\"amount\":\"17500\"},{\"description\":\"Y.B.BAT\",\"amount\":\"46000\"},{\"description\":\"Y.BASO PROM\",\"amount\":\"27500\"}]}"
+    },
+    {
+      "document": "tierp-cord-v2-0093",
+      "engine": "hosted:minimax-m3",
+      "requested_runs": 2,
+      "completed_runs": 2,
+      "errors": [],
+      "median_seconds": 52.78766393661499,
+      "seconds_all": [
+        49.00986409187317,
+        56.56546378135681
+      ],
+      "field_outcomes_by_run": {
+        "total_inclusive": [
+          "UNPARSEABLE",
+          "UNPARSEABLE"
+        ],
+        "gst_amount": [
+          "UNPARSEABLE",
+          "UNPARSEABLE"
+        ],
+        "supplier_abn": [
+          "UNPARSEABLE",
+          "UNPARSEABLE"
+        ],
+        "is_tax_invoice": [
+          "UNPARSEABLE",
+          "UNPARSEABLE"
+        ],
+        "page_count": [
+          "UNPARSEABLE",
+          "UNPARSEABLE"
+        ],
+        "line_count": [
+          "UNPARSEABLE",
+          "UNPARSEABLE"
+        ]
+      },
+      "parsed_by_run": [
+        null,
+        null
+      ],
+      "field_outcome_mode": {
+        "total_inclusive": "UNPARSEABLE",
+        "gst_amount": "UNPARSEABLE",
+        "supplier_abn": "UNPARSEABLE",
+        "is_tax_invoice": "UNPARSEABLE",
+        "page_count": "UNPARSEABLE",
+        "line_count": "UNPARSEABLE"
+      },
+      "lines_total": 3,
+      "lines_matched_median": 0.0,
+      "parse_failures": 2,
+      "sample_raw_output": ""
+    },
+    {
+      "document": "gen-no_abn_van-0102",
+      "engine": "hosted:minimax-m3",
+      "requested_runs": 2,
+      "completed_runs": 2,
+      "errors": [],
+      "median_seconds": 4.5319870710372925,
+      "seconds_all": [
+        3.746002674102783,
+        5.317971467971802
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "NORMALISED",
+          "NORMALISED"
+        ],
+        "supplier_abn": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "issue_date": [
+          "EXACT",
+          "EXACT"
+        ],
+        "total_inclusive": [
+          "EXACT",
+          "EXACT"
+        ],
+        "gst_amount": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "parsed_by_run": [
+        {
+          "supplier_name": "THE LITTLE FOOD TRUCK",
+          "supplier_abn": null,
+          "issue_date": "2026-08-22",
+          "total_inclusive": "23.00",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 3,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "BACON EGG ROLL",
+              "amount": "12.50"
+            },
+            {
+              "description": "FLAT WHITE LGE",
+              "amount": "5.50"
+            },
+            {
+              "description": "BANANA BREAD",
+              "amount": "5.00"
+            }
+          ]
+        },
+        {
+          "supplier_name": "THE LITTLE FOOD TRUCK",
+          "supplier_abn": null,
+          "issue_date": "2026-08-22",
+          "total_inclusive": "23.00",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 3,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "BACON EGG ROLL",
+              "amount": "12.50"
+            },
+            {
+              "description": "FLAT WHITE LGE",
+              "amount": "5.50"
+            },
+            {
+              "description": "BANANA BREAD",
+              "amount": "5.00"
+            }
+          ]
+        }
+      ],
+      "field_outcome_mode": {
+        "supplier_name": "NORMALISED",
+        "supplier_abn": "ABSTAIN_OK",
+        "issue_date": "EXACT",
+        "total_inclusive": "EXACT",
+        "gst_amount": "ABSTAIN_OK",
+        "is_tax_invoice": "EXACT",
+        "line_count": "EXACT",
+        "page_count": "EXACT"
+      },
+      "lines_total": 3,
+      "lines_matched_median": 3.0,
+      "parse_failures": 0,
+      "sample_raw_output": "{\"supplier_name\":\"THE LITTLE FOOD TRUCK\",\"supplier_abn\":null,\"issue_date\":\"2026-08-22\",\"total_inclusive\":\"23.00\",\"gst_amount\":null,\"is_tax_invoice\":false,\"line_count\":3,\"page_count\":1,\"lines\":[{\"description\":\"BACON EGG ROLL\",\"amount\":\"12.50\"},{\"description\":\"FLAT WHITE LGE\",\"amount\":\"5.50\"},{\"description\":\"BANANA BREAD\",\"amount\":\"5.00\"}]}"
+    },
+    {
+      "document": "gen-supermarket-0043",
+      "engine": "hosted:minimax-m3",
+      "requested_runs": 2,
+      "completed_runs": 2,
+      "errors": [],
+      "median_seconds": 7.435398697853088,
+      "seconds_all": [
+        7.6403968334198,
+        7.230400562286377
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "NORMALISED",
+          "NORMALISED"
+        ],
+        "supplier_abn": [
+          "EXACT",
+          "EXACT"
+        ],
+        "issue_date": [
+          "EXACT",
+          "EXACT"
+        ],
+        "total_inclusive": [
+          "EXACT",
+          "EXACT"
+        ],
+        "gst_amount": [
+          "EXACT",
+          "EXACT"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "parsed_by_run": [
+        {
+          "supplier_name": "RIVERTON FRESH MARKET",
+          "supplier_abn": "08293882425",
+          "issue_date": "2025-12-19",
+          "total_inclusive": "44.78",
+          "gst_amount": "1.75",
+          "is_tax_invoice": true,
+          "line_count": 9,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "SMITHS CHIPS 170G",
+              "amount": "4.50"
+            },
+            {
+              "description": "CHICKEN BREAST 1KG",
+              "amount": "12.00"
+            },
+            {
+              "description": "WHITE RICE 1KG",
+              "amount": "3.20"
+            },
+            {
+              "description": "FULL CREAM MILK 2L",
+              "amount": "3.30"
+            },
+            {
+              "description": "ENERGY DRINK 500ML",
+              "amount": "4.30"
+            },
+            {
+              "description": "BANANAS 1.2KG",
+              "amount": "4.68"
+            },
+            {
+              "description": "PAPER TOWEL 2PK",
+              "amount": "5.50"
+            },
+            {
+              "description": "ICE 2KG",
+              "amount": "4.90"
+            },
+            {
+              "description": "PLAIN FLOUR 1KG",
+              "amount": "2.40"
+            }
+          ]
+        },
+        {
+          "supplier_name": "RIVERTON FRESH MARKET",
+          "supplier_abn": "08293882425",
+          "issue_date": "2025-12-19",
+          "total_inclusive": "44.78",
+          "gst_amount": "1.75",
+          "is_tax_invoice": true,
+          "line_count": 9,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "SMITHS CHIPS 170G",
+              "amount": "4.50"
+            },
+            {
+              "description": "CHICKEN BREAST 1KG",
+              "amount": "12.00"
+            },
+            {
+              "description": "WHITE RICE 1KG",
+              "amount": "3.20"
+            },
+            {
+              "description": "FULL CREAM MILK 2L",
+              "amount": "3.30"
+            },
+            {
+              "description": "ENERGY DRINK 500ML",
+              "amount": "4.30"
+            },
+            {
+              "description": "BANANAS 1.2KG",
+              "amount": "4.68"
+            },
+            {
+              "description": "PAPER TOWEL 2PK",
+              "amount": "5.50"
+            },
+            {
+              "description": "ICE 2KG",
+              "amount": "4.90"
+            },
+            {
+              "description": "PLAIN FLOUR 1KG",
+              "amount": "2.40"
+            }
+          ]
+        }
+      ],
+      "field_outcome_mode": {
+        "supplier_name": "NORMALISED",
+        "supplier_abn": "EXACT",
+        "issue_date": "EXACT",
+        "total_inclusive": "EXACT",
+        "gst_amount": "EXACT",
+        "is_tax_invoice": "EXACT",
+        "line_count": "EXACT",
+        "page_count": "EXACT"
+      },
+      "lines_total": 9,
+      "lines_matched_median": 9.0,
+      "parse_failures": 0,
+      "sample_raw_output": "{\"supplier_name\":\"RIVERTON FRESH MARKET\",\"supplier_abn\":\"08293882425\",\"issue_date\":\"2025-12-19\",\"total_inclusive\":\"44.78\",\"gst_amount\":\"1.75\",\"is_tax_invoice\":true,\"line_count\":9,\"page_count\":1,\"lines\":[{\"description\":\"SMITHS CHIPS 170G\",\"amount\":\"4.50\"},{\"description\":\"CHICKEN BREAST 1KG\",\"amount\":\"12.00\"},{\"description\":\"WHITE RICE 1KG\",\"amount\":\"3.20\"},{\"description\":\"FULL CREAM MILK 2L\",\"amount\":\"3.30\"},{\"description\":\"ENERGY DRINK 500ML\",\"amount\":\"4.30\"},{\"description\":\"BANANAS 1.2KG\",\"amount\":\"4.68\"},{\"description\":\"PAPER TOWEL 2PK\",\"amount\":\"5.50\"},{\"description\":\"ICE 2KG\",\"amount\":\"4.9"
+    },
+    {
+      "document": "gen-no_abn_van-0029",
+      "engine": "hosted:minimax-m3",
+      "requested_runs": 2,
+      "completed_runs": 2,
+      "errors": [],
+      "median_seconds": 4.769788384437561,
+      "seconds_all": [
+        4.78078031539917,
+        4.758796453475952
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "NORMALISED",
+          "NORMALISED"
+        ],
+        "supplier_abn": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "issue_date": [
+          "EXACT",
+          "EXACT"
+        ],
+        "total_inclusive": [
+          "EXACT",
+          "EXACT"
+        ],
+        "gst_amount": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "parsed_by_run": [
+        {
+          "supplier_name": "RIVERBANK SNACK TRAILER",
+          "supplier_abn": null,
+          "issue_date": "2026-09-18",
+          "total_inclusive": "16.50",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 3,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "ICED LATTE",
+              "amount": "6.20"
+            },
+            {
+              "description": "FLAT WHITE LGE",
+              "amount": "5.50"
+            },
+            {
+              "description": "CAPPUCCINO REG",
+              "amount": "4.80"
+            }
+          ]
+        },
+        {
+          "supplier_name": "RIVERBANK SNACK TRAILER",
+          "supplier_abn": null,
+          "issue_date": "2026-09-18",
+          "total_inclusive": "16.50",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 3,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "ICED LATTE",
+              "amount": "6.20"
+            },
+            {
+              "description": "FLAT WHITE LGE",
+              "amount": "5.50"
+            },
+            {
+              "description": "CAPPUCCINO REG",
+              "amount": "4.80"
+            }
+          ]
+        }
+      ],
+      "field_outcome_mode": {
+        "supplier_name": "NORMALISED",
+        "supplier_abn": "ABSTAIN_OK",
+        "issue_date": "EXACT",
+        "total_inclusive": "EXACT",
+        "gst_amount": "ABSTAIN_OK",
+        "is_tax_invoice": "EXACT",
+        "line_count": "EXACT",
+        "page_count": "EXACT"
+      },
+      "lines_total": 3,
+      "lines_matched_median": 3.0,
+      "parse_failures": 0,
+      "sample_raw_output": "{\"supplier_name\":\"RIVERBANK SNACK TRAILER\",\"supplier_abn\":null,\"issue_date\":\"2026-09-18\",\"total_inclusive\":\"16.50\",\"gst_amount\":null,\"is_tax_invoice\":false,\"line_count\":3,\"page_count\":1,\"lines\":[{\"description\":\"ICED LATTE\",\"amount\":\"6.20\"},{\"description\":\"FLAT WHITE LGE\",\"amount\":\"5.50\"},{\"description\":\"CAPPUCCINO REG\",\"amount\":\"4.80\"}]}"
+    },
+    {
+      "document": "gen-supermarket-0084",
+      "engine": "hosted:minimax-m3",
+      "requested_runs": 2,
+      "completed_runs": 2,
+      "errors": [],
+      "median_seconds": 26.224949955940247,
+      "seconds_all": [
+        7.817124605178833,
+        44.63277530670166
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "NORMALISED",
+          "UNPARSEABLE"
+        ],
+        "supplier_abn": [
+          "EXACT",
+          "UNPARSEABLE"
+        ],
+        "issue_date": [
+          "EXACT",
+          "UNPARSEABLE"
+        ],
+        "total_inclusive": [
+          "EXACT",
+          "UNPARSEABLE"
+        ],
+        "gst_amount": [
+          "EXACT",
+          "UNPARSEABLE"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "UNPARSEABLE"
+        ],
+        "line_count": [
+          "EXACT",
+          "UNPARSEABLE"
+        ],
+        "page_count": [
+          "EXACT",
+          "UNPARSEABLE"
+        ]
+      },
+      "parsed_by_run": [
+        {
+          "supplier_name": "KALINDA GROCERS",
+          "supplier_abn": "76672752465",
+          "issue_date": "2026-08-04",
+          "total_inclusive": "51.28",
+          "gst_amount": "2.73",
+          "is_tax_invoice": true,
+          "line_count": 10,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "TOMATOES 500G",
+              "amount": "4.50"
+            },
+            {
+              "description": "BANANAS 1.2KG",
+              "amount": "4.68"
+            },
+            {
+              "description": "SMITHS CHIPS 170G",
+              "amount": "4.50"
+            },
+            {
+              "description": "TIM TAMS 200G",
+              "amount": "4.20"
+            },
+            {
+              "description": "DISHWASHING LIQUID",
+              "amount": "4.80"
+            },
+            {
+              "description": "LAUNDRY POWDER 1KG",
+              "amount": "11.00"
+            },
+            {
+              "description": "FREE RANGE EGGS 12",
+              "amount": "7.50"
+            },
+            {
+              "description": "PLAIN FLOUR 1KG",
+              "amount": "2.40"
+            },
+            {
+              "description": "PAPER TOWEL 2PK",
+              "amount": "5.50"
+            },
+            {
+              "description": "CARROTS 1KG",
+              "amount": "2.20"
+            }
+          ]
+        },
+        null
+      ],
+      "field_outcome_mode": {
+        "supplier_name": "NORMALISED",
+        "supplier_abn": "EXACT",
+        "issue_date": "EXACT",
+        "total_inclusive": "EXACT",
+        "gst_amount": "EXACT",
+        "is_tax_invoice": "EXACT",
+        "line_count": "EXACT",
+        "page_count": "EXACT"
+      },
+      "lines_total": 10,
+      "lines_matched_median": 5.0,
+      "parse_failures": 1,
+      "sample_raw_output": "{\"supplier_name\":\"KALINDA GROCERS\",\"supplier_abn\":\"76672752465\",\"issue_date\":\"2026-08-04\",\"total_inclusive\":\"51.28\",\"gst_amount\":\"2.73\",\"is_tax_invoice\":true,\"line_count\":10,\"page_count\":1,\"lines\":[{\"description\":\"TOMATOES 500G\",\"amount\":\"4.50\"},{\"description\":\"BANANAS 1.2KG\",\"amount\":\"4.68\"},{\"description\":\"SMITHS CHIPS 170G\",\"amount\":\"4.50\"},{\"description\":\"TIM TAMS 200G\",\"amount\":\"4.20\"},{\"description\":\"DISHWASHING LIQUID\",\"amount\":\"4.80\"},{\"description\":\"LAUNDRY POWDER 1KG\",\"amount\":\"11.00\"},{\"description\":\"FREE RANGE EGGS 12\",\"amount\":\"7.50\"},{\"description\":\"PLAIN FLOUR 1KG\",\"amount\":\"2.4"
+    },
+    {
+      "document": "gen-no_abn_van-0011",
+      "engine": "hosted:minimax-m3",
+      "requested_runs": 2,
+      "completed_runs": 2,
+      "errors": [],
+      "median_seconds": 5.941009521484375,
+      "seconds_all": [
+        6.536645174026489,
+        5.345373868942261
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "NORMALISED",
+          "NORMALISED"
+        ],
+        "supplier_abn": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "issue_date": [
+          "WRONG",
+          "EXACT"
+        ],
+        "total_inclusive": [
+          "EXACT",
+          "EXACT"
+        ],
+        "gst_amount": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "parsed_by_run": [
+        {
+          "supplier_name": "RIVERBANK SNACK TRAILER",
+          "supplier_abn": null,
+          "issue_date": "2026-04-01",
+          "total_inclusive": "13.90",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 1,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "CHICKEN WRAP",
+              "amount": "13.90"
+            }
+          ]
+        },
+        {
+          "supplier_name": "RIVERBANK SNACK TRAILER",
+          "supplier_abn": null,
+          "issue_date": "2026-01-04",
+          "total_inclusive": "13.90",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 1,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "CHICKEN WRAP",
+              "amount": "13.90"
+            }
+          ]
+        }
+      ],
+      "field_outcome_mode": {
+        "supplier_name": "NORMALISED",
+        "supplier_abn": "ABSTAIN_OK",
+        "issue_date": "WRONG",
+        "total_inclusive": "EXACT",
+        "gst_amount": "ABSTAIN_OK",
+        "is_tax_invoice": "EXACT",
+        "line_count": "EXACT",
+        "page_count": "EXACT"
+      },
+      "lines_total": 1,
+      "lines_matched_median": 1.0,
+      "parse_failures": 0,
+      "sample_raw_output": "{\"supplier_name\":\"RIVERBANK SNACK TRAILER\",\"supplier_abn\":null,\"issue_date\":\"2026-04-01\",\"total_inclusive\":\"13.90\",\"gst_amount\":null,\"is_tax_invoice\":false,\"line_count\":1,\"page_count\":1,\"lines\":[{\"description\":\"CHICKEN WRAP\",\"amount\":\"13.90\"}]}"
+    },
+    {
+      "document": "gen-cafe-0291",
+      "engine": "hosted:minimax-m3",
+      "requested_runs": 2,
+      "completed_runs": 2,
+      "errors": [],
+      "median_seconds": 6.027352809906006,
+      "seconds_all": [
+        5.440698862075806,
+        6.614006757736206
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "NORMALISED",
+          "NORMALISED"
+        ],
+        "supplier_abn": [
+          "EXACT",
+          "EXACT"
+        ],
+        "issue_date": [
+          "EXACT",
+          "EXACT"
+        ],
+        "total_inclusive": [
+          "EXACT",
+          "EXACT"
+        ],
+        "gst_amount": [
+          "EXACT",
+          "EXACT"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "parsed_by_run": [
+        {
+          "supplier_name": "THE SIDINGS CAFE",
+          "supplier_abn": "26547496341",
+          "issue_date": "2026-08-31",
+          "total_inclusive": "21.50",
+          "gst_amount": "1.95",
+          "is_tax_invoice": true,
+          "line_count": 4,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "CAPPUCCINO REG",
+              "amount": "4.80"
+            },
+            {
+              "description": "ICED LATTE",
+              "amount": "6.20"
+            },
+            {
+              "description": "FLAT WHITE LGE",
+              "amount": "5.50"
+            },
+            {
+              "description": "BANANA BREAD",
+              "amount": "5.00"
+            }
+          ]
+        },
+        {
+          "supplier_name": "THE SIDINGS CAFE",
+          "supplier_abn": "26547496341",
+          "issue_date": "2026-08-31",
+          "total_inclusive": "21.50",
+          "gst_amount": "1.95",
+          "is_tax_invoice": true,
+          "line_count": 4,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "CAPPUCCINO REG",
+              "amount": "4.80"
+            },
+            {
+              "description": "ICED LATTE",
+              "amount": "6.20"
+            },
+            {
+              "description": "FLAT WHITE LGE",
+              "amount": "5.50"
+            },
+            {
+              "description": "BANANA BREAD",
+              "amount": "5.00"
+            }
+          ]
+        }
+      ],
+      "field_outcome_mode": {
+        "supplier_name": "NORMALISED",
+        "supplier_abn": "EXACT",
+        "issue_date": "EXACT",
+        "total_inclusive": "EXACT",
+        "gst_amount": "EXACT",
+        "is_tax_invoice": "EXACT",
+        "line_count": "EXACT",
+        "page_count": "EXACT"
+      },
+      "lines_total": 4,
+      "lines_matched_median": 4.0,
+      "parse_failures": 0,
+      "sample_raw_output": "{\"supplier_name\":\"THE SIDINGS CAFE\",\"supplier_abn\":\"26547496341\",\"issue_date\":\"2026-08-31\",\"total_inclusive\":\"21.50\",\"gst_amount\":\"1.95\",\"is_tax_invoice\":true,\"line_count\":4,\"page_count\":1,\"lines\":[{\"description\":\"CAPPUCCINO REG\",\"amount\":\"4.80\"},{\"description\":\"ICED LATTE\",\"amount\":\"6.20\"},{\"description\":\"FLAT WHITE LGE\",\"amount\":\"5.50\"},{\"description\":\"BANANA BREAD\",\"amount\":\"5.00\"}]}"
+    },
+    {
+      "document": "receipt-noabn",
+      "engine": "hosted:minimax-m3",
+      "requested_runs": 2,
+      "completed_runs": 2,
+      "errors": [],
+      "median_seconds": 3.748376965522766,
+      "seconds_all": [
+        3.3702521324157715,
+        4.126501798629761
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "NORMALISED",
+          "NORMALISED"
+        ],
+        "supplier_abn": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "issue_date": [
+          "EXACT",
+          "EXACT"
+        ],
+        "total_inclusive": [
+          "EXACT",
+          "EXACT"
+        ],
+        "gst_amount": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "parsed_by_run": [
+        {
+          "supplier_name": "ROADSIDE COFFEE VAN",
+          "supplier_abn": null,
+          "issue_date": "2026-09-06",
+          "total_inclusive": "8.50",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 2,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "FLAT WHITE LGE",
+              "amount": "5.50"
+            },
+            {
+              "description": "BANANA BREAD",
+              "amount": "3.00"
+            }
+          ]
+        },
+        {
+          "supplier_name": "ROADSIDE COFFEE VAN",
+          "supplier_abn": null,
+          "issue_date": "2026-09-06",
+          "total_inclusive": "8.50",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 2,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "FLAT WHITE LGE",
+              "amount": "5.50"
+            },
+            {
+              "description": "BANANA BREAD",
+              "amount": "3.00"
+            }
+          ]
+        }
+      ],
+      "field_outcome_mode": {
+        "supplier_name": "NORMALISED",
+        "supplier_abn": "ABSTAIN_OK",
+        "issue_date": "EXACT",
+        "total_inclusive": "EXACT",
+        "gst_amount": "ABSTAIN_OK",
+        "is_tax_invoice": "EXACT",
+        "line_count": "EXACT",
+        "page_count": "EXACT"
+      },
+      "lines_total": 2,
+      "lines_matched_median": 2.0,
+      "parse_failures": 0,
+      "sample_raw_output": "{\"supplier_name\":\"ROADSIDE COFFEE VAN\",\"supplier_abn\":null,\"issue_date\":\"2026-09-06\",\"total_inclusive\":\"8.50\",\"gst_amount\":null,\"is_tax_invoice\":false,\"line_count\":2,\"page_count\":1,\"lines\":[{\"description\":\"FLAT WHITE LGE\",\"amount\":\"5.50\"},{\"description\":\"BANANA BREAD\",\"amount\":\"3.00\"}]}"
+    },
+    {
+      "document": "invoice-multipage",
+      "engine": "hosted:minimax-m3",
+      "requested_runs": 2,
+      "completed_runs": 2,
+      "errors": [],
+      "median_seconds": 14.878254890441895,
+      "seconds_all": [
+        12.036433219909668,
+        17.72007656097412
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "EXACT",
+          "EXACT"
+        ],
+        "supplier_abn": [
+          "EXACT",
+          "EXACT"
+        ],
+        "issue_date": [
+          "EXACT",
+          "EXACT"
+        ],
+        "total_inclusive": [
+          "EXACT",
+          "EXACT"
+        ],
+        "gst_amount": [
+          "EXACT",
+          "EXACT"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "parsed_by_run": [
+        {
+          "supplier_name": "Southern Cross Logistics Pty Ltd",
+          "supplier_abn": "85129887341",
+          "issue_date": "2026-08-14",
+          "total_inclusive": "17519.31",
+          "gst_amount": "1592.66",
+          "is_tax_invoice": true,
+          "line_count": 40,
+          "page_count": 2,
+          "lines": [
+            {
+              "description": "Freight: Melbourne -> Sydney (14/08)",
+              "amount": "640.00"
+            },
+            {
+              "description": "Freight: Sydney -> Brisbane (14/08)",
+              "amount": "715.50"
+            },
+            {
+              "description": "Freight: Brisbane -> Cairns (14/08)",
+              "amount": "980.00"
+            },
+            {
+              "description": "Freight: Cairns -> Townsville (14/08)",
+              "amount": "410.25"
+            },
+            {
+              "description": "Freight: Townsville -> Darwin (14/08)",
+              "amount": "1120.00"
+            },
+            {
+              "description": "Freight: Darwin -> Alice Springs (14/08)",
+              "amount": "890.75"
+            },
+            {
+              "description": "Freight: Alice Springs -> Adelaide (14/08)",
+              "amount": "960.00"
+            },
+            {
+              "description": "Freight: Adelaide -> Perth (14/08)",
+              "amount": "1340.50"
+            },
+            {
+              "description": "Freight: Perth -> Kalgoorlie (14/08)",
+              "amount": "505.00"
+            },
+            {
+              "description": "Freight: Kalgoorlie -> Adelaide (14/08)",
+              "amount": "960.00"
+            },
+            {
+              "description": "Fuel levy \u2014 Melbourne run",
+              "amount": "88.40"
+            },
+            {
+              "description": "Fuel levy \u2014 Sydney run",
+              "amount": "92.10"
+            },
+            {
+              "description": "Fuel levy \u2014 Brisbane run",
+              "amount": "104.60"
+            },
+            {
+              "description": "Fuel levy \u2014 Cairns run",
+              "amount": "61.30"
+            },
+            {
+              "description": "Fuel levy \u2014 Darwin run",
+              "amount": "130.25"
+            },
+            {
+              "description": "Pallet hire (40 pallets)",
+              "amount": "220.00"
+            },
+            {
+              "description": "Pallet hire (18 pallets)",
+              "amount": "99.00"
+            },
+            {
+              "description": "Tail-lift surcharge",
+              "amount": "75.00"
+            },
+            {
+              "description": "After-hours delivery surcharge",
+              "amount": "150.00"
+            },
+            {
+              "description": "Waiting time \u2014 Brisbane depot (2.5h)",
+              "amount": "187.50"
+            },
+            {
+              "description": "Waiting time \u2014 Perth depot (1h)",
+              "amount": "75.00"
+            },
+            {
+              "description": "Insurance \u2014 high-value load",
+              "amount": "240.00"
+            },
+            {
+              "description": "Depot handling fee x3",
+              "amount": "165.00"
+            },
+            {
+              "description": "Interstate compliance fee",
+              "amount": "130.00"
+            },
+            {
+              "description": "Freight: Adelaide -> Melbourne (15/08)",
+              "amount": "705.00"
+            },
+            {
+              "description": "Freight: Melbourne -> Hobart (ferry) (15/08)",
+              "amount": "1180.00"
+            },
+            {
+              "description": "Freight: Hobart -> Launceston (15/08)",
+              "amount": "340.00"
+            },
+            {
+              "description": "Freight: Launceston -> Melbourne (ferry) (16/08)",
+              "amount": "1180.00"
+            },
+            {
+              "description": "Freight: Melbourne -> Geelong (16/08)",
+              "amount": "210.00"
+            },
+            {
+              "description": "Freight: Geelong -> Ballarat (16/08)",
+              "amount": "260.00"
+            },
+            {
+              "description": "Freight: Ballarat -> Bendigo (16/08)",
+              "amount": "230.00"
+            },
+            {
+              "description": "Freight: Bendigo -> Mildura (16/08)",
+              "amount": "480.00"
+            },
+            {
+              "description": "Fuel levy \u2014 Adelaide run",
+              "amount": "76.50"
+            },
+            {
+              "description": "Fuel levy \u2014 Tasmania run",
+              "amount": "210.00"
+            },
+            {
+              "description": "Fuel levy \u2014 regional Victoria run",
+              "amount": "98.00"
+            },
+            {
+              "description": "Pallet hire (24 pallets)",
+              "amount": "132.00"
+            },
+            {
+              "description": "Refrigeration surcharge \u2014 Tasmania run",
+              "amount": "165.00"
+            },
+            {
+              "description": "Ferry booking fee x2",
+              "amount": "90.00"
+            },
+            {
+              "description": "Weekend loading fee",
+              "amount": "120.00"
+            },
+            {
+              "description": "Depot handling fee x2",
+              "amount": "110.00"
+            }
+          ]
+        },
+        {
+          "supplier_name": "Southern Cross Logistics Pty Ltd",
+          "supplier_abn": "85129887341",
+          "issue_date": "2026-08-14",
+          "total_inclusive": "17519.31",
+          "gst_amount": "1592.66",
+          "is_tax_invoice": true,
+          "line_count": 40,
+          "page_count": 2,
+          "lines": [
+            {
+              "description": "Freight: Melbourne -> Sydney (14/08)",
+              "amount": "640.00"
+            },
+            {
+              "description": "Freight: Sydney -> Brisbane (14/08)",
+              "amount": "715.50"
+            },
+            {
+              "description": "Freight: Brisbane -> Cairns (14/08)",
+              "amount": "980.00"
+            },
+            {
+              "description": "Freight: Cairns -> Townsville (14/08)",
+              "amount": "410.25"
+            },
+            {
+              "description": "Freight: Townsville -> Darwin (14/08)",
+              "amount": "1120.00"
+            },
+            {
+              "description": "Freight: Darwin -> Alice Springs (14/08)",
+              "amount": "890.75"
+            },
+            {
+              "description": "Freight: Alice Springs -> Adelaide (14/08)",
+              "amount": "960.00"
+            },
+            {
+              "description": "Freight: Adelaide -> Perth (14/08)",
+              "amount": "1340.50"
+            },
+            {
+              "description": "Freight: Perth -> Kalgoorlie (14/08)",
+              "amount": "505.00"
+            },
+            {
+              "description": "Freight: Kalgoorlie -> Adelaide (14/08)",
+              "amount": "960.00"
+            },
+            {
+              "description": "Fuel levy \u2014 Melbourne run",
+              "amount": "88.40"
+            },
+            {
+              "description": "Fuel levy \u2014 Sydney run",
+              "amount": "92.10"
+            },
+            {
+              "description": "Fuel levy \u2014 Brisbane run",
+              "amount": "104.60"
+            },
+            {
+              "description": "Fuel levy \u2014 Cairns run",
+              "amount": "61.30"
+            },
+            {
+              "description": "Fuel levy \u2014 Darwin run",
+              "amount": "130.25"
+            },
+            {
+              "description": "Pallet hire (40 pallets)",
+              "amount": "220.00"
+            },
+            {
+              "description": "Pallet hire (18 pallets)",
+              "amount": "99.00"
+            },
+            {
+              "description": "Tail-lift surcharge",
+              "amount": "75.00"
+            },
+            {
+              "description": "After-hours delivery surcharge",
+              "amount": "150.00"
+            },
+            {
+              "description": "Waiting time \u2014 Brisbane depot (2.5h)",
+              "amount": "187.50"
+            },
+            {
+              "description": "Waiting time \u2014 Perth depot (1h)",
+              "amount": "75.00"
+            },
+            {
+              "description": "Insurance \u2014 high-value load",
+              "amount": "240.00"
+            },
+            {
+              "description": "Depot handling fee x3",
+              "amount": "165.00"
+            },
+            {
+              "description": "Interstate compliance fee",
+              "amount": "130.00"
+            },
+            {
+              "description": "Freight: Adelaide -> Melbourne (15/08)",
+              "amount": "705.00"
+            },
+            {
+              "description": "Freight: Melbourne -> Hobart (ferry) (15/08)",
+              "amount": "1180.00"
+            },
+            {
+              "description": "Freight: Hobart -> Launceston (15/08)",
+              "amount": "340.00"
+            },
+            {
+              "description": "Freight: Launceston -> Melbourne (ferry) (16/08)",
+              "amount": "1180.00"
+            },
+            {
+              "description": "Freight: Melbourne -> Geelong (16/08)",
+              "amount": "210.00"
+            },
+            {
+              "description": "Freight: Geelong -> Ballarat (16/08)",
+              "amount": "260.00"
+            },
+            {
+              "description": "Freight: Ballarat -> Bendigo (16/08)",
+              "amount": "230.00"
+            },
+            {
+              "description": "Freight: Bendigo -> Mildura (16/08)",
+              "amount": "480.00"
+            },
+            {
+              "description": "Fuel levy \u2014 Adelaide run",
+              "amount": "76.50"
+            },
+            {
+              "description": "Fuel levy \u2014 Tasmania run",
+              "amount": "210.00"
+            },
+            {
+              "description": "Fuel levy \u2014 regional Victoria run",
+              "amount": "98.00"
+            },
+            {
+              "description": "Pallet hire (24 pallets)",
+              "amount": "132.00"
+            },
+            {
+              "description": "Refrigeration surcharge \u2014 Tasmania run",
+              "amount": "165.00"
+            },
+            {
+              "description": "Ferry booking fee x2",
+              "amount": "90.00"
+            },
+            {
+              "description": "Weekend loading fee",
+              "amount": "120.00"
+            },
+            {
+              "description": "Depot handling fee x2",
+              "amount": "110.00"
+            }
+          ]
+        }
+      ],
+      "field_outcome_mode": {
+        "supplier_name": "EXACT",
+        "supplier_abn": "EXACT",
+        "issue_date": "EXACT",
+        "total_inclusive": "EXACT",
+        "gst_amount": "EXACT",
+        "is_tax_invoice": "EXACT",
+        "line_count": "EXACT",
+        "page_count": "EXACT"
+      },
+      "lines_total": 3,
+      "lines_matched_median": 3.0,
+      "parse_failures": 0,
+      "sample_raw_output": "{\"supplier_name\":\"Southern Cross Logistics Pty Ltd\",\"supplier_abn\":\"85129887341\",\"issue_date\":\"2026-08-14\",\"total_inclusive\":\"17519.31\",\"gst_amount\":\"1592.66\",\"is_tax_invoice\":true,\"line_count\":40,\"page_count\":2,\"lines\":[{\"description\":\"Freight: Melbourne -> Sydney (14/08)\",\"amount\":\"640.00\"},{\"description\":\"Freight: Sydney -> Brisbane (14/08)\",\"amount\":\"715.50\"},{\"description\":\"Freight: Brisbane -> Cairns (14/08)\",\"amount\":\"980.00\"},{\"description\":\"Freight: Cairns -> Townsville (14/08)\",\"amount\":\"410.25\"},{\"description\":\"Freight: Townsville -> Darwin (14/08)\",\"amount\":\"1120.00\"},{\"description"
+    },
+    {
+      "document": "gen-no_abn_van-0006",
+      "engine": "hosted:minimax-m3",
+      "requested_runs": 2,
+      "completed_runs": 2,
+      "errors": [],
+      "median_seconds": 5.0906524658203125,
+      "seconds_all": [
+        6.202916622161865,
+        3.9783883094787598
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "NORMALISED",
+          "NORMALISED"
+        ],
+        "supplier_abn": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "issue_date": [
+          "EXACT",
+          "EXACT"
+        ],
+        "total_inclusive": [
+          "EXACT",
+          "EXACT"
+        ],
+        "gst_amount": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "parsed_by_run": [
+        {
+          "supplier_name": "RIVERBANK SNACK TRAILER",
+          "supplier_abn": null,
+          "issue_date": "2026-09-07",
+          "total_inclusive": "11.70",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 2,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "FLAT WHITE LGE",
+              "amount": "5.50"
+            },
+            {
+              "description": "ICED LATTE",
+              "amount": "6.20"
+            }
+          ]
+        },
+        {
+          "supplier_name": "RIVERBANK SNACK TRAILER",
+          "supplier_abn": null,
+          "issue_date": "2026-09-07",
+          "total_inclusive": "11.70",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 2,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "FLAT WHITE LGE",
+              "amount": "5.50"
+            },
+            {
+              "description": "ICED LATTE",
+              "amount": "6.20"
+            }
+          ]
+        }
+      ],
+      "field_outcome_mode": {
+        "supplier_name": "NORMALISED",
+        "supplier_abn": "ABSTAIN_OK",
+        "issue_date": "EXACT",
+        "total_inclusive": "EXACT",
+        "gst_amount": "ABSTAIN_OK",
+        "is_tax_invoice": "EXACT",
+        "line_count": "EXACT",
+        "page_count": "EXACT"
+      },
+      "lines_total": 2,
+      "lines_matched_median": 2.0,
+      "parse_failures": 0,
+      "sample_raw_output": "{\"supplier_name\":\"RIVERBANK SNACK TRAILER\",\"supplier_abn\":null,\"issue_date\":\"2026-09-07\",\"total_inclusive\":\"11.70\",\"gst_amount\":null,\"is_tax_invoice\":false,\"line_count\":2,\"page_count\":1,\"lines\":[{\"description\":\"FLAT WHITE LGE\",\"amount\":\"5.50\"},{\"description\":\"ICED LATTE\",\"amount\":\"6.20\"}]}"
+    },
+    {
+      "document": "gen-cafe-0016",
+      "engine": "hosted:minimax-m3",
+      "requested_runs": 2,
+      "completed_runs": 2,
+      "errors": [],
+      "median_seconds": 7.673789739608765,
+      "seconds_all": [
+        7.889989137649536,
+        7.457590341567993
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "NORMALISED",
+          "NORMALISED"
+        ],
+        "supplier_abn": [
+          "EXACT",
+          "EXACT"
+        ],
+        "issue_date": [
+          "EXACT",
+          "EXACT"
+        ],
+        "total_inclusive": [
+          "EXACT",
+          "EXACT"
+        ],
+        "gst_amount": [
+          "EXACT",
+          "EXACT"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "parsed_by_run": [
+        {
+          "supplier_name": "RIVERGUM COFFEE HOUSE",
+          "supplier_abn": "51314757397",
+          "issue_date": "2026-02-12",
+          "total_inclusive": "29.90",
+          "gst_amount": "2.72",
+          "is_tax_invoice": true,
+          "line_count": 4,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "BANANA BREAD",
+              "amount": "5.00"
+            },
+            {
+              "description": "ICED LATTE",
+              "amount": "6.20"
+            },
+            {
+              "description": "CAPPUCCINO REG",
+              "amount": "4.80"
+            },
+            {
+              "description": "CHICKEN WRAP",
+              "amount": "13.90"
+            }
+          ]
+        },
+        {
+          "supplier_name": "RIVERGUM COFFEE HOUSE",
+          "supplier_abn": "51314757397",
+          "issue_date": "2026-02-12",
+          "total_inclusive": "29.90",
+          "gst_amount": "2.72",
+          "is_tax_invoice": true,
+          "line_count": 4,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "BANANA BREAD",
+              "amount": "5.00"
+            },
+            {
+              "description": "ICED LATTE",
+              "amount": "6.20"
+            },
+            {
+              "description": "CAPPUCCINO REG",
+              "amount": "4.80"
+            },
+            {
+              "description": "CHICKEN WRAP",
+              "amount": "13.90"
+            }
+          ]
+        }
+      ],
+      "field_outcome_mode": {
+        "supplier_name": "NORMALISED",
+        "supplier_abn": "EXACT",
+        "issue_date": "EXACT",
+        "total_inclusive": "EXACT",
+        "gst_amount": "EXACT",
+        "is_tax_invoice": "EXACT",
+        "line_count": "EXACT",
+        "page_count": "EXACT"
+      },
+      "lines_total": 4,
+      "lines_matched_median": 4.0,
+      "parse_failures": 0,
+      "sample_raw_output": "{\"supplier_name\":\"RIVERGUM COFFEE HOUSE\",\"supplier_abn\":\"51314757397\",\"issue_date\":\"2026-02-12\",\"total_inclusive\":\"29.90\",\"gst_amount\":\"2.72\",\"is_tax_invoice\":true,\"line_count\":4,\"page_count\":1,\"lines\":[{\"description\":\"BANANA BREAD\",\"amount\":\"5.00\"},{\"description\":\"ICED LATTE\",\"amount\":\"6.20\"},{\"description\":\"CAPPUCCINO REG\",\"amount\":\"4.80\"},{\"description\":\"CHICKEN WRAP\",\"amount\":\"13.90\"}]}"
+    },
+    {
+      "document": "gen-no_abn_van-0082",
+      "engine": "hosted:minimax-m3",
+      "requested_runs": 2,
+      "completed_runs": 2,
+      "errors": [],
+      "median_seconds": 3.4320684671401978,
+      "seconds_all": [
+        3.3781521320343018,
+        3.4859848022460938
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "NORMALISED",
+          "NORMALISED"
+        ],
+        "supplier_abn": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "issue_date": [
+          "EXACT",
+          "EXACT"
+        ],
+        "total_inclusive": [
+          "EXACT",
+          "EXACT"
+        ],
+        "gst_amount": [
+          "ABSTAIN_OK",
+          "ABSTAIN_OK"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "parsed_by_run": [
+        {
+          "supplier_name": "ROADSIDE COFFEE VAN",
+          "supplier_abn": null,
+          "issue_date": "2026-01-25",
+          "total_inclusive": "23.70",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 3,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "CHICKEN WRAP",
+              "amount": "13.90"
+            },
+            {
+              "description": "BANANA BREAD",
+              "amount": "5.00"
+            },
+            {
+              "description": "CAPPUCCINO REG",
+              "amount": "4.80"
+            }
+          ]
+        },
+        {
+          "supplier_name": "ROADSIDE COFFEE VAN",
+          "supplier_abn": null,
+          "issue_date": "2026-01-25",
+          "total_inclusive": "23.70",
+          "gst_amount": null,
+          "is_tax_invoice": false,
+          "line_count": 3,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "CHICKEN WRAP",
+              "amount": "13.90"
+            },
+            {
+              "description": "BANANA BREAD",
+              "amount": "5.00"
+            },
+            {
+              "description": "CAPPUCCINO REG",
+              "amount": "4.80"
+            }
+          ]
+        }
+      ],
+      "field_outcome_mode": {
+        "supplier_name": "NORMALISED",
+        "supplier_abn": "ABSTAIN_OK",
+        "issue_date": "EXACT",
+        "total_inclusive": "EXACT",
+        "gst_amount": "ABSTAIN_OK",
+        "is_tax_invoice": "EXACT",
+        "line_count": "EXACT",
+        "page_count": "EXACT"
+      },
+      "lines_total": 3,
+      "lines_matched_median": 3.0,
+      "parse_failures": 0,
+      "sample_raw_output": "{\"supplier_name\":\"ROADSIDE COFFEE VAN\",\"supplier_abn\":null,\"issue_date\":\"2026-01-25\",\"total_inclusive\":\"23.70\",\"gst_amount\":null,\"is_tax_invoice\":false,\"line_count\":3,\"page_count\":1,\"lines\":[{\"description\":\"CHICKEN WRAP\",\"amount\":\"13.90\"},{\"description\":\"BANANA BREAD\",\"amount\":\"5.00\"},{\"description\":\"CAPPUCCINO REG\",\"amount\":\"4.80\"}]}"
+    },
+    {
+      "document": "gen-trade_invoice-0020",
+      "engine": "hosted:minimax-m3",
+      "requested_runs": 2,
+      "completed_runs": 2,
+      "errors": [],
+      "median_seconds": 16.003004789352417,
+      "seconds_all": [
+        9.223666191101074,
+        22.78234338760376
+      ],
+      "field_outcomes_by_run": {
+        "supplier_name": [
+          "EXACT",
+          "EXACT"
+        ],
+        "supplier_abn": [
+          "EXACT",
+          "EXACT"
+        ],
+        "issue_date": [
+          "EXACT",
+          "EXACT"
+        ],
+        "total_inclusive": [
+          "EXACT",
+          "EXACT"
+        ],
+        "gst_amount": [
+          "EXACT",
+          "EXACT"
+        ],
+        "is_tax_invoice": [
+          "EXACT",
+          "EXACT"
+        ],
+        "line_count": [
+          "EXACT",
+          "EXACT"
+        ],
+        "page_count": [
+          "EXACT",
+          "EXACT"
+        ]
+      },
+      "parsed_by_run": [
+        {
+          "supplier_name": "Cavanagh Transport Pty Ltd",
+          "supplier_abn": "82926267200",
+          "issue_date": "2026-07-07",
+          "total_inclusive": "5527.50",
+          "gst_amount": "502.50",
+          "is_tax_invoice": true,
+          "line_count": 22,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "Depot handling fee (01)",
+              "amount": "110.00"
+            },
+            {
+              "description": "Insurance surcharge (02)",
+              "amount": "42.50"
+            },
+            {
+              "description": "Depot handling fee (03)",
+              "amount": "110.00"
+            },
+            {
+              "description": "Fuel levy (04)",
+              "amount": "76.50"
+            },
+            {
+              "description": "Waiting time 2hrs (05)",
+              "amount": "180.00"
+            },
+            {
+              "description": "Freight: Melbourne -> Sydney (06)",
+              "amount": "640.00"
+            },
+            {
+              "description": "Fuel levy (07)",
+              "amount": "76.50"
+            },
+            {
+              "description": "Freight: Sydney -> Brisbane (08)",
+              "amount": "580.00"
+            },
+            {
+              "description": "Pallet hire x4 (09)",
+              "amount": "88.00"
+            },
+            {
+              "description": "Insurance surcharge (10)",
+              "amount": "42.50"
+            },
+            {
+              "description": "After-hours surcharge (11)",
+              "amount": "145.00"
+            },
+            {
+              "description": "Freight: Sydney -> Brisbane (12)",
+              "amount": "580.00"
+            },
+            {
+              "description": "Fuel levy (13)",
+              "amount": "76.50"
+            },
+            {
+              "description": "After-hours surcharge (14)",
+              "amount": "145.00"
+            },
+            {
+              "description": "Waiting time 2hrs (15)",
+              "amount": "180.00"
+            },
+            {
+              "description": "Freight: Melbourne -> Sydney (16)",
+              "amount": "640.00"
+            },
+            {
+              "description": "Waiting time 2hrs (17)",
+              "amount": "180.00"
+            },
+            {
+              "description": "Tail-lift service (18)",
+              "amount": "65.00"
+            },
+            {
+              "description": "After-hours surcharge (19)",
+              "amount": "145.00"
+            },
+            {
+              "description": "Freight: Melbourne -> Sydney (20)",
+              "amount": "640.00"
+            },
+            {
+              "description": "After-hours surcharge (21)",
+              "amount": "145.00"
+            },
+            {
+              "description": "Freight: Melbourne -> Sydney (22)",
+              "amount": "640.00"
+            }
+          ]
+        },
+        {
+          "supplier_name": "Cavanagh Transport Pty Ltd",
+          "supplier_abn": "82926267200",
+          "issue_date": "2026-07-07",
+          "total_inclusive": "5527.50",
+          "gst_amount": "502.50",
+          "is_tax_invoice": true,
+          "line_count": 22,
+          "page_count": 1,
+          "lines": [
+            {
+              "description": "Depot handling fee (01)",
+              "amount": "110.00"
+            },
+            {
+              "description": "Insurance surcharge (02)",
+              "amount": "42.50"
+            },
+            {
+              "description": "Depot handling fee (03)",
+              "amount": "110.00"
+            },
+            {
+              "description": "Fuel levy (04)",
+              "amount": "76.50"
+            },
+            {
+              "description": "Waiting time 2hrs (05)",
+              "amount": "180.00"
+            },
+            {
+              "description": "Freight: Melbourne -> Sydney (06)",
+              "amount": "640.00"
+            },
+            {
+              "description": "Fuel levy (07)",
+              "amount": "76.50"
+            },
+            {
+              "description": "Freight: Sydney -> Brisbane (08)",
+              "amount": "580.00"
+            },
+            {
+              "description": "Pallet hire x4 (09)",
+              "amount": "88.00"
+            },
+            {
+              "description": "Insurance surcharge (10)",
+              "amount": "42.50"
+            },
+            {
+              "description": "After-hours surcharge (11)",
+              "amount": "145.00"
+            },
+            {
+              "description": "Freight: Sydney -> Brisbane (12)",
+              "amount": "580.00"
+            },
+            {
+              "description": "Fuel levy (13)",
+              "amount": "76.50"
+            },
+            {
+              "description": "After-hours surcharge (14)",
+              "amount": "145.00"
+            },
+            {
+              "description": "Waiting time 2hrs (15)",
+              "amount": "180.00"
+            },
+            {
+              "description": "Freight: Melbourne -> Sydney (16)",
+              "amount": "640.00"
+            },
+            {
+              "description": "Waiting time 2hrs (17)",
+              "amount": "180.00"
+            },
+            {
+              "description": "Tail-lift service (18)",
+              "amount": "65.00"
+            },
+            {
+              "description": "After-hours surcharge (19)",
+              "amount": "145.00"
+            },
+            {
+              "description": "Freight: Melbourne -> Sydney (20)",
+              "amount": "640.00"
+            },
+            {
+              "description": "After-hours surcharge (21)",
+              "amount": "145.00"
+            },
+            {
+              "description": "Freight: Melbourne -> Sydney (22)",
+              "amount": "640.00"
+            }
+          ]
+        }
+      ],
+      "field_outcome_mode": {
+        "supplier_name": "EXACT",
+        "supplier_abn": "EXACT",
+        "issue_date": "EXACT",
+        "total_inclusive": "EXACT",
+        "gst_amount": "EXACT",
+        "is_tax_invoice": "EXACT",
+        "line_count": "EXACT",
+        "page_count": "EXACT"
+      },
+      "lines_total": 22,
+      "lines_matched_median": 22.0,
+      "parse_failures": 0,
+      "sample_raw_output": "{\"supplier_name\":\"Cavanagh Transport Pty Ltd\",\"supplier_abn\":\"82926267200\",\"issue_date\":\"2026-07-07\",\"total_inclusive\":\"5527.50\",\"gst_amount\":\"502.50\",\"is_tax_invoice\":true,\"line_count\":22,\"page_count\":1,\"lines\":[{\"description\":\"Depot handling fee (01)\",\"amount\":\"110.00\"},{\"description\":\"Insurance surcharge (02)\",\"amount\":\"42.50\"},{\"description\":\"Depot handling fee (03)\",\"amount\":\"110.00\"},{\"description\":\"Fuel levy (04)\",\"amount\":\"76.50\"},{\"description\":\"Waiting time 2hrs (05)\",\"amount\":\"180.00\"},{\"description\":\"Freight: Melbourne -> Sydney (06)\",\"amount\":\"640.00\"},{\"description\":\"Fuel levy (0"
+    }
+  ]
+}

@@ -185,6 +185,37 @@ comparable: different documents, different scoring.
   misread at high confidence). Report both failure modes separately; an aggregate score hides the
   only thing that matters.
 
+> **First run: 2026-09-16, `bench/results/20260916T074227Z`. Tier S+P, INTERNAL ONLY.**
+> 24 documents (12 tier S, 12 tier P) stratified by tier, degradation and abstention;
+> `gemma4:31b` and `minimax-m3`; 2 repeats. `paddleocr` / `docling` / `llamaparse` report **not
+> run** (dependencies absent) rather than a score.
+>
+> **The fabrication prediction did not hold.** Zero hallucinated fields across both engines, with
+> 35 correct abstentions on `supplier_abn`. Caveat before this is read as a result: the prompt
+> says "NEVER guess a value", and a tier P receipt has nothing ABN-shaped to grab, so this is an
+> easy abstention. The gate document's failure was a *misread of a present ABN*, which is a
+> different thing this sample does not contain. Fabrication is not disproven — it is unobserved
+> here.
+>
+> **What actually fails is omission, not invention.** `gst_amount` is the weak field: 13 MISS
+> against 12 EXACT — the models simply do not find a GST figure that is printed. `line_count` is
+> next (6 WRONG). `total_inclusive` came back **47 of 47 correct**, and `supplier_abn` 46 of 47.
+>
+> **The two engines are close, and differ in the way that matters.** gemma4 omission 8 / misread
+> 5; minimax-m3 omission 5 / misread 4, of 167 scored fields each. For a compliance product a MISS
+> is a cheaper failure than a WRONG, which is a selection criterion neither model's benchmark
+> scores capture.
+>
+> **This run cannot close G2**, and `provenance.may_publish_headline` enforces that: the tier
+> floor is S, so `corrections per 100 documents` prints the refusal. The internal figures are
+> 54.2 (gemma4) and 62.5 (minimax-m3), and they are engineering signal, not a claim.
+>
+> **The first attempt at this run reported 14 WRONG totals and was wrong itself** — tier P money
+> was scored with the `text` comparator, so a model returning `16500` against a truth of `16,500`
+> was marked WRONG with every digit correct. Twelve of the fourteen were that. See the commit
+> "A comparator is a judgement"; `compare.py` now persists `parsed_by_run` and `rescore.py`
+> re-derives outcomes with no engine calls, so the next comparator fix costs nothing.
+
 ### B3 — Calibration
 
 **Gate G3. Implements D20. Depends on: B1, B2. Blocks: all of Lane D.**
