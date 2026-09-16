@@ -704,7 +704,37 @@ device engine declarations.
 package's dependencies makes it fail.
 *Depends on:* OD-3.
 
-**OD-5 · `preview_score.py` and the device-matrix corpus layout** — `qa` · default.
+**OD-5 · `preview_score.py` and the device-matrix corpus layout** — ~~`qa` · default~~
+**DONE 2026-09-16**, and it returns a verdict: **the structurer does not pass its own gate.**
+
+Measured over the stratified corpus through the server sidecar
+(`bench/results/preview/structurer.json`). Tier S — Australian-shaped — judged against §6.3;
+tier P shown separately, because these rules are Australian and holding them to Indonesian
+dockets would score them against a distribution they were never built for.
+
+| field | fill | wrong-when-shown | ceiling | |
+|---|---|---|---|---|
+| `supplier_abn` | 100% | **0.0%** | ≤1% | PASS |
+| `issue_date` | 100% | **0.0%** | ≤5% | PASS |
+| `supplier_name` | 100% | 25.0% | ≤10% | FAIL |
+| `total_inclusive` | 100% | 33.3% | ≤3% | FAIL |
+| `tax_amount` | 100% | 33.3% | ≤3% | FAIL |
+
+Corrections per 100 documents: **112 against a blank-form baseline of 283** — 60% fewer, which
+clears §6.3's weakest bar and is the least interesting number here.
+
+**The two fields that pass are the two with a checkable answer.** `supplier_abn` passes because
+mod-89 makes a wrong value almost unrepresentable; `issue_date` passes because a plausibility
+window rejects anything implausible. The three that fail are the ones decided by keyword and
+layout heuristics, and the money fields sit **eleven times** over their ceiling.
+
+**So OD-6 should not be run yet.** A device measurement adds the recogniser's error on top of a
+structurer that already fails on clean server DocDOMs; it can only make these numbers worse, and
+it would spend a handset session confirming something already known. §6.4 step 3's whole point is
+separating the recogniser's error from the structurer's — and the structurer's is currently the
+binding constraint. **Fix the money rules first, re-run this, and only then take it to a phone.**
+
+That reorders Stage 0: the floor devices are not the blocker right now. This is.
 *Do:* per §6.4 steps 2–3: Node shim to run `structure()` over DocDOM JSON; score with
 `scoring.py`; report fill rate, wrong-when-shown, preview corrections per 100, blank-form baseline,
 and a per-engine timing/memory table read from the dev screen's export; corpus layout

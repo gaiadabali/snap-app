@@ -9,9 +9,9 @@
       "EXACT": 6
     },
     "total_inclusive": {
-      "EXACT": 8,
-      "WRONG": 9,
+      "EXACT": 11,
       "MISS": 5,
+      "WRONG": 6,
       "NORMALISED": 2
     },
     "gst_amount": {
@@ -22,8 +22,8 @@
       "NORMALISED": 1
     },
     "supplier_name": {
-      "WRONG": 6,
-      "NORMALISED": 6
+      "NORMALISED": 9,
+      "WRONG": 3
     },
     "issue_date": {
       "EXACT": 12
@@ -43,7 +43,7 @@
     "issue_date": 12,
     "supplier_abn": 6
   },
-  "corrections_per_100": 112.5,
+  "corrections_per_100": 87.5,
   "blank_form_baseline_per_100": 283.33333333333337,
   "rows": [
     {
@@ -58,7 +58,7 @@
       "document": "tierp-cord-v2-0039",
       "got": {
         "supplier_abn": null,
-        "total_inclusive": "50,000",
+        "total_inclusive": "16,500",
         "gst_amount": null
       }
     },
@@ -82,7 +82,7 @@
       "document": "tierp-cord-v2-0015",
       "got": {
         "supplier_abn": null,
-        "total_inclusive": "100,000",
+        "total_inclusive": "70,000",
         "gst_amount": null
       }
     },
@@ -145,7 +145,7 @@
     {
       "document": "gen-no_abn_van-0102",
       "got": {
-        "supplier_name": "TOTAL $ 23.00",
+        "supplier_name": "THE LITTLE FOOD TRUCK",
         "supplier_abn": null,
         "issue_date": "2026-08-22",
         "total_inclusive": "23.00",
@@ -155,7 +155,7 @@
     {
       "document": "gen-supermarket-0043",
       "got": {
-        "supplier_name": "RIVERTON FRESH MARKET",
+        "supplier_name": "19 / 12 / 2025 Op : SAV",
         "supplier_abn": "08293882425",
         "issue_date": "2025-12-19",
         "total_inclusive": "44.78",
@@ -165,7 +165,7 @@
     {
       "document": "gen-no_abn_van-0029",
       "got": {
-        "supplier_name": "TOTAL $ 16.50",
+        "supplier_name": "RIVERBANK SNACK TRAILER",
         "supplier_abn": null,
         "issue_date": "2026-09-18",
         "total_inclusive": "16.50",
@@ -205,10 +205,10 @@
     {
       "document": "receipt-noabn",
       "got": {
-        "supplier_name": "TOTAL 8.50",
+        "supplier_name": "ROADSIDE COFFEE VAN",
         "supplier_abn": null,
         "issue_date": "2026-09-06",
-        "total_inclusive": "10.00",
+        "total_inclusive": "8.50",
         "gst_amount": null
       }
     },
@@ -225,7 +225,7 @@
     {
       "document": "gen-no_abn_van-0006",
       "got": {
-        "supplier_name": "TOTAL $ 11.70",
+        "supplier_name": "RIVERBANK SNACK TRAILER",
         "supplier_abn": null,
         "issue_date": "2026-09-07",
         "total_inclusive": "11.70",
@@ -245,7 +245,7 @@
     {
       "document": "gen-no_abn_van-0082",
       "got": {
-        "supplier_name": "CAPPUCCINO REG 5.00",
+        "supplier_name": "ROADSIDE COFFEE VAN",
         "supplier_abn": null,
         "issue_date": "2026-01-25",
         "total_inclusive": "4417",
@@ -255,7 +255,7 @@
     {
       "document": "gen-trade_invoice-0020",
       "got": {
-        "supplier_name": "Cavanagh Transport Pty Ltd TAX INVOICE",
+        "supplier_name": "Insurance surcharge ( 02 ) 42.50",
         "supplier_abn": "82926267200",
         "issue_date": "2026-07-07",
         "total_inclusive": "5,527.50",
