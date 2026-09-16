@@ -52,18 +52,35 @@ MIN_CONFIDENCE = float(os.environ.get("DOCAI_MIN_CONFIDENCE", "0.3"))
 # (rotation omitted) rather than carrying detector jitter as a false signal.
 ROTATION_EPSILON_DEG = 1.0
 
-ENGINE_ID = "ppocr-v5"
+# ENGINE_ID is set with the tier below, not fixed here. The registry treats an
+# engine id as PROVENANCE, so a layout read by v6 must not claim to be v5 —
+# otherwise a re-run comparison is comparing two things with the same name.
 WEIGHTS_LICENCE = "apache-2.0"  # PP-OCRv5 weights are Apache-2.0, per PaddleOCR's own LICENSE.
 
+# Both generations, selectable side by side — docs/GAPS.md A2.
+#
+# The v5 pair is NOT replaced. `paddleocr==3.7.0` ships PP-OCRv6 and this file
+# asked for v5 by name only because it was written before v6 existed, but
+# swapping the default would make the two ungradeable against each other: the
+# bench has to score them on identical input before anything adopts either.
+# D34's instruction is to re-evaluate, not to assume, and PaddleOCR's +4.6%
+# detection claim is PaddleOCR's.
+#
+# Verified present in the pinned paddlex build (config filenames), not taken
+# from the release notes — det AND rec exist for all three v6 tiers.
 _MODEL_NAMES = {
-    "mobile": ("PP-OCRv5_mobile_det", "PP-OCRv5_mobile_rec"),
-    "server": ("PP-OCRv5_server_det", "PP-OCRv5_server_rec"),
+    # tier      detection                  recognition               engine id
+    "mobile": ("PP-OCRv5_mobile_det", "PP-OCRv5_mobile_rec", "ppocr-v5"),
+    "server": ("PP-OCRv5_server_det", "PP-OCRv5_server_rec", "ppocr-v5"),
+    "tiny":   ("PP-OCRv6_tiny_det",   "PP-OCRv6_tiny_rec",   "ppocr-v6"),
+    "small":  ("PP-OCRv6_small_det",  "PP-OCRv6_small_rec",  "ppocr-v6"),
+    "medium": ("PP-OCRv6_medium_det", "PP-OCRv6_medium_rec", "ppocr-v6"),
 }
 
 if MODEL_TIER not in _MODEL_NAMES:
     raise ValueError(f"DOCAI_MODEL_TIER must be one of {list(_MODEL_NAMES)}, got {MODEL_TIER!r}")
 
-DET_MODEL_NAME, REC_MODEL_NAME = _MODEL_NAMES[MODEL_TIER]
+DET_MODEL_NAME, REC_MODEL_NAME, ENGINE_ID = _MODEL_NAMES[MODEL_TIER]
 
 
 def _aabb(points: list[tuple[float, float]]) -> dict[str, float]:

@@ -42,6 +42,12 @@ import type { Capability, Engine, EngineSpec, PageInput } from '../registry.js';
 
 export type SidecarConfig = {
   /**
+   * Which generation the sidecar is running — `ppocr-v5` (default) or
+   * `ppocr-v6`. Must match its `DOCAI_MODEL_TIER`; `health()` reports what it
+   * actually loaded.
+   */
+  engineId?: string;
+  /**
    * Loopback by construction — see the file header. Overridable (env var,
    * test harness) but the default is deliberately `127.0.0.1`, never a
    * hostname that could resolve off-box.
@@ -92,11 +98,15 @@ function specFor(id: string): EngineSpec {
     capabilities: ['detect', 'recognise'],
     residency: 'self-hosted',
     requiresNetwork: false, // see file header
-    weightsLicence: 'apache-2.0', // PP-OCRv5, per docs/contracts/phase1-ocr-stage.md §5.1
+    // Apache-2.0 for BOTH generations — PP-OCRv5 per
+    // docs/contracts/phase1-ocr-stage.md §5.1, and PP-OCRv6 per PaddleOCR's
+    // own LICENSE. `violatesLicenceFloor()` passes either way, which is what
+    // docs/GAPS.md A2 asks be confirmed rather than assumed.
+    weightsLicence: 'apache-2.0',
     redistributable: true,
     tier: 1,
-    medianSeconds: null, // unmeasured — no live sidecar to benchmark against yet
-    note: 'PP-OCRv5 detection + recognition via the docai-engine Python sidecar (loopback HTTP).',
+    medianSeconds: null, // unmeasured — docs/GAPS.md A4
+    note: `${id} detection + recognition via the docai-engine Python sidecar (loopback HTTP).`,
   };
 }
 
@@ -122,7 +132,16 @@ export class SidecarEngine implements Engine {
     this.baseUrl = (config.baseUrl ?? DEFAULT_BASE_URL).replace(/\/$/, '');
     this.timeoutMs = config.timeoutMs ?? DEFAULT_TIMEOUT_MS;
     this.fetchImpl = config.fetchImpl ?? fetch;
-    this.spec = specFor('ppocr-v5');
+    // The sidecar can be configured to run PP-OCRv5 or PP-OCRv6
+    // (DOCAI_MODEL_TIER, docs/GAPS.md A2), so the id is no longer a constant
+    // here. Hardcoding v5 would have made the registry describe an engine the
+    // service is not running — same licence and capabilities today, and still
+    // a lie of exactly the kind that costs a day when it stops being harmless.
+    //
+    // Span PROVENANCE does not depend on this: the sidecar stamps every span
+    // with its own engine id and `read()` returns those blocks verbatim, so a
+    // stored layout names the generation that actually read it either way.
+    this.spec = specFor(config.engineId ?? 'ppocr-v5');
   }
 
   async read(input: PageInput): Promise<Partial<Document>> {

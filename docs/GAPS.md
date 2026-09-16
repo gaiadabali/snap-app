@@ -108,6 +108,34 @@ PP-OCRv6. `ocr_engine.py` asks for v5 by name.
 - **Licence:** still Apache-2.0. Confirm `violatesLicenceFloor()` in
   `packages/docai/src/registry.ts` still passes.
 
+> **Tiers added and measured 2026-09-16. Verdict: the corpus cannot decide.**
+>
+> All three v6 tiers are selectable alongside the v5 pair via `DOCAI_MODEL_TIER`
+> (`tiny` / `small` / `medium`), verified present in the pinned paddlex build by
+> config filename rather than taken from the release notes — det AND rec exist
+> for each. `ENGINE_ID` is now derived from the tier, so a v6 layout cannot
+> claim to be v5 in `document_layouts`. Licence is Apache-2.0 for both, so the
+> floor is unchanged.
+>
+> Scored on identical input, `bench/results/a2-v5/` and `bench/results/a2-v6/`:
+>
+> | engine | recall | mean IoU | predicted spans | CER figures | CER prose |
+> |---|---|---|---|---|---|
+> | PP-OCRv5 mobile | 0.875 | 0.8228 | 70 | 0.0000 | 0.0192 |
+> | PP-OCRv6 medium | 0.875 | 0.8239 | 70 | 0.0000 | 0.0192 |
+>
+> **Do not read this as "v6 is no better".** The OCR truth corpus is ONE
+> synthetic page with 8 regions, 7 of them legible. PaddleOCR's claimed +4.6%
+> detection improvement would be 0.37 of a region here — the instrument cannot
+> resolve it, and a null result from an underpowered measurement is not a
+> finding about the engine.
+>
+> **What A2 actually surfaced is that the OCR corpus is the bottleneck.**
+> `bench/corpus/generated/` now holds 300 documents with per-field truth, but
+> `ocr/ocr_truth_manifest.json` — the only corpus with REGION-level truth, which
+> is what detection recall needs — is a single page. Growing it is the
+> prerequisite for deciding A2, and for A4 having anything to compare against.
+
 ### A3 — Report reading accuracy whitespace-insensitively
 
 **Implements D35.**
@@ -170,6 +198,22 @@ leaves us with no CPU accelerator at all. PaddleOCR's published 5.2× CPU figure
   with the comment *"until someone measures it"* — is filled in with a real median.
 - **If OpenVINO also fails:** record that, keep the workaround, and close the ticket. A measured
   dead end is a result.
+
+> **Scoped 2026-09-16, not yet run.** OpenVINO is not a flag on the path this
+> service uses. `PaddleOCR.__init__` exposes no backend parameter at all
+> (checked by signature, not by documentation); OpenVINO is reachable only
+> through paddlex's **HPI** path — `create_predictor(..., use_hpip=True,
+> hpi_config=...)` — and the `openvino` package is not installed in the image.
+>
+> So A4 is two pieces of work, not one: add the runtime, and route the engine
+> through `create_predictor` instead of `PaddleOCR`, which is a rewrite of how
+> `ocr_engine.py` loads its models rather than a config change. The ticket's own
+> "days, not hours" estimate is right.
+>
+> **Sequence it after the OCR corpus grows** (see A2's note). A speed
+> measurement on one page is worth having; a speed measurement that cannot be
+> paired with an accuracy check on the same input is how a faster-and-worse
+> backend gets adopted.
 
 ---
 
