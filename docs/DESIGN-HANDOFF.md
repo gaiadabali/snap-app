@@ -273,29 +273,53 @@ This section used to list six open questions. Five are now decided and one was
 closed by a commit. The reasoning is kept because a decision without its reason
 gets re-litigated by the next person to open this file.
 
-### 12.1 The aesthetic — settled: keep the paper, fix the rhythm
+### 12.1 The aesthetic — settled by the owner: OCR-futurist, done properly
 
-Three directions were built and all three were rejected as generated-looking
-(`.design-directions/`: `FieldLight`, `MachineVision`, `Main`). Two of them
-drifted to near-black plus a bright accent without meaning to.
+**This overrides the recommendation that stood here earlier in the day.** That
+draft read *"keep the paper, fix the rhythm — not a new palette, not glowing
+chrome"* and treated the futurist register as the thing that had failed. The
+owner's call is the opposite: the register was never the problem, the execution
+was. The earlier reasoning is kept below because the *evidence* in it is still
+true and still binding; only the conclusion changed.
 
-**The rejection was never about colour.** It was the *layout metronome* — every
-section the same shape, one after another. The palette in §4–§5 is measured
-from the launch film, is shared byte-for-byte with `apps/mobile`, and stays.
-
-The evidence is in this repository. `apps/web/src/design/primitives/index.tsx`
-documents `SectionHead` as the thing that *"replaces the eyebrow/title/lede
-stack that ran identically seven times down the old home page"* — and the home
-page now runs **eight sections, seven of them `Section → SectionHead → content`,
-tone alternating `ground` / `surface`**. The fix was applied at the level of the
+**The diagnosis stands.** Three directions were built and all three were
+rejected as generated-looking (`.design-directions/`: `FieldLight`,
+`MachineVision`, `Main`). The rejection was not about colour. It was the *layout
+metronome* — every section the same shape, one after another. The evidence is in
+this repository: `apps/web/src/design/primitives/index.tsx` documents
+`SectionHead` as the thing that *"replaces the eyebrow/title/lede stack that ran
+identically seven times down the old home page"* — and the home page then ran
+**eight sections, seven of them `Section → SectionHead → content`, tone
+alternating `ground` / `surface`**. The fix had been applied at the level of the
 component and the repetition simply moved up a level. §11 already lists
-*"alternating tinted bands as the only structural device"* under **Avoid**; the
-page does exactly that.
+*"alternating tinted bands as the only structural device"* under **Avoid**.
 
-**So the direction is: editorial restraint, carried by typography and real
-motion, with a deliberately irregular section rhythm.** Not a new palette. Not
-glowing chrome. The reference is otsuka-air.jp's restraint — but see 12.2 for
-what we cannot borrow from it.
+**What "done properly" has to mean**, given the three other answers settled the
+same day — purely typographic (§12.2), light default (§12.3), palette closed
+(§12.5). Futurism here is a *register*, not a skin. It is carried by:
+
+- **Instrument, not illustration.** The futurist feeling comes from the page
+  behaving like a reading instrument — a real gutter carrying a real ATO code, a
+  figure that locks to a column, a highlight that lands on the span it names.
+  Not from anything that merely *depicts* technology.
+- **Motion that reports.** Real motion is permitted and wanted, but every
+  animation must be the system doing something — a box resolving onto a total, a
+  ledger row settling — never ambient drift.
+- **The palette stays.** §4–§5 is measured from the launch film and is shared
+  byte-for-byte with `apps/mobile` (verified in `bafe7fb`). A futurist direction
+  that starts by swapping to near-black plus a bright accent is the exact drift
+  that produced two of the three rejected builds. If the palette ever changes it
+  changes on both surfaces, as its own decision.
+- **No glowing chrome.** §12.2 is not softened by this: no abstract gradients,
+  no synthetic "AI" visuals, no decorative iconography. We have no art director
+  and no commissioned photography, and substituting UI glow for imagery is
+  precisely what read as slop.
+
+The honest tension, stated once so it is not rediscovered: §12.2's constraint is
+the hardest constraint under which to attempt a futurist direction, because it
+removes every cheap signifier of one. That is deliberate. What is left —
+typography, structure, motion, and the document itself — is the only version of
+this that will not read as generated.
 
 **The rule that replaces the metronome.** No two adjacent sections may share a
 *form*. Tone alternation is not variation — it is the same shape in a different
