@@ -117,6 +117,21 @@ function field(spans: Span[], page: number, value: string, normalised?: string |
 const MONEY = /^\$?\s?-?\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?$|^\$?\s?-?\d+(?:\.\d{1,2})?$/;
 
 /**
+ * A printed figure as a number, or null when it is not one.
+ *
+ * Used ONLY for sanity checks between two fields that were each read from the
+ * paper — never to produce a value. §3.4 forbids the preview inventing a
+ * figure the document does not carry, and this does not: it decides whether a
+ * figure already read is possible.
+ */
+function parseAmount(text: string): number | null {
+  const cleaned = text.replace(/[$\s,]/g, '');
+  if (!/^-?\d+(?:\.\d{1,2})?$/.test(cleaned)) return null;
+  const n = Number(cleaned);
+  return Number.isFinite(n) ? n : null;
+}
+
+/**
  * How far apart two spans may sit and still be one printed figure.
  *
  * `$ 1 , 042.60` is four boxes separated by hairlines. A docket's payment line
@@ -195,6 +210,40 @@ const PAYMENT_WORDS = /\b(EFTPOS|VISA|MASTERCARD|AMEX|CASH|CREDIT|DEBIT)\b/i;
 const NOT_TOTAL = /\b(SUB\s*-?\s*TOTAL|GST|TAX|CHANGE|SAVINGS|DISCOUNT|TENDERED|ROUNDING)\b/i;
 const GST_WORDS = /\b(GST|TAX)\b/i;
 const TAX_INVOICE = /TAX\s*INVOICE/i;
+// A line that says what is NOT taxed. `GST-FREE SUBTOTAL 16.10` matched
+// GST_WORDS and was reported as the GST on a docket whose real GST was 1.46 —
+// a semantic inversion, and the most dangerous shape of error there is: the
+// number is plausible, it sits beside the right word, and it is precisely the
+// amount that carries no GST at all.
+const GST_FREE = /\bGST[\s-]*FREE\b|\bNO\s*GST\b|\bEXEMPT\b|\bFREE\s*SUBTOTAL\b/i;
+// The words a document-type banner is made of. STRIPPED from a line rather
+// than used to reject it: ML Kit returns `Westmead Haulage Pty Ltd TAX INVOICE`
+// as one row, because on the paper they share a line. Rejecting the line threw
+// the supplier away on every trade invoice in the corpus.
+const DOC_TYPE = /\*+|\b(TAX\s*INVOICE|INVOICE|RECEIPT|STATEMENT|ADJUSTMENT\s*NOTE|CREDIT\s*NOTE|DUPLICATE|COPY)\b/gi;
+// Column headings on an itemised invoice. They survive every other filter —
+// no digits, no address words — and on a long invoice they sit inside the top
+// band and are often set as large as the supplier.
+// Column headings, tolerant of a recogniser splitting a word.
+//
+// ML Kit returns `DE SCRIPTION` — two boxes, one printed word — and
+// `\bDESCRIPTION\b` does not match it, so the heading was kept and, being the
+// topmost surviving line on an itemised invoice, became the supplier on 26 of
+// the 43 remaining failures. Spaces inside the word are collapsed before
+// testing rather than the pattern being loosened, so `PRICES PLUS` is still a
+// business name and not a heading.
+const TABLE_HEADER = /\b(DESCRIPTION|QTY|QUANTITY|UNIT|RATE|PRICE|AMOUNT|ITEM|CODE|DETAILS|SUBTOTAL)\b/i;
+const despaced = (text: string) => text.replace(/\s+/g, '');
+// A printed date, or an operator / till stamp. `18/01/2026 Op: TRENT` is 32%
+// digits so the digit-ratio filter passed it, and its box was TALLER than the
+// supplier's, so sorting by height chose it.
+// A printed date, or an operator / till stamp. `18/01/2026 Op: TRENT` is 32%
+// digits so the digit-ratio filter passed it, and its box was TALLER than the
+// supplier's, so sorting by height chose it.
+//
+// The stamp half does NOT require a digit after the label: `Op: TRENT` names a
+// person, and demanding `\d` let it through to become a supplier.
+const DATEY = /\b\d{1,2}\s*[/.-]\s*\d{1,2}\s*[/.-]\s*\d{2,4}\b|\b(OP|OPERATOR|SERVED\s*BY|TILL|REG|TERM|ISSUED|DATE|INV|NO)\b\s*[:.#]/i;
 
 function payableAmount(lines: PositionedLine[]): PreviewField {
   const collect = (pattern: RegExp) => {
@@ -224,14 +273,26 @@ function payableAmount(lines: PositionedLine[]): PreviewField {
   return field(best.spans, best.page, best.text);
 }
 
-function taxAmount(lines: PositionedLine[]): PreviewField {
+function taxAmount(lines: PositionedLine[], payable: PreviewField): PreviewField {
+  // The total, when there is one, is an upper bound: GST is a component of the
+  // sale and cannot exceed it. `GST 682` was reported against a total of
+  // $75.00, because ML Kit dropped the decimal point from 6.82 —
+  // arithmetically impossible, and cheap to refuse. Refusing converts a
+  // confidently wrong figure into an abstention, which is the trade §6.1 says
+  // the preview must always make.
+  const ceiling = payable.value === null ? null : parseAmount(payable.value);
+
   for (const { line, page, text } of lines) {
     // "TAX INVOICE" is not a GST line, and matching it would read the invoice
     // number as the tax.
     if (!GST_WORDS.test(text) || TAX_INVOICE.test(text)) continue;
+    // A GST-FREE line is the opposite of a GST line.
+    if (GST_FREE.test(text)) continue;
     const runs = moneyRuns(line);
     if (runs.length > 0) {
       const run = runs[0] as (typeof runs)[number];
+      const value = parseAmount(run.text);
+      if (ceiling !== null && value !== null && value > ceiling) continue;
       return field(run.spans, page, run.text);
     }
   }
@@ -353,36 +414,68 @@ const ADDRESSY = /\b(ST|STREET|RD|ROAD|HWY|HIGHWAY|AVE|AVENUE|PO\s*BOX|NSW|VIC|Q
 const CONTACTY = /\b(PH|PHONE|FAX|EMAIL|WWW|HTTP|ABN|ACN)\b|@|\.com|\.au/i;
 
 function supplier(lines: PositionedLine[]): PreviewField {
-  const withHeight = lines
-    .map((l) => ({ ...l, height: l.line.box?.height ?? 0 }))
-    .filter((l) => l.text.length >= 3);
-  if (withHeight.length === 0) return ABSENT;
-
-  // Top of the CONTENT, not the top of the coordinate space.
+  // TWO MEASURED FAILURES SHAPE THIS, both from the 300-document run.
   //
-  // This measured `y <= maxY * 0.2`, which assumes the paper starts at y = 0.
-  // A photographed docket starts wherever it sits in frame, so on a short
-  // receipt the header fell outside the window, the filter emptied, the code
-  // fell back to every line — and the tallest line on a docket is the TOTAL.
-  // Every short receipt in the corpus reported its supplier as `TOTAL $ 23.00`.
-  const ys = withHeight.map((l) => l.line.box?.y ?? 0);
+  // 1. `GST_WORDS` REJECTED THE ANSWER. ML Kit returns
+  //    `Westmead Haulage Pty Ltd TAX INVOICE` as one row, because the paper
+  //    prints them on one line — name left, banner right. Matching "TAX" threw
+  //    the whole line away, leaving a pool of table headings and line items, so
+  //    every trade invoice reported its supplier as `Insurance surcharge (02)`.
+  //    The banner is now STRIPPED and what remains is kept.
+  //
+  // 2. HEIGHT WAS THE WRONG SORT KEY. `HILLVIEW FOOD STORE` was detected at
+  //    h=16 and `18/01/2026 Op: TRENT` at h=22, so the tallest-first sort chose
+  //    the date stamp. Box height tracks ascenders, descenders and digits as
+  //    much as type size, and on a photographed docket it is simply not a
+  //    reliable ordering. Reading order is: the supplier is at the top, which
+  //    is the one thing true of every docket in the corpus.
+  const candidates = lines
+    .map((l) => ({
+      ...l,
+      height: l.line.box?.height ?? 0,
+      y: l.line.box?.y ?? 0,
+      // `*** TAX INVOICE ***` strips to nothing and drops out by itself.
+      stripped: l.text.replace(DOC_TYPE, ' ').replace(/\s+/g, ' ').trim(),
+    }))
+    .filter((l) => l.stripped.length >= 3)
+    // `kk k` is what the recogniser made of a row of asterisks. A business
+    // name has a vowel in it; a run of consonants and spaces does not.
+    .filter((l) => /[AEIOU]/i.test(l.stripped));
+  if (candidates.length === 0) return ABSENT;
+
+  // Top of the CONTENT, not of the coordinate space. This measured
+  // `y <= maxY * 0.2`, which assumes the paper starts at y = 0; a photographed
+  // docket starts wherever it sits in frame, the filter emptied, and the code
+  // fell back to every line — where the tallest is the TOTAL.
+  const ys = candidates.map((l) => l.y);
   const minY = Math.min(...ys);
   const maxY = Math.max(...ys);
   const cutoff = minY + Math.max(1, (maxY - minY) * 0.25);
-  const top = withHeight.filter((l) => (l.line.box?.y ?? 0) <= cutoff);
-  const pool = top.length > 0 ? top : withHeight;
+  const top = candidates.filter((l) => l.y <= cutoff);
+  const pool = top.length > 0 ? top : candidates;
 
   const named = pool
-    .filter((l) => !ADDRESSY.test(l.text) && !CONTACTY.test(l.text))
+    .filter((l) => !ADDRESSY.test(l.stripped) && !CONTACTY.test(l.stripped))
     // Not mostly digits — that is a receipt number, not a business.
-    .filter((l) => (l.text.replace(/\D/g, '').length / l.text.length) < 0.4)
-    // And not a totals line that happens to be set large.
-    .filter((l) => !TOTAL_WORDS.test(l.text) && !PAYMENT_WORDS.test(l.text) && !GST_WORDS.test(l.text))
-    .sort((a, b) => b.height - a.height);
+    .filter((l) => (l.stripped.replace(/\D/g, '').length / l.stripped.length) < 0.4)
+    // Not a totals line that happens to be set large.
+    .filter((l) => !TOTAL_WORDS.test(l.stripped) && !PAYMENT_WORDS.test(l.stripped))
+    // A GST line is not a supplier. Checked on the STRIPPED text, so
+    // "TAX INVOICE" no longer counts against a name printed beside it.
+    .filter((l) => !GST_WORDS.test(l.stripped))
+    .filter((l) => !TABLE_HEADER.test(despaced(l.stripped)))
+    .filter((l) => !DATEY.test(l.stripped));
 
-  const best = named[0];
-  if (!best) return ABSENT;
-  return field(best.line.spans, best.page, best.text);
+  if (named.length === 0) return ABSENT;
+
+  // Topmost wins. Height breaks a tie only among lines on effectively the same
+  // row, which is what happens when a detector splits one printed line in two.
+  named.sort((a, b) => (Math.abs(a.y - b.y) > 4 ? a.y - b.y : b.height - a.height));
+  const best = named[0] as (typeof named)[number];
+  // The spans are the whole line's; the VALUE is the stripped text. Grounding
+  // still points at real ink — D16 is satisfied by spans that contain the name,
+  // and a banner sharing the row does not make the name ungrounded.
+  return field(best.line.spans, best.page, best.stripped);
 }
 
 /* ── Entry point ─────────────────────────────────────────────────────────── */
@@ -396,12 +489,14 @@ function supplier(lines: PositionedLine[]): PreviewField {
  */
 export function structure(doc: Document, now: Date = new Date()): PreviewFields {
   const lines = linesOf(doc);
+  // Read first, because the GST rule uses it as a ceiling.
+  const payable = payableAmount(lines);
   return {
     'header.supplier': supplier(lines),
     'header.supplier_abn': supplierAbn(lines),
     'header.issue_date': issueDate(lines, now),
-    'header.payable_amount': payableAmount(lines),
-    'header.tax_amount': taxAmount(lines),
+    'header.payable_amount': payable,
+    'header.tax_amount': taxAmount(lines, payable),
     'header.says_tax_invoice': saysTaxInvoice(lines),
   };
 }

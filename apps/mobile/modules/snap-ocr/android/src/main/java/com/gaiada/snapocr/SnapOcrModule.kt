@@ -126,7 +126,9 @@ class SnapOcrModule : Module() {
           Word(element.text, scaleBox(b, scaleX, scaleY), line.confidence ?: 0f)
         }
         if (words.isEmpty()) continue
-        detections.add(Detection(scaleBox(lineBox, scaleX, scaleY), words))
+        detections.add(
+          Detection(scaleBox(lineBox, scaleX, scaleY), words, slopeOf(line.cornerPoints)),
+        )
       }
     }
 
@@ -181,38 +183,109 @@ class SnapOcrModule : Module() {
   }
 
   private data class Word(val text: String, val box: Map<String, Any>, val confidence: Float)
-  private data class Detection(val box: Map<String, Any>, val words: List<Word>)
+  private data class Detection(
+    val box: Map<String, Any>,
+    val words: List<Word>,
+    /** dy/dx of this line's top edge, or null when it is too short to measure. */
+    val slope: Double?,
+  )
+
+  /**
+   * The line's own text angle, from ML Kit's corner points.
+   *
+   * Points are clockwise from top-left, so the first two are the top edge.
+   * Null when the detection is too narrow for corner noise to average out.
+   */
+  private fun slopeOf(corners: Array<android.graphics.Point>?): Double? {
+    if (corners == null || corners.size < 4) return null
+    val dx = (corners[1].x - corners[0].x).toDouble()
+    val dy = (corners[1].y - corners[0].y).toDouble()
+    // ~2 characters at docket scale. Shorter than this and the angle is noise.
+    if (kotlin.math.abs(dx) < 24.0) return null
+    val slope = dy / dx
+    // Past ~30 degrees this is a rotated crop or a vertical label, not skew.
+    return if (kotlin.math.abs(slope) <= 0.577) slope else null
+  }
+
+  /**
+   * Dominant text slope across the page: the MEDIAN of the per-line slopes.
+   *
+   * THE BUG THIS EXISTS FOR, measured on the handset rather than guessed. The
+   * server sidecar had exactly this defect and it cost 13% wrong totals there.
+   * On the A71's own reading of `gen-supermarket-0034` the same shape appeared:
+   *
+   *     TOTAL                  <- no amount on the row at all
+   *     GST INCLUDED 29.40     <- 29.40 is the TOTAL, one row too low
+   *
+   * so the preview reported 29.40 as the GST against a true 2.67, and the
+   * total abstained entirely. Across 300 documents the phone filled only 54%
+   * of totals, and most of the misses are this: an amount orphaned from its
+   * label because the page is a couple of degrees off square.
+   *
+   * Every hand-held photograph is off square. This is not a corpus artefact.
+   */
+  private fun pageSkew(detections: List<Detection>): Double {
+    val slopes = detections.mapNotNull { it.slope }.sorted()
+    if (slopes.isEmpty()) return 0.0
+    val mid = slopes.size / 2
+    return if (slopes.size % 2 == 1) slopes[mid] else 0.5 * (slopes[mid - 1] + slopes[mid])
+  }
 
   /**
    * Group detections into printed ROWS, ordered left to right within each.
    *
-   * The same fix the server-side sidecar needed: a detector splits one printed
-   * line into several regions, and treating each as its own DocDOM line means a
-   * supplier name spread across two of them can never be grounded, because
-   * grounding scans runs WITHIN a line. Overlap rather than a pixel tolerance,
-   * because line height varies with type size on the same docket.
+   * Rows are compared on the DESKEWED vertical centre, `y - skew * xc`, which
+   * is where the detection would sit had the page been square.
+   *
+   * Two further rules, both learned from the server sidecar's version of this
+   * same function:
+   *
+   *   * A row is matched against its ANCHOR extent — the first detection placed
+   *     in it — never the union of its members. A union grows every time a
+   *     taller item joins, so a row chains downwards and swallows the line
+   *     beneath it.
+   *
+   *   * The BEST-overlapping row wins, not the first found. Detections arrive
+   *     sorted by y, so "first" systematically favours the row above.
+   *
+   * The original motivation stands: a detector splits one printed line into
+   * several regions, and treating each as its own DocDOM line means a supplier
+   * spread across two of them can never be grounded, because grounding scans
+   * runs WITHIN a line.
    */
   private fun assembleRows(detections: List<Detection>): List<Map<String, Any>> {
-    val rows = mutableListOf<MutableList<Detection>>()
-    for (d in detections.sortedBy { it.box.y() }) {
-      val row = rows.firstOrNull { existing ->
-        val top = existing.minOf { it.box.y() }
-        val bottom = existing.maxOf { it.box.y() + it.box.h() }
-        val overlap = min(bottom, d.box.y() + d.box.h()) - max(top, d.box.y())
-        val shorter = min(bottom - top, d.box.h())
-        shorter > 0 && overlap > 0.5 * shorter
+    val skew = pageSkew(detections)
+    // (anchorTop, anchorBottom, members) — the anchor is fixed at creation.
+    val rows = mutableListOf<Triple<Double, Double, MutableList<Detection>>>()
+
+    fun top(d: Detection) = d.box.y() - skew * (d.box.x() + d.box.w() / 2.0)
+    fun bottom(d: Detection) = top(d) + d.box.h()
+
+    for (d in detections.sortedBy { top(it) }) {
+      var best: Triple<Double, Double, MutableList<Detection>>? = null
+      var bestRatio = 0.0
+      for (row in rows) {
+        val overlap = min(row.second, bottom(d)) - max(row.first, top(d))
+        val shorter = min(row.second - row.first, d.box.h())
+        if (shorter <= 0) continue
+        val ratio = overlap / shorter
+        if (ratio > 0.5 && ratio > bestRatio) {
+          best = row
+          bestRatio = ratio
+        }
       }
-      if (row == null) rows.add(mutableListOf(d)) else row.add(d)
+      if (best == null) rows.add(Triple(top(d), bottom(d), mutableListOf(d)))
+      else best.third.add(d)
     }
 
     return rows
-      .sortedBy { row -> row.minOf { it.box.y() } }
+      .sortedBy { it.first }
       .mapIndexed { index, row ->
-        val words = row.flatMap { it.words }.sortedBy { it.box.x() }
+        val words = row.third.flatMap { it.words }.sortedBy { it.box.x() }
         mapOf(
           "id" to "ln-p1-$index",
           "order" to index,
-          "box" to unionOf(row.map { it.box }),
+          "box" to unionOf(row.third.map { it.box }),
           "spans" to words.mapIndexed { wi, w ->
             mapOf(
               "id" to "sp-p1-l$index-w$wi",
