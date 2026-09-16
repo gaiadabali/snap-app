@@ -68,3 +68,10 @@ AGENTS.md
 # (docs/CORPUS.md §5.2) — a re-render that shifts a pixel cannot make the
 # manifest wrong, so the images need not be byte-reproducible.
 apps/server/bench/corpus/generated/*.png
+# Tier P images (apps/server/bench/tierp). Real photographed receipts from a
+# licensed public dataset, PII-redacted. Gitignored like the tier-S images and
+# for a stronger reason: these are other people's paper under CC-BY, and the
+# repository does not need to become a redistribution point for them. The
+# manifest records `source_row` per document, so any image can be re-fetched
+# and re-redacted from the dataset itself.
+apps/server/bench/corpus/tierp/*.png

@@ -123,7 +123,7 @@ jobs:
       - name: Corpus provenance control and factory truth
         working-directory: apps/server/bench
         run: |
-          python3 -m unittest test_provenance factory.test_documents -v
+          python3 -m unittest test_provenance factory.test_documents tierp.test_tierp -v
           python3 provenance.py
 
       - name: Database suite
