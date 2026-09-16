@@ -116,14 +116,78 @@ def _box_from_quad(points: list[tuple[float, float]]) -> dict[str, Any]:
 
 
 
-def _rows_from_boxes(rec_boxes, n: int) -> list[list[int]]:
+def _page_skew(rec_polys, n: int) -> float:
+    """Dominant text slope (dy/dx) across the page, from the detection quads.
+
+    THE BUG THIS EXISTS FOR. Row assembly used to compare raw axis-aligned `y`.
+    On `gen-cafe-0016` the amounts sat a uniform ~22px BELOW their own labels:
+
+        TOTAL          yc=499.0   |  $ 29.90   yc=521.0   (dx=395)
+        GST INCLUDED   yc=533.5   |  2.72      yc=555.5   (dx=425)
+        VISA ****4417  yc=588.5   |  29.90     yc=609.5   (dx=415)
+
+    The drop is proportional to horizontal distance, not constant: the page is
+    rotated about 3 degrees. Every right-aligned amount therefore grouped with
+    the row BELOW its label, so `header.tax_amount` returned the total and
+    `header.payable_amount` returned the masked card digits. 36 of 300 totals
+    and 48 of 300 GST amounts on the tier-S corpus.
+
+    This is not a synthetic artefact. Every hand-held photograph of a docket is
+    a few degrees off square, and the columns that drift apart are exactly the
+    label/amount pairs the whole extraction depends on.
+
+    Measured from the quads rather than fitted to the boxes, because a fit
+    needs to know which detections share a row and that is the question being
+    asked. Each quad's top edge already carries its own text angle. The MEDIAN
+    is taken so a handful of near-vertical or badly-formed detections cannot
+    move the page estimate.
+    """
+    slopes: list[float] = []
+    for i in range(n):
+        poly = rec_polys[i]
+        if poly is None or len(poly) < 4:
+            continue
+        (x0, y0), (x1, y1) = (float(poly[0][0]), float(poly[0][1])), (float(poly[1][0]), float(poly[1][1]))
+        dx, dy = x1 - x0, y1 - y0
+        # A short detection measures its own angle badly -- a two-character box
+        # spans too little width for the corner noise to average out. 24px is
+        # about two characters at docket scale.
+        if abs(dx) < 24.0:
+            continue
+        slope = dy / dx
+        # Beyond ~30 degrees this is not a skewed page, it is a rotated crop or
+        # a vertical label, and including it would drag the median.
+        if abs(slope) <= 0.577:
+            slopes.append(slope)
+
+    if not slopes:
+        return 0.0
+    slopes.sort()
+    mid = len(slopes) // 2
+    return slopes[mid] if len(slopes) % 2 else 0.5 * (slopes[mid - 1] + slopes[mid])
+
+
+def _rows_from_boxes(rec_boxes, n: int, skew: float = 0.0) -> list[list[int]]:
     """Group detections into printed ROWS, each ordered left-to-right.
 
-    Two detections belong to the same row when their vertical extents overlap
+    Rows are compared on the DESKEWED vertical centre, `yc - skew * xc`, which
+    is where the detection would sit had the page been square. Comparing raw
+    `y` is what put every amount on the wrong row (see `_page_skew`).
+
+    Two detections belong to the same row when their deskewed extents overlap
     by more than half the shorter one. Overlap rather than a fixed pixel
-    tolerance, because line height varies with type size on the same document —
-    a 15px total and an 11px footnote need different tolerances and an overlap
-    ratio supplies both.
+    tolerance, because line height varies with type size on the same document.
+
+    Two further rules, both learned from this corpus:
+
+      * A row is compared on its ANCHOR extent -- the first detection placed in
+        it -- not on the union of everything placed so far. The union grows
+        every time a slightly-taller item joins, so a row could chain downwards
+        and swallow the line beneath it. That is single-linkage drift, and the
+        `h=44` row that had absorbed an amount from the line above was it.
+
+      * The BEST-overlapping row wins, not the first one found. Items arrive
+        sorted by y, so "first" systematically favoured the row above.
 
     Rows are returned top-to-bottom; indices within a row are left-to-right.
     """
@@ -133,29 +197,39 @@ def _rows_from_boxes(rec_boxes, n: int) -> list[list[int]]:
     items = []
     for i in range(n):
         box = rec_boxes[i]
+        x0, x1 = float(box[0]), float(box[2])
         y0, y1 = float(box[1]), float(box[3])
         if y1 < y0:
             y0, y1 = y1, y0
-        items.append((i, float(box[0]), y0, y1))
+        # Deskew about the box's own horizontal centre: a wide detection is
+        # corrected by its middle, which is where its text sits on average.
+        shift = skew * (0.5 * (x0 + x1))
+        items.append((i, x0, y0 - shift, y1 - shift))
     items.sort(key=lambda it: (it[2], it[1]))
 
-    rows: list[list[tuple]] = []
+    # Each row keeps (anchor_y0, anchor_y1, members). The anchor is fixed when
+    # the row is created and never widened.
+    rows: list[tuple[float, float, list[tuple]]] = []
     for it in items:
-        placed = False
+        best = None
+        best_ratio = 0.0
         for row in rows:
-            ry0 = min(r[2] for r in row)
-            ry1 = max(r[3] for r in row)
+            ry0, ry1, _ = row
             overlap = min(ry1, it[3]) - max(ry0, it[2])
             shorter = min(ry1 - ry0, it[3] - it[2])
-            if shorter > 0 and overlap > 0.5 * shorter:
-                row.append(it)
-                placed = True
-                break
-        if not placed:
-            rows.append([it])
+            if shorter <= 0:
+                continue
+            ratio = overlap / shorter
+            if ratio > 0.5 and ratio > best_ratio:
+                best, best_ratio = row, ratio
+        if best is None:
+            rows.append((it[2], it[3], [it]))
+        else:
+            best[2].append(it)
 
-    rows.sort(key=lambda row: min(r[2] for r in row))
-    return [[r[0] for r in sorted(row, key=lambda r: r[1])] for row in rows]
+    rows.sort(key=lambda row: row[0])
+    return [[r[0] for r in sorted(row[2], key=lambda r: r[1])] for row in rows]
+
 
 class OcrEngine:
     """Loads PP-OCRv5 once and answers DocDOM-shaped `read()` calls."""
@@ -241,7 +315,8 @@ class OcrEngine:
             #
             # docs/OCR.md §4.4 lists "box merging, line assembly" among the
             # things the stage owns rather than borrows. This is that.
-            rows = _rows_from_boxes(rec_boxes, n)
+            skew = _page_skew(rec_polys, n)
+            rows = _rows_from_boxes(rec_boxes, n, skew)
 
             for line_no, row in enumerate(rows):
               row_spans: list[dict[str, Any]] = []
