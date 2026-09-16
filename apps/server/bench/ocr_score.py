@@ -387,6 +387,14 @@ def score_document(
 
 def to_markdown(report: dict) -> str:
     lines = [f"# OCR-stage bench results — {report['generated_at']}", '']
+    # Before anything quotable. Recall and CER are the two numbers this file
+    # reports and the two synthetic data most flatters — docs/CORPUS.md §2.
+    if report.get('tier'):
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import provenance as _prov
+
+        lines.append(_prov.banner(report['tier']))
+        lines.append('')
     lines.append(f"source: `{report['source']}`  ")
     if report.get('note'):
         lines.append(f"**{report['note']}**  ")
@@ -512,6 +520,10 @@ def main():
         report['not_run'] = f'file not found: {e}'
 
     report['source'] = source_desc
+    # The corpus's own declaration, carried into the report so the banner and
+    # the JSON agree. `load_and_validate` already refused to return a manifest
+    # without it, so this cannot be silently absent.
+    report['tier'] = (truth_manifest.get('provenance') or {}).get('tier')
     if note:
         report['note'] = note
     if scores:

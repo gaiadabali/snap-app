@@ -301,8 +301,8 @@ the one that converts the model's failure mode from *invent a number* into
 
 | # | What | Done when |
 |---|---|---|
-| **X1** | `provenance` replaces `synthetic` in `manifest.json`; loader **errors** on a missing tier | A manifest entry without `provenance.tier` fails the bench with a named error, proven by deleting one |
-| **X2** | Tier gate in reporting | `results.md` carries the weakest-tier banner; `corrections per 100` and any calibration curve print the refusal reason instead of a number below Tier R; per-tier breakdown always shown. Verified by running a Tier S set and watching the headline refuse |
+| ~~**X1**~~ | ~~`provenance` replaces `synthetic`; loader **errors** on a missing tier~~ | **DONE 2026-09-16.** `bench/provenance.py`; wired into `compare.py`'s `load_manifest()` beside the ABN check and into `ocr/validate_truth.py`. Verified by deleting the block and watching both refuse |
+| ~~**X2**~~ | ~~Tier gate in reporting~~ | **DONE 2026-09-16.** Banner above anything quotable in both `compare.py` and `ocr_score.py`; `corrections per 100` (B4, implemented here) prints the refusal reason and collapses the figure behind a not-quotable disclosure; per-tier breakdown always shown. 24 tests, all asserting refusals, running in CI |
 | **X3** | Corpus factory — templates + seeded generator + extended degradation, emitting manifest entries by construction | 300+ Tier S documents from a seed, byte-reproducible, no hand-edited truth, every §5.1 variation represented |
 | **X4** | Tier P intake — importer for SROIE/CORD ground truth into our manifest shape; redaction pass; provenance recording | ≥ 100 Tier P documents, PII-redacted, licence and source URL per document |
 | **X5** | Re-run B2 on S+P and publish an **internal** results file | Every engine has a row; failure modes reported separately (omission vs fabrication); the file's own header says which tier and what it cannot be used for |

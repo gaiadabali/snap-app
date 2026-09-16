@@ -60,6 +60,7 @@ from engines.llamaparse_engine import LlamaParseEngine
 from engines import EngineResult
 import scoring
 import abn
+import provenance
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -95,6 +96,13 @@ def load_manifest():
     # defence (an invalid truth scores a correct and incorrect reading
     # identically). Refuse to run rather than silently trusting stale truth.
     abn.assert_manifest_abns_valid(manifest)
+    # Same posture, applied to what the corpus can PROVE rather than to what it
+    # says. Every document must declare a tier and there is no default: a
+    # defaulted tier is a guess about whether the run can back a claim, and
+    # `may_publish_headline()` below refuses the headline numbers on that basis.
+    # See docs/CORPUS.md §4 and provenance.py's own header for why this is a
+    # control and not a flag.
+    provenance.assert_manifest_provenance_valid(manifest)
     return manifest
 
 
@@ -188,11 +196,17 @@ def evaluate(manifest, engines, docs_filter, repeats, timeout, dry_run):
             }
             results.append(entry)
 
+    tier_floor = provenance.weakest_tier(documents)
     return {
         'generated_at': datetime.now(timezone.utc).isoformat(),
         'prompt_version': manifest.get('prompt_version', 'v1'),
         'dry_run': dry_run,
         'documents': [d['id'] for d in documents],
+        # The FLOOR of the documents actually run, not of the whole manifest —
+        # `--docs` can select a subset, and a run of three tier-R documents is
+        # quotable even if the manifest also holds synthetic ones.
+        'tier_floor': tier_floor,
+        'tier_breakdown': provenance.tier_breakdown(documents),
         'engines_run': [e.name for e in engines if e.name not in skipped],
         'engines_skipped': skipped,
         'results': results,
@@ -210,10 +224,66 @@ OUTCOME_COLS = [
 ]
 
 
+def corrections_per_100(report: dict) -> dict[str, float]:
+    """`docs/GAPS.md` B4 — the number the practice channel actually buys.
+
+    (WRONG + MISS + HALLUCINATED) per document x 100, per engine. The harness
+    already scored every field into those buckets; this is the derived column
+    that was one step away and had not been taken.
+
+    UNPARSEABLE counts too, and that is not what GAPS B4's formula literally
+    says. B4 was written against the six scoring outcomes; UNPARSEABLE is the
+    seventh, assigned to EVERY field when the model's output did not parse as
+    JSON at all. Excluding it scores a total extraction failure as ZERO
+    corrections — the best possible result — which is precisely backwards: a
+    document that did not parse is one a human keys in from scratch. Caught by
+    running the harness in dry-run, where every field is UNPARSEABLE by
+    construction and the headline came back 0.0 for both engines.
+
+    ABSTAIN_OK is excluded, deliberately: a ground-truth null correctly
+    returned as null is a success and costs nobody a correction.
+
+    Emitting it is gated on tier by `to_markdown` — see docs/CORPUS.md §4. The
+    arithmetic is always computed, because refusing to compute it would make
+    the gate untestable; what is refused is PRINTING it as a headline.
+    """
+    needs_correction = (
+        scoring.WRONG,
+        scoring.MISS,
+        scoring.HALLUCINATED,
+        scoring.UNPARSEABLE,
+    )
+    per_engine: dict[str, list[int]] = {}
+    for r in report['results']:
+        bad = 0
+        for outcomes in r['field_outcomes_by_run'].values():
+            if outcomes and mode_outcome(outcomes) in needs_correction:
+                bad += 1
+        per_engine.setdefault(r['engine'], []).append(bad)
+    return {
+        engine: (sum(counts) / len(counts)) * 100
+        for engine, counts in per_engine.items()
+        if counts
+    }
+
+
 def to_markdown(report: dict) -> str:
     lines = []
     lines.append(f"# Bench results — {report['generated_at']}")
     lines.append('')
+
+    # The banner comes before anything a reader could quote. A results file
+    # whose tier is stated in a footnote is a results file whose tier gets
+    # dropped when someone copies the table into a deck.
+    tier_floor = report.get('tier_floor')
+    lines.append(provenance.banner(tier_floor))
+    lines.append('')
+    breakdown = report.get('tier_breakdown') or {}
+    if breakdown:
+        shown = ', '.join(f'{n} x tier {t}' for t, n in breakdown.items() if n)
+        # Always printed, so a mixed run cannot hide behind an average.
+        lines.append(f"corpus: {shown}  ")
+
     lines.append(f"prompt version: `{report['prompt_version']}`  ")
     lines.append(f"documents: {', '.join(report['documents'])}  ")
     lines.append(f"engines run: {', '.join(report['engines_run']) or '(none)'}  ")
@@ -228,6 +298,40 @@ def to_markdown(report: dict) -> str:
         lines.append('|---|---|')
         for name, reason in report['engines_skipped'].items():
             lines.append(f'| {name} | {reason} |')
+        lines.append('')
+
+    # ── The headline, or the reason there isn't one ──────────────────────────
+    # `compare.py`'s engine adapters already report "not run" with a reason
+    # rather than inventing a score. This is that property applied to the
+    # metric itself: below tier R the number is replaced by why it is absent,
+    # so a reader sees a refusal rather than an empty cell they might fill in
+    # from somewhere else. docs/CORPUS.md §4.
+    lines.append('## Corrections per 100 documents')
+    lines.append('')
+    allowed, reason = provenance.may_publish_headline(tier_floor)
+    cp100 = corrections_per_100(report)
+    if not allowed:
+        lines.append(reason)
+        lines.append('')
+        if cp100:
+            lines.append('<details><summary>Internal figure — engineering use only, not quotable</summary>')
+            lines.append('')
+            lines.append('| engine | corrections per 100 (tier '
+                         f'{tier_floor or "?"}, NOT a claim) |')
+            lines.append('|---|---|')
+            for engine, value in sorted(cp100.items(), key=lambda kv: kv[1]):
+                lines.append(f'| {engine} | {value:.1f} |')
+            lines.append('')
+            lines.append('</details>')
+        lines.append('')
+    else:
+        lines.append('`(wrong + miss + hallucinated)` per document x 100, over posted fields. '
+                     'Lower is better.')
+        lines.append('')
+        lines.append('| engine | corrections per 100 |')
+        lines.append('|---|---|')
+        for engine, value in sorted(cp100.items(), key=lambda kv: kv[1]):
+            lines.append(f'| {engine} | {value:.1f} |')
         lines.append('')
 
     lines.append('## Per document x engine')

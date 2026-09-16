@@ -122,7 +122,31 @@ def load_and_validate(path: str | None = None) -> dict:
     with open(path, encoding='utf-8') as f:
         manifest = json.load(f)
     validate(manifest)
+    _validate_provenance(manifest)
     return manifest
+
+
+def _validate_provenance(manifest: dict) -> None:
+    """This corpus must declare what it is evidence FOR — docs/CORPUS.md §4.
+
+    It matters more here than anywhere else in the bench: this manifest is what
+    produced detection recall 0.875 and CER 0.0661 (docs/OCR.md §8.1), and
+    those are exactly the two quantities synthetic data flatters. Rendered
+    glyphs have ideal edges, so a recall figure measured here is an upper
+    bound, not an estimate.
+
+    Reuses the same validator `compare.py` uses by wrapping the single
+    page-level block in the per-document shape it expects — one definition of
+    a tier in the repository, not two that drift.
+    """
+    import sys
+
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    import provenance as prov
+
+    prov.assert_manifest_provenance_valid(
+        {'documents': [{'id': 'ocr_truth_manifest.json', 'provenance': manifest.get('provenance')}]}
+    )
 
 
 if __name__ == '__main__':

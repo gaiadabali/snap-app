@@ -103,6 +103,23 @@ jobs:
       - name: Workspace boundaries
         run: pnpm vitest run test/boundaries.test.ts
 
+      # The bench is Python and the rest of CI is not, so this is the only
+      # Python step — no setup-python needed, ubuntu-latest ships 3.12.
+      #
+      # It is here because a control that never runs in CI is a control we are
+      # trusting rather than enforcing, which is the exact failure this repo
+      # keeps rediscovering: three SNAP_ALLOW_PLACEHOLDER_PROOF overrides meant
+      # the testimonial guard could not fire in any automated path.
+      #
+      # These tests need no database, no sidecar and no model — they assert
+      # that the corpus declares what it is evidence FOR, and that the headline
+      # metric REFUSES below tier R (docs/CORPUS.md §4).
+      - name: Corpus provenance control
+        working-directory: apps/server/bench
+        run: |
+          python3 -m unittest test_provenance -v
+          python3 provenance.py
+
       - name: Database suite
         env:
           REQUIRE_DB: '1'

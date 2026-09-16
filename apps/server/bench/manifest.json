@@ -1,100 +1,258 @@
 {
-  "_comment": "Committed ground truth for the bench harness. Every document is SYNTHETIC (rendered from an HTML template in this directory, not a real captured document) -- see docs/OCR.md §8.2: a synthetic corpus is legitimate for exercising the harness but cannot stand in for the real AU gold sets planned there. Field 'compare' selects the comparator in scoring.py. A field whose truth is null is an ABSTENTION case: the correct model output is null, and returning null there is a SUCCESS, not a miss.",
+  "_comment": "Committed ground truth for the bench harness. EVERY document carries a `provenance` block and there is no default tier -- provenance.py refuses to run the harness without one, because a defaulted tier is a guess about what the document proves. Tier S is synthetic (rendered, then degraded): faithful for structure, abstention and grounding; OPTIMISTIC for recall and CER; and unusable for calibration, where fitting on this distribution is worse than not fitting at all. Tier P is real paper that is not Australian. Tier R is a real Australian capture and is the only tier a published claim may rest on -- see docs/CORPUS.md. Field 'compare' selects the comparator in scoring.py. A field whose truth is null is an ABSTENTION case: returning null there is a SUCCESS, not a miss.",
   "prompt_version": "v1",
   "documents": [
     {
       "id": "receipt-easy",
-      "synthetic": true,
+      "provenance": {
+        "tier": "S",
+        "source": "receipt.html rendered clean (rotated, drop-shadowed, scan-lined -- 'photographed but not degraded'). The optimistic-upper-bound case per run.py's own docstring.",
+        "licence": "ours",
+        "captured_in": null,
+        "pii_reviewed": true
+      },
       "format": "image",
-      "pages": ["receipt.png"],
-      "source": "receipt.html rendered clean (rotated, drop-shadowed, scan-lined -- 'photographed but not degraded'). The optimistic-upper-bound case per run.py's own docstring.",
+      "pages": [
+        "receipt.png"
+      ],
       "fields": {
-        "supplier_name": {"truth": "BP Truckstop Gundagai", "compare": "text"},
-        "supplier_abn": {"truth": "33051775556", "compare": "digits"},
-        "issue_date": {"truth": "2026-09-06", "compare": "exact"},
-        "total_inclusive": {"truth": "266.91", "compare": "amount"},
-        "gst_amount": {"truth": "24.26", "compare": "amount"},
-        "is_tax_invoice": {"truth": true, "compare": "bool"},
-        "line_count": {"truth": 3, "compare": "int"},
-        "page_count": {"truth": 1, "compare": "int"}
+        "supplier_name": {
+          "truth": "BP Truckstop Gundagai",
+          "compare": "text"
+        },
+        "supplier_abn": {
+          "truth": "33051775556",
+          "compare": "digits"
+        },
+        "issue_date": {
+          "truth": "2026-09-06",
+          "compare": "exact"
+        },
+        "total_inclusive": {
+          "truth": "266.91",
+          "compare": "amount"
+        },
+        "gst_amount": {
+          "truth": "24.26",
+          "compare": "amount"
+        },
+        "is_tax_invoice": {
+          "truth": true,
+          "compare": "bool"
+        },
+        "line_count": {
+          "truth": 3,
+          "compare": "int"
+        },
+        "page_count": {
+          "truth": 1,
+          "compare": "int"
+        }
       },
       "lines": {
         "truth": [
-          {"description": "DIESEL", "amount": "243.91"},
-          {"description": "ADBLUE", "amount": "18.50"},
-          {"description": "COFFEE", "amount": "4.50"}
+          {
+            "description": "DIESEL",
+            "amount": "243.91"
+          },
+          {
+            "description": "ADBLUE",
+            "amount": "18.50"
+          },
+          {
+            "description": "COFFEE",
+            "amount": "4.50"
+          }
         ]
       }
     },
     {
       "id": "receipt-hard",
-      "synthetic": true,
+      "provenance": {
+        "tier": "S",
+        "source": "hard.py degradation of receipt.html: dim cab light, motion blur, glare band across the total, a crease, sensor noise, downscaled -- the '2am truck stop' case. Same ground truth as receipt-easy; only the image differs.",
+        "licence": "ours",
+        "captured_in": null,
+        "pii_reviewed": true
+      },
       "format": "image",
-      "pages": ["receipt-hard.png"],
-      "source": "hard.py degradation of receipt.html: dim cab light, motion blur, glare band across the total, a crease, sensor noise, downscaled -- the '2am truck stop' case. Same ground truth as receipt-easy; only the image differs.",
+      "pages": [
+        "receipt-hard.png"
+      ],
       "fields": {
-        "supplier_name": {"truth": "BP Truckstop Gundagai", "compare": "text"},
-        "supplier_abn": {"truth": "33051775556", "compare": "digits"},
-        "issue_date": {"truth": "2026-09-06", "compare": "exact"},
-        "total_inclusive": {"truth": "266.91", "compare": "amount"},
-        "gst_amount": {"truth": "24.26", "compare": "amount"},
-        "is_tax_invoice": {"truth": true, "compare": "bool"},
-        "line_count": {"truth": 3, "compare": "int"},
-        "page_count": {"truth": 1, "compare": "int"}
+        "supplier_name": {
+          "truth": "BP Truckstop Gundagai",
+          "compare": "text"
+        },
+        "supplier_abn": {
+          "truth": "33051775556",
+          "compare": "digits"
+        },
+        "issue_date": {
+          "truth": "2026-09-06",
+          "compare": "exact"
+        },
+        "total_inclusive": {
+          "truth": "266.91",
+          "compare": "amount"
+        },
+        "gst_amount": {
+          "truth": "24.26",
+          "compare": "amount"
+        },
+        "is_tax_invoice": {
+          "truth": true,
+          "compare": "bool"
+        },
+        "line_count": {
+          "truth": 3,
+          "compare": "int"
+        },
+        "page_count": {
+          "truth": 1,
+          "compare": "int"
+        }
       },
       "lines": {
         "truth": [
-          {"description": "DIESEL", "amount": "243.91"},
-          {"description": "ADBLUE", "amount": "18.50"},
-          {"description": "COFFEE", "amount": "4.50"}
+          {
+            "description": "DIESEL",
+            "amount": "243.91"
+          },
+          {
+            "description": "ADBLUE",
+            "amount": "18.50"
+          },
+          {
+            "description": "COFFEE",
+            "amount": "4.50"
+          }
         ]
       }
     },
     {
       "id": "receipt-noabn",
-      "synthetic": true,
+      "provenance": {
+        "tier": "S",
+        "source": "noabn.html rendered via gen_corpus.py: a roadside coffee-van receipt with no ABN printed and no 'tax invoice' wording -- the ABSTENTION case. supplier_abn and gst_amount are null in truth on purpose; a model that invents an ABN or a GST split here is hallucinating, not reading.",
+        "licence": "ours",
+        "captured_in": null,
+        "pii_reviewed": true
+      },
       "format": "image",
-      "pages": ["corpus/receipt-noabn.png"],
-      "source": "noabn.html rendered via gen_corpus.py: a roadside coffee-van receipt with no ABN printed and no 'tax invoice' wording -- the ABSTENTION case. supplier_abn and gst_amount are null in truth on purpose; a model that invents an ABN or a GST split here is hallucinating, not reading.",
+      "pages": [
+        "corpus/receipt-noabn.png"
+      ],
       "fields": {
-        "supplier_name": {"truth": "Roadside Coffee Van", "compare": "text"},
-        "supplier_abn": {"truth": null, "compare": "digits"},
-        "issue_date": {"truth": "2026-09-06", "compare": "exact"},
-        "total_inclusive": {"truth": "8.50", "compare": "amount"},
-        "gst_amount": {"truth": null, "compare": "amount"},
-        "is_tax_invoice": {"truth": false, "compare": "bool"},
-        "line_count": {"truth": 2, "compare": "int"},
-        "page_count": {"truth": 1, "compare": "int"}
+        "supplier_name": {
+          "truth": "Roadside Coffee Van",
+          "compare": "text"
+        },
+        "supplier_abn": {
+          "truth": null,
+          "compare": "digits"
+        },
+        "issue_date": {
+          "truth": "2026-09-06",
+          "compare": "exact"
+        },
+        "total_inclusive": {
+          "truth": "8.50",
+          "compare": "amount"
+        },
+        "gst_amount": {
+          "truth": null,
+          "compare": "amount"
+        },
+        "is_tax_invoice": {
+          "truth": false,
+          "compare": "bool"
+        },
+        "line_count": {
+          "truth": 2,
+          "compare": "int"
+        },
+        "page_count": {
+          "truth": 1,
+          "compare": "int"
+        }
       },
       "lines": {
         "truth": [
-          {"description": "FLAT WHITE LGE", "amount": "5.50"},
-          {"description": "BANANA BREAD", "amount": "3.00"}
+          {
+            "description": "FLAT WHITE LGE",
+            "amount": "5.50"
+          },
+          {
+            "description": "BANANA BREAD",
+            "amount": "3.00"
+          }
         ]
       }
     },
     {
       "id": "invoice-multipage",
-      "synthetic": true,
+      "provenance": {
+        "tier": "S",
+        "source": "invoice-multipage.html rendered via gen_corpus.py: a digitally-generated 2-page AU tax invoice, 40 freight/fee line items. All 40 lines fall on page 1 by ordinary document flow (no manual page-break); the subtotal/GST/grand total fall on page 2 ONLY. A model that reads page 1 alone can get supplier/date/lines right but has no way to get total_inclusive or gst_amount right except by re-summing 40 lines itself -- this is the harness's first real multi-page measurement, per contract §6 and OCR.md §8.1's 'never run on a multi-page PDF' gap.",
+        "licence": "ours",
+        "captured_in": null,
+        "pii_reviewed": true
+      },
       "format": "pdf",
-      "pages": ["corpus/invoice-multipage-p1.png", "corpus/invoice-multipage-p2.png"],
+      "pages": [
+        "corpus/invoice-multipage-p1.png",
+        "corpus/invoice-multipage-p2.png"
+      ],
       "pdf_path": "corpus/invoice-multipage.pdf",
-      "source": "invoice-multipage.html rendered via gen_corpus.py: a digitally-generated 2-page AU tax invoice, 40 freight/fee line items. All 40 lines fall on page 1 by ordinary document flow (no manual page-break); the subtotal/GST/grand total fall on page 2 ONLY. A model that reads page 1 alone can get supplier/date/lines right but has no way to get total_inclusive or gst_amount right except by re-summing 40 lines itself -- this is the harness's first real multi-page measurement, per contract §6 and OCR.md §8.1's 'never run on a multi-page PDF' gap.",
       "fields": {
-        "supplier_name": {"truth": "Southern Cross Logistics Pty Ltd", "compare": "text"},
-        "supplier_abn": {"truth": "85129887341", "compare": "digits"},
-        "issue_date": {"truth": "2026-08-14", "compare": "exact"},
-        "total_inclusive": {"truth": "17519.31", "compare": "amount"},
-        "gst_amount": {"truth": "1592.66", "compare": "amount"},
-        "is_tax_invoice": {"truth": true, "compare": "bool"},
-        "line_count": {"truth": 40, "compare": "int"},
-        "page_count": {"truth": 2, "compare": "int"}
+        "supplier_name": {
+          "truth": "Southern Cross Logistics Pty Ltd",
+          "compare": "text"
+        },
+        "supplier_abn": {
+          "truth": "85129887341",
+          "compare": "digits"
+        },
+        "issue_date": {
+          "truth": "2026-08-14",
+          "compare": "exact"
+        },
+        "total_inclusive": {
+          "truth": "17519.31",
+          "compare": "amount"
+        },
+        "gst_amount": {
+          "truth": "1592.66",
+          "compare": "amount"
+        },
+        "is_tax_invoice": {
+          "truth": true,
+          "compare": "bool"
+        },
+        "line_count": {
+          "truth": 40,
+          "compare": "int"
+        },
+        "page_count": {
+          "truth": 2,
+          "compare": "int"
+        }
       },
       "lines": {
         "truth": [
-          {"description": "Freight: Melbourne -> Sydney (14/08)", "amount": "640.00"},
-          {"description": "Fuel levy — Adelaide run", "amount": "76.50"},
-          {"description": "Depot handling fee x2", "amount": "110.00"}
+          {
+            "description": "Freight: Melbourne -> Sydney (14/08)",
+            "amount": "640.00"
+          },
+          {
+            "description": "Fuel levy — Adelaide run",
+            "amount": "76.50"
+          },
+          {
+            "description": "Depot handling fee x2",
+            "amount": "110.00"
+          }
         ]
       }
     }
