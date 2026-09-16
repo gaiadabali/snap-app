@@ -144,6 +144,9 @@ importers:
       '@snap/docai':
         specifier: workspace:*
         version: link:../../packages/docai
+      '@snap/docai-preview':
+        specifier: workspace:*
+        version: link:../../packages/docai-preview
       '@snap/tax-engine':
         specifier: workspace:*
         version: link:../../packages/tax-engine
