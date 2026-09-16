@@ -221,14 +221,28 @@ Three rules the home page now follows:
    — belongs to **K. Marsh Transport**, the same demo workspace the app
    screenshots come from. Four unrelated invented numbers read as invented; one
    business followed through a quarter reads as a product.
-3. **Social proof is sample copy, and it is fenced.** The proof slot
-   (`_components/proof.tsx` + `proof-data.ts`) currently holds SAMPLE
-   testimonials so the section can be design-reviewed with realistic text. Each
-   is marked `placeholder: true`, renders with a visible amber "Sample" tag and
-   a line of body copy saying so, and **`assertNoPlaceholdersInProduction()`
-   throws during `next build` while any remain** — override with
-   `SNAP_ALLOW_PLACEHOLDER_PROOF=1` only for a staging host that runs with
-   `NODE_ENV=production`.
+3. **There is no social proof, and that is the settled position.** The proof
+   slot (`_components/proof.tsx` + `proof-data.ts`) held two SAMPLE
+   testimonials so the section could be design-reviewed with realistic text.
+   **They were removed on 2026-09-16** (`docs/DESIGN-HANDOFF.md` §12.4): the
+   handoff permits samples only while visibly marked, `next build` refuses a
+   production build while any remain, and on a compliance product the honest
+   resolution is to carry no testimonials until there are real ones.
+
+   `TESTIMONIALS` is now empty. `Proof` renders correctly without it — the
+   quote grid is skipped and the section stands on `MEASUREMENT`, the
+   *corrections per 100 documents* figure we have committed to publishing and
+   have not measured yet (`docs/MONETISATION.md` §2.1, `docs/GAPS.md` lanes B
+   and E). That is stronger proof than a quote anyone could have written.
+
+   **The guard stays armed, and is no longer overridden anywhere.**
+   `assertNoPlaceholdersInProduction()` still throws during `next build` if a
+   sample is added back. The `SNAP_ALLOW_PLACEHOLDER_PROOF=1` escape hatch
+   remains in the function for a future round of design review, but it is no
+   longer *set* in `apps/web/Dockerfile`, `.github/workflows/ci.yml` or
+   `.github/workflows/publish-images.yml` — all three were removed with the
+   samples, as their own comments instructed. While those overrides were in
+   place the guard could not have fired in any automated path.
 
    This is the one place on the site where getting it wrong is a legal problem
    rather than a taste problem: a testimonial from a customer who does not

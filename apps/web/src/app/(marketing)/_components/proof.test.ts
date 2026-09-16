@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  HAS_PLACEHOLDERS,
   TESTIMONIALS,
   assertNoPlaceholdersInProduction,
   type Testimonial,
@@ -14,26 +15,45 @@ import {
  * The env is passed in rather than mutated globally — `process.env.NODE_ENV`
  * is substituted at transform time by every bundler in this repo, so a test
  * that stubbed it would be asserting against a frozen literal.
+ *
+ * `hasPlaceholders` is passed in for the same reason the env is. These tests
+ * used to read the live `TESTIMONIALS` list, which meant the suite asserted
+ * the guard fires *and* that there was still something for it to fire on — so
+ * removing the last sample quote broke the test that proves the guard works.
+ * A test that fails when the data is finally correct is testing the wrong
+ * thing. The guard's behaviour is now exercised in both states regardless of
+ * what the live list happens to hold.
  */
 
 describe('placeholder testimonials cannot reach production', () => {
   it('allows a development build, so review hosts are unaffected', () => {
-    expect(() => assertNoPlaceholdersInProduction({ NODE_ENV: 'development' })).not.toThrow();
+    expect(() => assertNoPlaceholdersInProduction({ NODE_ENV: 'development' }, true)).not.toThrow();
   });
 
   it('refuses a production build while placeholders are present', () => {
-    expect(() => assertNoPlaceholdersInProduction({ NODE_ENV: 'production' })).toThrow(
+    expect(() => assertNoPlaceholdersInProduction({ NODE_ENV: 'production' }, true)).toThrow(
       /placeholder testimonials are still present/i,
     );
   });
 
+  it('allows a production build once no placeholders remain', () => {
+    expect(() => assertNoPlaceholdersInProduction({ NODE_ENV: 'production' }, false)).not.toThrow();
+  });
+
   it('can be overridden deliberately for a staging host', () => {
     expect(() =>
-      assertNoPlaceholdersInProduction({
-        NODE_ENV: 'production',
-        SNAP_ALLOW_PLACEHOLDER_PROOF: '1',
-      }),
+      assertNoPlaceholdersInProduction(
+        { NODE_ENV: 'production', SNAP_ALLOW_PLACEHOLDER_PROOF: '1' },
+        true,
+      ),
     ).not.toThrow();
+  });
+
+  it('defaults to the live list, so the real build is actually guarded', () => {
+    // No second argument: this is the call `proof.tsx` makes at module scope.
+    const run = () => assertNoPlaceholdersInProduction({ NODE_ENV: 'production' });
+    if (HAS_PLACEHOLDERS) expect(run).toThrow(/placeholder testimonials are still present/i);
+    else expect(run).not.toThrow();
   });
 });
 

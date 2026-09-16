@@ -44,31 +44,28 @@ export type Testimonial = {
 };
 
 /**
- * SAMPLE COPY — not real customers.
+ * Empty, deliberately — see `docs/DESIGN-HANDOFF.md` §12.4 (settled 2026-09-16).
  *
- * Written at realistic length and in the register a real one would use, because
- * a slot full of "Lorem ipsum" cannot be design-reviewed. The names are
- * deliberately generic rather than plausible-sounding individuals, so nothing
- * here reads as a real person even at a glance.
+ * This held two sample quotes so the layout could be reviewed with realistic
+ * text in it. They did their job and have been removed: the handoff allows
+ * samples only while they are visibly marked, and `next build` refuses a
+ * production build while any are present — so shipping meant choosing, and
+ * the honest choice on a compliance product is to have no testimonials until
+ * we have real ones.
+ *
+ * `Proof` already renders correctly with an empty list: the quote grid is
+ * skipped entirely and the section stands on `MEASUREMENT` — the number we
+ * have committed to publishing and have not measured yet. That is stronger
+ * proof than a quote anyone could have written.
+ *
+ * **Adding a real one.** Push an entry with a named person who has actually
+ * used the product, `consentedOn` set to the date written permission was
+ * obtained, and the quote verbatim and in context. Keep the permission on
+ * file: under the ACL the burden of substantiating a testimonial sits with the
+ * advertiser. Do not set `placeholder` — the guard below and the tests in
+ * `proof.test.ts` stay armed for exactly this.
  */
-export const TESTIMONIALS: readonly Testimonial[] = [
-  {
-    quote:
-      'The mixed dockets were the thing. Half my servo stops are fuel and a coffee, and I was either claiming the GST on all of it or none of it. Now it splits them and I stop thinking about it.',
-    name: 'Sample quote',
-    role: 'Line-haul driver',
-    location: 'Regional NSW',
-    placeholder: true,
-  },
-  {
-    quote:
-      'We were spending the first week of every quarter chasing clients for tax invoices that were never valid in the first place. Seeing it flagged the day it is photographed changed what that week looks like.',
-    name: 'Sample quote',
-    role: 'Bookkeeping practice, 40 clients',
-    location: 'Melbourne',
-    placeholder: true,
-  },
-];
+export const TESTIMONIALS: readonly Testimonial[] = [];
 
 export const HAS_PLACEHOLDERS = TESTIMONIALS.some((t) => t.placeholder);
 
@@ -82,8 +79,9 @@ export const HAS_PLACEHOLDERS = TESTIMONIALS.some((t) => t.placeholder);
  */
 export function assertNoPlaceholdersInProduction(
   env: NodeJS.ProcessEnv = process.env,
+  hasPlaceholders: boolean = HAS_PLACEHOLDERS,
 ): void {
-  if (!HAS_PLACEHOLDERS) return;
+  if (!hasPlaceholders) return;
   // Bracket access on purpose. Bundlers statically substitute the dotted form
   // `process.env.NODE_ENV` for a literal before this runs, which freezes the
   // value at transform time and makes the guard impossible to test.
