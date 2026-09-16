@@ -59,7 +59,20 @@ jobs:
           # app would point at a hostname that does not resolve, and would look
           # like a network fault on every screen.
           profile="${{ inputs.profile || 'preview' }}"
-          url=$(python3 -c "import json;print(json.load(open('eas.json'))['build']['$profile'].get('env',{}).get('EXPO_PUBLIC_API_URL',''))")
+          # This step runs at the REPOSITORY ROOT (see the grep above), and
+          # eas.json lives in apps/mobile. Opening the bare name raised
+          # FileNotFoundError, the substitution swallowed it, url came back
+          # empty, and empty is the "fixtures-only demo" branch below — so the
+          # /v1/ready guard silently did not run at all. Same failure mode as
+          # the REPLACE-WITH grep it replaced: a check that cannot fail.
+          #
+          # So: read the real path, and separate "this profile deliberately has
+          # no API URL" from "this file could not be read". Only the first is
+          # allowed to skip the probe.
+          if ! url=$(python3 -c "import json,sys; cfg=json.load(open('apps/mobile/eas.json')); print(cfg['build'][sys.argv[1]].get('env',{}).get('EXPO_PUBLIC_API_URL',''))" "$profile"); then
+            echo "::error::could not read profile '$profile' from apps/mobile/eas.json"
+            missing=1
+          fi
           # Checking for the literal string 'REPLACE-WITH' was not a check.
           #
           # The preview profile said https://staging.api.snapapps.au for months
