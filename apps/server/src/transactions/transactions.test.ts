@@ -304,6 +304,83 @@ describeIfDb('transactions: draft, post, list', () => {
     expect(amounts.reduce((a, b) => a + b, 0)).toBeCloseTo(0, 4);
   });
 
+  /**
+   * THE WEDGE, posted.
+   *
+   * A supermarket docket for site lunch mixes GST-free fresh food with taxable
+   * packaged goods, and `docs/MONETISATION.md` §2 identifies the per-category
+   * split as the one capability no competitor at any price offers.
+   *
+   * It could not be posted. `document_tax_subtotals` has been in the schema
+   * since migration 0004 and nothing ever wrote to it, so this path fell back
+   * to header totals and REFUSED anything carrying more than one tax treatment
+   * — `ambiguous_tax_categories`. The feature was in the schema, on the
+   * marketing site, and unreachable in the product.
+   *
+   * $24.50 taxable + $11.70 GST-free = $36.20, GST $2.23. Note that $2.23 is
+   * one eleventh of the TAXABLE portion, not of the total: a header-only
+   * reader computes $3.29 and over-claims by $1.06 on this one docket.
+   */
+  it('drafts a mixed GST / GST-free docket, splitting tax per category', async () => {
+    const capture = await makeCapture(admin, TENANT);
+    const documentId = await makeDocument(admin, TENANT, capture, {
+      isTaxInvoice: true,
+      taxExclusive: '33.9700',
+      tax: '2.2300',
+      payable: '36.2000',
+      lines: [
+        { net: '24.5000', category: 'S' },
+        { net: '11.7000', category: 'Z' },
+      ],
+    });
+
+    const outcome = await draftTransactionFromDocument(OWNER, TENANT, documentId);
+    expect(outcome).toMatchObject({ ok: true });
+    if (!outcome.ok) return;
+
+    const [txn] = await listTransactions(OWNER, TENANT, { status: 'draft' });
+    const splits = txn!.splits;
+
+    // Still double-entry: the database's sum-zero trigger is the backstop, but
+    // a split set that does not balance never gets that far.
+    expect(splits.map((s) => Number(s.amount)).reduce((a, b) => a + b, 0)).toBeCloseTo(0, 4);
+
+    // Both treatments present and posted to their own tax codes — which is the
+    // whole point, and what a header-only reader cannot produce.
+    const taxable = splits.find((s) => s.taxCode === 'GST');
+    const free = splits.find((s) => s.taxCode === 'FRE');
+    expect(taxable?.amount).toBe('22.2700'); // 24.50 inclusive less 2.23 GST
+    expect(taxable?.gstAmount).toBe('2.2300');
+    expect(free?.amount).toBe('11.7000');
+    expect(free?.gstAmount).toBe('0.0000');
+
+    // GST is claimed on the taxable half only. $2.23, never $3.29.
+    const claimable = splits.find((s) => s.accountName === 'GST Receivable');
+    expect(claimable?.amount).toBe('2.2300');
+  });
+
+  /**
+   * The refusal that must survive the change above. Deriving a split from the
+   * lines is only defensible because it declines when it cannot be honest.
+   */
+  it('still refuses a mixed docket whose lines do not reconcile to the payable', async () => {
+    const capture = await makeCapture(admin, TENANT);
+    const documentId = await makeDocument(admin, TENANT, capture, {
+      isTaxInvoice: true,
+      taxExclusive: '33.9700',
+      tax: '2.2300',
+      payable: '36.2000',
+      // Lines sum to 30.00, not 36.20: part of the receipt was never read.
+      lines: [
+        { net: '20.0000', category: 'S' },
+        { net: '10.0000', category: 'Z' },
+      ],
+    });
+
+    const outcome = await draftTransactionFromDocument(OWNER, TENANT, documentId);
+    expect(outcome).toMatchObject({ ok: false, reason: 'ambiguous_tax_categories' });
+  });
+
   it('refuses to draft from a document still needing review', async () => {
     const capture = await makeCapture(admin, TENANT);
     const documentId = await makeDocument(admin, TENANT, capture, {

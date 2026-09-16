@@ -5,6 +5,7 @@ import { sql } from 'drizzle-orm';
 
 import { getDb } from '../db.js';
 import { linesGap } from '../extraction/validators.js';
+import { taxSubtotalsFromLines } from '../extraction/tax-subtotals';
 
 /**
  * Where a confirmed scan becomes a posted, balanced ledger entry.
@@ -227,18 +228,54 @@ export async function draftTransactionFromDocument(
         tax: r.tax_amount,
       }));
     } else {
-      // No per-category reconciliation on record. Fall back to the header
-      // totals — but only when there is exactly one tax treatment on this
-      // document; a mix with no subtotals means the validators never
-      // reconciled it per-category, and guessing an allocation here would be
-      // exactly the "recompute what the validators own" this ticket forbids.
+      // No per-category reconciliation on record. One tax treatment falls
+      // back to the header totals; more than one is DERIVED from the lines
+      // below, by a function that refuses rather than guesses. The original
+      // rule — never recompute what the validators own — is kept by that
+      // refusal, not by declining to look.
       const lineCats = await t.execute<{ gst_category_code: string | null; net: string }>(sql`
         select gst_category_code, sum(line_net_amount)::text as net
           from document_lines where document_id = ${documentId}
          group by gst_category_code
       `);
       if (lineCats.rows.length === 0) return { ok: false, reason: 'ambiguous_tax_categories' };
-      if (lineCats.rows.length > 1) return { ok: false, reason: 'ambiguous_tax_categories' };
+
+      if (lineCats.rows.length > 1) {
+        // More than one tax treatment and no stored subtotals. This used to be
+        // an outright refusal, and while nothing could WRITE
+        // `document_tax_subtotals` it meant the mixed GST/GST-free docket —
+        // the product's whole wedge — could never be posted to the ledger.
+        //
+        // `taxSubtotalsFromLines` is not the guess the old comment rightly
+        // forbade: it derives the split with exact decimal arithmetic and
+        // returns NOTHING when it cannot state one honestly — lines that do
+        // not reconcile to the payable, or a printed GST that disagrees with
+        // the lines' own GST-free flags. So the refusal below still fires for
+        // every case that earned it.
+        //
+        // Derived here as well as persisted on extraction, because documents
+        // extracted before that write existed have lines and no subtotals, and
+        // a migration cannot recover what was never computed.
+        const rows = await t.execute<{ gst_category_code: string | null; line_net_amount: string }>(sql`
+          select gst_category_code, line_net_amount::text as line_net_amount
+            from document_lines where document_id = ${documentId} order by line_number
+        `);
+        const derived = taxSubtotalsFromLines(
+          rows.rows.map((r) => ({
+            amount: r.line_net_amount,
+            gstFree: r.gst_category_code === 'Z',
+          })),
+          doc.tax_amount,
+          doc.payable_amount,
+        );
+        if (derived.length === 0) return { ok: false, reason: 'ambiguous_tax_categories' };
+
+        groups = derived.map((d) => ({
+          categoryCode: d.categoryCode,
+          taxable: d.taxableAmount,
+          tax: d.taxAmount,
+        }));
+      } else {
 
       const lineSum = await t.execute<{ sum: string | null }>(sql`
         select sum(line_net_amount)::text as sum from document_lines where document_id = ${documentId}
@@ -259,6 +296,7 @@ export async function draftTransactionFromDocument(
           tax: doc.tax_amount ?? '0',
         },
       ];
+      }
     }
 
     const taxCodes = await loadTaxCodes(t);
