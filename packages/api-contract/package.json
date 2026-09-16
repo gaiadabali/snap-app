@@ -8,7 +8,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./money": "./src/money.ts",
-    "./analytics": "./src/analytics.ts"
+    "./analytics": "./src/analytics.ts",
+    "./docdom": "./src/docdom.ts"
   },
   "types": "./src/index.ts",
   "sideEffects": false,

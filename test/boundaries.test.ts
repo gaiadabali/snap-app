@@ -1,5 +1,5 @@
-import { readFileSync, existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { join, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
@@ -54,6 +54,15 @@ const WORKSPACE_DIRS = [
   'apps/web',
   'packages/api-contract',
   'packages/db',
+  // `packages/docai` was MISSING from this list, so no boundary rule here had
+  // ever covered it — not the dependency-graph walk, not the import checks.
+  // Found by breaking the duplicate-Document guard below and watching it pass
+  // anyway (docs/ON-DEVICE.md OD-4 asks for this list to be updated).
+  //
+  // It matters now more than it did: docai gained a dependency on
+  // api-contract when the DocDOM types moved there, and a package outside this
+  // list can acquire any dependency at all without anything noticing.
+  'packages/docai',
   'packages/tax-engine',
 ];
 
@@ -80,14 +89,27 @@ function closure(start: string): Set<string> {
 
 describe('workspace boundaries', () => {
   it('knows about every workspace package', () => {
-    expect([...graph.keys()].sort()).toEqual([
-      '@snap/api-contract',
-      '@snap/db',
-      '@snap/mobile',
-      '@snap/server',
-      '@snap/tax-engine',
-      '@snap/web',
-    ]);
+    // Derived from the FILESYSTEM, not from a second hardcoded list.
+    //
+    // This test previously compared `WORKSPACE_DIRS` against a literal array,
+    // and both of them were missing `packages/docai`. They agreed with each
+    // other perfectly, the test passed for months, and docai was invisible to
+    // every rule in this file — it could have taken a dependency on anything.
+    //
+    // docs/DEPLOY.md §8 names the shape: *nothing checks the agreement BETWEEN
+    // two correct things*. Two internally-consistent lists are not a check.
+    // A package added to the repo must now fail this until it is added above.
+    const onDisk = ['apps', 'packages']
+      .flatMap((group) =>
+        readdirSync(join(ROOT, group), { withFileTypes: true })
+          .filter((e) => e.isDirectory() && existsSync(join(ROOT, group, e.name, 'package.json')))
+          .map((e) => `${group}/${e.name}`),
+      )
+      .map((dir) => readPkg(dir)?.name)
+      .filter((name): name is string => Boolean(name))
+      .sort();
+
+    expect([...graph.keys()].sort()).toEqual(onDisk);
   });
 
   const clientCases = CLIENTS.flatMap((client) =>
@@ -123,12 +145,56 @@ describe('workspace boundaries', () => {
     expect(Object.keys(pkg?.dependencies ?? {})).toEqual([]);
   });
 
-  it('api-contract imports nothing at all', () => {
-    // A types-only package must not pull anything in; an `import` here would
-    // become real weight in the mobile bundle.
-    const src = readFileSync(join(ROOT, 'packages/api-contract/src/index.ts'), 'utf8');
-    const imports = src.match(/^\s*import\s.+$/gm) ?? [];
-    expect(imports, `unexpected imports:\n${imports.join('\n')}`).toEqual([]);
+  it('api-contract imports nothing from OUTSIDE itself', () => {
+    // A types-only package must not pull anything in; an external `import`
+    // here becomes real weight in the mobile bundle.
+    //
+    // Checked across EVERY entry point, not just index.ts. `docdom.ts` arrived
+    // later (docs/ON-DEVICE.md OD-2) and the original check looked only at
+    // index.ts, so it would have said nothing about it — a guard that does not
+    // cover what was added after it was written.
+    //
+    // Widening it immediately found that `analytics.ts` imports `./money`.
+    // That is fine and the rule is what was wrong: an import WITHIN the package
+    // adds no external weight, and `money.ts` is deliberately real code (exact
+    // decimal arithmetic the app shares). What must never appear is an import
+    // of anything outside this package.
+    for (const entry of ['index.ts', 'money.ts', 'analytics.ts', 'docdom.ts']) {
+      const src = readFileSync(join(ROOT, 'packages/api-contract/src', entry), 'utf8');
+      const external = (src.match(/from\s+'([^']+)'/g) ?? []).filter(
+        (m) => !/from\s+'\.{1,2}\//.test(m),
+      );
+      expect(external, `${entry} imports from outside api-contract: ${external.join(', ')}`)
+        .toEqual([]);
+    }
+  });
+
+  it('DocDOM is declared exactly once in the workspace', () => {
+    // The types moved to api-contract so the phone can render overlays without
+    // importing docai's reading pipeline (OD-2); docai re-exports them. The
+    // failure mode of that arrangement is someone re-declaring `Document`
+    // locally instead of importing it — two declarations that each compile and
+    // drift on the first field added to either. docs/DEPLOY.md §8: nothing
+    // checks the agreement BETWEEN two correct things.
+    const declarations: string[] = [];
+    for (const dir of WORKSPACE_DIRS) {
+      const srcDir = join(ROOT, dir, 'src');
+      if (!existsSync(srcDir)) continue;
+      const stack = [srcDir];
+      while (stack.length > 0) {
+        const current = stack.pop() as string;
+        for (const entry of readdirSync(current, { withFileTypes: true })) {
+          const full = join(current, entry.name);
+          if (entry.isDirectory()) stack.push(full);
+          else if (entry.name.endsWith('.ts') && !entry.name.endsWith('.test.ts')) {
+            if (/^export type Document = \{/m.test(readFileSync(full, 'utf8'))) {
+              declarations.push(full.slice(ROOT.length + 1).split(sep).join('/'));
+            }
+          }
+        }
+      }
+    }
+    expect(declarations).toEqual(['packages/api-contract/src/docdom.ts']);
   });
 
   it('tax-engine has no runtime dependencies', () => {

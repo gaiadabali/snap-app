@@ -255,6 +255,9 @@ importers:
 
   packages/docai:
     dependencies:
+      '@snap/api-contract':
+        specifier: workspace:*
+        version: link:../api-contract
       pdfjs-dist:
         specifier: ^6.3.289
         version: 6.3.289

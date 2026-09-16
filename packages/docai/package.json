@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "The document engine: DocDOM, the engine registry, and the reading pipeline. Pure TypeScript with no database and no cloud SDK — a function from bytes to a document. SERVER ONLY.",
+  "description": "The document engine: DocDOM, the engine registry, and the reading pipeline. Pure TypeScript with no database and no cloud SDK \u2014 a function from bytes to a document. SERVER ONLY.",
   "license": "UNLICENSED",
   "exports": {
     ".": "./src/index.ts",
@@ -21,7 +21,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "pdfjs-dist": "^6.3.289"
+    "pdfjs-dist": "^6.3.289",
+    "@snap/api-contract": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^20.19.43",
