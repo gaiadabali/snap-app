@@ -28,11 +28,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "60.000",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": "5.455",
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -82,11 +82,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "91000",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": null,
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -144,11 +144,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "28,000",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": null,
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -198,11 +198,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "11,000",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": null,
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -252,11 +252,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "174,600",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": null,
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -314,11 +314,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "31.000",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": "2.818",
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -368,11 +368,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "46,000",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": null,
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -430,11 +430,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "111,000",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": "10,091",
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -484,11 +484,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "50,000",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": "4,545",
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -538,11 +538,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "17,000",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": null,
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -592,11 +592,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "230,000",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": null,
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -646,11 +646,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "120,000",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": null,
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -691,11 +691,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "51.300",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": "4.664",
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -749,11 +749,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "281,435",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": "25,585",
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -823,11 +823,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "63.000",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": null,
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -881,11 +881,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "70,000",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": "6,364",
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -939,11 +939,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "Rp. 91,000",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": null,
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -1013,11 +1013,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "156000",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": null,
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -1067,11 +1067,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "176000",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": "16000",
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -1125,11 +1125,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "377,859",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": "34,351",
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -1195,11 +1195,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "Rp 38.000",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": null,
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -1253,11 +1253,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "40,000",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": null,
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -1311,11 +1311,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "63,000",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": null,
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -1369,11 +1369,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "Rp.118.000",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": null,
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -1431,11 +1431,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "43,000",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": null,
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -1493,11 +1493,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "Rp 138.000",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": null,
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -1547,11 +1547,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "61,600",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": "5,600",
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -1605,11 +1605,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "426,195",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": "38,745",
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -1667,11 +1667,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "145,900",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": "13,264",
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -1741,11 +1741,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "31,500",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": "2,864",
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -1795,11 +1795,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "113,886",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": "18,126",
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -1853,11 +1853,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "24.000",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": null,
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -1907,11 +1907,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "148,127",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": "19,557",
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -1969,11 +1969,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "93.500",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": "8.500",
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -2027,11 +2027,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "54,000",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": null,
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -2093,11 +2093,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "40,000",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": null,
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -2147,11 +2147,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "664,329",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": "60,394",
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -2233,11 +2233,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "68,000",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": null,
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -2291,11 +2291,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "365000.00",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": null,
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -2381,11 +2381,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "16,500",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": "1,500",
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -2435,11 +2435,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "Rp 165000.00",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": "Rp 15000.00",
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -2489,11 +2489,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "30.000",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": null,
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -2543,11 +2543,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "88,000",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": null,
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -2609,11 +2609,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "40,000",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": null,
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -2667,11 +2667,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "63,000.00",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": null,
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -2729,11 +2729,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "25,000",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": "2,272",
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -2783,11 +2783,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "23,000",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": null,
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -2841,11 +2841,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "19,500",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": "1,773",
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -2895,11 +2895,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "334,000",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": "30,365",
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -2961,11 +2961,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "40.000",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": null,
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -3019,11 +3019,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "123.585",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": "11.235",
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -3081,11 +3081,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "10,000",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": null,
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -3135,11 +3135,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "54,000",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": null,
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -3193,11 +3193,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "8,999",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": "818",
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -3247,11 +3247,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "60,500",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": "5,500",
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -3301,11 +3301,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "680,500",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": "61,849",
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -3387,11 +3387,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "26.250",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": "-",
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -3445,11 +3445,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "24,500",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": null,
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -3519,11 +3519,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "48.000",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": null,
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -3577,11 +3577,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "57.000",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": null,
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -3635,11 +3635,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "16.000",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": null,
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -3689,11 +3689,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "13.000",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": "-",
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -3743,11 +3743,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "40,000",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": "3,636",
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -3801,11 +3801,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "9.500,00",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": null,
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -3855,11 +3855,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "20,000",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": null,
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -3909,11 +3909,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "74,000",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": null,
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -3971,11 +3971,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "1,565,938",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": "142,358",
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -4049,11 +4049,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "198000",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": null,
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -4103,11 +4103,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "17,500",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": "1,591",
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -4157,11 +4157,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "22.000",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": null,
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -4215,11 +4215,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "330,264",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": "30,024",
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -4281,11 +4281,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "282,000",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": "25,637",
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -4355,11 +4355,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "17,000",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": null,
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -4409,11 +4409,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "30.000",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": null,
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -4463,11 +4463,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "22.000",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": null,
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -4521,11 +4521,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "25.000",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": null,
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -4575,11 +4575,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "50.000",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": null,
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -4637,11 +4637,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "385,000",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": null,
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -4699,11 +4699,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "23,000",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": "2,091",
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -4753,11 +4753,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "Rp 39.600",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": "Rp 3.600",
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -4811,11 +4811,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "197.450",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": "17.950",
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -4905,11 +4905,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "22,000",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": null,
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -4963,11 +4963,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "40,150",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": "3,650",
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -5017,11 +5017,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "47,000",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": null,
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -5075,11 +5075,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "40,000",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": null,
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -5129,11 +5129,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "29,500",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": "2,681",
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -5183,11 +5183,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "21.000",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": null,
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -5241,11 +5241,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "240.000",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": null,
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -5295,11 +5295,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "17,999",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": "1,636",
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -5349,11 +5349,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "140,063",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": "12,733",
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -5415,11 +5415,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "61,799",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": "5,618",
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -5473,11 +5473,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "41,000",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": null,
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -5527,11 +5527,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "55.000",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": null,
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -5589,11 +5589,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "250,690",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": "22,790",
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,
@@ -5651,11 +5651,11 @@
       "fields": {
         "total_inclusive": {
           "truth": "75,000",
-          "compare": "text"
+          "compare": "digits"
         },
         "gst_amount": {
           "truth": "['6,818', '0']",
-          "compare": "text"
+          "compare": "digits"
         },
         "supplier_abn": {
           "truth": null,

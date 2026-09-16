@@ -156,11 +156,23 @@ class TheManifestEntryIsWellFormed(unittest.TestCase):
         self.assertFalse(allowed)
         self.assertIn('not Australian', reason)
 
-    def test_money_uses_the_text_comparator_not_amount(self):
-        # The whole locale hazard in one assertion. `amount` would read
-        # "60.000" as 60.0 and grade a correct reading as WRONG.
-        self.assertEqual(self.entry['fields']['total_inclusive']['compare'], 'text')
-        self.assertEqual(self.entry['fields']['gst_amount']['compare'], 'text')
+    def test_money_is_compared_on_digits(self):
+        # The locale hazard, and the over-correction that followed it.
+        # `amount` reads "60.000" as 60.0. `text` marked a model that returned
+        # "16500" against a truth of "16,500" WRONG — every digit correct.
+        # `digits` strips separators and is the only comparator that measures
+        # what tier P is actually for.
+        self.assertEqual(self.entry['fields']['total_inclusive']['compare'], 'digits')
+        self.assertEqual(self.entry['fields']['gst_amount']['compare'], 'digits')
+
+    def test_separator_style_does_not_change_the_verdict(self):
+        import scoring
+        for got in ('16,500', '16500', '16.500'):
+            with self.subTest(got=got):
+                self.assertIn(scoring.score_field('digits', '16,500', got),
+                              (scoring.EXACT, scoring.NORMALISED))
+        # ...but a genuinely dropped digit is still WRONG.
+        self.assertEqual(scoring.score_field('digits', '11,000', '11.00'), scoring.WRONG)
 
     def test_abn_and_tax_invoice_are_abstention_cases(self):
         self.assertIsNone(self.entry['fields']['supplier_abn']['truth'])

@@ -167,12 +167,20 @@ def evaluate(manifest, engines, docs_filter, repeats, timeout, dry_run):
             lines_matched_all = []
             errors = []
             parse_failures = 0
+            parsed_runs: list[dict | None] = []
             sample_text = None  # first run's raw output, kept for debugging a WRONG/MISS field
 
             for i in range(repeats):
                 try:
                     res = run_one(engine, doc, prompt, timeout, dry_run)
                     ds = scoring.score_document(doc, res.parsed)
+                    # Keep what the engine actually RETURNED, not only how it
+                    # scored. A comparator choice is a judgement that can turn
+                    # out wrong — tier P money was scored with `text` and
+                    # marked `16500` WRONG against a truth of `16,500`, a
+                    # correct reading of every digit. Without the parsed output
+                    # the only way to re-score was to re-run every model call.
+                    parsed_runs.append(res.parsed)
                     seconds_all.append(res.seconds)
                     for f, outcome in ds.outcomes.items():
                         field_outcome_runs[f].append(outcome)
@@ -197,6 +205,10 @@ def evaluate(manifest, engines, docs_filter, repeats, timeout, dry_run):
                 'median_seconds': statistics.median(seconds_all) if seconds_all else None,
                 'seconds_all': seconds_all,
                 'field_outcomes_by_run': field_outcome_runs,
+                # Re-scoring fodder: see rescore.py. Cheap to store, and it
+                # makes a comparator fix free instead of costing a full run
+                # against a shared, rate-limited provider.
+                'parsed_by_run': parsed_runs,
                 'field_outcome_mode': {f: mode_outcome(v) for f, v in field_outcome_runs.items() if v},
                 'lines_total': doc.get('lines', {}).get('truth') and len(doc['lines']['truth']) or 0,
                 'lines_matched_median': statistics.median(lines_matched_all) if lines_matched_all else None,

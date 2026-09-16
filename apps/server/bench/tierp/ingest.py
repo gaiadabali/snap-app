@@ -11,18 +11,30 @@ THE THREE THINGS THIS FILE IS CAREFUL ABOUT
 -------------------------------------------
 
 **1. Money is not in AUD and is not formatted like an AUD docket.** CORD is
-Indonesian: `"60.000"` is sixty thousand rupiah, dot as the THOUSANDS
-separator. `scoring.py`'s `amount` comparator strips commas and calls `float`,
-so it reads `"60.000"` as 60.0 — and would then score a correct reading as
-WRONG, or a wrong one as right. Silently grading the engine against a corrupted
-truth is the single worst thing a corpus can do.
+Indonesian and uses BOTH `"60.000"` and `"120,000"` for thousands across the
+corpus. `scoring.py`'s `amount` comparator strips commas and calls `float`, so
+it reads `"60.000"` as 60.0 — grading a correct reading as WRONG, or a wrong
+one as right. Silently grading the engine against a corrupted truth is the
+single worst thing a corpus can do.
 
-So money on tier P uses the **`text` comparator**, and truth is the string **as
-printed**. That is not a workaround, it is the honest target: tier P measures
-whether the engine READS the characters on real thermal print. Whether a figure
-is a valid GST-inclusive Australian total is a tier R question, and tier P was
-never going to answer it. The manifest supports per-field comparators by design
-— `scoring.py`'s own header says the comparator is chosen in the manifest "not
+So truth is the string **as printed**, compared with the **`digits`**
+comparator.
+
+**The first version used `text`, and that was wrong in the opposite
+direction.** `text` is exact-or-substring after case and whitespace folding, so
+a model that read `16,500` and returned `16500` — every digit correct, one
+separator normalised — scored WRONG. The first head-to-head run
+(`results/20260916T072651Z`) marked 14 totals WRONG on tier P, and inspecting
+them showed 12 were correct readings differing only in separator convention.
+Avoiding one locale trap by walking into a stricter one is not an improvement.
+
+`digits` is the right target and always was: it strips every non-digit before
+comparing, so `16,500` / `16500` / `16.500` all agree, while `11,000` against
+`11.00` is still correctly WRONG. That is exactly what tier P measures —
+whether the engine READS THE DIGITS on real thermal print. Whether a figure is
+a valid GST-inclusive Australian total is a tier R question this tier was never
+going to answer. The manifest supports per-field comparators by design:
+`scoring.py`'s own header says the comparator is chosen in the manifest "not
 hardcoded per field name here, so the manifest stays the single source of
 truth".
 
@@ -180,12 +192,11 @@ def truth_from_cord(gt: dict) -> dict | None:
 def manifest_entry(doc_id: str, source: sources.Source, page: str, truth: dict,
                    redaction_note: str, source_offset: int) -> dict:
     fields = {
-        # Money as PRINTED, compared as TEXT — see this module's header.
-        # `amount` would misread this locale's thousands separator and corrupt
-        # the truth. CORD uses BOTH "60.000" and "120,000" across the corpus,
-        # which is exactly why the printed string is the only safe target.
-        'total_inclusive': {'truth': truth['total_inclusive'], 'compare': 'text'},
-        'gst_amount': {'truth': truth['tax_printed'], 'compare': 'text'},
+        # Money as PRINTED, compared on DIGITS — see this module's header.
+        # `amount` misreads this locale's thousands separator; `text` was too
+        # strict and marked a correct reading of 16,500 as 16500 WRONG.
+        'total_inclusive': {'truth': truth['total_inclusive'], 'compare': 'digits'},
+        'gst_amount': {'truth': truth['tax_printed'], 'compare': 'digits'},
         # Genuinely absent on a non-Australian receipt. Abstention cases, and
         # the two fields most prone to invention.
         'supplier_abn': {'truth': None, 'compare': 'digits'},
