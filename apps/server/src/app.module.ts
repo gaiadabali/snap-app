@@ -9,6 +9,7 @@ import { CreditsController } from './credits/credits.controller.js';
 import { PointsController } from './credits/points.controller.js';
 import { DocumentsController } from './documents/documents.controller.js';
 import { DownloadsController } from './export/downloads.controller.js';
+import { DeviceReadingController } from './captures/device-reading.controller.js';
 import { ReleasesController } from './releases/releases.controller.js';
 import { ImagesController } from './images/images.controller.js';
 import { ReportsController } from './reports/reports.controller.js';
@@ -86,6 +87,7 @@ export class HealthController {
     AuthController,
     WorkspacesController,
     CapturesController,
+    DeviceReadingController,
     DocumentsController,
     BusinessController,
     SummariesController,

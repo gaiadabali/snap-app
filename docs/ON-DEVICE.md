@@ -1,6 +1,6 @@
 # On-device preview — what can genuinely run on our users' phones, and what to build
 
-**Date:** 2026-09-15 · **Status:** research and design, for decision · **Specifies:** `docs/ECOSYSTEM.md` D24
+**Date:** 2026-09-15 · **Status:** research and design, for decision · **Specifies:** `docs/ECOSYSTEM.md` D30
 **Extends:** `docs/OCR.md` §4.9, D21, D23, D32, D33, D36, D37 · `docs/PLAN.md` D1, D3, §5.1 · `docs/GAPS.md` Lane D
 **Does not reopen:** on-device is the preview, the server's read is the record.
 
@@ -26,7 +26,7 @@ is the hallucination this whole engine exists to prevent.
 **What can run — on an iPhone 11 and a Galaxy A16 5G alike — is the platform's own on-device
 text recogniser (Apple Vision on iOS, Google ML Kit on Android) producing text with boxes and
 confidences, fed to a deterministic structurer that only ever *points* at spans.** That is
-shape (b) from ECOSYSTEM D24, minus the "small on-device LLM" — which is not needed for header
+shape (b) from ECOSYSTEM D30, minus the "small on-device LLM" — which is not needed for header
 fields and would reintroduce the hallucination and the memory problem. It ships zero model
 weights of ours, adds 0 MB (iOS) or ~260 KB (Android) to the binary, fits the existing DocDOM
 and grounding contract without a new type, and is a local Expo module rather than an ejection.
@@ -37,7 +37,7 @@ you the fields before the server has even received the photo. The server's read 
 record."* Not "an on-device VLM". If a Gemma-4-class model ever fits the floor device, §8
 Stage 3 says how we would find out.
 
-**One correction to the brief before anything else.** ECOSYSTEM D24 says shape (b) is "already
+**One correction to the brief before anything else.** ECOSYSTEM D30 says shape (b) is "already
 half-built: D3 put ML Kit on the device as a quality gate." It did not. `apps/mobile/package.json`
 has no ML Kit or Vision dependency, `capture.tsx` renders the words *"Document detected · sharp
 · all four corners in frame"* as static copy, and its own comment on `createCapture` reads *"No
@@ -828,13 +828,20 @@ result either way.
 
 ### Housekeeping
 
-**OD-16 · Decision numbering collision** — `junior` · default.
-`docs/ECOSYSTEM.md` numbers its decisions D24–D27 "on from `docs/OCR.md`", but OCR.md already
-holds D24–D28 (digital twin, append-only edits, never redraw, field-is-a-pointer, certified vs
-working copy) and runs to D37. Renumber ECOSYSTEM's to D38+ or prefix them (`E1–E4`) and add a
-cross-reference; this document numbers on from OCR.md's D37 and would otherwise collide too.
+**OD-16 · Decision numbering collision** — ~~`junior` · default~~ **DONE 2026-09-17.**
+`docs/ECOSYSTEM.md` numbered its decisions D24–D27 "on from `docs/OCR.md`", but OCR.md already
+held D24–D29 (digital twin, append-only edits, never redraw, field-is-a-pointer, certified vs
+working copy) and runs to D37.
+
+ECOSYSTEM was renumbered to **D30–D33** and states the reason in its own header. What was left was
+this document: three references to "ECOSYSTEM D24" that still named the old number and therefore
+resolved to OCR.md's digital-twin decision instead of the on-device one. They now read **D30**
+(*"Preview on device, server authoritative"*), which is the decision this whole document
+specifies.
+
 *Done when:* every decision id in `docs/` is unique and `grep -n "D24" docs/*.md` points at one
-decision.
+decision — now true: the remaining hits are OCR.md's own D24 and ECOSYSTEM's sentence explaining
+which range it avoided.
 
 ---
 

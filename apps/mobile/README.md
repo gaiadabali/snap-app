@@ -115,10 +115,19 @@ compile error rather than a production surprise.
 
 ## Why extraction is not on the device
 
-The on-device work is a **pre-flight check only** — is this a document, is it legible. Extraction is
-a versioned server-side function of the stored original so it can be **re-run when the model
-improves**. If the device extracted, historical records would be frozen at whatever the app shipped
-with and no backfill would ever be possible.
+The on-device work is a **provisional read** — `snap-ocr` recognises the page with the platform's
+own text recogniser and `@snap/docai-preview` structures it, so a few fields can appear while the
+upload is still in flight. It is advisory and it never posts to the ledger.
+
+It used to say "a pre-flight check only — is this a document, is it legible". That described a
+panel on the capture screen which reported `Document detected · sharp · all four corners in frame`
+as a hardcoded string: nothing measured document detection, sharpness or corners, and it read the
+same pointed at a wall. It was removed in `3fd0c8b` rather than restyled. There is no pre-flight
+check today; when one exists it will be driven by a measurement.
+
+Extraction stays a versioned server-side function of the stored original so it can be **re-run
+when the model improves**. If the device extracted, historical records would be frozen at whatever
+the app shipped with and no backfill would ever be possible.
 
 The same reasoning keeps the tax engine off the device: **its ATO rates change every 1 July.** In
 the app, a rate change needs an App Store release and every user who has not updated silently
