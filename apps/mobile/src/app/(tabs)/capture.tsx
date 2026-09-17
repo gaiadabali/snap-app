@@ -160,7 +160,10 @@ export default function CaptureScreen() {
     if (!chosen) throw new Error('No file was chosen.');
 
     const bytes = await chosen.arrayBuffer();
-    const digest = await Crypto.digest(Crypto.CryptoDigestAlgorithm.SHA256, bytes);
+    // Same Uint8Array wrap as the native path. Web tolerates a bare
+    // ArrayBuffer, but one spelling for both keeps the next person from
+    // copying the tolerant one onto a platform that is not.
+    const digest = await Crypto.digest(Crypto.CryptoDigestAlgorithm.SHA256, new Uint8Array(bytes));
     return {
       uri: URL.createObjectURL(chosen),
       bytes,
@@ -183,7 +186,18 @@ export default function CaptureScreen() {
     const bytes = await new File(photo.uri).arrayBuffer();
     // Native only, so the bytes are not retained here: `uri` is a real path and
     // the upload re-reads it when it needs it.
-    const digest = await Crypto.digest(Crypto.CryptoDigestAlgorithm.SHA256, bytes);
+    //
+    // A Uint8Array, NOT the bare ArrayBuffer. `Crypto.digest` is typed to take
+    // a BufferSource, which includes ArrayBuffer, but Expo's native bridge
+    // marshals only TYPED arrays into a Kotlin ByteArray. Handing it the buffer
+    // failed on the handset with
+    //
+    //     [digest] Cannot convert '[object ArrayBuffer]' to a Kotlin type.
+    //              no ArrayBuffer attached
+    //
+    // which is every capture on Android, not an edge case. TypeScript accepted
+    // it because the declared type is wider than what the native side takes.
+    const digest = await Crypto.digest(Crypto.CryptoDigestAlgorithm.SHA256, new Uint8Array(bytes));
     const sha256 = [...new Uint8Array(digest)]
       .map((b) => b.toString(16).padStart(2, '0'))
       .join('');
@@ -473,21 +487,36 @@ export default function CaptureScreen() {
       <View
         style={{ position: 'absolute', top: insets.top + space.lg, left: space.lg, right: space.lg }}
       >
-        <Card>
-          <View style={{ gap: space.sm }}>
-            {/* Which life this receipt is being filed against, decided BEFORE
-                the shutter. Discovering a personal grocery run in the BAS
-                three months later is the mistake this prevents. */}
-            <View style={{ gap: 6 }}>
-              <Label>Filing to</Label>
-              <WorkspaceSwitch />
-            </View>
-            <Label>Pre-flight check</Label>
-            <Body>Document detected · sharp · all four corners in frame</Body>
-            <Small>
-              Checked on device. Extraction runs on the server so it can be re-run as the model
-              improves.
-            </Small>
+        {/* ONE LINE, because this sits on top of the thing being photographed.
+            It used to be a five-line card — "Filing to", a workspace switch, a
+            "Pre-flight check" heading, a verdict, and an explanatory sentence —
+            covering the top third of the viewfinder, so framing a docket meant
+            aiming around the instructions.
+
+            The verdict was also NOT TRUE. `Document detected · sharp · all four
+            corners in frame` was a hardcoded string: nothing measured document
+            detection, sharpness or corners, and it read the same pointed at a
+            wall. D16 is that nothing may be asserted that cannot be pointed at,
+            and a confident green light over a blurred photo is the exact
+            failure the pre-flight idea exists to prevent. It is removed rather
+            than restyled — when the check is really implemented it can come
+            back, driven by a measurement.
+
+            What stays is the one thing that is both true and decided BEFORE the
+            shutter: which life this receipt is filed against. Discovering a
+            personal grocery run in the BAS three months later is the mistake
+            that prevents. */}
+        <Card style={{ paddingVertical: space.sm }}>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: space.md,
+            }}
+          >
+            <Label>Filing to</Label>
+            <WorkspaceSwitch />
           </View>
         </Card>
       </View>
