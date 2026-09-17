@@ -1059,3 +1059,27 @@ body {
     }
   }
 }
+
+/* Proof on short screens. MARGINS ONLY — the previous attempt shrank the type
+   to 12.5px and tightened every gap, which is what made this section read as
+   cramped and messy. The layout is composed to fit now; it just needs its
+   vertical rhythm tightened, not its content squeezed. */
+@media (min-width: 1024px) and (max-height: 940px) {
+  .screen .proof-grid > .mt-8 { margin-top: 1.25rem; }
+  .screen .proof-grid > .mt-9 { margin-top: 1.25rem; }
+  .screen .proof-grid .mt-10 { margin-top: 1.25rem; padding-top: 1.25rem; }
+}
+
+@media (min-width: 1024px) and (max-height: 820px) {
+  .screen .proof-grid > .mt-5 { margin-top: 0.75rem; }
+  .screen .proof-grid .md\:gap-12 { gap: 1.75rem; }
+}
+
+@media (min-width: 1024px) and (max-height: 820px) {
+  /* The last 29px at 1440x780: the three metric notes and the footnote, which
+     are the only runs of text long enough to give it back without the section
+     losing a line of meaning. */
+  .screen .proof-grid p { font-size: 13px; line-height: 1.5; }
+  .screen .proof-grid > .mt-9 { margin-top: 0.9rem; }
+  .screen .proof-grid .mt-10 { margin-top: 0.9rem; padding-top: 0.9rem; }
+}

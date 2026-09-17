@@ -466,10 +466,13 @@ export default function HomePage() {
           Currently sample copy plus the things a reader can verify today.
           See _components/proof.tsx — it will not build for production while
           the samples are still in. */}
-      {/* `measure` — one 68ch column. The only section on the page shaped
-          like prose, because it is the only one doing any. */}
+      {/* Was `measure`. It stopped being a prose section when the three
+          measurements became a 3-up: a 68ch column squeezed them to ~208px
+          each on a 2000px screen and left the right half of the page empty.
+          The gutter form gives them ~340px and puts the ATO code back in the
+          margin where every other section keeps it. */}
       <div className="pin-track">
-      <Section code="CHECK" form="measure" className="screen sect-3d">
+      <Section code="CHECK" className="screen sect-3d">
         <SectionHead
           kicker={PROOF_HEAD.kicker}
           title={PROOF_HEAD.title}
