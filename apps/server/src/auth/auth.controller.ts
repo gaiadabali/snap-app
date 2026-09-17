@@ -11,22 +11,49 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
-import { IsEmail, IsString } from 'class-validator';
+import { IsEmail, IsOptional, IsString } from 'class-validator';
 
 import { CurrentUser, SessionGuard, type AuthUser } from '../common/auth.guard.js';
 import { ValidBody } from '../common/valid-body.decorator.js';
 import { config, isGoogleSignInSimulatorEnabled, isProduction } from '../config.js';
-import { listDemoAccounts, listWorkspacesFor, upsertUserByEmail } from '../repo.js';
+import {
+  listDemoAccounts,
+  listWorkspacesFor,
+  passwordRecordFor,
+  registerWithPassword,
+  upsertUserByEmail,
+} from '../repo.js';
 import { getDb } from '../db.js';
 import { issueMagicLinkToken, issueSession, readMagicLinkToken } from '../tokens.js';
 import { GoogleIdTokenError, verifyGoogleIdToken } from './google-verify.js';
 import { tryConsume } from './magic-link-store.js';
 import { getMailer } from './mailer.js';
+import {
+  dummyHash,
+  hashPassword,
+  passwordProblem,
+  verifyPassword,
+} from './passwords.js';
 import { RateLimiter } from './rate-limit.js';
 
 export class SignInDto {
   @IsEmail({}, { message: 'That does not look like an email address.' })
   email!: string;
+}
+
+export class PasswordCredentialsDto {
+  @IsEmail({}, { message: 'That does not look like an email address.' })
+  email!: string;
+
+  @IsString({ message: 'A password is required.' })
+  password!: string;
+}
+
+export class RegisterDto extends PasswordCredentialsDto {
+  /** Optional: falls back to the local part of the address. */
+  @IsOptional()
+  @IsString({ message: 'A name must be text.' })
+  displayName?: string;
 }
 
 export class MagicLinkRequestDto {
@@ -148,9 +175,7 @@ export class AuthController {
       }
     }
 
-    const nameFromEmail = (email.split('@')[0] ?? 'You')
-      .replace(/[._-]+/g, ' ')
-      .replace(/\b\w/g, (c) => c.toUpperCase());
+    const nameFromEmail = nameFromAddress(email);
 
     const user = await upsertUserByEmail(email, nameFromEmail);
     // Read the memberships with a user context and no tenant context — the one
@@ -158,6 +183,76 @@ export class AuthController {
     const workspaces = await listWorkspacesFor(getDb(), user.userId);
 
     return { token: issueSession(user.userId), user, workspaces };
+  }
+
+  @Post('register')
+  @HttpCode(201)
+  @ApiOperation({
+    summary: 'Create an account with an email address and a password',
+    description:
+      'Registration is the same account the website dashboard uses: one users row, one memberships row per workspace. There is NO password reset in this build, because no mail transport is configured.',
+  })
+  async register(@ValidBody(RegisterDto) body: RegisterDto): Promise<{
+    token: string;
+    user: AuthUser;
+    workspaces: Array<{ id: string; name: string; kind: string; role: string }>;
+  }> {
+    const email = body.email.trim().toLowerCase();
+    const ip = 'register';
+    // Registration is a write and a scrypt hash, so it is rate limited on the
+    // same limiters the magic link uses rather than left open.
+    if (!perEmailLimiter.consume(`register:${email}`) || !perIpLimiter.consume(`ip:${ip}`)) {
+      throw new HttpException('Too many attempts. Try again shortly.', HttpStatus.TOO_MANY_REQUESTS);
+    }
+
+    const problem = passwordProblem(body.password);
+    if (problem) throw new HttpException(problem, HttpStatus.BAD_REQUEST);
+
+    const displayName = (body.displayName ?? '').trim() || nameFromAddress(email);
+    const user = await registerWithPassword(email, displayName, await hashPassword(body.password));
+    if (!user) {
+      // The address already carries a password. This DOES disclose that an
+      // account exists, and that is unavoidable for a registration endpoint:
+      // the alternative is to accept the request and silently not create
+      // anything, which leaves the person stuck with no way to tell why they
+      // cannot sign in. Enumeration is closed on sign-in, where it matters.
+      throw new HttpException('That address already has an account.', HttpStatus.CONFLICT);
+    }
+
+    const workspaces = await listWorkspacesFor(getDb(), user.userId);
+    return { token: issueSession(user.userId), user, workspaces };
+  }
+
+  @Post('password/sign-in')
+  @HttpCode(200)
+  @ApiOperation({
+    summary: 'Exchange an email address and password for a session token',
+    description:
+      'Answers identically for an unknown address, an account with no password, and a wrong password.',
+  })
+  async passwordSignIn(@ValidBody(PasswordCredentialsDto) body: PasswordCredentialsDto): Promise<{
+    token: string;
+    user: AuthUser;
+    workspaces: Array<{ id: string; name: string; kind: string; role: string }>;
+  }> {
+    const email = body.email.trim().toLowerCase();
+    if (!perEmailLimiter.consume(`pwd:${email}`) || !perIpLimiter.consume('ip:password')) {
+      throw new HttpException('Too many attempts. Try again shortly.', HttpStatus.TOO_MANY_REQUESTS);
+    }
+
+    const record = await passwordRecordFor(email);
+    // Three cases, ONE answer and one cost. An unknown address still spends a
+    // full scrypt verification against a hash of a random secret, so "no such
+    // account", "account exists but signs in with Google", and "wrong password"
+    // are indistinguishable from outside — by response and by timing.
+    const stored = record?.passwordHash ?? (await dummyHash());
+    const ok = await verifyPassword(body.password, stored);
+    if (!ok || !record || !record.passwordHash) {
+      throw new HttpException('Email or password is incorrect.', HttpStatus.UNAUTHORIZED);
+    }
+
+    const workspaces = await listWorkspacesFor(getDb(), record.user.userId);
+    return { token: issueSession(record.user.userId), user: record.user, workspaces };
   }
 
   @Get('demo-accounts')
@@ -395,4 +490,11 @@ export class AuthController {
     const workspaces = await listWorkspacesFor(getDb(), user.userId);
     return { token: issueSession(user.userId), user, workspaces };
   }
+}
+
+/** `jo.smith@x.com` -> `Jo Smith`. Used wherever an account is created. */
+function nameFromAddress(email: string): string {
+  return (email.split('@')[0] ?? 'You')
+    .replace(/[._-]+/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase());
 }

@@ -577,6 +577,34 @@ export class MockApi implements SnapApi {
     }));
   }
 
+  /**
+   * Register, in the fixture world.
+   *
+   * The password is checked for length and then DISCARDED — this backend has
+   * no credential store and inventing one would be a second implementation of
+   * something security-critical that nobody runs. The length check stays
+   * because the screen's disabled-button rule mirrors it, and a mock that
+   * accepts what the server rejects teaches the wrong thing in a demo.
+   */
+  async register(email: string, password: string, displayName?: string): Promise<Session> {
+    if ([...password].length < 10) {
+      throw new Error('password must be at least 10 characters');
+    }
+    const session = await this.signIn(email);
+    if (displayName?.trim()) session.user.displayName = displayName.trim();
+    return session;
+  }
+
+  async signInWithPassword(email: string, password: string): Promise<Session> {
+    if ([...password].length < 10) {
+      // Same single message the server gives, for the same reason: a fixture
+      // that distinguishes "no such account" from "wrong password" would show
+      // a flow the real one does not have.
+      throw new Error('Email or password is incorrect.');
+    }
+    return this.signIn(email);
+  }
+
   async signIn(email: string): Promise<Session> {
     // Long on purpose: the real one is a round trip to an identity provider
     // and a link in an inbox, and a demo that returns instantly teaches the

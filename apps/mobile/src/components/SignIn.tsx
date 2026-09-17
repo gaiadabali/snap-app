@@ -24,6 +24,8 @@ export function SignIn({ onSignedIn }: { onSignedIn: (s: Session) => void }) {
   const p = usePalette();
   const insets = useSafeAreaInsets();
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [mode, setMode] = useState<'sign-in' | 'register'>('sign-in');
   const [accounts, setAccounts] = useState<AuthUser[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +46,28 @@ export function SignIn({ onSignedIn }: { onSignedIn: (s: Session) => void }) {
     }
   }
 
+  async function withPassword() {
+    const address = email.trim().toLowerCase();
+    setError(null);
+    setBusy(address);
+    try {
+      onSignedIn(
+        mode === 'register'
+          ? await api().register(address, password)
+          : await api().signInWithPassword(address, password),
+      );
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not sign in.');
+    } finally {
+      setBusy(null);
+    }
+  }
+
   const valid = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim());
+  // Mirrors MIN_PASSWORD_LENGTH in apps/server/src/auth/passwords.ts, and
+  // counts code points the same way — five emoji are five characters to the
+  // person typing them and ten to `String.length`.
+  const longEnough = [...password].length >= 10;
 
   return (
     <Screen>
@@ -75,14 +98,41 @@ export function SignIn({ onSignedIn }: { onSignedIn: (s: Session) => void }) {
             placeholder="you@example.com"
             keyboardType="email-address"
             autoCapitalize="none"
-            hint="We send a link. There is no password to remember or to lose."
+            autoComplete="email"
+          />
+          <Field
+            label="Password"
+            value={password}
+            onChangeText={setPassword}
+            placeholder={mode === 'register' ? 'At least 10 characters' : ''}
+            autoCapitalize="none"
+            secureTextEntry
+            autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
+            hint={
+              mode === 'register'
+                ? 'At least 10 characters. Save it somewhere — there is no reset yet.'
+                : undefined
+            }
           />
           <Button
-            label="Continue"
-            onPress={() => void signIn(email)}
-            disabled={!valid}
-            busy={busy === email}
+            label={mode === 'register' ? 'Create account' : 'Sign in'}
+            onPress={() => void withPassword()}
+            disabled={!valid || !longEnough}
+            busy={busy === email.trim().toLowerCase()}
           />
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => {
+              setMode(mode === 'register' ? 'sign-in' : 'register');
+              setError(null);
+            }}
+          >
+            <Small style={{ textAlign: 'center' }}>
+              {mode === 'register'
+                ? 'Already have an account? Sign in'
+                : 'New here? Create an account'}
+            </Small>
+          </Pressable>
           {error ? (
             <View style={{ backgroundColor: p.riskSoft, borderRadius: radius.md, padding: space.md }}>
               <Small muted={false} style={{ color: p.risk }}>
@@ -139,7 +189,12 @@ export function SignIn({ onSignedIn }: { onSignedIn: (s: Session) => void }) {
         </View>
 
         <Small style={{ textAlign: 'center' }}>
-          An address we do not recognise creates a new account and asks you to set up a workspace.
+          A new account asks you to set up a workspace. The same account signs in to the
+          website dashboard — one login for both.
+        </Small>
+        <Small style={{ textAlign: 'center' }}>
+          There is no password reset yet: resetting one needs email, and no mail provider is
+          configured. Keep your password somewhere safe.
         </Small>
       </ScrollView>
     </Screen>

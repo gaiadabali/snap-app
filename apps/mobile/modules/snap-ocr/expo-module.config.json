@@ -1,5 +1,5 @@
 {
-  "platforms": ["android", "ios"],
+  "platforms": ["android"],
   "android": {
     "modules": ["com.gaiada.snapocr.SnapOcrModule"]
   }

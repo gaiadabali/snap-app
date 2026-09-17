@@ -111,6 +111,16 @@ export interface SnapApi {
    * unknown one creates an account with none, which lands on onboarding.
    */
   signIn(email: string): Promise<Session>;
+  /**
+   * Create an account with a password, or sign in with one.
+   *
+   * Passwords exist because no mail transport is configured, so the magic link
+   * is generated and never sent — see migration 0025. The same consequence
+   * follows here: there is no reset method on this interface, because a reset
+   * needs email too.
+   */
+  register(email: string, password: string, displayName?: string): Promise<Session>;
+  signInWithPassword(email: string, password: string): Promise<Session>;
   signOut(): Promise<void>;
   /** Creates the first workspace for a new account and returns the session. */
   completeOnboarding(input: OnboardingInput): Promise<Session>;

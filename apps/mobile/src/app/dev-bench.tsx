@@ -49,7 +49,36 @@ type Progress = {
   medianMs: number | null;
 };
 
-export default function DevBench() {
+/**
+ * THE ROUTE. Development builds only.
+ *
+ * This screen takes a server address from a text box and POSTs whatever the
+ * camera stack reads to it. That is exactly right for a bench harness on a
+ * cable, and exactly wrong in an app on a stranger's phone: `expo-router`
+ * turns every file under `src/app` into a reachable route, so without this
+ * guard `snapapps://dev-bench` would open a developer tool in the shipped
+ * build.
+ *
+ * `__DEV__` is a compile-time constant in a release bundle, so the branch below
+ * is statically false and Metro's minifier drops the call. The implementation
+ * itself still sits in the bundle — stripping it entirely needs the route file
+ * excluded from the router, which is a build-config change worth making before
+ * a PUBLIC release. For an internal build, unreachable is the bar.
+ */
+export default function DevBenchRoute() {
+  if (!__DEV__) return <NotAvailable />;
+  return <DevBench />;
+}
+
+function NotAvailable() {
+  return (
+    <View style={styles.page}>
+      <Text style={styles.note}>This screen exists only in development builds.</Text>
+    </View>
+  );
+}
+
+function DevBench() {
   const [url, setUrl] = useState(DEFAULT_BENCH);
   const [running, setRunning] = useState(false);
   const [log, setLog] = useState<string[]>([]);

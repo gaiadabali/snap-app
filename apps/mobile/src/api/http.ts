@@ -83,6 +83,9 @@ import type {
  */
 
 /** Thrown for any non-2xx. Carries the server's own wording where there is one. */
+/** What every sign-in shaped endpoint returns. */
+type AuthResponse = { token: string; user: AuthUser; workspaces: WorkspaceSummary[] };
+
 export class ApiError extends Error {
   readonly status: number;
   readonly code: string | null;
@@ -369,6 +372,42 @@ export class HttpApi implements SnapApi {
     this.workspaces = body.workspaces;
     // A returning user lands in a workspace immediately; a new one has none,
     // and the session gate sends them to onboarding.
+    setActiveWorkspaceId(body.workspaces[0]?.id ?? null);
+    return { user: body.user, workspaceIds: body.workspaces.map((w) => w.id) };
+  }
+
+  /**
+   * Register with a password, or sign in with one.
+   *
+   * Both share `adopt`, because the two responses are the same shape and the
+   * only difference that matters to the caller is which endpoint refused.
+   *
+   * `workspaceId: null` for the same reason `signIn` needs it: at
+   * registration there is no workspace by definition, and without it the
+   * request waits out `awaitWorkspace()` before the POST is even sent.
+   */
+  async register(email: string, password: string, displayName?: string): Promise<Session> {
+    return this.adopt(
+      await this.request<AuthResponse>('POST', '/v1/auth/register', {
+        body: displayName ? { email, password, displayName } : { email, password },
+        auth: false,
+        workspaceId: null,
+      }),
+    );
+  }
+
+  async signInWithPassword(email: string, password: string): Promise<Session> {
+    return this.adopt(
+      await this.request<AuthResponse>('POST', '/v1/auth/password/sign-in', {
+        body: { email, password }, auth: false, workspaceId: null,
+      }),
+    );
+  }
+
+  /** Take a fresh session: store the token, pick a workspace if there is one. */
+  private adopt(body: AuthResponse): Session {
+    setAuthToken(body.token);
+    this.workspaces = body.workspaces;
     setActiveWorkspaceId(body.workspaces[0]?.id ?? null);
     return { user: body.user, workspaceIds: body.workspaces.map((w) => w.id) };
   }

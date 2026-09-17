@@ -43,6 +43,8 @@ export function Field({
   autoFocus,
   autoCapitalize = 'sentences',
   multiline,
+  secureTextEntry,
+  autoComplete,
 }: {
   label: string;
   value: string;
@@ -54,6 +56,18 @@ export function Field({
   autoFocus?: boolean;
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
   multiline?: boolean;
+  /** Masks the input. Also turns off the keyboard's learning of what is typed. */
+  secureTextEntry?: boolean;
+  /**
+   * What the platform password manager should offer here.
+   *
+   * Worth setting rather than leaving to inference: this build has NO password
+   * reset (migration 0025), so a password the keychain saved correctly is the
+   * difference between a tester signing in tomorrow and an account nobody can
+   * recover. `new-password` on the register field also stops the OS offering
+   * the address as the password.
+   */
+  autoComplete?: 'email' | 'current-password' | 'new-password' | 'name' | 'off';
 }) {
   const p = usePalette();
   const [focused, setFocused] = useState(false);
@@ -78,11 +92,15 @@ export function Field({
           onChangeText={onChangeText}
           placeholder={placeholder}
           placeholderTextColor={p.inkFaint}
-          keyboardType={keyboardType}
           autoFocus={autoFocus}
           autoCapitalize={autoCapitalize}
           autoCorrect={false}
           multiline={multiline}
+          secureTextEntry={secureTextEntry}
+          autoComplete={autoComplete}
+          // A password field must never feed the keyboard's dictionary: the
+          // next person typing in any app would be offered it as a suggestion.
+          keyboardType={secureTextEntry ? 'default' : keyboardType}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           style={[

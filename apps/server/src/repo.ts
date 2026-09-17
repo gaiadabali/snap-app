@@ -80,6 +80,39 @@ export async function upsertUserByEmail(email: string, displayName: string): Pro
   return toAuthUser(row);
 }
 
+/**
+ * Create an account with a password, or attach one to an account that has none.
+ *
+ * `null` means the address already HAS a password — the controller turns that
+ * into a conflict. The function cannot overwrite one (migration 0025): an
+ * unauthenticated endpoint that can replace a credential is a reset primitive,
+ * and there is no email here to confirm such a thing.
+ */
+export async function registerWithPassword(
+  email: string,
+  displayName: string,
+  passwordHash: string,
+): Promise<AuthUser | null> {
+  const rows = await getDb().execute<IdentityRow>(sql`
+    select user_id, email, display_name
+      from identity_password_register(${email}, ${displayName}, ${passwordHash})
+  `);
+  const row = rows.rows[0];
+  return row ? toAuthUser(row) : null;
+}
+
+/** The stored hash for an address, or null when the address is unknown. */
+export async function passwordRecordFor(
+  email: string,
+): Promise<{ user: AuthUser; passwordHash: string | null } | null> {
+  const rows = await getDb().execute<IdentityRow & { password_hash: string | null }>(sql`
+    select user_id, email, display_name, password_hash
+      from identity_password_lookup(${email})
+  `);
+  const row = rows.rows[0];
+  return row ? { user: toAuthUser(row), passwordHash: row.password_hash } : null;
+}
+
 /** The caller's own row, by id. Read on every authenticated request. */
 export async function getUser(userId: string): Promise<AuthUser | null> {
   const rows = await getDb().execute<IdentityRow>(sql`
