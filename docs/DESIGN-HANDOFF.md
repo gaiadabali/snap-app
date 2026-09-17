@@ -432,6 +432,20 @@ Both obey the island rule in `docs/WEB.md` §4.4: a server-rendered flat card is
 the content, the canvas is a picture of it, and no figure exists only inside a
 texture. First-load JS is unchanged on every marketing route.
 
+**Updated 2026-09-17 — the asset layer.** Five reusable motifs now carry the
+subject across every page rather than only the home page: `FieldBox` (the OCR
+lock-on, with the field's real name in the margin), `Settle` (a string
+resolving glyph by glyph), `SplitBar` (a real total drawn in proportion),
+`Tear` (a docket's cut line) and `Join` (the vertical hairline between two
+pinned screens). All five are scroll-driven CSS in Server Components, and all
+five define their FINISHED state outside `@supports`, so reduced motion and
+browsers without scroll timelines get the completed thing. Full contract and
+the three uses that were tried and rejected: `docs/WEB.md` §4.8.
+
+`SplitBar` is the one to watch. It is **not** a confidence meter and §12.4
+is why: the accuracy figure stays unpublished until it is measured, so the bar
+only ever shows arithmetic the reader can check on the page.
+
 The **metronome is gone** — the page no longer runs the same section shape
 eight times with alternating tone. Forms: gutter · wide · gutter · measure ·
 wide · gutter · wide. `.page-spine` replaces the tinted bands as the thing that

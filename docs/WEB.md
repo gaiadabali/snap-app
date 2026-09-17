@@ -361,9 +361,72 @@ Two constraints that are not style preferences:
 | Header / footer | **Rebuilt** |
 | `public/screens/*`, `_components/app-showcase.tsx`, `_components/comparison.tsx` | **New.** Re-capture per §4.6; `src/public-assets.test.ts` guards the path collision |
 | Tokens, type, motion, primitives | **Rebuilt** — everything inherits these |
-| `/features`, `/how-it-works` | Inherit the palette, type and primitives, and since 2026-09-17 render the hero docket as a **WebGL scene** over the flat card (§4.4). Copy is **still mechanism-led** and still needs §4.5 applied. |
-| `/pricing`, `/docs`, `/download`, `/support`, `/legal` | Inherit the new palette, type and primitives, but **still carry the old zebra-band structure and pill eyebrows**. Port them to `Section` / `SectionHead` / `LedgerRow` — and apply §4.5 to their copy, not just their layout. `/how-it-works` is where the pipeline architecture belongs. |
+| `/features`, `/how-it-works` | Inherit the palette, type and primitives, and since 2026-09-17 render the hero docket as a **WebGL scene** over the flat card (§4.4). `/features` also carries the asset layer (§4.8) — a `SplitBar` on the real 18.40 / 21.60 docket split and a `FieldBox` on the G11 figure. Copy is **still mechanism-led** and still needs §4.5 applied. |
+| `/download` | **Rebuilt 2026-09-17** into `Section` / `SectionHead` / `Reveal` plus the asset layer (§4.8). It was the last page still wrapping its own `<main className="py-20">` — which also meant `main > main` inside the layout's `<main>`, now gone. Deliberately **not** pinned: locking someone who came for an APK and a checksum behind a scroll-lock would be hostile. Copy untouched. |
+| `/pricing` | Rebuilt 2026-09-17 into the section language. No field boxes: nothing on a pricing page is a document the product read (§4.8). |
+| `/docs`, `/support`, `/legal` | Inherit the new palette, type and primitives, but **still carry the old zebra-band structure and pill eyebrows**. Port them to `Section` / `SectionHead` / `LedgerRow` — and apply §4.5 to their copy, not just their layout. `/docs` and `/legal` are reference reading and want less motion than the marketing surfaces, not more. |
 | `/app/*`, `/admin/*` panels | Inherit the palette and the flatter `Card`. Intentionally unchanged otherwise — panels work, marketing breathes. |
+
+### 4.8 The asset layer — motion that carries the subject
+
+Added 2026-09-17. Five reusable motifs in `src/design/primitives/assets.tsx`,
+styled under "The asset layer" in `globals.css`, exported from
+`@/design/primitives` alongside everything else.
+
+They exist because the vocabulary before them was six generic utilities (rise,
+fade, deal, drift, wipe, expand) plus one-off components welded to the section
+they were built for — `read-card` only lives inside the reader comparison,
+`app-deck` only inside the showcase. Every page except the home page therefore
+had nothing to reach for, which is the mechanical reason they read as bland.
+
+| Asset | What it says | Use it on |
+|---|---|---|
+| `FieldBox` | Four corner brackets lock onto a value, the field's real name in the margin | A figure the product would have read off a document — a GST amount, an ABN, a total |
+| `Settle` | A string resolves glyph by glyph, the way a recogniser commits | Short labels and figures. **Never a heading** — see below |
+| `SplitBar` | A real total, drawn in proportion | Document arithmetic the reader can check |
+| `Tear` | The dashed line a docket is torn along | Anywhere `Rule` is too generic: "a receipt" rather than "a document" |
+| `Join` | A vertical hairline with a node riding down it | BETWEEN two `.pin-track` blocks, never inside one |
+
+**The four rules they all follow.** These are load-bearing, not style:
+
+1. **Zero JavaScript.** Scroll-driven CSS only, so they work in Server
+   Components. The §4.4 claim stays true for all five.
+2. **The finished state is defined OUTSIDE `@supports`.** A browser without
+   scroll timelines, or a reader with reduced motion, gets the completed thing.
+   An animation whose 0% keyframe hides content is one unresolved timeline away
+   from serving a blank page — this site has already done that to three of
+   them.
+3. **`view()` by default, `--screen` inside `.pin-track`.** A pinned section is
+   `position: sticky` and barely moves through the viewport, so a child's own
+   `view()` progress is nearly constant and the asset sits frozen on one frame
+   for the whole lock.
+4. **Nothing drifts on its own.** Every value is scrubbed by the scroll. There
+   is no idle loop in the layer.
+
+**Three things that were tried and removed, so they are not tried again:**
+
+- **`SplitBar` is not a confidence meter, and must not become one.** The
+  accuracy number is the one figure this site does not publish until it has
+  been measured against Hubdoc and Dext on the same documents (§12.4,
+  `_components/proof-data.ts`). A bar filling to an invented 94% is exactly the
+  fabricated proof that file exists to prevent. A split of a real docket —
+  18.40 GST-free + 21.60 taxable = 40.00 — is arithmetic the reader can check.
+- **`FieldBox` does not go where a visible label already names the field.** On
+  `/download` it was put on the SHA-256 checksum, three pixels under a heading
+  reading "SHA-256 CHECKSUM", and around a value that is empty until a real
+  build is published. An annotation that labels a label is decoration, which
+  §12.2 rules out. It also does not belong on a price: nothing on a pricing
+  page is a document the product read.
+- **`Settle` is not for headings.** The accessible copy means the string is in
+  `textContent` twice — fine for a kicker, wrong in an `h1`, where a crawler
+  reads the page's most important line doubled.
+
+**Naming.** The vertical join is `Join`, not `Seam`, because `.seam` was already
+the HORIZONTAL hairline that opens a section — three of them on the home page.
+Reusing the name silently restyled all three into 72px vertical sticks: the new
+rule simply came later in the file and won. That collision raises no error
+anywhere and is visible only on the page, which is the argument for checking a
+class name against `globals.css` before taking it.
 
 ## 5. Ownership map
 
