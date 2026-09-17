@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
 
-import { Container, SectionTitle } from '@/design/primitives';
+import { Reveal, Rule, Section, SectionHead } from '@/design/primitives';
 import { BUSINESS_SURFACES_ENABLED } from '@/lib/features';
 
+import { PageSpine } from '../_components/page-spine';
 import { PricingPlans } from './pricing-plans';
 
 export const metadata: Metadata = {
@@ -44,37 +45,67 @@ const VISIBLE_FAQ = FAQ.filter((item) => !item.businessOnly || BUSINESS_SURFACES
 
 export default function PricingPage() {
   return (
-    <main className="py-20">
-      <Container width="prose">
-        <SectionTitle
-          as="h1"
-          eyebrow="Pricing"
-          title={BUSINESS_SURFACES_ENABLED ? 'Priced for the accountant, not the app store' : 'Start free. Upgrade when you outgrow it.'}
-          lede={
-            BUSINESS_SURFACES_ENABLED
+    <>
+      {/* The same reading rail as every other marketing page. */}
+      <PageSpine />
+
+      {/*
+        Rebuilt 2026-09-17 to the language the rest of the surface speaks.
+
+        This page was the last one still built the old way: a bare
+        `<main className="py-20">` with `Container` + `SectionTitle`, which is
+        the eyebrow/title/lede stack docs/DESIGN-HANDOFF.md §12.1 lists under
+        Avoid, no gutter codes, and not one line of motion. Clicking "Pricing"
+        from a home page that moves landed you in a static document.
+
+        Copy is untouched — every plan, figure and FAQ answer is the owner's,
+        word for word. Only the structure and the motion changed.
+      */}
+      <Section form="wide" size="lg" className="screen sect-3d">
+        <Rule />
+        <Reveal variant="fade">
+          <div className="t-label mt-5 text-[var(--color-ink-muted)]">Pricing</div>
+        </Reveal>
+        <Reveal>
+          <h1 className="t-display mt-5 max-w-[16ch]">
+            {BUSINESS_SURFACES_ENABLED
+              ? 'Priced for the accountant, not the app store'
+              : 'Start free. Upgrade when you outgrow it.'}
+          </h1>
+        </Reveal>
+        <Reveal>
+          <p className="t-lede mt-8 max-w-[58ch] text-[var(--color-ink-muted)]">
+            {BUSINESS_SURFACES_ENABLED
               ? 'Hubdoc is free inside Xero and myDeductions is free from the ATO — so Snap Apps isn’t sold as another receipt scanner to individuals. It’s a BAS and deduction-compliance layer sold through the accountants and bookkeepers who already look after Australian sole traders and tradies.'
-              : 'Hubdoc is free inside Xero and myDeductions is free from the ATO. Snap Apps reads every line of a receipt and splits the GST correctly, which neither of them does — free for 20 scans a month, no card required.'
-          }
-        />
-      </Container>
+              : 'Hubdoc is free inside Xero and myDeductions is free from the ATO. Snap Apps reads every line of a receipt and splits the GST correctly, which neither of them does — free for 20 scans a month, no card required.'}
+          </p>
+        </Reveal>
+      </Section>
 
-      <Container width="wide" className="mt-6">
-        <PricingPlans />
-      </Container>
+      {/* The plans arrive as objects, like the pricing block on the home page. */}
+      <Section code="PLANS" className="screen sect-3d">
+        <div className="pop-3d">
+          <PricingPlans />
+        </div>
+      </Section>
 
-      <Container width="prose" className="mt-20">
-        <SectionTitle eyebrow="Questions" title="Before you talk to us" />
-        <dl className="mt-8 space-y-8">
-          {VISIBLE_FAQ.map((item) => (
-            <div key={item.q}>
-              <dt className="text-[15px] font-semibold text-[var(--color-ink)]">{item.q}</dt>
-              <dd className="mt-2 text-[14px] leading-relaxed text-[var(--color-ink-muted)]">
-                {item.a}
-              </dd>
-            </div>
+      {/* `measure` — the one column of prose on this page, so it does not share
+          a silhouette with the plans above it. */}
+      <Section code="ASK" form="measure" className="screen sect-3d">
+        <SectionHead kicker="Questions" title="Before you talk to us" />
+        <dl className="mt-10">
+          {VISIBLE_FAQ.map((item, i) => (
+            <Reveal key={item.q} variant="deal" delay={i}>
+              <div className="border-b border-[var(--color-rule)] py-6 last:border-b-0">
+                <dt className="text-[15px] font-medium text-[var(--color-ink)]">{item.q}</dt>
+                <dd className="mt-2 max-w-[62ch] text-[14px] leading-relaxed text-[var(--color-ink-muted)]">
+                  {item.a}
+                </dd>
+              </div>
+            </Reveal>
           ))}
         </dl>
-      </Container>
-    </main>
+      </Section>
+    </>
   );
 }
