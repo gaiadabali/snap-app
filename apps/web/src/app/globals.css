@@ -589,12 +589,32 @@ body {
     @media (prefers-reduced-motion: no-preference) {
       .sect-3d {
         animation: sect-3d linear both;
-        /* The TRACK's timeline, not this element's. A sticky element barely
-           moves through the viewport, so its own `view()` progress is nearly
-           constant and the animation would never play. */
-        animation-timeline: --screen;
+        /*
+         * `view()` is the DEFAULT, and it has to be.
+         *
+         * This said `--screen` unconditionally and blanked three pages.
+         * /features, /how-it-works and /pricing have `.sect-3d` sections but
+         * no `.pin-track`, so the named timeline did not resolve; an
+         * unresolved timeline never runs, `fill-mode: both` holds the 0%
+         * keyframe, and 0% is `opacity: 0`. Every section on those pages
+         * rendered invisible while being perfectly present in the DOM.
+         *
+         * The failure mode is the thing to remember: a missing named timeline
+         * does not fall back, it freezes. Any animation that hides content at
+         * 0% must therefore name a timeline that is guaranteed to exist in
+         * that scope — which is why the pinned override below is scoped to a
+         * `.pin-track` ancestor rather than applied globally.
+         */
+        animation-timeline: view();
         transform-style: preserve-3d;
         will-change: transform, opacity;
+      }
+
+      /* Pinned sections only: drive the section from the TRACK, because a
+         sticky element barely moves through the viewport and its own `view()`
+         progress is nearly constant. */
+      .pin-track > .sect-3d {
+        animation-timeline: --screen;
       }
     }
   }
@@ -943,12 +963,6 @@ body {
  * silently un-did it and made a 780px screen worse than before.
  */
 @media (min-width: 1024px) {
-  .screen .proof-grid { gap: 2rem; }
-  .screen .proof-grid p { font-size: 13px; line-height: 1.5; }
-  .screen .proof-grid .py-4 { padding-block: 0.55rem; }
-  /* The 17px lead paragraph is the single tallest run of text on the page. */
-  .screen .proof-grid .text-\[17px\] { font-size: 14.5px; line-height: 1.5; }
-  .screen .proof-grid :is(.mt-5, .mt-6, .mt-7) { margin-top: 0.85rem; }
 
   .screen .app-deck figure { max-width: 244px; }
   .screen .app-deck figcaption { margin-top: 0.8rem; }
@@ -957,28 +971,20 @@ body {
 
 @media (min-width: 1024px) and (max-height: 940px) {
   .screen .app-deck figure { max-width: 206px; }
-  .screen .proof-grid { gap: 1.5rem; }
 }
 
 @media (min-width: 1024px) and (max-height: 820px) {
   .screen .app-deck figure { max-width: 176px; }
-  .screen .proof-grid p { font-size: 12.5px; }
-  .screen .proof-grid .text-\[17px\] { font-size: 13.5px; }
 }
 
 /* The last two, at short heights only. Proof carries two columns of prose, a
    three-row metric ledger and a footnote; the matrix overran by three pixels,
    which is a row's padding. */
 @media (min-width: 1024px) and (max-height: 940px) {
-  .screen .proof-grid :is(.gap-10, .gap-14) { gap: 1.25rem; }
-  .screen .proof-grid :is(.mt-12, .pt-12) { margin-top: 1rem; padding-top: 1rem; }
   .screen table :is(td, th) { padding-block: 0.6rem; }
 }
 
 @media (min-width: 1024px) and (max-height: 820px) {
-  .screen .proof-grid { gap: 1rem; }
-  .screen .proof-grid :is(.mt-5, .mt-6, .mt-7) { margin-top: 0.6rem; }
-  .screen .proof-grid .t-label { font-size: 10px; }
   .screen table :is(td, th) { padding-block: 0.45rem; }
   .screen table { font-size: 12.5px; }
 }
@@ -987,9 +993,6 @@ body {
   /* Proof still needed ~36px at 1440x780. The head and the block beneath it
      are the only two things in this section, so the gap between them is where
      it comes from. */
-  .screen .proof-grid,
-  .screen .proof-head + * { margin-top: 0.9rem; }
-  .screen [class*="max-w-[68ch]"] > .mt-12 { margin-top: 0.9rem; }
   .screen .proof-grid .text-\[17px\] { font-size: 13px; }
 }
 
