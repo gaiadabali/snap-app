@@ -100,8 +100,13 @@ jobs:
           fi
 
       # ── Suites ────────────────────────────────────────────────────────────
-      - name: Workspace boundaries
-        run: pnpm vitest run test/boundaries.test.ts
+      # The whole directory, not one named file. `test/dockerfile-deps.test.ts`
+      # was added to catch a workspace dependency missing from an app image —
+      # the failure that took production down twice in one day — and naming
+      # boundaries.test.ts explicitly meant it would never have run here. A
+      # check CI does not execute is not a check.
+      - name: Repo-wide suites (boundaries, image dependencies)
+        run: pnpm vitest run test/
 
       # The bench is Python and the rest of CI is not, so this is the only
       # Python step — no setup-python needed, ubuntu-latest ships 3.12.
