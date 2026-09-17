@@ -47,6 +47,8 @@ COPY packages/api-contract/package.json packages/api-contract/package.json
 COPY packages/db/package.json packages/db/package.json
 COPY packages/docai/package.json packages/docai/package.json
 COPY packages/tax-engine/package.json packages/tax-engine/package.json
+COPY packages/tax-rules/package.json packages/tax-rules/package.json
+COPY packages/docai-preview/package.json packages/docai-preview/package.json
 # --filter "@snap/server..." installs @snap/server and everything it depends
 # on (workspace + registry), and nothing apps/mobile or apps/web only need —
 # so this never fetches Expo/React Native toolchains into a server image.
@@ -61,6 +63,18 @@ COPY packages/api-contract packages/api-contract
 COPY packages/db packages/db
 COPY packages/docai packages/docai
 COPY packages/tax-engine packages/tax-engine
+# Every workspace package apps/server DEPENDS ON must be here.
+#
+# These two were missing and the omission was invisible until it wasn't:
+# `@snap/tax-rules` shipped, the container imported `formatLocalAmount` from a
+# package that was not in the image, and the API served 502 until this line
+# existed. The image BUILT fine — nothing checks at build time that a declared
+# workspace dependency was copied — so CI was green and production was down.
+#
+# If you add a `@snap/*` dependency to apps/server/package.json, add it here in
+# BOTH places: the manifest block above (for the install layer) and here.
+COPY packages/tax-rules packages/tax-rules
+COPY packages/docai-preview packages/docai-preview
 COPY apps/server apps/server
 
 # Plain (non --system) group/user at a fixed high uid/gid: --system forces
