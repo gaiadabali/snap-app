@@ -12,17 +12,20 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@react-three/fiber": "^9.7.0",
     "@snap/api-contract": "workspace:*",
     "next": "^15.5.4",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "server-only": "^0.0.1"
+    "server-only": "^0.0.1",
+    "three": "^0.186.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.14",
     "@types/node": "^20.19.9",
     "@types/react": "^19.1.10",
     "@types/react-dom": "^19.1.7",
+    "@types/three": "^0.186.0",
     "tailwindcss": "^4.1.14",
     "typescript": "^5.9.3",
     "vitest": "^4.1.9"

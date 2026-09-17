@@ -38,3 +38,41 @@
  *    again.
  */
 export const BUSINESS_SURFACES_ENABLED = false;
+
+/**
+ * DESIGN_LAB_ENABLED — the 3D spike surface at `/lab/*`.
+ *
+ * `docs/DESIGN-HANDOFF.md` §12.1 records three art directions that were all
+ * rejected as generated-looking, which is the reason this route exists at all:
+ * a WebGL direction has to be looked at before it is wired into the pages that
+ * sell the product, not after. `/lab/capture` renders the scene large, in both
+ * themes, beside the flat card it would replace.
+ *
+ * Off in production. A lab route that ships is a "Soon" page by another name
+ * (§3.5), and the spike's whole purpose is that it might be deleted.
+ */
+export const DESIGN_LAB_ENABLED = process.env.NODE_ENV !== 'production';
+
+/**
+ * SCENES_3D_ENABLED — the WebGL document scenes on the marketing pages.
+ *
+ * ON by default, and killable from the outside: set `SNAP_WEB_3D=off` in
+ * `deploy/.env` and restart the web container. Deliberately a PLAIN env var,
+ * not a `NEXT_PUBLIC_` one — public vars are inlined at build time, so turning
+ * one off means a rebuild, a CI run and a re-deploy, which is the wrong shape
+ * of lever for the thing it is guarding.
+ *
+ * It is guarding a real uncertainty. The scenes degrade on their own for
+ * reduced motion, save-data, low memory and missing WebGL (see
+ * `src/design/three/capability.ts`), and every one of them falls back to the
+ * flat ledger card that is the actual content. What none of that covers is a
+ * whole class of device we have not seen it on — the scenes were verified
+ * against software rendering, not a real mobile GPU, and the buyer is a tradie
+ * on a phone (docs/DESIGN-HANDOFF.md §12.3). If it looks wrong out there, this
+ * is how it goes off in the time it takes to restart a container.
+ *
+ * Read on the SERVER and passed down as a prop. The island is a client
+ * component and `process.env` is empty there, so reading it inside the island
+ * would silently evaluate to "on" no matter what the host is set to.
+ */
+export const SCENES_3D_ENABLED = process.env.SNAP_WEB_3D !== 'off';
