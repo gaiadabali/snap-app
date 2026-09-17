@@ -522,6 +522,26 @@ const THOUSANDS = /\B(?=(\d{3})+(?!\d))/g;
  * take two decimal places, done. The moment this calls parseFloat, the contract
  * that keeps the books right has been broken on the client.
  */
+/**
+ * How each currency is written, where it differs from the AUD default.
+ *
+ * Indonesia inverts the separators against Australia and has no sub-unit at
+ * all: `Rp 1.234.567`, not `$1,234,567.89`. Rendering a rupiah figure with a
+ * dollar sign and two decimals is not a cosmetic slip — it is the same class of
+ * error as `docs/INDONESIA.md` §7.1, where reading `15.000` under the wrong
+ * convention silently means fifteen instead of fifteen thousand.
+ *
+ * A currency this table does not know falls back to the AUD shape, which is
+ * what every existing caller already gets.
+ */
+const CURRENCY_FORMATS: Record<
+  string,
+  { symbol: string; decimals: number; group: string; decimal: string; space: boolean }
+> = {
+  AUD: { symbol: '$', decimals: 2, group: ',', decimal: '.', space: false },
+  IDR: { symbol: 'Rp', decimals: 0, group: '.', decimal: ',', space: true },
+};
+
 export function Money({
   amount,
   currency = 'AUD',
@@ -531,17 +551,28 @@ export function Money({
   currency?: string;
   className?: string;
 }) {
+  const fmt = CURRENCY_FORMATS[currency.toUpperCase()] ?? CURRENCY_FORMATS.AUD!;
   const trimmed = amount.trim();
   const negative = trimmed.startsWith('-');
   const digits = negative ? trimmed.slice(1) : trimmed;
   const parts = digits.split('.');
   const whole = parts[0] ?? '0';
-  const frac = parts[1] ?? '00';
-  const grouped = whole.replace(THOUSANDS, ',');
-  const cents = frac.slice(0, 2).padEnd(2, '0');
+  const grouped = whole.replace(THOUSANDS, fmt.group);
+
+  // A currency with no sub-unit prints none. Rp 1.110.000,00 is not a price
+  // anyone in Indonesia has ever seen written down.
+  const fraction =
+    fmt.decimals === 0
+      ? ''
+      : fmt.decimal + (parts[1] ?? '').slice(0, fmt.decimals).padEnd(fmt.decimals, '0');
+
   return (
     <span className={cx('tabular', className)} title={currency + ' ' + amount}>
-      {negative ? '−' : ''}${grouped}.{cents}
+      {negative ? '−' : ''}
+      {fmt.symbol}
+      {fmt.space ? ' ' : ''}
+      {grouped}
+      {fraction}
     </span>
   );
 }

@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
+import type { AvailableTaxRules } from '@snap/api-contract';
 
 import { api } from '@/lib/api/server';
 import { hasSessionCookie } from '@/lib/auth/session';
@@ -33,9 +34,21 @@ export default async function OnboardingPage({
     anonymous: true,
   }).catch(() => [] as OccupationGroup[]);
 
+  // The catalogue of installable tax engines. Signed-in but NOT
+  // workspace-scoped — there is no workspace yet, which is the whole reason
+  // `/v1/tax-rules-catalogue` exists separately from `/v1/tax-rules`.
+  //
+  // An empty list on failure degrades to the current behaviour: the country
+  // step disappears and the workspace is created with no engine, which the
+  // settings screen can still fix. A broken catalogue must not block signup.
+  const taxRules = await api<AvailableTaxRules[]>('/v1/tax-rules-catalogue').catch(
+    () => [] as AvailableTaxRules[],
+  );
+
   return (
     <OnboardingForm
       occupationGroups={occupations}
+      taxRules={taxRules}
       initialKind={initialKind}
       error={params.error}
     />

@@ -5,6 +5,8 @@ import { useState } from 'react';
 import { Button, Card, Field, Input, Select } from '@/design/primitives';
 import { completeOnboardingAction } from '@/lib/auth/actions';
 
+import type { AvailableTaxRules } from '@snap/api-contract';
+
 type OccupationGroup = { group: string; profiles: Array<{ id: string; label: string }> };
 
 /**
@@ -17,14 +19,33 @@ type OccupationGroup = { group: string; profiles: Array<{ id: string; label: str
  */
 export function OnboardingForm({
   occupationGroups,
+  taxRules,
   initialKind,
   error,
 }: {
   occupationGroups: OccupationGroup[];
+  taxRules: AvailableTaxRules[];
   initialKind: 'business' | 'personal';
   error?: string;
 }) {
   const [kind, setKind] = useState<'business' | 'personal'>(initialKind);
+  const [rulesId, setRulesId] = useState('');
+
+  const chosen = taxRules.find((r) => r.rulesId === rulesId) ?? null;
+
+  /**
+   * Australia is where the ABN, GST and the D1–D14 deduction worksheet live.
+   *
+   * Every one of those questions is meaningless — and misleading — under
+   * another country's tax law: Indonesia has no ABN, personal taxpayers cannot
+   * recover PPN, and there is no itemised deduction worksheet for an individual
+   * at all (`docs/INDONESIA.md` §1). Asking anyway would tell a new user this
+   * software will do something for them that it cannot.
+   *
+   * Until a country is chosen this stays true, which keeps the form exactly as
+   * it was for every existing Australian signup.
+   */
+  const isAustralian = chosen === null || chosen.country === 'AU';
 
   return (
     <Card className="flex w-full max-w-[520px] flex-col gap-6">
@@ -81,7 +102,29 @@ export function OnboardingForm({
             />
           </Field>
 
-          {kind === 'business' ? (
+          {taxRules.length > 0 ? (
+            <Field
+              label="Where are you taxed?"
+              htmlFor="rulesId"
+              hint="Sets the tax rules every figure here is worked out under, plus your currency and financial year. Changeable later in settings."
+            >
+              <Select
+                id="rulesId"
+                name="rulesId"
+                value={rulesId}
+                onChange={(e) => setRulesId(e.target.value)}
+              >
+                <option value="">Australia</option>
+                {taxRules.map((r) => (
+                  <option key={r.rulesId} value={r.rulesId}>
+                    {r.countryName} ({r.consumptionTaxName}, {r.currency})
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          ) : null}
+
+          {kind === 'business' && isAustralian ? (
             <>
               <Field
                 label="ABN"
@@ -113,29 +156,47 @@ export function OnboardingForm({
         </fieldset>
 
         {/* ── Step 3: occupation, for deduction targeting ─────────────── */}
-        <fieldset className="flex flex-col gap-3">
-          <legend className="text-[13px] font-semibold text-[var(--color-ink)]">
-            3. Occupation (optional)
-          </legend>
-          <Field
-            label="What best describes this work?"
-            htmlFor="occupationProfileId"
-            hint="Targets the right deduction rows on your tax worksheet. Change it later in settings."
-          >
-            <Select id="occupationProfileId" name="occupationProfileId" defaultValue="">
-              <option value="">Not sure yet</option>
-              {occupationGroups.map((group) => (
-                <optgroup key={group.group} label={group.group}>
-                  {group.profiles.map((profile) => (
-                    <option key={profile.id} value={profile.id}>
-                      {profile.label}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
-            </Select>
-          </Field>
-        </fieldset>
+        {isAustralian ? (
+          <fieldset className="flex flex-col gap-3">
+            <legend className="text-[13px] font-semibold text-[var(--color-ink)]">
+              3. Occupation (optional)
+            </legend>
+            <Field
+              label="What best describes this work?"
+              htmlFor="occupationProfileId"
+              hint="Targets the right deduction rows on your tax worksheet. Change it later in settings."
+            >
+              <Select id="occupationProfileId" name="occupationProfileId" defaultValue="">
+                <option value="">Not sure yet</option>
+                {occupationGroups.map((group) => (
+                  <optgroup key={group.group} label={group.group}>
+                    {group.profiles.map((profile) => (
+                      <option key={profile.id} value={profile.id}>
+                        {profile.label}
+                      </option>
+                    ))}
+                  </optgroup>
+                ))}
+              </Select>
+            </Field>
+          </fieldset>
+        ) : (
+          /* Not a lesser version of the Australian flow — a different, true
+             one. Saying this here is cheaper than letting someone discover it
+             after categorising receipts for a month. */
+          <fieldset className="flex flex-col gap-2">
+            <legend className="text-[13px] font-semibold text-[var(--color-ink)]">
+              3. What this will do for you
+            </legend>
+            <p className="text-[13px] leading-relaxed text-[var(--color-ink-muted)]">
+              {chosen?.countryName} has no itemised deduction worksheet for individuals, so
+              there is no occupation to target and no deduction to optimise. What you get is a
+              clean record of what you spent, read straight off your receipts, with{' '}
+              {chosen?.consumptionTaxName} separated out — and every document kept for as long
+              as you are required to keep it.
+            </p>
+          </fieldset>
+        )}
 
         <Button type="submit" size="lg">
           Finish setup

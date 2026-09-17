@@ -4,8 +4,9 @@ import type { AnalyticsRange } from '@snap/api-contract';
 import { HouseAd } from '@/components/ads';
 import { Card, Empty, Money, SectionTitle, cx } from '@/design/primitives';
 import { formatPercent } from '@/lib/panels/format';
-import { getAnalytics } from '@/lib/panels/data';
+import { getAnalytics, getConsumptionTax } from '@/lib/panels/data';
 import { loadWorkspace } from '@/lib/panels/workspace';
+import { ConsumptionTaxCard } from '../../_shell/ConsumptionTaxCard';
 
 export const metadata = { title: 'Analytics' };
 
@@ -14,6 +15,29 @@ const RANGES: Array<{ value: AnalyticsRange; label: string }> = [
   { value: 'quarter', label: 'Quarter' },
   { value: 'year', label: 'Year' },
 ];
+
+/**
+ * The selected range as calendar dates, for the consumption-tax read.
+ *
+ * Calendar-based, and that is correct for every rule set that ships today:
+ * Indonesia's tax year IS the calendar year (`taxYearStartMonth: 1`). If a rule
+ * set with a mid-year tax year is ever installed here, this needs to ask the
+ * engine for the period rather than assuming — `periodOf()` in
+ * `@snap/tax-rules` is the function that knows.
+ */
+function rangeDates(range: AnalyticsRange, today = new Date()): { from: string; to: string } {
+  const iso = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const y = today.getFullYear();
+  const m = today.getMonth();
+  const start =
+    range === 'month'
+      ? new Date(y, m, 1)
+      : range === 'quarter'
+        ? new Date(y, Math.floor(m / 3) * 3, 1)
+        : new Date(y, 0, 1);
+  return { from: iso(start), to: iso(today) };
+}
 
 export default async function AnalyticsPage({
   searchParams,
@@ -25,7 +49,15 @@ export default async function AnalyticsPage({
 
   const { range: rangeParam } = await searchParams;
   const range: AnalyticsRange = RANGES.some((r) => r.value === rangeParam) ? (rangeParam as AnalyticsRange) : 'quarter';
-  const analytics = await getAnalytics(workspace.id, range);
+  const { from, to } = rangeDates(range);
+  const [analytics, consumptionTax] = await Promise.all([
+    getAnalytics(workspace.id, range),
+    // `null` when no tax engine is installed. The API answers 422 rather than
+    // zeros there, and this page renders nothing rather than an empty card —
+    // a workspace with no engine has no consumption tax to report, not a
+    // consumption tax of nought.
+    getConsumptionTax(workspace.id, from, to),
+  ]);
 
   const maxSeries = Math.max(1, ...analytics.series.map((p) => Number(p.value) || 0));
 
@@ -107,6 +139,8 @@ export default async function AnalyticsPage({
           </div>
         )}
       </Card>
+
+      {consumptionTax ? <ConsumptionTaxCard report={consumptionTax} /> : null}
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>

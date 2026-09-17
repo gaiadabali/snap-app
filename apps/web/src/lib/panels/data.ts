@@ -30,8 +30,9 @@ import type {
   TaxPack,
   Trip,
 } from '@snap/api-contract';
+import type { ConsumptionTaxReport, InstalledTaxRules } from '@snap/api-contract';
 
-import { api } from '@/lib/api/server';
+import { api, ApiError } from '@/lib/api/server';
 
 /**
  * Typed reads over the routes `docs/WEB.md` points at.
@@ -153,3 +154,34 @@ export type TransactionRow = {
 
 export const listTransactions = (workspaceId: string, status?: 'draft' | 'posted' | 'void') =>
   api<TransactionRow[]>(`/v1/transactions${status ? `?status=${status}` : ''}`, { workspaceId });
+
+/* ── The installed tax engine (0026) ──────────────────────────────────────── */
+
+/**
+ * Which tax rule set this workspace runs, and what it can install.
+ *
+ * Never throws for "no engine installed" — that is a 200 carrying a `problem`,
+ * because a settings screen has to render the state and offer the list.
+ */
+export const getInstalledTaxRules = (workspaceId: string) =>
+  api<InstalledTaxRules>('/v1/tax-rules', { workspaceId });
+
+/**
+ * Consumption tax over a period, from the ledger.
+ *
+ * Returns `null` when the workspace has no engine installed — the API answers
+ * 422 there rather than zeros, because a confident nothing is indistinguishable
+ * from a workspace that genuinely spent nothing, and the caller needs to tell
+ * those apart to render the right screen.
+ */
+export const getConsumptionTax = async (workspaceId: string, from: string, to: string) => {
+  try {
+    return await api<ConsumptionTaxReport>(
+      `/v1/tax-rules/consumption-tax?from=${from}&to=${to}`,
+      { workspaceId },
+    );
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 422) return null;
+    throw error;
+  }
+};
