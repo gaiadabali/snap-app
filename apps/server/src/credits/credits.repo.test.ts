@@ -91,7 +91,24 @@ describeIfDb('credits.repo', () => {
   it('starts a purchase pending, with no grant — and fulfilling it grants the credits atomically', async () => {
     const started = await startCreditPurchase(OWNER, TENANT, 'credits_100');
     expect(started).toMatchObject({ pack_code: 'credits_100', credits: 100, status: 'pending', paid_at: null });
-    expect(started!.price_aud).toBe('1.3000');
+
+    /*
+     * The purchase captures the CATALOGUE's price, read from the catalogue
+     * rather than asserted as a literal.
+     *
+     * This line used to say `toBe('1.3000')` and broke the moment the packs
+     * were repriced (migration 0027, cost x 3). That was the test's fault, not
+     * the repricing's: a price is a business decision that will change again,
+     * and hardcoding one here asserts the decision instead of the invariant.
+     *
+     * The invariant worth protecting is the one migration 0024 exists to
+     * state — what was paid is recorded on the purchase and never read back
+     * from a catalogue that may since have moved. That is what this compares.
+     */
+    const catalogue = await listCreditPacks(OWNER, TENANT);
+    const pack = catalogue.find((row) => row.code === 'credits_100');
+    expect(pack, 'credits_100 missing from the catalogue').toBeDefined();
+    expect(started!.price_aud).toBe(pack!.price_aud);
 
     const before = await getCreditBalance(OWNER, TENANT);
 
