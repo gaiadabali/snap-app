@@ -29,6 +29,8 @@
  *      `releaseDate`.
  */
 
+import { config } from './config';
+
 export type ReleaseChannel = 'beta' | 'stable';
 
 /**
@@ -78,18 +80,24 @@ export type ChangelogEntry = {
 export const releases: { android: PlatformRelease; ios: PlatformRelease } = {
   android: {
     platform: 'android',
-    version: '0.1.0',
-    buildNumber: '1',
-    releaseDate: '2026-09-12',
+    // THE FALLBACK, not the answer. `getAndroidRelease()` asks the API what is
+    // actually published and only uses this when nothing is. Every field is
+    // null and `availability` is 'in_development' for the same reason the iOS
+    // block below is: a page that names a version and a checksum for a build
+    // that does not exist is worse than one that says there is no build.
+    //
+    // This used to carry version 0.1.0, availability 'available', a URL of
+    // https://example.com/... and a sha256 of sixty-four zeros. All of it was
+    // marked PLACEHOLDER and all of it rendered as though it were a download.
+    version: null,
+    buildNumber: null,
+    releaseDate: null,
     channel: 'beta',
-    availability: 'available',
+    availability: 'in_development',
     minOsVersion: 'Android 8.0 (API 26)',
-    // PLACEHOLDER — points nowhere real yet. Replace with the artifact URL
-    // from `eas build --profile preview --platform android` once run.
-    url: 'https://example.com/downloads/snap-apps-0.1.0-preview.apk',
-    // PLACEHOLDER — size and checksum are meaningless without a real artifact.
-    fileSizeLabel: '00.0 MB (placeholder — not a real build)',
-    sha256: '0000000000000000000000000000000000000000000000000000000000000000',
+    url: null,
+    fileSizeLabel: null,
+    sha256: null,
   },
   ios: {
     platform: 'ios',
@@ -150,6 +158,68 @@ export const systemRequirements: SystemRequirement[] = [
 /** Typed accessor — the page imports this rather than reaching into the raw objects. */
 export function getRelease(platform: 'android' | 'ios'): PlatformRelease {
   return releases[platform];
+}
+
+/** What `GET /v1/downloads/android/manifest` answers. */
+type AndroidManifest = {
+  available: boolean;
+  build: {
+    version: string;
+    buildNumber: string;
+    commit: string;
+    sha256: string;
+    byteSize: number;
+    publishedAt: string;
+    apiUrl: string;
+  } | null;
+};
+
+/**
+ * The Android build that is actually being served, asked at render time.
+ *
+ * WHY NOT A CONSTANT. Every build changes the version, the size and the
+ * checksum, and a hardcoded trio is wrong the moment somebody publishes. The
+ * previous version of this file asked whoever ran `eas build` to remember to
+ * come back and edit four fields; nobody ever did, which is why the page spent
+ * weeks offering `https://example.com/...` with a checksum of zeros.
+ *
+ * THE DOWNLOAD URL COMES FROM THE MANIFEST, not from `config.apiUrl`. The web
+ * container reaches the API on an internal address that means nothing to a
+ * browser. `publish-apk.sh` records the PUBLIC url the bundle was built
+ * against, and that is both what the phone will talk to and what the download
+ * link must point at.
+ *
+ * Any failure falls back to "no build yet". A download page that renders an
+ * error, or a link built from a half-read response, is worse than one that
+ * honestly says nothing has shipped.
+ */
+export async function getAndroidRelease(): Promise<PlatformRelease> {
+  const fallback = releases.android;
+  try {
+    const response = await fetch(`${config.apiUrl}/v1/downloads/android/manifest`, {
+      // Never cached. The URL is stable and the artefact behind it changes, so
+      // a cached manifest advertises the previous build's checksum against the
+      // current download — which is exactly the mismatch a checksum is for.
+      cache: 'no-store',
+    });
+    if (!response.ok) return fallback;
+    const body = (await response.json()) as AndroidManifest;
+    if (!body.available || !body.build) return fallback;
+
+    const build = body.build;
+    return {
+      ...fallback,
+      version: build.version,
+      buildNumber: build.buildNumber,
+      releaseDate: build.publishedAt.slice(0, 10),
+      availability: 'available',
+      url: `${build.apiUrl.replace(/\/$/, '')}/v1/downloads/android/latest.apk`,
+      fileSizeLabel: `${(build.byteSize / 1048576).toFixed(1)} MB`,
+      sha256: build.sha256,
+    };
+  } catch {
+    return fallback;
+  }
 }
 
 export function getChangelog(): ChangelogEntry[] {

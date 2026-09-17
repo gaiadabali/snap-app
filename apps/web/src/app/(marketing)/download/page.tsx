@@ -1,7 +1,13 @@
 import type { Metadata } from 'next';
 
 import { Badge, Card, Container, SectionTitle } from '@/design/primitives';
-import { IOS_NOTIFY_CONTACT, getChangelog, getRelease, getSystemRequirements } from '@/lib/releases';
+import {
+  IOS_NOTIFY_CONTACT,
+  getAndroidRelease,
+  getChangelog,
+  getRelease,
+  getSystemRequirements,
+} from '@/lib/releases';
 
 import { CopyableChecksum } from './copyable-checksum';
 import { InertDownloadControl } from './inert-control';
@@ -108,8 +114,12 @@ function buildJsonLd(android: ReturnType<typeof getRelease>, ios: ReturnType<typ
   };
 }
 
-export default function DownloadPage() {
-  const android = getRelease('android');
+// Async, and uncached, because the Android build is read from the API at
+// render time rather than hardcoded — see `getAndroidRelease`.
+export const dynamic = 'force-dynamic';
+
+export default async function DownloadPage() {
+  const android = await getAndroidRelease();
   const ios = getRelease('ios');
   const changelog = getChangelog();
   const androidReqs = getSystemRequirements('android');
