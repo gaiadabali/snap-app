@@ -290,6 +290,30 @@ Three rules the home page now follows:
    guard, that samples and real quotes are never mixed, and that every real
    entry carries a consent date.
 
+   ### The ML Kit disclosure (OD-9)
+
+   `/legal/privacy` §3 and §4 name **Google ML Kit** and state both halves of
+   what it does, because only the flattering half is a misleading disclosure:
+
+   - Your photo and the text read from it **stay on the phone** — ML Kit does
+     not send the image or its result to Google.
+   - Google **does** receive usage and performance metrics from the recogniser,
+     and processes them under its own terms. Google's ML Kit Terms *require*
+     developers to inform users of this; it is not optional.
+
+   The reason Google is involved at all is the **unbundled** recogniser: the
+   model ships from Google Play services rather than inside the APK, which is
+   what keeps proprietary weights out of a redistributable image under D23
+   (`docs/ON-DEVICE.md` §5). A device without Play services falls back to the
+   Sydney extraction.
+
+   **The disclosure deliberately landed BEFORE the feature.** As of
+   2026-09-17 the module is built and measured on a handset but is not wired
+   to any user-facing screen (OD-8). A privacy notice that arrives after the
+   capability is the wrong order; this one is written in the present tense
+   about what happens *when* the app reads on-device, which is true whenever
+   that path runs and harmless until it does.
+
    The trust signals that need no customer are already there and are stronger
    than a quote: the capability comparison, the free tier as a self-serve
    demo, the real app screenshots, and the published-but-unmet measurement

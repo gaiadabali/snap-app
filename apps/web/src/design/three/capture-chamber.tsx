@@ -50,9 +50,19 @@ const PAPER_H = 1.45;
 const INTRO_SECONDS = 1.6;
 const INTRO_TARGET = 0.42;
 
-/** Where in the hero's pass through the viewport the read finishes. */
-const SCAN_FROM = 0.42;
-const SCAN_TO = 0.8;
+/**
+ * Where in the hero's TRACK the read runs.
+ *
+ * Retuned for pinning. These used to describe the hero's pass through the
+ * viewport; they now describe its pass through the pin track, which is the
+ * only thing still moving once the section is stuck. The read finishes at 0.62
+ * — comfortably before the pin releases at about 0.7 — so the docket is fully
+ * read and every field boxed before the page is allowed to move on, which is
+ * what "finish the animation before the page scrolls" has to mean when the
+ * scroll is what drives the animation.
+ */
+const SCAN_FROM = 0.36;
+const SCAN_TO = 0.62;
 
 /**
  * The curl. STATIC — it does not breathe.

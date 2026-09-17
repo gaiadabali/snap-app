@@ -13,6 +13,20 @@ const NAV = [
   { href: '/features', label: 'Features' },
   { href: '/how-it-works', label: 'How it works' },
   { href: '/pricing', label: 'Pricing' },
+  /*
+   * Download earns a nav slot of its own.
+   *
+   * It was reachable only from the footer and from one button on the home
+   * page, and the owner went looking for it and could not find it — which is
+   * the whole test. "Get started" is not a substitute: that is register and
+   * sign in, an account action. This is where you get the app onto a phone,
+   * which for a product whose entire premise is photographing a docket in a
+   * ute is a primary path, not a footer link.
+   *
+   * Placed after Pricing and before Docs: it belongs with the things a buyer
+   * does, ahead of the reference material.
+   */
+  { href: '/download', label: 'Download' },
   { href: '/docs', label: 'Docs' },
 ] as const;
 

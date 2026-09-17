@@ -23,8 +23,26 @@ export function useSceneScroll(host: RefObject<HTMLElement | null>) {
     const el = host.current;
     if (!el) return;
 
+    /**
+     * Measure the PIN TRACK, not the canvas.
+     *
+     * Once a section is pinned, its contents stop moving through the viewport
+     * — that is the entire point of a pin. So the canvas host's rect is very
+     * nearly constant for the whole time the section is on screen, and a
+     * progress computed from it barely advances: the hero's sweep froze about
+     * a third of the way down the docket and stayed there, which is exactly
+     * what the owner saw.
+     *
+     * The thing that IS still moving is the track the sticky section lives in.
+     * Reading its rect gives a progress that runs 0 -> 1 across the whole pin,
+     * so the scan can be scrubbed to completion before the section releases.
+     * Falls back to the host itself wherever there is no track — the handset,
+     * reduced motion, and any page that is not pinned.
+     */
+    const driver = el.closest('.pin-track') ?? el;
+
     const measure = () => {
-      const rect = el.getBoundingClientRect();
+      const rect = driver.getBoundingClientRect();
       const span = window.innerHeight + rect.height;
       if (span <= 0) return;
       const travelled = window.innerHeight - rect.top;

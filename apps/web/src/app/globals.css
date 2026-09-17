@@ -140,6 +140,9 @@
 html {
   color-scheme: light dark;
   scroll-behavior: smooth;
+  /* The sticky header's real height, measured. Used to pull the first screen
+     up under it and to clear content below it — one number, two jobs. */
+  --header-h: 65px;
 }
 
 body {
@@ -531,7 +534,21 @@ body {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    padding-top: 4rem;
+    padding-top: calc(var(--header-h) + 0.5rem);
+  }
+
+  /*
+   * The first screen on a page starts BELOW the header, because the header is
+   * sticky and therefore still takes part in the flow. So a section that is
+   * 100svh tall runs 65px past the bottom of the window and the hero was never
+   * actually full screen — measured at 1600x900 as 65..965 of 900, and cut off
+   * by exactly the header's height at every viewport.
+   *
+   * Pulling the first screen up by that height puts it at 0..100svh, and the
+   * padding above already keeps its content clear of the header.
+   */
+  .first-screen {
+    margin-top: calc(-1 * var(--header-h));
   }
 
   /*
@@ -872,7 +889,7 @@ body {
  */
 @media (min-width: 1024px) and (max-height: 940px) {
   .screen {
-    padding-top: 3.25rem;
+    padding-top: calc(var(--header-h) + 0.25rem);
     /* The section's own py-* still applies; this trims what `Section`
        contributes on top of the centring the flex box already does. */
     padding-bottom: 0.5rem;
@@ -1082,4 +1099,48 @@ body {
   .screen .proof-grid p { font-size: 13px; line-height: 1.5; }
   .screen .proof-grid > .mt-9 { margin-top: 0.9rem; }
   .screen .proof-grid .mt-10 { margin-top: 0.9rem; padding-top: 0.9rem; }
+}
+
+@media (min-width: 1024px) and (max-height: 820px) {
+  /* The capability matrix came back 9px over once the first screen was pulled
+     up under the header and `.screen` gained a few pixels of padding. Eight
+     rows, so a pixel each way settles it. */
+  .screen table :is(td, th) { padding-block: 0.35rem; }
+  .screen table :is(td, th) .t-label { font-size: 10px; }
+}
+
+/* ── Fitting a screen: one proportional lever ────────────────────────────
+ *
+ * Tailwind v4 builds every padding, margin and gap as `calc(var(--spacing) *
+ * N)`. Overriding `--spacing` INSIDE a section therefore scales its entire
+ * vertical rhythm at once, in proportion, instead of needing a rule per
+ * element — which is what the previous dozen rules were, and they fought each
+ * other: the last attempt made 1440x780 worse, not better.
+ *
+ * This matters more than it looks, because a pinned screen is
+ * `justify-content: center` with `overflow: hidden`. Content taller than the
+ * box is not pushed below the fold where you would see it — it is clipped at
+ * BOTH ends, silently and symmetrically. A section can report exactly one
+ * viewport of height and still be hiding its first and last line.
+ */
+@media (min-width: 1024px) and (max-height: 960px) {
+  .screen { --spacing: 0.215rem; }
+}
+
+@media (min-width: 1024px) and (max-height: 860px) {
+  .screen { --spacing: 0.19rem; }
+}
+
+@media (min-width: 1024px) and (max-height: 800px) {
+  .screen { --spacing: 0.165rem; }
+}
+
+@media (min-width: 1024px) and (max-height: 800px) {
+  /* The two that still clip at 1440x780 are the tallest objects on the page:
+     three portrait phones, and an eight-row table with a footnote. Both need
+     their own size cut, not just tighter rhythm. */
+  .screen .app-deck figure { max-width: 158px; }
+  .screen .app-deck figcaption span:last-child { font-size: 11.5px; }
+  .screen table { font-size: 12px; }
+  .screen table :is(td, th) { padding-block: 0.3rem; }
 }

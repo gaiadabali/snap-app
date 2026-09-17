@@ -7,7 +7,7 @@ export default function PrivacyPolicyPage() {
     <article className="flex flex-col gap-8 leading-relaxed text-[var(--color-ink-muted)]">
       <header>
         <h1 className="text-[28px] font-bold text-[var(--color-ink)]">Privacy Policy</h1>
-        <p className="mt-2 text-[13px] text-[var(--color-ink-faint)]">Draft — last updated 12 September 2026</p>
+        <p className="mt-2 text-[13px] text-[var(--color-ink-faint)]">Draft — last updated 17 September 2026</p>
       </header>
 
       <p>
@@ -80,6 +80,24 @@ export default function PrivacyPolicyPage() {
           Where our AI provider is Anthropic, Anthropic does not train its models on data submitted via
           its API.
         </p>
+        {/*
+          ML Kit disclosure — docs/ON-DEVICE.md §11 OD-9.
+          Google's ML Kit Terms require developers to inform users that Google
+          processes ML Kit metrics data. We use the UNBUNDLED text recogniser,
+          so no model weights ship in the app and no image reaches Google; the
+          metrics do. Both halves are stated because only stating the first
+          would be the flattering half.
+        */}
+        <p className="mt-3">
+          <strong className="text-[var(--color-ink)]">Reading on your phone.</strong> When the Android
+          app reads a receipt on the device itself, it uses Google&apos;s ML Kit text recogniser. Your
+          photo and the text read from it stay on your phone — ML Kit does not send the image or its
+          result to Google. Google does receive usage and performance metrics about the recogniser
+          itself, which Google processes under its own terms; those metrics describe how the
+          recogniser ran, not what your receipt says. The recognition model is supplied by Google
+          Play services rather than bundled into the app, which is why Google is involved at all, and
+          a device without Google Play services simply uses the Sydney extraction described above.
+        </p>
       </section>
 
       <section>
@@ -103,6 +121,11 @@ export default function PrivacyPolicyPage() {
           <li>
             <strong className="text-[var(--color-ink)]">Your accounting practice</strong>, if your
             account is managed under a Practice plan by a bookkeeper or accountant you&apos;ve engaged.
+          </li>
+          <li>
+            <strong className="text-[var(--color-ink)]">Google</strong>, where the Android app reads a
+            receipt on your device — and only usage and performance metrics from its ML Kit text
+            recogniser. Not your receipt images, and not the text read from them.
           </li>
           <li>Regulators or law enforcement, where we are legally required to disclose.</li>
         </ul>
