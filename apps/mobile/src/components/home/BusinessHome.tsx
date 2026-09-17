@@ -170,9 +170,9 @@ export default function BusinessHome() {
 
         {overview ? (
           <Small style={{ textAlign: 'center' }}>
-            {overview.entitlement.scanQuota === null
-              ? `${overview.entitlement.scansUsed} scans this month · unlimited`
-              : `${overview.entitlement.scansUsed} of ${overview.entitlement.scanQuota} scans used this month`}
+            {/* No quota to be "of", and nothing is "unlimited" — a credit
+                buys each read. Both branches described a plan. */}
+            {`${overview.entitlement.scansUsed} read this month`}
           </Small>
         ) : null}
       </ScrollView>

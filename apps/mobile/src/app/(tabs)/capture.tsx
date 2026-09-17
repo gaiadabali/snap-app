@@ -108,7 +108,7 @@ async function uploadPageWithRetry(uploadUrl: string, bytes: ArrayBuffer, mimeTy
  */
 export default function CaptureScreen() {
   const p = usePalette();
-  const { workspace } = useWorkspace();
+  const { workspace, workspaces, active } = useWorkspace();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const [permission, requestPermission] = useCameraPermissions();
@@ -582,7 +582,14 @@ export default function CaptureScreen() {
           >
             <Label>Filing to</Label>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
-              <WorkspaceSwitch />
+              {/* A NAME when there is nothing to switch between.
+                  `WorkspaceSwitch` returns null on one workspace, which is
+                  right for a switch and left "Filing to" as a label with
+                  nothing after it — the owner saw exactly that on the handset.
+                  Which life a receipt is filed against is worth stating even
+                  when there is only one answer; it is the decision this panel
+                  exists to make before the shutter. */}
+              {workspaces.length > 1 ? <WorkspaceSwitch /> : <Body>{active.name}</Body>}
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Hide this panel"

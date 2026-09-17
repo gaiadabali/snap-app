@@ -250,13 +250,18 @@ export default function TaxScreen() {
               <Label>This month</Label>
               <ConfidenceDots value={0.99} />
             </View>
+            {/* Credits, not a plan. `scanQuota` was a monthly allowance and
+                `planCode` named a tier; neither exists. A count of what was
+                read is still true, and so is how it was extracted. This screen
+                is behind BUSINESS_FEATURES_ENABLED and unreachable today —
+                fixed now because it will be WRONG rather than merely stale the
+                day that flag flips, and nobody will be looking at this line
+                then. */}
             <Body>
-              {data.entitlement.scansUsed} of {data.entitlement.scanQuota} scans used ·{' '}
+              {data.entitlement.scansUsed} read this month ·{' '}
               {data.entitlement.realtime ? 'Realtime' : 'Batch'} extraction
             </Body>
-            <Small>
-              Plan: {data.entitlement.planCode} · billed to {data.firmName ?? 'you'}
-            </Small>
+            {data.firmName ? <Small>Managed by {data.firmName}</Small> : null}
           </View>
         </Card>
 

@@ -41,8 +41,6 @@ export default function PlanScreen() {
     }, [load]),
   );
 
-  const scanPct =
-    plan && plan.scanQuota ? Math.min(1, plan.scansUsed / plan.scanQuota) : 0;
   const seatPct = plan ? Math.min(1, plan.seatsUsed / plan.seatLimit) : 0;
 
   return (
