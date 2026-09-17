@@ -364,7 +364,8 @@ Two constraints that are not style preferences:
 | `/features`, `/how-it-works` | Inherit the palette, type and primitives, and since 2026-09-17 render the hero docket as a **WebGL scene** over the flat card (§4.4). `/features` also carries the asset layer (§4.8) — a `SplitBar` on the real 18.40 / 21.60 docket split and a `FieldBox` on the G11 figure. Copy is **still mechanism-led** and still needs §4.5 applied. |
 | `/download` | **Rebuilt 2026-09-17** into `Section` / `SectionHead` / `Reveal` plus the asset layer (§4.8). It was the last page still wrapping its own `<main className="py-20">` — which also meant `main > main` inside the layout's `<main>`, now gone. Deliberately **not** pinned: locking someone who came for an APK and a checksum behind a scroll-lock would be hostile. Copy untouched. |
 | `/pricing` | Rebuilt 2026-09-17 into the section language. No field boxes: nothing on a pricing page is a document the product read (§4.8). |
-| `/docs`, `/support`, `/legal` | Inherit the new palette, type and primitives, but **still carry the old zebra-band structure and pill eyebrows**. Port them to `Section` / `SectionHead` / `LedgerRow` — and apply §4.5 to their copy, not just their layout. `/docs` and `/legal` are reference reading and want less motion than the marketing surfaces, not more. |
+| `/support` | **Ported 2026-09-17**, deliberately quiet: the section shell, a rule and a staggered reveal on the cards, plus `Tear` between categories. No document annotations — a help centre is a reading surface, and there is no docket on it to annotate. |
+| `/docs`, `/legal` | Inherit the new palette, type and primitives, but **still carry the old zebra-band structure and pill eyebrows**. Port them to `Section` / `SectionHead` / `LedgerRow` — and apply §4.5 to their copy, not just their layout. Both are reference reading and want LESS motion than the marketing surfaces, not more; port the shell, leave the asset layer off. |
 | `/app/*`, `/admin/*` panels | Inherit the palette and the flatter `Card`. Intentionally unchanged otherwise — panels work, marketing breathes. |
 
 ### 4.8 The asset layer — motion that carries the subject
@@ -427,6 +428,12 @@ Reusing the name silently restyled all three into 72px vertical sticks: the new
 rule simply came later in the file and won. That collision raises no error
 anywhere and is visible only on the page, which is the argument for checking a
 class name against `globals.css` before taking it.
+
+`src/app/globals.test.ts` now enforces this: a class may have exactly one
+top-level BASE rule. It deliberately allows the same class to reappear inside
+`@supports`, `@media` and `.pin-track` — those are overrides and they are the
+architecture — and bans only two components owning one name. Verified by
+reintroducing the `.seam` collision and watching it fail.
 
 ## 5. Ownership map
 

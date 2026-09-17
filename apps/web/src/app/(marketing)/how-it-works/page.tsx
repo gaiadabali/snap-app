@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 
 import {
   ButtonLink,
+  FieldBox,
   LedgerRow,
   Money,
   Reveal,
@@ -9,6 +10,8 @@ import {
   Section,
   SectionHead,
   Split,
+  SplitBar,
+  Tear,
 } from '@/design/primitives';
 
 import { Scene } from '@/design/three/Scene';
@@ -145,7 +148,8 @@ export default function HowItWorksPage() {
           title="Four things, every time, for every document"
           lede="The codes in the margin are the real ATO labels these map to. They are the product's whole point, so they are also how this page is organised."
         />
-        <div className="mt-10">
+        <Tear className="mt-10" />
+        <div className="mt-6">
           {WHAT_YOU_GET.map((row, i) => (
             <LedgerRow
               key={row.code}
@@ -186,6 +190,19 @@ export default function HowItWorksPage() {
           }
           aside={
             <div className="lg:pt-10">
+              {/*
+                75.00 ex-GST and 7.50 GST against an 82.50 total, to scale.
+                `legend={false}` because the rows directly below already print
+                both figures — the bar is the shape of them, not a second copy.
+              */}
+              <SplitBar
+                className="mb-7"
+                legend={false}
+                parts={[
+                  { weight: Number(EX.net), tone: 'muted' },
+                  { weight: Number(EX.gst), tone: 'accent' },
+                ]}
+              />
               <LedgerRow tone="void" code="ABN" label={EX.supplier} note={EX.abn} value="valid" />
               <LedgerRow tone="void" code="NET" label="Expense, ex-GST" value={<Money amount={EX.net} />} />
               <LedgerRow tone="void" code="G11" label="GST on purchases" value={<Money amount={EX.gst} />} />
@@ -193,7 +210,11 @@ export default function HowItWorksPage() {
                 tone="void"
                 code="1B"
                 label="Claimable this quarter"
-                value={<Money amount={EX.gst} />}
+                value={
+                  <FieldBox code="1B">
+                    <Money amount={EX.gst} />
+                  </FieldBox>
+                }
                 emphasis
               />
               <LedgerRow tone="void" code="TOT" label="Invoice total" value={<Money amount={EX.total} />} emphasis />
