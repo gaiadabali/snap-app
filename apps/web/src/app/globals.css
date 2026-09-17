@@ -359,22 +359,47 @@ body {
 
 /* ── The page spine ──────────────────────────────────────────────────────
  *
- * A curve down the left gutter that draws itself as the document is read.
- * See `_components/page-spine.tsx` for why it is a curve and why it is the
- * only tracker left on the page.
+ * A curve in the LEFT MARGIN — outside the reading column, never across it.
+ * See `_components/page-spine.tsx` for the two versions this replaces and the
+ * measurement that condemned the second one.
  *
- * Desktop only. Below 1024px there is no gutter to hang it in, and the brief
- * for this pass is desktop; the rail simply is not rendered there.
+ * Geometry is derived from the content edge, not the viewport. The container
+ * is max-w-1280 with 40px padding, so text starts at `50vw - 600px`. The rail
+ * is a 56px band ending 20px short of that:
+ *
+ *     left  = 50vw - 600px - 76px
+ *     width = 56px          ->  right edge = content edge - 20px
+ *
+ * At 1440 that is x 44-100 against text at 120. At 1600, 124-180 against 200.
+ * The curve's amplitude lives inside the band, so nothing it does can reach
+ * the column.
  */
-@media (min-width: 1024px) {
+@media (min-width: 1400px) {
   .page-spine {
     position: fixed;
     top: 0;
     bottom: 0;
-    left: max(0.5rem, calc(50vw - 40rem));
-    width: 5rem;
+    left: calc(50vw - 676px);
+    width: 56px;
     pointer-events: none;
-    z-index: 0;
+    /*
+     * Above the sections, below the header.
+     *
+     * It was `z-index: 0` and the rail was invisible the moment `.sect-3d`
+     * shipped: a transform creates a stacking context, so the sections stopped
+     * being plain in-flow backgrounds and began painting in the same layer as
+     * this fixed element — where DOM order decides, and every section comes
+     * after it.
+     *
+     * Proven by screenshotting a 64px crop of the rail's own band at each
+     * value: blank at 0, trace and node at 20. `elementFromPoint` cannot
+     * answer this question at all — the rail is `pointer-events: none`, so it
+     * is skipped and the section underneath is always returned.
+     *
+     * Safe to raise because the rail sits entirely in the margin with 20px of
+     * clearance: there is no content at this x for it to cover.
+     */
+    z-index: 20;
   }
 
   .page-spine__svg {
@@ -384,26 +409,45 @@ body {
     fill: none;
   }
 
-  /* The unread curve. Deliberately faint — this is furniture, and §12.1's
-     test for furniture is that it reports something without asking to be
-     looked at. */
+  /* The unread curve. Furniture: it reports without asking to be looked at. */
   .page-spine__track {
     stroke: var(--color-rule);
     stroke-width: 1;
   }
 
+  /* Weight under the trace, so the rail reads as an object rather than a
+     hairline — without a glow filter, which §12.2 would call chrome. */
+  .page-spine__halo {
+    stroke: var(--color-accent);
+    stroke-width: 6;
+    stroke-linecap: round;
+    opacity: 0.1;
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+  }
+
   .page-spine__trace {
     stroke: var(--color-accent);
-    stroke-width: 1.5;
+    stroke-width: 2;
     stroke-linecap: round;
     stroke-dasharray: 1;
     stroke-dashoffset: 1;
-    opacity: 0.85;
+  }
+
+  /* Zero-length dash + round cap = a dot, riding the trace's leading edge. */
+  .page-spine__node {
+    stroke: var(--color-accent);
+    stroke-width: 9;
+    stroke-linecap: round;
+    stroke-dasharray: 0 1;
+    stroke-dashoffset: 1;
   }
 
   @supports (animation-timeline: scroll()) {
     @media (prefers-reduced-motion: no-preference) {
-      .page-spine__trace {
+      .page-spine__halo,
+      .page-spine__trace,
+      .page-spine__node {
         animation: spine-trace linear both;
         animation-timeline: scroll(root block);
       }
