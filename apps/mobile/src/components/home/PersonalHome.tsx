@@ -7,6 +7,7 @@ import { IS_DEMO, api, type DocumentView, type PersonalSummary } from '@/api';
 import { CategoryBars } from '@/components/charts';
 import { GradientHero, HeroBody, HeroFigure, HeroLabel, Raised } from '@/components/rich';
 import { Chip, Figure, Label, Screen, Small } from '@/components/ui';
+import { UpdateNotice } from '@/components/UpdateNotice';
 import { formatAud, space, usePalette } from '@/theme';
 import { WorkspaceSwitch } from '@/workspace';
 
@@ -75,6 +76,8 @@ export default function PersonalHome() {
         }
       >
         <View style={{ paddingHorizontal: space.lg, gap: space.md }}>
+          {/* Renders nothing unless a newer build is actually published. */}
+          <UpdateNotice />
           <View style={{ gap: 2 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
               <Small>{greeting()}</Small>
