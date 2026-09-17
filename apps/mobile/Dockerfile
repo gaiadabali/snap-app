@@ -38,9 +38,22 @@ COPY packages/api-contract/package.json packages/api-contract/package.json
 COPY packages/db/package.json packages/db/package.json
 COPY packages/docai/package.json packages/docai/package.json
 COPY packages/tax-engine/package.json packages/tax-engine/package.json
+COPY packages/docai-preview/package.json packages/docai-preview/package.json
 RUN pnpm install --frozen-lockfile --filter "@snap/mobile..."
 
 COPY packages/api-contract packages/api-contract
+# apps/mobile declares @snap/docai-preview and `src/lib/device-read.ts`
+# imports `structure` from it (OD-8). Without this the web export fails with
+# "Unable to resolve module @snap/docai-preview" and the whole Publish images
+# run goes red, which blocks the deploy for every service — snap-server,
+# snap-web and snap-docai all published fine and none of them could ship.
+#
+# Second time today in the same shape: apps/server/Dockerfile was missing
+# @snap/tax-rules and @snap/docai-preview, and the API crash-looped on boot.
+# CI cannot catch it — `pnpm -r typecheck` resolves the workspace from the
+# repo, where the package is simply present. The image is the only place it is
+# absent, and nothing in CI runs the image.
+COPY packages/docai-preview packages/docai-preview
 COPY apps/mobile apps/mobile
 
 # Empty by default = the fixture/demo build, which is the safe thing to get if
