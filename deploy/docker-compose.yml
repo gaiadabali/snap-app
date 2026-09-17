@@ -68,6 +68,23 @@ services:
     environment:
       NODE_ENV: production
       DATABASE_URL: postgres://snap_app:${APP_DB_PASSWORD}@postgres:5432/snapapps
+      # WHERE THE ORIGINALS GO, said out loud.
+      #
+      # The volume below is mounted at /data/storage, but nothing told the app
+      # to use it. `STORAGE_DIR` defaults to `.storage` — RELATIVE — so the
+      # server resolved it against its workdir and would have written every
+      # captured receipt to /repo/apps/server/.storage, inside the container
+      # layer, where the next deploy deletes it.
+      #
+      # It has not lost anything yet only because no production capture has
+      # ever succeeded: the app ran on fixtures, and Android capture threw on
+      # every photo until 3fd0c8b. The first real upload would have been the
+      # first one lost, and nothing would have reported an error — the write
+      # succeeds, it just succeeds somewhere temporary.
+      #
+      # Found by publishing an APK into the volume and watching the API answer
+      # "nothing published" while the file sat there in plain sight.
+      STORAGE_DIR: /data/storage
     volumes:
       - storage_data:/data/storage
     depends_on:
@@ -125,6 +142,10 @@ services:
       # by DOCAI_SHADOW_TIMEOUT_MS. That contract is why this can be switched on
       # without a staged rollout.
       DOCAI_SIDECAR_URL: ${DOCAI_SIDECAR_URL:-http://docai:8088}
+      # Same as the api service above, and for the same reason: the worker
+      # reads the originals it was told about, and it must look where they
+      # were actually written.
+      STORAGE_DIR: /data/storage
     volumes:
       - storage_data:/data/storage
       - ${OLLAMA_ENV_FILE_HOST:-/dev/null}:/run/secrets/ollama.env:ro

@@ -27,7 +27,13 @@ COMMIT="${2:-$(git rev-parse --short HEAD 2>/dev/null || echo unknown)}"
 HOST="${SNAP_DEPLOY_HOST:-}"
 # Must match STORAGE_HOST_DIR in deploy/docker-compose.yml — the same directory
 # the API container sees as STORAGE_DIR.
-REMOTE_STORAGE="${SNAP_STORAGE_HOST_DIR:-/srv/snap/storage}"
+# Verified against the host rather than guessed: deploy/.env sets
+# STORAGE_HOST_DIR=/opt/snap-apps/data/storage, and writing a file inside the
+# API container at /data/storage confirmed it lands there. The first version of
+# this script guessed /srv/snap/storage, which would have uploaded the APK into
+# a directory nothing serves — a publish that reports success and changes
+# nothing.
+REMOTE_STORAGE="${SNAP_STORAGE_HOST_DIR:-/opt/snap-apps/data/storage}"
 REMOTE_DIR="${REMOTE_STORAGE}/downloads/android"
 
 if [ -z "$APK" ] || [ ! -f "$APK" ]; then
