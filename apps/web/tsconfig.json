@@ -30,12 +30,11 @@
     }
   },
   "include": [
-    ".next-ledger/types/**/*.ts",
     ".next/types/**/*.ts",
     "next-env.d.ts",
     "src/**/*.ts",
     "src/**/*.tsx",
-    ".next-wt/types/**/*.ts"
+    ".next-ledger/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"
