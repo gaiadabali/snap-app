@@ -497,7 +497,26 @@ body {
  */
 @media (min-width: 1024px) {
   html {
-    scroll-snap-type: y proximity;
+    /*
+     * MANDATORY, and `scroll-snap-stop: always` with it.
+     *
+     * This was `proximity` and I argued against mandatory on the grounds that
+     * it takes the scroll away from the reader: a flick that lands 40px into a
+     * section gets yanked, and any section taller than the viewport becomes
+     * hard to read the bottom of.
+     *
+     * The owner asked for each screen to finish before the next one starts,
+     * and the second half of that objection no longer applies — every section
+     * now fits a 1440x780 laptop, verified at three viewport heights. Nothing
+     * can be trapped below the fold because nothing extends below it.
+     *
+     * `scroll-snap-stop: always` is the half that does the actual locking: it
+     * forbids skipping past a section in one gesture, so a fast flick advances
+     * exactly one screen. Combined with the scroll-driven animations — which
+     * all complete by the time a section reaches centre — arriving at a
+     * section means its animation has finished.
+     */
+    scroll-snap-type: y mandatory;
   }
 
   .screen {
@@ -505,8 +524,21 @@ body {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    scroll-snap-align: center;
-    scroll-snap-stop: normal;
+    /*
+     * `start`, not `center`.
+     *
+     * With mandatory snapping and full-height sections, centre alignment puts
+     * the snap point in the middle of each section, so a scroll shorter than
+     * half a screen is pulled back where it came from. Measured: twenty-four
+     * wheel events totalling 2,640px moved the page zero pixels. That is not a
+     * lock, it is a page you cannot scroll.
+     *
+     * With `start` the snap points sit one viewport apart and each gesture
+     * advances exactly one. `scroll-margin-top` keeps the section's first line
+     * clear of the sticky header.
+     */
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
     /* The header is sticky and 4rem tall, so a section centred in the full
        viewport puts its first line underneath it. Centring happens in the
        space BELOW the header instead. Found by screenshotting a settled
@@ -778,4 +810,162 @@ body {
 @keyframes read-answer {
   from { opacity: 0; transform: perspective(700px) translate3d(0, 0.5rem, -3rem); }
   to   { opacity: 1; transform: perspective(700px) translate3d(0, 0, 0); }
+}
+
+/* ── Short screens ───────────────────────────────────────────────────────
+ *
+ * "One section, one screen" was only ever true at 1000px of viewport height,
+ * which is what it was measured at. A 1440x900 laptop has about 780px of
+ * usable height after browser chrome, and at that size FOUR sections
+ * overflowed — the hero at 1004, proof at 979, the app deck at 895 and the
+ * capability matrix at 791. A section that overruns is the one thing that
+ * breaks mandatory snapping, because the bottom of it becomes unreachable.
+ *
+ * So the page compresses with the viewport rather than assuming a tall one.
+ * Everything below is vertical only: no measure changes, no type colour
+ * changes, and the display face keeps its 300 weight and its negative
+ * tracking — it simply stops being set at 92px on a screen that cannot hold
+ * 92px.
+ */
+@media (min-width: 1024px) and (max-height: 940px) {
+  .screen {
+    padding-top: 3.25rem;
+    /* The section's own py-* still applies; this trims what `Section`
+       contributes on top of the centring the flex box already does. */
+    padding-bottom: 0.5rem;
+  }
+
+  .screen :is(.py-12, .py-14, .py-16) {
+    padding-block: 1.5rem;
+  }
+
+  /* Display type, scaled to the height it has to live in rather than to the
+     width. The clamp's upper bound is what overflows a short screen. */
+  .screen .t-display {
+    font-size: clamp(2.25rem, 4.6vw, 3.9rem);
+  }
+
+  .screen .t-head {
+    font-size: clamp(1.5rem, 2.6vw, 2.1rem);
+  }
+
+  .screen .t-lede {
+    font-size: 1rem;
+    line-height: 1.55;
+  }
+
+  /* The app deck: three portrait phones are the tallest object on the page. */
+  .screen .app-deck figure {
+    max-width: 218px;
+  }
+
+  /* Ledger and proof rows give back a few pixels each, which adds up over
+     six or seven of them. */
+  .screen :is(.py-4, .py-6) {
+    padding-block: 0.7rem;
+  }
+}
+
+@media (min-width: 1024px) and (max-height: 820px) {
+  .screen .t-display {
+    font-size: clamp(2rem, 4vw, 3.15rem);
+  }
+
+  .screen .app-deck figure {
+    max-width: 186px;
+  }
+
+  .screen :is(.mt-10, .mt-12, .mt-14) {
+    margin-top: 1.5rem;
+  }
+
+  .screen :is(.gap-10, .gap-12, .gap-14) {
+    gap: 1.5rem;
+  }
+}
+
+/* The hero's docket is the tallest object on the page, and on a short screen it
+   is the only thing keeping the hero off one screen.
+ *
+ * It is shortened by changing the ASPECT, never the width — which is the
+ * opposite of the first attempt and worth writing down. Narrowing it to 360px
+ * made the hero TALLER (900 -> 928): the twin inside is `ReceiptScanCard`,
+ * which is a `@container` two-up, and below the 448px container breakpoint it
+ * collapses to one column and grows from 613px to 708px. The frame is sized by
+ * its content, so the twin was setting the height all along.
+ *
+ * So the width stays above that breakpoint and the frame simply gets less
+ * tall. */
+@media (min-width: 1024px) and (max-height: 940px) {
+  .hero-scene { aspect-ratio: 1 / 1; }
+}
+
+@media (min-width: 1024px) and (max-height: 820px) {
+  .hero-scene { aspect-ratio: 5 / 4; }
+}
+
+/* ── Fitting the heavy sections ──────────────────────────────────────────
+ *
+ * Measured with LAYOUT metrics, not `getBoundingClientRect`. That distinction
+ * cost a whole pass: `.sect-3d` puts every section under a 3D transform, so
+ * the bounding rect returns the perspective-SCALED box — a constant 0.846 of
+ * the real height. Sections reported as fitting at "762 of 900" were actually
+ * 900 of 900, and genuine overflows were hidden by the same factor. Anything
+ * inside a transformed element must be measured with `offsetHeight` /
+ * `scrollHeight`.
+ *
+ * ORDER MATTERS HERE, and getting it wrong is the second thing that cost a
+ * pass: these caps are declared shortest-last, because a later rule of equal
+ * specificity wins. Declaring the roomy default after the short-screen cap
+ * silently un-did it and made a 780px screen worse than before.
+ */
+@media (min-width: 1024px) {
+  .screen .proof-grid { gap: 2rem; }
+  .screen .proof-grid p { font-size: 13px; line-height: 1.5; }
+  .screen .proof-grid .py-4 { padding-block: 0.55rem; }
+  /* The 17px lead paragraph is the single tallest run of text on the page. */
+  .screen .proof-grid .text-\[17px\] { font-size: 14.5px; line-height: 1.5; }
+  .screen .proof-grid :is(.mt-5, .mt-6, .mt-7) { margin-top: 0.85rem; }
+
+  .screen .app-deck figure { max-width: 244px; }
+  .screen .app-deck figcaption { margin-top: 0.8rem; }
+  .screen .app-deck figcaption span:last-child { font-size: 12.5px; line-height: 1.4; }
+}
+
+@media (min-width: 1024px) and (max-height: 940px) {
+  .screen .app-deck figure { max-width: 206px; }
+  .screen .proof-grid { gap: 1.5rem; }
+}
+
+@media (min-width: 1024px) and (max-height: 820px) {
+  .screen .app-deck figure { max-width: 176px; }
+  .screen .proof-grid p { font-size: 12.5px; }
+  .screen .proof-grid .text-\[17px\] { font-size: 13.5px; }
+}
+
+/* The last two, at short heights only. Proof carries two columns of prose, a
+   three-row metric ledger and a footnote; the matrix overran by three pixels,
+   which is a row's padding. */
+@media (min-width: 1024px) and (max-height: 940px) {
+  .screen .proof-grid :is(.gap-10, .gap-14) { gap: 1.25rem; }
+  .screen .proof-grid :is(.mt-12, .pt-12) { margin-top: 1rem; padding-top: 1rem; }
+  .screen table :is(td, th) { padding-block: 0.6rem; }
+}
+
+@media (min-width: 1024px) and (max-height: 820px) {
+  .screen .proof-grid { gap: 1rem; }
+  .screen .proof-grid :is(.mt-5, .mt-6, .mt-7) { margin-top: 0.6rem; }
+  .screen .proof-grid .t-label { font-size: 10px; }
+  .screen table :is(td, th) { padding-block: 0.45rem; }
+  .screen table { font-size: 12.5px; }
+}
+
+@media (min-width: 1024px) and (max-height: 820px) {
+  /* Proof still needed ~36px at 1440x780. The head and the block beneath it
+     are the only two things in this section, so the gap between them is where
+     it comes from. */
+  .screen .proof-grid,
+  .screen .proof-head + * { margin-top: 0.9rem; }
+  .screen [class*="max-w-[68ch]"] > .mt-12 { margin-top: 0.9rem; }
+  .screen .proof-grid .text-\[17px\] { font-size: 13px; }
 }

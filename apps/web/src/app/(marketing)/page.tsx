@@ -239,7 +239,7 @@ export default function HomePage() {
             >
               <Scene
                 enabled={SCENES_3D_ENABLED}
-                className="mx-auto aspect-[3/4] w-full max-w-[340px] lg:max-w-[460px]"
+                className="hero-scene mx-auto aspect-[3/4] w-full max-w-[340px] lg:max-w-[460px]"
               >
                 <div className="flex h-full items-center justify-center">
                   <ReceiptScanCard className="w-full" scanning={false} />

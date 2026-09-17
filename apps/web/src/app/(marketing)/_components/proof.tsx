@@ -55,7 +55,7 @@ function Quote({ t, i }: { t: Testimonial; i: number }) {
 /** What a reader can check today, and one thing they can hold us to. */
 function Standing() {
   return (
-    <div className="grid gap-14 lg:grid-cols-[1fr_1fr] lg:gap-20">
+    <div className="proof-grid grid gap-14 lg:grid-cols-[1fr_1fr] lg:gap-20">
       <div>
         <Reveal>
           <div className="t-label text-[var(--color-ink-faint)]">Check it yourself</div>
