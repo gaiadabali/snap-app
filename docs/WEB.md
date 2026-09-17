@@ -333,7 +333,7 @@ Two constraints that are not style preferences:
 
 | Surface | State |
 |---|---|
-| `/` (home) | **Rebuilt** in the ledger language, then **re-sequenced for conversion** (§4.5): wedge first, both doors above the fold, real app screens, comparison table |
+| `/` (home) | **Rebuilt** in the ledger language, **re-sequenced for conversion** (§4.5), and on 2026-09-17 **re-formed to break the metronome** (§12.1): the eight sections no longer all run `Section → SectionHead → content` with alternating tone. Forms now go gutter · wide · gutter · measure · wide · gutter · wide, the tinted bands are gone, and `.page-spine` carries continuity instead. Two WebGL scenes: the capture chamber in the hero and the tax split at G11. |
 | Header / footer | **Rebuilt** |
 | `public/screens/*`, `_components/app-showcase.tsx`, `_components/comparison.tsx` | **New.** Re-capture per §4.6; `src/public-assets.test.ts` guards the path collision |
 | Tokens, type, motion, primitives | **Rebuilt** — everything inherits these |

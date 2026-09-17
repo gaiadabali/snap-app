@@ -412,13 +412,41 @@ only makes sense with one door, and do not build one that looks broken with two.
 
 ## 13. What is live right now
 
-Home page rebuilt in the ledger language: split hero with both prices visible ·
+Home page rebuilt in the ledger language: hero with the price visible ·
 per-category GST split · four real app screenshots · a named, date-stamped
 capability comparison (Hubdoc / Dext / myDeductions / Ozly) · one inverted band
 on the money-at-risk figure · deduction worksheet · practice review queue ·
-three pricing plans.
+pricing.
 
-Not yet redesigned: `/features`, `/how-it-works`, `/pricing`, `/docs/*`,
-`/support`, `/legal/*`, and the signed-in panels at `/app/*` and `/admin/*`
-(those inherit tokens and the flatter card, and are intentionally denser —
-*marketing breathes; panels work*).
+**Updated 2026-09-17 — the §12.1 register, built.** Two WebGL scenes ship on
+`/`, and one on each of `/features` and `/how-it-works`:
+
+- **The capture chamber** (hero) — a docket being read, with the extractor's
+  field boxes latching onto the spans they name. The boxes are placed by
+  `measureText` from the same code that drew the type, so they are exact by
+  construction rather than by tuning.
+- **The tax split** (G11) — the servo docket separating into its GST-free and
+  taxable halves. The distance between the two sheets is the classification.
+
+Both obey the island rule in `docs/WEB.md` §4.4: a server-rendered flat card is
+the content, the canvas is a picture of it, and no figure exists only inside a
+texture. First-load JS is unchanged on every marketing route.
+
+The **metronome is gone** — the page no longer runs the same section shape
+eight times with alternating tone. Forms: gutter · wide · gutter · measure ·
+wide · gutter · wide. `.page-spine` replaces the tinted bands as the thing that
+makes the page read as one document.
+
+**Not yet done, and worth being plain about:** the register is carried by
+depth, precision and the document itself, not by anything overtly sci-fi —
+§12.2's purely-typographic constraint is still in force and still, as §12.1
+says, the hardest constraint under which to attempt this. Scenes S3–S7 from the
+build plan (the nine validators, the void band, the practice deck, the
+comparison, the depth spine as a travelled Z-axis) are unbuilt. The scenes have
+been verified against software rendering only, never a real mobile GPU.
+
+Not yet redesigned: `/pricing`, `/docs/*`, `/support`, `/legal/*`, and the
+signed-in panels at `/app/*` and `/admin/*` (those inherit tokens and the
+flatter card, and are intentionally denser — *marketing breathes; panels
+work*). `/features` and `/how-it-works` have the scenes but their copy is still
+mechanism-led.
