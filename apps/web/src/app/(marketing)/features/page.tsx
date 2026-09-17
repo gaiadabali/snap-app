@@ -249,7 +249,7 @@ export default function FeaturesPage() {
         </Reveal>
         <Reveal>
           <p className="t-lede mt-6 text-[var(--color-ink-muted)]">
-            Twenty documents a month, free, no card.
+            Ten scans free, no card. After that a scan costs a credit, and credits do not expire.
           </p>
         </Reveal>
         <Reveal>

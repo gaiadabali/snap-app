@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import type {
+  CheckoutSession,
   CreditBalance,
   CreditPack,
   CreditPurchase,
@@ -17,6 +18,8 @@ import type {
 } from '@snap/api-contract';
 import { IsString } from 'class-validator';
 
+import { isManualCreditFulfilmentEnabled } from '../config.js';
+import { paymentProvider } from './payment-provider.js';
 import {
   CurrentUser,
   MembershipGuard,
@@ -133,18 +136,75 @@ export class CreditsController {
     return toPurchase(row);
   }
 
+  @Post('credits/purchases/:id/checkout')
+  @HttpCode(200)
+  @ApiOperation({
+    summary: 'Ask what to do next about a pending purchase',
+    description:
+      'Returns a descriptor rather than a URL, because no processor has been chosen and the rails do not correspond — a card processor answers with a hosted page, in-app purchase answers with a product identifier the phone redeems itself. Today every call returns state "unavailable" with a message safe to show a customer: the order is recorded, nothing has been charged. See credits/payment-provider.ts for the seam and what wiring a real one involves.',
+  })
+  async checkout(
+    @CurrentUser() user: AuthUser,
+    @WorkspaceId() tenantId: string,
+    @Param('id') id: string,
+  ): Promise<CheckoutSession> {
+    // Same bar as starting the purchase: this is the step that would take
+    // money, so it is not open to every member of the workspace.
+    await requireAdmin(user, tenantId);
+
+    /*
+     * Read the purchase back rather than trusting the caller's id: the price
+     * a processor is asked to charge must come from the record, never from
+     * the request. `listCreditPurchases` is tenant-scoped by RLS, so a
+     * purchase belonging to another workspace simply is not in this list.
+     */
+    const rows = await listCreditPurchases(user.userId, tenantId);
+    const row = rows.find((r) => r.id === id);
+    if (!row) throw new NotFoundException('No such purchase.');
+    if (row.status !== 'pending') {
+      throw new ConflictException(
+        `This purchase is ${row.status}, not pending — there is nothing left to pay.`,
+      );
+    }
+
+    return paymentProvider().createCheckout({
+      purchaseId: row.id,
+      tenantId,
+      packCode: row.pack_code,
+      credits: row.credits,
+      priceAud: row.price_aud,
+    });
+  }
+
   @Post('credits/purchases/:id/fulfil')
   @HttpCode(200)
   @ApiOperation({
-    summary: 'Mark a purchase paid and grant the credits',
+    summary: 'Mark a purchase paid and grant the credits — non-production only',
     description:
-      'The manual stand-in for a payment processor webhook (Stripe is phase 6.5 and unwired). Atomically marks the purchase paid, inserts the usage_grants row, and links grant_id — the same sequence a real webhook handler must run, keyed instead by provider + provider_ref. Idempotent: fulfilling an already-paid purchase returns it unchanged rather than granting twice.',
+      'The manual stand-in for a payment processor webhook. Atomically marks the purchase paid, inserts the usage_grants row, and links grant_id — the same sequence a real webhook handler must run, keyed instead by provider + provider_ref. Idempotent: fulfilling an already-paid purchase returns it unchanged rather than granting twice. Returns 404 unless CREDITS_MANUAL_FULFIL is set on a non-production or staging host: it grants paid credits without any money moving, and credits are now the entire commercial model.',
   })
   async fulfil(
     @CurrentUser() user: AuthUser,
     @WorkspaceId() tenantId: string,
     @Param('id') id: string,
   ): Promise<CreditPurchase> {
+    /*
+     * THE GATE, and why `requireAdmin` below is not one.
+     *
+     * Creating a workspace makes you its `owner` (workspaces.controller.ts),
+     * so every self-service signup passes `requireAdmin` for their own
+     * tenant. Start a purchase, fulfil it, and the credits are granted with
+     * no money involved. That was honest while there was no payment path at
+     * all — the endpoint is a stand-in and says so. Credits are now the whole
+     * commercial model, which turns the same two calls into free money.
+     *
+     * 404 rather than 403: in production this endpoint does not exist, and
+     * saying "forbidden" would confirm that it does. Same treatment the
+     * development sign-in bypass gets in `auth.controller.ts`.
+     */
+    if (!isManualCreditFulfilmentEnabled()) {
+      throw new NotFoundException('Cannot POST to this path.');
+    }
     await requireAdmin(user, tenantId);
     try {
       const row = await fulfilCreditPurchase(user.userId, tenantId, id);

@@ -551,9 +551,34 @@ a prefix and last-4, never the value, and writing a key is an audited event.
   takes an email and no password and says in its own comments it must not ship.
   Google OAuth + email registration is the target; the dev bypass is guarded by
   two independent conditions (`NODE_ENV` and an explicit env flag).
-- **Billing has no server routes.** `subscriptions` and `usage_counters` exist
-  in schema (0008, 0011); Stripe is phase 6.5 and unbuilt. Wallet/payment panels
-  read what exists and must not invent a checkout that has no backend.
+- **There is no payment processor, and the commercial model is credits.**
+  Updated 2026-09-17. Subscriptions are gone: a new account gets ten free scans
+  (`usage_grants.source = 'signup_bonus'`), then one scan costs one credit.
+  Credit packs, purchases and balances DO have server routes (`/v1/credit-packs`,
+  `/v1/credits`, `/v1/credits/purchases`) — the earlier claim that "billing has
+  no server routes" was already false for credits and is now wholly false.
+
+  What is still missing is the money. No processor is chosen, and the open
+  question is which RAIL, not which vendor: charging through the phone puts the
+  purchase under Apple's and Google's in-app purchase rules at 15–30% rather
+  than a card processor's ~2% (`docs/MONETISATION.md` §1). The seam is
+  `apps/server/src/credits/payment-provider.ts`; `POST
+  /v1/credits/purchases/:id/checkout` returns a descriptor, and today every
+  call answers `state: 'unavailable'` with a message safe to show a customer.
+
+  The buy screen runs the real flow as far as it genuinely goes — the order is
+  priced, confirmed and recorded as pending — and then says there is nothing to
+  pay with. That is §3.5 applied to a half-built capability: not a disabled
+  button, not a "soon" badge, and never a stub that completes.
+
+  **`POST /v1/credits/purchases/:id/fulfil` grants credits with no money.** It
+  is the manual stand-in for a processor webhook and is gated by
+  `config.ts#isManualCreditFulfilmentEnabled` — off in production, off without
+  an explicit opt-in, proven by `credits/manual-fulfil-gate.test.ts`. Its
+  `requireAdmin` guard is NOT a control: creating a workspace makes you its
+  owner, so every self-service signup satisfies it for their own tenant. When a
+  real processor lands, delete this endpoint rather than leaving it switched
+  off.
 - **The firm/practice console needs new server routes.** `firms` and
   `firm_memberships` are schema-only (0011); the server reads nothing from them
   but a plan's `firm_name`. Treat it as a separate build.

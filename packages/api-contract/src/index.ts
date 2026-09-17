@@ -1423,6 +1423,44 @@ export interface CreditPurchase {
   paidAt: IsoDateTime | null;
 }
 
+/**
+ * Which rail a payment would go through.
+ *
+ * `'none'` is a real, expected value rather than an error state: no processor
+ * has been chosen. The gateway question is genuinely open and it is not only
+ * "which vendor" — charging through the phone means Apple's and Google's
+ * in-app purchase rules, which are a different rail from a card processor at a
+ * different rate (`docs/MONETISATION.md` §1 prices that difference at 15–30%
+ * against roughly 2%). So the seam is drawn around the rail, not around Stripe.
+ */
+export type PaymentProviderId = 'none' | 'stripe' | 'apple' | 'google' | 'manual';
+
+/**
+ * What the client should do next about a pending purchase —
+ * `POST /v1/credits/purchases/:id/checkout`.
+ *
+ * Deliberately a DESCRIPTOR rather than a redirect URL, because a URL cannot
+ * express the state this product is actually in. Every processor hands back
+ * something different (a hosted-page URL, a client secret, a StoreKit product
+ * id) and there is currently no processor at all, so a `string` would have
+ * forced either a lie or a sentinel value.
+ *
+ * `state: 'unavailable'` is the honest answer today: the purchase is recorded,
+ * nothing has been charged, and `message` says so in words a person can read.
+ * The UI renders that rather than a pay button that goes nowhere — see
+ * `docs/WEB.md` §3.5, nothing says "soon".
+ */
+export interface CheckoutSession {
+  purchaseId: string;
+  provider: PaymentProviderId;
+  /** `redirect` — send the customer to `url`. `unavailable` — nothing to pay with. */
+  state: 'redirect' | 'unavailable';
+  /** Present only when `state` is `redirect`. */
+  url?: string;
+  /** Present when `state` is `unavailable`; safe to show a customer. */
+  message?: string;
+}
+
 /** `GET /v1/points` — USER-scoped; see the header above. */
 export interface PointBalance {
   balance: number;

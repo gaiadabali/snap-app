@@ -238,7 +238,7 @@ export default function HowItWorksPage() {
         </Reveal>
         <Reveal>
           <p className="t-lede mt-6 text-[var(--color-ink-muted)]">
-            Twenty documents a month, free, no card. If it does not read your dockets properly, you
+            Ten scans free, no card. If it does not read your dockets properly, you
             will know within one.
           </p>
         </Reveal>

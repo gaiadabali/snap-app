@@ -3,6 +3,25 @@
 **Date:** 2026-09-09 · **Currency:** AUD, GST-inclusive where quoted to consumers
 **Supersedes** the direct-to-consumer tiering in this file's previous revision. See §1 for why.
 
+> **SUPERSEDED IN PART — 2026-09-17.** The owner has settled a credit model:
+> ten free scans on signup, then one scan costs one credit, priced at the
+> measured model cost × 3 (§5's ~$0.011/scan → $0.033). There are no
+> subscriptions, no seats and no minimum, so the Free / Sole Trader / Practice
+> / Practice Plus tiering below — and every MRR and per-seat figure derived
+> from it — no longer describes what is sold. Credit packs are seeded by
+> migration 0027 and the rule lives in
+> `apps/web/src/app/(marketing)/pricing/credit-packs.ts`.
+>
+> What survives and is still the reason this file exists: §1's finding that
+> the channel is accountants and bookkeepers rather than D2C, §5's measured
+> unit economics, and the rail analysis (in-app purchase at 15–30% against a
+> card processor's ~2%) which is now the open question for checkout.
+>
+> Left in place rather than rewritten: the channel arithmetic is the owner's
+> strategic work and re-deriving it under per-scan pricing is a business
+> decision, not an editing job.
+
+
 ---
 
 ## 1. Why this was rewritten
