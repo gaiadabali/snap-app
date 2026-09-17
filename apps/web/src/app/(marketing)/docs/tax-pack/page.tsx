@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 
+import { ArticleHero } from '@/design/primitives';
+
 import { Toc } from '../_components/Toc';
 
 export const metadata: Metadata = { title: 'The tax pack' };
@@ -15,7 +17,10 @@ export default function TaxPackPage() {
   return (
     <div className="grid gap-10 xl:grid-cols-[1fr_200px]">
       <article className="max-w-[68ch]">
-        <h1 className="text-[28px] font-bold text-[var(--color-ink)]">The tax pack</h1>
+        <ArticleHero
+        kicker="Documentation"
+        title={<>The tax pack</>}
+      />
         <p className="mt-3 text-[16px] leading-relaxed text-[var(--color-ink-muted)]">
           The tax pack is the single export built for handing your quarter or year to an accountant —
           everything they need in one file, rather than them chasing individual receipts.

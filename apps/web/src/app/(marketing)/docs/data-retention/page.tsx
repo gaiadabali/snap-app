@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 
+import { ArticleHero } from '@/design/primitives';
+
 import { Toc } from '../_components/Toc';
 
 export const metadata: Metadata = { title: 'Data retention and deletion' };
@@ -15,9 +17,10 @@ export default function DataRetentionPage() {
   return (
     <div className="grid gap-10 xl:grid-cols-[1fr_200px]">
       <article className="max-w-[68ch]">
-        <h1 className="text-[28px] font-bold text-[var(--color-ink)]">
-          Data retention and deletion
-        </h1>
+        <ArticleHero
+        kicker="Documentation"
+        title={<>Data retention and deletion</>}
+      />
         <p className="mt-3 text-[16px] leading-relaxed text-[var(--color-ink-muted)]">
           How long records are kept is a rule with a specific source, not a general policy — the ATO
           sets it, and Snap Apps enforces it as data rather than as a document nobody reads.

@@ -20,6 +20,7 @@ import { AppScreens } from './_components/app-showcase';
 import { ReceiptScanCard } from './_components/receipt-scan-card';
 import { ComparisonTable } from './_components/comparison';
 import { PageSpine } from './_components/page-spine';
+import { GetTheAppButtons } from './_components/platform-cta';
 import { ReadComparison } from './_components/read-comparison';
 import { Proof, PROOF_HEAD } from './_components/proof';
 
@@ -264,6 +265,20 @@ export default function HomePage() {
               }
               style={{ ['--i' as string]: 4 }}
             >
+              {/*
+                The app itself, first. This is a landing page for a phone app
+                and until now it had no way to GET the phone app — both doors
+                led to a web sign-up, and `/download` was reachable only from
+                the nav. Someone who arrives convinced should be able to
+                install it from the screen that convinced them.
+
+                Order is deliberate: install, then sign up. The free tier
+                needs no card and the app is what was just demonstrated, so
+                asking for an account before handing over the thing is the
+                wrong way round.
+              */}
+              <GetTheAppButtons />
+
               <Door
                 kicker="Start free, no card"
                 title="Sole trader, tradie, or on the road"

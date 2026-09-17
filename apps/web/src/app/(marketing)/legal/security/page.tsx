@@ -1,13 +1,18 @@
 import type { Metadata } from 'next';
 
+import { ArticleHero } from '@/design/primitives';
+
 export const metadata: Metadata = { title: 'Data handling & security' };
 
 export default function DataHandlingSecurityPage() {
   return (
     <article className="flex flex-col gap-8 leading-relaxed text-[var(--color-ink-muted)]">
       <header>
-        <h1 className="text-[28px] font-bold text-[var(--color-ink)]">Data handling &amp; security</h1>
-        <p className="mt-2 text-[13px] text-[var(--color-ink-faint)]">Draft — last updated 12 September 2026</p>
+        <ArticleHero
+        kicker="Documentation"
+        title={<>Data handling &amp; security</>}
+        meta={<>Draft — last updated 12 September 2026</>}
+      />
       </header>
 
       <p>

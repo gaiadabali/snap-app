@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 
+import { ArticleHero } from '@/design/primitives';
+
 import { Toc } from '../_components/Toc';
 
 export const metadata: Metadata = { title: 'BAS and the unclaimable-GST report' };
@@ -17,9 +19,10 @@ export default function BasAndGstPage() {
   return (
     <div className="grid gap-10 xl:grid-cols-[1fr_200px]">
       <article className="max-w-[68ch]">
-        <h1 className="text-[28px] font-bold text-[var(--color-ink)]">
-          BAS and the unclaimable-GST report
-        </h1>
+        <ArticleHero
+        kicker="Documentation"
+        title={<>BAS and the unclaimable-GST report</>}
+      />
         <p className="mt-3 text-[16px] leading-relaxed text-[var(--color-ink-muted)]">
           The BAS report is built directly from your posted transactions and their tax codes — it is
           the same ledger you&apos;ve been confirming receipts into, grouped the way the ATO asks for

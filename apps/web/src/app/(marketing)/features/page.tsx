@@ -5,11 +5,11 @@ import {
   FieldBox,
   LedgerRow,
   Money,
+  PageHero,
   Reveal,
   Rule,
   Section,
   SectionHead,
-  Settle,
   Split,
   SplitBar,
   Tear,
@@ -71,25 +71,13 @@ export default function FeaturesPage() {
           the ATO codes hang. See `_components/page-spine.tsx`. */}
       <PageSpine />
 
-      {/* 1 — wide. */}
-      <Section form="wide" size="lg" className="screen sect-3d first-screen">
-        <Rule />
-        <Reveal variant="fade">
-          <div className="t-label mt-5 text-[var(--color-ink-muted)]">
-            <Settle text="What it does" />
-          </div>
-        </Reveal>
-        <Reveal>
-          <h1 className="t-display mt-5 max-w-[15ch]">Right to the cent, or it says so.</h1>
-        </Reveal>
-        <Reveal>
-          <p className="t-lede mt-8 max-w-[58ch] text-[var(--color-ink-muted)]">
-            Most tools hand you a total off the front of a receipt. This one works out the GST line
-            by line, checks it nine ways against the ATO's own rules, and refuses to post anything
-            that does not balance.
-          </p>
-        </Reveal>
-      </Section>
+      {/* 1 — the shared opening. */}
+      <PageHero
+        screen
+        kicker="What it does"
+        title="Right to the cent, or it says so."
+        lede="Most tools hand you a total off the front of a receipt. This one works out the GST line by line, checks it nine ways against the ATO's own rules, and refuses to post anything that does not balance."
+      />
 
       {/* 2 — gutter. The wedge, first, because it is the thing nobody else does. */}
       <Section code="G11" size="lg" className="screen sect-3d">

@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 
-import { Card, SectionTitle } from '@/design/primitives';
+import { ArticleHero, Card } from '@/design/primitives';
 
 import { DOCS_NAV } from './_components/nav';
 
@@ -10,12 +10,11 @@ export const metadata: Metadata = { title: 'Docs' };
 export default function DocsIndexPage() {
   return (
     <div className="max-w-[68ch]">
-      <SectionTitle
-        as="h1"
-        eyebrow="Documentation"
-        title="How Snap Apps works"
-        lede="Guides for using the product day to day — capturing receipts, correcting what the model got wrong, understanding your BAS position, and getting your data out. Not an API reference."
-      />
+      <ArticleHero kicker="Documentation" title="How Snap Apps works" />
+      <p className="t-body mt-5 text-[var(--color-ink-muted)]">
+        Guides for using the product day to day — capturing receipts, correcting what the model got
+        wrong, understanding your BAS position, and getting your data out. Not an API reference.
+      </p>
       <div className="mt-8 flex flex-col gap-3">
         {DOCS_NAV.map((item) => (
           <Link key={item.href} href={item.href} className="block">

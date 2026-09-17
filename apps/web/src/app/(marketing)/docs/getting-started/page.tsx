@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 
+import { ArticleHero } from '@/design/primitives';
+
 import { Toc } from '../_components/Toc';
 
 export const metadata: Metadata = { title: 'Getting started' };
@@ -15,7 +17,10 @@ export default function GettingStartedPage() {
   return (
     <div className="grid gap-10 xl:grid-cols-[1fr_200px]">
       <article className="max-w-[68ch]">
-        <h1 className="text-[28px] font-bold text-[var(--color-ink)]">Getting started</h1>
+        <ArticleHero
+        kicker="Documentation"
+        title={<>Getting started</>}
+      />
         <p className="mt-3 text-[16px] leading-relaxed text-[var(--color-ink-muted)]">
           Snap Apps turns a photo of a receipt or tax invoice into a checked, categorised record —
           and, once you confirm it, a balanced ledger entry. It is built for Australian sole traders,

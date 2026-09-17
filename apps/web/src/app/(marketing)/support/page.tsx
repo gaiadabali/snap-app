@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 
-import { Badge, Card, Reveal, Rule, Section, Tear } from '@/design/primitives';
+import { Badge, Card, PageHero, Reveal, Section, Tear } from '@/design/primitives';
 
 import { PageSpine } from '../_components/page-spine';
 
@@ -44,22 +44,14 @@ export default function SupportPage() {
 
         Copy is untouched.
       */}
-      <Section form="measure" size="lg" className="sect-3d">
-        <Rule />
-        <Reveal variant="fade">
-          <div className="t-label mt-5 text-[var(--color-ink-muted)]">Support</div>
-        </Reveal>
-        <Reveal>
-          <h1 className="t-head mt-4 max-w-[20ch]">Help centre</h1>
-        </Reveal>
-        <Reveal>
-          <p className="t-lede mt-6 text-[var(--color-ink-muted)]">
-            Search for a topic, browse by category, or contact us directly. This page covers the
-            product as it actually works — nothing here describes a feature that isn&apos;t shipped.
-          </p>
-        </Reveal>
+      <PageHero
+        kicker="Support"
+        title="Help centre"
+        lede="Search for a topic, browse by category, or contact us directly. This page covers the product as it actually works — nothing here describes a feature that isn't shipped."
+      />
 
-        <div className="mt-8">
+      <Section form="measure" className="sect-3d">
+        <div>
           <SupportSearch index={SEARCH_INDEX} />
         </div>
 

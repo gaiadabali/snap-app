@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 
+import { ArticleHero } from '@/design/primitives';
+
 import { Toc } from '../_components/Toc';
 
 export const metadata: Metadata = { title: 'Reviewing and correcting extractions' };
@@ -16,9 +18,10 @@ export default function ReviewingCorrectionsPage() {
   return (
     <div className="grid gap-10 xl:grid-cols-[1fr_200px]">
       <article className="max-w-[68ch]">
-        <h1 className="text-[28px] font-bold text-[var(--color-ink)]">
-          Reviewing and correcting extractions
-        </h1>
+        <ArticleHero
+        kicker="Documentation"
+        title={<>Reviewing and correcting extractions</>}
+      />
         <p className="mt-3 text-[16px] leading-relaxed text-[var(--color-ink-muted)]">
           Every field the model reads carries a confidence and, where relevant, a reason it was
           flagged. The review screen is where you fix what it got wrong — and it&apos;s built so that

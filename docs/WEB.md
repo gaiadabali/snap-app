@@ -435,6 +435,36 @@ top-level BASE rule. It deliberately allows the same class to reappear inside
 architecture — and bans only two components owning one name. Verified by
 reintroducing the `.seam` collision and watching it fail.
 
+### 4.9 One opening, every page
+
+Added 2026-09-17. `PageHero` and `ArticleHero` in `design/primitives`.
+
+Before them the site opened four different ways: `/features`,
+`/how-it-works`, `/pricing` and `/download` each hand-rolled
+`Rule` → kicker → `h1` → lede and had drifted apart in spacing and scale;
+`/docs` used `SectionTitle` with a pill eyebrow; and `/legal/*` plus every
+docs subpage opened with a bare `<h1 className="text-[28px] font-bold">` —
+no rule, no kicker, no motion. Twelve reference pages looked like a different
+product from the six marketing ones.
+
+The opening is now a component rather than a convention, because a convention
+is what people mean to follow.
+
+| | |
+|---|---|
+| `PageHero` | Owns its `Section`. Marketing pages. `screen` holds it to one viewport. |
+| `ArticleHero` | Copy block only, for a page whose layout is already owned by a shell — docs articles (sidebar + TOC) and legal pages. |
+
+Two dials vary and only these two: `size` (`page` display type vs `sub` head
+type — a 64px heading on "Connecting Xero" is shouting a filename) and
+`screen`. Everything else is identical by construction.
+
+**Which pages hold to one screen.** Narrative pages — home, features,
+how-it-works, pricing — where the page is an argument read in order. Utility
+pages — download, support, docs, legal — stay in normal flow: someone who came
+for a checksum or a retention period should not have to scroll through a held
+screen to reach it. Only the home page is additionally pinned.
+
 ## 5. Ownership map
 
 Work in **your files only**. If you need a shared primitive that does not exist,
