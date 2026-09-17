@@ -1,13 +1,16 @@
 import { claimJobs, completeJob, failJob, withTenantAs } from '@snap/db';
+import type { TaxRules } from '@snap/tax-rules';
 import { sql } from 'drizzle-orm';
 
 import { chain } from './ai/router.js';
 import { config } from './config.js';
 import { getDb } from './db.js';
 import { BedrockClaudeProvider, OllamaCloudProvider, type ExtractionProvider, type PageImage } from './extraction/provider.js';
+import { extractionPromptFor } from './extraction/prompt.js';
 import { runExtraction } from './extraction/run.js';
 import { runShadowOcr } from './extraction/shadow.js';
-import { listCapturePages, saveExtraction, saveExtractionFailure } from './repo.js';
+import { listCapturePages, readTenant, saveExtraction, saveExtractionFailure } from './repo.js';
+import { rulesFor } from './taxrules/taxrules.repo.js';
 import { get as readObject } from './storage.js';
 
 /**
@@ -26,10 +29,32 @@ import { get as readObject } from './storage.js';
 
 const WORKER_USER = process.env.WORKER_USER_ID ?? '';
 
-function providerFor(model: string): ExtractionProvider {
+function providerFor(model: string, rules: TaxRules | null): ExtractionProvider {
+  // The prompt is part of the jurisdiction, not a constant. A workspace with
+  // no rule set gets the Australian prompt, which is what it has always got.
+  const prompt = rules
+    ? extractionPromptFor({
+        countryName: rules.countryName,
+        consumptionTax: {
+          name: rules.consumptionTax.name,
+          // The EFFECTIVE rate — statutory x base fraction. Indonesia prints
+          // 12% and charges 11%, and the model should be told the 11%.
+          statutoryRate: {
+            n: rules.consumptionTax.statutoryRate.n * rules.consumptionTax.baseFraction.n,
+            d: rules.consumptionTax.statutoryRate.d * rules.consumptionTax.baseFraction.d,
+          },
+        },
+        taxId: rules.taxId,
+        currency: rules.currency,
+        documentRules: rules.documentRules,
+        otherTaxes: rules.otherTaxes,
+        consumptionTaxExemptHints: rules.consumptionTax.exemptCategories.flatMap((c) => c.hints),
+      })
+    : undefined;
+
   return config().EXTRACTION_PROVIDER === 'bedrock'
     ? new BedrockClaudeProvider(model)
-    : new OllamaCloudProvider(model);
+    : new OllamaCloudProvider(model, undefined, undefined, prompt);
 }
 
 type Job = { id: string; tenantId: string | null; payload: unknown };
@@ -73,6 +98,32 @@ async function handle(job: Job): Promise<void> {
     pages = [{ bytes: readObject(capture.key), mimeType: capture.mime }];
   }
 
+  /**
+   * The workspace's tax rule set, resolved once for this job.
+   *
+   * `null` means no engine installed, which is every Australian workspace and
+   * is the documented pre-0026 state — `validate()` then behaves exactly as it
+   * always has. What must NOT happen is an Indonesian workspace silently
+   * getting that same path: a receipt read under Australian rules produces a
+   * GST arithmetic complaint on every PPN line, demands an ABN that does not
+   * exist, and calls a rupiah total a dollar figure.
+   *
+   * A rule set that fails to load is left null rather than failing the job. The
+   * document still gets read and stored — losing the capture would be worse
+   * than validating it conservatively — and the findings a reviewer sees are
+   * the Australian ones, which is visibly wrong rather than quietly wrong.
+   */
+  let taxRules: TaxRules | null = null;
+  try {
+    const tenant = await readTenant(WORKER_USER, job.tenantId);
+    if (tenant?.tax_rules_id) taxRules = await rulesFor(tenant);
+  } catch (error) {
+    console.error(
+      `job ${job.id}: tax rules did not load for tenant ${job.tenantId}; ` +
+        `validating without a rule set — ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+
   const models = chain('vision');
 
   // Escalation, not retry: a model that returned unparseable output at
@@ -80,7 +131,7 @@ async function handle(job: Job): Promise<void> {
   // changes the answer.
   let lastError = 'no models tried';
   for (const spec of models) {
-    const outcome = await runExtraction(providerFor(spec.id), pages);
+    const outcome = await runExtraction(providerFor(spec.id, taxRules), pages, new Date(), taxRules);
 
     if (outcome.ok) {
       const { run } = outcome;

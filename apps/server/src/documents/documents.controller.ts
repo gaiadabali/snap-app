@@ -46,13 +46,15 @@ import {
   listCapturePages,
   listDocuments,
   listMembers,
+  readTenant,
   replaceLines,
   updateDocument,
   type CapturePageRow,
   type DocumentRow,
   type LineRow,
 } from '../repo.js';
-import { abnIsValid, validate } from '../extraction/validators.js';
+import { abnIsValid, expectedGst, validate } from '../extraction/validators.js';
+import { rulesFor } from '../taxrules/taxrules.repo.js';
 import { getCaptureForDocument } from '../repo.js';
 import { get as readObject } from '../storage.js';
 import { issueImageToken } from '../tokens.js';
@@ -403,16 +405,20 @@ export class DocumentsController {
     // vocabulary leaking through the handler.
     const edit = flattenEdits(body.edits);
 
-    // Correcting the total re-derives the tax. GST is never taken from the
-    // client: it is exactly 1/11 of the taxable part, and accepting both
-    // invites the two to disagree.
+    // The workspace's tax rule set, or null for Australia. Resolved before the
+    // re-derivation below, because the divisor is the jurisdiction: 1/11 in
+    // Australia, 11/111 in Indonesia (docs/INDONESIA.md §2.2).
+    const tenant = await readTenant(user.userId, tenantId);
+    const taxRules = tenant?.tax_rules_id ? await rulesFor(tenant) : null;
+
+    // Correcting the total re-derives the tax. Tax is never taken from the
+    // client: it is a function of the taxable part, and accepting both invites
+    // the two to disagree.
     let taxAmount: string | undefined;
     let taxExclusiveAmount: string | undefined;
     const payable = edit.payableAmount ?? before.document.payable_amount;
     if (edit.payableAmount != null || edit.gstFreeAmount !== undefined) {
-      const gstFree = money.money(edit.gstFreeAmount ?? '0');
-      const taxable = money.subtract(money.money(payable ?? '0'), gstFree);
-      taxAmount = money.gstFromInclusive(taxable);
+      taxAmount = expectedGst(payable ?? '0', edit.gstFreeAmount ?? '0', taxRules);
       taxExclusiveAmount = money.subtract(money.money(payable ?? '0'), money.money(taxAmount));
     }
 
@@ -447,7 +453,7 @@ export class DocumentsController {
       payableAmount: { value: payable, confidence: 1 },
       lines: [],
       notes: { legible: true, imageIssues: [], warnings: [] },
-    });
+    }, new Date(), taxRules);
 
     const outcome = await updateDocument(
       user.userId,

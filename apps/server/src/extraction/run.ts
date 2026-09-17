@@ -1,5 +1,7 @@
 import { createHash } from 'node:crypto';
 
+import type { TaxRules } from '@snap/tax-rules';
+
 import { TruncatedOutputError } from './provider.js';
 import type { ExtractionProvider, PageImage, ProviderResult } from './provider.js';
 import type { ValidatedExtraction } from './types.js';
@@ -67,6 +69,16 @@ export async function runExtraction(
   provider: ExtractionProvider,
   image: PageImage | PageImage[],
   now = new Date(),
+  /**
+   * The workspace's tax rule set, or null for Australia.
+   *
+   * Passed in rather than resolved here so this function stays PURE in the way
+   * that matters: same image, same rules, same verdict. A replay against a
+   * stored image has to be able to supply the rule set the original run used,
+   * and a function that looked one up from the database could not be replayed
+   * at all.
+   */
+  rules?: TaxRules | null,
 ): Promise<{ ok: true; run: ExtractionRun } | { ok: false; failure: RunFailure }> {
   const pages = Array.isArray(image) ? image : [image];
   const started = Date.now();
@@ -104,7 +116,7 @@ export async function runExtraction(
     };
   }
 
-  const result = validate(provided.extraction, now);
+  const result = validate(provided.extraction, now, rules);
 
   return {
     ok: true,

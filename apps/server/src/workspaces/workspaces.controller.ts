@@ -32,6 +32,7 @@ import { listMembers, listWorkspacesFor, updateTenant } from '../repo.js';
 import { seedDefaultCategories } from '../settings/settings.repo.js';
 import { setBudget } from '../business/business.repo.js';
 import { abnIsValid } from '../extraction/validators.js';
+import { installRulesFor } from '../taxrules/taxrules.repo.js';
 
 const ROLES = ['owner', 'admin', 'bookkeeper', 'member', 'readonly'] as const;
 type Role = (typeof ROLES)[number];
@@ -60,6 +61,14 @@ export class OnboardingDto {
   @IsOptional() @IsIn(['cash', 'accrual']) gstBasis?: 'cash' | 'accrual';
   @IsOptional() @IsString() occupationProfileId?: string | null;
   @IsOptional() @IsString() monthlyBudget?: string | null;
+  /**
+   * The tax engine to install, e.g. `id-2026` (migration 0026).
+   *
+   * Optional, and its absence means "no engine" rather than "Australia" — a
+   * workspace without one refuses every tax calculation, which is the honest
+   * state and the one the settings screen can fix.
+   */
+  @IsOptional() @IsString() taxRulesId?: string | null;
 }
 
 export class RoleDto {
@@ -188,6 +197,21 @@ export class WorkspacesController {
           ? { occupationProfileId: body.occupationProfileId || null }
           : {}),
       });
+    }
+
+    // The tax engine, if one was chosen. Installed AFTER the settings above
+    // because it also writes `country`, `base_currency` and
+    // `financial_year_start_month` — the engine is the authority on those, and
+    // letting a later write win would leave the workspace Indonesian for tax
+    // and Australian for its financial year.
+    //
+    // A failure here is not swallowed. Onboarding that silently produced a
+    // workspace with no engine, after the person picked a country, would put
+    // them in front of a tracker that refuses every tax figure with no
+    // explanation of why.
+    const taxRulesId = (body.taxRulesId ?? '').trim();
+    if (taxRulesId !== '') {
+      await installRulesFor(user.userId, created.id, taxRulesId);
     }
 
     // A household that said what it intends to spend gets that recorded now,

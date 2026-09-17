@@ -1,4 +1,5 @@
 import { money } from '@snap/db';
+import { formatLocalAmount, periodOf, taxFromInclusive, type TaxRules } from '@snap/tax-rules';
 
 import type {
   ComplianceFailure,
@@ -70,13 +71,20 @@ export function abnIsValid(abn: string | null | undefined): boolean {
  * Is this a date a business record could carry?
  *
  * Deliberately not "is it a valid date": `2006-09-26` is perfectly valid and
- * still wrong. Records must be kept five years, so anything older than seven
- * is far more likely a misread two-digit year than a genuine old receipt, and
- * a future date cannot be a receipt for something already bought.
+ * still wrong. A future date cannot be a receipt for something already bought,
+ * and a date far outside the retention period is far more likely a misread
+ * two-digit year than a genuine old receipt.
+ *
+ * `maxAgeYears` is the jurisdiction's, not a constant: Australia keeps records
+ * five years and this allows seven, but Indonesia requires TEN (UU KUP Pasal
+ * 28(11)), so an eight-year-old Indonesian docket is one the taxpayer is still
+ * legally required to hold. Refusing it would be the software contradicting
+ * the law. docs/INDONESIA.md §6.2.
  */
 export function dateProblem(
   iso: string | null,
   now = new Date(),
+  maxAgeYears = 7,
 ): { code: string; message: string; fix: string } | null {
   if (!iso) {
     return {
@@ -121,11 +129,11 @@ export function dateProblem(
       fix: 'Check the year and the day/month order on the receipt.',
     };
   }
-  const sevenYearsAgo = asIso(new Date(now.getFullYear() - 7, now.getMonth(), now.getDate()));
-  if (iso < sevenYearsAgo) {
+  const floor = asIso(new Date(now.getFullYear() - maxAgeYears, now.getMonth(), now.getDate()));
+  if (iso < floor) {
     return {
       code: 'date_implausible',
-      message: `${iso} is more than seven years ago, which is outside the retention period.`,
+      message: `${iso} is more than ${maxAgeYears} years ago, which is outside the retention period.`,
       // The exact failure the provider produced on a two-digit year.
       fix: 'A two-digit year is easily misread — check whether this is 20xx.',
     };
@@ -173,9 +181,152 @@ export function quarterOf(iso: string): string {
   return `${year}-Q${Math.floor((Number(month) - 1) / 3) + 1}`;
 }
 
-/** GST inside a GST-inclusive amount: exactly 1/11. */
-export function expectedGst(inclusive: string, gstFree: string = '0'): string {
-  return money.gstFromInclusive(money.subtract(money.money(inclusive), money.money(gstFree)));
+/**
+ * The reporting period an ISO date falls in, for the day/month tie-breaker.
+ *
+ * The question this answers is narrow and worth stating: *would the two
+ * readings of an ambiguous date be reported in different periods?* If not, no
+ * figure anyone files differs, and interrupting the user costs more than it
+ * saves — the reasoning already recorded for `quarterOf`.
+ *
+ * With no rule set this IS `quarterOf`, unchanged. With one, the period comes
+ * from the jurisdiction, and the consequence is real: under monthly periods
+ * every ambiguous pair lands in a different period, so the check fires far more
+ * often than it does in Australia. docs/INDONESIA.md §6.1.
+ */
+export function periodKey(iso: string, rules?: TaxRules | null): string {
+  if (!rules) return quarterOf(iso);
+  return periodOf(rules, iso);
+}
+
+/**
+ * The jurisdiction-dependent half of validation.
+ *
+ * `validate()` was written when there was one country, so every value below was
+ * a constant in this file. `docs/INDONESIA.md` §8 inventoried them; this is
+ * where they stop being constants.
+ *
+ * **Null rules means Australia, and that is not a silent fallback.** It is the
+ * documented state of every workspace created before migration 0026 and of the
+ * Australian product, which does not use rule sets at all — `@snap/tax-engine`
+ * is its engine. The distinction that matters: a workspace that HAS chosen
+ * Indonesia never reaches this branch, because `worker.ts` resolves its rule
+ * set and passes it. Australia is the answer to "no country was ever chosen",
+ * not to "the country could not be loaded" — that case throws upstream.
+ */
+type Jurisdiction = {
+  /** Tax inside a tax-inclusive total, applied by `taxFromInclusive`. */
+  taxOf: (inclusive: string) => string;
+  /** What the tax is called on local paper. */
+  taxName: string;
+  /** What the taxpayer id is called. */
+  taxIdName: string;
+  /** False when this jurisdiction gives no arithmetic check on the tax id. */
+  taxIdCheckable: boolean;
+  /** Expected currency code. */
+  currency: string;
+  /** Format an amount the way a person here reads it. */
+  format: (v: string | null | undefined) => string;
+  /** Words that mark the formal tax invoice, e.g. `FAKTUR PAJAK`. */
+  taxInvoiceTokens: string[];
+  /**
+   * False when a photograph cannot establish validity at all.
+   *
+   * Indonesia: a faktur pajak is valid only once DJP has cleared it and the
+   * seller has uploaded it by the 20th of the following month, and neither
+   * fact is on the paper (`docs/INDONESIA.md` §4.2). Asserting a verdict from
+   * the image would be inventing one.
+   */
+  validityDecidable: boolean;
+  /** Tax-invoice / buyer-id thresholds, where the jurisdiction has them. */
+  taxInvoiceThreshold: string | null;
+  buyerIdThreshold: string | null;
+  /** How old a document can plausibly be. */
+  plausibleAgeYears: number;
+  /** Reconciliation tolerance, in this currency's own units. */
+  rounding: number;
+  /** Drift above which a stated tax figure disagrees with the arithmetic. */
+  taxDrift: number;
+  /** Taxes that print like the main one and are NOT it. */
+  otherTaxes: { code: string; name: string; tokens: string[]; why: string }[];
+  /** One sentence telling the user which way dates are printed here. */
+  dateOrderHint: string;
+};
+
+/** Australia, exactly as this file has always behaved. */
+const AUSTRALIA: Jurisdiction = {
+  taxOf: (inclusive) => money.gstFromInclusive(money.money(inclusive)),
+  taxName: 'GST',
+  taxIdName: 'ABN',
+  taxIdCheckable: true,
+  currency: 'AUD',
+  format: (v) =>
+    `$${(v == null ? 0 : Number(v)).toLocaleString('en-AU', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`,
+  taxInvoiceTokens: ['TAX INVOICE'],
+  validityDecidable: true,
+  taxInvoiceThreshold: TAX_INVOICE_THRESHOLD,
+  buyerIdThreshold: BUYER_ABN_THRESHOLD,
+  plausibleAgeYears: 7,
+  rounding: ROUNDING_TOLERANCE,
+  taxDrift: 0.011,
+  otherTaxes: [],
+  dateOrderHint: 'Australian receipts print day/month.',
+};
+
+/** Build the jurisdiction from an installed rule set. */
+export function jurisdictionOf(rules: TaxRules | null | undefined): Jurisdiction {
+  if (!rules) return AUSTRALIA;
+  const ct = rules.consumptionTax;
+  const cur = rules.currency;
+  // Five till increments, as `@snap/tax-rules` defines it — 5 cents in
+  // Australia, Rp 500 in Indonesia. A literal 0.05 here was the §7.2 defect.
+  const tolerance = (cur.tillRounding * 5) / 10 ** cur.minorUnits;
+  return {
+    taxOf: (inclusive) => taxFromInclusive(rules, inclusive).taxAmount,
+    taxName: ct.name,
+    taxIdName: rules.taxId.name,
+    taxIdCheckable: rules.taxId.checksum !== null,
+    currency: cur.code,
+    format: (v) => formatLocalAmount(v == null ? '0' : String(v), cur),
+    taxInvoiceTokens: rules.documentRules.taxInvoiceTokens,
+    validityDecidable: rules.documentRules.validityDecidableFromDocument,
+    // Indonesia has no retail-receipt threshold: a cash-register slip is a
+    // valid faktur pajak at any amount, and none of them is creditable anyway.
+    taxInvoiceThreshold: null,
+    buyerIdThreshold: null,
+    plausibleAgeYears: rules.documentRules.plausibleAgeYears,
+    rounding: tolerance,
+    taxDrift: tolerance,
+    otherTaxes: rules.otherTaxes.map((t) => ({
+      code: t.code,
+      name: t.name,
+      tokens: t.documentTokens,
+      why: t.confusableWith,
+    })),
+    dateOrderHint:
+      rules.documentRules.dateOrder === 'day_first'
+        ? `${rules.countryName} prints day/month.`
+        : `${rules.countryName} prints month/day.`,
+  };
+}
+
+/**
+ * Tax inside a tax-inclusive amount, less any exempt portion.
+ *
+ * Australia: exactly 1/11. Indonesia: 11/111, because the 12% statutory rate
+ * applies to a base of 11/12 (`docs/INDONESIA.md` §2.2). The divisor is the
+ * jurisdiction, which is why it is no longer written here.
+ */
+export function expectedGst(
+  inclusive: string,
+  gstFree: string = '0',
+  rules?: TaxRules | null,
+): string {
+  const j = jurisdictionOf(rules);
+  return j.taxOf(money.subtract(money.money(inclusive), money.money(gstFree)));
 }
 
 const num = (v: string | null | undefined): number => (v == null ? 0 : Number(v));
@@ -214,7 +365,14 @@ export function linesGap(
   return Math.abs(exclusive) < Math.abs(inclusive) ? exclusive : inclusive;
 }
 
-/** Money as a person reads it. Findings are shown to users, not to logs. */
+/**
+ * Money as a person reads it. Findings are shown to users, not to logs.
+ *
+ * Kept as the Australian formatter for callers outside `validate()`. Inside it,
+ * the jurisdiction's own formatter is used — `$1,110,000.00` for a rupiah
+ * figure is not a cosmetic slip, it is the wrong currency's convention on a
+ * number the user has to check against paper.
+ */
 const aud = (v: string | null | undefined): string =>
   `$${num(v).toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -226,9 +384,19 @@ const aud = (v: string | null | undefined): string =>
  * and its output compared against today's, which is impossible if validation
  * depends on wall-clock state.
  */
-export function validate(extraction: Extraction, now = new Date()): ValidatedExtraction {
+export function validate(
+  extraction: Extraction,
+  now = new Date(),
+  rules?: TaxRules | null,
+): ValidatedExtraction {
   const findings: Finding[] = [];
   const failures: ComplianceFailure[] = [];
+
+  // Everything jurisdiction-dependent comes from here. With no rule set this
+  // is Australia, byte-for-byte as before — which is what keeps every existing
+  // test in this file meaningful rather than merely passing.
+  const j = jurisdictionOf(rules);
+  const fmt = j.format;
 
   const payable = extraction.payableAmount.value;
   const gst = extraction.taxAmount.value;
@@ -278,30 +446,48 @@ export function validate(extraction: Extraction, now = new Date()): ValidatedExt
       .filter((l) => l.gstFree.value === true)
       .reduce((acc, l) => acc + num(l.amount.value), 0);
 
-    const expected = expectedGst(payable, gstFreePortion.toFixed(4));
+    const expected = expectedGst(payable, gstFreePortion.toFixed(4), rules);
     const drift = Math.abs(num(gst) - num(expected));
     // A cent of drift is rounding on the till. More than that means either the
-    // GST was misread or part of the sale is GST-free and unlabelled.
-    if (drift > 0.011) {
+    // tax was misread or part of the sale is exempt and unlabelled.
+    if (drift > j.taxDrift) {
+      // Before blaming the arithmetic, say whether a DIFFERENT tax could be
+      // what was read. On an Indonesian restaurant bill the 10% line is PB1, a
+      // regional tax that is not PPN and is never recoverable — and 10% of a
+      // subtotal sits close enough to 11% to look like a rounding complaint
+      // rather than the category error it is (docs/INDONESIA.md §5).
+      const confusable = j.otherTaxes[0];
       findings.push({
         code: 'gst_arithmetic',
         severity: 'warning',
         field: 'taxAmount',
-        message: `GST reads ${aud(gst)}, but 1/11 of the taxable amount is ${aud(expected)}.`,
-        fix: 'Check whether some items are GST-free, such as fresh food.',
+        message:
+          `${j.taxName} reads ${fmt(gst)}, but the taxable amount implies ${fmt(expected)}.` +
+          (confusable ? ` This may be ${confusable.name} rather than ${j.taxName}.` : ''),
+        fix: confusable
+          ? `${confusable.why} Check which tax the line is, and whether some items are exempt.`
+          : `Check whether some items are ${j.taxName}-free, such as fresh food.`,
       });
     }
   }
 
-  if (gst == null && payable != null && num(payable) >= Number(TAX_INVOICE_THRESHOLD)) {
-    // A tax invoice must show the GST, or a statement that the total includes it.
+  // Only where the jurisdiction actually sets a threshold. Indonesia does not:
+  // a cash-register slip is a valid faktur pajak at any amount, so demanding a
+  // tax line above some figure would be inventing a rule.
+  if (
+    gst == null &&
+    payable != null &&
+    j.taxInvoiceThreshold != null &&
+    num(payable) >= Number(j.taxInvoiceThreshold)
+  ) {
+    // A tax invoice must show the tax, or a statement that the total includes it.
     failures.push('no_gst_amount_shown');
     findings.push({
       code: 'gst_missing',
       severity: 'warning',
       field: 'taxAmount',
-      message: 'No GST amount or GST-inclusive statement was found.',
-      fix: 'A tax invoice must show the GST, or say the total includes GST.',
+      message: `No ${j.taxName} amount or ${j.taxName}-inclusive statement was found.`,
+      fix: `A tax invoice must show the ${j.taxName}, or say the total includes it.`,
     });
   }
 
@@ -309,14 +495,14 @@ export function validate(extraction: Extraction, now = new Date()): ValidatedExt
   if (extraction.lines.length > 0 && payable != null) {
     const lineSum = extraction.lines.reduce((acc, l) => acc + num(l.amount.value), 0);
     const difference = linesGap(lineSum, payable, gst);
-    if (Math.abs(difference) > ROUNDING_TOLERANCE) {
+    if (Math.abs(difference) > j.rounding) {
       findings.push({
         code: 'lines_do_not_balance',
         severity: 'warning',
         field: 'lines',
-        message: `The lines add to ${aud(lineSum.toFixed(2))}, which is ${aud(
+        message: `The lines add to ${fmt(lineSum.toFixed(2))}, which is ${fmt(
           Math.abs(difference).toFixed(2),
-        )} ${difference > 0 ? 'short of' : 'over'} the ${aud(payable)} total.`,
+        )} ${difference > 0 ? 'short of' : 'over'} the ${fmt(payable)} total.`,
         fix:
           difference > 0
             ? 'A line was probably missed. Check the image against the list.'
@@ -326,7 +512,7 @@ export function validate(extraction: Extraction, now = new Date()): ValidatedExt
   }
 
   /* ── 5. The date ───────────────────────────────────────────────────── */
-  const dateIssue = dateProblem(extraction.issueDate.value, now);
+  const dateIssue = dateProblem(extraction.issueDate.value, now, j.plausibleAgeYears);
   if (dateIssue) {
     findings.push({
       code: dateIssue.code,
@@ -347,7 +533,13 @@ export function validate(extraction: Extraction, now = new Date()): ValidatedExt
     // documents to confirm a date would train people to tap through the
     // warning without reading it — which costs more than it saves. If both
     // readings fall in the same BAS quarter, no report differs, so it passes.
-    if (ambiguous && quarterOf(extraction.issueDate.value!) !== quarterOf(ambiguous.alternative)) {
+    // The tie-breaker is the REPORTING PERIOD, and its length is the
+    // jurisdiction's. Australia reports GST quarterly, so two readings often
+    // land in the same quarter and nothing differs. Indonesia's personal
+    // taxpayer has no consumption-tax return at all, so the tax YEAR is the
+    // grain — and an ambiguous pair inside one year changes nothing either.
+    // docs/INDONESIA.md §6.1.
+    if (ambiguous && periodKey(extraction.issueDate.value!, rules) !== periodKey(ambiguous.alternative, rules)) {
       findings.push({
         code: 'date_order_ambiguous',
         // A warning, not an error: the date read may well be right. But it
@@ -356,29 +548,32 @@ export function validate(extraction: Extraction, now = new Date()): ValidatedExt
         severity: 'warning',
         field: 'issueDate',
         message: `${extraction.issueDate.value} could also be ${ambiguous.alternative} — the day and month are both 12 or less.`,
-        fix: 'Check the order on the receipt. Australian receipts print day/month.',
+        fix: `Check the order on the receipt. ${j.dateOrderHint}`,
       });
     }
   }
 
   /* ── 6. Currency ───────────────────────────────────────────────────── */
   const currency = extraction.currency.value;
-  if (currency && currency.toUpperCase() !== 'AUD') {
+  if (currency && currency.toUpperCase() !== j.currency) {
     findings.push({
       code: 'foreign_currency',
       severity: 'warning',
       field: 'currency',
-      message: `This document is in ${currency}.`,
-      fix: 'GST does not apply to a foreign purchase; check how it should be recorded.',
+      message: `This document is in ${currency}, not ${j.currency}.`,
+      fix: `${j.taxName} does not apply to a foreign purchase; check how it should be recorded.`,
     });
   }
 
   /* ── 7. The tax-invoice elements ───────────────────────────────────── */
   const belowThreshold =
-    payable != null && money.compare(money.money(payable), money.money(TAX_INVOICE_THRESHOLD)) < 0;
-  const overBuyerThreshold =
+    j.taxInvoiceThreshold != null &&
     payable != null &&
-    money.compare(money.money(payable), money.money(BUYER_ABN_THRESHOLD)) >= 0;
+    money.compare(money.money(payable), money.money(j.taxInvoiceThreshold)) < 0;
+  const overBuyerThreshold =
+    j.buyerIdThreshold != null &&
+    payable != null &&
+    money.compare(money.money(payable), money.money(j.buyerIdThreshold)) >= 0;
 
   if (!abn) {
     failures.push('supplier_abn_missing');
@@ -386,16 +581,21 @@ export function validate(extraction: Extraction, now = new Date()): ValidatedExt
       code: 'supplier_abn_missing',
       severity: belowThreshold ? 'note' : 'warning',
       field: 'supplierAbn',
-      message: 'The document shows no supplier ABN.',
-      fix: 'Add it from the docket, or ask the supplier for a compliant tax invoice.',
+      message: `The document shows no supplier ${j.taxIdName}.`,
+      fix: `Add it from the docket, or ask the supplier for a compliant tax invoice.`,
     });
-  } else if (!abnIsValid(abn)) {
+  } else if (j.taxIdCheckable && !abnIsValid(abn)) {
+    // Only where the jurisdiction GIVES us an arithmetic check. An Indonesian
+    // individual's NPWP is their NIK, which carries no checksum at all
+    // (docs/INDONESIA.md §3.2) — running the ABN algorithm over it would
+    // reject valid numbers, and reporting "valid" would imply a check that
+    // never happened. Saying nothing is the only honest option.
     failures.push('supplier_abn_invalid');
     findings.push({
       code: 'supplier_abn_invalid',
       severity: 'warning',
       field: 'supplierAbn',
-      message: `The ABN ${abn} fails the modulus-89 checksum, so at least one digit was misread.`,
+      message: `The ${j.taxIdName} ${abn} fails the modulus-89 checksum, so at least one digit was misread.`,
       fix: 'Re-read the digits from the receipt.',
     });
   }
@@ -406,8 +606,8 @@ export function validate(extraction: Extraction, now = new Date()): ValidatedExt
       code: 'buyer_abn_required_over_1000',
       severity: 'warning',
       field: 'buyerIdentified',
-      message: `At ${aud(payable)} the invoice must also show your identity or ABN.`,
-      fix: 'Ask the supplier to reissue it showing your business name or ABN.',
+      message: `At ${fmt(payable)} the invoice must also show your identity or ${j.taxIdName}.`,
+      fix: `Ask the supplier to reissue it showing your business name or ${j.taxIdName}.`,
     });
   }
 
@@ -417,12 +617,23 @@ export function validate(extraction: Extraction, now = new Date()): ValidatedExt
       code: 'not_marked_tax_invoice',
       severity: belowThreshold ? 'note' : 'warning',
       field: 'saysTaxInvoice',
-      message: 'The words “tax invoice” do not appear on the document.',
+      message: `The words “${j.taxInvoiceTokens[0]?.toLowerCase() ?? 'tax invoice'}” do not appear on the document.`,
       fix: 'Request a tax invoice from the supplier.',
     });
   }
 
-  const isTaxInvoice = failures.length === 0;
+  /**
+   * Whether this document supports a tax claim.
+   *
+   * `false` rather than `true` wherever the jurisdiction says validity is not
+   * decidable from the paper at all. Indonesia is exactly that case: a faktur
+   * pajak is valid only once DJP has cleared it through Coretax and the seller
+   * has uploaded it by the 20th of the following month, and neither fact is
+   * printed on the document (docs/INDONESIA.md §4.2). A clean read of an
+   * Indonesian receipt is not evidence of a valid faktur pajak, and claiming
+   * otherwise is the one error here that costs a user money years later.
+   */
+  const isTaxInvoice = j.validityDecidable && failures.length === 0;
 
   /* ── 8. Confidence ─────────────────────────────────────────────────── */
   const criticalConfidences = CRITICAL_FIELDS.map((f) => extraction[f].confidence);

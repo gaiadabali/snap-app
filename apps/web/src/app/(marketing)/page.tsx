@@ -430,7 +430,9 @@ export default function HomePage() {
           kicker="Against what you are probably using"
           title="The row nobody else can tick."
         />
-        <div className="mt-12">
+        {/* The table is evidence, so it stays a table — it is not replaced by
+            a scene. It just arrives like one. */}
+        <div className="pop-3d mt-12">
           <ComparisonTable />
         </div>
       </Section>
@@ -465,7 +467,11 @@ export default function HomePage() {
               GST credits at risk — this quarter
             </div>
 
-            <div className="anim-wipe mt-5">
+            {/* The sharpest number on the page, and the only one that gets
+                this treatment. `.anim-strike` brings it forward out of the
+                void rather than wiping it in flat — the whole section exists
+                to make this figure land. */}
+            <div className="anim-strike mt-5">
               <div className="font-mono text-[clamp(3.25rem,8vw,6rem)] font-normal leading-none tabular text-[var(--color-risk)]">
                 <Money amount="177.15" />
               </div>
@@ -510,7 +516,7 @@ export default function HomePage() {
                 <div className="t-label text-[var(--color-good)]">
                   Claimable, same quarter · label 1B
                 </div>
-                <div className="mt-3 font-mono text-[40px] font-normal leading-none tabular text-[var(--color-good)]">
+                <div className="anim-strike mt-3 font-mono text-[40px] font-normal leading-none tabular text-[var(--color-good)]">
                   <Money amount="1476.70" />
                 </div>
                 <p className="mt-3 max-w-[38ch] text-[13.5px] leading-relaxed text-[var(--color-void-muted)]">
@@ -556,7 +562,7 @@ export default function HomePage() {
             <Reveal>
               <div className="mt-1 flex items-baseline justify-between gap-4 border-t-2 border-[var(--color-ink)] pt-5">
                 <span className="text-[15px] text-[var(--color-ink)]">Estimated deduction</span>
-                <span className="font-mono text-[28px] font-normal tabular text-[var(--color-accent)]">
+                <span className="anim-strike inline-block font-mono text-[28px] font-normal tabular text-[var(--color-accent)]">
                   <Money amount="50570.00" />
                 </span>
               </div>
@@ -642,7 +648,7 @@ export default function HomePage() {
         <div
           className={
             VISIBLE_PLANS.length === 3
-              ? 'mt-12 grid gap-6 md:grid-cols-3'
+              ? 'pop-3d mt-12 grid gap-6 md:grid-cols-3'
               : 'mt-12 grid gap-6 sm:grid-cols-2 md:mx-auto md:max-w-[720px]'
           }
         >

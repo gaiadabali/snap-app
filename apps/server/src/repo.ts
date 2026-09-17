@@ -806,6 +806,18 @@ export type TenantRow = {
   simpler_bas: boolean;
   occupation_profile_id: string | null;
   financial_year_start_month: number;
+  /** ISO 3166-1 alpha-2. Selects the tax rule set (0026). */
+  country: string;
+  base_currency: string;
+  /**
+   * Installed `@snap/tax-rules` rule set, or NULL for no engine (0026).
+   *
+   * NULL is a real state, not a gap: every tax calculation refuses until a
+   * rule set is installed. There is no fallback to Australia, because that
+   * would produce plausible numbers under the wrong law.
+   */
+  tax_rules_id: string | null;
+  tax_rules_version: string | null;
 };
 
 export async function readTenant(
@@ -815,7 +827,8 @@ export async function readTenant(
   return withTenantAs(getDb(), userId, tenantId, async (tx) => {
     const rows = await tx.execute<TenantRow>(sql`
       select id, name, kind, abn, abn_valid, gst_registered, gst_basis,
-             simpler_bas, occupation_profile_id, financial_year_start_month
+             simpler_bas, occupation_profile_id, financial_year_start_month,
+             country, base_currency, tax_rules_id, tax_rules_version
         from tenants where id = ${tenantId} limit 1
     `);
     return rows.rows[0] ?? null;

@@ -787,6 +787,88 @@ export interface BusinessSettings {
   financialYearStartMonth: number;
 }
 
+/* ── The installed tax engine (migration 0026, @snap/tax-rules) ──────────── */
+
+/** A tax rule set this deployment can install. */
+export interface AvailableTaxRules {
+  rulesId: string;
+  country: string;
+  countryName: string;
+  version: string;
+  taxYear: string;
+  scope: 'personal' | 'business';
+  consumptionTaxName: string;
+  currency: string;
+}
+
+/**
+ * Which tax engine a workspace is running.
+ *
+ * Everything is nullable except `country`, `currency` and `available`, because
+ * "no engine installed" is a real state rather than an error: there is
+ * deliberately no default, and a workspace with no rule set refuses every tax
+ * calculation instead of quietly using Australian rules. `problem` carries the
+ * reason, for a person to read.
+ */
+export interface InstalledTaxRules {
+  rulesId: string | null;
+  rulesVersion: string | null;
+  country: string;
+  countryName: string | null;
+  taxYear: string | null;
+  /** What the consumption tax is called locally: `PPN`, `GST`. */
+  consumptionTaxName: string | null;
+  currency: string;
+  /** What the annual return is called locally, e.g. `SPT Tahunan`. */
+  annualReturnName: string | null;
+  /**
+   * `none` when this taxpayer has no filing obligation for the consumption
+   * tax. A surface must not render a period or a "lodge" affordance then.
+   */
+  filingPeriod: 'monthly' | 'quarterly' | 'annual' | 'none' | null;
+  /** False for a personal taxpayer: consumption tax is a cost, not a credit. */
+  recoverable: boolean | null;
+  problem: string | null;
+  available: AvailableTaxRules[];
+}
+
+export interface ConsumptionTaxLine {
+  code: string;
+  name: string;
+  /**
+   * `other_tax` is a DIFFERENT levy that prints like the main one — Indonesia's
+   * PB1, a regional tax of up to 10% on restaurant and hotel consumption. It is
+   * never recoverable and is never included in `taxPaid`.
+   */
+  treatment: 'standard' | 'exempt' | 'other_tax' | 'out_of_scope';
+  grossAmount: string;
+  taxAmount: string;
+  transactionCount: number;
+}
+
+export interface ConsumptionTaxReport {
+  from: string;
+  to: string;
+  rulesId: string;
+  rulesVersion: string;
+  taxName: string;
+  currency: string;
+  grossSpend: string;
+  taxPaid: string;
+  exemptSpend: string;
+  otherTaxPaid: string;
+  recoverable: boolean;
+  /**
+   * What this figure IS, in one sentence, written by the tax engine.
+   *
+   * Render it verbatim. It is the difference between a spending analytic and an
+   * implied claim, and a screen is not allowed to decide which one it shows.
+   */
+  disclosure: string;
+  filingPeriod: 'monthly' | 'quarterly' | 'annual' | 'none';
+  lines: ConsumptionTaxLine[];
+}
+
 export interface CategorySetting {
   name: string;
   /** Deduction label this maps to, e.g. D1. null in the personal workspace. */

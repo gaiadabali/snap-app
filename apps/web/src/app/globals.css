@@ -547,3 +547,75 @@ body {
     letter-spacing: normal;
   }
 }
+
+/* ── Desktop depth ───────────────────────────────────────────────────────
+ *
+ * The macro move is `.sect-3d`: the section itself travels in Z. These are the
+ * micro moves inside it — rows, figures and panels arriving from behind rather
+ * than merely fading up. All of it is scroll-driven (`animation-timeline:
+ * view()`), so the frame shown is a function of scroll position and nothing
+ * else: it cannot drift out of step with the reader, and it plays backwards
+ * when they scroll back up.
+ *
+ * Desktop only, and everything below is additive to the flat versions that
+ * already ship — a handset and a reduced-motion reader keep exactly the
+ * motion they had.
+ */
+@media (min-width: 1024px) {
+  @supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+
+      /**
+       * Ledger rows deal in from depth.
+       *
+       * This overrides `.anim-deal`, which every `LedgerRow` already routes
+       * through — so the void band's flagged documents, the deduction
+       * worksheet and the docket lines all gain depth from one rule rather
+       * than from a class sprinkled over three call sites.
+       *
+       * The stagger still lives in the RANGE, not in `animation-delay`: a
+       * scroll-linked animation has no wall clock to delay against, so each
+       * row's window is offset by its own `--i` instead.
+       */
+      .anim-deal {
+        animation: deal-in-3d linear both;
+        animation-timeline: view();
+        animation-range: entry calc(2% + (var(--i, 0) * 6%)) cover calc(30% + (var(--i, 0) * 6%));
+      }
+
+      /* A panel or figure group that should arrive as an object rather than
+         as text: slightly turned, slightly behind, settling square. */
+      .pop-3d {
+        animation: pop-3d linear both;
+        animation-timeline: view();
+        animation-range: entry 4% cover 38%;
+      }
+
+      /* The app screens need no rule of their own: `AppScreens` already wraps
+         each figure in `Reveal variant="deal"`, so they inherit the depth
+         above and arrive staggered, three objects rather than three images. */
+    }
+  }
+}
+
+@keyframes deal-in-3d {
+  from {
+    opacity: 0;
+    transform: perspective(1100px) translate3d(0, 1.5rem, -7rem) rotateX(12deg);
+  }
+  to {
+    opacity: 1;
+    transform: perspective(1100px) translate3d(0, 0, 0) rotateX(0deg);
+  }
+}
+
+@keyframes pop-3d {
+  from {
+    opacity: 0;
+    transform: perspective(1400px) translate3d(0, 2.5rem, -14rem) rotateX(9deg) rotateY(-4deg);
+  }
+  to {
+    opacity: 1;
+    transform: perspective(1400px) translate3d(0, 0, 0) rotateX(0deg) rotateY(0deg);
+  }
+}

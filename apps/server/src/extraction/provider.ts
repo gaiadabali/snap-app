@@ -190,6 +190,15 @@ export class OllamaCloudProvider implements ExtractionProvider {
     readonly model = 'gemma4:31b',
     private readonly apiKey = readKeyFromEnvFile(),
     private readonly baseUrl = 'https://ollama.com/v1',
+    /**
+     * The prompt to send, when the workspace is not Australian.
+     *
+     * Defaults to `EXTRACTION_PROMPT`, which names Australia in ten places and
+     * tells the model that tax is one eleventh and an ABN has eleven digits.
+     * Sending that to a model reading an Indonesian docket does not merely
+     * waste tokens — it instructs it to look for things that are not there.
+     */
+    private readonly prompt: string = EXTRACTION_PROMPT,
   ) {}
 
   async extract(pages: PageImage | PageImage[]): Promise<ProviderResult> {
@@ -214,7 +223,7 @@ export class OllamaCloudProvider implements ExtractionProvider {
               // lets the model read a two-page invoice as one document
               // instead of two independent guesses that then have to be
               // reconciled.
-              { type: 'text', text: EXTRACTION_PROMPT },
+              { type: 'text', text: this.prompt },
               ...images.map((image) => ({
                 type: 'image_url' as const,
                 image_url: {

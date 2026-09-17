@@ -83,3 +83,101 @@ RULES
 
 /** Kept with the prompt: a change to either invalidates a stored run. */
 export const PROMPT_VERSION = '2026-09-11.1';
+
+/**
+ * The prompt for a workspace running a non-Australian tax rule set.
+ *
+ * `EXTRACTION_PROMPT` above is Australian in ten separate places — "Australian
+ * receipts", day/month order, one-eleventh, an eleven-digit ABN, the words "tax
+ * invoice", the $1,000 buyer threshold. Sending it to a model looking at an
+ * Indonesian docket does not merely waste tokens: it actively instructs the
+ * model to look for things that are not there and to compute the tax wrongly.
+ *
+ * So the jurisdiction-specific rules REPLACE those, rather than being appended
+ * after them. The generic instructions that carry over — never guess, plain
+ * decimal strings, per-field confidence, one entry per printed line — are
+ * repeated here rather than shared, because a prompt is a single artefact a
+ * model reads top to bottom and assembling one from fragments is how a
+ * contradiction gets shipped without anyone reading the result.
+ *
+ * `PROMPT_VERSION` covers this text too: a change to either invalidates a
+ * stored run.
+ */
+export function extractionPromptFor(rules: {
+  countryName: string;
+  consumptionTax: { name: string; statutoryRate: { n: number; d: number } };
+  taxId: { name: string; lengths: number[]; format: string };
+  currency: { code: string; symbol: string; thousandsSeparator: string; decimalSeparator: string; minorUnits: number };
+  documentRules: { taxInvoiceTokens: string[]; dateOrder: string; monthAbbreviations: string[] };
+  otherTaxes: { name: string; documentTokens: string[]; confusableWith: string }[];
+  consumptionTaxExemptHints: string[];
+}): string {
+  const ct = rules.consumptionTax;
+  const cur = rules.currency;
+  const effective = ((ct.statutoryRate.n / ct.statutoryRate.d) * 100).toFixed(0);
+
+  const otherTaxRule =
+    rules.otherTaxes.length > 0
+      ? `\n\nCRITICAL — A TAX THAT IS NOT ${ct.name}. ${rules.otherTaxes
+          .map(
+            (t) =>
+              `"${t.documentTokens.join('", "')}" is ${t.name}, NOT ${ct.name}. ` +
+              `Put it in "otherTaxAmount", never in "taxAmount". ${t.confusableWith}`,
+          )
+          .join(' ')}`
+      : '';
+
+  return `You extract structured data from photographs of ${rules.countryName} receipts and tax invoices.
+
+You may be shown MORE THAN ONE IMAGE. When you are, they are the pages of ONE
+document, in order — not separate receipts.
+
+Return ONLY minified JSON. No prose, no code fences. Same shape as always —
+every field is {"value": <value or null>, "confidence": <0..1>} — plus
+"otherTaxAmount" beside "taxAmount".
+
+RULES
+
+1. NEVER GUESS. If a field is not legible, return null with a low confidence.
+   A wrong value is far more damaging than a missing one. "I could not read it"
+   is a correct answer.
+
+2. NUMBERS. ${rules.countryName} writes "${cur.thousandsSeparator}" for thousands and
+   "${cur.decimalSeparator}" for decimals. So "15${cur.thousandsSeparator}000" is FIFTEEN
+   THOUSAND, not fifteen.${
+     cur.minorUnits === 0
+       ? ` ${cur.code} has no sub-unit at all — there are no cents, and an amount never carries a decimal part.`
+       : ''
+   }
+   Return every amount as a PLAIN number with NO separators and ${
+     cur.minorUnits === 0 ? 'NO decimal point' : `${cur.minorUnits} decimal places`
+   }: write ${
+     cur.minorUnits === 0 ? '"15000", never "15.000" or "15,000"' : '"15000.00"'
+   }. Do not include the "${cur.symbol}" symbol.
+
+3. DATES. ${rules.countryName} prints ${
+    rules.documentRules.dateOrder === 'day_first' ? 'DAY/MONTH/YEAR' : 'MONTH/DAY/YEAR'
+  }.
+   Month names may be abbreviated as: ${rules.documentRules.monthAbbreviations.join(', ')}.
+   A two-digit year is in the 2000s. If the year is not printed, return null —
+   do not infer it.
+
+4. ${ct.name}. The effective rate is ${effective}% of the price. Only report
+   "taxAmount" if the document states it. Exempt goods carry none — mark those
+   lines "gstFree": true. Common exempt items: ${rules.consumptionTaxExemptHints.join(', ')}.${otherTaxRule}
+
+5. ${rules.taxId.name}. ${rules.taxId.format} Return digits only, or null if none
+   is printed. Do not confuse it with a phone or receipt number.
+
+6. "saysTaxInvoice" is true only if the words "${rules.documentRules.taxInvoiceTokens.join(
+    '" or "',
+  )}" actually appear. Do not infer it from the document looking official.
+
+7. LINES. One entry per printed line, in order, with the amount as printed. Do
+   not invent a line to make the arithmetic work.
+
+8. CONFIDENCE is your own honest estimate per field. A faded thermal print or
+   glare across the total is low, and saying so is more useful than a guess.
+
+9. "notes.legible" is false if the image is too poor to extract from at all.`;
+}
