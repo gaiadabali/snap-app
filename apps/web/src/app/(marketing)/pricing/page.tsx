@@ -1,94 +1,187 @@
 import type { Metadata } from 'next';
 
-import { PageHero, Reveal, Section, SectionHead } from '@/design/primitives';
-import { BUSINESS_SURFACES_ENABLED } from '@/lib/features';
+import {
+  ArrowLink,
+  ButtonLink,
+  LedgerRow,
+  Money,
+  PageHero,
+  Reveal,
+  Section,
+  SectionHead,
+  Tear,
+} from '@/design/primitives';
 
 import { PageSpine } from '../_components/page-spine';
-import { PricingPlans } from './pricing-plans';
+import { CREDIT_PACKS, CREDIT_PRICE_AUD, FREE_SCANS_AT_SIGNUP } from './credit-packs';
 
 export const metadata: Metadata = {
   title: 'Pricing',
-  description: BUSINESS_SURFACES_ENABLED
-    ? 'Practice and Practice Plus for accounting and bookkeeping firms, Free and Sole Trader for direct sole traders. Real AUD figures, no invented tiers.'
-    : 'Free and Sole Trader for Australian sole traders and tradies. Real AUD figures, no invented tiers.',
+  description:
+    'Ten scans free, then 3.3 cents a scan. Credits never expire, there is no subscription, and every scan earns a point.',
 };
 
-// Each FAQ entry can be marked `businessOnly` rather than deleted, so the
-// whole set comes back the moment BUSINESS_SURFACES_ENABLED flips true
-// (src/lib/features.ts) without anyone having to reconstruct the copy.
-const FAQ: Array<{ q: string; a: string; businessOnly?: boolean }> = [
+/**
+ * Rewritten 2026-09-17: there is no subscription any more.
+ *
+ * ── What changed and why the old page could not simply be edited ──────────
+ *
+ * This page sold monthly tiers — Free / Sole Trader $29 / Practice $19 per
+ * client / Practice Plus — with a billing-period toggle, a per-client
+ * estimator and an FAQ half of which explained the seat minimum. The owner
+ * settled a different model: ten free scans, then credits, one scan one
+ * credit, no recurring charge at all. Under that model a monthly/annual toggle
+ * has nothing to toggle and the seat-minimum question has no answer, so the
+ * structure went with the tiering rather than being reworded around it.
+ *
+ * `PricingPlans`, `BillingToggle` and `PracticeEstimator` are consequently
+ * unreferenced. They are left on disk rather than deleted: the practice
+ * channel is `docs/MONETISATION.md`'s primary revenue line and
+ * `BUSINESS_SURFACES_ENABLED` still exists, so how firms buy credits is an
+ * open question, not a closed one. Deleting the components would throw away
+ * the answer to a question nobody has asked yet.
+ *
+ * ── The one number on this page ───────────────────────────────────────────
+ *
+ * Every figure comes from `./credit-packs`, which derives them from the
+ * owner's rule (model cost × 3) — the same rule migration 0027 seeds
+ * `credit_packs` from. `credit-packs.test.ts` reads that migration and fails
+ * if this page ever advertises a price the checkout would not honour, which
+ * is a misleading representation under ACL s18 and not merely untidy.
+ */
+
+/** 0.033 → "3.3 cents". The unit price is the headline, so it is written out. */
+const CENTS_PER_SCAN = (CREDIT_PRICE_AUD * 100).toFixed(1);
+
+const FAQ: Array<{ q: string; a: string }> = [
   {
-    q: 'Why is Sole Trader ($29/mo) priced above the Practice per-client rate ($19/mo)?',
-    a: 'Deliberately. A direct customer costs us more to support than a client sitting inside a firm’s existing workflow, and pricing it above the practice rate gives your accountant a real reason to bring you onto their plan instead of leaving you on your own. If you already work with a bookkeeper or accountant, Practice is the cheaper path in — ask them about it.',
-    businessOnly: true,
+    q: `Why ${CENTS_PER_SCAN} cents?`,
+    a: `It is what the extraction actually costs us, times three. A scan runs through a vision model and that has a real per-document price — about 1.1 cents blended across the model that reads most documents and the larger one that handles the hard ones. Tripling it covers storage, the checks, support and the business. We would rather show you the arithmetic than pick a round number and defend it.`,
+  },
+  {
+    q: 'Do credits expire?',
+    a: 'No. Credits are not a monthly allowance and there is no period for them to reset at — buy a hundred, use them over two years if that is how your paperwork arrives. The ten free scans a new account starts with do not expire either.',
+  },
+  {
+    q: 'Is there a subscription, a contract, or a minimum?',
+    a: 'None of the three. Nothing recurs, so there is nothing to cancel and no notice period. If you stop scanning you stop paying, and any credits you have already bought stay where they are.',
   },
   {
     q: 'We’re a Xero-using firm — does this replace Hubdoc?',
-    a: 'Hubdoc handles header-level capture for free inside Xero Business. It does not split a receipt into per-category GST subtotals or map lines to BAS labels, which is the gap Snap Apps is built to close. The two aren’t mutually exclusive; a Xero sync ships on every paid plan.',
+    a: 'Hubdoc handles header-level capture for free inside Xero Business. It does not split a receipt into per-category GST subtotals or map lines to BAS labels, which is the gap Snap Apps is built to close. The two aren’t mutually exclusive; a Xero sync is part of the product, not a paid add-on.',
   },
   {
-    q: 'Is there a contract or lock-in?',
-    a: 'No fixed term on either billing option. Annual billing gives two months free over paying monthly; it is a discount, not a commitment.',
+    q: 'Can I pay by card today?',
+    a: 'Not yet — the checkout is not connected to a payment processor. You can create an account and use the ten free scans now, and the buy-credits screen will tell you plainly that there is nothing to pay with rather than taking you to a form that goes nowhere. Which processor it will be has not been decided.',
   },
   {
-    q: 'How does the 10-client minimum work?',
-    a: 'Practice and Practice Plus are billed for at least 10 client seats even if you start with fewer — the same shape Dext uses. It keeps the practice pricing sane for us to support and signals a real practice rather than a single trial seat.',
-    businessOnly: true,
-  },
-  {
-    q: 'Can I pay by credit card today?',
-    a: 'Not yet — checkout is still being built. Every plan above goes through a real conversation or a registration you can complete now; nobody is asked for a card that then goes nowhere.',
+    q: 'What are the points for?',
+    a: 'Every scan earns a point, banked against your account rather than your workspace. Points are spent in yourtal, a separate app in this ecosystem that has not been built yet — so there is nothing to redeem today. They are recorded from the first scan so that nobody who used the product early is short-changed when there is.',
   },
 ];
-
-const VISIBLE_FAQ = FAQ.filter((item) => !item.businessOnly || BUSINESS_SURFACES_ENABLED);
 
 export default function PricingPage() {
   return (
     <>
-      {/* The same reading rail as every other marketing page. */}
       <PageSpine />
 
-      {/*
-        Rebuilt 2026-09-17 to the language the rest of the surface speaks.
-
-        This page was the last one still built the old way: a bare
-        `<main className="py-20">` with `Container` + `SectionTitle`, which is
-        the eyebrow/title/lede stack docs/DESIGN-HANDOFF.md §12.1 lists under
-        Avoid, no gutter codes, and not one line of motion. Clicking "Pricing"
-        from a home page that moves landed you in a static document.
-
-        Copy is untouched — every plan, figure and FAQ answer is the owner's,
-        word for word. Only the structure and the motion changed.
-      */}
       <PageHero
         screen
         kicker="Pricing"
         title={
-          BUSINESS_SURFACES_ENABLED
-            ? 'Priced for the accountant, not the app store'
-            : 'Start free. Upgrade when you outgrow it.'
+          <>
+            Ten scans free. Then {CENTS_PER_SCAN} cents each.
+          </>
         }
-        lede={
-          BUSINESS_SURFACES_ENABLED
-            ? 'Hubdoc is free inside Xero and myDeductions is free from the ATO — so Snap Apps isn’t sold as another receipt scanner to individuals. It’s a BAS and deduction-compliance layer sold through the accountants and bookkeepers who already look after Australian sole traders and tradies.'
-            : 'Hubdoc is free inside Xero and myDeductions is free from the ATO. Snap Apps reads every line of a receipt and splits the GST correctly, which neither of them does — free for 20 scans a month, no card required.'
+        lede="No subscription, no seats, no minimum. One scan costs one credit, credits never expire, and a new account starts with ten of them."
+        actions={
+          <div className="flex flex-wrap items-center gap-5">
+            <ButtonLink href="/register" size="lg">
+              Start with ten free scans
+            </ButtonLink>
+            <ArrowLink href="/download">Get the app</ArrowLink>
+          </div>
         }
       />
 
-      {/* The plans arrive as objects, like the pricing block on the home page. */}
-      <Section code="PLANS" className="screen sect-3d">
-        <div className="pop-3d">
-          <PricingPlans />
+      {/* 2 — gutter. The model, in four lines. */}
+      <Section code="CREDIT" size="lg" className="screen sect-3d">
+        <SectionHead
+          kicker="How it works"
+          title="You pay for scans. That is the whole model."
+          lede="There is no tier to be on and nothing to outgrow. The product is the same on the first scan as on the ten thousandth."
+        />
+        <Tear className="mt-10" />
+        <div className="mt-6">
+          <LedgerRow
+            code="FREE"
+            label="Every new account starts with ten scans"
+            note="Enough to photograph a week of receipts and judge the result on your own paperwork rather than ours. No card, and nothing to cancel afterwards."
+            value={`${FREE_SCANS_AT_SIGNUP} scans`}
+            emphasis
+            index={0}
+          />
+          <LedgerRow
+            code="1:1"
+            label="One scan costs one credit"
+            note="A credit is a document read end to end — the GST split per line, the nine checks, the BAS label. Not a page, not an API call."
+            value="1 credit"
+            emphasis
+            index={1}
+          />
+          <LedgerRow
+            code="KEEP"
+            label="Credits never expire"
+            note="They are not a monthly allowance. Paperwork does not arrive evenly and a quota that resets on the first of the month punishes you for that."
+            value="no expiry"
+            emphasis
+            index={2}
+          />
+          <LedgerRow
+            code="PTS"
+            label="Every scan earns a point"
+            note="Banked against you rather than your workspace. Spent in yourtal, a separate app in this ecosystem that has not been built yet — so there is nothing to redeem today."
+            value="1 point"
+            emphasis
+            index={3}
+          />
         </div>
       </Section>
 
-      {/* `measure` — the one column of prose on this page, so it does not share
-          a silhouette with the plans above it. */}
+      {/* 3 — wide. The packs. */}
+      <Section form="wide" size="lg" className="screen sect-3d">
+        <SectionHead
+          kicker="Credit packs"
+          title="Six sizes, one price per scan"
+          lede="Every pack is the same rate — there is no volume discount to chase and no pack that is the wrong one to buy."
+        />
+
+        <div className="mt-10 max-w-[560px]">
+          <Tear className="mb-2" />
+          {CREDIT_PACKS.map((pack, i) => (
+            <LedgerRow
+              key={pack.credits}
+              code={`${pack.credits}`}
+              label={`${pack.credits.toLocaleString('en-AU')} scans`}
+              value={<Money amount={pack.priceAud} />}
+              emphasis={pack.credits === 100}
+              index={i}
+            />
+          ))}
+          <Reveal>
+            <p className="mt-6 text-[13px] leading-relaxed text-[var(--color-ink-faint)]">
+              GST-inclusive, in Australian dollars. Prices are derived from what a scan costs to
+              run, so they move when that cost does — see the first question below.
+            </p>
+          </Reveal>
+        </div>
+      </Section>
+
+      {/* 4 — measure. The questions. */}
       <Section code="ASK" form="measure" className="screen sect-3d">
-        <SectionHead kicker="Questions" title="Before you talk to us" />
+        <SectionHead kicker="Questions" title="Before you spend anything" />
         <dl className="mt-10">
-          {VISIBLE_FAQ.map((item, i) => (
+          {FAQ.map((item, i) => (
             <Reveal key={item.q} variant="deal" delay={i}>
               <div className="border-b border-[var(--color-rule)] py-6 last:border-b-0">
                 <dt className="text-[15px] font-medium text-[var(--color-ink)]">{item.q}</dt>

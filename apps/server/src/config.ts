@@ -185,6 +185,19 @@ const schema = z.object({
     .optional()
     .default('false')
     .transform((v) => v === 'true'),
+
+  /**
+   * Explicit opt-in for the MANUAL credit fulfilment endpoint — see
+   * `isManualCreditFulfilmentEnabled`. Defaults to off, and like
+   * `GOOGLE_SIGNIN_SIMULATOR` it is never inferred from `DEMO_ENV`: running a
+   * demo host and letting that host mint paid credits without money are two
+   * different decisions.
+   */
+  CREDITS_MANUAL_FULFIL: z
+    .string()
+    .optional()
+    .default('false')
+    .transform((v) => v === 'true'),
 });
 
 export type Config = z.infer<typeof schema>;
@@ -235,6 +248,47 @@ export const isProduction = (): boolean => config().NODE_ENV === 'production';
  * again immediately before minting a session — that second call is the real
  * boundary, not this one, same as `isDevBypassAvailable`'s own comment.
  */
+/**
+ * Whether `POST /v1/credits/purchases/:id/fulfil` may run — the manual
+ * stand-in for a payment processor's webhook.
+ *
+ * ── Why this gate had to exist before anything else was built ──────────────
+ *
+ * That endpoint atomically marks a purchase paid and inserts the
+ * `usage_grants` row. It is guarded by `requireAdmin`, which sounds like a
+ * control and is not one: `workspaces.controller.ts` gives the creator of a
+ * workspace the `owner` role, so every self-service signup is an owner of
+ * their own tenant. Two calls — start a purchase, then fulfil it — and the
+ * credits are granted. No money moves, because there is nowhere for money to
+ * move to.
+ *
+ * While there was no payment path at all that was honest: the whole feature
+ * was a stand-in and said so. Credits are now the entire commercial model, so
+ * the same two calls are the revenue model with a hole in it — and it would
+ * not have looked like a new bug, because the code would not have changed.
+ *
+ * Same lesson as the sign-in bypass in `auth.controller.ts`, which carried
+ * "must not ship" in a comment for a long time while nothing enforced it. A
+ * comment is not a control.
+ *
+ * Two independent conditions, BOTH required — a plain production deployment
+ * that sets neither fails this outright:
+ *
+ *   1. `NODE_ENV !== 'production'` OR `DEMO_ENV === 'staging'`, because the
+ *      demo host runs the same build as production and needs to be able to
+ *      demonstrate buying credits.
+ *   2. `CREDITS_MANUAL_FULFIL === true`, a separate, deliberate opt-in.
+ *
+ * When a real processor is wired up, its webhook handler replaces this — it
+ * runs the same repo function keyed by `provider` + `provider_ref`, and this
+ * endpoint should be deleted rather than left switched off.
+ */
+export function isManualCreditFulfilmentEnabled(): boolean {
+  const settings = config();
+  const demoHost = settings.NODE_ENV !== 'production' || settings.DEMO_ENV === 'staging';
+  return demoHost && settings.CREDITS_MANUAL_FULFIL;
+}
+
 export function isGoogleSignInSimulatorEnabled(): boolean {
   const settings = config();
   const demoHost = settings.NODE_ENV !== 'production' || settings.DEMO_ENV === 'staging';

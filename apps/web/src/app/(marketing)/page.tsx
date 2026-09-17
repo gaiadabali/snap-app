@@ -21,13 +21,18 @@ import { ReceiptScanCard } from './_components/receipt-scan-card';
 import { ComparisonTable } from './_components/comparison';
 import { PageSpine } from './_components/page-spine';
 import { GetTheAppButtons } from './_components/platform-cta';
+import {
+  CREDIT_PACKS,
+  CREDIT_PRICE_AUD,
+  FREE_SCANS_AT_SIGNUP,
+} from './pricing/credit-packs';
 import { ReadComparison } from './_components/read-comparison';
 import { Proof, PROOF_HEAD } from './_components/proof';
 
 export const metadata: Metadata = {
   title: 'Split every receipt correctly — GST, BAS and deductions for Australian trades',
   description:
-    'Half a docket can have GST and half can be GST-free. Snap Apps reads every line, splits the tax correctly, and gives you a BAS position you can defend. Free for 20 receipts a month.',
+    'Half a docket can have GST and half can be GST-free. Snap Apps reads every line, splits the tax correctly, and gives you a BAS position you can defend. Ten scans free, then pay per scan.',
 };
 
 /**
@@ -104,41 +109,8 @@ const PRACTICE_QUEUE = [
   },
 ] as const;
 
-const PLANS = [
-  {
-    name: 'Free',
-    price: '$0',
-    unit: 'forever',
-    line: '20 receipts a month, 12-month retention. No card.',
-    href: '/register',
-    cta: 'Start scanning',
-    primary: false,
-  },
-  {
-    name: 'Sole Trader',
-    price: '$29',
-    unit: 'per month, incl GST',
-    line: '150 receipts, realtime, BAS pack, Xero sync, 5-year retention.',
-    href: '/pricing',
-    cta: 'See what is included',
-    primary: true,
-  },
-  // The Practice door is folded back in the moment BUSINESS_SURFACES_ENABLED
-  // flips true — see src/lib/features.ts. Kept in the source, filtered at
-  // render, so re-enabling needs no rewrite.
-  {
-    name: 'Practice',
-    price: '$19',
-    unit: 'per client / month',
-    line: 'From 10 clients. 200 scans each, firm-wide BAS review queue.',
-    href: '/pricing#practice',
-    cta: 'See practice pricing',
-    primary: false,
-    businessOnly: true,
-  },
-] as const;
-
-const VISIBLE_PLANS = PLANS.filter((p) => !('businessOnly' in p) || BUSINESS_SURFACES_ENABLED);
+/** 0.033 -> "3.3". The unit price is a headline figure, so it is written out. */
+const HOME_CENTS_PER_SCAN = (CREDIT_PRICE_AUD * 100).toFixed(1);
 
 /** The two doors. Equal weight, because the business has two buyers. */
 function Door({
@@ -283,7 +255,7 @@ export default function HomePage() {
                 kicker="Start free, no card"
                 title="Sole trader, tradie, or on the road"
                 price="Free"
-                note="20 receipts a month"
+                note="10 free scans"
                 href="/register"
                 cta="Start scanning"
               />
@@ -297,7 +269,7 @@ export default function HomePage() {
                   cta="See practice pricing"
                 />
               ) : (
-                <ArrowLink href="/pricing">See what Sole Trader unlocks — realtime, BAS pack, Xero sync</ArrowLink>
+                <ArrowLink href="/pricing">What a scan costs after the first ten</ArrowLink>
               )}
             </div>
           </div>
@@ -710,53 +682,65 @@ export default function HomePage() {
       <Join />
 
       <div className="pin-track">
-      <Section code="PLANS" form="wide" className="screen sect-3d">
+      <Section code="CREDIT" form="wide" className="screen sect-3d">
         <div className="seam" aria-hidden />
         <SectionHead
           kicker="Pricing"
-          title="Start free. Bring your accountant when you are ready."
-          lede="No trial clock and no card on the free tier — it is a real plan, not a countdown."
+          title="Ten scans free. Then you pay per scan."
+          lede="No subscription, no seats, no monthly allowance to run out of. One scan costs one credit, and credits do not expire."
           className="mt-6"
         />
-        <div
-          className={
-            VISIBLE_PLANS.length === 3
-              ? 'pop-3d mt-12 grid gap-6 md:grid-cols-3'
-              : 'mt-12 grid gap-6 sm:grid-cols-2 md:mx-auto md:max-w-[720px]'
-          }
-        >
-          {VISIBLE_PLANS.map((plan, i) => (
-            <Reveal key={plan.name} variant="deal" delay={i}>
-              <div
-                className={[
-                  'flex h-full flex-col justify-between gap-8 rounded-[var(--radius-md)] border p-6',
-                  plan.primary
-                    ? 'border-[var(--color-accent)] bg-[var(--color-ground)]'
-                    : 'border-[var(--color-rule-strong)] bg-[var(--color-ground)]',
-                ].join(' ')}
-              >
-                <div>
-                  <div className="t-label text-[var(--color-ink-faint)]">{plan.name}</div>
-                  <div className="mt-4 flex items-baseline gap-2">
-                    <span className="font-mono text-[34px] tabular text-[var(--color-ink)]">
-                      {plan.price}
-                    </span>
-                    <span className="text-[13px] text-[var(--color-ink-muted)]">{plan.unit}</span>
-                  </div>
-                  <p className="mt-4 text-[14px] leading-relaxed text-[var(--color-ink-muted)]">
-                    {plan.line}
-                  </p>
-                </div>
-                <ButtonLink
-                  href={plan.href}
-                  variant={plan.primary ? 'primary' : 'secondary'}
-                  className="w-full"
-                >
-                  {plan.cta}
-                </ButtonLink>
+
+        {/*
+          Rewritten 2026-09-17 with the model. This was three plan cards —
+          Free / Sole Trader $29 / Practice $19 per client — and there are no
+          plans any more. Figures come from `pricing/credit-packs`, which
+          derives them from the owner's rule (model cost x 3) exactly as
+          migration 0027 does, so the home page cannot quote a price the
+          checkout would not honour.
+        */}
+        <div className="pop-3d mt-12 grid gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
+          <div className="flex flex-col justify-between gap-8 rounded-[var(--radius-md)] border border-[var(--color-accent)] bg-[var(--color-ground)] p-6">
+            <div>
+              <div className="t-label text-[var(--color-ink-faint)]">Start here</div>
+              <div className="mt-4 flex items-baseline gap-2">
+                <span className="font-mono text-[34px] tabular text-[var(--color-ink)]">
+                  {FREE_SCANS_AT_SIGNUP}
+                </span>
+                <span className="text-[13px] text-[var(--color-ink-muted)]">free scans, no card</span>
               </div>
-            </Reveal>
-          ))}
+              <p className="mt-4 text-[14px] leading-relaxed text-[var(--color-ink-muted)]">
+                Enough to photograph a week of receipts and judge it on your own paperwork. Nothing
+                recurs, so there is nothing to cancel afterwards.
+              </p>
+            </div>
+            <ButtonLink href="/register" className="w-full">
+              Start scanning
+            </ButtonLink>
+          </div>
+
+          <div className="flex flex-col justify-between gap-6 rounded-[var(--radius-md)] border border-[var(--color-rule-strong)] bg-[var(--color-ground)] p-6">
+            <div>
+              <div className="t-label text-[var(--color-ink-faint)]">After that</div>
+              <div className="mt-4 flex items-baseline gap-2">
+                <span className="font-mono text-[34px] tabular text-[var(--color-ink)]">
+                  {HOME_CENTS_PER_SCAN}c
+                </span>
+                <span className="text-[13px] text-[var(--color-ink-muted)]">per scan, incl GST</span>
+              </div>
+              <div className="mt-5">
+                {CREDIT_PACKS.map((pack, i) => (
+                  <LedgerRow
+                    key={pack.credits}
+                    label={`${pack.credits.toLocaleString('en-AU')} scans`}
+                    value={<Money amount={pack.priceAud} />}
+                    index={i}
+                  />
+                ))}
+              </div>
+            </div>
+            <ArrowLink href="/pricing">Why that price, and what a credit buys</ArrowLink>
+          </div>
         </div>
       </Section>
       </div>
@@ -769,8 +753,8 @@ export default function HomePage() {
           </Reveal>
           <Reveal>
             <p className="t-lede mt-6 max-w-[46ch] text-[var(--color-ink-muted)]">
-              Twenty receipts a month, free, no card. You will know by the third one whether it
-              reads your dockets properly.
+              Ten scans free, no card. You will know by the third one whether it reads your
+              dockets properly.
             </p>
           </Reveal>
           <Reveal>

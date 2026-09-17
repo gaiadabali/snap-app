@@ -1,4 +1,4 @@
-import { Empty, SectionTitle } from '@/design/primitives';
+import { ButtonLink, Empty, SectionTitle } from '@/design/primitives';
 import { getCreditBalance, getPlanUsage, listCreditPacks, listCreditPurchases } from '@/lib/panels/data';
 import { startCreditPurchase } from '@/lib/panels/credit-actions';
 import { loadWorkspace } from '@/lib/panels/workspace';
@@ -28,11 +28,14 @@ export default async function CreditsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <SectionTitle
-        as="h1"
-        title="Credits"
-        lede="Scans you bought or were given for free — separate from what your plan already includes this period, and they never expire."
-      />
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <SectionTitle
+          as="h1"
+          title="Credits"
+          lede="Scans you bought or were given for free. One scan costs one credit, and credits never expire."
+        />
+        <ButtonLink href="/app/credits/buy">Buy credits</ButtonLink>
+      </div>
       <CreditsClient
         plan={plan}
         balance={balance}
