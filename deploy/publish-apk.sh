@@ -39,6 +39,41 @@ if [ -z "$HOST" ]; then
   exit 2
 fi
 
+# THE ARTEFACT MUST ACTUALLY POINT SOMEWHERE.
+#
+# `EXPO_PUBLIC_API_URL` is inlined into the JS bundle at build time. When it is
+# unset, `api()` falls back to the FIXTURE implementation and the app runs on
+# invented data — a release APK that opens on a made-up budget and never
+# contacts the server. That shipped once, was installed on a handset, and was
+# only caught because somebody noticed a "Demo" chip in the corner.
+#
+# So this greps the bundle for the URL rather than trusting the environment
+# that built it. The environment variable says what SHOULD have happened; the
+# bundle says what DID. Verified to discriminate: the fixtures-only build gives
+# zero matches, a correctly-built one gives at least one.
+if [ -z "${EXPO_PUBLIC_API_URL:-}" ]; then
+  echo "EXPO_PUBLIC_API_URL is not set — refusing to publish." >&2
+  echo "Without it the bundle runs on fixtures and never contacts the server." >&2
+  exit 2
+fi
+if ! command -v unzip >/dev/null 2>&1; then
+  echo "unzip is required to verify what is inside the APK" >&2
+  exit 2
+fi
+# `grep -cF`, not `grep -qF`. With `set -o pipefail`, `-q` exits at the first
+# match, `unzip` takes SIGPIPE and dies non-zero, and the pipeline reports
+# FAILURE on a perfectly good APK — a guard that rejects everything, which is
+# worse than no guard because it teaches people to skip it. `-c` reads its
+# input to the end, so unzip finishes cleanly.
+BUNDLE_HITS=$(unzip -p "$APK" assets/index.android.bundle 2>/dev/null | grep -cF "$EXPO_PUBLIC_API_URL" || true)
+if [ "${BUNDLE_HITS:-0}" -lt 1 ]; then
+  echo "This APK does not contain $EXPO_PUBLIC_API_URL." >&2
+  echo "It was built without the variable set, so it runs on FIXTURES." >&2
+  echo "Rebuild with: EXPO_PUBLIC_API_URL=$EXPO_PUBLIC_API_URL ./gradlew :app:assembleRelease" >&2
+  exit 1
+fi
+echo "verified: the bundle contains $EXPO_PUBLIC_API_URL"
+
 SHA=$(sha256sum "$APK" | cut -d' ' -f1)
 SIZE=$(stat -c%s "$APK")
 VERSION=$(node -p "require('./apps/mobile/app.json').expo.version" 2>/dev/null || echo 0.0.0)
@@ -46,7 +81,7 @@ VERSION=$(node -p "require('./apps/mobile/app.json').expo.version" 2>/dev/null |
 # changed afterwards, so it is recorded WITH the artefact. An APK pointing at
 # the wrong host is indistinguishable from a broken server, and this is the
 # only place that fact survives.
-API_URL="${EXPO_PUBLIC_API_URL:-https://snap-apps-api.gaiada.com}"
+API_URL="$EXPO_PUBLIC_API_URL"
 NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
 echo "publishing $(basename "$APK")"
