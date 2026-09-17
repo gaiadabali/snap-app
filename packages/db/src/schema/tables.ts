@@ -93,10 +93,29 @@ export const tenants = pgTable('tenants', {
 
 export const users = pgTable('users', {
   id: uuid('id').primaryKey(),
-  /** External IdP subject. No password ever lands in this database. */
+  /**
+   * External IdP subject, or `pwd|<email>` for an account that registered with
+   * a password.
+   *
+   * The comment here used to read "No password ever lands in this database."
+   * Migration 0025 reversed that, and records why: no mail transport is
+   * configured, so the magic link is generated and never sent, and Google
+   * answers 501 without credentials. Passwords were the only remaining way
+   * into an internal build.
+   */
   subject: text('subject').notNull().unique(),
   email: citext('email'),
   displayName: text('display_name'),
+  /**
+   * Self-describing KDF string from `apps/server/src/auth/passwords.ts`.
+   *
+   * NULL for every account that arrived through an IdP or a magic link, which
+   * is most of them. Never compared in SQL — verification is constant-time in
+   * the application, and the only way this column is read at all is
+   * `identity_password_lookup`, because the app role cannot read `users`.
+   */
+  passwordHash: text('password_hash'),
+  passwordUpdatedAt: timestamp('password_updated_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
