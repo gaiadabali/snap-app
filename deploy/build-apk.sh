@@ -32,6 +32,10 @@ API_URL="${1:-${EXPO_PUBLIC_API_URL:-https://snap-apps-api.gaiada.com}}"
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 export EXPO_PUBLIC_API_URL="$API_URL"
+# HEAD of the checked-out branch, never a named branch. A sibling script
+# fetched `main` and silently built three APKs from stale source, because this
+# repository's sessions push to origin/main by refspec and leave local main
+# behind.
 export EXPO_PUBLIC_BUILD_COMMIT="$(git -C "$REPO_ROOT" rev-parse --short HEAD)"
 export EXPO_PUBLIC_BUILD_VERSION="$(node -p "require('$REPO_ROOT/apps/mobile/app.json').expo.version")"
 
