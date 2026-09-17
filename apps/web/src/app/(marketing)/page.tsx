@@ -197,6 +197,7 @@ export default function HomePage() {
           the hero's job is the CLAIM, and the claim is about what happens to a
           piece of paper. §12.2 permits exactly two kinds of imagery: the app
           screenshots, and the document itself. This is the second one. */}
+      <div className="pin-track">
       <section className="screen sect-3d">
         <Container width="wide" className="pb-16 pt-14 md:pb-20 md:pt-20">
           {/**
@@ -286,10 +287,12 @@ export default function HomePage() {
           </div>
         </Container>
       </section>
+      </div>
 
       {/* ── The wedge, first and shown ───────────────────────────────────
           MONETISATION.md §2: "not a schema detail to mention in paragraph
           four". So it is section one. */}
+      <div className="pin-track">
       <Section code="G11" className="screen sect-3d">
         <SectionHead
           kicker="The thing no other app does"
@@ -393,6 +396,7 @@ export default function HomePage() {
           </div>
         </div>
       </Section>
+      </div>
 
       {/* ── The app itself ──────────────────────────────────────────────── */}
       {/* `inline` — no head. The section above ended on two figures; this one
@@ -400,6 +404,7 @@ export default function HomePage() {
           another rule/kicker/display stack would be the fourth identical
           opening in a row. That repetition, not the palette, is what got three
           directions rejected (§12.1). */}
+      <div className="pin-track">
       <Section code="THE APP" form="wide" size="sm" className="screen sect-3d">
         <div className="seam" aria-hidden />
         <div className="mt-6 flex flex-wrap items-baseline justify-between gap-x-10 gap-y-3">
@@ -424,9 +429,11 @@ export default function HomePage() {
           <ArrowLink href="/how-it-works">How a receipt moves through it</ArrowLink>
         </div>
       </Section>
+      </div>
 
       {/* ── Comparison ──────────────────────────────────────────────────── */}
       {/* The demonstration: one docket, read four ways. */}
+      <div className="pin-track">
       <Section code="VS" className="screen sect-3d">
         <SectionHead
           kicker="Against what you are probably using"
@@ -436,10 +443,12 @@ export default function HomePage() {
           <ReadComparison />
         </div>
       </Section>
+      </div>
 
       {/* The evidence, kept as a table because that is what evidence looks
           like — named, date-stamped and checkable. `wide` so it does not share
           a silhouette with the demonstration above it. */}
+      <div className="pin-track">
       <Section code="MATRIX" form="wide" className="screen sect-3d">
         <div className="seam" aria-hidden />
         <div className="mt-6 t-label text-[var(--color-ink-faint)]">
@@ -451,6 +460,7 @@ export default function HomePage() {
           <ComparisonTable />
         </div>
       </Section>
+      </div>
 
       {/* ── Proof ───────────────────────────────────────────────────────
           Currently sample copy plus the things a reader can verify today.
@@ -458,6 +468,7 @@ export default function HomePage() {
           the samples are still in. */}
       {/* `measure` — one 68ch column. The only section on the page shaped
           like prose, because it is the only one doing any. */}
+      <div className="pin-track">
       <Section code="CHECK" form="measure" className="screen sect-3d">
         <SectionHead
           kicker={PROOF_HEAD.kicker}
@@ -468,6 +479,7 @@ export default function HomePage() {
           <Proof />
         </div>
       </Section>
+      </div>
 
       {/* ── The inverted band ────────────────────────────────────────────
           One dark moment, on the sharpest number, tied to the same worked
@@ -475,6 +487,7 @@ export default function HomePage() {
       {/* `wide` — the form the handoff reserves for "the single most important
           claim", and this is it. It also keeps the void band from sharing a
           silhouette with the deduction ledger immediately below it. */}
+      <div className="pin-track">
       <Section code="1B" tone="void" size="lg" form="wide" className="screen sect-3d">
         <div className="grid gap-14 lg:grid-cols-[1fr_1fr] lg:gap-16">
           <Reveal variant="expand">
@@ -543,8 +556,10 @@ export default function HomePage() {
           </div>
         </div>
       </Section>
+      </div>
 
       {/* ── Deductions ──────────────────────────────────────────────────── */}
+      <div className="pin-track">
       <Section code="D1–D5" className="screen sect-3d">
         <div className="grid gap-12 lg:grid-cols-[1fr_1.1fr] lg:gap-20">
           <div>
@@ -589,6 +604,7 @@ export default function HomePage() {
           </div>
         </div>
       </Section>
+      </div>
 
       {/* ── Practices ───────────────────────────────────────────────────── *
        * Whole section hidden while BUSINESS_SURFACES_ENABLED is false — this
@@ -596,6 +612,7 @@ export default function HomePage() {
        * primary revenue line. Left in the source rather than deleted so
        * flipping the flag back on restores it exactly as it was. */}
       {BUSINESS_SURFACES_ENABLED ? (
+      <div className="pin-track">
       <Section code="FIRMS" className="screen sect-3d">
         <div className="grid gap-12 lg:grid-cols-[1fr_1fr] lg:gap-20">
           <div>
@@ -649,9 +666,11 @@ export default function HomePage() {
           </div>
         </div>
       </Section>
+      </div>
       ) : null}
 
       {/* ── Pricing ─────────────────────────────────────────────────────── */}
+      <div className="pin-track">
       <Section code="PLANS" form="wide" className="screen sect-3d">
         <div className="seam" aria-hidden />
         <SectionHead
@@ -701,6 +720,7 @@ export default function HomePage() {
           ))}
         </div>
       </Section>
+      </div>
 
       {/* ── Final CTA ───────────────────────────────────────────────────── */}
       <section className="border-t border-[var(--color-rule)]">

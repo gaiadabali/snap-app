@@ -482,69 +482,69 @@ body {
   }
 }
 
-/* ── Desktop: one section, one screen ────────────────────────────────────
+/* ── Desktop: one section, one screen, pinned ────────────────────────────
  *
- * Scoped to >=1024px on purpose. The brief for this pass is the desktop
- * surface; the handset keeps the ordinary flowing document, which is the
- * right shape for it anyway — a tradie thumbing through in the sun does not
- * want to be paged.
+ * Each section is STICKY inside a taller track. Scrolling through the track
+ * holds the section still and scrubs its animation; the section only leaves
+ * once that animation has finished. That is the "lock it until the animation
+ * is done" the owner asked for, and it is the reason the inter-section motion
+ * matters — the transition between two screens is now a thing you scroll
+ * through rather than a cut.
  *
- * `proximity`, never `mandatory`. Mandatory snapping takes the scroll away
- * from the reader: a trackpad flick that lands 40px into a section gets
- * yanked, and any section taller than the viewport becomes genuinely hard to
- * read the bottom of. Proximity gives the same settled feeling and gives it
- * back the moment someone scrolls deliberately.
+ * No JavaScript, and deliberately so. The usual way to pin is a scroll
+ * library that listens for wheel events and repositions the page, which takes
+ * the scroll away from the reader and fights trackpad momentum. Position
+ * sticky plus a named view timeline does the same job in the compositor: the
+ * browser is still doing the scrolling, we are only deciding what the numbers
+ * drive.
+ *
+ * SNAP IS GONE. Mandatory snapping and pinning are two mechanisms for the same
+ * job and they fight — snap tries to jump to the next track start while the
+ * pin is still consuming scroll. The pin is the stronger of the two and the
+ * one that was asked for, so it wins outright.
  */
 @media (min-width: 1024px) {
-  html {
-    /*
-     * MANDATORY, and `scroll-snap-stop: always` with it.
-     *
-     * This was `proximity` and I argued against mandatory on the grounds that
-     * it takes the scroll away from the reader: a flick that lands 40px into a
-     * section gets yanked, and any section taller than the viewport becomes
-     * hard to read the bottom of.
-     *
-     * The owner asked for each screen to finish before the next one starts,
-     * and the second half of that objection no longer applies — every section
-     * now fits a 1440x780 laptop, verified at three viewport heights. Nothing
-     * can be trapped below the fold because nothing extends below it.
-     *
-     * `scroll-snap-stop: always` is the half that does the actual locking: it
-     * forbids skipping past a section in one gesture, so a fast flick advances
-     * exactly one screen. Combined with the scroll-driven animations — which
-     * all complete by the time a section reaches centre — arriving at a
-     * section means its animation has finished.
-     */
-    scroll-snap-type: y mandatory;
-  }
-
+  /* The un-pinned shape, and the one a browser gets if it cannot run the
+     pin. An ordinary full-height section in an ordinary flowing document. */
   .screen {
     min-height: 100svh;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    /*
-     * `start`, not `center`.
-     *
-     * With mandatory snapping and full-height sections, centre alignment puts
-     * the snap point in the middle of each section, so a scroll shorter than
-     * half a screen is pulled back where it came from. Measured: twenty-four
-     * wheel events totalling 2,640px moved the page zero pixels. That is not a
-     * lock, it is a page you cannot scroll.
-     *
-     * With `start` the snap points sit one viewport apart and each gesture
-     * advances exactly one. `scroll-margin-top` keeps the section's first line
-     * clear of the sticky header.
-     */
-    scroll-snap-align: start;
-    scroll-snap-stop: always;
-    /* The header is sticky and 4rem tall, so a section centred in the full
-       viewport puts its first line underneath it. Centring happens in the
-       space BELOW the header instead. Found by screenshotting a settled
-       section and reading a headline with its top third missing. */
     padding-top: 4rem;
-    scroll-margin-top: 4rem;
+  }
+
+  /*
+   * Pinning is applied ONLY where it can be driven.
+   *
+   * The track is 1.85 screens tall and the section inside it is sticky, so
+   * scrolling the extra 0.85 is what scrubs the animation. Without scroll
+   * timelines, or under reduced motion, there is no animation to scrub — and
+   * the track would become 0.85 of a screen of scrolling where nothing
+   * whatsoever happens, nine times over. So both guards wrap the pin itself,
+   * not just the keyframes, and those readers get the plain document above.
+   */
+  @supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+      .pin-track {
+        /* Below about 1.5 the animation finishes before the pin releases and
+           the lock is not felt; above about 2.2 the page starts to feel like
+           work. */
+        height: 185svh;
+        /* The timeline every child animation reads. Named, because the section
+           inside is sticky — its own `view()` progress would barely move. */
+        view-timeline-name: --screen;
+        view-timeline-axis: block;
+      }
+
+      .pin-track > .screen {
+        position: sticky;
+        top: 0;
+        height: 100svh;
+        min-height: 0;
+        overflow: hidden;
+      }
+    }
   }
 }
 
@@ -569,7 +569,10 @@ body {
     @media (prefers-reduced-motion: no-preference) {
       .sect-3d {
         animation: sect-3d linear both;
-        animation-timeline: view();
+        /* The TRACK's timeline, not this element's. A sticky element barely
+           moves through the viewport, so its own `view()` progress is nearly
+           constant and the animation would never play. */
+        animation-timeline: --screen;
         transform-style: preserve-3d;
         will-change: transform, opacity;
       }
@@ -968,4 +971,68 @@ body {
   .screen .proof-head + * { margin-top: 0.9rem; }
   .screen [class*="max-w-[68ch]"] > .mt-12 { margin-top: 0.9rem; }
   .screen .proof-grid .text-\[17px\] { font-size: 13px; }
+}
+
+/* ── Inner motion, re-pointed at the track ───────────────────────────────
+ *
+ * This is what makes the pin worth having. Every animation inside a pinned
+ * section still had `animation-timeline: view()` — its OWN progress through
+ * the viewport — and a sticky element barely moves, so all of them sat frozen
+ * at one frame for the whole lock. The section arrived, then nothing happened
+ * until it left.
+ *
+ * Pointing them at `--screen` makes the track's scroll drive the content: the
+ * ledger rows deal, the figures strike, the phones fan and the four readers
+ * sweep WHILE the screen is held. That is the literal reading of "each screen
+ * finishes all its animation before it goes to the next one" — you cannot
+ * leave until you have scrolled through all of it.
+ *
+ * The ranges are plain percentages of the track, all inside 30%-68%, which is
+ * the window the section is actually pinned for. Measured, not guessed: entry
+ * completes at about 30% of the track timeline and the exit begins at about
+ * 70%, so anything outside that band would play while the section is moving
+ * and be missed.
+ *
+ * Scoped to `.pin-track` descendants so the same utilities keep their ordinary
+ * behaviour on the handset and on pages that are not pinned.
+ */
+@media (min-width: 1024px) {
+  @supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+      .pin-track :is(.anim-rise, .anim-fade, .anim-rule, .anim-wipe, .anim-expand) {
+        animation-timeline: --screen;
+        animation-range: 30% 46%;
+      }
+
+      .pin-track .anim-deal {
+        animation-timeline: --screen;
+        animation-range: calc(32% + (var(--i, 0) * 3%)) calc(50% + (var(--i, 0) * 3%));
+      }
+
+      .pin-track .anim-strike {
+        animation-timeline: --screen;
+        animation-range: 40% 58%;
+      }
+
+      .pin-track .pop-3d {
+        animation-timeline: --screen;
+        animation-range: 32% 54%;
+      }
+
+      .pin-track .app-deck > * > * {
+        animation-timeline: --screen;
+        animation-range: calc(30% + (var(--i, 0) * 5%)) calc(56% + (var(--i, 0) * 5%));
+      }
+
+      .pin-track .read-card__sweep {
+        animation-timeline: --screen;
+        animation-range: calc(32% + (var(--i, 0) * 5%)) calc(50% + (var(--i, 0) * 5%));
+      }
+
+      .pin-track .read-card__answer {
+        animation-timeline: --screen;
+        animation-range: calc(44% + (var(--i, 0) * 5%)) calc(60% + (var(--i, 0) * 5%));
+      }
+    }
+  }
 }
