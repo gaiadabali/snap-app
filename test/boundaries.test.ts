@@ -75,6 +75,19 @@ const WORKSPACE_DIRS = [
   'packages/docai',
   'packages/docai-preview',
   'packages/tax-engine',
+  // `@snap/tax-rules` is deliberately NOT in FORBIDDEN_FOR_CLIENTS, and the
+  // reason is the reason this file gives for banning `@snap/tax-engine`:
+  // *a rate change must be a deploy, not a client release.* A rule set is DATA and
+  // the interpreter is fixed code, so an Indonesian PTKP change is a rule set
+  // update, not an App Store submission — the exact failure the ban exists to
+  // prevent is the one this package is built to solve.
+  //
+  // It is still absent from ALLOWED_FOR_MOBILE, so mobile cannot reach it
+  // today. Putting it there is a separate, deliberate decision; what makes it
+  // *safe* to consider is that a shipped rule set carries `effectiveTo` and the
+  // registry refuses to compute outside it, so a stale built-in fails closed
+  // rather than quietly applying superseded law.
+  'packages/tax-rules',
 ];
 
 /** name -> its declared @snap/* runtime deps, for transitive walking. */

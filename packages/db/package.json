@@ -33,7 +33,8 @@
     "@types/node": "^20.19.9",
     "@types/pg": "^8.20.0",
     "typescript": "^5.9.3",
-    "vitest": "^4.1.9"
+    "vitest": "^4.1.9",
+    "@snap/tax-rules": "workspace:*"
   },
   "engines": {
     "node": ">=20"

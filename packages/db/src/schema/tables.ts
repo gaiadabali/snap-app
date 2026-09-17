@@ -85,6 +85,16 @@ export const tenants = pgTable('tenants', {
   financialYearStartMonth: smallint('financial_year_start_month').notNull().default(7),
   /** A `@snap/tax-engine` PROFILES key: 'truckie_long', 'nurse', 'sole', … */
   occupationProfileId: text('occupation_profile_id'),
+  /**
+   * Installed `@snap/tax-rules` engine, e.g. 'id-2026' (0026).
+   *
+   * NULL means no engine, and every tax calculation then refuses. There is no
+   * default on purpose: falling back to Australia would produce plausible
+   * numbers under the wrong law, which is the failure nobody would see.
+   */
+  taxRulesId: text('tax_rules_id'),
+  /** Version of the installed pack, so a stored figure can be replayed (0026). */
+  taxRulesVersion: text('tax_rules_version'),
   /** The practice that owns this client, or NULL for a direct-plan tenant (0011). */
   firmId: uuid('firm_id'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -443,6 +453,15 @@ export const taxCodes = pgTable('tax_codes', {
   id: uuid('id').primaryKey(),
   /** NULL = system-seeded, readable by every tenant. */
   tenantId: uuid('tenant_id'),
+  /**
+   * The jurisdiction this code belongs to (0026).
+   *
+   * A tenant only ever sees codes for its own country. A trigger on
+   * `transaction_splits` refuses a mismatch, because an Australian GST code on
+   * an Indonesian workspace would post cleanly and produce a BAS line for a
+   * taxpayer who has never heard of a BAS.
+   */
+  country: countryCode('country').notNull(),
   code: text('code').notNull(),
   name: text('name').notNull(),
   rate: taxRate('rate').notNull(),

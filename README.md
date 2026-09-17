@@ -58,6 +58,9 @@ apps/
 packages/
   db/          Postgres schema: migrations, Drizzle declarations, RLS + drift suites
   tax-engine/  The Australian deduction engine (217 golden tests)
+  tax-rules/   Pluggable per-country tax engine. Rules are DATA, the interpreter is
+               code; one rule set installed at a time, swapped by country. Indonesia
+               (personal) ships today — see packages/tax-rules/README.md
   api-contract/ Types shared by server and clients. Imports nothing — that is enforced
   docai/       Document AI: DocDOM, grounding, the engine registry and licence floor
 services/

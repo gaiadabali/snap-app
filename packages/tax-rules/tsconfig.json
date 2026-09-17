@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    /* Pure computation, like @snap/tax-engine: no DOM, no Node APIs, no
+       framework. A stray `document` or `window` is a compile error here rather
+       than a runtime crash in the worker or on a phone. */
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+
+    "strict": true,
+    "noUncheckedIndexedAccess": false,
+    "forceConsistentCasingInFileNames": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+
+    "noEmit": true
+  },
+  "include": ["src/**/*.ts", "vitest.config.ts"]
+}
