@@ -47,16 +47,24 @@ const FAILURE_COPY: Record<string, { title: string; detail: string; fix: string 
 };
 
 import { ProvisionalNotice } from '@/components/ProvisionalNotice';
+import { ProvisionalReview } from '@/components/ProvisionalReview';
 import { transitionsFor, type Preview } from '@/lib/provisional';
 
 export default function DocumentScreen() {
   const p = usePalette();
   const router = useRouter();
-  const { id, localPages, preview } = useLocalSearchParams<{
+  const { id, localPages, preview, captureId } = useLocalSearchParams<{
     id: string;
     localPages?: string;
     /** What the device read, JSON, when the capture came from this session. */
     preview?: string;
+    /**
+     * Set with `id: 'pending'` when the capture has been uploaded and the
+     * server has not finished reading it. This screen then shows the phone's
+     * provisional read and waits, rather than the capture screen blocking on a
+     * spinner before anybody sees anything.
+     */
+    captureId?: string;
   }>();
 
 
@@ -65,6 +73,7 @@ export default function DocumentScreen() {
   const [editing, setEditing] = useState<null | 'abn'>(null);
   const [draft, setDraft] = useState('');
   const [perms, setPerms] = useState<Permissions | null>(null);
+  const [stillWaiting, setStillWaiting] = useState(false);
 
   /**
    * The four §7.1 transitions, computed once the server's document arrives.
@@ -73,6 +82,16 @@ export default function DocumentScreen() {
    * no device reading to compare against, and must render exactly as it
    * always has.
    */
+  /** The device's read, parsed once. Null when this document was not captured here. */
+  const parsedPreview = useMemo(() => {
+    if (!preview) return null;
+    try {
+      return JSON.parse(preview) as Preview;
+    } catch {
+      return null;
+    }
+  }, [preview]);
+
   const transitions = useMemo(() => {
     if (!preview || !doc) return null;
     try {
@@ -90,12 +109,30 @@ export default function DocumentScreen() {
     }
   }, [preview, doc]);
 
+  const pendingCapture = id === 'pending' ? (captureId ?? null) : null;
+
   const load = useCallback(async () => {
+    // Waiting on the server's read, with the preview already on screen. A
+    // failure here is NOT an error state: the capture is stored, the person
+    // can see what the phone read, and the document will appear in the review
+    // list when extraction finishes. Throwing them to an error screen over a
+    // slow worker would be the preview costing them something, which §9
+    // forbids.
+    if (pendingCapture) {
+      try {
+        const extracted = await api().awaitExtraction(pendingCapture);
+        setDoc(extracted);
+        setPerms(await api().getPermissions(extracted.workspaceId));
+      } catch {
+        setStillWaiting(true);
+      }
+      return;
+    }
     if (!id) return;
     const next = await api().getDocument(id);
     setDoc(next);
     if (next) setPerms(await api().getPermissions(next.workspaceId));
-  }, [id]);
+  }, [id, pendingCapture]);
 
   useEffect(() => {
     void load();
@@ -124,6 +161,12 @@ export default function DocumentScreen() {
     },
     [load],
   );
+
+  // THE PROVISIONAL SCREEN. Shown the moment the capture is uploaded, before
+  // the server has read anything — which is the whole of Stage 1.
+  if (!doc && parsedPreview) {
+    return <ProvisionalReview preview={parsedPreview} stillWaiting={stillWaiting} />;
+  }
 
   if (!doc) {
     return (

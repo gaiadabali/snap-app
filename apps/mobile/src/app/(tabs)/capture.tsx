@@ -346,6 +346,39 @@ export default function CaptureScreen() {
     const read = deviceReadRef.current;
     if (read) recordReading(pc.captureId, read);
 
+    // GO NOW, if the phone read anything.
+    //
+    // This used to wait on `awaitExtraction` before navigating, which made the
+    // preview pointless: the numbers sat in a variable until the server
+    // produced its own, and the person saw a spinner. On the handset the
+    // extraction timed out and they saw NOTHING — with this they see the total
+    // the phone already read.
+    //
+    // OD-8: "navigate to the review screen in provisional mode WHILE upload
+    // and extraction proceed". The review screen does the waiting from here.
+    const localPages = JSON.stringify(pc.pages.map((page) => page.uri));
+    if (read) {
+      setPhase('framing');
+      setPending(null);
+      setPageStatus({});
+      router.push({
+        pathname: '/document/[id]',
+        params: {
+          // No document exists yet — that is the point. The review screen
+          // awaits extraction itself and swaps this for the real record.
+          id: 'pending',
+          captureId: pc.captureId,
+          localPages,
+          preview: JSON.stringify(read.preview),
+        },
+      });
+      deviceReadRef.current = null;
+      return;
+    }
+
+    // NO DEVICE READ — Expo Go, no Play services, a PDF, a throw inside ML
+    // Kit. §OD-8 requires this path to be byte-for-byte what it was before the
+    // preview existed, so it is left exactly as it was.
     setPhase('extracting');
     try {
       const doc = await api().awaitExtraction(pc.captureId, pc.pages[0]?.uri, workspace);
@@ -360,14 +393,9 @@ export default function CaptureScreen() {
           // screen can page through them immediately. A document reopened
           // later falls back to its single stored image — the server does
           // not yet hand back a full page list over the wire.
-          localPages: JSON.stringify(pc.pages.map((page) => page.uri)),
-          // What the phone read, so the review screen can show the four §7.1
-          // transitions against the server's document rather than silently
-          // replacing numbers the person may already have looked at.
-          ...(read ? { preview: JSON.stringify(read.preview) } : {}),
+          localPages,
         },
       });
-      deviceReadRef.current = null;
     } catch (err) {
       // Every page is already stored either way — only the wait for a
       // reading failed. Keep `pending` so Retry does not re-upload anything.
