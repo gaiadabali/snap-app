@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 
-import { Badge, Card, Container, SectionTitle } from '@/design/primitives';
+import { Badge, Card, Reveal, Rule, Section, Tear } from '@/design/primitives';
+
+import { PageSpine } from '../_components/page-spine';
 
 import { CATEGORIES, SEARCH_INDEX } from './_data';
 import { SupportSearch } from './SupportSearch';
@@ -27,14 +29,35 @@ const STATUS_ROWS = [
 
 export default function SupportPage() {
   return (
-    <div className="py-12">
-      <Container width="prose">
-        <SectionTitle
-          as="h1"
-          eyebrow="Support"
-          title="Help centre"
-          lede="Search for a topic, browse by category, or contact us directly. This page covers the product as it actually works — nothing here describes a feature that isn't shipped."
-        />
+    <>
+      <PageSpine />
+
+      {/*
+        Ported to the section language 2026-09-17, but DELIBERATELY QUIET.
+
+        A help centre is a reading surface: someone arrives here with a problem
+        and wants an answer, not a performance. So it takes the shell, the rule
+        and a staggered reveal on the cards — and none of the asset layer's
+        document annotations (`docs/WEB.md` §4.8). A field box belongs on a
+        figure the product read off a docket; there is no docket on this page.
+        Same reasoning keeps `/docs` and `/legal` quiet.
+
+        Copy is untouched.
+      */}
+      <Section form="measure" size="lg" className="sect-3d">
+        <Rule />
+        <Reveal variant="fade">
+          <div className="t-label mt-5 text-[var(--color-ink-muted)]">Support</div>
+        </Reveal>
+        <Reveal>
+          <h1 className="t-head mt-4 max-w-[20ch]">Help centre</h1>
+        </Reveal>
+        <Reveal>
+          <p className="t-lede mt-6 text-[var(--color-ink-muted)]">
+            Search for a topic, browse by category, or contact us directly. This page covers the
+            product as it actually works — nothing here describes a feature that isn&apos;t shipped.
+          </p>
+        </Reveal>
 
         <div className="mt-8">
           <SupportSearch index={SEARCH_INDEX} />
@@ -43,8 +66,13 @@ export default function SupportPage() {
         <div className="mt-12 flex flex-col gap-12">
           {CATEGORIES.map((category) => (
             <section key={category.id} id={category.id}>
-              <h2 className="text-[20px] font-bold text-[var(--color-ink)]">{category.title}</h2>
-              <p className="mt-2 text-[14px] leading-relaxed text-[var(--color-ink-muted)]">{category.intro}</p>
+              <Tear className="mb-4" />
+              <Reveal>
+                <h2 className="text-[20px] font-bold text-[var(--color-ink)]">{category.title}</h2>
+              </Reveal>
+              <Reveal>
+                <p className="mt-2 text-[14px] leading-relaxed text-[var(--color-ink-muted)]">{category.intro}</p>
+              </Reveal>
               <div className="mt-4 flex flex-col gap-3">
                 {category.issues.map((issue, i) => (
                   <Card key={i}>
@@ -65,6 +93,7 @@ export default function SupportPage() {
           ))}
 
           <section id="contact">
+            <Tear className="mb-4" />
             <h2 className="text-[20px] font-bold text-[var(--color-ink)]">Contact support</h2>
             <p className="mt-2 text-[14px] leading-relaxed text-[var(--color-ink-muted)]">
               Couldn&apos;t find your answer above? Email{' '}
@@ -110,6 +139,7 @@ export default function SupportPage() {
           </section>
 
           <section id="status">
+            <Tear className="mb-4" />
             <h2 className="text-[20px] font-bold text-[var(--color-ink)]">System status</h2>
             <p className="mt-2 text-[13px] leading-relaxed text-[var(--color-ink-muted)]">
               A manually-maintained snapshot, not a live monitoring feed. If something looks wrong here
@@ -129,7 +159,7 @@ export default function SupportPage() {
             </div>
           </section>
         </div>
-      </Container>
-    </div>
+      </Section>
+    </>
   );
 }
