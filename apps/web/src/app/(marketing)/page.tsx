@@ -19,6 +19,7 @@ import { AppScreens } from './_components/app-showcase';
 import { ReceiptScanCard } from './_components/receipt-scan-card';
 import { ComparisonTable } from './_components/comparison';
 import { PageSpine } from './_components/page-spine';
+import { ReadComparison } from './_components/read-comparison';
 import { Proof, PROOF_HEAD } from './_components/proof';
 
 export const metadata: Metadata = {
@@ -413,7 +414,7 @@ export default function HomePage() {
         {/* Capped so three phones fit the screen this section owns. Without
             it the grid sizes to the image aspect and overruns by ~50px, which
             is just enough to stop the section being one screen. */}
-        <div className="app-deck mt-10 [&_figure]:mx-auto lg:[&_figure]:max-w-[292px]">
+        <div className="mt-10 [&_figure]:mx-auto lg:[&_figure]:max-w-[292px]">
           <AppScreens />
         </div>
         <div className="mt-8 flex flex-wrap items-center gap-6">
@@ -425,11 +426,25 @@ export default function HomePage() {
       </Section>
 
       {/* ── Comparison ──────────────────────────────────────────────────── */}
+      {/* The demonstration: one docket, read four ways. */}
       <Section code="VS" className="screen sect-3d">
         <SectionHead
           kicker="Against what you are probably using"
           title="The row nobody else can tick."
         />
+        <div className="mt-10">
+          <ReadComparison />
+        </div>
+      </Section>
+
+      {/* The evidence, kept as a table because that is what evidence looks
+          like — named, date-stamped and checkable. `wide` so it does not share
+          a silhouette with the demonstration above it. */}
+      <Section code="MATRIX" form="wide" className="screen sect-3d">
+        <div className="seam" aria-hidden />
+        <div className="mt-6 t-label text-[var(--color-ink-faint)]">
+          Capability, not quality — every cell is checkable
+        </div>
         {/* The table is evidence, so it stays a table — it is not replaced by
             a scene. It just arrives like one. */}
         <div className="pop-3d mt-12">

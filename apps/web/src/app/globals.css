@@ -359,47 +359,22 @@ body {
 
 /* ── The page spine ──────────────────────────────────────────────────────
  *
- * A curve in the LEFT MARGIN — outside the reading column, never across it.
- * See `_components/page-spine.tsx` for the two versions this replaces and the
- * measurement that condemned the second one.
+ * A curve down the left gutter that draws itself as the document is read.
+ * See `_components/page-spine.tsx` for why it is a curve and why it is the
+ * only tracker left on the page.
  *
- * Geometry is derived from the content edge, not the viewport. The container
- * is max-w-1280 with 40px padding, so text starts at `50vw - 600px`. The rail
- * is a 56px band ending 20px short of that:
- *
- *     left  = 50vw - 600px - 76px
- *     width = 56px          ->  right edge = content edge - 20px
- *
- * At 1440 that is x 44-100 against text at 120. At 1600, 124-180 against 200.
- * The curve's amplitude lives inside the band, so nothing it does can reach
- * the column.
+ * Desktop only. Below 1024px there is no gutter to hang it in, and the brief
+ * for this pass is desktop; the rail simply is not rendered there.
  */
-@media (min-width: 1400px) {
+@media (min-width: 1024px) {
   .page-spine {
     position: fixed;
     top: 0;
     bottom: 0;
-    left: calc(50vw - 676px);
-    width: 56px;
+    left: max(0.5rem, calc(50vw - 40rem));
+    width: 5rem;
     pointer-events: none;
-    /*
-     * Above the sections, below the header.
-     *
-     * It was `z-index: 0` and the rail was invisible the moment `.sect-3d`
-     * shipped: a transform creates a stacking context, so the sections stopped
-     * being plain in-flow backgrounds and began painting in the same layer as
-     * this fixed element — where DOM order decides, and every section comes
-     * after it.
-     *
-     * Proven by screenshotting a 64px crop of the rail's own band at each
-     * value: blank at 0, trace and node at 20. `elementFromPoint` cannot
-     * answer this question at all — the rail is `pointer-events: none`, so it
-     * is skipped and the section underneath is always returned.
-     *
-     * Safe to raise because the rail sits entirely in the margin with 20px of
-     * clearance: there is no content at this x for it to cover.
-     */
-    z-index: 20;
+    z-index: 0;
   }
 
   .page-spine__svg {
@@ -409,45 +384,26 @@ body {
     fill: none;
   }
 
-  /* The unread curve. Furniture: it reports without asking to be looked at. */
+  /* The unread curve. Deliberately faint — this is furniture, and §12.1's
+     test for furniture is that it reports something without asking to be
+     looked at. */
   .page-spine__track {
     stroke: var(--color-rule);
     stroke-width: 1;
   }
 
-  /* Weight under the trace, so the rail reads as an object rather than a
-     hairline — without a glow filter, which §12.2 would call chrome. */
-  .page-spine__halo {
-    stroke: var(--color-accent);
-    stroke-width: 6;
-    stroke-linecap: round;
-    opacity: 0.1;
-    stroke-dasharray: 1;
-    stroke-dashoffset: 1;
-  }
-
   .page-spine__trace {
     stroke: var(--color-accent);
-    stroke-width: 2;
+    stroke-width: 1.5;
     stroke-linecap: round;
     stroke-dasharray: 1;
     stroke-dashoffset: 1;
-  }
-
-  /* Zero-length dash + round cap = a dot, riding the trace's leading edge. */
-  .page-spine__node {
-    stroke: var(--color-accent);
-    stroke-width: 9;
-    stroke-linecap: round;
-    stroke-dasharray: 0 1;
-    stroke-dashoffset: 1;
+    opacity: 0.85;
   }
 
   @supports (animation-timeline: scroll()) {
     @media (prefers-reduced-motion: no-preference) {
-      .page-spine__halo,
-      .page-spine__trace,
-      .page-spine__node {
+      .page-spine__trace {
         animation: spine-trace linear both;
         animation-timeline: scroll(root block);
       }
@@ -664,58 +620,62 @@ body {
   }
 }
 
-/* ── The app deck ────────────────────────────────────────────────────────
+/* ── The read comparison ─────────────────────────────────────────────────
  *
- * Three real app screens that used to sit in a flat row — the most ordinary
- * thing left on the home page. They now arrive as a DECK: stacked toward the
- * centre, turned, and set back, fanning out to their grid positions as the
- * section is scrolled.
+ * Four cards, each showing the same docket read by a different product. A
+ * cyan sweep passes across each in turn as the section is scrolled, and the
+ * one card that can answer resolves its split behind it.
  *
- * It is the one place the page can use photography, because §12.2 permits
- * exactly two kinds of imagery — the real app screenshots and the document
- * itself — and these are the first kind. No new asset is invented to get the
- * effect; the movement is the asset.
- *
- * Per-phone direction comes from a custom property set by `:nth-child`, since
- * a keyframe cannot branch. The outer two start displaced TOWARD the centre,
- * so scrolling opens the fan rather than sliding three things sideways.
- *
- * This deliberately overrides `.anim-deal` on the same elements —
- * `.app-deck > * > *` outranks a single class — so the phones get the fan
- * instead of the generic row treatment, and nothing animates twice.
+ * Scroll-driven like the rest: the sweep's position is the scroll position,
+ * staggered per card by `--i`, so the four are read left to right as the
+ * reader arrives rather than on a timer they might miss.
  */
-@media (min-width: 1024px) {
-  /* The three phones are GRANDCHILDREN: `AppScreens` wraps them in its own
-     grid, so `.app-deck > *` matched that single container and fanned the
-     whole row in as one object. Caught by logging the computed transform of
-     every matched element and finding exactly one. */
-  .app-deck > * > *:nth-child(1) { --fan-x: 64%;  --fan-r: 22deg;  --fan-z: -26rem; }
-  .app-deck > * > *:nth-child(2) { --fan-x: 0%;   --fan-r: 0deg;   --fan-z: -34rem; }
-  .app-deck > * > *:nth-child(3) { --fan-x: -64%; --fan-r: -22deg; --fan-z: -26rem; }
+.read-card {
+  overflow: hidden;
+}
 
-  @supports (animation-timeline: view()) {
-    @media (prefers-reduced-motion: no-preference) {
-      .app-deck > * > * {
-        animation: app-fan linear both;
-        animation-timeline: view();
-        animation-range: entry 2% cover 52%;
-        transform-origin: 50% 90%;
-        will-change: transform, opacity;
-      }
+.read-card__sweep {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--color-scan), transparent);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* The answer is present and legible without any timeline — the reveal below
+   only adds the arrival. A figure this page argues about may never depend on
+   an animation to exist. */
+.read-card__answer {
+  opacity: 1;
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .read-card__sweep {
+      animation: read-sweep linear both;
+      animation-timeline: view();
+      animation-range: entry calc(8% + (var(--i, 0) * 7%)) cover calc(40% + (var(--i, 0) * 7%));
+    }
+
+    .read-card__answer {
+      animation: read-answer linear both;
+      animation-timeline: view();
+      /* Lands just behind the sweep that reads it. */
+      animation-range: entry calc(26% + (var(--i, 0) * 7%)) cover calc(48% + (var(--i, 0) * 7%));
     }
   }
 }
 
-@keyframes app-fan {
-  from {
-    opacity: 0;
-    transform: perspective(2000px)
-      translate3d(var(--fan-x, 0), 3rem, var(--fan-z, -24rem))
-      rotateY(var(--fan-r, 0deg))
-      rotateX(8deg);
-  }
-  to {
-    opacity: 1;
-    transform: perspective(2000px) translate3d(0, 0, 0) rotateY(0deg) rotateX(0deg);
-  }
+@keyframes read-sweep {
+  0%   { transform: translateY(0); opacity: 0; }
+  12%  { opacity: 1; }
+  88%  { opacity: 1; }
+  100% { transform: translateY(var(--sweep-to, 280px)); opacity: 0; }
+}
+
+@keyframes read-answer {
+  from { opacity: 0; transform: perspective(700px) translate3d(0, 0.5rem, -3rem); }
+  to   { opacity: 1; transform: perspective(700px) translate3d(0, 0, 0); }
 }
