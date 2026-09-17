@@ -234,13 +234,27 @@ const customCategories = new Set<string>();
  * so it lives beside the other hand-authored demo constants (`ACCOUNTS`,
  * `OCCUPATION_LABELS`) rather than in the generated fixture.
  */
+// MIRRORS migration 0027, which reprices every pack to credits x $0.033 —
+// model cost x 3, measured in MONETISATION.md §5 at ~$0.011 a scan. The
+// migration asserts that relationship in SQL, so these are not independent
+// numbers to keep in step by hand: they are that arithmetic, written out.
+//
+// The old figures (0.15 / 0.70 / 1.30 / 2.40 / 5.50 / 10.00) survived here
+// after the repricing landed, which would have demoed prices nobody will ever
+// be charged. Caught by snap-apps-c3, who repriced the database and checked
+// what else quoted the old numbers.
+//
+// The CODES were also wrong — `pack_10` here against `credits_10` in the
+// database. A fixture may legitimately invent data, but not a different
+// identifier for the same thing: a demo that shows `pack_10` and a support
+// conversation about `credits_10` are about the same pack and do not look it.
 const CREDIT_PACKS: CreditPack[] = [
-  { code: 'pack_10', credits: 10, priceAud: '0.15', sortOrder: 1 },
-  { code: 'pack_50', credits: 50, priceAud: '0.70', sortOrder: 2 },
-  { code: 'pack_100', credits: 100, priceAud: '1.30', sortOrder: 3 },
-  { code: 'pack_200', credits: 200, priceAud: '2.40', sortOrder: 4 },
-  { code: 'pack_500', credits: 500, priceAud: '5.50', sortOrder: 5 },
-  { code: 'pack_1000', credits: 1000, priceAud: '10.00', sortOrder: 6 },
+  { code: 'credits_10', credits: 10, priceAud: '0.33', sortOrder: 10 },
+  { code: 'credits_50', credits: 50, priceAud: '1.65', sortOrder: 20 },
+  { code: 'credits_100', credits: 100, priceAud: '3.30', sortOrder: 30 },
+  { code: 'credits_200', credits: 200, priceAud: '6.60', sortOrder: 40 },
+  { code: 'credits_500', credits: 500, priceAud: '16.50', sortOrder: 50 },
+  { code: 'credits_1000', credits: 1000, priceAud: '33.00', sortOrder: 60 },
 ];
 
 /**
@@ -265,9 +279,12 @@ let creditBalance = 7; // 10 free-to-start, 3 already used — see docs/ECOSYSTE
 const seedCreditPurchases = (): CreditPurchase[] => [
   {
     id: 'cpu_1',
-    packCode: 'pack_50',
+    packCode: 'credits_50',
     credits: 50,
-    priceAud: '0.70',
+    // Matches CREDIT_PACKS above, which matches migration 0027. A seeded
+    // purchase showing a price no pack sells for is the same demo lie as a
+    // stale catalogue, one row further down.
+    priceAud: '1.65',
     status: 'paid',
     provider: 'manual',
     createdAt: '2026-06-02T01:15:00.000Z',
