@@ -92,8 +92,8 @@ describeIfDb('credits and points (migration 0024)', () => {
       const r = await c.query<{ code: string }>(
         `SELECT code FROM credit_packs WHERE active ORDER BY sort_order`,
       );
+      // credits_10 retired in 0029 — inactive, not deleted.
       expect(r.rows.map((x) => x.code)).toEqual([
-        'credits_10',
         'credits_50',
         'credits_100',
         'credits_200',

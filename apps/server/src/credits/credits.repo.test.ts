@@ -52,8 +52,9 @@ describeIfDb('credits.repo', () => {
 
   it('lists the seeded active packs in display order', async () => {
     const packs = await listCreditPacks(OWNER, TENANT);
+    // credits_10 is retired (migration 0029) — active = false, so it is off
+    // sale without being deleted, because old receipts reference it.
     expect(packs.map((p) => p.code)).toEqual([
-      'credits_10',
       'credits_50',
       'credits_100',
       'credits_200',
@@ -125,7 +126,7 @@ describeIfDb('credits.repo', () => {
   });
 
   it('fulfilling an already-paid purchase is idempotent — it does not grant a second time', async () => {
-    const started = await startCreditPurchase(OWNER, TENANT, 'credits_10');
+    const started = await startCreditPurchase(OWNER, TENANT, 'credits_50');
     const first = await fulfilCreditPurchase(OWNER, TENANT, started!.id);
     const before = await getCreditBalance(OWNER, TENANT);
 
@@ -135,7 +136,7 @@ describeIfDb('credits.repo', () => {
   });
 
   it('refuses to fulfil a purchase that is not pending (failed/refunded)', async () => {
-    const started = await startCreditPurchase(OWNER, TENANT, 'credits_10');
+    const started = await startCreditPurchase(OWNER, TENANT, 'credits_50');
     await admin.query(`UPDATE credit_purchases SET status = 'failed' WHERE id = $1`, [started!.id]);
 
     await expect(fulfilCreditPurchase(OWNER, TENANT, started!.id)).rejects.toBeInstanceOf(

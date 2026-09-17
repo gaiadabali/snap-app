@@ -18,7 +18,7 @@ import { CREDIT_PACKS, CREDIT_PRICE_AUD, FREE_SCANS_AT_SIGNUP } from './credit-p
 export const metadata: Metadata = {
   title: 'Pricing',
   description:
-    'Ten scans free, then 3.3 cents a scan. Credits never expire, there is no subscription, and every scan earns a point.',
+    'Ten scans free, then 3.7 cents a scan — GST and card fees included. Credits never expire, there is no subscription, and every scan earns a point.',
 };
 
 /**
@@ -56,7 +56,11 @@ const CENTS_PER_SCAN = (CREDIT_PRICE_AUD * 100).toFixed(1);
 const FAQ: Array<{ q: string; a: string }> = [
   {
     q: `Why ${CENTS_PER_SCAN} cents?`,
-    a: `It is what the extraction actually costs us, times three. A scan runs through a vision model and that has a real per-document price — about 1.1 cents blended across the model that reads most documents and the larger one that handles the hard ones. Tripling it covers storage, the checks, support and the business. We would rather show you the arithmetic than pick a round number and defend it.`,
+    a: `A scan runs through a vision model with a real per-document price — about 1.1 cents blended across the model that reads most documents and the larger one that handles the hard ones. We charge three times that, which covers storage, the checks, support and the business. Then GST and the card fee come out of it rather than being added on top of it, which is what takes 3.3 cents to ${CENTS_PER_SCAN}. You see one number and it is the whole number. We would rather show you the arithmetic than pick something round and defend it.`,
+  },
+  {
+    q: 'Is there anything added at checkout?',
+    a: 'No. GST and the card processing fee are already inside the price on this page, so the total at the end is the number you picked. We would rather build them in than surprise you with them — and it means the receipt is one line, which is easier to put through your own books.',
   },
   {
     q: 'Do credits expire?',
@@ -93,7 +97,7 @@ export default function PricingPage() {
             Ten scans free. Then {CENTS_PER_SCAN} cents each.
           </>
         }
-        lede="No subscription, no seats, no minimum. One scan costs one credit, credits never expire, and a new account starts with ten of them."
+        lede="No subscription, no seats, no minimum. One scan costs one credit, credits never expire, and a new account starts with ten of them. The price you see is the price you pay — GST and card fees are already in it."
         actions={
           <div className="flex flex-wrap items-center gap-5">
             <ButtonLink href="/register" size="lg">
@@ -153,7 +157,7 @@ export default function PricingPage() {
         <SectionHead
           kicker="Credit packs"
           title="Six sizes, one price per scan"
-          lede="Every pack is the same rate — there is no volume discount to chase and no pack that is the wrong one to buy."
+          lede="Every pack is the same rate — there is no volume discount to chase and no pack that is the wrong one to buy. Nothing is added at checkout."
         />
 
         <div className="mt-10 max-w-[560px]">
@@ -170,8 +174,10 @@ export default function PricingPage() {
           ))}
           <Reveal>
             <p className="mt-6 text-[13px] leading-relaxed text-[var(--color-ink-faint)]">
-              GST-inclusive, in Australian dollars. Prices are derived from what a scan costs to
-              run, so they move when that cost does — see the first question below.
+              Australian dollars, GST included, card processing included. What is on this page is
+              what is charged — there is no fee added at the last step. Prices are derived from
+              what a scan costs to run, so they move when that cost does; see the first question
+              below.
             </p>
           </Reveal>
         </div>
