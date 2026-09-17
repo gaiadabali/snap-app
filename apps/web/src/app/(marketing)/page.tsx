@@ -197,7 +197,7 @@ export default function HomePage() {
           the hero's job is the CLAIM, and the claim is about what happens to a
           piece of paper. §12.2 permits exactly two kinds of imagery: the app
           screenshots, and the document itself. This is the second one. */}
-      <div className="pin-track">
+      <div className="pin-track first-screen">
       <section className="screen sect-3d">
         <Container width="wide" className="pb-16 pt-14 md:pb-20 md:pt-20">
           {/**

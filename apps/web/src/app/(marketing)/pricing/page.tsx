@@ -61,7 +61,7 @@ export default function PricingPage() {
         Copy is untouched — every plan, figure and FAQ answer is the owner's,
         word for word. Only the structure and the motion changed.
       */}
-      <Section form="wide" size="lg" className="screen sect-3d">
+      <Section form="wide" size="lg" className="screen sect-3d first-screen">
         <Rule />
         <Reveal variant="fade">
           <div className="t-label mt-5 text-[var(--color-ink-muted)]">Pricing</div>
