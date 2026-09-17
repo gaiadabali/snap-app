@@ -48,6 +48,7 @@ COPY packages/db/package.json packages/db/package.json
 COPY packages/docai/package.json packages/docai/package.json
 COPY packages/tax-engine/package.json packages/tax-engine/package.json
 COPY packages/tax-rules/package.json packages/tax-rules/package.json
+COPY packages/tax-rules/package.json packages/tax-rules/package.json
 COPY packages/docai-preview/package.json packages/docai-preview/package.json
 # --filter "@snap/server..." installs @snap/server and everything it depends
 # on (workspace + registry), and nothing apps/mobile or apps/web only need —
@@ -63,6 +64,7 @@ COPY packages/api-contract packages/api-contract
 COPY packages/db packages/db
 COPY packages/docai packages/docai
 COPY packages/tax-engine packages/tax-engine
+COPY packages/tax-rules packages/tax-rules
 # Every workspace package apps/server DEPENDS ON must be here.
 #
 # These two were missing and the omission was invisible until it wasn't:
