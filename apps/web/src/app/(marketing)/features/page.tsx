@@ -2,13 +2,17 @@ import type { Metadata } from 'next';
 
 import {
   ButtonLink,
+  FieldBox,
   LedgerRow,
   Money,
   Reveal,
   Rule,
   Section,
   SectionHead,
+  Settle,
   Split,
+  SplitBar,
+  Tear,
 } from '@/design/primitives';
 
 import { Scene } from '@/design/three/Scene';
@@ -71,7 +75,9 @@ export default function FeaturesPage() {
       <Section form="wide" size="lg" className="screen sect-3d first-screen">
         <Rule />
         <Reveal variant="fade">
-          <div className="t-label mt-5 text-[var(--color-ink-muted)]">What it does</div>
+          <div className="t-label mt-5 text-[var(--color-ink-muted)]">
+            <Settle text="What it does" />
+          </div>
         </Reveal>
         <Reveal>
           <h1 className="t-display mt-5 max-w-[15ch]">Right to the cent, or it says so.</h1>
@@ -106,9 +112,32 @@ export default function FeaturesPage() {
           }
           aside={
             <div className="lg:pt-6">
+              {/*
+                The same two figures the rows carry, drawn to scale. Not a
+                confidence meter — see `SplitBar`: this is arithmetic the
+                reader can check, 18.40 and 21.60 against a 40.00 total.
+              */}
+              <SplitBar
+                className="mb-8"
+                parts={[
+                  { weight: Number(DOCKET.free), tone: 'good', label: 'GST-free' },
+                  { weight: Number(DOCKET.taxable), tone: 'accent', label: 'Taxable' },
+                ]}
+              />
+              <Tear className="mb-6" />
               <LedgerRow code="FREE" label="GST-free — fresh food" value={<Money amount={DOCKET.free} />} index={0} />
               <LedgerRow code="TAX" label="Taxable — packaged goods" value={<Money amount={DOCKET.taxable} />} index={1} />
-              <LedgerRow code="G11" label="GST you can claim" value={<Money amount={DOCKET.gst} />} emphasis index={2} />
+              <LedgerRow
+                code="G11"
+                label="GST you can claim"
+                value={
+                  <FieldBox code="G11">
+                    <Money amount={DOCKET.gst} />
+                  </FieldBox>
+                }
+                emphasis
+                index={2}
+              />
               <LedgerRow code="TOT" label="Docket total" value={<Money amount={DOCKET.total} />} emphasis index={3} />
             </div>
           }
@@ -145,7 +174,8 @@ export default function FeaturesPage() {
           title="The cheapest accuracy in the system is arithmetic"
           lede="These cost nothing to run and catch things a larger model does not. They run in code, against the ATO's rules — the model is never asked to grade its own work."
         />
-        <div className="mt-10">
+        <Tear className="mt-10" tone="void" />
+        <div className="mt-6">
           {CHECKS.map((c, i) => (
             <LedgerRow
               key={c.code}
@@ -186,7 +216,8 @@ export default function FeaturesPage() {
           kicker="And the rest of it"
           title="What happens after the reading is done"
         />
-        <div className="mt-10">
+        <Tear className="mt-10" />
+        <div className="mt-6">
           <LedgerRow
             code="SUM"
             label="Books that cannot go out of balance"

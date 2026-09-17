@@ -5,6 +5,7 @@ import {
   ArrowLink,
   ButtonLink,
   Container,
+  Join,
   LedgerRow,
   Money,
   Reveal,
@@ -292,6 +293,8 @@ export default function HomePage() {
       {/* ── The wedge, first and shown ───────────────────────────────────
           MONETISATION.md §2: "not a schema detail to mention in paragraph
           four". So it is section one. */}
+      <Join />
+
       <div className="pin-track">
       <Section code="G11" className="screen sect-3d">
         <SectionHead
@@ -404,6 +407,8 @@ export default function HomePage() {
           another rule/kicker/display stack would be the fourth identical
           opening in a row. That repetition, not the palette, is what got three
           directions rejected (§12.1). */}
+      <Join />
+
       <div className="pin-track">
       <Section code="THE APP" form="wide" size="sm" className="screen sect-3d">
         <div className="seam" aria-hidden />
@@ -433,6 +438,8 @@ export default function HomePage() {
 
       {/* ── Comparison ──────────────────────────────────────────────────── */}
       {/* The demonstration: one docket, read four ways. */}
+      <Join />
+
       <div className="pin-track">
       <Section code="VS" className="screen sect-3d">
         <SectionHead
@@ -448,6 +455,8 @@ export default function HomePage() {
       {/* The evidence, kept as a table because that is what evidence looks
           like — named, date-stamped and checkable. `wide` so it does not share
           a silhouette with the demonstration above it. */}
+      <Join />
+
       <div className="pin-track">
       <Section code="MATRIX" form="wide" className="screen sect-3d">
         <div className="seam" aria-hidden />
@@ -471,6 +480,8 @@ export default function HomePage() {
           each on a 2000px screen and left the right half of the page empty.
           The gutter form gives them ~340px and puts the ATO code back in the
           margin where every other section keeps it. */}
+      <Join />
+
       <div className="pin-track">
       <Section code="CHECK" className="screen sect-3d">
         <SectionHead
@@ -490,6 +501,8 @@ export default function HomePage() {
       {/* `wide` — the form the handoff reserves for "the single most important
           claim", and this is it. It also keeps the void band from sharing a
           silhouette with the deduction ledger immediately below it. */}
+      <Join />
+
       <div className="pin-track">
       <Section code="1B" tone="void" size="lg" form="wide" className="screen sect-3d">
         <div className="grid gap-14 lg:grid-cols-[1fr_1fr] lg:gap-16">
@@ -562,6 +575,8 @@ export default function HomePage() {
       </div>
 
       {/* ── Deductions ──────────────────────────────────────────────────── */}
+      <Join />
+
       <div className="pin-track">
       <Section code="D1–D5" className="screen sect-3d">
         <div className="grid gap-12 lg:grid-cols-[1fr_1.1fr] lg:gap-20">
@@ -615,6 +630,9 @@ export default function HomePage() {
        * primary revenue line. Left in the source rather than deleted so
        * flipping the flag back on restores it exactly as it was. */}
       {BUSINESS_SURFACES_ENABLED ? (
+      <>
+      <Join />
+
       <div className="pin-track">
       <Section code="FIRMS" className="screen sect-3d">
         <div className="grid gap-12 lg:grid-cols-[1fr_1fr] lg:gap-20">
@@ -670,9 +688,12 @@ export default function HomePage() {
         </div>
       </Section>
       </div>
+      </>
       ) : null}
 
       {/* ── Pricing ─────────────────────────────────────────────────────── */}
+      <Join />
+
       <div className="pin-track">
       <Section code="PLANS" form="wide" className="screen sect-3d">
         <div className="seam" aria-hidden />

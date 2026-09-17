@@ -1,6 +1,15 @@
 import type { Metadata } from 'next';
 
-import { Badge, Card, Container, SectionTitle } from '@/design/primitives';
+import {
+  Badge,
+  Card,
+  Reveal,
+  Rule,
+  Section,
+  SectionHead,
+  Settle,
+  Tear,
+} from '@/design/primitives';
 import {
   IOS_NOTIFY_CONTACT,
   getAndroidRelease,
@@ -9,6 +18,7 @@ import {
   getSystemRequirements,
 } from '@/lib/releases';
 
+import { PageSpine } from '../_components/page-spine';
 import { CopyableChecksum } from './copyable-checksum';
 import { InertDownloadControl } from './inert-control';
 
@@ -127,24 +137,60 @@ export default async function DownloadPage() {
   const jsonLd = buildJsonLd(android, ios);
 
   return (
-    <main className="py-20">
+    <>
       {/* eslint-disable-next-line react/no-danger -- static, locally-built JSON-LD, no user input */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      <Container width="prose">
-        <SectionTitle
-          as="h1"
-          eyebrow="Download"
-          title="Get Snap Apps on Android — and see what's coming to iPhone"
-          lede="Android is a direct download today, with Google Play to follow. The iPhone app is in active development: this page shows exactly what it will do and how to hear the moment it's ready, rather than a link that doesn't work yet."
-        />
-      </Container>
+      {/* The same reading rail as every other marketing page. */}
+      <PageSpine />
 
-      <Container width="wide" className="mt-10">
-        <div className="grid gap-5 lg:grid-cols-2">
+      {/*
+        Rebuilt 2026-09-17, for the reason the pricing page was rebuilt the
+        same week: this was the last page still built the old way — a bare
+        `<main className="py-20">` of `Container` + `SectionTitle`, which is
+        the eyebrow/title/lede stack `docs/DESIGN-HANDOFF.md` §12.1 lists under
+        Avoid, with no gutter codes and not one line of motion. Arriving here
+        from a home page that moves landed you in a static document.
+
+        NOT pinned, and that is deliberate. The home page locks each section
+        until its animation finishes, which is right for a page whose job is to
+        be read in order. This page's job is to hand someone an APK and a
+        checksum, and making them scroll-wrestle a lock to reach a SHA-256
+        would be hostile. It gets the asset layer and the section language; it
+        does not get `.screen` or `.pin-track`.
+
+        Copy is untouched — every sentence, figure and step is the owner's,
+        word for word. Only the structure and the motion changed.
+      */}
+
+      {/* 1 — wide. */}
+      <Section form="wide" size="lg" className="sect-3d">
+        <Rule />
+        <Reveal variant="fade">
+          <div className="t-label mt-5 text-[var(--color-ink-muted)]">
+            <Settle text="Download" />
+          </div>
+        </Reveal>
+        <Reveal>
+          <h1 className="t-display mt-5 max-w-[20ch]">
+            Get Snap Apps on Android — and see what&apos;s coming to iPhone
+          </h1>
+        </Reveal>
+        <Reveal>
+          <p className="t-lede mt-8 max-w-[58ch] text-[var(--color-ink-muted)]">
+            Android is a direct download today, with Google Play to follow. The iPhone app is in
+            active development: this page shows exactly what it will do and how to hear the moment
+            it&apos;s ready, rather than a link that doesn&apos;t work yet.
+          </p>
+        </Reveal>
+      </Section>
+
+      {/* 2 — gutter. The two platforms, as objects. */}
+      <Section code="APK" className="sect-3d">
+        <div className="pop-3d grid gap-5 lg:grid-cols-2">
           {/* ── Android ─────────────────────────────────────────────────── */}
           <Card className="flex flex-col">
             <div className="flex items-start justify-between gap-3">
@@ -179,6 +225,8 @@ export default async function DownloadPage() {
               new&quot; below.
             </p>
 
+            <Tear className="mt-6" />
+
             <dl className="mt-6 grid grid-cols-2 gap-x-4 gap-y-3 text-[13px]">
               <div>
                 <dt className="text-[var(--color-ink-faint)]">Version</dt>
@@ -200,11 +248,19 @@ export default async function DownloadPage() {
               </div>
             </dl>
 
-            <div className="mt-4">
+            <div className="mt-6">
               <div className="text-[12px] font-semibold uppercase tracking-[0.06em] text-[var(--color-ink-faint)]">
                 SHA-256 checksum
               </div>
-              <div className="mt-1">
+              {/*
+                No field box here, though it was tried. The heading above
+                already says SHA-256, so the frame's own tag repeated it a
+                second time three pixels away — and until a real build is
+                published `android.sha256` is empty, so the frame was drawn
+                around nothing at all. An annotation that labels a label and
+                points at an empty value is decoration, which §12.2 rules out.
+              */}
+              <div className="mt-2.5">
                 <CopyableChecksum sha256={android.sha256 ?? ''} />
               </div>
             </div>
@@ -279,6 +335,8 @@ export default async function DownloadPage() {
               </a>
             </div>
 
+            <Tear className="mt-6" />
+
             <dl className="mt-6 grid grid-cols-2 gap-x-4 gap-y-3 text-[13px]">
               <div>
                 <dt className="text-[var(--color-ink-faint)]">Planned minimum OS</dt>
@@ -291,82 +349,85 @@ export default async function DownloadPage() {
             </dl>
           </Card>
         </div>
-      </Container>
+      </Section>
 
-      {/* ── System requirements ─────────────────────────────────────────── */}
-      <Container width="prose" className="mt-20">
-        <SectionTitle eyebrow="Before you install" title="System requirements" />
-        <div className="mt-6 grid gap-6 sm:grid-cols-2">
-          <div>
+      {/* 3 — measure. */}
+      <Section form="measure" className="sect-3d">
+        <SectionHead kicker="Before you install" title="System requirements" />
+        <div className="mt-10 grid gap-6 sm:grid-cols-2">
+          <Reveal variant="deal" delay={0}>
             <h3 className="text-[13px] font-semibold text-[var(--color-ink)]">Android</h3>
-            <ul className="mt-2 space-y-1.5 text-[14px] text-[var(--color-ink-muted)]">
+            <Tear className="mt-2" />
+            <ul className="mt-3 space-y-1.5 text-[14px] text-[var(--color-ink-muted)]">
               {androidReqs.map((r) => (
                 <li key={r.label}>{r.label}</li>
               ))}
             </ul>
-          </div>
-          <div>
+          </Reveal>
+          <Reveal variant="deal" delay={1}>
             <h3 className="text-[13px] font-semibold text-[var(--color-ink)]">iPhone (planned)</h3>
-            <ul className="mt-2 space-y-1.5 text-[14px] text-[var(--color-ink-muted)]">
+            <Tear className="mt-2" />
+            <ul className="mt-3 space-y-1.5 text-[14px] text-[var(--color-ink-muted)]">
               {iosReqs.map((r) => (
                 <li key={r.label}>{r.label}</li>
               ))}
             </ul>
-          </div>
+          </Reveal>
         </div>
-      </Container>
+      </Section>
 
-      {/* ── Install instructions ─────────────────────────────────────────── */}
-      <Container width="prose" className="mt-20">
-        <div id="android-top">
-          <SectionTitle
-            eyebrow="Installing on Android"
-            title="Installing the APK, step by step"
-            lede={
-              'This app doesn\'t come from the Play Store yet, so Android calls it an app from an ' +
-              '"unknown source" — that just means it isn\'t from a store, not that anything is ' +
-              'wrong. Here\'s exactly what to expect.'
-            }
-          />
-        </div>
-        <ol className="mt-8 space-y-6">
+      {/* 4 — gutter. The install itself. */}
+      <Section code="INSTALL" id="android-top" className="sect-3d">
+        <SectionHead
+          kicker="Installing on Android"
+          title="Installing the APK, step by step"
+          lede={
+            'This app doesn\'t come from the Play Store yet, so Android calls it an app from an ' +
+            '"unknown source" — that just means it isn\'t from a store, not that anything is ' +
+            'wrong. Here\'s exactly what to expect.'
+          }
+        />
+        <ol className="mt-10 space-y-6">
           {ANDROID_STEPS.map((step, i) => (
-            <li key={step.title} className="flex gap-4">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--color-accent-soft)] text-[14px] font-bold tabular text-[var(--color-accent)]">
-                {i + 1}
+            <Reveal as="li" variant="deal" delay={i} key={step.title}>
+              <div className="flex gap-4">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--color-accent-soft)] text-[14px] font-bold tabular text-[var(--color-accent)]">
+                  {i + 1}
+                </div>
+                <div>
+                  <h3 className="text-[15px] font-semibold text-[var(--color-ink)]">{step.title}</h3>
+                  <p className="mt-1 text-[14px] leading-relaxed text-[var(--color-ink-muted)]">
+                    {step.body}
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-[15px] font-semibold text-[var(--color-ink)]">{step.title}</h3>
-                <p className="mt-1 text-[14px] leading-relaxed text-[var(--color-ink-muted)]">
-                  {step.body}
-                </p>
-              </div>
-            </li>
+            </Reveal>
           ))}
         </ol>
-      </Container>
+      </Section>
 
-      {/* ── What's new ───────────────────────────────────────────────────── */}
-      <Container width="prose" className="mt-20">
-        <SectionTitle eyebrow="Changelog" title="What's new" />
-        <div className="mt-6 space-y-8">
-          {changelog.map((entry) => (
-            <div key={entry.version}>
+      {/* 5 — measure. */}
+      <Section form="measure" className="sect-3d">
+        <SectionHead kicker="Changelog" title="What's new" />
+        <div className="mt-10 space-y-8">
+          {changelog.map((entry, i) => (
+            <Reveal variant="deal" delay={i} key={entry.version}>
               <div className="flex items-baseline gap-2">
                 <span className="text-[15px] font-bold tabular text-[var(--color-ink)]">
                   v{entry.version}
                 </span>
                 <span className="tabular text-[13px] text-[var(--color-ink-faint)]">{entry.date}</span>
               </div>
-              <ul className="mt-2 list-disc space-y-1 pl-5 text-[14px] text-[var(--color-ink-muted)]">
+              <Tear className="mt-2" />
+              <ul className="mt-3 list-disc space-y-1 pl-5 text-[14px] text-[var(--color-ink-muted)]">
                 {entry.notes.map((note) => (
                   <li key={note}>{note}</li>
                 ))}
               </ul>
-            </div>
+            </Reveal>
           ))}
         </div>
-      </Container>
-    </main>
+      </Section>
+    </>
   );
 }

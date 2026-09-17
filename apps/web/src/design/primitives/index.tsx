@@ -24,9 +24,8 @@
 import Link from 'next/link';
 import type { ComponentProps, ReactNode } from 'react';
 
-export function cx(...parts: Array<string | false | null | undefined>): string {
-  return parts.filter(Boolean).join(' ');
-}
+export { cx } from './cx';
+import { cx } from './cx';
 
 // ── Layout ────────────────────────────────────────────────────────────────
 
@@ -817,3 +816,7 @@ export function Td({ children, className, align = 'left' }: { children?: ReactNo
     </td>
   );
 }
+
+// The asset layer — see `assets.tsx`. Re-exported so every page has one
+// import site for the whole design vocabulary.
+export * from './assets';

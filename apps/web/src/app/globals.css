@@ -1144,3 +1144,306 @@ body {
   .screen table { font-size: 12px; }
   .screen table :is(td, th) { padding-block: 0.3rem; }
 }
+
+/* ── The asset layer ─────────────────────────────────────────────────────
+ *
+ * Five motifs meant to be used on EVERY page, not just the home page. Before
+ * this, the motion vocabulary was six generic utilities (rise, fade, deal,
+ * drift, wipe, expand) plus a handful of one-off components welded to the
+ * section they were built for — `read-card` only exists inside the reader
+ * comparison, `app-deck` only inside the showcase. So the other pages had
+ * nothing to reach for and ended up as type on a ground, which is exactly why
+ * they read as bland next to the home page.
+ *
+ * What makes something an ASSET rather than another utility: it carries the
+ * product's subject. A fade says "this arrived". A field box says "the
+ * machine found a value here, and here is what it called it" — the reader
+ * learns what the product does by watching the page behave like it. That is
+ * §12.1's instrument-not-illustration read, taken literally.
+ *
+ * Rules every one of these follows, and they are not negotiable:
+ *
+ *   1. ZERO JavaScript. Scroll-driven CSS only, so they work in Server
+ *      Components and the marketing pages stay static.
+ *   2. The rest state — the FINISHED state — is defined outside `@supports`.
+ *      A browser with no scroll timelines, or a reader with reduced motion,
+ *      gets the completed thing, never a hidden one. See the comment at
+ *      `.sect-3d`: an animation whose 0% keyframe hides content is one
+ *      unresolved timeline away from serving a blank page, and this site has
+ *      already done that to three of them.
+ *   3. `view()` by default, `--screen` inside `.pin-track`. A pinned section
+ *      is `position: sticky` and barely moves through the viewport, so its
+ *      children's own `view()` progress is almost constant and the asset
+ *      would sit frozen on one frame for the whole lock.
+ *   4. Nothing drifts on its own. Every value below is scrubbed by the
+ *      scroll; there is no idle loop anywhere in this layer.
+ */
+
+/* ── 1. Field box — the OCR lock-on ──────────────────────────────────────
+ *
+ * Four corner brackets that converge on a value, with the field's name in the
+ * margin. This is the most on-subject asset on the site: it is what the
+ * product literally does, and it can wrap anything — a figure, a word in a
+ * heading, a table cell.
+ *
+ * One element draws all four corners. A full 1px border is masked down to
+ * four squares, so the corners are the border's own corners rather than four
+ * positioned divs — which means they cannot drift out of alignment when the
+ * box resizes, and the whole frame scales as one thing.
+ */
+.fieldbox {
+  position: relative;
+  display: inline-block;
+}
+
+.fieldbox__frame {
+  --fb-arm: 0.7em;
+  position: absolute;
+  inset: calc(-1 * var(--fb-pad-y, 0.34em)) calc(-1 * var(--fb-pad-x, 0.46em));
+  border: 1px solid var(--fb-tone, var(--color-accent));
+  border-radius: 2px;
+  pointer-events: none;
+  -webkit-mask:
+    linear-gradient(#000 0 0) 0 0 / var(--fb-arm) var(--fb-arm) no-repeat,
+    linear-gradient(#000 0 0) 100% 0 / var(--fb-arm) var(--fb-arm) no-repeat,
+    linear-gradient(#000 0 0) 0 100% / var(--fb-arm) var(--fb-arm) no-repeat,
+    linear-gradient(#000 0 0) 100% 100% / var(--fb-arm) var(--fb-arm) no-repeat;
+  mask:
+    linear-gradient(#000 0 0) 0 0 / var(--fb-arm) var(--fb-arm) no-repeat,
+    linear-gradient(#000 0 0) 100% 0 / var(--fb-arm) var(--fb-arm) no-repeat,
+    linear-gradient(#000 0 0) 0 100% / var(--fb-arm) var(--fb-arm) no-repeat,
+    linear-gradient(#000 0 0) 100% 100% / var(--fb-arm) var(--fb-arm) no-repeat;
+}
+
+/* The field's name, set in the mono face at label size, hanging above the
+   frame's top-left corner the way an annotation sits on a marked-up page. */
+.fieldbox__code {
+  position: absolute;
+  /* Clear the FRAME, not the content box — the frame sits --fb-pad-y above
+     it, so measuring from the text alone puts the tag on top of the rule. */
+  bottom: calc(100% + var(--fb-pad-y, 0.34em) + 0.25em);
+  left: 0;
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--fb-tone, var(--color-accent));
+  pointer-events: none;
+}
+
+/* ── 2. Settle — text resolving, glyph by glyph ──────────────────────────
+ *
+ * Characters arrive slightly low and out of focus and settle into place from
+ * the left, which is what watching a recogniser commit to a string looks
+ * like. Reserved for SHORT strings — a figure, two or three words. A whole
+ * paragraph of this would be unreadable and would cost a span per character
+ * for nothing.
+ *
+ * The plain string stays in the accessibility tree: the component renders it
+ * once for assistive technology and marks the per-character spans hidden, so
+ * nothing is read out letter by letter.
+ */
+.settle__ch {
+  display: inline-block;
+  white-space: pre;
+}
+
+/* ── 3. Split bar — a real total, in proportion ──────────────────────────
+ *
+ * A composition bar that wipes open to show how a document's total divides.
+ *
+ * Deliberately NOT a confidence meter. An accuracy percentage is the one
+ * number this site is not allowed to show — `proof-data.ts` holds the line
+ * that it stays unpublished until it has been measured against Hubdoc and
+ * Dext on the same documents, and a bar filling to an invented 94% would be
+ * precisely the fabricated proof that file exists to prevent. A split of a
+ * real docket is arithmetic the reader can check instead: 18.40 GST-free plus
+ * 21.60 taxable is 40.00, and the bar is those two figures to scale.
+ */
+.splitbar {
+  display: flex;
+  width: 100%;
+  height: 0.375rem;
+  gap: 2px;
+  clip-path: inset(0 0 0 0);
+}
+
+.splitbar__seg {
+  flex: var(--w, 1) 1 0%;
+  border-radius: 1px;
+  background: var(--seg, var(--color-accent));
+}
+
+/* ── 4. Tear — the cut line ──────────────────────────────────────────────
+ *
+ * The dashed rule a docket is torn along. A ruled hairline says "a document";
+ * a dashed one says "a receipt", and it costs one element to say it. Reuses
+ * the `rule-draw` keyframe rather than defining a second one that does the
+ * same thing.
+ */
+.tear {
+  width: 100%;
+  height: 1px;
+  transform-origin: left center;
+  background-image: repeating-linear-gradient(
+    90deg,
+    var(--color-rule-strong) 0 5px,
+    transparent 5px 11px
+  );
+}
+
+/* ── 5. Join — the handoff between sections ──────────────────────────────
+ *
+ * A short vertical hairline in the gap between two sections, with a node that
+ * rides down it as the boundary crosses the viewport. It is the reading
+ * rail's echo inside the content column: the rail tracks the whole document
+ * from the margin, the seam marks one join.
+ *
+ * This is the piece that makes a pinned page feel continuous rather than like
+ * nine slides. Between two pinned screens the eye gets no travel at all — one
+ * section releases its lock and the next is simply there. The seam gives that
+ * moment something that moves through it.
+ */
+.join {
+  position: relative;
+  width: 1px;
+  height: 4.5rem;
+  margin-inline: auto;
+  background: var(--color-rule);
+}
+
+.join__fill {
+  position: absolute;
+  inset: 0;
+  transform-origin: top center;
+  background: var(--color-accent);
+}
+
+.join__node {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 5px;
+  height: 5px;
+  margin-top: -2.5px;
+  margin-left: -2.5px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  transform: translateY(4.5rem);
+}
+
+/* ── Asset motion ────────────────────────────────────────────────────────
+ * Everything above is the finished state. Below is the only place any of it
+ * is allowed to start from somewhere else. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .fieldbox__frame {
+      animation: fieldbox-lock linear both;
+      animation-timeline: view();
+      animation-range: entry 22% cover 44%;
+    }
+
+    .fieldbox__code {
+      animation: fieldbox-tag linear both;
+      animation-timeline: view();
+      animation-range: entry 34% cover 52%;
+    }
+
+    .settle__ch {
+      animation: settle-in linear both;
+      animation-timeline: view();
+      animation-range:
+        entry calc(10% + (var(--i, 0) * 1%))
+        cover calc(28% + (var(--i, 0) * 1%));
+    }
+
+    .splitbar {
+      animation: wipe-in linear both;
+      animation-timeline: view();
+      animation-range: entry 18% cover 44%;
+    }
+
+    .tear {
+      animation: rule-draw linear both;
+      animation-timeline: view();
+      animation-range: entry 10% cover 32%;
+    }
+
+    .join__fill {
+      animation: join-fill linear both;
+      animation-timeline: view();
+      animation-range: cover 0% cover 100%;
+    }
+
+    .join__node {
+      animation: join-node linear both;
+      animation-timeline: view();
+      animation-range: cover 0% cover 100%;
+    }
+  }
+}
+
+@keyframes fieldbox-lock {
+  0%   { opacity: 0; transform: scale(1.22); }
+  60%  { opacity: 1; }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes fieldbox-tag {
+  from { opacity: 0; transform: translateY(0.25em); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes settle-in {
+  from { opacity: 0; transform: translateY(0.18em); filter: blur(5px); }
+  to   { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+
+@keyframes join-fill {
+  from { transform: scaleY(0); }
+  to   { transform: scaleY(1); }
+}
+
+@keyframes join-node {
+  from { transform: translateY(0); }
+  to   { transform: translateY(4.5rem); }
+}
+
+/* Pinned screens drive their assets from the track, for the reason given at
+   the top of this layer. Ranges sit inside the 30%-68% window the section is
+   actually held for — outside it the asset plays while the section is still
+   moving, and is simply missed. */
+@media (min-width: 1024px) {
+  @supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+      .pin-track .fieldbox__frame {
+        animation-timeline: --screen;
+        animation-range: 34% 52%;
+      }
+
+      .pin-track .fieldbox__code {
+        animation-timeline: --screen;
+        animation-range: 46% 60%;
+      }
+
+      .pin-track .settle__ch {
+        animation-timeline: --screen;
+        animation-range:
+          calc(30% + (var(--i, 0) * 0.7%))
+          calc(44% + (var(--i, 0) * 0.7%));
+      }
+
+      .pin-track .splitbar {
+        animation-timeline: --screen;
+        animation-range: 34% 56%;
+      }
+
+      .pin-track .tear {
+        animation-timeline: --screen;
+        animation-range: 30% 46%;
+      }
+    }
+  }
+}
