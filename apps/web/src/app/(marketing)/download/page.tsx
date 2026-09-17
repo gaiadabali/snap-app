@@ -218,12 +218,33 @@ export default async function DownloadPage() {
               href={android.url ?? '#'}
               className="mt-5 flex h-12 w-full items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-accent)] text-[16px] font-semibold text-[var(--color-accent-ink)] transition-colors duration-150 hover:bg-[var(--color-accent-deep)]"
             >
-              Download for Android · v{android.version}
+              {/* No build, no version number — "· v" with nothing after it
+                  reads as a broken template, not as "nothing has shipped". */}
+              Download for Android
+              {android.availability === 'available' && android.version
+                ? ` · v${android.version}`
+                : ''}
             </a>
-            <p className="mt-2 text-center text-[12px] text-[var(--color-ink-faint)]">
-              Placeholder link — the first real build has not been published yet. See &quot;What&apos;s
-              new&quot; below.
-            </p>
+            {/*
+              Only while there is genuinely nothing to download. This line was
+              unconditional, so the moment a real APK was published the page
+              sat a working 50.4 MB download with a real checksum directly on
+              top of the sentence "the first real build has not been published
+              yet" — telling the reader not to trust a link that works.
+
+              `availability` is the same field the JSON-LD above gates on, and
+              for the same reason: `getAndroidRelease()` sets it to
+              'available' only when the manifest reports a real build, and
+              falls back to 'in_development' on any failure. One source of
+              truth for "is there something to download", used by both the
+              structured data and the words on the page.
+            */}
+            {android.availability === 'available' ? null : (
+              <p className="mt-2 text-center text-[12px] text-[var(--color-ink-faint)]">
+                No build published yet — this link will not install anything. See &quot;What&apos;s
+                new&quot; below.
+              </p>
+            )}
 
             <Tear className="mt-6" />
 

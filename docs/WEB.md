@@ -429,6 +429,12 @@ rule simply came later in the file and won. That collision raises no error
 anywhere and is visible only on the page, which is the argument for checking a
 class name against `globals.css` before taking it.
 
+`src/app/globals.test.ts` now enforces this: a class may have exactly one
+top-level BASE rule. It deliberately allows the same class to reappear inside
+`@supports`, `@media` and `.pin-track` — those are overrides and they are the
+architecture — and bans only two components owning one name. Verified by
+reintroducing the `.seam` collision and watching it fail.
+
 ## 5. Ownership map
 
 Work in **your files only**. If you need a shared primitive that does not exist,
