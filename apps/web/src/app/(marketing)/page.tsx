@@ -413,7 +413,7 @@ export default function HomePage() {
         {/* Capped so three phones fit the screen this section owns. Without
             it the grid sizes to the image aspect and overruns by ~50px, which
             is just enough to stop the section being one screen. */}
-        <div className="mt-10 [&_figure]:mx-auto lg:[&_figure]:max-w-[292px]">
+        <div className="app-deck mt-10 [&_figure]:mx-auto lg:[&_figure]:max-w-[292px]">
           <AppScreens />
         </div>
         <div className="mt-8 flex flex-wrap items-center gap-6">

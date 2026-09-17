@@ -663,3 +663,59 @@ body {
     transform: perspective(1400px) translate3d(0, 0, 0) rotateX(0deg) rotateY(0deg);
   }
 }
+
+/* ── The app deck ────────────────────────────────────────────────────────
+ *
+ * Three real app screens that used to sit in a flat row — the most ordinary
+ * thing left on the home page. They now arrive as a DECK: stacked toward the
+ * centre, turned, and set back, fanning out to their grid positions as the
+ * section is scrolled.
+ *
+ * It is the one place the page can use photography, because §12.2 permits
+ * exactly two kinds of imagery — the real app screenshots and the document
+ * itself — and these are the first kind. No new asset is invented to get the
+ * effect; the movement is the asset.
+ *
+ * Per-phone direction comes from a custom property set by `:nth-child`, since
+ * a keyframe cannot branch. The outer two start displaced TOWARD the centre,
+ * so scrolling opens the fan rather than sliding three things sideways.
+ *
+ * This deliberately overrides `.anim-deal` on the same elements —
+ * `.app-deck > * > *` outranks a single class — so the phones get the fan
+ * instead of the generic row treatment, and nothing animates twice.
+ */
+@media (min-width: 1024px) {
+  /* The three phones are GRANDCHILDREN: `AppScreens` wraps them in its own
+     grid, so `.app-deck > *` matched that single container and fanned the
+     whole row in as one object. Caught by logging the computed transform of
+     every matched element and finding exactly one. */
+  .app-deck > * > *:nth-child(1) { --fan-x: 64%;  --fan-r: 22deg;  --fan-z: -26rem; }
+  .app-deck > * > *:nth-child(2) { --fan-x: 0%;   --fan-r: 0deg;   --fan-z: -34rem; }
+  .app-deck > * > *:nth-child(3) { --fan-x: -64%; --fan-r: -22deg; --fan-z: -26rem; }
+
+  @supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+      .app-deck > * > * {
+        animation: app-fan linear both;
+        animation-timeline: view();
+        animation-range: entry 2% cover 52%;
+        transform-origin: 50% 90%;
+        will-change: transform, opacity;
+      }
+    }
+  }
+}
+
+@keyframes app-fan {
+  from {
+    opacity: 0;
+    transform: perspective(2000px)
+      translate3d(var(--fan-x, 0), 3rem, var(--fan-z, -24rem))
+      rotateY(var(--fan-r, 0deg))
+      rotateX(8deg);
+  }
+  to {
+    opacity: 1;
+    transform: perspective(2000px) translate3d(0, 0, 0) rotateY(0deg) rotateX(0deg);
+  }
+}
