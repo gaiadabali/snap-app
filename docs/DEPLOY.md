@@ -370,6 +370,49 @@ Pull rather than push, deliberately: a push deploy needs a credential that can
 *change* the server, held by a laptop or a CI runner. Here the server holds one
 **read-only** token and nothing outside needs access to it.
 
+### 10.1 Disk is the thing that stops this, and it did
+
+**A rollout pulls ~4.4GB** — docai 2.4, server 1.5, web 0.4, mobile 0.1 — and
+until 2026-09-17 nothing ever removed the previous one. With several green
+commits a day that arithmetic only ends one way. It ended on 2026-09-17: the
+root filesystem hit **100% with 29 generations resident across 105 images**,
+and every tick for forty minutes failed at the pull.
+
+Two things made it take longer to find than it should have:
+
+1. The failure message said *"The repo is private — has this host run
+   `docker login ghcr.io`?"*. Authentication was fine. The real error,
+   `no space left on device`, was one line higher in the journal. That message
+   now checks free space and names disk when disk is the cause.
+2. Nothing outside the box can see it. The site kept serving the previous
+   build perfectly, GitHub showed two green workflows, and `deployed-sha`
+   stayed on an old commit silently.
+
+**`deploy.sh` now prunes after every verified rollout**, keeping
+`KEEP_GENERATIONS` (default 3 — what is running, plus two to roll back to).
+That bounds the image store at roughly 13GB.
+
+It only ever touches `ghcr.io/gaiadabali/snap-*` tags. Not `docker image prune
+-a`: **this box serves other sites**, and that would take any image of theirs
+whose container happens to be stopped.
+
+**If a deploy is already wedged for space**, this needs no `deploy/.env` and
+does not deploy anything:
+
+```bash
+deploy/deploy.sh --prune-images
+```
+
+**To check this from outside**, a green CI run is not evidence the deploy
+landed. Fetch an asset that would only exist in the new build — the CSS bundle
+is the reliable one, since the HTML is a prerender served with
+`x-nextjs-cache: HIT`:
+
+```bash
+css=$(curl -s https://snap-apps.gaiada.com/ | grep -o '/_next/static/css/[^"]*\.css' | head -1)
+curl -s "https://snap-apps.gaiada.com${css}" | grep -c 'some-class-from-your-change'
+```
+
 ```
 merge to main
    ├─ CI ................... typecheck, 4 suites, RLS assertion, web build

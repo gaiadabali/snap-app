@@ -58,6 +58,48 @@ DOCAI_DEGRADED=0
 log()  { echo "==> $*"; }
 fail() { echo "FAILED: $*" >&2; exit 1; }
 
+# How many image generations to keep: what is running, plus two to roll back
+# to. A generation is ~4.4GB (docai 2.4 + server 1.5 + web 0.4 + mobile 0.1),
+# so this bounds the image store at roughly 13GB.
+KEEP_GENERATIONS="${KEEP_GENERATIONS:-3}"
+
+# Drop superseded snap-* images.
+#
+# Nothing used to remove them and the arithmetic was never going to work: a
+# rollout pulls ~4.4GB and there are several green commits a day. On
+# 2026-09-17 the host reached 100% disk with 29 generations resident across
+# 105 images, and every deploy for forty minutes failed at the pull with a
+# message blaming `docker login`.
+#
+# Deliberately NOT `docker image prune -a`: this box serves other sites, and
+# that would take any image of theirs whose container happens to be stopped.
+# Only ghcr.io/gaiadabali/snap-* tags are considered, and the newest
+# KEEP_GENERATIONS survive so --rollback still has something to name.
+prune_old_images() {
+  local keep before after
+  keep="$(docker images --format '{{.Tag}}	{{.CreatedAt}}' 'ghcr.io/gaiadabali/snap-*' 2>/dev/null     | grep '^sha-' | sort -k2 -r | awk '!seen[$1]++ {print $1}' | head -n "${KEEP_GENERATIONS}")"
+  [[ -n "${keep}" ]] || { log "no snap-* images resident; nothing to prune"; return 0; }
+
+  before="$(df -Pk / | awk 'NR==2{print $4}')"
+  docker images --format '{{.Repository}}:{{.Tag}}' 'ghcr.io/gaiadabali/snap-*' 2>/dev/null     | grep -- ':sha-'     | grep -vFf <(printf ':%s
+' ${keep})     | sort -u     | xargs -r -n1 docker rmi >/dev/null 2>&1 || true
+  after="$(df -Pk / | awk 'NR==2{print $4}')"
+
+  log "Image generations kept: $(echo ${keep} | tr '
+' ' ')"
+  log "Pruned superseded snap images; / free $((before / 1024))MB -> $((after / 1024))MB"
+}
+
+# Reclaim space, then stop. Handled HERE, before the deploy/.env guard below,
+# because the entire point of this flag is the wedged case: the disk is full,
+# the pull has failed, and you need room to try again. Parsed with the other
+# options further down it sat behind a check it has no need of — verified by
+# running it on the host and watching it refuse over a file it never reads.
+if [[ "${1:-}" == "--prune-images" ]]; then
+  prune_old_images
+  exit 0
+fi
+
 [[ -f "${ENV_FILE}" ]] || fail "deploy/.env not found. Copy deploy/.env.example and fill it in first."
 
 # An IMAGE_TAG passed by the CALLER must survive sourcing the env file.
@@ -126,7 +168,22 @@ else
   if [[ "${PULL_MODE}" == "1" ]]; then
     export IMAGE_TAG
     log "Pulling prebuilt images ${SERVER_IMAGE}:${IMAGE_TAG} and ${WEB_IMAGE}:${IMAGE_TAG}"
-    "${COMPOSE[@]}" pull api worker web || fail "pull failed. The repo is private — has this host run 'docker login ghcr.io'? Does the tag exist?"
+    if ! "${COMPOSE[@]}" pull api worker web; then
+      # Say which failure this actually is.
+      #
+      # This line used to read "The repo is private — has this host run
+      # 'docker login ghcr.io'?" and nothing else. On 2026-09-17 the root
+      # filesystem hit 100% and every tick for forty minutes reported an
+      # authentication problem that did not exist, while the real error —
+      # "no space left on device" — sat one line higher in the journal and
+      # went unread. A diagnostic that names the wrong cause is worse than no
+      # diagnostic: it sends you to check the thing that is fine.
+      free_kb="$(df -Pk / | awk 'NR==2{print $4}')"
+      if [[ "${free_kb}" -lt 3145728 ]]; then
+        fail "pull failed and / has only $((free_kb / 1024))MB free. A rollout needs ~5GB of images. Reclaim space with 'deploy/deploy.sh --prune-images', then re-run."
+      fi
+      fail "pull failed with $((free_kb / 1048576))GB free on /, so this is not disk. The repo is private — has this host run 'docker login ghcr.io'? Does the tag ${IMAGE_TAG} exist?"
+    fi
 
     # docai is pulled SEPARATELY and NON-FATALLY, and this is deliberate.
     #
@@ -251,6 +308,8 @@ SIGNIN_STATUS="$(curl -sS -o /dev/null -w '%{http_code}' -X POST "${API_BASE}/v1
 log "sign-in correctly 404"
 
 log "Deploy verified. Live at image tag ${IMAGE_TAG}."
+
+prune_old_images
 echo
 echo "Rollback if needed:  deploy/deploy.sh --rollback <previous-sha>"
 echo "Logs:                docker compose -f deploy/docker-compose.yml logs -f <service>"
