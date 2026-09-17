@@ -1,51 +1,86 @@
 /**
- * The reading rail — a curve down the left gutter that draws itself as you
- * scroll.
+ * The reading rail — a curve in the left margin that draws itself as you
+ * scroll, with a node riding its leading edge.
  *
- * The first version was a straight 1px hairline pinned at the gutter x, and it
- * read as disruptive for a reason worth writing down: a perfectly straight
- * vertical line at full page height competes with the text column as a second
- * edge, and because it never changes it gives the eye nothing to do except
- * notice it. A curve is quieter. It drifts a few pixels across the gutter,
- * never repeats the same x beside two sections, and reads as an object the
- * page is threaded onto rather than a border someone left on.
+ * Two earlier versions and what each got wrong, because both are easy to
+ * repeat:
  *
- * It is also now the ONLY progress indicator. The header carried a second one
- * reporting the identical quantity; two trackers for one fact is worse than
- * one, because a reader has to check whether they agree.
+ * 1. A straight 1px hairline at full page height. It read as a second edge
+ *    competing with the text column, and because it never changed it gave the
+ *    eye nothing to do except notice it.
+ * 2. A curve — better, but placed in a band that OVERLAPPED the reading
+ *    column. At 1440px the rail occupied x 80–160 while the h1 began at 120,
+ *    so the curve crossed the display type. Measured, not guessed: the numbers
+ *    came back from `getBoundingClientRect` on the live page.
  *
- * Entirely scroll-driven and entirely CSS — `animation-timeline: scroll(root)`
+ * So the geometry is now derived from the content edge rather than from the
+ * viewport. The container is `max-w-[1280px]` with 40px padding, so text
+ * begins at `50vw - 600px`. The rail is a 56px band ending 20px short of that,
+ * which keeps every pixel of it — curve amplitude included — outside the
+ * column at every width it renders at.
+ *
+ * And it only renders from 1400px. Below that the margin is genuinely too
+ * narrow to hold a rail without crowding, and a decorative element that has to
+ * be squeezed is one that should not be there.
+ *
+ * Entirely scroll-driven and entirely CSS: `animation-timeline: scroll(root)`
  * on a dash offset. No listener, no rAF, no state, and it runs on the
- * compositor. A browser without scroll timelines gets the static track and
- * nothing else, which is a finished thing rather than a broken one.
+ * compositor. Without scroll timelines the reader gets the static track, which
+ * is a finished thing rather than a broken one.
  */
+
+/**
+ * One path, drawn four times. The whole group drifts sideways as the document
+ * scrolls, so the rail travels across its band instead of holding one shape.
+ */
+const CURVE = 'M50 0 C 6 170, 94 300, 50 470 S 6 700, 50 860 S 94 960, 50 1000';
+
 export function PageSpine() {
   return (
     <div className="page-spine" aria-hidden>
       <svg
         className="page-spine__svg"
-        viewBox="0 0 80 1000"
+        viewBox="0 0 100 1000"
         preserveAspectRatio="none"
         focusable="false"
       >
         {/*
-          `pathLength="1"` normalises the geometry so the dash maths is just
-          0 → 1 regardless of how long the curve actually is, and
-          `vector-effect` keeps the stroke hairline-thin despite the
-          non-uniform scale that stretches this box to the viewport height.
+          The drift group. Its transform is driven by the document scroll, so
+          the curve leans one way through one screen and the other way through
+          the next — the rail follows the page rather than decorating it.
         */}
-        <path
-          className="page-spine__track"
-          pathLength={1}
-          vectorEffect="non-scaling-stroke"
-          d="M40 0 C 14 190, 66 330, 40 500 S 14 810, 40 1000"
-        />
-        <path
-          className="page-spine__trace"
-          pathLength={1}
-          vectorEffect="non-scaling-stroke"
-          d="M40 0 C 14 190, 66 330, 40 500 S 14 810, 40 1000"
-        />
+        <g className="page-spine__drift">
+          <path
+            className="page-spine__track"
+            pathLength={1}
+            vectorEffect="non-scaling-stroke"
+            d={CURVE}
+          />
+          <path
+            className="page-spine__halo"
+            pathLength={1}
+            vectorEffect="non-scaling-stroke"
+            d={CURVE}
+          />
+          <path
+            className="page-spine__trace"
+            pathLength={1}
+            vectorEffect="non-scaling-stroke"
+            d={CURVE}
+          />
+          {/*
+            The node is the same path with a ZERO-length dash and a round cap,
+            so the stroke collapses to a single dot riding the trace's leading
+            edge. No extra element, no `offset-path`, and it cannot drift off
+            the line because it IS the line.
+          */}
+          <path
+            className="page-spine__node"
+            pathLength={1}
+            vectorEffect="non-scaling-stroke"
+            d={CURVE}
+          />
+        </g>
       </svg>
     </div>
   );

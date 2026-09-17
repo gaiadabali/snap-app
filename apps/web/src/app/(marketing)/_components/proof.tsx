@@ -52,19 +52,70 @@ function Quote({ t, i }: { t: Testimonial; i: number }) {
   );
 }
 
-/** What a reader can check today, and one thing they can hold us to. */
+/**
+ * What a reader can check today, and the one number we have committed to
+ * publishing and have not measured yet.
+ *
+ * REBUILT because the two-column version was cramped. The three measurements
+ * were `LedgerRow`s — code gutter, label, note, right-locked value — stacked
+ * inside a 410px column. That leaves about 250px for the label, so every title
+ * wrapped ("Corrections per 100 / documents"), every note ran to four lines,
+ * and the value sat marooned at the far right. Then it got squeezed further to
+ * fit one screen, which made it dense as well as cramped.
+ *
+ * The fix is composition, not compression: the three run ACROSS the full
+ * measure as a 3-up, so each gets its own column and its title fits on one
+ * line. `LedgerRow` is the wrong primitive here — it is built for a figure
+ * locked to a right-hand column, and "pending" is not a figure.
+ */
 function Standing() {
   return (
-    <div className="grid gap-14 lg:grid-cols-[1fr_1fr] lg:gap-20">
-      <div>
-        <Reveal>
-          <div className="t-label text-[var(--color-ink-faint)]">Check it yourself</div>
-          <p className="mt-5 max-w-[46ch] text-[17px] leading-relaxed text-[var(--color-ink)]">
+    <div className="proof-grid">
+      <div className="t-label text-[var(--color-ink-faint)]">
+        The number we have not published yet
+      </div>
+
+      <div className="mt-5">
+        <Rule tone="strong" />
+      </div>
+
+      <div className="mt-8 grid gap-10 md:grid-cols-3 md:gap-12">
+        {MEASUREMENT.map((m, i) => (
+          <Reveal key={m.code} variant="deal" delay={i}>
+            <div>
+              <div className="flex items-baseline justify-between gap-4">
+                <span className="t-label text-[var(--color-ink-faint)]">{m.code}</span>
+                {/* "pending" is a STATE, not a figure — so it reads as a badge
+                    beside its own metric rather than as a column of money. */}
+                <span className="t-label text-[var(--color-warn)]">pending</span>
+              </div>
+              <div className="mt-3 text-[16px] leading-snug text-[var(--color-ink)]">
+                {m.label}
+              </div>
+              <p className="mt-2 text-[13.5px] leading-relaxed text-[var(--color-ink-muted)]">
+                {m.note}
+              </p>
+            </div>
+          </Reveal>
+        ))}
+      </div>
+
+      <Reveal>
+        <p className="mt-9 max-w-[70ch] text-[13.5px] leading-relaxed text-[var(--color-ink-muted)]">
+          Every capture tool claims high accuracy and none of them shows its working. This is the
+          standard we set ourselves and have not met yet — when it is measured, the number goes
+          here whether it flatters us or not.
+        </p>
+      </Reveal>
+
+      {/* The invitation and the CTAs, on one band across the bottom. */}
+      <Reveal>
+        <div className="mt-10 flex flex-wrap items-end justify-between gap-x-12 gap-y-6 border-t border-[var(--color-rule)] pt-8">
+          <p className="max-w-[46ch] text-[15px] leading-relaxed text-[var(--color-ink)]">
             Photograph the messiest docket in your ute — the one that is half fuel and half servo
-            food. You will know inside three scans whether it reads your paperwork properly, which
-            is more than anyone&apos;s quote would have told you.
+            food. You will know inside three scans whether it reads your paperwork properly.
           </p>
-          <div className="mt-7 flex flex-wrap items-center gap-6">
+          <div className="flex flex-wrap items-center gap-6">
             <ButtonLink href="/register" size="lg">
               Scan 20 free, no card
             </ButtonLink>
@@ -74,34 +125,8 @@ function Standing() {
               <ArrowLink href="/how-it-works">See how a receipt moves through it</ArrowLink>
             )}
           </div>
-        </Reveal>
-      </div>
-
-      <div>
-        <div className="t-label text-[var(--color-ink-faint)]">
-          The number we have not published yet
         </div>
-        <div className="mt-5">
-          <Rule tone="strong" />
-          {MEASUREMENT.map((m, i) => (
-            <LedgerRow
-              key={m.code}
-              index={i}
-              code={m.code}
-              label={m.label}
-              note={m.note}
-              value={<span className="text-[var(--color-ink-faint)]">pending</span>}
-            />
-          ))}
-        </div>
-        <Reveal>
-          <p className="mt-6 max-w-[46ch] text-[13.5px] leading-relaxed text-[var(--color-ink-muted)]">
-            Every capture tool claims high accuracy and none of them shows its working. This is the
-            standard we set ourselves and have not met yet — when it is measured, the number goes
-            here whether it flatters us or not.
-          </p>
-        </Reveal>
-      </div>
+      </Reveal>
     </div>
   );
 }
