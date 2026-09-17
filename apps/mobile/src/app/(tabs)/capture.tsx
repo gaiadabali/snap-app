@@ -124,6 +124,24 @@ export default function CaptureScreen() {
   /** Set once `createCapture` has returned and cleared only when every page has uploaded. */
   const [pending, setPending] = useState<PendingCapture | null>(null);
   const [pageStatus, setPageStatus] = useState<Record<number, PageStatus>>({});
+  /**
+   * The torch, for a docket on a restaurant table or in a ute footwell.
+   *
+   * Off on every mount rather than remembered: a phone that silently turns its
+   * light on when the scan tab opens is alarming in a quiet room, and the cost
+   * of the alternative is one tap.
+   */
+  const [torch, setTorch] = useState(false);
+  /**
+   * Whether the overlay cards are showing.
+   *
+   * They sit on top of the thing being photographed, so they have to be
+   * dismissible — a tap anywhere on the viewfinder hides them, and they come
+   * back on the next tap or whenever there is something new to say. An error
+   * always reappears, because a capture that failed silently is worse than one
+   * that interrupts.
+   */
+  const [chrome, setChrome] = useState(true);
   const camera = useRef<CameraView>(null);
 
   /** Photographs one page and returns its uri, bytes and hash. */
@@ -461,7 +479,16 @@ export default function CaptureScreen() {
           </Text>
         </View>
       ) : (
-        <CameraView ref={camera} style={{ flex: 1 }} facing="back" />
+        <Pressable
+          style={{ flex: 1 }}
+          // The viewfinder itself is the dismiss target. No accessibility role:
+          // this is a convenience over the whole frame, and every action it
+          // shortcuts is also reachable from a labelled control.
+          accessible={false}
+          onPress={() => setChrome((on) => !on)}
+        >
+          <CameraView ref={camera} style={{ flex: 1 }} facing="back" enableTorch={torch} />
+        </Pressable>
       )}
 
       <View
@@ -485,7 +512,15 @@ export default function CaptureScreen() {
       </View>
 
       <View
-        style={{ position: 'absolute', top: insets.top + space.lg, left: space.lg, right: space.lg }}
+        style={{
+          position: 'absolute',
+          top: insets.top + space.lg,
+          left: space.lg,
+          right: space.lg,
+          // Hidden rather than unmounted, so dismissing does not reset the
+          // workspace switch's own open/closed state.
+          display: chrome ? 'flex' : 'none',
+        }}
       >
         {/* ONE LINE, because this sits on top of the thing being photographed.
             It used to be a five-line card — "Filing to", a workspace switch, a
@@ -516,7 +551,17 @@ export default function CaptureScreen() {
             }}
           >
             <Label>Filing to</Label>
-            <WorkspaceSwitch />
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
+              <WorkspaceSwitch />
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Hide this panel"
+                hitSlop={12}
+                onPress={() => setChrome(false)}
+              >
+                <Text style={{ color: p.inkFaint, fontSize: 18, lineHeight: 18 }}>×</Text>
+              </Pressable>
+            </View>
           </View>
         </Card>
       </View>
@@ -535,7 +580,19 @@ export default function CaptureScreen() {
         {error ? (
           <Card tone="risk" style={{ width: '100%' }}>
             <View style={{ gap: space.xs }}>
-              <Label style={{ color: p.risk }}>Capture failed</Label>
+              <View
+                style={{ flexDirection: 'row', alignItems: 'flex-start', gap: space.sm }}
+              >
+                <Label style={{ color: p.risk, flex: 1 }}>Capture failed</Label>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Dismiss this error"
+                  hitSlop={12}
+                  onPress={() => setError(null)}
+                >
+                  <Text style={{ color: p.risk, fontSize: 18, lineHeight: 18 }}>×</Text>
+                </Pressable>
+              </View>
               <Body>{error}</Body>
             </View>
           </Card>
@@ -637,24 +694,27 @@ export default function CaptureScreen() {
               </ScrollView>
             ) : null}
 
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.xl }}>
-              <Pressable
-                accessibilityRole="button"
+            {/* THREE CONTROLS, SYMMETRIC.
+                Add page and Torch are the same 56pt circle either side of the
+                shutter, so the row balances on the shutter instead of being
+                padded out by an empty spacer. Everything sits in one band at
+                the bottom, which keeps the viewfinder — the part that actually
+                needs to be seen — clear. */}
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                width: '100%',
+                maxWidth: 320,
+              }}
+            >
+              <SideControl
+                label="Add page"
+                glyph="+"
                 accessibilityLabel="Add another page to this document"
                 onPress={() => void onAddPage()}
-                style={({ pressed }) => ({
-                  paddingHorizontal: space.md,
-                  paddingVertical: 10,
-                  borderRadius: radius.pill,
-                  borderWidth: 1.5,
-                  borderColor: 'rgba(255,255,255,0.7)',
-                  backgroundColor: pressed ? 'rgba(255,255,255,0.2)' : 'transparent',
-                })}
-              >
-                <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 12 }}>
-                  + Add page
-                </Text>
-              </Pressable>
+              />
 
               <Pressable
                 accessibilityRole="button"
@@ -682,8 +742,13 @@ export default function CaptureScreen() {
                 ) : null}
               </Pressable>
 
-              {/* Balances the row so the shutter stays centred. */}
-              <View style={{ width: 86 }} />
+              <SideControl
+                label={torch ? 'Torch on' : 'Torch'}
+                glyph="⚡"
+                on={torch}
+                accessibilityLabel={torch ? 'Turn the torch off' : 'Turn the torch on'}
+                onPress={() => setTorch((t) => !t)}
+              />
             </View>
 
             {pages.length > 0 ? (
@@ -696,5 +761,60 @@ export default function CaptureScreen() {
         )}
       </View>
     </Screen>
+  );
+}
+
+/**
+ * One of the two controls flanking the shutter.
+ *
+ * Shared so they cannot drift apart: the row only reads as balanced while both
+ * sides are the same size, and two separately-styled Pressables is how that
+ * stops being true.
+ */
+function SideControl({
+  label,
+  glyph,
+  onPress,
+  accessibilityLabel,
+  on = false,
+}: {
+  label: string;
+  glyph: string;
+  onPress: () => void;
+  accessibilityLabel: string;
+  on?: boolean;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      accessibilityState={{ selected: on }}
+      onPress={onPress}
+      style={{ alignItems: 'center', gap: 6, width: 76 }}
+    >
+      {({ pressed }) => (
+        <>
+          <View
+            style={{
+              width: 56,
+              height: 56,
+              borderRadius: 28,
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderWidth: 1.5,
+              borderColor: on ? '#FFFFFF' : 'rgba(255,255,255,0.7)',
+              backgroundColor: on
+                ? 'rgba(255,255,255,0.9)'
+                : pressed
+                  ? 'rgba(255,255,255,0.25)'
+                  : 'rgba(0,0,0,0.25)',
+            }}
+          >
+            <Text style={{ color: on ? '#14181D' : '#FFFFFF', fontSize: 22 }}>{glyph}</Text>
+          </View>
+          <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '700' }}>{label}</Text>
+        </>
+      )}
+    </Pressable>
   );
 }
