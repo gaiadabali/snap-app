@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
 import { Container, Rule, Section, SectionHead } from '@/design/primitives';
-import { CaptureScene } from '@/design/three/CaptureScene';
+import { Scene } from '@/design/three/Scene';
 import { DESIGN_LAB_ENABLED } from '@/lib/features';
 
 import { ReceiptScanCard } from '../../_components/receipt-scan-card';
@@ -48,7 +48,7 @@ export default function CaptureLabPage() {
         <div className="grid gap-12 lg:grid-cols-[1fr_1fr] lg:items-start">
           <div>
             <div className="t-label mb-4 text-[var(--color-ink-faint)]">WebGL</div>
-            <CaptureScene className="mx-auto aspect-[3/4] w-full max-w-[460px]">
+            <Scene className="mx-auto aspect-[3/4] w-full max-w-[460px]">
               {/*
                 The twin. It is the accessible copy and it is what sets the
                 canvas's height, so it stays in the DOM — faded out once the
@@ -57,7 +57,7 @@ export default function CaptureLabPage() {
               <div className="flex h-full items-center justify-center">
                 <ReceiptScanCard className="w-full" scanning={false} />
               </div>
-            </CaptureScene>
+            </Scene>
           </div>
 
           <div>

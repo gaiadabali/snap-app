@@ -49,8 +49,8 @@ export type DocketTexture = {
  * point where the mono type stops resolving — verified by reading the smallest
  * line, the ABN, at full zoom. 2048 doubled the upload with no visible gain.
  */
-const W = 1024;
-const H = 1448;
+export const W = 1024;
+export const H = 1448;
 
 /** The same docket as `_components/receipt-scan-card.tsx`. 75.00 + 7.50 = 82.50. */
 const LINES = [
@@ -64,13 +64,13 @@ const TOTALS = [
   { label: 'GST', amount: '7.50', field: 'gst_amount' },
 ] as const;
 
-function cssFont(variable: string, fallback: string): string {
+export function cssFont(variable: string, fallback: string): string {
   const value = getComputedStyle(document.documentElement).getPropertyValue(variable).trim();
   return value || fallback;
 }
 
 /** Pads a measured text run into a box that looks like an extractor drew it. */
-function boxAround(
+export function boxAround(
   field: string,
   left: number,
   baseline: number,
@@ -94,7 +94,7 @@ function boxAround(
   };
 }
 
-function dashedRule(ctx: CanvasRenderingContext2D, y: number, palette: ScenePalette) {
+export function dashedRule(ctx: CanvasRenderingContext2D, y: number, palette: ScenePalette) {
   ctx.save();
   ctx.strokeStyle = palette['rule-strong'];
   ctx.lineWidth = 2;

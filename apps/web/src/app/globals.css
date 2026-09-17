@@ -363,3 +363,84 @@ body {
   outline-offset: 3px;
   border-radius: 2px;
 }
+
+/* ── The page spine ──────────────────────────────────────────────────────
+ *
+ * A hairline down the left gutter with a filled portion that tracks how far
+ * through the document you are.
+ *
+ * This exists because of a specific complaint: the sections read as separate
+ * blocks rather than one document. The usual fix is a tinted band per section,
+ * which is the exact thing §11 lists under Avoid and the thing that got three
+ * directions rejected. A continuous rail does the opposite — it is one element
+ * that every section is measured against, so the page reads as a single ruled
+ * sheet the reader is travelling down rather than a stack.
+ *
+ * It lands on the same x as the `120px | 1fr` gutter that carries the ATO
+ * codes (§8), so the codes appear to hang off it. Below 1024px there is no
+ * gutter, so there is no rail.
+ *
+ * Instrument, not decoration (§12.1): it reports position in the document, the
+ * one thing a reader cannot otherwise know. Solid accent, no gradient, 1px.
+ */
+@media (min-width: 1024px) {
+  .page-spine {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: max(2.5rem, calc(50vw - 40rem + 2.5rem));
+    width: 1px;
+    background: var(--color-rule);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .page-spine::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: var(--color-accent);
+    transform: scaleY(0);
+    transform-origin: top center;
+  }
+
+  /* Without scroll timelines the rail is simply a static hairline — complete,
+     not half-drawn. That is why the rest state sits outside the feature query
+     here while the animation sits inside it. */
+  @supports (animation-timeline: scroll()) {
+    @media (prefers-reduced-motion: no-preference) {
+      .page-spine::after {
+        animation: spine-fill linear both;
+        animation-timeline: scroll(root block);
+      }
+    }
+  }
+}
+
+@keyframes spine-fill {
+  from { transform: scaleY(0); }
+  to   { transform: scaleY(1); }
+}
+
+/* ── Section seams ───────────────────────────────────────────────────────
+ *
+ * Replaces the tone alternation the home page used to separate sections.
+ * A section no longer changes colour to announce itself; it opens with a
+ * hairline that draws itself as the section arrives. Same job, no zebra.
+ */
+.seam {
+  height: 1px;
+  width: 100%;
+  background: var(--color-rule);
+  transform-origin: left center;
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .seam {
+      animation: rule-draw linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 18%;
+    }
+  }
+}

@@ -12,9 +12,11 @@ import {
   Section,
   SectionHead,
 } from '@/design/primitives';
-import { BUSINESS_SURFACES_ENABLED } from '@/lib/features';
+import { Scene } from '@/design/three/Scene';
+import { BUSINESS_SURFACES_ENABLED, SCENES_3D_ENABLED } from '@/lib/features';
 
-import { AppScreens, PhoneFrame, APP_SCREENS } from './_components/app-showcase';
+import { AppScreens } from './_components/app-showcase';
+import { ReceiptScanCard } from './_components/receipt-scan-card';
 import { ComparisonTable } from './_components/comparison';
 import { Proof, PROOF_HEAD } from './_components/proof';
 
@@ -180,10 +182,20 @@ function Door({
 export default function HomePage() {
   return (
     <>
+      {/* The reading rail. One element the whole page is measured against —
+          see `.page-spine` in globals.css for why it replaced tinted bands. */}
+      <div className="page-spine" aria-hidden />
+
       {/* ── Hero ─────────────────────────────────────────────────────────
-          The wedge as the headline, both doors above the fold, and a real
-          screen from the real app rather than an illustration of one. */}
-      <section className="border-b border-[var(--color-rule)]">
+          The wedge as the headline, both doors above the fold, and the docket
+          itself as the artefact.
+
+          It used to be a phone screenshot here. The four real app screens are
+          still on this page, two sections down, which is where proof belongs —
+          the hero's job is the CLAIM, and the claim is about what happens to a
+          piece of paper. §12.2 permits exactly two kinds of imagery: the app
+          screenshots, and the document itself. This is the second one. */}
+      <section>
         <Container width="wide" className="pb-16 pt-14 md:pb-20 md:pt-20">
           {/**
            * Three children, explicitly placed, so the phone can sit in
@@ -220,14 +232,17 @@ export default function HomePage() {
             </div>
 
             <div
-              className="anim-load mx-auto w-full max-w-[260px] lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:max-w-[280px]"
+              className="anim-load lg:col-start-2 lg:row-start-1 lg:row-span-2"
               style={{ ['--i' as string]: 3 }}
             >
-              <PhoneFrame
-                screen={APP_SCREENS[0]!}
-                priority
-                sizes="(max-width: 1024px) 60vw, 280px"
-              />
+              <Scene
+                enabled={SCENES_3D_ENABLED}
+                className="mx-auto aspect-[3/4] w-full max-w-[340px] lg:max-w-[420px]"
+              >
+                <div className="flex h-full items-center justify-center">
+                  <ReceiptScanCard className="w-full" scanning={false} />
+                </div>
+              </Scene>
             </div>
 
             {/*
@@ -280,60 +295,114 @@ export default function HomePage() {
           lede="Buy milk, bread and a sandwich with a hot pie and a coffee, and you have bought two different tax treatments on one docket. A tool that only reads the total has to guess which half is which — and a guess is not a BAS position."
         />
 
-        <div className="mt-12 grid gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:gap-20">
-          <div>
-            <div className="t-label text-[var(--color-ink-faint)]">
-              Coles Express Yass · 11 Sep 2026
-            </div>
-            <div className="mt-5">
-              <Rule />
-              {DOCKET.map((line, i) => (
-                <LedgerRow
-                  key={line.label}
-                  index={i}
-                  code={line.taxable ? 'TAX' : 'FREE'}
-                  label={line.label}
-                  value={<Money amount={line.amount} />}
-                />
-              ))}
-            </div>
-          </div>
+        {/*
+          The docket coming apart along the tax boundary.
 
-          <div className="flex flex-col justify-center gap-8">
-            <Reveal>
-              <div>
-                <div className="t-label text-[var(--color-good)]">GST-free</div>
-                <div className="mt-3 font-mono text-[40px] font-normal leading-none tabular text-[var(--color-good)]">
-                  <Money amount="16.80" />
+          The scene and the ledger beneath it are the same six lines and the
+          same two subtotals — 4.50 + 3.80 + 8.50 = 16.80 GST-free, and
+          6.20 + 3.20 + 6.00 = 15.40 taxable carrying 1.40 of GST. The 3D is a
+          camera on the rows below it, never a second set of figures.
+        */}
+        <div className="mt-14">
+          <Scene
+            scene="split"
+            enabled={SCENES_3D_ENABLED}
+            className="mx-auto aspect-[16/10] w-full max-w-[780px]"
+          >
+            <div className="flex h-full items-center justify-center">
+              <div className="w-full max-w-[420px]">
+                <div className="t-label text-[var(--color-ink-faint)]">
+                  Coles Express Yass · 11 Sep 2026
                 </div>
-                <p className="mt-2 text-[13.5px] text-[var(--color-ink-muted)]">
-                  Basic food. No GST to claim, and none claimed.
-                </p>
-              </div>
-            </Reveal>
-            <Rule />
-            <Reveal>
-              <div>
-                <div className="t-label text-[var(--color-accent)]">Taxable · GST $1.40</div>
-                <div className="mt-3 font-mono text-[40px] font-normal leading-none tabular text-[var(--color-accent)]">
-                  <Money amount="15.40" />
+                <div className="mt-5">
+                  <Rule />
+                  {DOCKET.map((line, i) => (
+                    <LedgerRow
+                      key={line.label}
+                      index={i}
+                      code={line.taxable ? 'TAX' : 'FREE'}
+                      label={line.label}
+                      value={<Money amount={line.amount} />}
+                    />
+                  ))}
+                  {/*
+                    The docket total belongs here even though the section makes
+                    its point with the two subtotals below.
+
+                    The scene prints 32.20 on the paper, and docs/WEB.md §4.4
+                    states the rule this enforces: a scene may not be the only
+                    place a figure exists. Without this row the total is legible
+                    to anyone with a GPU and invisible to everyone else — which
+                    is exactly backwards, since the flat card is the version
+                    that has to stand alone. Caught by asserting every figure
+                    the scenes depict is also in the DOM.
+                  */}
+                  <div className="mt-1 flex items-baseline justify-between gap-4 border-t-2 border-[var(--color-ink)] pt-4">
+                    <span className="text-[14px] text-[var(--color-ink)]">Docket total</span>
+                    <Money
+                      amount="32.20"
+                      className="font-mono text-[18px] text-[var(--color-ink)]"
+                    />
+                  </div>
                 </div>
-                <p className="mt-2 text-[13.5px] text-[var(--color-ink-muted)]">
-                  Hot food and drinks. Reconciled per line, not per receipt.
-                </p>
               </div>
-            </Reveal>
-          </div>
+            </div>
+          </Scene>
+        </div>
+
+        {/*
+          The two answers, side by side under the object that produced them.
+
+          These used to sit in a column beside a copy of the line items. The
+          lines now live once, as the scene's twin above, because printing the
+          same six rows twice on one screen is the kind of duplication a reader
+          reads as a mistake — and a screen reader reads as the docket being
+          announced twice.
+        */}
+        <div className="mt-14 grid gap-10 sm:grid-cols-2 sm:gap-16">
+          <Reveal>
+            <div>
+              <div className="t-label text-[var(--color-good)]">GST-free</div>
+              <div className="mt-3 font-mono text-[clamp(2rem,4vw,2.75rem)] font-normal leading-none tabular text-[var(--color-good)]">
+                <Money amount="16.80" />
+              </div>
+              <p className="mt-3 max-w-[34ch] text-[13.5px] leading-relaxed text-[var(--color-ink-muted)]">
+                Basic food. No GST to claim, and none claimed.
+              </p>
+            </div>
+          </Reveal>
+
+          <Reveal delay={1}>
+            <div>
+              <div className="t-label text-[var(--color-accent)]">Taxable · GST $1.40</div>
+              <div className="mt-3 font-mono text-[clamp(2rem,4vw,2.75rem)] font-normal leading-none tabular text-[var(--color-accent)]">
+                <Money amount="15.40" />
+              </div>
+              <p className="mt-3 max-w-[34ch] text-[13.5px] leading-relaxed text-[var(--color-ink-muted)]">
+                Hot food and drinks. Reconciled per line, not per receipt.
+              </p>
+            </div>
+          </Reveal>
         </div>
       </Section>
 
       {/* ── The app itself ──────────────────────────────────────────────── */}
-      <Section code="THE APP" tone="surface">
-        <SectionHead
-          kicker="What you actually get"
-          title="Photograph it. Check what was read. Move on."
-          lede="The app tells you what needs a human and leaves everything else alone. These are real screens from the app, running on a demo workspace."
-        />
+      {/* `inline` — no head. The section above ended on two figures; this one
+          answers "what does that look like in my hand" and opening it with
+          another rule/kicker/display stack would be the fourth identical
+          opening in a row. That repetition, not the palette, is what got three
+          directions rejected (§12.1). */}
+      <Section code="THE APP" form="wide" size="sm">
+        <div className="seam" aria-hidden />
+        <div className="mt-6 flex flex-wrap items-baseline justify-between gap-x-10 gap-y-3">
+          <div className="t-label text-[var(--color-ink-faint)]">
+            Real screens · demo workspace
+          </div>
+          <p className="max-w-[46ch] text-[15px] leading-relaxed text-[var(--color-ink-muted)]">
+            Photograph it, check what was read, move on. The app tells you what needs a human and
+            leaves everything else alone.
+          </p>
+        </div>
         <div className="mt-12">
           <AppScreens />
         </div>
@@ -350,7 +419,6 @@ export default function HomePage() {
         <SectionHead
           kicker="Against what you are probably using"
           title="The row nobody else can tick."
-          lede="Hubdoc comes free with Xero and myDeductions comes free from the ATO. Neither of them — and nothing else on this list — can split one docket into its GST-free and taxable halves."
         />
         <div className="mt-12">
           <ComparisonTable />
@@ -361,7 +429,9 @@ export default function HomePage() {
           Currently sample copy plus the things a reader can verify today.
           See _components/proof.tsx — it will not build for production while
           the samples are still in. */}
-      <Section code="CHECK" tone="surface">
+      {/* `measure` — one 68ch column. The only section on the page shaped
+          like prose, because it is the only one doing any. */}
+      <Section code="CHECK" form="measure">
         <SectionHead
           kicker={PROOF_HEAD.kicker}
           title={PROOF_HEAD.title}
@@ -375,7 +445,10 @@ export default function HomePage() {
       {/* ── The inverted band ────────────────────────────────────────────
           One dark moment, on the sharpest number, tied to the same worked
           case as the app screenshots above. */}
-      <Section code="1B" tone="void" size="lg">
+      {/* `wide` — the form the handoff reserves for "the single most important
+          claim", and this is it. It also keeps the void band from sharing a
+          silhouette with the deduction ledger immediately below it. */}
+      <Section code="1B" tone="void" size="lg" form="wide">
         <div className="grid gap-14 lg:grid-cols-[1fr_1fr] lg:gap-16">
           <Reveal variant="expand">
             <div className="t-label text-[var(--color-void-muted)]">
@@ -441,7 +514,7 @@ export default function HomePage() {
       </Section>
 
       {/* ── Deductions ──────────────────────────────────────────────────── */}
-      <Section code="D1–D5" tone="surface">
+      <Section code="D1–D5">
         <div className="grid gap-12 lg:grid-cols-[1fr_1.1fr] lg:gap-20">
           <div>
             <SectionHead
@@ -548,11 +621,13 @@ export default function HomePage() {
       ) : null}
 
       {/* ── Pricing ─────────────────────────────────────────────────────── */}
-      <Section code="PLANS" tone="surface">
+      <Section code="PLANS" form="wide">
+        <div className="seam" aria-hidden />
         <SectionHead
           kicker="Pricing"
           title="Start free. Bring your accountant when you are ready."
           lede="No trial clock and no card on the free tier — it is a real plan, not a countdown."
+          className="mt-6"
         />
         <div
           className={

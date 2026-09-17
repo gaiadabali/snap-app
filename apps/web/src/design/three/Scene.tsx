@@ -25,7 +25,14 @@ import { useSceneCapability } from './capability';
  * at module scope, and `next build` produces a standalone server
  * (next.config.ts) that would have to execute it.
  */
-const CaptureChamber = dynamic(() => import('./capture-chamber'), { ssr: false });
+const SCENES = {
+  /** S1 — one docket being read, field boxes latching onto the spans they name. */
+  capture: dynamic(() => import('./capture-chamber'), { ssr: false }),
+  /** S2 — one docket separating into the two tax positions it was carrying. */
+  split: dynamic(() => import('./tax-split'), { ssr: false }),
+} as const;
+
+export type SceneName = keyof typeof SCENES;
 
 /**
  * How early the chunk is allowed to start downloading.
@@ -36,9 +43,11 @@ const CaptureChamber = dynamic(() => import('./capture-chamber'), { ssr: false }
  */
 const PREFETCH_MARGIN = '600px 0px';
 
-export function CaptureScene({
+export function Scene({
   children,
   className,
+  /** Which scene to lay over the twin. Every one obeys the same gate. */
+  scene = 'capture',
   /**
    * The host-level kill switch, read on the server from `SCENES_3D_ENABLED`
    * and handed down. Off means this component is a passthrough: the twin is
@@ -50,9 +59,11 @@ export function CaptureScene({
 }: {
   children: ReactNode;
   className?: string;
+  scene?: SceneName;
   enabled?: boolean;
   keepTwinVisible?: boolean;
 }) {
+  const SceneComponent = SCENES[scene];
   const host = useRef<HTMLDivElement | null>(null);
   const capability = useSceneCapability();
   const [near, setNear] = useState(false);
@@ -93,13 +104,14 @@ export function CaptureScene({
        * nothing.
        */}
       <div
+        data-scene-twin={scene}
         className={`transition-opacity duration-500 ${twinHidden ? 'opacity-0' : 'opacity-100'}`}
       >
         {children}
       </div>
 
       {mount ? (
-        <CaptureChamber
+        <SceneComponent
           className="pointer-events-none absolute inset-0"
           onFirstFrame={() => setPainted(true)}
         />

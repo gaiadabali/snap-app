@@ -11,7 +11,7 @@ import {
   Split,
 } from '@/design/primitives';
 
-import { CaptureScene } from '@/design/three/CaptureScene';
+import { Scene } from '@/design/three/Scene';
 import { SCENES_3D_ENABLED } from '@/lib/features';
 
 import { ReceiptScanCard } from '../_components/receipt-scan-card';
@@ -230,18 +230,18 @@ export default function FeaturesPage() {
         </Reveal>
         <Reveal>
           {/*
-            The docket, in depth. `CaptureScene` is a passthrough unless the
+            The docket, in depth. `Scene` is a passthrough unless the
             host allows it AND the device can take it — so what is inside is
-            not a placeholder, it is the page. See src/design/three/CaptureScene.
+            not a placeholder, it is the page. See src/design/three/Scene.
           */}
-          <CaptureScene
+          <Scene
             enabled={SCENES_3D_ENABLED}
             className="mt-10 aspect-[3/4] w-full max-w-[420px]"
           >
             <div className="flex h-full items-center justify-center">
               <ReceiptScanCard className="w-full" />
             </div>
-          </CaptureScene>
+          </Scene>
         </Reveal>
         <div className="mt-10 flex flex-wrap gap-3">
           <ButtonLink href="/register" size="lg">
