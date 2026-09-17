@@ -256,14 +256,59 @@
           "id": "ln-p1-4",
           "order": 4,
           "box": {
-            "x": 584,
+            "x": 94,
             "y": 328,
-            "width": 62,
-            "height": 19
+            "width": 552,
+            "height": 43
           },
           "spans": [
             {
               "id": "sp-p1-l4-w0",
+              "text": "BACON",
+              "box": {
+                "x": 94,
+                "y": 351,
+                "width": 63,
+                "height": 20
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8235676884651184,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l4-w1",
+              "text": "EGG",
+              "box": {
+                "x": 173,
+                "y": 349,
+                "width": 37,
+                "height": 18
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8235676884651184,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l4-w2",
+              "text": "ROLL",
+              "box": {
+                "x": 226,
+                "y": 345,
+                "width": 51,
+                "height": 19
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8235676884651184,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l4-w3",
               "text": "12.50",
               "box": {
                 "x": 584,
@@ -283,71 +328,29 @@
           "id": "ln-p1-5",
           "order": 5,
           "box": {
-            "x": 94,
-            "y": 345,
-            "width": 183,
-            "height": 26
+            "x": 97,
+            "y": 397,
+            "width": 551,
+            "height": 46
           },
           "spans": [
             {
               "id": "sp-p1-l5-w0",
-              "text": "BACON",
+              "text": "TOTAL",
               "box": {
-                "x": 94,
-                "y": 351,
-                "width": 63,
-                "height": 20
+                "x": 97,
+                "y": 422,
+                "width": 82,
+                "height": 21
               },
               "provenance": {
                 "engine": "device-mlkit",
-                "confidence": 0.8235676884651184,
+                "confidence": 0.7796875238418579,
                 "calibrated": false
               }
             },
             {
               "id": "sp-p1-l5-w1",
-              "text": "EGG",
-              "box": {
-                "x": 173,
-                "y": 349,
-                "width": 37,
-                "height": 18
-              },
-              "provenance": {
-                "engine": "device-mlkit",
-                "confidence": 0.8235676884651184,
-                "calibrated": false
-              }
-            },
-            {
-              "id": "sp-p1-l5-w2",
-              "text": "ROLL",
-              "box": {
-                "x": 226,
-                "y": 345,
-                "width": 51,
-                "height": 19
-              },
-              "provenance": {
-                "engine": "device-mlkit",
-                "confidence": 0.8235676884651184,
-                "calibrated": false
-              }
-            }
-          ]
-        },
-        {
-          "id": "ln-p1-6",
-          "order": 6,
-          "box": {
-            "x": 554,
-            "y": 397,
-            "width": 94,
-            "height": 27
-          },
-          "spans": [
-            {
-              "id": "sp-p1-l6-w0",
               "text": "$12.50",
               "box": {
                 "x": 554,
@@ -364,44 +367,47 @@
           ]
         },
         {
-          "id": "ln-p1-7",
-          "order": 7,
+          "id": "ln-p1-6",
+          "order": 6,
           "box": {
-            "x": 97,
-            "y": 422,
-            "width": 82,
-            "height": 21
+            "x": 98,
+            "y": 469,
+            "width": 554,
+            "height": 43
           },
           "spans": [
             {
-              "id": "sp-p1-l7-w0",
-              "text": "TOTAL",
+              "id": "sp-p1-l6-w0",
+              "text": "AMEX",
               "box": {
-                "x": 97,
-                "y": 422,
-                "width": 82,
-                "height": 21
+                "x": 98,
+                "y": 492,
+                "width": 52,
+                "height": 20
               },
               "provenance": {
                 "engine": "device-mlkit",
-                "confidence": 0.7796875238418579,
+                "confidence": 0.7620442509651184,
                 "calibrated": false
               }
-            }
-          ]
-        },
-        {
-          "id": "ln-p1-8",
-          "order": 8,
-          "box": {
-            "x": 591,
-            "y": 469,
-            "width": 61,
-            "height": 20
-          },
-          "spans": [
+            },
             {
-              "id": "sp-p1-l8-w0",
+              "id": "sp-p1-l6-w1",
+              "text": "****1002",
+              "box": {
+                "x": 167,
+                "y": 486,
+                "width": 101,
+                "height": 22
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.7620442509651184,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l6-w2",
               "text": "12.50",
               "box": {
                 "x": 591,
@@ -418,50 +424,8 @@
           ]
         },
         {
-          "id": "ln-p1-9",
-          "order": 9,
-          "box": {
-            "x": 98,
-            "y": 486,
-            "width": 170,
-            "height": 26
-          },
-          "spans": [
-            {
-              "id": "sp-p1-l9-w0",
-              "text": "AMEX",
-              "box": {
-                "x": 98,
-                "y": 492,
-                "width": 52,
-                "height": 20
-              },
-              "provenance": {
-                "engine": "device-mlkit",
-                "confidence": 0.7620442509651184,
-                "calibrated": false
-              }
-            },
-            {
-              "id": "sp-p1-l9-w1",
-              "text": "****1002",
-              "box": {
-                "x": 167,
-                "y": 486,
-                "width": 101,
-                "height": 22
-              },
-              "provenance": {
-                "engine": "device-mlkit",
-                "confidence": 0.7620442509651184,
-                "calibrated": false
-              }
-            }
-          ]
-        },
-        {
-          "id": "ln-p1-10",
-          "order": 10,
+          "id": "ln-p1-7",
+          "order": 7,
           "box": {
             "x": 320,
             "y": 532,
@@ -470,7 +434,7 @@
           },
           "spans": [
             {
-              "id": "sp-p1-l10-w0",
+              "id": "sp-p1-l7-w0",
               "text": "THANK",
               "box": {
                 "x": 320,
@@ -485,7 +449,7 @@
               }
             },
             {
-              "id": "sp-p1-l10-w1",
+              "id": "sp-p1-l7-w1",
               "text": "YOU",
               "box": {
                 "x": 400,

@@ -288,8 +288,8 @@
           "box": {
             "x": 107,
             "y": 341,
-            "width": 139,
-            "height": 21
+            "width": 593,
+            "height": 40
           },
           "spans": [
             {
@@ -306,21 +306,9 @@
                 "confidence": 0.928515613079071,
                 "calibrated": false
               }
-            }
-          ]
-        },
-        {
-          "id": "ln-p1-5",
-          "order": 5,
-          "box": {
-            "x": 589,
-            "y": 362,
-            "width": 111,
-            "height": 19
-          },
-          "spans": [
+            },
             {
-              "id": "sp-p1-l5-w0",
+              "id": "sp-p1-l4-w1",
               "text": "Op:",
               "box": {
                 "x": 589,
@@ -335,7 +323,7 @@
               }
             },
             {
-              "id": "sp-p1-l5-w1",
+              "id": "sp-p1-l4-w2",
               "text": "AMIR",
               "box": {
                 "x": 646,
@@ -352,8 +340,8 @@
           ]
         },
         {
-          "id": "ln-p1-6",
-          "order": 6,
+          "id": "ln-p1-5",
+          "order": 5,
           "box": {
             "x": 105,
             "y": 380,
@@ -362,7 +350,7 @@
           },
           "spans": [
             {
-              "id": "sp-p1-l6-w0",
+              "id": "sp-p1-l5-w0",
               "text": "Inv",
               "box": {
                 "x": 105,
@@ -377,7 +365,7 @@
               }
             },
             {
-              "id": "sp-p1-l6-w1",
+              "id": "sp-p1-l5-w1",
               "text": "38288",
               "box": {
                 "x": 161,
@@ -394,17 +382,17 @@
           ]
         },
         {
-          "id": "ln-p1-7",
-          "order": 7,
+          "id": "ln-p1-6",
+          "order": 6,
           "box": {
             "x": 101,
             "y": 448,
-            "width": 314,
-            "height": 29
+            "width": 596,
+            "height": 38
           },
           "spans": [
             {
-              "id": "sp-p1-l7-w0",
+              "id": "sp-p1-l6-w0",
               "text": "DIESEL",
               "box": {
                 "x": 101,
@@ -419,7 +407,7 @@
               }
             },
             {
-              "id": "sp-p1-l7-w1",
+              "id": "sp-p1-l6-w1",
               "text": "100.77L",
               "box": {
                 "x": 203,
@@ -434,7 +422,7 @@
               }
             },
             {
-              "id": "sp-p1-l7-w2",
+              "id": "sp-p1-l6-w2",
               "text": "@",
               "box": {
                 "x": 318,
@@ -449,7 +437,7 @@
               }
             },
             {
-              "id": "sp-p1-l7-w3",
+              "id": "sp-p1-l6-w3",
               "text": "1.829",
               "box": {
                 "x": 347,
@@ -462,21 +450,9 @@
                 "confidence": 0.8342927694320679,
                 "calibrated": false
               }
-            }
-          ]
-        },
-        {
-          "id": "ln-p1-8",
-          "order": 8,
-          "box": {
-            "x": 615,
-            "y": 468,
-            "width": 82,
-            "height": 18
-          },
-          "spans": [
+            },
             {
-              "id": "sp-p1-l8-w0",
+              "id": "sp-p1-l6-w4",
               "text": "184.31",
               "box": {
                 "x": 615,
@@ -493,17 +469,17 @@
           ]
         },
         {
-          "id": "ln-p1-9",
-          "order": 9,
+          "id": "ln-p1-7",
+          "order": 7,
           "box": {
             "x": 98,
             "y": 487,
-            "width": 216,
-            "height": 23
+            "width": 599,
+            "height": 38
           },
           "spans": [
             {
-              "id": "sp-p1-l9-w0",
+              "id": "sp-p1-l7-w0",
               "text": "WINDSCREEN",
               "box": {
                 "x": 98,
@@ -518,7 +494,7 @@
               }
             },
             {
-              "id": "sp-p1-l9-w1",
+              "id": "sp-p1-l7-w1",
               "text": "WASH",
               "box": {
                 "x": 257,
@@ -531,21 +507,9 @@
                 "confidence": 0.888671875,
                 "calibrated": false
               }
-            }
-          ]
-        },
-        {
-          "id": "ln-p1-10",
-          "order": 10,
-          "box": {
-            "x": 644,
-            "y": 508,
-            "width": 53,
-            "height": 17
-          },
-          "spans": [
+            },
             {
-              "id": "sp-p1-l10-w0",
+              "id": "sp-p1-l7-w2",
               "text": "9.90",
               "box": {
                 "x": 644,
@@ -562,17 +526,17 @@
           ]
         },
         {
-          "id": "ln-p1-11",
-          "order": 11,
+          "id": "ln-p1-8",
+          "order": 8,
           "box": {
             "x": 96,
             "y": 523,
-            "width": 144,
-            "height": 21
+            "width": 599,
+            "height": 37
           },
           "spans": [
             {
-              "id": "sp-p1-l11-w0",
+              "id": "sp-p1-l8-w0",
               "text": "ADBLUE",
               "box": {
                 "x": 96,
@@ -587,7 +551,7 @@
               }
             },
             {
-              "id": "sp-p1-l11-w1",
+              "id": "sp-p1-l8-w1",
               "text": "10L",
               "box": {
                 "x": 200,
@@ -600,21 +564,9 @@
                 "confidence": 0.7834201455116272,
                 "calibrated": false
               }
-            }
-          ]
-        },
-        {
-          "id": "ln-p1-12",
-          "order": 12,
-          "box": {
-            "x": 627,
-            "y": 542,
-            "width": 68,
-            "height": 18
-          },
-          "spans": [
+            },
             {
-              "id": "sp-p1-l12-w0",
+              "id": "sp-p1-l8-w2",
               "text": "18.50",
               "box": {
                 "x": 627,
@@ -631,17 +583,17 @@
           ]
         },
         {
-          "id": "ln-p1-13",
-          "order": 13,
+          "id": "ln-p1-9",
+          "order": 9,
           "box": {
             "x": 94,
             "y": 598,
-            "width": 86,
-            "height": 21
+            "width": 598,
+            "height": 43
           },
           "spans": [
             {
-              "id": "sp-p1-l13-w0",
+              "id": "sp-p1-l9-w0",
               "text": "TOTAL",
               "box": {
                 "x": 94,
@@ -654,21 +606,9 @@
                 "confidence": 0.76171875,
                 "calibrated": false
               }
-            }
-          ]
-        },
-        {
-          "id": "ln-p1-14",
-          "order": 14,
-          "box": {
-            "x": 571,
-            "y": 612,
-            "width": 121,
-            "height": 29
-          },
-          "spans": [
+            },
             {
-              "id": "sp-p1-l14-w0",
+              "id": "sp-p1-l9-w1",
               "text": "$212.71",
               "box": {
                 "x": 571,
@@ -685,17 +625,17 @@
           ]
         },
         {
-          "id": "ln-p1-15",
-          "order": 15,
+          "id": "ln-p1-10",
+          "order": 10,
           "box": {
             "x": 92,
             "y": 642,
-            "width": 172,
-            "height": 21
+            "width": 600,
+            "height": 38
           },
           "spans": [
             {
-              "id": "sp-p1-l15-w0",
+              "id": "sp-p1-l10-w0",
               "text": "GST",
               "box": {
                 "x": 92,
@@ -710,7 +650,7 @@
               }
             },
             {
-              "id": "sp-p1-l15-w1",
+              "id": "sp-p1-l10-w1",
               "text": "INCLUDED",
               "box": {
                 "x": 151,
@@ -723,21 +663,9 @@
                 "confidence": 0.8529829382896423,
                 "calibrated": false
               }
-            }
-          ]
-        },
-        {
-          "id": "ln-p1-16",
-          "order": 16,
-          "box": {
-            "x": 625,
-            "y": 662,
-            "width": 67,
-            "height": 18
-          },
-          "spans": [
+            },
             {
-              "id": "sp-p1-l16-w0",
+              "id": "sp-p1-l10-w2",
               "text": "19.34",
               "box": {
                 "x": 625,
@@ -754,17 +682,17 @@
           ]
         },
         {
-          "id": "ln-p1-17",
-          "order": 17,
+          "id": "ln-p1-11",
+          "order": 11,
           "box": {
             "x": 89,
             "y": 716,
-            "width": 57,
-            "height": 17
+            "width": 601,
+            "height": 37
           },
           "spans": [
             {
-              "id": "sp-p1-l17-w0",
+              "id": "sp-p1-l11-w0",
               "text": "CASH",
               "box": {
                 "x": 89,
@@ -777,21 +705,9 @@
                 "confidence": 0.8125,
                 "calibrated": false
               }
-            }
-          ]
-        },
-        {
-          "id": "ln-p1-18",
-          "order": 18,
-          "box": {
-            "x": 607,
-            "y": 734,
-            "width": 83,
-            "height": 19
-          },
-          "spans": [
+            },
             {
-              "id": "sp-p1-l18-w0",
+              "id": "sp-p1-l11-w1",
               "text": "212.71",
               "box": {
                 "x": 607,
@@ -808,8 +724,8 @@
           ]
         },
         {
-          "id": "ln-p1-19",
-          "order": 19,
+          "id": "ln-p1-12",
+          "order": 12,
           "box": {
             "x": 324,
             "y": 780,
@@ -818,7 +734,7 @@
           },
           "spans": [
             {
-              "id": "sp-p1-l19-w0",
+              "id": "sp-p1-l12-w0",
               "text": "THANK",
               "box": {
                 "x": 324,
@@ -833,7 +749,7 @@
               }
             },
             {
-              "id": "sp-p1-l19-w1",
+              "id": "sp-p1-l12-w1",
               "text": "YOU",
               "box": {
                 "x": 411,

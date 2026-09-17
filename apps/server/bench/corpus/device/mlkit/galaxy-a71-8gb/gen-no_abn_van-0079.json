@@ -370,14 +370,29 @@
           "id": "ln-p1-6",
           "order": 6,
           "box": {
-            "x": 505,
+            "x": 79,
             "y": 401,
-            "width": 40,
-            "height": 15
+            "width": 466,
+            "height": 22
           },
           "spans": [
             {
               "id": "sp-p1-l6-w0",
+              "text": "CASH",
+              "box": {
+                "x": 79,
+                "y": 411,
+                "width": 44,
+                "height": 12
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8115234375,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l6-w1",
               "text": "5.00",
               "box": {
                 "x": 505,
@@ -397,33 +412,6 @@
           "id": "ln-p1-7",
           "order": 7,
           "box": {
-            "x": 79,
-            "y": 411,
-            "width": 44,
-            "height": 12
-          },
-          "spans": [
-            {
-              "id": "sp-p1-l7-w0",
-              "text": "CASH",
-              "box": {
-                "x": 79,
-                "y": 411,
-                "width": 44,
-                "height": 12
-              },
-              "provenance": {
-                "engine": "device-mlkit",
-                "confidence": 0.8115234375,
-                "calibrated": false
-              }
-            }
-          ]
-        },
-        {
-          "id": "ln-p1-8",
-          "order": 8,
-          "box": {
             "x": 264,
             "y": 445,
             "width": 98,
@@ -431,7 +419,7 @@
           },
           "spans": [
             {
-              "id": "sp-p1-l8-w0",
+              "id": "sp-p1-l7-w0",
               "text": "THANK",
               "box": {
                 "x": 264,
@@ -446,7 +434,7 @@
               }
             },
             {
-              "id": "sp-p1-l8-w1",
+              "id": "sp-p1-l7-w1",
               "text": "YOU",
               "box": {
                 "x": 331,

@@ -571,14 +571,29 @@
           "id": "ln-p1-9",
           "order": 9,
           "box": {
-            "x": 466,
+            "x": 81,
             "y": 466,
-            "width": 79,
-            "height": 21
+            "width": 464,
+            "height": 29
           },
           "spans": [
             {
               "id": "sp-p1-l9-w0",
+              "text": "TOTAL",
+              "box": {
+                "x": 81,
+                "y": 479,
+                "width": 69,
+                "height": 16
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.817187488079071,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l9-w1",
               "text": "$31.40",
               "box": {
                 "x": 466,
@@ -599,40 +614,13 @@
           "order": 10,
           "box": {
             "x": 81,
-            "y": 479,
-            "width": 69,
-            "height": 16
-          },
-          "spans": [
-            {
-              "id": "sp-p1-l10-w0",
-              "text": "TOTAL",
-              "box": {
-                "x": 81,
-                "y": 479,
-                "width": 69,
-                "height": 16
-              },
-              "provenance": {
-                "engine": "device-mlkit",
-                "confidence": 0.817187488079071,
-                "calibrated": false
-              }
-            }
-          ]
-        },
-        {
-          "id": "ln-p1-11",
-          "order": 11,
-          "box": {
-            "x": 81,
             "y": 502,
             "width": 468,
             "height": 26
           },
           "spans": [
             {
-              "id": "sp-p1-l11-w0",
+              "id": "sp-p1-l10-w0",
               "text": "GST",
               "box": {
                 "x": 81,
@@ -647,7 +635,7 @@
               }
             },
             {
-              "id": "sp-p1-l11-w1",
+              "id": "sp-p1-l10-w1",
               "text": "INCLUDED",
               "box": {
                 "x": 126,
@@ -662,7 +650,7 @@
               }
             },
             {
-              "id": "sp-p1-l11-w2",
+              "id": "sp-p1-l10-w2",
               "text": "2.85",
               "box": {
                 "x": 506,
@@ -679,17 +667,32 @@
           ]
         },
         {
-          "id": "ln-p1-12",
-          "order": 12,
+          "id": "ln-p1-11",
+          "order": 11,
           "box": {
-            "x": 498,
+            "x": 82,
             "y": 559,
-            "width": 53,
-            "height": 14
+            "width": 469,
+            "height": 25
           },
           "spans": [
             {
-              "id": "sp-p1-l12-w0",
+              "id": "sp-p1-l11-w0",
+              "text": "CASH",
+              "box": {
+                "x": 82,
+                "y": 570,
+                "width": 44,
+                "height": 14
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.80859375,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l11-w1",
               "text": "31.40",
               "box": {
                 "x": 498,
@@ -706,35 +709,8 @@
           ]
         },
         {
-          "id": "ln-p1-13",
-          "order": 13,
-          "box": {
-            "x": 82,
-            "y": 570,
-            "width": 44,
-            "height": 14
-          },
-          "spans": [
-            {
-              "id": "sp-p1-l13-w0",
-              "text": "CASH",
-              "box": {
-                "x": 82,
-                "y": 570,
-                "width": 44,
-                "height": 14
-              },
-              "provenance": {
-                "engine": "device-mlkit",
-                "confidence": 0.80859375,
-                "calibrated": false
-              }
-            }
-          ]
-        },
-        {
-          "id": "ln-p1-14",
-          "order": 14,
+          "id": "ln-p1-12",
+          "order": 12,
           "box": {
             "x": 267,
             "y": 602,
@@ -743,7 +719,7 @@
           },
           "spans": [
             {
-              "id": "sp-p1-l14-w0",
+              "id": "sp-p1-l12-w0",
               "text": "THANK",
               "box": {
                 "x": 267,
@@ -758,7 +734,7 @@
               }
             },
             {
-              "id": "sp-p1-l14-w1",
+              "id": "sp-p1-l12-w1",
               "text": "YoU",
               "box": {
                 "x": 335,

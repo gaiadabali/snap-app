@@ -1075,14 +1075,29 @@
           "id": "ln-p1-16",
           "order": 16,
           "box": {
-            "x": 497,
+            "x": 81,
             "y": 697,
-            "width": 54,
-            "height": 14
+            "width": 470,
+            "height": 22
           },
           "spans": [
             {
               "id": "sp-p1-l16-w0",
+              "text": "CASH",
+              "box": {
+                "x": 81,
+                "y": 704,
+                "width": 44,
+                "height": 15
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.8466796875,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l16-w1",
               "text": "25.90",
               "box": {
                 "x": 497,
@@ -1102,33 +1117,6 @@
           "id": "ln-p1-17",
           "order": 17,
           "box": {
-            "x": 81,
-            "y": 704,
-            "width": 44,
-            "height": 15
-          },
-          "spans": [
-            {
-              "id": "sp-p1-l17-w0",
-              "text": "CASH",
-              "box": {
-                "x": 81,
-                "y": 704,
-                "width": 44,
-                "height": 15
-              },
-              "provenance": {
-                "engine": "device-mlkit",
-                "confidence": 0.8466796875,
-                "calibrated": false
-              }
-            }
-          ]
-        },
-        {
-          "id": "ln-p1-18",
-          "order": 18,
-          "box": {
             "x": 268,
             "y": 741,
             "width": 98,
@@ -1136,7 +1124,7 @@
           },
           "spans": [
             {
-              "id": "sp-p1-l18-w0",
+              "id": "sp-p1-l17-w0",
               "text": "THANK",
               "box": {
                 "x": 268,
@@ -1151,7 +1139,7 @@
               }
             },
             {
-              "id": "sp-p1-l18-w1",
+              "id": "sp-p1-l17-w1",
               "text": "YOU",
               "box": {
                 "x": 334,

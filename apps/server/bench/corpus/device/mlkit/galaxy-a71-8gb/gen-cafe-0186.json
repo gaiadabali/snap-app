@@ -687,8 +687,8 @@
           "box": {
             "x": 86,
             "y": 667,
-            "width": 172,
-            "height": 18
+            "width": 559,
+            "height": 26
           },
           "spans": [
             {
@@ -720,21 +720,9 @@
                 "confidence": 0.8580729365348816,
                 "calibrated": false
               }
-            }
-          ]
-        },
-        {
-          "id": "ln-p1-12",
-          "order": 12,
-          "box": {
-            "x": 581,
-            "y": 677,
-            "width": 64,
-            "height": 16
-          },
-          "spans": [
+            },
             {
-              "id": "sp-p1-l12-w0",
+              "id": "sp-p1-l11-w2",
               "text": "24.20",
               "box": {
                 "x": 581,
@@ -751,8 +739,8 @@
           ]
         },
         {
-          "id": "ln-p1-13",
-          "order": 13,
+          "id": "ln-p1-12",
+          "order": 12,
           "box": {
             "x": 305,
             "y": 724,
@@ -761,7 +749,7 @@
           },
           "spans": [
             {
-              "id": "sp-p1-l13-w0",
+              "id": "sp-p1-l12-w0",
               "text": "THANK",
               "box": {
                 "x": 305,
@@ -776,7 +764,7 @@
               }
             },
             {
-              "id": "sp-p1-l13-w1",
+              "id": "sp-p1-l12-w1",
               "text": "YOU",
               "box": {
                 "x": 385,

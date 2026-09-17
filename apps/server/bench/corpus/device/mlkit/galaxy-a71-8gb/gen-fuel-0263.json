@@ -472,14 +472,44 @@
           "id": "ln-p1-7",
           "order": 7,
           "box": {
-            "x": 503,
+            "x": 78,
             "y": 381,
-            "width": 42,
-            "height": 14
+            "width": 467,
+            "height": 26
           },
           "spans": [
             {
               "id": "sp-p1-l7-w0",
+              "text": "MEAT",
+              "box": {
+                "x": 78,
+                "y": 391,
+                "width": 43,
+                "height": 16
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.7918526530265808,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l7-w1",
+              "text": "PIE",
+              "box": {
+                "x": 135,
+                "y": 390,
+                "width": 30,
+                "height": 15
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.7918526530265808,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l7-w2",
               "text": "6.20",
               "box": {
                 "x": 503,
@@ -499,56 +529,44 @@
           "id": "ln-p1-8",
           "order": 8,
           "box": {
-            "x": 78,
-            "y": 390,
-            "width": 87,
-            "height": 17
+            "x": 80,
+            "y": 409,
+            "width": 466,
+            "height": 26
           },
           "spans": [
             {
               "id": "sp-p1-l8-w0",
-              "text": "MEAT",
+              "text": "COFFEE",
               "box": {
-                "x": 78,
-                "y": 391,
-                "width": 43,
+                "x": 80,
+                "y": 419,
+                "width": 64,
                 "height": 16
               },
               "provenance": {
                 "engine": "device-mlkit",
-                "confidence": 0.7918526530265808,
+                "confidence": 0.7547743320465088,
                 "calibrated": false
               }
             },
             {
               "id": "sp-p1-l8-w1",
-              "text": "PIE",
+              "text": "LGE",
               "box": {
-                "x": 135,
-                "y": 390,
+                "x": 159,
+                "y": 418,
                 "width": 30,
                 "height": 15
               },
               "provenance": {
                 "engine": "device-mlkit",
-                "confidence": 0.7918526530265808,
+                "confidence": 0.7547743320465088,
                 "calibrated": false
               }
-            }
-          ]
-        },
-        {
-          "id": "ln-p1-9",
-          "order": 9,
-          "box": {
-            "x": 503,
-            "y": 409,
-            "width": 43,
-            "height": 14
-          },
-          "spans": [
+            },
             {
-              "id": "sp-p1-l9-w0",
+              "id": "sp-p1-l8-w2",
               "text": "4.50",
               "box": {
                 "x": 503,
@@ -565,59 +583,32 @@
           ]
         },
         {
-          "id": "ln-p1-10",
-          "order": 10,
+          "id": "ln-p1-9",
+          "order": 9,
           "box": {
-            "x": 80,
-            "y": 418,
-            "width": 109,
-            "height": 17
+            "x": 81,
+            "y": 464,
+            "width": 465,
+            "height": 32
           },
           "spans": [
             {
-              "id": "sp-p1-l10-w0",
-              "text": "COFFEE",
+              "id": "sp-p1-l9-w0",
+              "text": "TOTAL",
               "box": {
-                "x": 80,
-                "y": 419,
-                "width": 64,
+                "x": 81,
+                "y": 480,
+                "width": 69,
                 "height": 16
               },
               "provenance": {
                 "engine": "device-mlkit",
-                "confidence": 0.7547743320465088,
+                "confidence": 0.7906249761581421,
                 "calibrated": false
               }
             },
             {
-              "id": "sp-p1-l10-w1",
-              "text": "LGE",
-              "box": {
-                "x": 159,
-                "y": 418,
-                "width": 30,
-                "height": 15
-              },
-              "provenance": {
-                "engine": "device-mlkit",
-                "confidence": 0.7547743320465088,
-                "calibrated": false
-              }
-            }
-          ]
-        },
-        {
-          "id": "ln-p1-11",
-          "order": 11,
-          "box": {
-            "x": 452,
-            "y": 464,
-            "width": 94,
-            "height": 23
-          },
-          "spans": [
-            {
-              "id": "sp-p1-l11-w0",
+              "id": "sp-p1-l9-w1",
               "text": "$101.66",
               "box": {
                 "x": 452,
@@ -634,44 +625,47 @@
           ]
         },
         {
-          "id": "ln-p1-12",
-          "order": 12,
+          "id": "ln-p1-10",
+          "order": 10,
           "box": {
             "x": 81,
-            "y": 480,
-            "width": 69,
-            "height": 16
+            "y": 501,
+            "width": 468,
+            "height": 27
           },
           "spans": [
             {
-              "id": "sp-p1-l12-w0",
-              "text": "TOTAL",
+              "id": "sp-p1-l10-w0",
+              "text": "GST",
               "box": {
                 "x": 81,
-                "y": 480,
-                "width": 69,
+                "y": 512,
+                "width": 31,
                 "height": 16
               },
               "provenance": {
                 "engine": "device-mlkit",
-                "confidence": 0.7906249761581421,
+                "confidence": 0.82421875,
                 "calibrated": false
               }
-            }
-          ]
-        },
-        {
-          "id": "ln-p1-13",
-          "order": 13,
-          "box": {
-            "x": 508,
-            "y": 501,
-            "width": 41,
-            "height": 14
-          },
-          "spans": [
+            },
             {
-              "id": "sp-p1-l13-w0",
+              "id": "sp-p1-l10-w1",
+              "text": "INCLUDED",
+              "box": {
+                "x": 126,
+                "y": 509,
+                "width": 89,
+                "height": 18
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.82421875,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l10-w2",
               "text": "9.24",
               "box": {
                 "x": 508,
@@ -688,50 +682,8 @@
           ]
         },
         {
-          "id": "ln-p1-14",
-          "order": 14,
-          "box": {
-            "x": 81,
-            "y": 508,
-            "width": 134,
-            "height": 20
-          },
-          "spans": [
-            {
-              "id": "sp-p1-l14-w0",
-              "text": "GST",
-              "box": {
-                "x": 81,
-                "y": 512,
-                "width": 31,
-                "height": 16
-              },
-              "provenance": {
-                "engine": "device-mlkit",
-                "confidence": 0.82421875,
-                "calibrated": false
-              }
-            },
-            {
-              "id": "sp-p1-l14-w1",
-              "text": "INCLUDED",
-              "box": {
-                "x": 126,
-                "y": 509,
-                "width": 89,
-                "height": 18
-              },
-              "provenance": {
-                "engine": "device-mlkit",
-                "confidence": 0.82421875,
-                "calibrated": false
-              }
-            }
-          ]
-        },
-        {
-          "id": "ln-p1-15",
-          "order": 15,
+          "id": "ln-p1-11",
+          "order": 11,
           "box": {
             "x": 82,
             "y": 555,
@@ -740,7 +692,7 @@
           },
           "spans": [
             {
-              "id": "sp-p1-l15-w0",
+              "id": "sp-p1-l11-w0",
               "text": "MASTERCARD",
               "box": {
                 "x": 82,
@@ -755,7 +707,7 @@
               }
             },
             {
-              "id": "sp-p1-l15-w1",
+              "id": "sp-p1-l11-w1",
               "text": "****8830",
               "box": {
                 "x": 208,
@@ -770,7 +722,7 @@
               }
             },
             {
-              "id": "sp-p1-l15-w2",
+              "id": "sp-p1-l11-w2",
               "text": "101.",
               "box": {
                 "x": 487,
@@ -785,7 +737,7 @@
               }
             },
             {
-              "id": "sp-p1-l15-w3",
+              "id": "sp-p1-l11-w3",
               "text": "66",
               "box": {
                 "x": 531,
@@ -802,8 +754,8 @@
           ]
         },
         {
-          "id": "ln-p1-16",
-          "order": 16,
+          "id": "ln-p1-12",
+          "order": 12,
           "box": {
             "x": 268,
             "y": 604,
@@ -812,7 +764,7 @@
           },
           "spans": [
             {
-              "id": "sp-p1-l16-w0",
+              "id": "sp-p1-l12-w0",
               "text": "THANK",
               "box": {
                 "x": 268,
@@ -827,7 +779,7 @@
               }
             },
             {
-              "id": "sp-p1-l16-w1",
+              "id": "sp-p1-l12-w1",
               "text": "YOU",
               "box": {
                 "x": 336,

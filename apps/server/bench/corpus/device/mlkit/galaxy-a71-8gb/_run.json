@@ -1,0 +1,1819 @@
+{
+  "device": "galaxy-a71-8gb",
+  "documents": {
+    "gen-cafe-0000": {
+      "recogniseMs": [
+        801.784063
+      ],
+      "pages": 1
+    },
+    "gen-trade_invoice-0001": {
+      "recogniseMs": [
+        1062.541198
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0002": {
+      "recogniseMs": [
+        426.222708
+      ],
+      "pages": 1
+    },
+    "gen-hardware-0003": {
+      "recogniseMs": [
+        454.3075
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0004": {
+      "recogniseMs": [
+        373.005365
+      ],
+      "pages": 1
+    },
+    "gen-trade_invoice-0005": {
+      "recogniseMs": [
+        614.421614
+      ],
+      "pages": 1
+    },
+    "gen-no_abn_van-0006": {
+      "recogniseMs": [
+        315.56875
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0007": {
+      "recogniseMs": [
+        345.604844
+      ],
+      "pages": 1
+    },
+    "gen-no_abn_van-0008": {
+      "recogniseMs": [
+        220.801458
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0009": {
+      "recogniseMs": [
+        451.736406
+      ],
+      "pages": 1
+    },
+    "gen-no_abn_van-0010": {
+      "recogniseMs": [
+        224.510469
+      ],
+      "pages": 1
+    },
+    "gen-no_abn_van-0011": {
+      "recogniseMs": [
+        221.094583
+      ],
+      "pages": 1
+    },
+    "gen-no_abn_van-0012": {
+      "recogniseMs": [
+        207.75375
+      ],
+      "pages": 1
+    },
+    "gen-trade_invoice-0013": {
+      "recogniseMs": [
+        629.874792
+      ],
+      "pages": 1
+    },
+    "gen-fuel-0014": {
+      "recogniseMs": [
+        282.016406
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0015": {
+      "recogniseMs": [
+        339.241198
+      ],
+      "pages": 1
+    },
+    "gen-cafe-0016": {
+      "recogniseMs": [
+        299.347552
+      ],
+      "pages": 1
+    },
+    "gen-fuel-0017": {
+      "recogniseMs": [
+        268.780625
+      ],
+      "pages": 1
+    },
+    "gen-telco-0018": {
+      "recogniseMs": [
+        312.734063
+      ],
+      "pages": 1
+    },
+    "gen-telco-0019": {
+      "recogniseMs": [
+        416.997292
+      ],
+      "pages": 1
+    },
+    "gen-trade_invoice-0020": {
+      "recogniseMs": [
+        564.08875
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0021": {
+      "recogniseMs": [
+        370.182135
+      ],
+      "pages": 1
+    },
+    "gen-cafe-0022": {
+      "recogniseMs": [
+        289.30375
+      ],
+      "pages": 1
+    },
+    "gen-no_abn_van-0023": {
+      "recogniseMs": [
+        228.000782
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0024": {
+      "recogniseMs": [
+        385.427552
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0025": {
+      "recogniseMs": [
+        323.394479
+      ],
+      "pages": 1
+    },
+    "gen-fuel-0026": {
+      "recogniseMs": [
+        262.207812
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0027": {
+      "recogniseMs": [
+        294.284948
+      ],
+      "pages": 1
+    },
+    "gen-telco-0028": {
+      "recogniseMs": [
+        342.793802
+      ],
+      "pages": 1
+    },
+    "gen-no_abn_van-0029": {
+      "recogniseMs": [
+        268.243489
+      ],
+      "pages": 1
+    },
+    "gen-telco-0030": {
+      "recogniseMs": [
+        336.449063
+      ],
+      "pages": 1
+    },
+    "gen-hardware-0031": {
+      "recogniseMs": [
+        300.389323
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0032": {
+      "recogniseMs": [
+        417.550833
+      ],
+      "pages": 1
+    },
+    "gen-cafe-0033": {
+      "recogniseMs": [
+        284.30026
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0034": {
+      "recogniseMs": [
+        309.430208
+      ],
+      "pages": 1
+    },
+    "gen-telco-0035": {
+      "recogniseMs": [
+        495.548177
+      ],
+      "pages": 1
+    },
+    "gen-fuel-0036": {
+      "recogniseMs": [
+        286.987916
+      ],
+      "pages": 1
+    },
+    "gen-hardware-0037": {
+      "recogniseMs": [
+        353.032031
+      ],
+      "pages": 1
+    },
+    "gen-hardware-0038": {
+      "recogniseMs": [
+        314.937864
+      ],
+      "pages": 1
+    },
+    "gen-hardware-0039": {
+      "recogniseMs": [
+        358.295313
+      ],
+      "pages": 1
+    },
+    "gen-trade_invoice-0040": {
+      "recogniseMs": [
+        578.714792
+      ],
+      "pages": 1
+    },
+    "gen-cafe-0041": {
+      "recogniseMs": [
+        357.260729
+      ],
+      "pages": 1
+    },
+    "gen-trade_invoice-0042": {
+      "recogniseMs": [
+        504.019114
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0043": {
+      "recogniseMs": [
+        339.818854
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0044": {
+      "recogniseMs": [
+        342.156093
+      ],
+      "pages": 1
+    },
+    "gen-telco-0045": {
+      "recogniseMs": [
+        317.270833
+      ],
+      "pages": 1
+    },
+    "gen-trade_invoice-0046": {
+      "recogniseMs": [
+        399.016614
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0047": {
+      "recogniseMs": [
+        356.678385
+      ],
+      "pages": 1
+    },
+    "gen-fuel-0048": {
+      "recogniseMs": [
+        236.803073
+      ],
+      "pages": 1
+    },
+    "gen-cafe-0049": {
+      "recogniseMs": [
+        229.34401
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0050": {
+      "recogniseMs": [
+        347.781249
+      ],
+      "pages": 1
+    },
+    "gen-hardware-0051": {
+      "recogniseMs": [
+        394.165886
+      ],
+      "pages": 1
+    },
+    "gen-hardware-0052": {
+      "recogniseMs": [
+        348.755729
+      ],
+      "pages": 1
+    },
+    "gen-trade_invoice-0053": {
+      "recogniseMs": [
+        597.394166
+      ],
+      "pages": 1
+    },
+    "gen-trade_invoice-0054": {
+      "recogniseMs": [
+        345.739687
+      ],
+      "pages": 1
+    },
+    "gen-trade_invoice-0055": {
+      "recogniseMs": [
+        437.397031
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0056": {
+      "recogniseMs": [
+        334.716667
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0057": {
+      "recogniseMs": [
+        379.625833
+      ],
+      "pages": 1
+    },
+    "gen-hardware-0058": {
+      "recogniseMs": [
+        319.252813
+      ],
+      "pages": 1
+    },
+    "gen-fuel-0059": {
+      "recogniseMs": [
+        237.614895
+      ],
+      "pages": 1
+    },
+    "gen-cafe-0060": {
+      "recogniseMs": [
+        283.544948
+      ],
+      "pages": 1
+    },
+    "gen-trade_invoice-0061": {
+      "recogniseMs": [
+        401.898333
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0062": {
+      "recogniseMs": [
+        271.633489
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0063": {
+      "recogniseMs": [
+        337.594218
+      ],
+      "pages": 1
+    },
+    "gen-hardware-0064": {
+      "recogniseMs": [
+        343.4725
+      ],
+      "pages": 1
+    },
+    "gen-fuel-0065": {
+      "recogniseMs": [
+        312.343177
+      ],
+      "pages": 1
+    },
+    "gen-trade_invoice-0066": {
+      "recogniseMs": [
+        505.690313
+      ],
+      "pages": 1
+    },
+    "gen-hardware-0067": {
+      "recogniseMs": [
+        289.182865
+      ],
+      "pages": 1
+    },
+    "gen-cafe-0068": {
+      "recogniseMs": [
+        254.373021
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0069": {
+      "recogniseMs": [
+        340.561198
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0070": {
+      "recogniseMs": [
+        373.797344
+      ],
+      "pages": 1
+    },
+    "gen-fuel-0071": {
+      "recogniseMs": [
+        256.237448
+      ],
+      "pages": 1
+    },
+    "gen-telco-0072": {
+      "recogniseMs": [
+        314.651406
+      ],
+      "pages": 1
+    },
+    "gen-hardware-0073": {
+      "recogniseMs": [
+        369.102343
+      ],
+      "pages": 1
+    },
+    "gen-cafe-0074": {
+      "recogniseMs": [
+        260.936302
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0075": {
+      "recogniseMs": [
+        357.266511
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0076": {
+      "recogniseMs": [
+        286.092552
+      ],
+      "pages": 1
+    },
+    "gen-no_abn_van-0077": {
+      "recogniseMs": [
+        279.070781
+      ],
+      "pages": 1
+    },
+    "gen-telco-0078": {
+      "recogniseMs": [
+        329.261459
+      ],
+      "pages": 1
+    },
+    "gen-no_abn_van-0079": {
+      "recogniseMs": [
+        282.225052
+      ],
+      "pages": 1
+    },
+    "gen-trade_invoice-0080": {
+      "recogniseMs": [
+        456.142969
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0081": {
+      "recogniseMs": [
+        342.9725
+      ],
+      "pages": 1
+    },
+    "gen-no_abn_van-0082": {
+      "recogniseMs": [
+        225.73401
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0083": {
+      "recogniseMs": [
+        326.183438
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0084": {
+      "recogniseMs": [
+        355.048125
+      ],
+      "pages": 1
+    },
+    "gen-cafe-0085": {
+      "recogniseMs": [
+        229.740885
+      ],
+      "pages": 1
+    },
+    "gen-cafe-0086": {
+      "recogniseMs": [
+        227.126458
+      ],
+      "pages": 1
+    },
+    "gen-telco-0087": {
+      "recogniseMs": [
+        298.468802
+      ],
+      "pages": 1
+    },
+    "gen-fuel-0088": {
+      "recogniseMs": [
+        284.531927
+      ],
+      "pages": 1
+    },
+    "gen-hardware-0089": {
+      "recogniseMs": [
+        357.457344
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0090": {
+      "recogniseMs": [
+        385.964948
+      ],
+      "pages": 1
+    },
+    "gen-fuel-0091": {
+      "recogniseMs": [
+        233.394896
+      ],
+      "pages": 1
+    },
+    "gen-hardware-0092": {
+      "recogniseMs": [
+        393.264739
+      ],
+      "pages": 1
+    },
+    "gen-hardware-0093": {
+      "recogniseMs": [
+        316.052656
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0094": {
+      "recogniseMs": [
+        287.755052
+      ],
+      "pages": 1
+    },
+    "gen-trade_invoice-0095": {
+      "recogniseMs": [
+        477.712968
+      ],
+      "pages": 1
+    },
+    "gen-no_abn_van-0096": {
+      "recogniseMs": [
+        180.575052
+      ],
+      "pages": 1
+    },
+    "gen-fuel-0097": {
+      "recogniseMs": [
+        234.754583
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0098": {
+      "recogniseMs": [
+        396.55776
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0099": {
+      "recogniseMs": [
+        432.010677
+      ],
+      "pages": 1
+    },
+    "gen-no_abn_van-0100": {
+      "recogniseMs": [
+        211.574896
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0101": {
+      "recogniseMs": [
+        307.664791
+      ],
+      "pages": 1
+    },
+    "gen-no_abn_van-0102": {
+      "recogniseMs": [
+        238.578333
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0103": {
+      "recogniseMs": [
+        306.565417
+      ],
+      "pages": 1
+    },
+    "gen-fuel-0104": {
+      "recogniseMs": [
+        233.15776
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0105": {
+      "recogniseMs": [
+        302.181771
+      ],
+      "pages": 1
+    },
+    "gen-telco-0106": {
+      "recogniseMs": [
+        335.129166
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0107": {
+      "recogniseMs": [
+        312.387656
+      ],
+      "pages": 1
+    },
+    "gen-hardware-0108": {
+      "recogniseMs": [
+        324.577448
+      ],
+      "pages": 1
+    },
+    "gen-trade_invoice-0109": {
+      "recogniseMs": [
+        603.205885
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0110": {
+      "recogniseMs": [
+        365.422031
+      ],
+      "pages": 1
+    },
+    "gen-no_abn_van-0111": {
+      "recogniseMs": [
+        190.19323
+      ],
+      "pages": 1
+    },
+    "gen-fuel-0112": {
+      "recogniseMs": [
+        225.262084
+      ],
+      "pages": 1
+    },
+    "gen-trade_invoice-0113": {
+      "recogniseMs": [
+        503.450416
+      ],
+      "pages": 1
+    },
+    "gen-cafe-0114": {
+      "recogniseMs": [
+        262.715
+      ],
+      "pages": 1
+    },
+    "gen-trade_invoice-0115": {
+      "recogniseMs": [
+        494.308073
+      ],
+      "pages": 1
+    },
+    "gen-fuel-0116": {
+      "recogniseMs": [
+        286.331249
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0117": {
+      "recogniseMs": [
+        328.42125
+      ],
+      "pages": 1
+    },
+    "gen-trade_invoice-0118": {
+      "recogniseMs": [
+        655.607291
+      ],
+      "pages": 1
+    },
+    "gen-telco-0119": {
+      "recogniseMs": [
+        323.637656
+      ],
+      "pages": 1
+    },
+    "gen-cafe-0120": {
+      "recogniseMs": [
+        266.830052
+      ],
+      "pages": 1
+    },
+    "gen-cafe-0121": {
+      "recogniseMs": [
+        230.533385
+      ],
+      "pages": 1
+    },
+    "gen-cafe-0122": {
+      "recogniseMs": [
+        243.040469
+      ],
+      "pages": 1
+    },
+    "gen-trade_invoice-0123": {
+      "recogniseMs": [
+        611.689635
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0124": {
+      "recogniseMs": [
+        342.37276
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0125": {
+      "recogniseMs": [
+        330.074011
+      ],
+      "pages": 1
+    },
+    "gen-fuel-0126": {
+      "recogniseMs": [
+        253.364688
+      ],
+      "pages": 1
+    },
+    "gen-cafe-0127": {
+      "recogniseMs": [
+        213.864375
+      ],
+      "pages": 1
+    },
+    "gen-fuel-0128": {
+      "recogniseMs": [
+        217.603385
+      ],
+      "pages": 1
+    },
+    "gen-hardware-0129": {
+      "recogniseMs": [
+        263.700208
+      ],
+      "pages": 1
+    },
+    "gen-hardware-0130": {
+      "recogniseMs": [
+        370.187969
+      ],
+      "pages": 1
+    },
+    "gen-hardware-0131": {
+      "recogniseMs": [
+        326.069427
+      ],
+      "pages": 1
+    },
+    "gen-hardware-0132": {
+      "recogniseMs": [
+        413.397813
+      ],
+      "pages": 1
+    },
+    "gen-fuel-0133": {
+      "recogniseMs": [
+        268.075417
+      ],
+      "pages": 1
+    },
+    "gen-fuel-0134": {
+      "recogniseMs": [
+        237.446302
+      ],
+      "pages": 1
+    },
+    "gen-fuel-0135": {
+      "recogniseMs": [
+        237.748177
+      ],
+      "pages": 1
+    },
+    "gen-hardware-0136": {
+      "recogniseMs": [
+        360.720781
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0137": {
+      "recogniseMs": [
+        298.867083
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0138": {
+      "recogniseMs": [
+        357.655833
+      ],
+      "pages": 1
+    },
+    "gen-trade_invoice-0139": {
+      "recogniseMs": [
+        557.830937
+      ],
+      "pages": 1
+    },
+    "gen-trade_invoice-0140": {
+      "recogniseMs": [
+        541.676042
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0141": {
+      "recogniseMs": [
+        356.407448
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0142": {
+      "recogniseMs": [
+        303.797031
+      ],
+      "pages": 1
+    },
+    "gen-trade_invoice-0143": {
+      "recogniseMs": [
+        597.462708
+      ],
+      "pages": 1
+    },
+    "gen-trade_invoice-0144": {
+      "recogniseMs": [
+        529.70526
+      ],
+      "pages": 1
+    },
+    "gen-fuel-0145": {
+      "recogniseMs": [
+        224.75599
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0146": {
+      "recogniseMs": [
+        345.273229
+      ],
+      "pages": 1
+    },
+    "gen-hardware-0147": {
+      "recogniseMs": [
+        461.049219
+      ],
+      "pages": 1
+    },
+    "gen-cafe-0148": {
+      "recogniseMs": [
+        205.285938
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0149": {
+      "recogniseMs": [
+        350.658646
+      ],
+      "pages": 1
+    },
+    "gen-trade_invoice-0150": {
+      "recogniseMs": [
+        515.606511
+      ],
+      "pages": 1
+    },
+    "gen-fuel-0151": {
+      "recogniseMs": [
+        206.54177
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0152": {
+      "recogniseMs": [
+        318.286041
+      ],
+      "pages": 1
+    },
+    "gen-hardware-0153": {
+      "recogniseMs": [
+        393.161614
+      ],
+      "pages": 1
+    },
+    "gen-telco-0154": {
+      "recogniseMs": [
+        295.860833
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0155": {
+      "recogniseMs": [
+        363.54276
+      ],
+      "pages": 1
+    },
+    "gen-fuel-0156": {
+      "recogniseMs": [
+        222.371718
+      ],
+      "pages": 1
+    },
+    "gen-fuel-0157": {
+      "recogniseMs": [
+        246.998854
+      ],
+      "pages": 1
+    },
+    "gen-hardware-0158": {
+      "recogniseMs": [
+        348.281406
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0159": {
+      "recogniseMs": [
+        324.475156
+      ],
+      "pages": 1
+    },
+    "gen-trade_invoice-0160": {
+      "recogniseMs": [
+        507.317239
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0161": {
+      "recogniseMs": [
+        326.39401
+      ],
+      "pages": 1
+    },
+    "gen-trade_invoice-0162": {
+      "recogniseMs": [
+        445.723594
+      ],
+      "pages": 1
+    },
+    "gen-fuel-0163": {
+      "recogniseMs": [
+        235.904375
+      ],
+      "pages": 1
+    },
+    "gen-trade_invoice-0164": {
+      "recogniseMs": [
+        597.569687
+      ],
+      "pages": 1
+    },
+    "gen-cafe-0165": {
+      "recogniseMs": [
+        231.453385
+      ],
+      "pages": 1
+    },
+    "gen-fuel-0166": {
+      "recogniseMs": [
+        250.457708
+      ],
+      "pages": 1
+    },
+    "gen-hardware-0167": {
+      "recogniseMs": [
+        300.977447
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0168": {
+      "recogniseMs": [
+        299.989635
+      ],
+      "pages": 1
+    },
+    "gen-no_abn_van-0169": {
+      "recogniseMs": [
+        214.333021
+      ],
+      "pages": 1
+    },
+    "gen-hardware-0170": {
+      "recogniseMs": [
+        343.895
+      ],
+      "pages": 1
+    },
+    "gen-fuel-0171": {
+      "recogniseMs": [
+        227.759739
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0172": {
+      "recogniseMs": [
+        338.814792
+      ],
+      "pages": 1
+    },
+    "gen-fuel-0173": {
+      "recogniseMs": [
+        241.647709
+      ],
+      "pages": 1
+    },
+    "gen-cafe-0174": {
+      "recogniseMs": [
+        213.633021
+      ],
+      "pages": 1
+    },
+    "gen-trade_invoice-0175": {
+      "recogniseMs": [
+        323.020834
+      ],
+      "pages": 1
+    },
+    "gen-trade_invoice-0176": {
+      "recogniseMs": [
+        604.108749
+      ],
+      "pages": 1
+    },
+    "gen-telco-0177": {
+      "recogniseMs": [
+        305.787031
+      ],
+      "pages": 1
+    },
+    "gen-telco-0178": {
+      "recogniseMs": [
+        367.941927
+      ],
+      "pages": 1
+    },
+    "gen-cafe-0179": {
+      "recogniseMs": [
+        210.391927
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0180": {
+      "recogniseMs": [
+        328.541354
+      ],
+      "pages": 1
+    },
+    "gen-telco-0181": {
+      "recogniseMs": [
+        352.404219
+      ],
+      "pages": 1
+    },
+    "gen-no_abn_van-0182": {
+      "recogniseMs": [
+        303.418385
+      ],
+      "pages": 1
+    },
+    "gen-hardware-0183": {
+      "recogniseMs": [
+        360.772812
+      ],
+      "pages": 1
+    },
+    "gen-cafe-0184": {
+      "recogniseMs": [
+        239.24625
+      ],
+      "pages": 1
+    },
+    "gen-hardware-0185": {
+      "recogniseMs": [
+        366.7175
+      ],
+      "pages": 1
+    },
+    "gen-cafe-0186": {
+      "recogniseMs": [
+        243.619062
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0187": {
+      "recogniseMs": [
+        299.099271
+      ],
+      "pages": 1
+    },
+    "gen-fuel-0188": {
+      "recogniseMs": [
+        249.734063
+      ],
+      "pages": 1
+    },
+    "gen-trade_invoice-0189": {
+      "recogniseMs": [
+        471.882083
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0190": {
+      "recogniseMs": [
+        298.554844
+      ],
+      "pages": 1
+    },
+    "gen-fuel-0191": {
+      "recogniseMs": [
+        235.517344
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0192": {
+      "recogniseMs": [
+        316.32125
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0193": {
+      "recogniseMs": [
+        353.825781
+      ],
+      "pages": 1
+    },
+    "gen-cafe-0194": {
+      "recogniseMs": [
+        267.164011
+      ],
+      "pages": 1
+    },
+    "gen-trade_invoice-0195": {
+      "recogniseMs": [
+        539.448073
+      ],
+      "pages": 1
+    },
+    "gen-cafe-0196": {
+      "recogniseMs": [
+        231.35276
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0197": {
+      "recogniseMs": [
+        326.111927
+      ],
+      "pages": 1
+    },
+    "gen-fuel-0198": {
+      "recogniseMs": [
+        294.228594
+      ],
+      "pages": 1
+    },
+    "gen-fuel-0199": {
+      "recogniseMs": [
+        296.626615
+      ],
+      "pages": 1
+    },
+    "gen-telco-0200": {
+      "recogniseMs": [
+        357.197344
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0201": {
+      "recogniseMs": [
+        322.035625
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0202": {
+      "recogniseMs": [
+        298.662604
+      ],
+      "pages": 1
+    },
+    "gen-trade_invoice-0203": {
+      "recogniseMs": [
+        575.269114
+      ],
+      "pages": 1
+    },
+    "gen-trade_invoice-0204": {
+      "recogniseMs": [
+        697.470573
+      ],
+      "pages": 1
+    },
+    "gen-hardware-0205": {
+      "recogniseMs": [
+        276.958958
+      ],
+      "pages": 1
+    },
+    "gen-fuel-0206": {
+      "recogniseMs": [
+        218.778333
+      ],
+      "pages": 1
+    },
+    "gen-hardware-0207": {
+      "recogniseMs": [
+        310.128907
+      ],
+      "pages": 1
+    },
+    "gen-hardware-0208": {
+      "recogniseMs": [
+        297.910365
+      ],
+      "pages": 1
+    },
+    "gen-trade_invoice-0209": {
+      "recogniseMs": [
+        534.405625
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0210": {
+      "recogniseMs": [
+        313.631197
+      ],
+      "pages": 1
+    },
+    "gen-cafe-0211": {
+      "recogniseMs": [
+        308.352552
+      ],
+      "pages": 1
+    },
+    "gen-no_abn_van-0212": {
+      "recogniseMs": [
+        185.063594
+      ],
+      "pages": 1
+    },
+    "gen-fuel-0213": {
+      "recogniseMs": [
+        294.865677
+      ],
+      "pages": 1
+    },
+    "gen-fuel-0214": {
+      "recogniseMs": [
+        262.350208
+      ],
+      "pages": 1
+    },
+    "gen-telco-0215": {
+      "recogniseMs": [
+        329.729843
+      ],
+      "pages": 1
+    },
+    "gen-hardware-0216": {
+      "recogniseMs": [
+        393.805312
+      ],
+      "pages": 1
+    },
+    "gen-cafe-0217": {
+      "recogniseMs": [
+        295.553021
+      ],
+      "pages": 1
+    },
+    "gen-no_abn_van-0218": {
+      "recogniseMs": [
+        209.507656
+      ],
+      "pages": 1
+    },
+    "gen-fuel-0219": {
+      "recogniseMs": [
+        229.407916
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0220": {
+      "recogniseMs": [
+        332.38125
+      ],
+      "pages": 1
+    },
+    "gen-fuel-0221": {
+      "recogniseMs": [
+        271.899844
+      ],
+      "pages": 1
+    },
+    "gen-telco-0222": {
+      "recogniseMs": [
+        310.760573
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0223": {
+      "recogniseMs": [
+        344.542708
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0224": {
+      "recogniseMs": [
+        331.838177
+      ],
+      "pages": 1
+    },
+    "gen-trade_invoice-0225": {
+      "recogniseMs": [
+        371.087187
+      ],
+      "pages": 1
+    },
+    "gen-fuel-0226": {
+      "recogniseMs": [
+        226.267604
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0227": {
+      "recogniseMs": [
+        344.923281
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0228": {
+      "recogniseMs": [
+        297.624687
+      ],
+      "pages": 1
+    },
+    "gen-cafe-0229": {
+      "recogniseMs": [
+        204.931771
+      ],
+      "pages": 1
+    },
+    "gen-telco-0230": {
+      "recogniseMs": [
+        370.656667
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0231": {
+      "recogniseMs": [
+        288.662865
+      ],
+      "pages": 1
+    },
+    "gen-hardware-0232": {
+      "recogniseMs": [
+        337.102708
+      ],
+      "pages": 1
+    },
+    "gen-trade_invoice-0233": {
+      "recogniseMs": [
+        525.068333
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0234": {
+      "recogniseMs": [
+        339.285157
+      ],
+      "pages": 1
+    },
+    "gen-fuel-0235": {
+      "recogniseMs": [
+        263.310573
+      ],
+      "pages": 1
+    },
+    "gen-trade_invoice-0236": {
+      "recogniseMs": [
+        569.816666
+      ],
+      "pages": 1
+    },
+    "gen-hardware-0237": {
+      "recogniseMs": [
+        322.238854
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0238": {
+      "recogniseMs": [
+        496.616718
+      ],
+      "pages": 1
+    },
+    "gen-fuel-0239": {
+      "recogniseMs": [
+        399.754948
+      ],
+      "pages": 1
+    },
+    "gen-trade_invoice-0240": {
+      "recogniseMs": [
+        761.486927
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0241": {
+      "recogniseMs": [
+        509.884739
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0242": {
+      "recogniseMs": [
+        355.124792
+      ],
+      "pages": 1
+    },
+    "gen-trade_invoice-0243": {
+      "recogniseMs": [
+        776.815104
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0244": {
+      "recogniseMs": [
+        340.131406
+      ],
+      "pages": 1
+    },
+    "gen-hardware-0245": {
+      "recogniseMs": [
+        453.597552
+      ],
+      "pages": 1
+    },
+    "gen-telco-0246": {
+      "recogniseMs": [
+        493.470313
+      ],
+      "pages": 1
+    },
+    "gen-fuel-0247": {
+      "recogniseMs": [
+        297.439948
+      ],
+      "pages": 1
+    },
+    "gen-hardware-0248": {
+      "recogniseMs": [
+        403.667396
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0249": {
+      "recogniseMs": [
+        308.649999
+      ],
+      "pages": 1
+    },
+    "gen-trade_invoice-0250": {
+      "recogniseMs": [
+        504.929374
+      ],
+      "pages": 1
+    },
+    "gen-hardware-0251": {
+      "recogniseMs": [
+        287.771927
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0252": {
+      "recogniseMs": [
+        342.382448
+      ],
+      "pages": 1
+    },
+    "gen-fuel-0253": {
+      "recogniseMs": [
+        350.52776
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0254": {
+      "recogniseMs": [
+        357.031979
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0255": {
+      "recogniseMs": [
+        320.955052
+      ],
+      "pages": 1
+    },
+    "gen-fuel-0256": {
+      "recogniseMs": [
+        231.70901
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0257": {
+      "recogniseMs": [
+        303.674896
+      ],
+      "pages": 1
+    },
+    "gen-no_abn_van-0258": {
+      "recogniseMs": [
+        184.364271
+      ],
+      "pages": 1
+    },
+    "gen-trade_invoice-0259": {
+      "recogniseMs": [
+        508.62
+      ],
+      "pages": 1
+    },
+    "gen-hardware-0260": {
+      "recogniseMs": [
+        505.040364
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0261": {
+      "recogniseMs": [
+        316.876927
+      ],
+      "pages": 1
+    },
+    "gen-trade_invoice-0262": {
+      "recogniseMs": [
+        478.976979
+      ],
+      "pages": 1
+    },
+    "gen-fuel-0263": {
+      "recogniseMs": [
+        223.505625
+      ],
+      "pages": 1
+    },
+    "gen-fuel-0264": {
+      "recogniseMs": [
+        228.602969
+      ],
+      "pages": 1
+    },
+    "gen-fuel-0265": {
+      "recogniseMs": [
+        236.400833
+      ],
+      "pages": 1
+    },
+    "gen-trade_invoice-0266": {
+      "recogniseMs": [
+        430.176042
+      ],
+      "pages": 1
+    },
+    "gen-no_abn_van-0267": {
+      "recogniseMs": [
+        215.513177
+      ],
+      "pages": 1
+    },
+    "gen-fuel-0268": {
+      "recogniseMs": [
+        266.573281
+      ],
+      "pages": 1
+    },
+    "gen-fuel-0269": {
+      "recogniseMs": [
+        249.861406
+      ],
+      "pages": 1
+    },
+    "gen-fuel-0270": {
+      "recogniseMs": [
+        232.309583
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0271": {
+      "recogniseMs": [
+        315.307969
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0272": {
+      "recogniseMs": [
+        390.080729
+      ],
+      "pages": 1
+    },
+    "gen-no_abn_van-0273": {
+      "recogniseMs": [
+        239.371511
+      ],
+      "pages": 1
+    },
+    "gen-telco-0274": {
+      "recogniseMs": [
+        311.473906
+      ],
+      "pages": 1
+    },
+    "gen-trade_invoice-0275": {
+      "recogniseMs": [
+        503.564479
+      ],
+      "pages": 1
+    },
+    "gen-fuel-0276": {
+      "recogniseMs": [
+        224.600989
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0277": {
+      "recogniseMs": [
+        332.974375
+      ],
+      "pages": 1
+    },
+    "gen-fuel-0278": {
+      "recogniseMs": [
+        264.634895
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0279": {
+      "recogniseMs": [
+        271.967761
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0280": {
+      "recogniseMs": [
+        315.849479
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0281": {
+      "recogniseMs": [
+        319.619063
+      ],
+      "pages": 1
+    },
+    "gen-telco-0282": {
+      "recogniseMs": [
+        329.07276
+      ],
+      "pages": 1
+    },
+    "gen-trade_invoice-0283": {
+      "recogniseMs": [
+        495.414687
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0284": {
+      "recogniseMs": [
+        302.201979
+      ],
+      "pages": 1
+    },
+    "gen-cafe-0285": {
+      "recogniseMs": [
+        282.945937
+      ],
+      "pages": 1
+    },
+    "gen-hardware-0286": {
+      "recogniseMs": [
+        311.730208
+      ],
+      "pages": 1
+    },
+    "gen-fuel-0287": {
+      "recogniseMs": [
+        272.280937
+      ],
+      "pages": 1
+    },
+    "gen-cafe-0288": {
+      "recogniseMs": [
+        236.046458
+      ],
+      "pages": 1
+    },
+    "gen-telco-0289": {
+      "recogniseMs": [
+        274.454062
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0290": {
+      "recogniseMs": [
+        289.285521
+      ],
+      "pages": 1
+    },
+    "gen-cafe-0291": {
+      "recogniseMs": [
+        254.771666
+      ],
+      "pages": 1
+    },
+    "gen-fuel-0292": {
+      "recogniseMs": [
+        223.886927
+      ],
+      "pages": 1
+    },
+    "gen-no_abn_van-0293": {
+      "recogniseMs": [
+        196.036667
+      ],
+      "pages": 1
+    },
+    "gen-trade_invoice-0294": {
+      "recogniseMs": [
+        478.128542
+      ],
+      "pages": 1
+    },
+    "gen-supermarket-0295": {
+      "recogniseMs": [
+        338.697396
+      ],
+      "pages": 1
+    },
+    "gen-fuel-0296": {
+      "recogniseMs": [
+        248.889636
+      ],
+      "pages": 1
+    },
+    "gen-no_abn_van-0297": {
+      "recogniseMs": [
+        175.972552
+      ],
+      "pages": 1
+    },
+    "gen-trade_invoice-0298": {
+      "recogniseMs": [
+        420.841718
+      ],
+      "pages": 1
+    },
+    "gen-trade_invoice-0299": {
+      "recogniseMs": [
+        486.905156
+      ],
+      "pages": 1
+    }
+  },
+  "device_reported": {
+    "platform": "android",
+    "osVersion": "13",
+    "model": "samsung SM-A715F",
+    "totalMemoryMb": 7519
+  },
+  "recognise_summary": {
+    "pages": 300,
+    "medianMs": 319.252813,
+    "p95Ms": 578.714792,
+    "maxMs": 1062.541198
+  },
+  "may_decide_fit": false,
+  "fit_reason": "Samsung Galaxy A71 (SM-A715F, 8 GB) reports 7519 MB, 3423 MB ABOVE the 4096 MB floor. docs/ON-DEVICE.md \u00a71.2: a phone with more memory produces numbers that pass and mean nothing. Function measured here is real; a latency or peak-memory figure is NOT the \u00a76.1 gate."
+}

@@ -303,8 +303,8 @@
           "box": {
             "x": 93,
             "y": 287,
-            "width": 121,
-            "height": 23
+            "width": 509,
+            "height": 44
           },
           "spans": [
             {
@@ -321,6 +321,36 @@
                 "confidence": 0.9398437738418579,
                 "calibrated": false
               }
+            },
+            {
+              "id": "sp-p1-l4-w1",
+              "text": "Op:",
+              "box": {
+                "x": 505,
+                "y": 311,
+                "width": 33,
+                "height": 17
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.7511160969734192,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l4-w2",
+              "text": "MARK",
+              "box": {
+                "x": 554,
+                "y": 313,
+                "width": 48,
+                "height": 18
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.7511160969734192,
+                "calibrated": false
+              }
             }
           ]
         },
@@ -329,9 +359,9 @@
           "order": 5,
           "box": {
             "x": 92,
-            "y": 311,
-            "width": 510,
-            "height": 29
+            "y": 321,
+            "width": 107,
+            "height": 19
           },
           "spans": [
             {
@@ -363,36 +393,6 @@
                 "confidence": 0.85888671875,
                 "calibrated": false
               }
-            },
-            {
-              "id": "sp-p1-l5-w2",
-              "text": "Op:",
-              "box": {
-                "x": 505,
-                "y": 311,
-                "width": 33,
-                "height": 17
-              },
-              "provenance": {
-                "engine": "device-mlkit",
-                "confidence": 0.7511160969734192,
-                "calibrated": false
-              }
-            },
-            {
-              "id": "sp-p1-l5-w3",
-              "text": "MARK",
-              "box": {
-                "x": 554,
-                "y": 313,
-                "width": 48,
-                "height": 18
-              },
-              "provenance": {
-                "engine": "device-mlkit",
-                "confidence": 0.7511160969734192,
-                "calibrated": false
-              }
             }
           ]
         },
@@ -402,8 +402,8 @@
           "box": {
             "x": 88,
             "y": 380,
-            "width": 329,
-            "height": 31
+            "width": 510,
+            "height": 42
           },
           "spans": [
             {
@@ -495,6 +495,21 @@
                 "confidence": 0.82863450050354,
                 "calibrated": false
               }
+            },
+            {
+              "id": "sp-p1-l6-w6",
+              "text": "261.42",
+              "box": {
+                "x": 527,
+                "y": 405,
+                "width": 71,
+                "height": 17
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.9029948115348816,
+                "calibrated": false
+              }
             }
           ]
         },
@@ -503,9 +518,9 @@
           "order": 7,
           "box": {
             "x": 85,
-            "y": 405,
-            "width": 513,
-            "height": 32
+            "y": 413,
+            "width": 512,
+            "height": 41
           },
           "spans": [
             {
@@ -540,16 +555,16 @@
             },
             {
               "id": "sp-p1-l7-w2",
-              "text": "261.42",
+              "text": "9.90",
               "box": {
-                "x": 527,
-                "y": 405,
-                "width": 71,
-                "height": 17
+                "x": 551,
+                "y": 438,
+                "width": 46,
+                "height": 16
               },
               "provenance": {
                 "engine": "device-mlkit",
-                "confidence": 0.9029948115348816,
+                "confidence": 0.8603515625,
                 "calibrated": false
               }
             }
@@ -560,9 +575,9 @@
           "order": 8,
           "box": {
             "x": 83,
-            "y": 438,
-            "width": 514,
-            "height": 25
+            "y": 444,
+            "width": 512,
+            "height": 41
           },
           "spans": [
             {
@@ -597,16 +612,16 @@
             },
             {
               "id": "sp-p1-l8-w2",
-              "text": "9.90",
+              "text": "4.50",
               "box": {
-                "x": 551,
-                "y": 438,
-                "width": 46,
+                "x": 550,
+                "y": 469,
+                "width": 45,
                 "height": 16
               },
               "provenance": {
                 "engine": "device-mlkit",
-                "confidence": 0.8603515625,
+                "confidence": 0.8505859375,
                 "calibrated": false
               }
             }
@@ -617,9 +632,9 @@
           "order": 9,
           "box": {
             "x": 81,
-            "y": 469,
-            "width": 514,
-            "height": 26
+            "y": 476,
+            "width": 513,
+            "height": 42
           },
           "spans": [
             {
@@ -654,33 +669,6 @@
             },
             {
               "id": "sp-p1-l9-w2",
-              "text": "4.50",
-              "box": {
-                "x": 550,
-                "y": 469,
-                "width": 45,
-                "height": 16
-              },
-              "provenance": {
-                "engine": "device-mlkit",
-                "confidence": 0.8505859375,
-                "calibrated": false
-              }
-            }
-          ]
-        },
-        {
-          "id": "ln-p1-10",
-          "order": 10,
-          "box": {
-            "x": 548,
-            "y": 501,
-            "width": 46,
-            "height": 17
-          },
-          "spans": [
-            {
-              "id": "sp-p1-l10-w0",
               "text": "6.20",
               "box": {
                 "x": 548,
@@ -697,17 +685,17 @@
           ]
         },
         {
-          "id": "ln-p1-11",
-          "order": 11,
+          "id": "ln-p1-10",
+          "order": 10,
           "box": {
             "x": 78,
             "y": 540,
-            "width": 75,
-            "height": 21
+            "width": 512,
+            "height": 46
           },
           "spans": [
             {
-              "id": "sp-p1-l11-w0",
+              "id": "sp-p1-l10-w0",
               "text": "TOTAL",
               "box": {
                 "x": 78,
@@ -720,21 +708,9 @@
                 "confidence": 0.797656238079071,
                 "calibrated": false
               }
-            }
-          ]
-        },
-        {
-          "id": "ln-p1-12",
-          "order": 12,
-          "box": {
-            "x": 485,
-            "y": 559,
-            "width": 105,
-            "height": 27
-          },
-          "spans": [
+            },
             {
-              "id": "sp-p1-l12-w0",
+              "id": "sp-p1-l10-w1",
               "text": "$282.02",
               "box": {
                 "x": 485,
@@ -751,17 +727,17 @@
           ]
         },
         {
-          "id": "ln-p1-13",
-          "order": 13,
+          "id": "ln-p1-11",
+          "order": 11,
           "box": {
             "x": 74,
             "y": 575,
-            "width": 148,
-            "height": 26
+            "width": 515,
+            "height": 45
           },
           "spans": [
             {
-              "id": "sp-p1-l13-w0",
+              "id": "sp-p1-l11-w0",
               "text": "GST",
               "box": {
                 "x": 74,
@@ -776,7 +752,7 @@
               }
             },
             {
-              "id": "sp-p1-l13-w1",
+              "id": "sp-p1-l11-w1",
               "text": "INCLUDE",
               "box": {
                 "x": 129,
@@ -791,7 +767,7 @@
               }
             },
             {
-              "id": "sp-p1-l13-w2",
+              "id": "sp-p1-l11-w2",
               "text": "D",
               "box": {
                 "x": 216,
@@ -804,21 +780,9 @@
                 "confidence": 0.8746448755264282,
                 "calibrated": false
               }
-            }
-          ]
-        },
-        {
-          "id": "ln-p1-14",
-          "order": 14,
-          "box": {
-            "x": 530,
-            "y": 603,
-            "width": 59,
-            "height": 17
-          },
-          "spans": [
+            },
             {
-              "id": "sp-p1-l14-w0",
+              "id": "sp-p1-l11-w3",
               "text": "25.64",
               "box": {
                 "x": 530,
@@ -835,17 +799,17 @@
           ]
         },
         {
-          "id": "ln-p1-15",
-          "order": 15,
+          "id": "ln-p1-12",
+          "order": 12,
           "box": {
             "x": 72,
             "y": 638,
-            "width": 121,
-            "height": 21
+            "width": 514,
+            "height": 41
           },
           "spans": [
             {
-              "id": "sp-p1-l15-w0",
+              "id": "sp-p1-l12-w0",
               "text": "EFTPOS",
               "box": {
                 "x": 72,
@@ -860,7 +824,7 @@
               }
             },
             {
-              "id": "sp-p1-l15-w1",
+              "id": "sp-p1-l12-w1",
               "text": "SAV",
               "box": {
                 "x": 159,
@@ -873,21 +837,9 @@
                 "confidence": 0.7951388955116272,
                 "calibrated": false
               }
-            }
-          ]
-        },
-        {
-          "id": "ln-p1-16",
-          "order": 16,
-          "box": {
-            "x": 515,
-            "y": 661,
-            "width": 71,
-            "height": 18
-          },
-          "spans": [
+            },
             {
-              "id": "sp-p1-l16-w0",
+              "id": "sp-p1-l12-w2",
               "text": "282.02",
               "box": {
                 "x": 515,
@@ -904,8 +856,8 @@
           ]
         },
         {
-          "id": "ln-p1-17",
-          "order": 17,
+          "id": "ln-p1-13",
+          "order": 13,
           "box": {
             "x": 271,
             "y": 699,
@@ -914,7 +866,7 @@
           },
           "spans": [
             {
-              "id": "sp-p1-l17-w0",
+              "id": "sp-p1-l13-w0",
               "text": "THANK",
               "box": {
                 "x": 271,
@@ -929,7 +881,7 @@
               }
             },
             {
-              "id": "sp-p1-l17-w1",
+              "id": "sp-p1-l13-w1",
               "text": "YOU",
               "box": {
                 "x": 346,

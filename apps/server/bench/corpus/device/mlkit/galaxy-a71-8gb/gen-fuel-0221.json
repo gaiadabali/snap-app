@@ -502,14 +502,44 @@
           "id": "ln-p1-7",
           "order": 7,
           "box": {
-            "x": 493,
+            "x": 78,
             "y": 382,
-            "width": 52,
-            "height": 14
+            "width": 467,
+            "height": 24
           },
           "spans": [
             {
               "id": "sp-p1-l7-w0",
+              "text": "OIL",
+              "box": {
+                "x": 78,
+                "y": 391,
+                "width": 32,
+                "height": 15
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.5492187738418579,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l7-w1",
+              "text": "11",
+              "box": {
+                "x": 124,
+                "y": 390,
+                "width": 19,
+                "height": 14
+              },
+              "provenance": {
+                "engine": "device-mlkit",
+                "confidence": 0.5492187738418579,
+                "calibrated": false
+              }
+            },
+            {
+              "id": "sp-p1-l7-w2",
               "text": "14.50",
               "box": {
                 "x": 493,
@@ -529,56 +559,29 @@
           "id": "ln-p1-8",
           "order": 8,
           "box": {
-            "x": 78,
-            "y": 390,
-            "width": 65,
-            "height": 16
+            "x": 80,
+            "y": 437,
+            "width": 465,
+            "height": 29
           },
           "spans": [
             {
               "id": "sp-p1-l8-w0",
-              "text": "OIL",
+              "text": "TOTAL",
               "box": {
-                "x": 78,
-                "y": 391,
-                "width": 32,
-                "height": 15
+                "x": 80,
+                "y": 450,
+                "width": 68,
+                "height": 16
               },
               "provenance": {
                 "engine": "device-mlkit",
-                "confidence": 0.5492187738418579,
+                "confidence": 0.8226562738418579,
                 "calibrated": false
               }
             },
             {
               "id": "sp-p1-l8-w1",
-              "text": "11",
-              "box": {
-                "x": 124,
-                "y": 390,
-                "width": 19,
-                "height": 14
-              },
-              "provenance": {
-                "engine": "device-mlkit",
-                "confidence": 0.5492187738418579,
-                "calibrated": false
-              }
-            }
-          ]
-        },
-        {
-          "id": "ln-p1-9",
-          "order": 9,
-          "box": {
-            "x": 452,
-            "y": 437,
-            "width": 93,
-            "height": 21
-          },
-          "spans": [
-            {
-              "id": "sp-p1-l9-w0",
               "text": "$218.16",
               "box": {
                 "x": 452,
@@ -595,35 +598,8 @@
           ]
         },
         {
-          "id": "ln-p1-10",
-          "order": 10,
-          "box": {
-            "x": 80,
-            "y": 450,
-            "width": 68,
-            "height": 16
-          },
-          "spans": [
-            {
-              "id": "sp-p1-l10-w0",
-              "text": "TOTAL",
-              "box": {
-                "x": 80,
-                "y": 450,
-                "width": 68,
-                "height": 16
-              },
-              "provenance": {
-                "engine": "device-mlkit",
-                "confidence": 0.8226562738418579,
-                "calibrated": false
-              }
-            }
-          ]
-        },
-        {
-          "id": "ln-p1-11",
-          "order": 11,
+          "id": "ln-p1-9",
+          "order": 9,
           "box": {
             "x": 81,
             "y": 474,
@@ -632,7 +608,7 @@
           },
           "spans": [
             {
-              "id": "sp-p1-l11-w0",
+              "id": "sp-p1-l9-w0",
               "text": "GST",
               "box": {
                 "x": 81,
@@ -647,7 +623,7 @@
               }
             },
             {
-              "id": "sp-p1-l11-w1",
+              "id": "sp-p1-l9-w1",
               "text": "INCLUDED",
               "box": {
                 "x": 126,
@@ -662,7 +638,7 @@
               }
             },
             {
-              "id": "sp-p1-l11-w2",
+              "id": "sp-p1-l9-w2",
               "text": "19.83",
               "box": {
                 "x": 495,
@@ -679,8 +655,8 @@
           ]
         },
         {
-          "id": "ln-p1-12",
-          "order": 12,
+          "id": "ln-p1-10",
+          "order": 10,
           "box": {
             "x": 81,
             "y": 527,
@@ -689,7 +665,7 @@
           },
           "spans": [
             {
-              "id": "sp-p1-l12-w0",
+              "id": "sp-p1-l10-w0",
               "text": "MASTERCARD",
               "box": {
                 "x": 81,
@@ -704,7 +680,7 @@
               }
             },
             {
-              "id": "sp-p1-l12-w1",
+              "id": "sp-p1-l10-w1",
               "text": "****8830",
               "box": {
                 "x": 207,
@@ -719,7 +695,7 @@
               }
             },
             {
-              "id": "sp-p1-l12-w2",
+              "id": "sp-p1-l10-w2",
               "text": "218.16",
               "box": {
                 "x": 484,
@@ -736,8 +712,8 @@
           ]
         },
         {
-          "id": "ln-p1-13",
-          "order": 13,
+          "id": "ln-p1-11",
+          "order": 11,
           "box": {
             "x": 267,
             "y": 575,
@@ -746,7 +722,7 @@
           },
           "spans": [
             {
-              "id": "sp-p1-l13-w0",
+              "id": "sp-p1-l11-w0",
               "text": "THANK",
               "box": {
                 "x": 267,
@@ -761,7 +737,7 @@
               }
             },
             {
-              "id": "sp-p1-l13-w1",
+              "id": "sp-p1-l11-w1",
               "text": "YOU",
               "box": {
                 "x": 328,
