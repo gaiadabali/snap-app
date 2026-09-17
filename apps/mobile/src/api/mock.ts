@@ -605,6 +605,18 @@ export class MockApi implements SnapApi {
     return this.signIn(email);
   }
 
+  /**
+   * Accepted and dropped.
+   *
+   * The fixture world has no layouts table and inventing one would be a second
+   * implementation of something the server already owns. What matters for a
+   * demo is that calling this never throws and never slows anything down,
+   * which is exactly what the real one promises.
+   */
+  async recordDeviceReading(): Promise<void> {
+    return;
+  }
+
   async signIn(email: string): Promise<Session> {
     // Long on purpose: the real one is a round trip to an identity provider
     // and a link in an inbox, and a demo that returns instantly teaches the

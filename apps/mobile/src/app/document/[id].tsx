@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Image, Modal, TextInput, View } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 
@@ -46,15 +46,49 @@ const FAILURE_COPY: Record<string, { title: string; detail: string; fix: string 
   },
 };
 
+import { ProvisionalNotice } from '@/components/ProvisionalNotice';
+import { transitionsFor, type Preview } from '@/lib/provisional';
+
 export default function DocumentScreen() {
   const p = usePalette();
   const router = useRouter();
-  const { id, localPages } = useLocalSearchParams<{ id: string; localPages?: string }>();
+  const { id, localPages, preview } = useLocalSearchParams<{
+    id: string;
+    localPages?: string;
+    /** What the device read, JSON, when the capture came from this session. */
+    preview?: string;
+  }>();
+
+
   const [doc, setDoc] = useState<DocumentView | null>(null);
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState<null | 'abn'>(null);
   const [draft, setDraft] = useState('');
   const [perms, setPerms] = useState<Permissions | null>(null);
+
+  /**
+   * The four §7.1 transitions, computed once the server's document arrives.
+   *
+   * Empty whenever there is no preview — a document opened from the list has
+   * no device reading to compare against, and must render exactly as it
+   * always has.
+   */
+  const transitions = useMemo(() => {
+    if (!preview || !doc) return null;
+    try {
+      return transitionsFor(JSON.parse(preview) as Preview, {
+        supplierName: doc.supplierName,
+        supplierAbn: doc.supplierAbn,
+        issueDate: doc.issueDate,
+        payableAmount: doc.payableAmount,
+        taxAmount: doc.taxAmount,
+      });
+    } catch {
+      // A malformed param is not worth failing the screen over; the document
+      // is the record and renders without any of this.
+      return null;
+    }
+  }, [preview, doc]);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -189,6 +223,10 @@ export default function DocumentScreen() {
         <View style={{ gap: space.xs }}>
           <Label>{doc.category}</Label>
           <Figure size="h1">{doc.supplierName}</Figure>
+          {/* §7.1: a value the person may already have read on the preview
+              never changes without a visible trace. Renders nothing unless
+              this capture carried a device reading AND it disagreed. */}
+          {transitions ? <ProvisionalNotice transition={transitions['header.supplier']} /> : null}
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
             <Small>{formatShortDate(doc.issueDate)}</Small>
             <ConfidenceDots value={doc.confidenceOverall} />
@@ -238,10 +276,18 @@ export default function DocumentScreen() {
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
               <Label>Total incl GST</Label>
               <Figure size="h1">{formatAud(doc.payableAmount)}</Figure>
+              {/* The most expensive number on the screen, and the one §6.3
+                  calls the most expensive to get wrong. */}
             </View>
             <Divider />
             <Field label="Excluding GST" value={formatAud(doc.taxExclusiveAmount)} />
+            {transitions ? (
+              <ProvisionalNotice transition={transitions['header.payable_amount']} />
+            ) : null}
             <Field label="GST" value={formatAud(doc.taxAmount)} hint="Exactly 1/11 of the taxable amount" />
+            {transitions ? (
+              <ProvisionalNotice transition={transitions['header.tax_amount']} />
+            ) : null}
             {doc.taxSubtotals.length > 1 ? (
               /* ── The split, and the reason this product exists ──
                  One docket, two tax treatments. Hubdoc, Dext, myDeductions and
@@ -355,6 +401,9 @@ export default function DocumentScreen() {
             />
             <Field label="Document type" value={doc.isTaxInvoice ? 'Tax invoice' : 'Receipt'} />
             <Field label="Issue date" value={doc.issueDate} />
+            {transitions ? (
+              <ProvisionalNotice transition={transitions['header.issue_date']} />
+            ) : null}
             <Field label="Currency" value={doc.currency} />
             <Field
               label="Deduction row"

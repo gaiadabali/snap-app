@@ -56,7 +56,7 @@ import type {
   UpdateDocumentRequest,
   Workspace,
   WorkspaceSummary,
-} from './types';
+  DeviceReading,} from './types';
 
 /**
  * The real backend.
@@ -410,6 +410,17 @@ export class HttpApi implements SnapApi {
     this.workspaces = body.workspaces;
     setActiveWorkspaceId(body.workspaces[0]?.id ?? null);
     return { user: body.user, workspaceIds: body.workspaces.map((w) => w.id) };
+  }
+
+  async recordDeviceReading(captureId: string, reading: DeviceReading): Promise<void> {
+    // `queue: true` is the default for a POST, so an offline capture still
+    // records its reading when signal returns — §OD-8 asks for exactly that.
+    // Nothing awaits the result anywhere; see the interface for why.
+    await this.request<{ layoutId: string }>(
+      'POST',
+      `/v1/captures/${encodeURIComponent(captureId)}/device-reading`,
+      { body: reading as unknown as Record<string, unknown> },
+    );
   }
 
   async signOut(): Promise<void> {

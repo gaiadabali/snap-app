@@ -4,6 +4,8 @@ import { File } from 'expo-file-system';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
+
+import { readOnDevice, recordReading, type DeviceRead } from '@/lib/device-read';
 import { ActivityIndicator, Alert, Image, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -131,6 +133,14 @@ export default function CaptureScreen() {
    * light on when the scan tab opens is alarming in a quiet room, and the cost
    * of the alternative is one tap.
    */
+  /**
+   * What the phone itself read, held from the shutter until the capture exists.
+   *
+   * Computed from the FIRST page only. A multi-page document's header — who,
+   * when, how much — is on page one, and recognising page five to find a
+   * supplier name costs time nobody gets back. The server reads every page.
+   */
+  const deviceReadRef = useRef<DeviceRead | null>(null);
   const [torch, setTorch] = useState(false);
   /**
    * Whether the overlay cards are showing.
@@ -201,6 +211,14 @@ export default function CaptureScreen() {
       skipProcessing: false,
     });
     if (!photo?.uri) throw new Error('The camera returned no image.');
+    // The device read, started before the digest and the upload so the
+    // preview is ready by the time the capture exists. It cannot throw — see
+    // `readOnDevice` — so there is no try/catch here and no failure path into
+    // the capture.
+    if (pages.length === 0) {
+      deviceReadRef.current = await readOnDevice(photo.uri);
+    }
+
     const bytes = await new File(photo.uri).arrayBuffer();
     // Native only, so the bytes are not retained here: `uri` is a real path and
     // the upload re-reads it when it needs it.
@@ -321,6 +339,13 @@ export default function CaptureScreen() {
       return;
     }
 
+    // OD-7, fire-and-forget. Sent AFTER the pages are uploaded so the capture
+    // certainly exists server-side, and not awaited: the reading is advisory
+    // and a slow or failed upload of it must not delay the person's document
+    // by a single millisecond.
+    const read = deviceReadRef.current;
+    if (read) recordReading(pc.captureId, read);
+
     setPhase('extracting');
     try {
       const doc = await api().awaitExtraction(pc.captureId, pc.pages[0]?.uri, workspace);
@@ -336,8 +361,13 @@ export default function CaptureScreen() {
           // later falls back to its single stored image — the server does
           // not yet hand back a full page list over the wire.
           localPages: JSON.stringify(pc.pages.map((page) => page.uri)),
+          // What the phone read, so the review screen can show the four §7.1
+          // transitions against the server's document rather than silently
+          // replacing numbers the person may already have looked at.
+          ...(read ? { preview: JSON.stringify(read.preview) } : {}),
         },
       });
+      deviceReadRef.current = null;
     } catch (err) {
       // Every page is already stored either way — only the wait for a
       // reading failed. Keep `pending` so Retry does not re-upload anything.

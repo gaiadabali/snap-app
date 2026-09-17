@@ -16,6 +16,22 @@
  */
 export type * from '@snap/api-contract';
 
+/**
+ * The body of `POST /v1/captures/:id/device-reading` — ON-DEVICE.md §3.5.
+ *
+ * Declared here rather than in `@snap/api-contract` because the shape is the
+ * device's, not the ledger's: it carries a DocDOM and timings that only the
+ * phone can produce, and nothing on the web side ever sends one.
+ */
+export type DeviceReading = {
+  engine: 'device-vision' | 'device-mlkit';
+  engineVersion: string;
+  docdom: unknown;
+  preview: Record<string, unknown>;
+  timings: { recogniseMs: number; structureMs: number };
+  device: { platform: string; osVersion: string; model?: string };
+};
+
 import type {
   AnalyticsRange,
   AnalyticsSummary,
@@ -110,6 +126,15 @@ export interface SnapApi {
    * one: a known address returns that person's real memberships, and an
    * unknown one creates an account with none, which lands on onboarding.
    */
+  /**
+   * Record what the device's own recogniser read for a capture (OD-7).
+   *
+   * Advisory and fire-and-forget. It never blocks the capture, never gates the
+   * review screen, and a failure is not shown to anybody — the server's read
+   * is the record either way, and a person who has just photographed a receipt
+   * does not need to hear that a shadow measurement did not upload.
+   */
+  recordDeviceReading(captureId: string, reading: DeviceReading): Promise<void>;
   signIn(email: string): Promise<Session>;
   /**
    * Create an account with a password, or sign in with one.
