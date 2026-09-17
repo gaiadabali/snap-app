@@ -148,13 +148,50 @@ five minutes before a demo". That is a **React Native** concern and stays true
 in `apps/mobile`. On web, `next/font` self-hosts from our own origin with a
 metric-matched fallback, so these cannot fail independently of the app.
 
-### 4.4 Motion — scroll-driven, zero JavaScript
+### 4.4 Motion — scroll-driven CSS, plus WebGL islands
 
-Animation is **native CSS scroll timelines** (`animation-timeline: view()` and
-`scroll()`), not GSAP and not Framer Motion. This is an architectural choice,
-not a taste one: the marketing pages are React **Server Components**, and both
-libraries would force `'use client'` across the whole tree plus ~40–45 KB gz to
-fade a heading in. CSS timelines run on the compositor and ship nothing.
+**Page motion** is **native CSS scroll timelines** (`animation-timeline: view()`
+and `scroll()`), not GSAP and not Framer Motion. This is an architectural
+choice, not a taste one: the marketing pages are React **Server Components**,
+and both libraries would force `'use client'` across the whole tree plus
+~40–45 KB gz to fade a heading in. CSS timelines run on the compositor and ship
+nothing. That is still true of every page-level animation and is not up for
+renegotiation to fade a heading in.
+
+**The one exception, shipped 2026-09-17:** `/features` and `/how-it-works`
+render the hero docket as a WebGL scene (`src/design/three/`). The heading of
+this section used to say "zero JavaScript" and that is no longer literally
+true, so it says this instead.
+
+The exception is bounded by a rule, and the rule is what keeps the claim above
+honest — **the twin is the content, the canvas is a picture of it**:
+
+```
+<CaptureScene enabled={SCENES_3D_ENABLED}>   client island
+  <ReceiptScanCard />                        server-rendered, always in the DOM
+</CaptureScene>
+```
+
+The server renders the flat card. The canvas mounts over it and fades it out
+only after WebGL has a frame up, and the canvas is `aria-hidden` because every
+figure in it is a picture of a number. So first-load JS on every marketing
+route is **unchanged** (109.2 KB gz on `/`), the 3D payload (241.9 KB gz) is in
+no route's first-load manifest, and it is never fetched at all for: reduced
+motion, `saveData`, `deviceMemory < 4`, no WebGL2, no JS, or a crawler. All of
+them get the card that already shipped.
+
+Two things that follow, and both have already caught a bug:
+
+- **A scene may not be the only place a figure exists.** If deleting the canvas
+  would lose information, the scene is carrying content it should not.
+- **Verify the refusals, not just the happy path.** The checks that matter are
+  "canvas count is 0" and "the worked example is still in the DOM", under
+  reduced motion and with WebGL disabled.
+
+**The kill switch:** `SNAP_WEB_3D=off` in `deploy/.env` plus a web container
+restart. A plain env var rather than `NEXT_PUBLIC_` on purpose — a public var is
+inlined at build time, so switching it would need a rebuild, a CI run and a
+redeploy, which is the wrong shape of lever for an escape hatch.
 
 Utilities live in `globals.css`: `.anim-rise` `.anim-fade` `.anim-deal`
 `.anim-drift` `.anim-wipe` `.anim-expand` `.anim-progress`, plus `.anim-load`
@@ -300,7 +337,8 @@ Two constraints that are not style preferences:
 | Header / footer | **Rebuilt** |
 | `public/screens/*`, `_components/app-showcase.tsx`, `_components/comparison.tsx` | **New.** Re-capture per §4.6; `src/public-assets.test.ts` guards the path collision |
 | Tokens, type, motion, primitives | **Rebuilt** — everything inherits these |
-| `/features`, `/how-it-works`, `/pricing`, `/docs`, `/download`, `/support`, `/legal` | Inherit the new palette, type and primitives, but **still carry the old zebra-band structure and pill eyebrows**. Port them to `Section` / `SectionHead` / `LedgerRow` — and apply §4.5 to their copy, not just their layout. `/how-it-works` is where the pipeline architecture belongs. |
+| `/features`, `/how-it-works` | Inherit the palette, type and primitives, and since 2026-09-17 render the hero docket as a **WebGL scene** over the flat card (§4.4). Copy is **still mechanism-led** and still needs §4.5 applied. |
+| `/pricing`, `/docs`, `/download`, `/support`, `/legal` | Inherit the new palette, type and primitives, but **still carry the old zebra-band structure and pill eyebrows**. Port them to `Section` / `SectionHead` / `LedgerRow` — and apply §4.5 to their copy, not just their layout. `/how-it-works` is where the pipeline architecture belongs. |
 | `/app/*`, `/admin/*` panels | Inherit the palette and the flatter `Card`. Intentionally unchanged otherwise — panels work, marketing breathes. |
 
 ## 5. Ownership map
