@@ -29,57 +29,58 @@
  * is a finished thing rather than a broken one.
  */
 
-/** One path, drawn three times: track, trace, and the node riding its tip. */
-const CURVE = 'M40 0 C 12 200, 68 340, 40 520 S 12 830, 40 1000';
+/**
+ * One path, drawn four times. The whole group drifts sideways as the document
+ * scrolls, so the rail travels across its band instead of holding one shape.
+ */
+const CURVE = 'M50 0 C 6 170, 94 300, 50 470 S 6 700, 50 860 S 94 960, 50 1000';
 
 export function PageSpine() {
   return (
     <div className="page-spine" aria-hidden>
       <svg
         className="page-spine__svg"
-        viewBox="0 0 80 1000"
+        viewBox="0 0 100 1000"
         preserveAspectRatio="none"
         focusable="false"
       >
         {/*
-          `pathLength="1"` normalises the geometry so every dash value below is
-          a plain 0 → 1 fraction regardless of the curve's real length, and
-          `vector-effect` keeps strokes hairline-true despite the non-uniform
-          scale that stretches this box to the viewport height.
+          The drift group. Its transform is driven by the document scroll, so
+          the curve leans one way through one screen and the other way through
+          the next — the rail follows the page rather than decorating it.
         */}
-        <path
-          className="page-spine__track"
-          pathLength={1}
-          vectorEffect="non-scaling-stroke"
-          d={CURVE}
-        />
-        {/* The soft under-layer. Gives the trace weight without asking for a
-            second colour or a glow filter. */}
-        <path
-          className="page-spine__halo"
-          pathLength={1}
-          vectorEffect="non-scaling-stroke"
-          d={CURVE}
-        />
-        <path
-          className="page-spine__trace"
-          pathLength={1}
-          vectorEffect="non-scaling-stroke"
-          d={CURVE}
-        />
-        {/*
-          The node is the same path drawn with a ZERO-length dash and a round
-          cap, so the stroke collapses to a single dot that travels the curve
-          as its offset animates. No extra element, no `offset-path`, and no
-          distortion from the stretched viewBox — it is the same geometry the
-          trace already follows, which is why it can never drift off the line.
-        */}
-        <path
-          className="page-spine__node"
-          pathLength={1}
-          vectorEffect="non-scaling-stroke"
-          d={CURVE}
-        />
+        <g className="page-spine__drift">
+          <path
+            className="page-spine__track"
+            pathLength={1}
+            vectorEffect="non-scaling-stroke"
+            d={CURVE}
+          />
+          <path
+            className="page-spine__halo"
+            pathLength={1}
+            vectorEffect="non-scaling-stroke"
+            d={CURVE}
+          />
+          <path
+            className="page-spine__trace"
+            pathLength={1}
+            vectorEffect="non-scaling-stroke"
+            d={CURVE}
+          />
+          {/*
+            The node is the same path with a ZERO-length dash and a round cap,
+            so the stroke collapses to a single dot riding the trace's leading
+            edge. No extra element, no `offset-path`, and it cannot drift off
+            the line because it IS the line.
+          */}
+          <path
+            className="page-spine__node"
+            pathLength={1}
+            vectorEffect="non-scaling-stroke"
+            d={CURVE}
+          />
+        </g>
       </svg>
     </div>
   );

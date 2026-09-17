@@ -375,29 +375,28 @@ body {
  * the column.
  */
 @media (min-width: 1400px) {
+  /*
+   * The rail takes the whole left margin now, not a 56px slot inside it.
+   *
+   * Content starts at `50vw - 600px` (max-w-1280 plus 40px padding), so the
+   * band runs from the window edge to 24px short of that. At 1600 that is
+   * 8-176 against text at 200; at 1920, 8-336. Wider band, bigger amplitude,
+   * and still nothing can reach the column.
+   */
   .page-spine {
     position: fixed;
     top: 0;
     bottom: 0;
-    left: calc(50vw - 676px);
-    width: 56px;
+    left: 0.5rem;
+    width: calc(50vw - 600px - 24px);
     pointer-events: none;
     /*
-     * Above the sections, below the header.
-     *
-     * It was `z-index: 0` and the rail was invisible the moment `.sect-3d`
-     * shipped: a transform creates a stacking context, so the sections stopped
-     * being plain in-flow backgrounds and began painting in the same layer as
-     * this fixed element — where DOM order decides, and every section comes
-     * after it.
-     *
-     * Proven by screenshotting a 64px crop of the rail's own band at each
-     * value: blank at 0, trace and node at 20. `elementFromPoint` cannot
-     * answer this question at all — the rail is `pointer-events: none`, so it
-     * is skipped and the section underneath is always returned.
-     *
-     * Safe to raise because the rail sits entirely in the margin with 20px of
-     * clearance: there is no content at this x for it to cover.
+     * Above the sections, below the header. `z-index: 0` stopped working when
+     * `.sect-3d` shipped — a transform creates a stacking context, so sections
+     * paint in the same layer as this fixed element and every one comes after
+     * it in DOM order. Proven by screenshotting a crop of the rail's own band:
+     * blank at 0, visible at 20. `elementFromPoint` cannot answer it, because
+     * the rail is `pointer-events: none` and is skipped.
      */
     z-index: 20;
   }
@@ -409,19 +408,13 @@ body {
     fill: none;
   }
 
-  /* The unread curve. Furniture: it reports without asking to be looked at. */
-  .page-spine__track {
-    stroke: var(--color-rule);
-    stroke-width: 1;
-  }
+  .page-spine__track { stroke: var(--color-rule); stroke-width: 1; }
 
-  /* Weight under the trace, so the rail reads as an object rather than a
-     hairline — without a glow filter, which §12.2 would call chrome. */
   .page-spine__halo {
     stroke: var(--color-accent);
-    stroke-width: 6;
+    stroke-width: 7;
     stroke-linecap: round;
-    opacity: 0.1;
+    opacity: 0.09;
     stroke-dasharray: 1;
     stroke-dashoffset: 1;
   }
@@ -434,10 +427,9 @@ body {
     stroke-dashoffset: 1;
   }
 
-  /* Zero-length dash + round cap = a dot, riding the trace's leading edge. */
   .page-spine__node {
     stroke: var(--color-accent);
-    stroke-width: 9;
+    stroke-width: 10;
     stroke-linecap: round;
     stroke-dasharray: 0 1;
     stroke-dashoffset: 1;
@@ -451,9 +443,37 @@ body {
         animation: spine-trace linear both;
         animation-timeline: scroll(root block);
       }
+
+      /* The drift. One lean per screen, roughly — the rail leans into a
+         section while it is pinned and back out as the next arrives, which is
+         what makes it read as following the page instead of sitting on it. */
+      .page-spine__drift {
+        animation: spine-drift linear both;
+        animation-timeline: scroll(root block);
+        transform-origin: 50% 50%;
+      }
     }
   }
 }
+
+@keyframes spine-drift {
+  /*
+   * Bounded on purpose. The curve occupies x 6-94 of a 0-100 viewBox, so a
+   * translate beyond about 5% or a scaleX above 1 pushes it outside the box
+   * and the SVG clips it — the line would simply end mid-air against the
+   * margin. Every value below keeps the path inside 1-99.
+   */
+  0%   { transform: translateX(4%)  scaleX(0.82); }
+  12%  { transform: translateX(-4%) scaleX(1.00); }
+  25%  { transform: translateX(5%)  scaleX(0.86); }
+  38%  { transform: translateX(-5%) scaleX(0.98); }
+  50%  { transform: translateX(3%)  scaleX(0.9); }
+  62%  { transform: translateX(-5%) scaleX(1.00); }
+  75%  { transform: translateX(4%)  scaleX(0.84); }
+  88%  { transform: translateX(-3%) scaleX(0.96); }
+  100% { transform: translateX(2%)  scaleX(0.9); }
+}
+
 
 @keyframes spine-trace {
   to { stroke-dashoffset: 0; }
