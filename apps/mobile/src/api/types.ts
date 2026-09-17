@@ -29,7 +29,14 @@ export type DeviceReading = {
   docdom: unknown;
   preview: Record<string, unknown>;
   timings: { recogniseMs: number; structureMs: number };
-  device: { platform: string; osVersion: string; model?: string };
+  device: {
+    platform: string;
+    osVersion: string;
+    model?: string;
+    /** What the OS reports as total RAM. The only evidence §1.2's 4GB floor
+     *  will ever have — see migration 0028. */
+    totalMemoryMb?: number;
+  };
 };
 
 import type {

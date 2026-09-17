@@ -254,6 +254,15 @@ export const documentLayouts = pgTable('document_layouts', {
   /** Shadow runs are advisory. A layout that fed a real document is not. */
   shadow: boolean('shadow').notNull().default(true),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  /**
+   * What the handset said about itself, for a device reading (0028).
+   *
+   * Empty for server-side layouts. Never trusted for authorisation — it is a
+   * client describing its own hardware. It exists to answer whether
+   * ON-DEVICE.md §1.2's 4GB floor is the right line, which is currently a
+   * support decision with no evidence behind it.
+   */
+  deviceMeta: jsonb('device_meta').notNull().default({})
 });
 
 // ── Field grounding, shadow stage (0020) ────────────────────────────────────

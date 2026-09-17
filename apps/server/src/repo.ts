@@ -1473,6 +1473,14 @@ export async function saveLayout(
     spanCount: number;
     unreadableCount: number;
     shadow: boolean;
+    /**
+     * What the handset said about itself, for a device reading (0028).
+     *
+     * Empty for server-side layouts. NEVER trusted for authorisation — it is
+     * a client describing its own hardware, and the only thing it is used for
+     * is answering whether ON-DEVICE.md §1.2's 4GB floor is the right line.
+     */
+    deviceMeta?: Record<string, unknown>;
   },
 ): Promise<{ layoutId: string }> {
   return withTenantAs(getDb(), userId, tenantId, async (tx) => {
@@ -1488,11 +1496,12 @@ export async function saveLayout(
     await tx.execute(sql`
       insert into document_layouts (
         id, tenant_id, capture_id, extraction_run_id, storage_key, docdom_version,
-        page_count, engine_ids, span_count, unreadable_count, shadow
+        page_count, engine_ids, span_count, unreadable_count, shadow, device_meta
       ) values (
         ${id}, ${tenantId}, ${input.captureId}, ${input.extractionRunId}, ${input.storageKey},
         ${input.docdomVersion}, ${input.pageCount}, ${engineIdsLiteral}, ${input.spanCount},
-        ${input.unreadableCount}, ${input.shadow}
+        ${input.unreadableCount}, ${input.shadow},
+        ${JSON.stringify(input.deviceMeta ?? {})}::jsonb
       )
     `);
     return { layoutId: id };

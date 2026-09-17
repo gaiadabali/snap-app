@@ -69,7 +69,7 @@ describeIfDb('POST /v1/captures/:id/device-reading', () => {
       'header.tax_amount': { value: null, grounded: false, spanIds: [], box: null, page: null, confidence: 0 },
     },
     timings: { recogniseMs: 320, structureMs: 4 },
-    device: { platform: 'android', osVersion: '13', model: 'samsung SM-A715F' },
+    device: { platform: 'android', osVersion: '13', model: 'samsung SM-A715F', totalMemoryMb: 7519 },
     ...over,
   });
 
@@ -165,6 +165,36 @@ describeIfDb('POST /v1/captures/:id/device-reading', () => {
 
     // THE POINT OF THE WHOLE TICKET.
     expect(await counts()).toEqual(before);
+  });
+
+  it('stores what the handset said about itself', async () => {
+    // The point of 0028. ON-DEVICE.md §1.2's 4GB floor is a support decision
+    // with no evidence behind it, and the phone measures its own memory on
+    // every capture. Before this the value reached the handler and was
+    // dropped — computed and discarded, the same shape as the OD-8 preview
+    // that was computed and never shown.
+    const { layoutId } = await controller.record(user, TENANT, CAPTURE, body() as never);
+    const row = (
+      await admin.query('select device_meta from document_layouts where id = $1', [layoutId])
+    ).rows[0];
+    expect(row.device_meta).toMatchObject({
+      platform: 'android',
+      model: 'samsung SM-A715F',
+      totalMemoryMb: 7519,
+    });
+  });
+
+  it('leaves device_meta empty when the client sends no device block', async () => {
+    const { layoutId } = await controller.record(
+      user,
+      TENANT,
+      CAPTURE,
+      body({ device: undefined }) as never,
+    );
+    const row = (
+      await admin.query('select device_meta from document_layouts where id = $1', [layoutId])
+    ).rows[0];
+    expect(row.device_meta).toEqual({});
   });
 
   it('refuses a capture belonging to another tenant', async () => {

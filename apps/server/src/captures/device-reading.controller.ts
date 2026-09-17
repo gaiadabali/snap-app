@@ -74,7 +74,7 @@ export class DeviceReadingDto {
     }
   >;
   timings?: { recogniseMs?: number; structureMs?: number };
-  device?: { platform?: string; osVersion?: string; model?: string };
+  device?: { platform?: string; osVersion?: string; model?: string; totalMemoryMb?: number };
 }
 
 @ApiTags('captures')
@@ -147,6 +147,11 @@ export class DeviceReadingController {
       unreadableCount: (docdom.unreadable ?? []).length,
       // Advisory. A layout that fed a real document is not.
       shadow: true,
+      // 0028. The phone already measures its own memory on every capture and
+      // the value reached this handler and was dropped. §1.2's 4GB floor is a
+      // support DECISION nobody has evidence for; storing this is what turns
+      // it into a query after a few hundred captures.
+      deviceMeta: (body.device ?? {}) as Record<string, unknown>,
     });
 
     const grounding = Object.entries(body.preview ?? {})

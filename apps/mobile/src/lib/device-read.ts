@@ -29,7 +29,7 @@ export type DeviceRead = {
   engine: 'device-mlkit' | 'device-vision';
   engineVersion: string;
   timings: { recogniseMs: number; structureMs: number };
-  device: { platform: string; osVersion: string; model?: string };
+  device: { platform: string; osVersion: string; model?: string; totalMemoryMb?: number };
 };
 
 /** Fields the preview is allowed to show. Anything else the structurer produces is ignored. */
@@ -79,7 +79,14 @@ export async function readOnDevice(uri: string): Promise<DeviceRead | null> {
       engine: info.platform === 'ios' ? 'device-vision' : 'device-mlkit',
       engineVersion: info.osVersion,
       timings: { recogniseMs: result.timings.recogniseMs, structureMs },
-      device: { platform: info.platform, osVersion: info.osVersion, model: info.model },
+      device: {
+        platform: info.platform,
+        osVersion: info.osVersion,
+        model: info.model,
+        // The number ON-DEVICE.md §1.2 guesses at. It was measured here on
+        // every capture and thrown away before the payload was built.
+        totalMemoryMb: info.totalMemoryMb,
+      },
     };
   } catch {
     // See the module comment. A capture must never fail because a preview did.
