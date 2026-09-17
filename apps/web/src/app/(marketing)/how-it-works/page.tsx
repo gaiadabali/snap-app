@@ -14,6 +14,7 @@ import {
 import { Scene } from '@/design/three/Scene';
 import { SCENES_3D_ENABLED } from '@/lib/features';
 
+import { PageSpine } from '../_components/page-spine';
 import { ReceiptScanCard } from '../_components/receipt-scan-card';
 
 export const metadata: Metadata = {
@@ -94,8 +95,11 @@ const HONEST = [
 export default function HowItWorksPage() {
   return (
     <>
+      {/* Same reading rail as the rest of the marketing surface. */}
+      <PageSpine />
+
       {/* 1 — wide. One idea at display size. */}
-      <Section form="wide" size="lg">
+      <Section form="wide" size="lg" className="screen sect-3d">
         <Rule />
         <Reveal variant="fade">
           <div className="t-label mt-5 text-[var(--color-ink-muted)]">What happens</div>
@@ -113,7 +117,7 @@ export default function HowItWorksPage() {
       </Section>
 
       {/* 2 — measure. Prose that earns its length. */}
-      <Section form="measure" tone="surface">
+      <Section form="measure" className="screen sect-3d">
         <Rule />
         <Reveal>
           <h2 className="t-head mt-5 max-w-[20ch]">The part that costs you a Sunday</h2>
@@ -135,7 +139,7 @@ export default function HowItWorksPage() {
       </Section>
 
       {/* 3 — gutter. The spine: enumerable things against their codes. */}
-      <Section code="G11" size="lg">
+      <Section code="G11" size="lg" className="screen sect-3d">
         <SectionHead
           kicker="What you get back"
           title="Four things, every time, for every document"
@@ -157,7 +161,7 @@ export default function HowItWorksPage() {
       </Section>
 
       {/* 4 — wide + void. The single inverted band, on the sharpest claim. */}
-      <Section form="wide" tone="void" size="lg">
+      <Section form="wide" tone="void" size="lg" className="screen sect-3d">
         <Split
           lead={
             <>
@@ -199,7 +203,7 @@ export default function HowItWorksPage() {
       </Section>
 
       {/* 5 — gutter. Questions, asymmetric so it does not read as the grid above. */}
-      <Section code="ASK" tone="surface" size="lg">
+      <Section code="ASK" size="lg" className="screen sect-3d">
         <SectionHead kicker="Reasonable questions" title="The things worth asking before you trust it" />
         <div className="mt-10 grid gap-x-12 gap-y-8 lg:grid-cols-2">
           {HONEST.map((item, i) => (
@@ -215,7 +219,7 @@ export default function HowItWorksPage() {
       </Section>
 
       {/* 6 — measure. Close on the reading column, with the real artefact. */}
-      <Section form="measure">
+      <Section form="measure" className="screen sect-3d">
         <Rule />
         <Reveal>
           <h2 className="t-head mt-5 max-w-[18ch]">Try it on one receipt</h2>
