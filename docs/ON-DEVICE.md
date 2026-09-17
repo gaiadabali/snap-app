@@ -786,10 +786,29 @@ preview requires an EAS/dev build.
 usage metrics are sent to Google; README no longer promises the preview in Expo Go.
 *Depends on:* owner decision §12 Q1.
 
-**OD-10 · Stage 1 device-matrix acceptance** — `qa` · default.
-*Done when:* on each shipped platform's floor device: p50/p90 time-to-first-field, peak added RAM
-and cold start recorded against §1.3; wrong-when-shown from OD-6 re-run on the shipped threshold;
-EAS `preview` build installs and runs; the abandon conditions in §9 all evaluated and written down.
+**OD-10 · Stage 1 device-matrix acceptance** — `qa` · default. **RESCOPED 2026-09-18 by the
+owner: the floor-device measurement is dropped; the requirement is STATED instead.**
+
+The original gate needed a 4GB Galaxy A16 5G in hand and nobody has one. Rather than hold Stage 1
+behind hardware, the support boundary is declared up front — in the app (settings names this
+phone's own memory and says whether on-device reading is offered), on the website's download page,
+and later in the Play Store and App Store listings.
+
+**What that changes about the claim.** 4GB is now openly a SUPPORT DECISION rather than a
+measurement. §1.2 picked it from what Samsung sells in Australian retail; no build has ever run on
+a 4GB handset, and `bench/devices.py` still refuses to let the 7.5GB A71 settle a fit question.
+Nothing anywhere may say the figure was verified.
+
+*Done when:* the requirement appears in the app and on the website; a phone that cannot run the
+on-device reader still captures, uploads and gets a server reading identically — §9's "server-only
+is a real outcome" made visible rather than implied.
+
+*Still open, and worth doing when a 4GB device exists:* p50/p90 time-to-first-field, peak added RAM
+and cold start against §1.3. Until then the fleet is the only instrument — and note that
+`captures.device_meta` is an empty `{}` on every row today, so the one number that would tell us
+whether 4GB is the right line is currently discarded on every capture. Wiring that is the cheapest
+path to a real answer.
+
 *Depends on:* OD-8.
 
 ### Stage 2 — editing and agreement (specified now, scheduled after Stage 1 is in the field)

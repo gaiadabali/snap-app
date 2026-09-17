@@ -4,6 +4,7 @@ import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { abnIsValid, api, resetDemoData, type BusinessSettings, type PlanUsage } from '@/api';
+import { currentDevice, deviceReadAvailable } from '@/lib/device-read';
 import { Avatar, Choice, Field, Loading, Sheet, Toggle } from '@/components/form';
 import { Raised } from '@/components/rich';
 import { Body, Divider, Figure, Label, Screen, Small } from '@/components/ui';
@@ -236,6 +237,16 @@ export default function SettingsScreen() {
               </Small>
             </Raised>
 
+            {/* WHAT THIS PHONE CAN DO, stated rather than discovered.
+                ON-DEVICE.md §9: reading on the server is a real outcome, not a
+                failure. So this is not a warning and not a blocker — the app
+                captures, uploads and reads identically on every supported
+                phone. The only thing a smaller device misses is the instant
+                preview while it waits, and somebody who never sees that
+                preview deserves to know it exists rather than assume the app
+                is slow. */}
+            <DeviceSupport />
+
             {/* A demo that cannot be put back is a demo you can only give
                 once. Everything the app changes is stored locally, so this
                 returns it to the shipped fixture. */}
@@ -366,5 +377,53 @@ function Row({
       </View>
       <Small style={{ fontSize: 18 }}>›</Small>
     </Pressable>
+  );
+}
+
+/**
+ * Whether on-device reading is available here, and why not when it is not.
+ *
+ * THE NUMBER IS A CHOICE, NOT A MEASUREMENT, and the copy is written so it
+ * cannot be read as one. `docs/ON-DEVICE.md` §1.2 picks 4 GB because that is
+ * what Samsung sells in Australian retail, and nobody has ever run this on a
+ * 4 GB handset — the test device has 7.5 GB and `bench/devices.py` refuses to
+ * let it settle a fit question for exactly that reason. So this says what is
+ * SUPPORTED, never what was verified.
+ *
+ * It reports what this phone actually has, rather than a generic requirements
+ * list, because the useful question is "does mine do it" and the app already
+ * knows the answer.
+ */
+function DeviceSupport() {
+  const device = currentDevice();
+  const available = deviceReadAvailable();
+
+  // Web, Expo Go, or a build without the native module: there is no device to
+  // describe and no claim worth making.
+  if (!device) return null;
+
+  const enoughMemory = device.totalMemoryMb >= 4096 - 512;
+
+  return (
+    <Raised style={{ gap: space.sm }}>
+      <Label>This device</Label>
+      <Body>
+        {device.model} · {device.totalMemoryMb} MB · {device.platform} {device.osVersion}
+      </Body>
+      {available ? (
+        <Small>
+          Receipts are read on this phone while they upload, so a total appears before the
+          server answers. The server reads every receipt too, and its answer is the one kept.
+        </Small>
+      ) : (
+        <Small>
+          Reading happens on the server for this phone. Everything works the same — captures,
+          records and totals — you just will not see a preview while a receipt uploads.
+          {enoughMemory
+            ? ' The on-device reader needs Google Play services, which this device does not appear to have.'
+            : ' The on-device reader is offered on phones with 4 GB of memory or more.'}
+        </Small>
+      )}
+    </Raised>
   );
 }
