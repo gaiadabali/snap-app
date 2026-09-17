@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 
-import { Reveal, Rule, Section, SectionHead } from '@/design/primitives';
+import { PageHero, Reveal, Section, SectionHead } from '@/design/primitives';
 import { BUSINESS_SURFACES_ENABLED } from '@/lib/features';
 
 import { PageSpine } from '../_components/page-spine';
@@ -61,26 +61,20 @@ export default function PricingPage() {
         Copy is untouched — every plan, figure and FAQ answer is the owner's,
         word for word. Only the structure and the motion changed.
       */}
-      <Section form="wide" size="lg" className="screen sect-3d first-screen">
-        <Rule />
-        <Reveal variant="fade">
-          <div className="t-label mt-5 text-[var(--color-ink-muted)]">Pricing</div>
-        </Reveal>
-        <Reveal>
-          <h1 className="t-display mt-5 max-w-[16ch]">
-            {BUSINESS_SURFACES_ENABLED
-              ? 'Priced for the accountant, not the app store'
-              : 'Start free. Upgrade when you outgrow it.'}
-          </h1>
-        </Reveal>
-        <Reveal>
-          <p className="t-lede mt-8 max-w-[58ch] text-[var(--color-ink-muted)]">
-            {BUSINESS_SURFACES_ENABLED
-              ? 'Hubdoc is free inside Xero and myDeductions is free from the ATO — so Snap Apps isn’t sold as another receipt scanner to individuals. It’s a BAS and deduction-compliance layer sold through the accountants and bookkeepers who already look after Australian sole traders and tradies.'
-              : 'Hubdoc is free inside Xero and myDeductions is free from the ATO. Snap Apps reads every line of a receipt and splits the GST correctly, which neither of them does — free for 20 scans a month, no card required.'}
-          </p>
-        </Reveal>
-      </Section>
+      <PageHero
+        screen
+        kicker="Pricing"
+        title={
+          BUSINESS_SURFACES_ENABLED
+            ? 'Priced for the accountant, not the app store'
+            : 'Start free. Upgrade when you outgrow it.'
+        }
+        lede={
+          BUSINESS_SURFACES_ENABLED
+            ? 'Hubdoc is free inside Xero and myDeductions is free from the ATO — so Snap Apps isn’t sold as another receipt scanner to individuals. It’s a BAS and deduction-compliance layer sold through the accountants and bookkeepers who already look after Australian sole traders and tradies.'
+            : 'Hubdoc is free inside Xero and myDeductions is free from the ATO. Snap Apps reads every line of a receipt and splits the GST correctly, which neither of them does — free for 20 scans a month, no card required.'
+        }
+      />
 
       {/* The plans arrive as objects, like the pricing block on the home page. */}
       <Section code="PLANS" className="screen sect-3d">

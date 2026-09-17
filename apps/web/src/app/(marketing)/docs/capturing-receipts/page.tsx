@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 
+import { ArticleHero } from '@/design/primitives';
+
 import { Toc } from '../_components/Toc';
 
 export const metadata: Metadata = { title: 'Capturing receipts well' };
@@ -16,7 +18,10 @@ export default function CapturingReceiptsPage() {
   return (
     <div className="grid gap-10 xl:grid-cols-[1fr_200px]">
       <article className="max-w-[68ch]">
-        <h1 className="text-[28px] font-bold text-[var(--color-ink)]">Capturing receipts well</h1>
+        <ArticleHero
+        kicker="Documentation"
+        title={<>Capturing receipts well</>}
+      />
         <p className="mt-3 text-[16px] leading-relaxed text-[var(--color-ink-muted)]">
           Extraction accuracy starts at the camera. A better photo means fewer flagged fields and less
           time spent correcting.

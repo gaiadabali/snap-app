@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 
+import { ArticleHero } from '@/design/primitives';
+
 import { Toc } from '../_components/Toc';
 
 export const metadata: Metadata = { title: 'The ledger and what "posted" means' };
@@ -16,9 +18,10 @@ export default function LedgerAndPostedPage() {
   return (
     <div className="grid gap-10 xl:grid-cols-[1fr_200px]">
       <article className="max-w-[68ch]">
-        <h1 className="text-[28px] font-bold text-[var(--color-ink)]">
-          The ledger and what &quot;posted&quot; means
-        </h1>
+        <ArticleHero
+        kicker="Documentation"
+        title={<>The ledger and what &quot;posted&quot; means</>}
+      />
         <p className="mt-3 text-[16px] leading-relaxed text-[var(--color-ink-muted)]">
           Snap Apps keeps a real double-entry ledger underneath the receipts, not a flat list of
           categorised amounts. That is what lets a BAS reconcile, and what an accountant expects to

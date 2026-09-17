@@ -27,6 +27,8 @@ import type { ComponentProps, ReactNode } from 'react';
 export { cx } from './cx';
 import { cx } from './cx';
 
+import { Settle } from './assets';
+
 // ── Layout ────────────────────────────────────────────────────────────────
 
 export function Container({
@@ -281,6 +283,202 @@ export function SectionHead({
         </Reveal>
       ) : null}
     </div>
+  );
+}
+
+/**
+ * The page hero — one opening, every page.
+ *
+ * Before this there were four different ones. `/features`, `/how-it-works`,
+ * `/pricing` and `/download` each hand-rolled `Rule` → kicker → `h1` → lede and
+ * had drifted apart in spacing and type scale; `/docs` used `SectionTitle`
+ * with a pill eyebrow; `/legal/*` and every docs subpage opened with a bare
+ * `<h1 className="text-[28px] font-bold">` and no rule, no kicker and no
+ * motion. The site read as four sites sharing a palette.
+ *
+ * So the opening is a component rather than a convention. A convention is a
+ * thing people mean to follow; this is the thing they have to.
+ *
+ * ── The one DNA, and where it is allowed to differ ───────────────────────
+ *
+ * Every page gets: a hairline that draws itself, a mono kicker, the heading,
+ * the lede. That is the constant. Two dials vary, and only these two:
+ *
+ *   `size`   'page' — display type, for a surface someone chose to visit.
+ *            'sub'  — head type, for a document INSIDE a section: a docs
+ *                     article, a legal page. A 64px display heading on
+ *                     "Connecting Xero" would be shouting a filename.
+ *
+ *   `screen` One section, one viewport — the narrative pages (home,
+ *            features, how-it-works, pricing) where the page is an argument
+ *            read in order. Utility pages (download, support, docs, legal)
+ *            stay in normal flow: someone who came for a checksum or a
+ *            retention period should not have to scroll through a held
+ *            screen to reach it.
+ *
+ * Everything else — rhythm, colour, motion, the rule, the kicker treatment —
+ * is identical by construction, because it is written once, here.
+ */
+export function PageHero({
+  kicker,
+  title,
+  lede,
+  code,
+  form = 'wide',
+  size = 'page',
+  screen = false,
+  actions,
+  meta,
+  aside,
+  className,
+}: {
+  /** The mono line above the heading. Short — two or three words. */
+  kicker: string;
+  title: ReactNode;
+  lede?: ReactNode;
+  /** Real ATO label for the gutter, when `form="gutter"`. Never an invented marker. */
+  code?: string;
+  form?: 'gutter' | 'wide' | 'measure';
+  size?: 'page' | 'sub';
+  /** Hold the hero to one viewport. Narrative pages only — see above. */
+  screen?: boolean;
+  /** CTA row. */
+  actions?: ReactNode;
+  /** A short row of facts under the lede — version, size, last updated. */
+  meta?: ReactNode;
+  /** A figure beside the copy. Creates the two-column hero at `lg`. */
+  aside?: ReactNode;
+  className?: string;
+}) {
+  const copy = (
+    <>
+      <Rule />
+      <Reveal variant="fade">
+        <div className="t-label mt-5 text-[var(--color-ink-muted)]">
+          {/*
+            `Settle` resolves the kicker glyph by glyph — the recogniser
+            committing to a string, which is the site's whole subject. Only on
+            a full page hero: on a docs subpage it would be the loudest thing
+            on a quiet reference document, and there are forty of those.
+          */}
+          {size === 'page' ? <Settle text={kicker} /> : kicker}
+        </div>
+      </Reveal>
+
+      <Reveal>
+        <h1
+          className={cx(
+            'mt-4 max-w-[20ch]',
+            size === 'page' ? 't-display mt-5 max-w-[16ch]' : 't-head',
+          )}
+        >
+          {title}
+        </h1>
+      </Reveal>
+
+      {lede ? (
+        <Reveal>
+          <p
+            className={cx(
+              'text-[var(--color-ink-muted)]',
+              size === 'page' ? 't-lede mt-8 max-w-[58ch]' : 't-body mt-5 max-w-[62ch]',
+            )}
+          >
+            {lede}
+          </p>
+        </Reveal>
+      ) : null}
+
+      {meta ? (
+        <Reveal>
+          <div className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-2">{meta}</div>
+        </Reveal>
+      ) : null}
+
+      {actions ? (
+        <Reveal>
+          <div className="mt-9 flex flex-col gap-4">{actions}</div>
+        </Reveal>
+      ) : null}
+    </>
+  );
+
+  return (
+    <Section
+      code={code}
+      form={form}
+      size={size === 'page' ? 'lg' : 'md'}
+      className={cx('sect-3d', screen && 'screen first-screen', className)}
+    >
+      {aside ? (
+        <div className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:gap-16">
+          <div className="min-w-0">{copy}</div>
+          <div className="min-w-0">{aside}</div>
+        </div>
+      ) : (
+        copy
+      )}
+    </Section>
+  );
+}
+
+/**
+ * The same opening, mounted inside a page that already owns its layout.
+ *
+ * Docs articles and legal pages sit inside a shell that supplies the
+ * container, the sidebar and — on docs — a table-of-contents column. A
+ * `PageHero` would bring its own `Section` and fight all three. So this is the
+ * hero's copy block on its own: the same rule, the same mono kicker, the same
+ * heading, in the `sub` scale.
+ *
+ * It exists so those forty-odd pages stop opening with a bare
+ * `<h1 className="text-[28px] font-bold">` — no rule, no kicker, no motion —
+ * which is what made the reference half of the site look like a different
+ * product from the marketing half.
+ */
+export function ArticleHero({
+  kicker,
+  title,
+  meta,
+  className,
+}: {
+  kicker: string;
+  title: ReactNode;
+  /** A dateline or status, e.g. "Draft — last updated 17 September 2026". */
+  meta?: ReactNode;
+  className?: string;
+}) {
+  return (
+    <header className={className}>
+      <Rule />
+      <Reveal variant="fade">
+        <div className="t-label mt-4 text-[var(--color-ink-muted)]">{kicker}</div>
+      </Reveal>
+      <Reveal>
+        <h1 className="t-head mt-3">{title}</h1>
+      </Reveal>
+      {meta ? (
+        <Reveal>
+          <p className="mt-3 font-mono text-[12px] tabular text-[var(--color-ink-faint)]">{meta}</p>
+        </Reveal>
+      ) : null}
+    </header>
+  );
+}
+
+/**
+ * A fact in a hero's `meta` row: a mono label with its value under it.
+ *
+ * Exists so "Version 0.1.0" and "Last updated 17 September 2026" are set the
+ * same way on the two pages that show such a thing, instead of each inventing
+ * a `<span className="text-[12px]">` pair.
+ */
+export function HeroFact({ label, value }: { label: string; value: ReactNode }) {
+  return (
+    <span className="flex flex-col gap-0.5">
+      <span className="t-label text-[var(--color-ink-faint)]">{label}</span>
+      <span className="font-mono text-[13px] tabular text-[var(--color-ink)]">{value}</span>
+    </span>
   );
 }
 

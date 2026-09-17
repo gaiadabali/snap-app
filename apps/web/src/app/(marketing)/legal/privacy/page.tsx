@@ -1,13 +1,18 @@
 import type { Metadata } from 'next';
 
+import { ArticleHero } from '@/design/primitives';
+
 export const metadata: Metadata = { title: 'Privacy Policy' };
 
 export default function PrivacyPolicyPage() {
   return (
     <article className="flex flex-col gap-8 leading-relaxed text-[var(--color-ink-muted)]">
       <header>
-        <h1 className="text-[28px] font-bold text-[var(--color-ink)]">Privacy Policy</h1>
-        <p className="mt-2 text-[13px] text-[var(--color-ink-faint)]">Draft — last updated 17 September 2026</p>
+        <ArticleHero
+        kicker="Documentation"
+        title={<>Privacy Policy</>}
+        meta={<>Draft — last updated 17 September 2026</>}
+      />
       </header>
 
       <p>

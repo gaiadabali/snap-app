@@ -5,6 +5,7 @@ import {
   FieldBox,
   LedgerRow,
   Money,
+  PageHero,
   Reveal,
   Rule,
   Section,
@@ -101,23 +102,13 @@ export default function HowItWorksPage() {
       {/* Same reading rail as the rest of the marketing surface. */}
       <PageSpine />
 
-      {/* 1 — wide. One idea at display size. */}
-      <Section form="wide" size="lg" className="screen sect-3d first-screen">
-        <Rule />
-        <Reveal variant="fade">
-          <div className="t-label mt-5 text-[var(--color-ink-muted)]">What happens</div>
-        </Reveal>
-        <Reveal>
-          <h1 className="t-display mt-5 max-w-[16ch]">Photograph it. That is the job done.</h1>
-        </Reveal>
-        <Reveal>
-          <p className="t-lede mt-8 max-w-[58ch] text-[var(--color-ink-muted)]">
-            You take one photo of a tax invoice. The GST comes back worked out line by line, checked
-            nine ways, and filed under the label it belongs to — with the original kept exactly as
-            you took it, in case anyone ever asks.
-          </p>
-        </Reveal>
-      </Section>
+      {/* 1 — the shared opening. */}
+      <PageHero
+        screen
+        kicker="What happens"
+        title="Photograph it. That is the job done."
+        lede="You take one photo of a tax invoice. The GST comes back worked out line by line, checked nine ways, and filed under the label it belongs to — with the original kept exactly as you took it, in case anyone ever asks."
+      />
 
       {/* 2 — measure. Prose that earns its length. */}
       <Section form="measure" className="screen sect-3d">

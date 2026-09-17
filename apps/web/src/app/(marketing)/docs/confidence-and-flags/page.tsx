@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 
+import { ArticleHero } from '@/design/primitives';
+
 import { Toc } from '../_components/Toc';
 
 export const metadata: Metadata = { title: 'Confidence and why a field was flagged' };
@@ -16,9 +18,10 @@ export default function ConfidenceAndFlagsPage() {
   return (
     <div className="grid gap-10 xl:grid-cols-[1fr_200px]">
       <article className="max-w-[68ch]">
-        <h1 className="text-[28px] font-bold text-[var(--color-ink)]">
-          Confidence and why a field was flagged
-        </h1>
+        <ArticleHero
+        kicker="Documentation"
+        title={<>Confidence and why a field was flagged</>}
+      />
         <p className="mt-3 text-[16px] leading-relaxed text-[var(--color-ink-muted)]">
           A confident-looking wrong answer is worse than one that admits it isn&apos;t sure — a wrong
           ABN accepted without question quietly creates a GST credit you can&apos;t actually claim.

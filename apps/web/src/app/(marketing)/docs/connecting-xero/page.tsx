@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 
+import { ArticleHero } from '@/design/primitives';
+
 import { Toc } from '../_components/Toc';
 
 export const metadata: Metadata = { title: 'Connecting Xero' };
@@ -15,7 +17,10 @@ export default function ConnectingXeroPage() {
   return (
     <div className="grid gap-10 xl:grid-cols-[1fr_200px]">
       <article className="max-w-[68ch]">
-        <h1 className="text-[28px] font-bold text-[var(--color-ink)]">Connecting Xero</h1>
+        <ArticleHero
+        kicker="Documentation"
+        title={<>Connecting Xero</>}
+      />
         <p className="mt-3 text-[16px] leading-relaxed text-[var(--color-ink-muted)]">
           Connecting Xero pushes your posted transactions across as bank transactions or bills, each
           one carrying its original receipt image as an attachment — so the evidence is sitting right
