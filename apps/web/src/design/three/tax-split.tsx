@@ -278,13 +278,19 @@ export default function TaxSplit({
   }, [palette]);
 
   /**
-   * Scroll maps onto the split, and stops well before the section leaves.
+   * Scroll maps onto the split, and finishes before the section settles.
    *
-   * The separation finishes at 55% of the pass rather than at 100%, so the
-   * reader spends the back half of the section looking at the finished answer
-   * instead of watching it still assembling as it scrolls away. A scrubbed
-   * animation that is only complete at the moment it exits has, in practice,
-   * never been seen by anyone.
+   * The window matters more than it looks. The section is a full screen and
+   * snaps to centre, which puts this scene at roughly 0.5 of its pass through
+   * the viewport — so the separation has to be COMPLETE by then. At the first
+   * numbers (0.16 → 0.55) it was still at ~0.85 when the reader stopped, and
+   * the base sheet held a 15% ghost of the three rows that had already moved:
+   * every taxable line appeared twice, once faint and once solid, a few
+   * hundred pixels apart. On a page whose claim is that each line is read
+   * exactly once, that is the worst possible artefact.
+   *
+   * Finishing at 0.42 also means the back half of the section is spent looking
+   * at the answer rather than watching it assemble on the way out.
    */
   const split = useRef(0);
 
@@ -327,7 +333,7 @@ function SplitDriver({
   split: RefObject<number>;
 }) {
   useFrame(() => {
-    split.current = THREE.MathUtils.smoothstep(progress.current, 0.16, 0.55);
+    split.current = THREE.MathUtils.smoothstep(progress.current, 0.12, 0.42);
   });
   return null;
 }

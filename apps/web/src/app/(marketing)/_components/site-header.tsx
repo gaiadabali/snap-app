@@ -161,18 +161,18 @@ export function SiteHeader() {
         ) : null}
       </Container>
 
-      {/**
-       * Read-through progress, driven by the document scroller.
-       *
-       * `animation-timeline: scroll(root block)` — no scroll listener, no
-       * rAF loop, no state. It runs on the compositor, so it stays smooth
-       * while the main thread is busy, and it simply does not render on a
-       * browser without scroll timelines.
-       */}
-      <div
-        aria-hidden
-        className="anim-progress absolute inset-x-0 bottom-0 h-px origin-left bg-[var(--color-accent)]"
-      />
+      {/*
+        The read-through progress bar that used to live here is gone.
+
+        It reported exactly the same quantity as the spine rail down the left
+        gutter (`.page-spine` in globals.css), so the page carried two trackers
+        for one fact. Two indicators of the same thing is worse than one: a
+        reader has to work out whether they disagree, and the answer is always
+        that they do not.
+
+        The spine survives because it is where the ATO codes already hang, so
+        it is measuring the document rather than decorating the chrome.
+      */}
     </header>
   );
 }

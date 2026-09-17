@@ -287,13 +287,6 @@ body {
       animation-range: entry 15% cover 45%;
     }
 
-    /* Scroll-linked progress, driven by the document scroller. */
-    .anim-progress {
-      animation: rule-draw linear both;
-      animation-timeline: scroll(root block);
-      transform-origin: left center;
-    }
-
     /* The dark band breathes open as it takes the viewport. */
     .anim-expand {
       animation: expand-in linear both;
@@ -366,60 +359,60 @@ body {
 
 /* ── The page spine ──────────────────────────────────────────────────────
  *
- * A hairline down the left gutter with a filled portion that tracks how far
- * through the document you are.
+ * A curve down the left gutter that draws itself as the document is read.
+ * See `_components/page-spine.tsx` for why it is a curve and why it is the
+ * only tracker left on the page.
  *
- * This exists because of a specific complaint: the sections read as separate
- * blocks rather than one document. The usual fix is a tinted band per section,
- * which is the exact thing §11 lists under Avoid and the thing that got three
- * directions rejected. A continuous rail does the opposite — it is one element
- * that every section is measured against, so the page reads as a single ruled
- * sheet the reader is travelling down rather than a stack.
- *
- * It lands on the same x as the `120px | 1fr` gutter that carries the ATO
- * codes (§8), so the codes appear to hang off it. Below 1024px there is no
- * gutter, so there is no rail.
- *
- * Instrument, not decoration (§12.1): it reports position in the document, the
- * one thing a reader cannot otherwise know. Solid accent, no gradient, 1px.
+ * Desktop only. Below 1024px there is no gutter to hang it in, and the brief
+ * for this pass is desktop; the rail simply is not rendered there.
  */
 @media (min-width: 1024px) {
   .page-spine {
     position: fixed;
     top: 0;
     bottom: 0;
-    left: max(2.5rem, calc(50vw - 40rem + 2.5rem));
-    width: 1px;
-    background: var(--color-rule);
+    left: max(0.5rem, calc(50vw - 40rem));
+    width: 5rem;
     pointer-events: none;
     z-index: 0;
   }
 
-  .page-spine::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: var(--color-accent);
-    transform: scaleY(0);
-    transform-origin: top center;
+  .page-spine__svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+    fill: none;
   }
 
-  /* Without scroll timelines the rail is simply a static hairline — complete,
-     not half-drawn. That is why the rest state sits outside the feature query
-     here while the animation sits inside it. */
+  /* The unread curve. Deliberately faint — this is furniture, and §12.1's
+     test for furniture is that it reports something without asking to be
+     looked at. */
+  .page-spine__track {
+    stroke: var(--color-rule);
+    stroke-width: 1;
+  }
+
+  .page-spine__trace {
+    stroke: var(--color-accent);
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    opacity: 0.85;
+  }
+
   @supports (animation-timeline: scroll()) {
     @media (prefers-reduced-motion: no-preference) {
-      .page-spine::after {
-        animation: spine-fill linear both;
+      .page-spine__trace {
+        animation: spine-trace linear both;
         animation-timeline: scroll(root block);
       }
     }
   }
 }
 
-@keyframes spine-fill {
-  from { transform: scaleY(0); }
-  to   { transform: scaleY(1); }
+@keyframes spine-trace {
+  to { stroke-dashoffset: 0; }
 }
 
 /* ── Section seams ───────────────────────────────────────────────────────
@@ -442,5 +435,115 @@ body {
       animation-timeline: view();
       animation-range: entry 0% cover 18%;
     }
+  }
+}
+
+/* ── Desktop: one section, one screen ────────────────────────────────────
+ *
+ * Scoped to >=1024px on purpose. The brief for this pass is the desktop
+ * surface; the handset keeps the ordinary flowing document, which is the
+ * right shape for it anyway — a tradie thumbing through in the sun does not
+ * want to be paged.
+ *
+ * `proximity`, never `mandatory`. Mandatory snapping takes the scroll away
+ * from the reader: a trackpad flick that lands 40px into a section gets
+ * yanked, and any section taller than the viewport becomes genuinely hard to
+ * read the bottom of. Proximity gives the same settled feeling and gives it
+ * back the moment someone scrolls deliberately.
+ */
+@media (min-width: 1024px) {
+  html {
+    scroll-snap-type: y proximity;
+  }
+
+  .screen {
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    scroll-snap-align: center;
+    scroll-snap-stop: normal;
+    /* The header is sticky and 4rem tall, so a section centred in the full
+       viewport puts its first line underneath it. Centring happens in the
+       space BELOW the header instead. Found by screenshotting a settled
+       section and reading a headline with its top third missing. */
+    padding-top: 4rem;
+    scroll-margin-top: 4rem;
+  }
+}
+
+/* ── The section transition ──────────────────────────────────────────────
+ *
+ * Every section arrives from below and behind, settles square, holds while it
+ * is being read, and recedes as it leaves. Entirely scroll-driven: the
+ * position in the animation IS the position on the page, so it can never be
+ * out of step with where the reader actually is, and it reverses exactly when
+ * they scroll back.
+ *
+ * `perspective()` inside the transform rather than on a parent, so each
+ * section is its own vanishing point and a section does not skew because it
+ * happens to sit far from the centre of a shared one.
+ *
+ * The rest state lives INSIDE the feature query — a browser without scroll
+ * timelines must get the finished, square, fully opaque section, never a
+ * blank one waiting for a timeline that will never run.
+ */
+@media (min-width: 1024px) {
+  @supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+      .sect-3d {
+        animation: sect-3d linear both;
+        animation-timeline: view();
+        transform-style: preserve-3d;
+        will-change: transform, opacity;
+      }
+    }
+  }
+}
+
+@keyframes sect-3d {
+  0% {
+    opacity: 0;
+    transform: perspective(1600px) translate3d(0, 5rem, -18rem) rotateX(7deg);
+  }
+  22% {
+    opacity: 1;
+    transform: perspective(1600px) translate3d(0, 0, 0) rotateX(0deg);
+  }
+  80% {
+    opacity: 1;
+    transform: perspective(1600px) translate3d(0, 0, 0) rotateX(0deg);
+  }
+  100% {
+    opacity: 0;
+    transform: perspective(1600px) translate3d(0, -5rem, -18rem) rotateX(-7deg);
+  }
+}
+
+/* A figure that arrives with more weight than the prose around it. Same
+   scroll timeline, a shorter, later range, so the number lands after the
+   sentence that introduces it. */
+@media (min-width: 1024px) {
+  @supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+      .anim-strike {
+        animation: strike-in linear both;
+        animation-timeline: view();
+        animation-range: entry 12% cover 42%;
+      }
+    }
+  }
+}
+
+@keyframes strike-in {
+  from {
+    opacity: 0;
+    transform: perspective(900px) translate3d(0, 1.25rem, -6rem) rotateX(14deg);
+    letter-spacing: 0.04em;
+  }
+  to {
+    opacity: 1;
+    transform: perspective(900px) translate3d(0, 0, 0) rotateX(0deg);
+    letter-spacing: normal;
   }
 }

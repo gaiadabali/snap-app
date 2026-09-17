@@ -18,6 +18,7 @@ import { BUSINESS_SURFACES_ENABLED, SCENES_3D_ENABLED } from '@/lib/features';
 import { AppScreens } from './_components/app-showcase';
 import { ReceiptScanCard } from './_components/receipt-scan-card';
 import { ComparisonTable } from './_components/comparison';
+import { PageSpine } from './_components/page-spine';
 import { Proof, PROOF_HEAD } from './_components/proof';
 
 export const metadata: Metadata = {
@@ -182,9 +183,9 @@ function Door({
 export default function HomePage() {
   return (
     <>
-      {/* The reading rail. One element the whole page is measured against —
-          see `.page-spine` in globals.css for why it replaced tinted bands. */}
-      <div className="page-spine" aria-hidden />
+      {/* The reading rail — the page's only progress indicator now that the
+          header's has gone. See `_components/page-spine.tsx`. */}
+      <PageSpine />
 
       {/* ── Hero ─────────────────────────────────────────────────────────
           The wedge as the headline, both doors above the fold, and the docket
@@ -195,7 +196,7 @@ export default function HomePage() {
           the hero's job is the CLAIM, and the claim is about what happens to a
           piece of paper. §12.2 permits exactly two kinds of imagery: the app
           screenshots, and the document itself. This is the second one. */}
-      <section>
+      <section className="screen sect-3d">
         <Container width="wide" className="pb-16 pt-14 md:pb-20 md:pt-20">
           {/**
            * Three children, explicitly placed, so the phone can sit in
@@ -237,7 +238,7 @@ export default function HomePage() {
             >
               <Scene
                 enabled={SCENES_3D_ENABLED}
-                className="mx-auto aspect-[3/4] w-full max-w-[340px] lg:max-w-[420px]"
+                className="mx-auto aspect-[3/4] w-full max-w-[340px] lg:max-w-[460px]"
               >
                 <div className="flex h-full items-center justify-center">
                   <ReceiptScanCard className="w-full" scanning={false} />
@@ -288,7 +289,7 @@ export default function HomePage() {
       {/* ── The wedge, first and shown ───────────────────────────────────
           MONETISATION.md §2: "not a schema detail to mention in paragraph
           four". So it is section one. */}
-      <Section code="G11">
+      <Section code="G11" className="screen sect-3d">
         <SectionHead
           kicker="The thing no other app does"
           title="One receipt. Two tax answers. Split to the cent."
@@ -303,11 +304,29 @@ export default function HomePage() {
           6.20 + 3.20 + 6.00 = 15.40 taxable carrying 1.40 of GST. The 3D is a
           camera on the rows below it, never a second set of figures.
         */}
-        <div className="mt-14">
+        {/*
+          Scene and answers side by side, filling the screen this section owns.
+
+          They were stacked — scene centred, figures underneath — and that left
+          a void down the left third while the heading above it was flush left.
+          A centred object under left-aligned type reads as two layouts, not
+          one. Side by side, the docket comes apart and the two subtotals it
+          resolves into sit level with it, which is also the order the claim is
+          made in.
+        */}
+        <div className="mt-10 grid gap-10 lg:grid-cols-[1.4fr_0.6fr] lg:items-center lg:gap-14">
           <Scene
             scene="split"
             enabled={SCENES_3D_ENABLED}
-            className="mx-auto aspect-[16/10] w-full max-w-[780px]"
+            /*
+              `min-w-0` is load-bearing. A grid item defaults to
+              `min-width: auto`, so it refuses to shrink below its content and
+              silently widens its track instead — this one blew out to 662px
+              inside a 390px viewport and gave the whole document a horizontal
+              scrollbar. The `Split` primitive already guards every track this
+              way; a hand-rolled grid has to do it too.
+            */
+            className="aspect-[16/10] w-full min-w-0"
           >
             <div className="flex h-full items-center justify-center">
               <div className="w-full max-w-[420px]">
@@ -327,15 +346,10 @@ export default function HomePage() {
                   ))}
                   {/*
                     The docket total belongs here even though the section makes
-                    its point with the two subtotals below.
-
-                    The scene prints 32.20 on the paper, and docs/WEB.md §4.4
-                    states the rule this enforces: a scene may not be the only
-                    place a figure exists. Without this row the total is legible
-                    to anyone with a GPU and invisible to everyone else — which
-                    is exactly backwards, since the flat card is the version
-                    that has to stand alone. Caught by asserting every figure
-                    the scenes depict is also in the DOM.
+                    its point with the two subtotals beside it. The scene prints
+                    32.20 on the paper, and docs/WEB.md §4.4 states the rule: a
+                    scene may not be the only place a figure exists. Caught by
+                    asserting every figure the scenes depict is also in the DOM.
                   */}
                   <div className="mt-1 flex items-baseline justify-between gap-4 border-t-2 border-[var(--color-ink)] pt-4">
                     <span className="text-[14px] text-[var(--color-ink)]">Docket total</span>
@@ -348,41 +362,34 @@ export default function HomePage() {
               </div>
             </div>
           </Scene>
-        </div>
 
-        {/*
-          The two answers, side by side under the object that produced them.
-
-          These used to sit in a column beside a copy of the line items. The
-          lines now live once, as the scene's twin above, because printing the
-          same six rows twice on one screen is the kind of duplication a reader
-          reads as a mistake — and a screen reader reads as the docket being
-          announced twice.
-        */}
-        <div className="mt-14 grid gap-10 sm:grid-cols-2 sm:gap-16">
-          <Reveal>
-            <div>
-              <div className="t-label text-[var(--color-good)]">GST-free</div>
-              <div className="mt-3 font-mono text-[clamp(2rem,4vw,2.75rem)] font-normal leading-none tabular text-[var(--color-good)]">
-                <Money amount="16.80" />
+          <div className="flex min-w-0 flex-col gap-10">
+            <Reveal>
+              <div>
+                <div className="t-label text-[var(--color-good)]">GST-free</div>
+                <div className="anim-strike mt-3 font-mono text-[clamp(2rem,3.4vw,2.9rem)] font-normal leading-none tabular text-[var(--color-good)]">
+                  <Money amount="16.80" />
+                </div>
+                <p className="mt-3 max-w-[30ch] text-[13.5px] leading-relaxed text-[var(--color-ink-muted)]">
+                  Basic food. No GST to claim, and none claimed.
+                </p>
               </div>
-              <p className="mt-3 max-w-[34ch] text-[13.5px] leading-relaxed text-[var(--color-ink-muted)]">
-                Basic food. No GST to claim, and none claimed.
-              </p>
-            </div>
-          </Reveal>
+            </Reveal>
 
-          <Reveal delay={1}>
-            <div>
-              <div className="t-label text-[var(--color-accent)]">Taxable · GST $1.40</div>
-              <div className="mt-3 font-mono text-[clamp(2rem,4vw,2.75rem)] font-normal leading-none tabular text-[var(--color-accent)]">
-                <Money amount="15.40" />
+            <Rule />
+
+            <Reveal delay={1}>
+              <div>
+                <div className="t-label text-[var(--color-accent)]">Taxable · GST $1.40</div>
+                <div className="anim-strike mt-3 font-mono text-[clamp(2rem,3.4vw,2.9rem)] font-normal leading-none tabular text-[var(--color-accent)]">
+                  <Money amount="15.40" />
+                </div>
+                <p className="mt-3 max-w-[30ch] text-[13.5px] leading-relaxed text-[var(--color-ink-muted)]">
+                  Hot food and drinks. Reconciled per line, not per receipt.
+                </p>
               </div>
-              <p className="mt-3 max-w-[34ch] text-[13.5px] leading-relaxed text-[var(--color-ink-muted)]">
-                Hot food and drinks. Reconciled per line, not per receipt.
-              </p>
-            </div>
-          </Reveal>
+            </Reveal>
+          </div>
         </div>
       </Section>
 
@@ -392,7 +399,7 @@ export default function HomePage() {
           another rule/kicker/display stack would be the fourth identical
           opening in a row. That repetition, not the palette, is what got three
           directions rejected (§12.1). */}
-      <Section code="THE APP" form="wide" size="sm">
+      <Section code="THE APP" form="wide" size="sm" className="screen sect-3d">
         <div className="seam" aria-hidden />
         <div className="mt-6 flex flex-wrap items-baseline justify-between gap-x-10 gap-y-3">
           <div className="t-label text-[var(--color-ink-faint)]">
@@ -403,10 +410,13 @@ export default function HomePage() {
             leaves everything else alone.
           </p>
         </div>
-        <div className="mt-12">
+        {/* Capped so three phones fit the screen this section owns. Without
+            it the grid sizes to the image aspect and overruns by ~50px, which
+            is just enough to stop the section being one screen. */}
+        <div className="mt-10 [&_figure]:mx-auto lg:[&_figure]:max-w-[292px]">
           <AppScreens />
         </div>
-        <div className="mt-12 flex flex-wrap items-center gap-6">
+        <div className="mt-8 flex flex-wrap items-center gap-6">
           <ButtonLink href="/download" size="lg">
             Download the app
           </ButtonLink>
@@ -415,7 +425,7 @@ export default function HomePage() {
       </Section>
 
       {/* ── Comparison ──────────────────────────────────────────────────── */}
-      <Section code="VS">
+      <Section code="VS" className="screen sect-3d">
         <SectionHead
           kicker="Against what you are probably using"
           title="The row nobody else can tick."
@@ -431,7 +441,7 @@ export default function HomePage() {
           the samples are still in. */}
       {/* `measure` — one 68ch column. The only section on the page shaped
           like prose, because it is the only one doing any. */}
-      <Section code="CHECK" form="measure">
+      <Section code="CHECK" form="measure" className="screen sect-3d">
         <SectionHead
           kicker={PROOF_HEAD.kicker}
           title={PROOF_HEAD.title}
@@ -448,7 +458,7 @@ export default function HomePage() {
       {/* `wide` — the form the handoff reserves for "the single most important
           claim", and this is it. It also keeps the void band from sharing a
           silhouette with the deduction ledger immediately below it. */}
-      <Section code="1B" tone="void" size="lg" form="wide">
+      <Section code="1B" tone="void" size="lg" form="wide" className="screen sect-3d">
         <div className="grid gap-14 lg:grid-cols-[1fr_1fr] lg:gap-16">
           <Reveal variant="expand">
             <div className="t-label text-[var(--color-void-muted)]">
@@ -514,7 +524,7 @@ export default function HomePage() {
       </Section>
 
       {/* ── Deductions ──────────────────────────────────────────────────── */}
-      <Section code="D1–D5">
+      <Section code="D1–D5" className="screen sect-3d">
         <div className="grid gap-12 lg:grid-cols-[1fr_1.1fr] lg:gap-20">
           <div>
             <SectionHead
@@ -565,7 +575,7 @@ export default function HomePage() {
        * primary revenue line. Left in the source rather than deleted so
        * flipping the flag back on restores it exactly as it was. */}
       {BUSINESS_SURFACES_ENABLED ? (
-      <Section code="FIRMS">
+      <Section code="FIRMS" className="screen sect-3d">
         <div className="grid gap-12 lg:grid-cols-[1fr_1fr] lg:gap-20">
           <div>
             <SectionHead
@@ -621,7 +631,7 @@ export default function HomePage() {
       ) : null}
 
       {/* ── Pricing ─────────────────────────────────────────────────────── */}
-      <Section code="PLANS" form="wide">
+      <Section code="PLANS" form="wide" className="screen sect-3d">
         <div className="seam" aria-hidden />
         <SectionHead
           kicker="Pricing"

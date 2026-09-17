@@ -32,9 +32,27 @@ import { usePointerParallax, useSceneScroll } from './use-scene-scroll';
 const PAPER_W = 1.0;
 const PAPER_H = 1.45;
 
-/** Sweep 2.6s, then hold the fully-read state ~1.5s before going again. */
-const SWEEP_SECONDS = 2.6;
-const HOLD_SECONDS = 1.5;
+/**
+ * The read is SCROLL-DRIVEN, with one concession.
+ *
+ * An earlier version ran it on a 2.6s loop to match `.scan-line`. Scrubbing it
+ * to scroll is better and is what the page now does everywhere: the position
+ * in the animation is the position on the page, so it cannot be out of step
+ * with the reader and it reverses exactly when they scroll back up.
+ *
+ * The concession is the first second and a half. The hero is the top of the
+ * document, so at rest its scroll progress never moves — a purely scrolled
+ * scan would greet everyone with a blurred, unread docket and no indication
+ * that it does anything. So an intro eases the read to INTRO_TARGET once, on
+ * arrival, and scroll takes it the rest of the way. The two are combined with
+ * max(), never added, so scrolling can only ever advance the read.
+ */
+const INTRO_SECONDS = 1.6;
+const INTRO_TARGET = 0.42;
+
+/** Where in the hero's pass through the viewport the read finishes. */
+const SCAN_FROM = 0.42;
+const SCAN_TO = 0.8;
 
 /**
  * The curl. STATIC — it does not breathe.
@@ -312,8 +330,10 @@ function Docket({
     u.uScanColor.value.lerp(scanTarget.set(palette.scan), 0.08);
     u.uGround.value.lerp(groundTarget.set(palette.ground), 0.08);
 
-    // The read, on the same clock `.scan-line` runs on.
-    u.uScan.value = Math.min(1, (t % (SWEEP_SECONDS + HOLD_SECONDS)) / SWEEP_SECONDS);
+    // The read: an intro that plays once, then scroll.
+    const intro = INTRO_TARGET * THREE.MathUtils.smoothstep(t, 0.25, INTRO_SECONDS);
+    const scrolled = THREE.MathUtils.smoothstep(progress.current, SCAN_FROM, SCAN_TO);
+    u.uScan.value = Math.max(intro, scrolled);
 
     const g = group.current;
     if (!g) return;
@@ -323,10 +343,10 @@ function Docket({
      * square to the camera as the section takes the viewport — so the reward
      * for scrolling is that the document turns to face you.
      */
-    const settle = THREE.MathUtils.smoothstep(progress.current, 0.05, 0.6);
-    const targetY = THREE.MathUtils.lerp(-0.42, -0.1, settle);
-    const targetX = THREE.MathUtils.lerp(0.2, 0.045, settle);
-    const targetZ = THREE.MathUtils.lerp(-0.55, 0, settle);
+    const settle = THREE.MathUtils.smoothstep(progress.current, 0.3, 0.82);
+    const targetY = THREE.MathUtils.lerp(-0.58, -0.04, settle);
+    const targetX = THREE.MathUtils.lerp(0.26, 0.02, settle);
+    const targetZ = THREE.MathUtils.lerp(-0.85, 0.12, settle);
 
     // Parallax on top, damped. Two degrees, not twenty.
     const { x: px, y: py } = pointer.current;
