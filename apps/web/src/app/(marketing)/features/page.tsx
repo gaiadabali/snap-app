@@ -14,6 +14,7 @@ import {
 import { Scene } from '@/design/three/Scene';
 import { SCENES_3D_ENABLED } from '@/lib/features';
 
+import { PageSpine } from '../_components/page-spine';
 import { ReceiptScanCard } from '../_components/receipt-scan-card';
 
 export const metadata: Metadata = {
@@ -62,8 +63,12 @@ const CHECKS = [
 export default function FeaturesPage() {
   return (
     <>
+      {/* Same reading rail as the home page. One tracker, in the gutter where
+          the ATO codes hang. See `_components/page-spine.tsx`. */}
+      <PageSpine />
+
       {/* 1 — wide. */}
-      <Section form="wide" size="lg">
+      <Section form="wide" size="lg" className="screen sect-3d">
         <Rule />
         <Reveal variant="fade">
           <div className="t-label mt-5 text-[var(--color-ink-muted)]">What it does</div>
@@ -81,7 +86,7 @@ export default function FeaturesPage() {
       </Section>
 
       {/* 2 — gutter. The wedge, first, because it is the thing nobody else does. */}
-      <Section code="G11" tone="surface" size="lg">
+      <Section code="G11" size="lg" className="screen sect-3d">
         <Split
           lead={
             <>
@@ -111,7 +116,7 @@ export default function FeaturesPage() {
       </Section>
 
       {/* 3 — measure. Prose. */}
-      <Section form="measure">
+      <Section form="measure" className="screen sect-3d">
         <Rule />
         <Reveal>
           <h2 className="t-head mt-5 max-w-[22ch]">Nothing changes behind your back</h2>
@@ -133,7 +138,7 @@ export default function FeaturesPage() {
       </Section>
 
       {/* 4 — gutter + void. The single inverted band, on the accuracy claim. */}
-      <Section code="CHECK" tone="void" size="lg">
+      <Section code="CHECK" tone="void" size="lg" className="screen sect-3d">
         <SectionHead
           tone="void"
           kicker="Nine checks, every document"
@@ -156,7 +161,7 @@ export default function FeaturesPage() {
       </Section>
 
       {/* 5 — wide. One idea at display size. */}
-      <Section form="wide" size="lg">
+      <Section form="wide" size="lg" className="screen sect-3d">
         <Rule />
         <Reveal variant="fade">
           <div className="t-label mt-5 text-[var(--color-ink-muted)]">Before lodgement</div>
@@ -176,7 +181,7 @@ export default function FeaturesPage() {
       </Section>
 
       {/* 6 — gutter. The rest, enumerated. */}
-      <Section code="D1–D5" tone="surface" size="lg">
+      <Section code="D1–D5" size="lg" className="screen sect-3d">
         <SectionHead
           kicker="And the rest of it"
           title="What happens after the reading is done"
@@ -218,7 +223,7 @@ export default function FeaturesPage() {
       </Section>
 
       {/* 7 — measure. Close. */}
-      <Section form="measure">
+      <Section form="measure" className="screen sect-3d">
         <Rule />
         <Reveal>
           <h2 className="t-head mt-5 max-w-[18ch]">Start with one receipt</h2>
