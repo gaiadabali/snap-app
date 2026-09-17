@@ -304,23 +304,41 @@ export default async function DownloadPage() {
 
       {/* 3 — measure. */}
       <Section form="measure" className="sect-3d">
-        <SectionHead kicker="Before you install" title="System requirements" />
+        <SectionHead
+          kicker="Before you install"
+          title="System requirements"
+          lede="Stated here rather than discovered afterwards. The memory line is the one worth reading: it changes how the app works, not whether it works."
+        />
         <div className="mt-10 grid gap-6 sm:grid-cols-2">
           <Reveal variant="deal" delay={0}>
             <h3 className="text-[13px] font-semibold text-[var(--color-ink)]">Android</h3>
             <Tear className="mt-2" />
-            <ul className="mt-3 space-y-1.5 text-[14px] text-[var(--color-ink-muted)]">
+            <ul className="mt-3 space-y-2.5 text-[14px] text-[var(--color-ink-muted)]">
               {androidReqs.map((r) => (
-                <li key={r.label}>{r.label}</li>
+                <li key={r.label}>
+                  {r.label}
+                  {r.note ? (
+                    <span className="mt-0.5 block text-[13px] leading-relaxed text-[var(--color-ink-faint)]">
+                      {r.note}
+                    </span>
+                  ) : null}
+                </li>
               ))}
             </ul>
           </Reveal>
           <Reveal variant="deal" delay={1}>
             <h3 className="text-[13px] font-semibold text-[var(--color-ink)]">iPhone (planned)</h3>
             <Tear className="mt-2" />
-            <ul className="mt-3 space-y-1.5 text-[14px] text-[var(--color-ink-muted)]">
+            <ul className="mt-3 space-y-2.5 text-[14px] text-[var(--color-ink-muted)]">
               {iosReqs.map((r) => (
-                <li key={r.label}>{r.label}</li>
+                <li key={r.label}>
+                  {r.label}
+                  {r.note ? (
+                    <span className="mt-0.5 block text-[13px] leading-relaxed text-[var(--color-ink-faint)]">
+                      {r.note}
+                    </span>
+                  ) : null}
+                </li>
               ))}
             </ul>
           </Reveal>

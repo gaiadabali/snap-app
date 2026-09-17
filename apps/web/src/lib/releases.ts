@@ -145,13 +145,52 @@ export const changelog: ChangelogEntry[] = [
 export type SystemRequirement = {
   platform: 'android' | 'ios';
   label: string;
+  /**
+   * The qualification a bare label would misrepresent. Used for the memory
+   * line, where the honest statement is longer than a list item.
+   */
+  note?: string;
 };
 
+/**
+ * Stated upfront, 2026-09-18, rather than discovered after installing.
+ *
+ * ── The memory line, and why it is worded like that ───────────────────────
+ *
+ * 4 GB is NOT required to run the app, and saying "requires 4 GB" would be
+ * false as well as costly. `docs/ON-DEVICE.md` D33 is explicit that
+ * server-only is a real outcome rather than a failure: a smaller phone still
+ * captures, still uploads, still gets its reading back with the same GST split
+ * and the same checks. What it does not get is the instant provisional preview
+ * while it waits.
+ *
+ * ── And it is a chosen floor, not a measured one ──────────────────────────
+ *
+ * Nobody has run this on a 4 GB handset. ON-DEVICE.md §1.2 picked the number
+ * from what Samsung actually sells in Australian retail — the Galaxy A16 5G
+ * ships 4 GB — and §9 says plainly that no published result exists for a 4 GB
+ * mid-range. The test handset has 7.5 GB and the bench harness refuses to let
+ * it answer a fit question.
+ *
+ * So the page says what we SUPPORT, never what we measured. If that
+ * distinction ever gets edited out, the site is making a performance claim
+ * nobody has evidence for.
+ */
 export const systemRequirements: SystemRequirement[] = [
   { platform: 'android', label: 'Android 8.0 or later' },
+  {
+    platform: 'android',
+    label: '4 GB RAM for the instant preview',
+    note: 'Not needed to use the app. On a smaller phone the reading happens on our servers instead — same result, you just wait for it rather than watching fields appear.',
+  },
   { platform: 'android', label: 'Camera, ~50 MB free storage' },
   { platform: 'android', label: 'Internet connection for realtime sync (batch mode works offline)' },
   { platform: 'ios', label: 'iOS 15.0 or later (planned)' },
+  {
+    platform: 'ios',
+    label: '4 GB RAM for the instant preview (planned)',
+    note: 'iPhone 11 and later. Below that, reading happens on our servers.',
+  },
   { platform: 'ios', label: 'Camera, ~50 MB free storage (planned)' },
 ];
 
