@@ -213,7 +213,7 @@ export default function SettingsScreen() {
             {/* Everything else */}
             <Raised style={{ padding: 0 }}>
               <Row label="Categories" value="How spending is sorted" href="/categories" first />
-              <Row label="Plan and usage" value={`${plan.planName} · ${plan.scansUsed} scans this month`} href="/plan" />
+              <Row label="Credits and usage" value={`${plan.scansUsed} read this month`} href="/plan" />
               {isBusiness ? (
                 <Row label="Accounting connections" value="Xero, MYOB, QuickBooks" href="/connections" />
               ) : null}

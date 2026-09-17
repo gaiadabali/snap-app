@@ -3,7 +3,7 @@ import { useCallback, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { api, type PlanUsage } from '@/api';
+import { api, type CreditBalance, type PlanUsage } from '@/api';
 import { Loading, StatRow } from '@/components/form';
 import { GradientHero, HeroBody, HeroFigure, HeroLabel, Raised } from '@/components/rich';
 import { Body, Button, Card, Chip, Divider, Figure, Label, Screen, Small } from '@/components/ui';
@@ -22,9 +22,17 @@ export default function PlanScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const [plan, setPlan] = useState<PlanUsage | null>(null);
+  const [credits, setCredits] = useState<CreditBalance | null>(null);
 
   const load = useCallback(async () => {
-    setPlan(await api().getPlanUsage());
+    // Both, in parallel: the balance is the headline and the usage figures
+    // are what remains true underneath it.
+    const [usage, balance] = await Promise.all([
+      api().getPlanUsage(),
+      api().getCreditBalance(),
+    ]);
+    setPlan(usage);
+    setCredits(balance);
   }, []);
 
   useFocusEffect(
@@ -50,13 +58,23 @@ export default function PlanScreen() {
           <Loading />
         ) : (
           <>
+            {/* CREDITS, not a subscription.
+                This said "$9.99 a month · renews 14 Oct" off
+                `planName`/`priceCents`/`periodEnds`. There is no monthly
+                charge and no renewal date to state: a credit is bought once
+                and never expires (ECOSYSTEM D27 — credits "never reset",
+                unlike the plan quota that used to sit here).
+                Stating a renewal date under a credit system is not a stale
+                label, it is a claim about somebody's money that is not true. */}
             <GradientHero>
               <View style={{ gap: space.xs }}>
-                <HeroLabel>Your plan</HeroLabel>
-                <HeroFigure small>{plan.planName}</HeroFigure>
+                <HeroLabel>Credits</HeroLabel>
+                <HeroFigure small>
+                  {credits === null ? '—' : `${credits.creditsRemaining}`}
+                </HeroFigure>
                 <HeroBody>
-                  ${(plan.priceCents / 100).toFixed(2)} a month · renews{' '}
-                  {formatShortDate(plan.periodEnds)}
+                  One credit reads one document. They do not expire and there is nothing to
+                  renew.
                 </HeroBody>
               </View>
             </GradientHero>
@@ -66,8 +84,8 @@ export default function PlanScreen() {
                 <View style={{ gap: space.xs }}>
                   <Label style={{ color: p.accent }}>Through your accountant</Label>
                   <Body>
-                    This workspace is on {plan.firmName}&rsquo;s practice plan. They are billed for
-                    it, and they can see the workspaces you have shared with them.
+                    {plan.firmName} manages this workspace, and can see what you have shared with
+                    them.
                   </Body>
                 </View>
               </Card>
@@ -75,12 +93,19 @@ export default function PlanScreen() {
 
             <Raised style={{ gap: space.md }}>
               <Label>This month</Label>
-              <Meter
-                label="Scans"
-                used={`${plan.scansUsed}`}
-                cap={plan.scanQuota === null ? 'Unlimited' : `of ${plan.scanQuota}`}
-                fraction={scanPct}
-                tone={scanPct > 0.9 ? 'risk' : 'accent'}
+              {/* A COUNT, not a quota. `scanQuota` was the monthly allowance a
+                  plan bought; there is no allowance now, so a meter filling
+                  towards a cap would be measuring against a limit that does
+                  not exist. What is still true is how many documents this
+                  workspace has read this month. */}
+              <StatRow
+                stats={[
+                  {
+                    label: 'Read this month',
+                    value: `${plan.scansUsed}`,
+                    hint: 'One credit each',
+                  },
+                ]}
               />
               <Meter
                 label="Seats"

@@ -1239,7 +1239,7 @@ export class MockApi implements SnapApi {
     await settle(320);
     const current = memberList(workspaceId);
     if (current.seatsUsed >= current.seatLimit) {
-      throw new Error(`This plan includes ${current.seatLimit} seats. Upgrade to invite more.`);
+      throw new Error(`This workspace has ${current.seatLimit} seats and they are all in use.`);
     }
     if (current.members.some((m) => m.email?.toLowerCase() === email.toLowerCase())) {
       throw new Error(`${email} is already in this workspace.`);
