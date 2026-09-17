@@ -9,8 +9,13 @@ import { CreditsController } from './credits/credits.controller.js';
 import { PointsController } from './credits/points.controller.js';
 import { DocumentsController } from './documents/documents.controller.js';
 import { DownloadsController } from './export/downloads.controller.js';
+import { ReleasesController } from './releases/releases.controller.js';
 import { ImagesController } from './images/images.controller.js';
 import { ReportsController } from './reports/reports.controller.js';
+import {
+  TaxRulesCatalogueController,
+  TaxRulesController,
+} from './taxrules/taxrules.controller.js';
 import { SettingsController } from './settings/settings.controller.js';
 import { SummariesController } from './summaries/summaries.controller.js';
 import { TransactionsController } from './transactions/transactions.controller.js';
@@ -86,9 +91,12 @@ export class HealthController {
     SummariesController,
     SettingsController,
     DownloadsController,
+    ReleasesController,
     ImagesController,
     TransactionsController,
     ReportsController,
+    TaxRulesController,
+    TaxRulesCatalogueController,
     CreditsController,
     PointsController,
   ],
