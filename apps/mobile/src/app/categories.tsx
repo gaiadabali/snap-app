@@ -1,6 +1,6 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Alert, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, type CategorySetting } from '@/api';
@@ -18,10 +18,14 @@ import { WorkspaceSwitch, useWorkspace } from '@/workspace';
  * in "Other" — which makes the analytics useless and the deduction estimate
  * worse than useless.
  *
- * A category is never deleted, only switched off: turning one off stops it
- * being offered for new captures, while the receipts already filed against it
- * keep their category. Deleting would silently rewrite history, including
- * quarters that have already been reported to the ATO.
+ * A category with any history — a receipt, a budget, a subcategory — is never
+ * deleted, only switched off: turning one off stops it being offered for new
+ * captures, while the receipts already filed against it keep their category.
+ * Deleting it would silently rewrite history, including quarters that have
+ * already been reported to the ATO. An empty category someone added by
+ * mistake has no such history to protect, so it can be deleted outright — the
+ * server decides which case applies, not this screen; `deletable` on each row
+ * is its answer.
  */
 export default function CategoriesScreen() {
   const p = usePalette();
@@ -86,6 +90,11 @@ export default function CategoriesScreen() {
                 {isBusiness
                   ? 'Each one maps to a deduction label on the tax worksheet.'
                   : 'Give a category a budget and it appears on your month.'}
+              </Small>
+              <Small>
+                An empty category can be deleted outright. One with receipts or a
+                budget is switched off instead — that keeps its history exactly as
+                filed.
               </Small>
             </View>
 
@@ -201,22 +210,61 @@ function CategoryRow({
         <Figure size="h2">{formatAud(row.totalSpend, { cents: false })}</Figure>
       </View>
 
-      <Pressable
-        accessibilityRole="switch"
-        accessibilityState={{ checked: row.active }}
-        disabled={busy}
-        onPress={() => {
-          setBusy(true);
-          void api()
-            .setCategoryActive(row.name, !row.active)
-            .then(onToggle)
-            .finally(() => setBusy(false));
-        }}
-      >
-        <Small muted={false} style={{ color: p.accent, fontWeight: '600' }}>
-          {row.active ? 'Switch off' : 'Switch back on'}
-        </Small>
-      </Pressable>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.lg }}>
+        <Pressable
+          accessibilityRole="switch"
+          accessibilityState={{ checked: row.active }}
+          disabled={busy}
+          onPress={() => {
+            setBusy(true);
+            void api()
+              .setCategoryActive(row.name, !row.active)
+              .then(onToggle)
+              .finally(() => setBusy(false));
+          }}
+        >
+          <Small muted={false} style={{ color: p.accent, fontWeight: '600' }}>
+            {row.active ? 'Switch off' : 'Switch back on'}
+          </Small>
+        </Pressable>
+
+        {row.deletable ? (
+          <Pressable
+            accessibilityRole="button"
+            disabled={busy}
+            onPress={() => {
+              Alert.alert(
+                `Delete ${row.name}?`,
+                'Nothing is filed against it, so this removes it outright. This cannot be undone.',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: () => {
+                      setBusy(true);
+                      void api()
+                        .deleteCategory(row.name)
+                        .then(onToggle)
+                        .catch((e) =>
+                          Alert.alert(
+                            'Cannot delete',
+                            e instanceof Error ? e.message : 'Could not delete that category.',
+                          ),
+                        )
+                        .finally(() => setBusy(false));
+                    },
+                  },
+                ],
+              );
+            }}
+          >
+            <Small muted={false} style={{ color: p.risk, fontWeight: '600' }}>
+              Delete
+            </Small>
+          </Pressable>
+        ) : null}
+      </View>
     </View>
   );
 }

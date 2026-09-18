@@ -930,6 +930,13 @@ export class HttpApi implements SnapApi {
     );
   }
 
+  deleteCategory(name: string): Promise<CategorySetting[]> {
+    return this.request<CategorySetting[]>(
+      'DELETE',
+      `/v1/settings/categories/${encodeURIComponent(name)}`,
+    );
+  }
+
   async createCategory(
     name: string,
     workspace: Workspace,

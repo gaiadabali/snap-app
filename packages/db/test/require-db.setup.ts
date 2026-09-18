@@ -9,6 +9,11 @@
  *
  * Locally, skipping is the right default — not everyone has Postgres up. In CI
  * it must be an error, so CI sets `REQUIRE_DB=1` and this refuses to start.
+ *
+ * SHARED BY `apps/server` TOO (see its `vitest.config.ts`), which is why the
+ * owner-role check lives in `require-owner-role.setup.ts` and not here:
+ * `apps/server` must connect as the unprivileged `snap_app`, and a role rule
+ * added to this file would break it.
  */
 export default function setup(): void {
   if (process.env.REQUIRE_DB === '1' && !process.env.DATABASE_URL) {

@@ -46,6 +46,7 @@ export const STATE_CHANGING = [
   'updateBusinessSettings',
   'setCategoryActive',
   'createCategory',
+  'deleteCategory',
   'connectAccounting',
   'disconnectAccounting',
   'createItem',

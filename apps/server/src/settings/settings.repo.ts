@@ -83,6 +83,8 @@ export type CategoryRow = {
   document_count: number;
   total_spend: string;
   active: boolean;
+  /** True when nothing points at this category — see `deleteCategory`. */
+  deletable: boolean;
 };
 
 /**
@@ -91,6 +93,13 @@ export type CategoryRow = {
  * The counts come from `document_lines`, not from documents: a single Bunnings
  * docket can legitimately span two categories, and counting it once against
  * whichever one happened to be first would misstate both.
+ *
+ * `deletable` is computed here rather than from `document_count`, because
+ * `document_count` deliberately excludes rejected and deleted documents (it is
+ * a "what's live" figure for the screen) while a rejected document's line
+ * still holds `document_lines.category_id` — deleting the category would still
+ * violate that foreign key. `deletable` counts every reference, filtered or
+ * not, which is the question that actually matters before offering the button.
  */
 export async function listCategories(
   userId: string,
@@ -106,7 +115,13 @@ export async function listCategories(
              -- renders as '0' while every other amount in the app is 4dp, and
              -- a client comparing strings would see two different zeroes.
              coalesce(u.total_spend, 0)::numeric(18,4)::text as total_spend,
-             c.active
+             c.active,
+             (
+               b.category is null
+               and coalesce(refs.document_lines, 0) = 0
+               and coalesce(refs.transaction_splits, 0) = 0
+               and coalesce(refs.child_categories, 0) = 0
+             ) as deletable
         from categories c
         left join budgets b on b.tenant_id = c.tenant_id and b.category = c.name
         left join (
@@ -118,9 +133,102 @@ export async function listCategories(
            where d.deleted_at is null and d.review_status <> 'rejected'
            group by l.category_id
         ) u on u.category_id = c.id
+        left join lateral (
+          select
+            (select count(*) from document_lines dl where dl.category_id = c.id) as document_lines,
+            (select count(*) from transaction_splits ts where ts.category_id = c.id) as transaction_splits,
+            (select count(*) from categories ch where ch.parent_id = c.id) as child_categories
+        ) refs on true
        order by c.name
     `);
     return rows.rows;
+  });
+}
+
+/** What is holding onto a category, in the terms the refusal message uses. */
+export type CategoryUsage = {
+  documentLines: number;
+  transactionSplits: number;
+  childCategories: number;
+  hasBudget: boolean;
+};
+
+/** One clause per kind of reference that is actually present, in a fixed order. */
+function describeUsage(usage: CategoryUsage): string[] {
+  const parts: string[] = [];
+  if (usage.documentLines > 0) {
+    parts.push(`${usage.documentLines} receipt line${usage.documentLines === 1 ? '' : 's'}`);
+  }
+  if (usage.transactionSplits > 0) {
+    parts.push(
+      `${usage.transactionSplits} ledger ${usage.transactionSplits === 1 ? 'entry' : 'entries'}`,
+    );
+  }
+  if (usage.childCategories > 0) {
+    parts.push(
+      `${usage.childCategories} subcategor${usage.childCategories === 1 ? 'y' : 'ies'} nested under it`,
+    );
+  }
+  if (usage.hasBudget) parts.push('a monthly budget');
+  return parts;
+}
+
+export type DeleteCategoryResult =
+  | { outcome: 'deleted' }
+  | { outcome: 'not_found' }
+  | { outcome: 'in_use'; reasons: string[] };
+
+/**
+ * Deletes a category — but ONLY when nothing points at it.
+ *
+ * `document_lines.category_id`, `transaction_splits.category_id` and a
+ * category's own `parent_id` are real foreign keys with no `ON DELETE`
+ * clause, so Postgres already refuses the bare DELETE below whenever one of
+ * those exists (default action is `NO ACTION`/RESTRICT — nothing here relies
+ * on cascading to make deletion "work"). `budgets.category` is NOT a foreign
+ * key: a budget is matched to a category by NAME (see `listCategories`), so a
+ * category with a budget would otherwise delete cleanly and leave a budget
+ * row pointing at a name nothing answers to. That case is checked explicitly.
+ *
+ * All four are checked up front, in the same transaction as the delete, so
+ * the refusal names every reason at once rather than surfacing whichever
+ * foreign key Postgres happened to hit first.
+ */
+export async function deleteCategory(
+  userId: string,
+  tenantId: string,
+  name: string,
+): Promise<DeleteCategoryResult> {
+  return tx(getDb(), userId, tenantId, async (t) => {
+    const found = await t.execute<{ id: string }>(sql`
+      select id from categories where tenant_id = ${tenantId} and name = ${name}
+    `);
+    const cat = found.rows[0];
+    if (!cat) return { outcome: 'not_found' as const };
+
+    const usageRows = await t.execute<{
+      document_lines: number;
+      transaction_splits: number;
+      child_categories: number;
+      has_budget: boolean;
+    }>(sql`
+      select
+        (select count(*)::int from document_lines where category_id = ${cat.id}) as document_lines,
+        (select count(*)::int from transaction_splits where category_id = ${cat.id}) as transaction_splits,
+        (select count(*)::int from categories where parent_id = ${cat.id}) as child_categories,
+        exists(select 1 from budgets where tenant_id = ${tenantId} and category = ${name}) as has_budget
+    `);
+    const row = usageRows.rows[0]!;
+    const reasons = describeUsage({
+      documentLines: row.document_lines,
+      transactionSplits: row.transaction_splits,
+      childCategories: row.child_categories,
+      hasBudget: row.has_budget,
+    });
+    if (reasons.length > 0) return { outcome: 'in_use' as const, reasons };
+
+    await t.execute(sql`delete from categories where tenant_id = ${tenantId} and id = ${cat.id}`);
+    return { outcome: 'deleted' as const };
   });
 }
 

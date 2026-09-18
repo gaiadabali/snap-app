@@ -77,7 +77,13 @@ const BUSINESS_GROUPS: Group[] = [
       { label: 'Categories', hint: 'How spending is sorted', glyph: '🏷', hue: '#EF6C7E', href: '/categories' },
       { label: 'Credits', hint: 'Scans this workspace has bought or been given', glyph: '💳', hue: '#1878D8', href: '/credits' },
       { label: 'Points', hint: 'Yours, earned by scanning', glyph: '✦', hue: '#9B6BF2', href: '/points' },
-      { label: 'Credits', hint: 'Balance and usage', glyph: '⭐', hue: '#F2994A', href: '/plan' },
+      // NOT 'Credits'. `/credits` above is the balance, the packs and the
+      // purchase history; this screen is THIS MONTH'S USAGE — scans used, and
+      // what happens if you run out. Both were labelled 'Credits' after the
+      // subscription was dropped and 'Plan' was relabelled without noticing the
+      // entry above already existed, so the menu showed the same word twice
+      // pointing at two different screens.
+      { label: 'Usage', hint: 'Scans used this month', glyph: '⭐', hue: '#F2994A', href: '/plan' },
     ],
   },
 ];
@@ -103,7 +109,13 @@ const PERSONAL_GROUPS: Group[] = [
     entries: [
       { label: 'Credits', hint: 'Scans you have bought or been given', glyph: '💳', hue: '#1878D8', href: '/credits' },
       { label: 'Points', hint: 'Earned by scanning', glyph: '✦', hue: '#9B6BF2', href: '/points' },
-      { label: 'Credits', hint: 'Balance and usage', glyph: '⭐', hue: '#F2994A', href: '/plan' },
+      // NOT 'Credits'. `/credits` above is the balance, the packs and the
+      // purchase history; this screen is THIS MONTH'S USAGE — scans used, and
+      // what happens if you run out. Both were labelled 'Credits' after the
+      // subscription was dropped and 'Plan' was relabelled without noticing the
+      // entry above already existed, so the menu showed the same word twice
+      // pointing at two different screens.
+      { label: 'Usage', hint: 'Scans used this month', glyph: '⭐', hue: '#F2994A', href: '/plan' },
     ],
   },
   {

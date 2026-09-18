@@ -1578,6 +1578,7 @@ export class MockApi implements SnapApi {
     return [...names]
       .map((name) => {
         const rows = mine.filter((d) => d.category === name);
+        const hasBudget = budgets.some((b) => b.category === name);
         return {
           name,
           taxLabel:
@@ -1588,6 +1589,9 @@ export class MockApi implements SnapApi {
           documentCount: rows.length,
           totalSpend: sumDecimal(rows.map((d) => d.payableAmount)),
           active: !inactiveCategories.has(name),
+          // Mirrors the server's rule: nothing filed against it and no budget.
+          // There is no ledger or subcategory concept in this mock.
+          deletable: rows.length === 0 && !hasBudget,
         };
       })
       .sort((a, b) => Number(b.totalSpend) - Number(a.totalSpend));
@@ -1620,6 +1624,26 @@ export class MockApi implements SnapApi {
     } else {
       customCategories.add(clean);
     }
+    return this.listCategorySettings(workspace);
+  }
+
+  async deleteCategory(name: string): Promise<CategorySetting[]> {
+    await settle(140);
+    const workspace = docs.find((d) => d.category === name)?.workspace ?? 'business';
+    const current = await this.listCategorySettings(workspace);
+    const row = current.find((c) => c.name === name);
+    if (!row) throw new Error(`No category called ${name}.`);
+    if (!row.deletable) {
+      const reasons: string[] = [];
+      if (row.documentCount > 0) {
+        reasons.push(`${row.documentCount} receipt${row.documentCount === 1 ? '' : 's'}`);
+      }
+      if (row.monthlyBudget) reasons.push('a monthly budget');
+      throw new Error(`"${name}" cannot be deleted — it has ${reasons.join(' and ')}. Switch it off instead.`);
+    }
+    budgets = budgets.filter((b) => b.category !== name);
+    customCategories.delete(name);
+    inactiveCategories.delete(name);
     return this.listCategorySettings(workspace);
   }
 

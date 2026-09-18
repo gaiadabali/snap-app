@@ -32,6 +32,28 @@ what the OS will actually let an app see, and is always somewhat under the
 number on the box (a "8 GB" A71 reports ~7.3 GiB). Every entry below records
 where its figure came from, because a registry of guesses would recreate the
 problem this file is here to stop.
+
+OWNER DECISION, 2026-09-18 (OD-15). No 4 GB floor device has ever been in
+hand, and the A71 is "the handset actually on the desk" (see its entry
+below). The owner accepted `galaxy-a71-8gb` as the **bench device for now**,
+with an iOS floor device to follow later. Recorded here, dated, so the next
+reader sees a decision rather than a habit that formed by default:
+
+  * ACCEPTED for FUNCTION: does a model load at all, does ML Kit / Vision /
+    a Stage-3 VLM resolve, do boxes land on the right glyphs, does the
+    structurer read genuine thermal print off a real handset.
+  * ACCEPTED for RELATIVE comparison: model A vs model B, or engine A vs
+    engine B, on IDENTICAL hardware -- the A71 held constant while the
+    variable under test changes.
+  * NOT ACCEPTED, and this decision does not attempt to make it so, for
+    FIT: whether a 4 GB phone can hold a given model's memory footprint.
+    `may_decide_fit('galaxy-a71-8gb')` returns `False` below, unchanged,
+    for the reason it already gave before this decision existed: a phone
+    with 3.4 GB more headroom than the floor produces latency and peak-
+    memory numbers that pass and mean nothing about the floor device. The
+    owner accepting a bench device is not a claim that the bench device IS
+    the floor -- those are different sentences and this file must not let
+    them collapse into one.
 """
 from __future__ import annotations
 
@@ -74,6 +96,21 @@ DEVICES: dict[str, dict] = {
             'The handset actually on the desk, and the chosen bench device. '
             'It is ~1.8x the floor, so it settles FUNCTION and not FIT.'
         ),
+        'bench_decision': {
+            'decided': '2026-09-18',
+            'by': 'owner',
+            'accepted_for': (
+                'FUNCTIONAL results (does a model load and produce a field '
+                'at all) and RELATIVE comparisons on identical hardware '
+                '(model A vs model B, engine A vs engine B). iOS floor '
+                'device to follow later.'
+            ),
+            'not_accepted_for': (
+                'FIT. may_decide_fit() below is unchanged by this decision '
+                'and still returns False for this device -- see the module '
+                'docstring.'
+            ),
+        },
     },
     'galaxy-a6-3gb': {
         'label': 'Samsung Galaxy A6 (2018, 3 GB)',
@@ -156,6 +193,13 @@ def banner(device: str | None) -> str:
     ]
     if entry.get('os'):
         lines.append(f'  OS:   {entry["os"]}')
+    bench_decision = entry.get('bench_decision')
+    if bench_decision:
+        lines.append(
+            f'  BENCH DECISION ({bench_decision["decided"]}, {bench_decision["by"]}): '
+            f'accepted for {bench_decision["accepted_for"]}'
+        )
+        lines.append(f'    NOT accepted for: {bench_decision["not_accepted_for"]}')
     lines.append(f'  FIT (timing / memory vs §6.1): {"DECIDES" if ok else "CANNOT DECIDE"}')
     lines.append(f'    {why}')
     lines.append('  FUNCTION (does it read the document correctly): measured, and real.')
@@ -168,9 +212,13 @@ if __name__ == '__main__':
     assert role_of('galaxy-a71-8gb') == ROLE_ABOVE
     assert role_of('galaxy-a6-3gb') == ROLE_BELOW
 
-    # The bench device must not be able to close the fit gate.
+    # The bench device must not be able to close the fit gate -- and the
+    # 2026-09-18 owner decision to accept it as the bench device must not
+    # have moved this. Recording a decision is not the same act as
+    # weakening a refusal.
     ok, why = may_decide_fit('galaxy-a71-8gb')
     assert ok is False and 'mean nothing' in why, why
+    assert DEVICES['galaxy-a71-8gb']['bench_decision']['decided'] == '2026-09-18'
 
     # Below the floor is a HARDER test, so it is allowed to decide.
     ok, _ = may_decide_fit('galaxy-a6-3gb')

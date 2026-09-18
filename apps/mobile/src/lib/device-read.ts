@@ -3,6 +3,7 @@ import { structure } from '@snap/docai-preview';
 
 import { deviceInfo, isAvailable, recognise } from '../../modules/snap-ocr/src';
 
+import { evaluateQualityGate, type QualityGateWarning } from './quality-gate';
 import type { Preview } from './provisional';
 
 /**
@@ -30,6 +31,14 @@ export type DeviceRead = {
   engineVersion: string;
   timings: { recogniseMs: number; structureMs: number };
   device: { platform: string; osVersion: string; model?: string; totalMemoryMb?: number };
+  /**
+   * OD-13's live quality gate, evaluated over the same DocDOM and fields as
+   * the preview above. `null` when there is nothing to warn about — which is
+   * also what a phone that cannot run the gate at all produces, since this is
+   * only ever set inside the branch where a read already exists. See
+   * `./quality-gate.ts` for what fires today and what is built but disabled.
+   */
+  qualityWarning: QualityGateWarning | null;
 };
 
 /** Fields the preview is allowed to show. Anything else the structurer produces is ignored. */
@@ -60,6 +69,14 @@ export async function readOnDevice(uri: string): Promise<DeviceRead | null> {
     const fields = structure(result.document as never);
     const structureMs = Date.now() - structureStart;
 
+    // OD-13. Reads what `structure()` already produced — no extra recognition,
+    // no extra latency, and it cannot throw into this function (it catches
+    // internally; see `quality-gate.ts`). Computed from the FULL field set,
+    // before `SHOWN` narrows `preview` below, because the gate cares whether
+    // the structurer found a total at all, not whether that field is one of
+    // the ones the screen shows.
+    const qualityWarning = evaluateQualityGate(result.document, fields);
+
     const preview: Preview = {};
     for (const path of SHOWN) {
       const field = (fields as Record<string, unknown>)[path] as
@@ -87,6 +104,7 @@ export async function readOnDevice(uri: string): Promise<DeviceRead | null> {
         // every capture and thrown away before the payload was built.
         totalMemoryMb: info.totalMemoryMb,
       },
+      qualityWarning,
     };
   } catch {
     // See the module comment. A capture must never fail because a preview did.

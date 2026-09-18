@@ -322,6 +322,13 @@ export interface SnapApi {
     workspace: Workspace,
     monthlyBudget?: string | null,
   ): Promise<CategorySetting[]>;
+  /**
+   * Deletes a category that nothing uses. The server refuses this — with a
+   * message naming why — for a category that has a receipt, a ledger entry, a
+   * subcategory or a budget; `setCategoryActive(name, false)` is the tool for
+   * that case instead.
+   */
+  deleteCategory(name: string): Promise<CategorySetting[]>;
   getPlanUsage(): Promise<PlanUsage>;
   listConnections(): Promise<Connection[]>;
   /**

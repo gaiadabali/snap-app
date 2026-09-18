@@ -6,10 +6,12 @@ import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
 
 import { readOnDevice, recordReading, type DeviceRead } from '@/lib/device-read';
+import type { QualityGateWarning } from '@/lib/quality-gate';
 import { ActivityIndicator, Alert, Image, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, type CapturePageUpload } from '@/api';
+import { QualityGateNotice } from '@/components/QualityGateNotice';
 import { ScanLine } from '@/components/ScanLine';
 import { Body, Button, Card, Figure, Label, Screen, Small } from '@/components/ui';
 import { radius, space, usePalette } from '@/theme';
@@ -141,6 +143,16 @@ export default function CaptureScreen() {
    * supplier name costs time nobody gets back. The server reads every page.
    */
   const deviceReadRef = useRef<DeviceRead | null>(null);
+  /**
+   * OD-13 — the live quality gate's verdict on the first page, if any.
+   *
+   * Set alongside `deviceReadRef` and nowhere else. Advisory only: by the time
+   * this can be non-null, `readOnDevice` has already run to completion and
+   * `uploadAndExtract` proceeds exactly as it would without this state — see
+   * `QualityGateNotice`'s own comment for why neither action it offers can
+   * block or delay the capture already under way.
+   */
+  const [qualityWarning, setQualityWarning] = useState<QualityGateWarning | null>(null);
   const [torch, setTorch] = useState(false);
   /**
    * Whether the overlay cards are showing.
@@ -217,6 +229,11 @@ export default function CaptureScreen() {
     // the capture.
     if (pages.length === 0) {
       deviceReadRef.current = await readOnDevice(photo.uri);
+      // OD-13. `readOnDevice` never throws (see its own module comment) and
+      // always resolves `qualityWarning` to `null` when there is nothing to
+      // say — including on a phone that cannot run the gate at all, which is
+      // exactly the "captures exactly as it does today" case §9 requires.
+      setQualityWarning(deviceReadRef.current?.qualityWarning ?? null);
     }
 
     const bytes = await new File(photo.uri).arrayBuffer();
@@ -408,10 +425,22 @@ export default function CaptureScreen() {
     setPending(null);
     setPageStatus({});
     setError(null);
+    setQualityWarning(null);
+  }
+
+  /** OD-13's "Retake": clears the tray so a fresh photo can be taken. The upload already in
+   *  flight for the page just warned about is left completely alone — see `QualityGateNotice`. */
+  function retakeAfterWarning() {
+    setQualityWarning(null);
+    deviceReadRef.current = null;
+    setPages([]);
   }
 
   async function onShutter() {
     setError(null);
+    // A new capture cycle starts clean; `shoot()` sets this again below if the
+    // new first page also fails the gate.
+    if (pages.length === 0) setQualityWarning(null);
     try {
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     } catch {
@@ -642,6 +671,14 @@ export default function CaptureScreen() {
           paddingHorizontal: space.lg,
         }}
       >
+        {qualityWarning ? (
+          <QualityGateNotice
+            warning={qualityWarning}
+            onRetake={retakeAfterWarning}
+            onDismiss={() => setQualityWarning(null)}
+          />
+        ) : null}
+
         {error ? (
           <Card tone="risk" style={{ width: '100%' }}>
             <View style={{ gap: space.xs }}>
@@ -751,7 +788,13 @@ export default function CaptureScreen() {
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="Discard the collected pages"
-                  onPress={() => setPages([])}
+                  onPress={() => {
+                    setPages([]);
+                    // Page one — the one `readOnDevice` and the quality gate
+                    // ever look at — goes with the tray.
+                    deviceReadRef.current = null;
+                    setQualityWarning(null);
+                  }}
                   style={{ justifyContent: 'center', paddingHorizontal: space.sm }}
                 >
                   <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '700' }}>Clear</Text>

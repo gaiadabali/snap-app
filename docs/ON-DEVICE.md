@@ -142,6 +142,35 @@ on-phone numbers. Those numbers are the argument against it:
 | Time-to-first-field on the floor device | **[estimate]** — image ≈ 256–512 tokens + prompt ≈ 200, JSON out ≈ 150 tokens. Flagship: ≈ 1.3 s prefill + 3.2 s decode + image encode ≈ **5 s**. Mid-range at 5–10× slower CPU: **20–45 s**, if it loads at all beside the OS in 4 GB | p50 ≤ 1.5 s target |
 | Where the total came from | A string; **no span, no box** | A span id and a box, by construction |
 
+**OD-15 Stage 3(b) spike — measured rows, pending a device.** `apps/server/bench/vlm_spike_server.py`
+and `vlm_spike.py` are the harness (31 passing tests in `test_vlm_spike.py`); `adb devices` is empty
+for this whole ticket, so nothing below is a number — each cell states what will fill it and why it
+cannot yet:
+
+| Model | Runtime | Licence (D23) | Time-to-first-field | Peak memory | First-run download |
+|---|---|---|---|---|---|
+| Gemma 4 E2B | `llama.rn` | **Apache-2.0 — passes** **[verified]** §2.1; `npm view llama.rn license` → MIT, 2026-09-18 | **PENDING — no device attached.** Run `python apps/server/bench/vlm_spike_server.py --device galaxy-a71-8gb --model gemma-4-e2b` against a real handset | **PENDING**, same run | **PENDING**, same run — cited estimate is 2.58 GB (§2.1), not a measurement |
+| Florence-2-base | `react-native-executorch` | **MIT — passes** **[verified]** §2.1; `npm view react-native-executorch license` → MIT, 2026-09-18 | **PENDING — no device attached.** Run `python apps/server/bench/vlm_spike_server.py --device galaxy-a71-8gb --model florence-2-base` against a real handset | **PENDING**, same run | **PENDING**, same run — cited estimate is ~0.5 GB f16 (§2.1), not a measurement |
+
+**A format mismatch found while building the harness, not resolvable without more research
+[estimate/uncertain — record before spending phone time].** Gemma 4 E2B ships as `.litertlm`
+(MediaPipe/LiteRT-LM); `llama.rn` loads GGUF. No GGUF re-export of Gemma 4 E2B was found and verified
+in this pass. Florence-2-base has no GGUF path either; `react-native-executorch` loads `.pte`
+(ExecuTorch), so an ExecuTorch export of Florence-2-base is the intended route and needs confirming
+in hand before a dev-build run. Neither gap changes the licence verdict — both models and both
+runtimes clear D23 — but a first phone session should confirm the artefact exists before it spends a
+day discovering it does not.
+
+**Device note.** `apps/server/bench/devices.py` records the owner's 2026-09-18 decision to accept
+`galaxy-a71-8gb` (7519 MB measured, ~1.8× the 4 GB floor) as the bench device for *functional* results
+and *relative* comparisons between the two models, with an iOS floor device to follow later.
+`may_decide_fit('galaxy-a71-8gb')` still returns `False`, unchanged — a peak-memory or
+time-to-first-field number from this phone would still not settle whether a 4 GB device copes, and
+`vlm_spike_server.py`'s own output states this every time it runs (see the `devices.banner()` output
+in its docstring). If OD-15 is run before a true floor device is in hand, the resulting §2.2 row must
+carry the same "does not settle §6.1" caveat `vlm_spike.render_od2_2_row()` already attaches
+automatically.
+
 MediaPipe's own guidance for this model class: *"The LLM Inference API is optimized for high-end
 Android devices, such as Pixel 8 and Samsung S23 or later"* **[verified]**. Google is telling us
 which phones it works on, and the A16 is not one of them.
@@ -840,15 +869,106 @@ coordinate mapping is non-obvious, multi-file work where a wrong first cut is a 
 *Done when:* on the Galaxy A16 5G, `device-ppocr` beats `device-mlkit` on OD-5's metrics on the
 same gold set, within §1.3, or the ticket is closed with the measured reason.
 
+**MEASURED 2026-09-18 — and the number is the answer.** The engine builds and links.
+A release APK (arm64-v8a, as `deploy/build-apk.sh` ships) is **87,320,200 bytes**
+against the **52,895,809** baseline: **+34,424,391 bytes, +32.83 MiB, a 65% larger
+install.** Almost all of it is one file, `lib/arm64-v8a/libonnxruntime.so` at
+32,990,472 bytes, plus `libonnxruntimejsi.so` at 361,624.
+
+The download-on-first-use design HELD: no `.onnx` is in the APK, only the 27,156-byte
+character dictionary. This cost is the ONNX Runtime binary itself, not the weights.
+
+**`PPOCR_ENABLED = false` DOES NOT AVOID IT.** A flag gates JavaScript; it does not
+gate a native library. With `onnxruntime-react-native` in `package.json`, that 33 MiB
+is in every user's APK whether the engine ever runs or not. So this is not a
+"ship it off by default and decide later" — it is a binary choice.
+
+*Two blockers were cleared to get here, both recorded because the errors misled:*
+(1) the package ships a `unimodule.json`, so expo-modules-autolinking adopted it as a
+legacy unimodule and failed with `SoftwareComponent with name 'release' not found` —
+blaming `:expo`, not the package. Removing the marker hands it to React Native's
+autolinking. **An earlier attempt used `expo.autolinking.exclude` and that is a
+trap: it does not hand the module to RN, it removes it. The build passed, the APK
+had zero ORT `.so` files, and the +0.09 MiB "delta" measured dead code.**
+(2) ORT 1.24.3's `build.gradle` calls `org.gradle.util.VersionNumber`, removed in
+Gradle 9 (this project runs 9.3.1), in one unreachable branch guarding React Native
+< 0.71 — this app is on 0.86.3.
+
+*Still unrun:* the OD-5 accuracy comparison against `device-mlkit`, which needs the
+handset. **So nothing here says PP-OCR is better — only what it costs.** Paying 33 MiB
+for an engine with no measured accuracy benefit is not a trade anybody has evidence
+for. A reduced ORT Mobile build (custom `.ort` operator set) is the obvious lever if
+the accuracy case is later made.
+
 *Was assigned `senior-integrator`, reassigned 2026-09-18 after that role declined it on scope:*
 nothing here crosses a service boundary. It is one Android module — tensors, CTC decode and Gradle
 plumbing — with no gateway call, no event bridge and no tenancy to reason about. The dependency
 `onnxruntime-react-native` made it *look* like integration work and it is not.
 
 **OD-15 · Gemma 4 E2B and Florence-2-base floor-device spike** — `medior` · default.
+
+*Model-format check, 2026-09-18 — the two models are NOT equally reachable.*
+The harness landed assuming either runtime would do. They do not:
+
+- **Gemma 4 E2B — reachable now.** It ships as `.litertlm`, which `llama.rn`
+  cannot load, but a pre-converted GGUF exists (`unsloth/gemma-4-E2B-it-GGUF`)
+  and llama.cpp has carried native Gemma 4 support since April 2026. No export
+  work; point `llama.rn` at the GGUF.
+- **Florence-2-base — NOT reachable off the shelf.** `react-native-executorch`
+  loads `.pte`, and Software Mansion's pre-exported collection (LLaMa 3.2,
+  Qwen 2.5, SmolLM2, LFM 2.5, mpnet, efficientnet) does not include it. Self-
+  export via `optimum-executorch` would be required, and Florence-2 is a vision
+  encoder-decoder — the awkward case for that toolchain, not a shape anyone has
+  demonstrated. **Stated as NOT FOUND, not as proven impossible**; a search is
+  not an exhaustive proof, and the distinction matters before someone spends a
+  week on it.
+
+*Consequence for sequencing:* Gemma can be measured as soon as a phone is
+attached. Florence-2 needs an export spike FIRST, and that spike may fail — in
+which case "Florence-2-base cannot be exported to `.pte`" is itself the result
+this ticket asks for, and §2.2 should say so rather than leaving a blank.
+
+*And a cost this ticket inherits from OD-14:* whichever runtime is chosen ships
+NATIVE LIBRARIES, exactly as `onnxruntime-react-native` did at +32.8 MiB. A
+spike build carrying them is fine; shipping one is a separate decision that
+needs the same measurement OD-14 now has.
+**Harness delivered 2026-09-18; measurement still PENDING — no device attached.**
+
+Licence floor checked first, per D23: Gemma 4 E2B (Apache-2.0, LiteRT-LM page), Florence-2-base
+(MIT, HF card), `react-native-executorch` (MIT) and `llama.rn` (MIT) all pass. `adb devices` was
+empty for the whole of this ticket, so no time-to-first-field, peak-memory or first-run-download
+number may be written down — `apps/server/bench/provenance.py`'s whole convention is that a
+number without provenance is not recorded, and the same discipline applies here even though this
+spike has no corpus tier of its own.
+
+*Delivered:* `apps/server/bench/vlm_spike.py` (model/runtime registry with the D23 verdicts and
+licence sources; payload validation; per-model/per-device result files; the §2.2 row renderer,
+which attaches the "does not settle §6.1" caveat automatically for an above-floor device) and
+`apps/server/bench/vlm_spike_server.py` (the `adb reverse`-served receiver, same shape as
+`device_server.py`'s OD-1 harness). 31 tests in `test_vlm_spike.py`, all passing, plus a live
+smoke test (a synthetic POST round-tripped through the actual HTTP server, then deleted — never
+committed as a result). `apps/server/bench/devices.py` gained a dated, explicit owner decision
+(§ above the `DEVICES` dict and on the `galaxy-a71-8gb` entry) accepting that handset as the bench
+device for FUNCTION and RELATIVE comparison; `may_decide_fit('galaxy-a71-8gb')` is unchanged and
+still refuses to let it settle FIT.
+
+*Run once a phone is attached:*
+```
+adb reverse tcp:8100 tcp:8100
+python apps/server/bench/vlm_spike_server.py --device galaxy-a71-8gb --model gemma-4-e2b
+python apps/server/bench/vlm_spike_server.py --device galaxy-a71-8gb --model florence-2-base
+```
+each paired with a dev-build screen in `apps/mobile/` (out of this ticket's file ownership) that
+loads the model, times model-load and time-to-first-field, samples peak memory, and POSTs the
+JSON `vlm_spike.validate_result` documents to `/result`. On shutdown the server prints a pasteable
+§2.2 row. **Before that run:** confirm a GGUF export of Gemma 4 E2B and a `.pte` export of
+Florence-2-base actually exist — the harness surfaces this as `runtime_caveat` because neither
+model's published artefact format matches its intended runtime directly (see §2.2).
+
 *Done when:* time-to-first-field, peak memory and first-run download recorded on both floor
 devices via `react-native-executorch` or `llama.rn`, and §2.2 updated with measured rows — a
-result either way.
+result either way. **Not yet met**: no floor device (nor even the accepted bench device) was
+physically available to this ticket. The harness that makes the run a single command is met.
 
 ### Housekeeping
 

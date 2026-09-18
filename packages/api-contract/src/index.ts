@@ -902,6 +902,12 @@ export interface CategorySetting {
   totalSpend: string;
   /** False for a category the user has switched off; it stops being offered. */
   active: boolean;
+  /**
+   * True when nothing references this category — no receipts, no ledger
+   * entries, no subcategories, no budget. Only then does DELETE succeed; the
+   * server re-checks this independently of whatever the client shows.
+   */
+  deletable: boolean;
 }
 
 export interface PlanUsage {

@@ -1,7 +1,9 @@
 import {
   BadRequestException,
   Body,
+  ConflictException,
   Controller,
+  Delete,
   Get,
   HttpCode,
   NotFoundException,
@@ -34,6 +36,7 @@ import { readPlan, readTenant, updateTenant } from '../repo.js';
 import { abnIsValid } from '../extraction/validators.js';
 import {
   createCategory,
+  deleteCategory,
   listCategories,
   listConnections,
   readTaxPack,
@@ -191,6 +194,7 @@ export class SettingsController {
       documentCount: r.document_count,
       totalSpend: r.total_spend,
       active: r.active,
+      deletable: r.deletable,
     }));
   }
 
@@ -222,6 +226,27 @@ export class SettingsController {
   ): Promise<CategorySetting[]> {
     const found = await setCategoryActive(user.userId, tenantId, name, body.active);
     if (!found) throw new NotFoundException(`No category called ${name}.`);
+    return this.categories(user, tenantId);
+  }
+
+  @Delete('settings/categories/:name')
+  @ApiOperation({
+    summary: 'Delete a category that nothing uses',
+    description:
+      'Refused whenever anything points at the category — a receipt line, a ledger entry, a subcategory, or a budget — because deleting it would either fail a foreign key or, for a budget, silently orphan one. A category with any history should be switched off instead: same effect on new receipts, none of the risk to old ones.',
+  })
+  async removeCategory(
+    @CurrentUser() user: AuthUser,
+    @WorkspaceId() tenantId: string,
+    @Param('name') name: string,
+  ): Promise<CategorySetting[]> {
+    const result = await deleteCategory(user.userId, tenantId, name);
+    if (result.outcome === 'not_found') throw new NotFoundException(`No category called ${name}.`);
+    if (result.outcome === 'in_use') {
+      throw new ConflictException(
+        `"${name}" cannot be deleted — it has ${joinWithAnd(result.reasons)}. Switch it off instead.`,
+      );
+    }
     return this.categories(user, tenantId);
   }
 
@@ -382,6 +407,12 @@ export class SettingsController {
         'Business records must be kept for five years from the date they were prepared, obtained or the transaction completed — whichever is latest.',
     };
   }
+}
+
+/** "a" | "a and b" | "a, b and c" — for naming every blocking reason at once. */
+function joinWithAnd(items: string[]): string {
+  if (items.length <= 1) return items[0] ?? '';
+  return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
 }
 
 /* ── The providers this server knows how to talk to ──────────────────────── */
