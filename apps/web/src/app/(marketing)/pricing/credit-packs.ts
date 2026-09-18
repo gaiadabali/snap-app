@@ -31,11 +31,54 @@ export const MODEL_COST_AUD = 0.011;
 /** The owner's multiple. */
 export const PRICE_MULTIPLE = 3;
 
-/** What one credit — one scan — costs, GST-inclusive AUD. */
-export const CREDIT_PRICE_AUD = MODEL_COST_AUD * PRICE_MULTIPLE;
+/** What we must RETAIN per credit, after everything has been taken out of it. */
+export const RETAINED_PER_CREDIT_AUD = MODEL_COST_AUD * PRICE_MULTIPLE;
 
-/** The bundles on sale, smallest first. Matches `credit_packs` in 0027. */
-export const PACK_SIZES = [10, 50, 100, 200, 500, 1000] as const;
+/**
+ * GST as a share of a GST-INCLUSIVE price. Ten per cent added to an ex-GST
+ * price is one eleventh of the inclusive one, which is the figure that matters
+ * when grossing up.
+ *
+ * ASSUMES THE BUSINESS IS REGISTERED FOR GST. Registration is compulsory only
+ * above $75,000 turnover; below it, charging or stating GST is not permitted.
+ * If that is not true yet, this becomes 0 — see the note in migration 0029.
+ */
+export const GST_SHARE_OF_INCLUSIVE = 1 / 11;
+
+/** The proportional part of card processing. The fixed part is deliberately absent. */
+export const CARD_FEE_RATE = 0.0175;
+
+/**
+ * One price, with everything already in it.
+ *
+ * The customer sees a single number and that number covers the inference, the
+ * margin, GST and the card fee. Nothing is added at checkout. So the rate is
+ * grossed UP from what has to survive the deductions:
+ *
+ *     0.0330 / (1 - 1/11 - 0.0175) = $0.037012...
+ *
+ * Published as $0.037, which is not a convenience rounding: at 3.7 cents every
+ * pack on sale lands on an exact cent, so no total needs explaining.
+ *
+ * WHAT IS NOT IN IT: the fixed ~30c per transaction. It cannot be, while
+ * pricing is flat — a per-transaction cost spread over a variable number of
+ * scans is a different per-scan price for every pack, which is the taper the
+ * owner rejected. Absorbing it means the retained multiple climbs with pack
+ * size (2.45x at 50 credits, 2.97x at 1000) instead of sitting at exactly 3x.
+ * Flat pricing and an exact 3x everywhere cannot both hold.
+ */
+export const CREDIT_PRICE_AUD = 0.037;
+
+/**
+ * The bundles on sale, smallest first. Matches the ACTIVE rows of
+ * `credit_packs` after migration 0029.
+ *
+ * The 10-pack is retired, not deleted: at $0.33 it netted about two cents
+ * after the fixed card fee against $0.11 of inference, so it lost money on
+ * every sale — the only pack that did, with break-even at about fourteen
+ * credits. It also duplicated the ten scans every new account already gets.
+ */
+export const PACK_SIZES = [50, 100, 200, 500, 1000] as const;
 
 /** Scans a brand-new account starts with — `usage_grants.source = 'signup_bonus'`. */
 export const FREE_SCANS_AT_SIGNUP = 10;
@@ -55,6 +98,11 @@ export type CreditPack = {
  */
 export function packPrice(credits: number): string {
   return (credits * CREDIT_PRICE_AUD).toFixed(2);
+}
+
+/** The GST inside a pack's price, for a receipt line. */
+export function packGst(credits: number): string {
+  return (credits * CREDIT_PRICE_AUD * GST_SHARE_OF_INCLUSIVE).toFixed(2);
 }
 
 export const CREDIT_PACKS: readonly CreditPack[] = PACK_SIZES.map((credits) => ({
