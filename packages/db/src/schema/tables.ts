@@ -37,6 +37,9 @@ import {
   extractionEngine,
   financialAccountType,
   gstBasis,
+  matchCandidateStatus,
+  matchProposer,
+  observationKind,
   pageSource,
   reviewStatus,
   runStatus,
@@ -933,4 +936,47 @@ export const statementLines = pgTable('statement_lines', {
   /** {"amount":"...","currency":"...","rate":"..."} for FX rows; {} otherwise. */
   foreignFx: jsonb('foreign_fx').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+// ── The observation register (0032, docs/STATEMENTS.md §5.3.1, Lane R ticket
+// R5a) ───────────────────────────────────────────────────────────────────
+//
+// `match_candidates` is hypotheses and their outcomes; `event_observations`
+// is facts only — a row exists iff a human (or the posting act itself) has
+// established that this evidence observes this live event. Kept as two
+// tables on purpose so no reader of `event_observations` can forget to
+// filter on "is this confirmed yet" (there is nothing to filter — every row
+// already is).
+
+export const matchCandidates = pgTable('match_candidates', {
+  id: uuid('id').primaryKey(),
+  tenantId: uuid('tenant_id').notNull(),
+  statementLineId: uuid('statement_line_id').notNull(),
+  /** Always a document in R5 — a candidate references EVIDENCE, never a transaction. */
+  documentId: uuid('document_id').notNull(),
+  status: matchCandidateStatus('status').notNull().default('suggested'),
+  proposedBy: matchProposer('proposed_by').notNull(),
+  matcherVersion: text('matcher_version'),
+  /** FACTS, never a score — amount_exact, date_gap_days, card_last4, merchant_similarity, within_posting_lag. */
+  evidence: jsonb('evidence').notNull(),
+  /** A human's account of an amount difference, set only at accept. 'tip' | 'surcharge' | 'other'. */
+  varianceKind: text('variance_kind'),
+  varianceAmount: moneyAmount('variance_amount'),
+  decidedBy: uuid('decided_by'),
+  decidedAt: timestamp('decided_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const eventObservations = pgTable('event_observations', {
+  id: uuid('id').primaryKey(),
+  tenantId: uuid('tenant_id').notNull(),
+  transactionId: uuid('transaction_id').notNull(),
+  kind: observationKind('kind').notNull(),
+  /** No cascade — evidence outlives links. Exactly one of these two is set, matching `kind`. */
+  documentId: uuid('document_id'),
+  statementLineId: uuid('statement_line_id'),
+  /** NULL for the posting-act row (a receipt-only draft carries no candidate). */
+  candidateId: uuid('candidate_id'),
+  confirmedBy: uuid('confirmed_by'),
+  confirmedAt: timestamp('confirmed_at', { withTimezone: true }).notNull().defaultNow(),
 });

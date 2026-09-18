@@ -1154,6 +1154,62 @@ const AU_CONSUMPTION_TAX: Pick<ConsumptionTaxSpec, 'inclusiveFraction' | 'baseFr
   baseFraction: { n: 1, d: 1 },
 };
 
+/**
+ * R5e (`docs/STATEMENTS.md` §12 Lane R): `documents.dedup_group_id` —
+ * *"business-key fingerprint group; flag, never auto-merge"* — gets its
+ * writer. Document-to-document, deliberately separate from
+ * `event_observations` (receipt-to-statement-line, built elsewhere): two
+ * documents landing in the same group is a signal for a human, never
+ * permission to combine them.
+ *
+ * Called once the fingerprint the caller computed (or NULL, when any of its
+ * parts was missing — never fabricate a group from partial data) has been
+ * written to the row. If the group now has a second live member, raises
+ * exactly ONE `review_tasks` row, `reason = 'possible_duplicate'` (the
+ * string 0007's own comment already names), naming every document in the
+ * group. A group that already carries a task (resolved or not — "resolve"
+ * here means the existing reject flow, or keep-both, never a second alert
+ * for the same pair) never gets a second one.
+ */
+export async function flagPossibleDuplicate(
+  tx: Tx,
+  tenantId: string,
+  documentId: string,
+  dedupGroupId: string | null,
+): Promise<void> {
+  if (!dedupGroupId) return;
+
+  const others = await tx.execute<{ id: string }>(sql`
+    select id from documents
+     where tenant_id = ${tenantId}
+       and dedup_group_id = ${dedupGroupId}
+       and id != ${documentId}
+       and deleted_at is null
+  `);
+  if (others.rows.length === 0) return;
+
+  const existingTask = await tx.execute(sql`
+    select 1 from review_tasks
+     where tenant_id = ${tenantId}
+       and reason = 'possible_duplicate'
+       and detail ->> 'dedupGroupId' = ${dedupGroupId}
+     limit 1
+  `);
+  if (existingTask.rows.length > 0) return;
+
+  await tx.execute(sql`
+    insert into review_tasks (id, tenant_id, document_id, reason, detail, priority)
+    values (
+      ${randomUUID()}, ${tenantId}, ${documentId}, 'possible_duplicate',
+      ${JSON.stringify({
+        dedupGroupId,
+        documentIds: [...others.rows.map((r) => r.id), documentId],
+      })}::jsonb,
+      4
+    )
+  `);
+}
+
 export async function saveExtraction(
   workerUserId: string,
   tenantId: string,
@@ -1411,6 +1467,30 @@ export async function saveExtraction(
         )
       `);
     }
+
+    // R5e: the business-key fingerprint, over the values the row actually
+    // ended up with (a `keep()`d field included) — computed AFTER the
+    // insert/update above rather than re-deriving the locked-field logic
+    // here, so this can never disagree with what was actually written.
+    // `||` concatenation is NULL-poisoning in Postgres: a NULL supplier, a
+    // NULL issue_date or a NULL payable_amount collapses the whole
+    // expression to NULL rather than fabricating a group from partial data.
+    const fingerprint = await tx.execute<{ dedup_group_id: string | null }>(sql`
+      update documents set
+        dedup_group_id = (
+          select md5(
+                   documents.tenant_id::text || '|' ||
+                   p.name_normalised || '|' ||
+                   documents.issue_date::text || '|' ||
+                   documents.payable_amount::text
+                 )::uuid
+            from parties p
+           where p.id = documents.supplier_id
+        )
+      where id = ${documentId}
+      returning dedup_group_id
+    `);
+    await flagPossibleDuplicate(tx, tenantId, documentId, fingerprint.rows[0]?.dedup_group_id ?? null);
 
     let n = 0;
     for (const line of e.lines) {

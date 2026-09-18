@@ -5,6 +5,7 @@ import type { StatementBalanceCheck } from '@snap/api-contract';
 import { sql } from 'drizzle-orm';
 
 import { getDb } from '../db.js';
+import { flagPossibleDuplicate } from '../repo.js';
 
 /**
  * Database access for statement intake (`docs/STATEMENTS.md` §12 T5).
@@ -179,18 +180,37 @@ export async function createStatementFromCsv(
     // look, which `needs_review` already says honestly.
     const reviewStatus = input.balanceCheck === 'pass' ? 'auto_accepted' : 'needs_review';
 
-    await tx.execute(sql`
+    // R5e (`docs/STATEMENTS.md` §12 Lane R): the statement-side fingerprint —
+    // over (account, period, opening balance, closing balance) — computed at
+    // insert time and 0031's own note that a re-uploaded statement flags
+    // "through the EXISTING `documents.dedup_group_id` path rather than a
+    // second statement-shaped one." Every part here is a required column on
+    // this input, so it is never NULL for a statement the way it can be for
+    // a receipt missing a field — but the same NULL-poisoning `||`
+    // concatenation is used regardless, so that stays true even if a future
+    // caller loosens one of these to optional.
+    const inserted = await tx.execute<{ dedup_group_id: string | null }>(sql`
       insert into documents (
         id, tenant_id, capture_id, doc_type, is_tax_invoice, ato_compliance,
         issue_date, currency, rounding_amount, review_status, field_provenance,
-        locked_fields, created_by, retention_until
+        locked_fields, created_by, retention_until, dedup_group_id
       ) values (
         ${documentId}, ${tenantId}, ${input.captureId}, 'statement', false, '{}'::jsonb,
         ${input.periodEnd}::date, ${input.currency}, '0.0000', ${reviewStatus},
         ${JSON.stringify(input.fieldProvenance)}::jsonb, '{}'::text[], ${input.createdBy},
-        (${input.periodEnd}::date + make_interval(years => ${input.documentRetentionYears}))::date
+        (${input.periodEnd}::date + make_interval(years => ${input.documentRetentionYears}))::date,
+        md5(
+          ${tenantId}::text || '|' ||
+          ${input.financialAccountId}::text || '|' ||
+          ${input.periodStart}::text || '|' ||
+          ${input.periodEnd}::text || '|' ||
+          ${input.openingBalance}::text || '|' ||
+          ${input.closingBalance}::text
+        )::uuid
       )
+      returning dedup_group_id
     `);
+    await flagPossibleDuplicate(tx, tenantId, documentId, inserted.rows[0]?.dedup_group_id ?? null);
 
     const statementId = randomUUID();
     await tx.execute(sql`

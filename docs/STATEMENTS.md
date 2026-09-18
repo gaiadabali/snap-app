@@ -1942,6 +1942,52 @@ the app will look broken in the same way. There is no second provider
 configured to fall back to. This is a known, accepted, temporary exposure and
 not a thing anyone has measured the headroom of.
 
+### 14.1c Settled by the owner, 2026-09-18 (second pass)
+
+*Provenance, because it matters to whoever reads this later:* both were put to
+the owner with the trade-offs and a recommendation, and the owner answered "go
+with the best way" — accepting the recommendation rather than independently
+arriving at it. They are decisions and are binding; they are not independent
+confirmation that the recommendation was right.
+
+**D-S6 — Accepting a match IS the act of posting it.** One tap, under the
+owner/admin rule posting already has.
+*Why:* by the time a match is offered there is nothing left to confirm. The
+receipt was reviewed and confirmed separately, beforehand. The bank line is
+cleared money — it has already left the account, so it is not a claim being
+asserted but a fact the bank is reporting. A second tap would ask a person to
+re-confirm both.
+*Cost:* `0009`'s *"two separate acts"* can be read to require accept-then-post,
+and this reading departs from that. If a business workspace later needs the
+stricter two-step for audit reasons, that is a workspace-level rule and does not
+reopen this for personal use.
+*Changes:* `R5c`'s endpoint semantics and `R5g`'s screen.
+
+**D-S7 — A statement line counts as SPENDING immediately, and becomes a LEDGER
+TRANSACTION only by a human act.** These are different things and the answer is
+to stop conflating them.
+*The rule:* the spending view = posted transactions **plus unmatched statement
+lines**. `event_observations` is what makes the subtraction exact — it knows
+which lines a posted transaction already represents, so nothing is counted
+twice.
+*Why neither option in §5.3.1 was taken.* Keeping statement lines out of the
+view entirely means a tracker that reflects only what the person happened to
+photograph: import 80 lines, 12 match receipts, and the other 68 — parking,
+tolls, coffee — are real money that the app would go on not knowing about. That
+is not a tracker. Posting them automatically fixes the number by letting the
+machine move the books, and a wrong match then double-counts, which §10.6 already
+names as the failure users never forgive.
+*Consequence:* the ledger still contains only what a person confirmed — the
+machine posts nothing, ever. An unmatched line surfaces as spending with no
+receipt behind it, which is `R8`'s *"no receipt for this payment"* in personal
+and the substantiation risk in business. This is D16 applied to money in: a
+posted transaction points at a confirmed receipt, an unmatched line points at
+the bank, and the surface must say which.
+*Changes:* `M9` reads `statement_lines` and subtracts matched ones; `R5d`'s
+post-as-spending stays a human act and its `PersonalSummary`-unchanged assertion
+must be REPLACED — under this decision the summary is expected to change on
+import, and a test asserting otherwise would now be asserting the wrong thing.
+
 ### 14.2 Still open
 
 Three questions survive the decisions above, and the answers still change the
@@ -1961,16 +2007,17 @@ work.
    statement — which is also the only one a trialling user will see. The
    onboarding has to survive that, and no amount of engine accuracy fixes it.
 
-Two more were raised by the R5 design pass of 2026-09-18 (§5.3.1). Both carry a
-recommendation there; neither is decided.
+Two more were raised by the R5 design pass of 2026-09-18 (§5.3.1). **Both were
+decided on the same day — see D-S6 and D-S7 in §14.1c.** They are kept below
+with their answers so the question and its resolution stay together.
 
-4. **Is accepting a match the same act as posting?** §5.3.1 proposes one act —
+4. **DECIDED (D-S6): yes, one act.** §5.3.1 proposed one act —
    accept posts the merged transaction, under the owner/admin rule posting
    already has — because the receipt was confirmed separately beforehand and
    the bank line is cleared money. The alternative is two taps, accept then
    post, which 0009's *"two separate acts"* could be read to require. The
    answer changes `R5c`'s endpoint semantics and `R5g`'s screen.
-5. **Do statement lines count as spending before a person posts them?**
+5. **DECIDED (D-S7): they count as SPENDING immediately, but only a human makes one a LEDGER TRANSACTION — a third answer neither option below proposed.**
    §5.3.1 keeps the machine out of the ledger: a line becomes a transaction only
    through a human act — accept, or `R5d`'s post-as-spending, single or bulk.
    If the personal tracker should show statement spending the moment a

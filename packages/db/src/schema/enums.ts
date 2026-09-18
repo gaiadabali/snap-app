@@ -131,17 +131,23 @@ export const billStatus = pgEnum('bill_status', ['unpaid', 'paid', 'overdue', 'v
 export const pageSource = pgEnum('page_source', ['capture', 'pdf_native', 'pdf_render']);
 
 /**
- * What told the app a savings-goal contribution happened (0030).
+ * What told the app a savings-goal contribution happened (0030, widened 0032).
  *
- * 'manual' is the only value the API will ever write today. 'opening_balance'
- * is written exactly once, by migration 0030 itself, to carry forward a
+ * 'manual' is the only value the API writes today. 'opening_balance' was
+ * written exactly once, by migration 0030 itself, to carry forward a
  * pre-existing `goals.saved` figure honestly rather than inventing history
- * for it. A 'statement_line' member (docs/STATEMENTS.md Lane T — an observed
- * bank transfer the user confirmed) is deliberately absent until that
- * pipeline exists to produce one; adding it later is `ALTER TYPE
- * contribution_source ADD VALUE 'statement_line'`, not a table reshape.
+ * for it. 'statement_line' was added by 0032 (docs/STATEMENTS.md Lane R,
+ * ticket R5a) — the grounding rule that lets the API actually write it
+ * (`(source = 'statement_line') = (source_statement_line_id IS NOT NULL)`,
+ * plus the FK) is a later migration (R5f-1), so this member exists here with
+ * nothing producing it yet, same discipline 0030's own comment used to
+ * explain the wait the other way around.
  */
-export const contributionSource = pgEnum('contribution_source', ['manual', 'opening_balance']);
+export const contributionSource = pgEnum('contribution_source', [
+  'manual',
+  'opening_balance',
+  'statement_line',
+]);
 
 /* ── Statements (0031, docs/STATEMENTS.md Lane T, ticket T3) ───────────── */
 
@@ -174,3 +180,30 @@ export const statementBalanceCheck = pgEnum('statement_balance_check', [
   'residual',
   'unverifiable',
 ]);
+
+/* ── The observation register (0032, docs/STATEMENTS.md §5.3.1, Lane R ticket
+   R5a) ──────────────────────────────────────────────────────────────────── */
+
+/**
+ * What kind of evidence an `event_observations` row points at.
+ *
+ * Exactly one of `document_id` / `statement_line_id` is set, matching the
+ * kind — enforced by `event_observations_pointer_matches_kind` in SQL, not
+ * restated here.
+ */
+export const observationKind = pgEnum('observation_kind', ['document', 'statement_line']);
+
+/**
+ * A `match_candidates` row's life cycle: `suggested -> accepted | rejected`,
+ * `accepted -> unlinked`. Never re-suggested once decided — that is what the
+ * pair-uniqueness constraint on the table is for.
+ */
+export const matchCandidateStatus = pgEnum('match_candidate_status', [
+  'suggested',
+  'accepted',
+  'rejected',
+  'unlinked',
+]);
+
+/** Who proposed a `match_candidates` row — the automated matcher, or a person making a manual link. */
+export const matchProposer = pgEnum('match_proposer', ['matcher', 'user']);

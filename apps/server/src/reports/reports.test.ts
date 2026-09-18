@@ -93,8 +93,28 @@ async function postPosting(
 ): Promise<string> {
   const txnId = randomUUID();
   await admin.query(
-    `insert into transactions (id, tenant_id, txn_date, status, source, document_id)
-     values ($1, $2, $3, 'draft', 'manual', $4)`,
+    // ONE STATEMENT. 0032's `assert_document_id_matches_observation` is
+    // DEFERRED and fires at COMMIT, and each `admin.query` commits on its own —
+    // so a transaction inserted by one call and its observation by the next
+    // trips the trigger at the first commit, when the observation does not yet
+    // exist. `draftTransactionFromDocument` writes both inside one
+    // `withTenantAs`; a raw-SQL fixture has to reproduce that atomicity rather
+    // than route around the trigger, which is asserting precisely the invariant
+    // the register exists for.
+    //
+    // The `where document_id is not null` matters: this helper also builds
+    // transactions with NO document, and `event_observations_pointer_matches_kind`
+    // correctly refuses a 'document' observation pointing at nothing. A
+    // transaction with no document has no document observation — which is the
+    // trigger's own exemption, not a special case for tests.
+    `with t as (
+       insert into transactions (id, tenant_id, txn_date, status, source, document_id)
+       values ($1, $2, $3, 'draft', 'manual', $4)
+       returning id, tenant_id, document_id
+     )
+     insert into event_observations (id, tenant_id, transaction_id, kind, document_id)
+     select gen_random_uuid(), t.tenant_id, t.id, 'document', t.document_id from t
+      where t.document_id is not null`,
     [txnId, tenantId, txnDate, documentId],
   );
   // Exact decimal arithmetic, same helper the ledger itself uses (never a

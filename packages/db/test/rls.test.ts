@@ -53,11 +53,29 @@ describeIfDb('RLS tenant isolation', () => {
     const ids = [[A, B]];
     await c.query(`DELETE FROM jobs WHERE kind = 'rls_probe'`);
     await c.query('DELETE FROM audit_log WHERE tenant_id = ANY($1::uuid[])', ids);
+    await c.query('DELETE FROM transaction_splits WHERE tenant_id = ANY($1::uuid[])', ids);
+    // transactions BEFORE event_observations/match_candidates, deliberately —
+    // not just for the FK (transaction_id CASCADEs either order). 0032's
+    // deferred trigger 2 re-checks `transactions.document_id` against the
+    // register on every DELETE of event_observations, evaluated at the end
+    // of THIS statement since wipeFixtures runs outside an explicit
+    // transaction (each call autocommits). Deleting transactions first means
+    // the cascade that removes their event_observations rows finds no
+    // transaction left to check against (the function's own "transaction
+    // gone -> nothing to judge" branch) instead of finding a still-'posted'
+    // row whose document_id now disagrees with a just-deleted observation.
+    await c.query('DELETE FROM transactions WHERE tenant_id = ANY($1::uuid[])', ids);
+    // Explicit and redundant with the cascade above by design — same
+    // "safe even if a future migration tightens a cascade to RESTRICT"
+    // reasoning this function's own header states. document_id and
+    // statement_line_id on event_observations are plain REFERENCES (no
+    // cascade — "evidence outlives links"), so both must be gone before
+    // statement_lines/documents below regardless.
+    await c.query('DELETE FROM match_candidates WHERE tenant_id = ANY($1::uuid[])', ids);
+    await c.query('DELETE FROM event_observations WHERE tenant_id = ANY($1::uuid[])', ids);
     await c.query('DELETE FROM statement_lines WHERE tenant_id = ANY($1::uuid[])', ids);
     await c.query('DELETE FROM statements WHERE tenant_id = ANY($1::uuid[])', ids);
     await c.query('DELETE FROM financial_accounts WHERE tenant_id = ANY($1::uuid[])', ids);
-    await c.query('DELETE FROM transaction_splits WHERE tenant_id = ANY($1::uuid[])', ids);
-    await c.query('DELETE FROM transactions WHERE tenant_id = ANY($1::uuid[])', ids);
     await c.query('DELETE FROM documents WHERE tenant_id = ANY($1::uuid[])', ids);
     await c.query('DELETE FROM document_field_grounding WHERE tenant_id = ANY($1::uuid[])', ids);
     await c.query('DELETE FROM document_layouts WHERE tenant_id = ANY($1::uuid[])', ids);
@@ -76,6 +94,16 @@ describeIfDb('RLS tenant isolation', () => {
     await c.query('RESET ROLE'); // seed as superuser: RLS is bypassed
     await wipeFixtures(); // idempotent across runs
 
+    // One explicit transaction for the whole fixture graph, not one implicit
+    // transaction per statement (the pg client's default). This matters as
+    // of 0032: `transactions` ('e1111111…', 'e2222222…') is inserted with
+    // `document_id` already set, and trigger 2's deferred check for that
+    // requires the matching `event_observations` row to exist BY COMMIT, not
+    // by the time of the `transactions` INSERT itself. Autocommit-per-
+    // statement would fail that check before the observation row a few
+    // statements below ever lands — exactly the ordering DEFERRABLE
+    // INITIALLY DEFERRED exists to allow within one real transaction.
+    await c.query('BEGIN');
     await c.query(`INSERT INTO tenants (id, name) VALUES ($1,'Tenant A'), ($2,'Tenant B')`, [A, B]);
     await c.query(`
       INSERT INTO users (id, subject, email) VALUES
@@ -182,6 +210,36 @@ describeIfDb('RLS tenant isolation', () => {
         (gen_random_uuid(),$2,'ba222222-0000-0000-0000-000000000001',1,'2026-08-05','COFFEE SHOP B',25.5000)`,
       [A, B],
     );
+    await c.query(
+      // event_observations (0032): the document observation for each
+      // tenant's already-posted, document-backed transaction — the same
+      // shape 0032's own backfill produces.
+      `INSERT INTO event_observations (id, tenant_id, transaction_id, kind, document_id, confirmed_at) VALUES
+        ('eb111111-0000-0000-0000-000000000001',$1,'e1111111-0000-0000-0000-000000000001','document','d1111111-0000-0000-0000-000000000001',now()),
+        ('eb222222-0000-0000-0000-000000000001',$2,'e2222222-0000-0000-0000-000000000001','document','d2222222-0000-0000-0000-000000000001',now())`,
+      [A, B],
+    );
+    await c.query(
+      // match_candidates (0032): one matcher-suggested pair for tenant A,
+      // against A's own statement line and document.
+      `INSERT INTO match_candidates (id, tenant_id, statement_line_id, document_id, proposed_by)
+       SELECT 'ca111111-0000-0000-0000-000000000001', $1, sl.id, 'd1111111-0000-0000-0000-000000000001', 'matcher'
+         FROM statement_lines sl WHERE sl.tenant_id = $1`,
+      [A],
+    );
+    await c.query(
+      // Same, for tenant B.
+      `INSERT INTO match_candidates (id, tenant_id, statement_line_id, document_id, proposed_by)
+       SELECT 'ca222222-0000-0000-0000-000000000001', $1, sl.id, 'd2222222-0000-0000-0000-000000000001', 'matcher'
+         FROM statement_lines sl WHERE sl.tenant_id = $1`,
+      [B],
+    );
+    // Commits the whole fixture graph in one go — see the BEGIN note above.
+    // This is also the point at which 0006's deferred balance trigger and
+    // 0032's two deferred observation triggers all evaluate for the first
+    // time; a fixture that violates any of them fails HERE, loudly, rather
+    // than shipping a beforeAll that silently built something invalid.
+    await c.query('COMMIT');
   });
 
   afterAll(async () => {
@@ -509,6 +567,92 @@ describeIfDb('RLS tenant isolation', () => {
       expect(await count('statement_lines')).toBe(0);
       await asRole('app_worker', B);
       expect(await count('statement_lines')).toBe(1);
+    });
+  });
+
+  // match_candidates / event_observations (migration 0032, docs/STATEMENTS.md
+  // §5.3.1, Lane R ticket R5a): same ordinary-tenant-table shape as
+  // capture_pages and financial_accounts — no elevated worker policy. Proven
+  // NOT vacuous the same way 0031's suite was: for each table, temporarily
+  // `ALTER TABLE ... DISABLE ROW LEVEL SECURITY` and re-run this describe
+  // block — every one of the "hides"/"rejects"/"fails closed" cases below
+  // must flip to failing before the fix is re-applied. Done by hand for this
+  // ticket (see the PR/ticket notes), not automated here, because flipping
+  // RLS off mid-suite for one table and back on again is exactly the kind of
+  // state a shared test database should not carry between runs.
+  describe('match_candidates / event_observations', () => {
+    it('app_rw with tenant A sees only tenant A rows', async () => {
+      await asRole('app_rw', A);
+      expect(await count('match_candidates')).toBe(1);
+      expect(await count('event_observations')).toBe(1);
+    });
+
+    it('switching tenant context changes the visible set', async () => {
+      await asRole('app_rw', A);
+      expect(await count('event_observations')).toBe(1);
+      await asRole('app_rw', B);
+      expect(await count('event_observations')).toBe(1);
+      const r = await c.query<{ document_id: string }>('SELECT document_id FROM event_observations');
+      expect(r.rows[0].document_id).toBe('d2222222-0000-0000-0000-000000000001');
+    });
+
+    it("hides another tenant's observation even when addressed by transaction_id", async () => {
+      await asRole('app_rw', A);
+      const r = await c.query(
+        `SELECT 1 FROM event_observations WHERE transaction_id = 'e2222222-0000-0000-0000-000000000001'`,
+      );
+      expect(r.rowCount).toBe(0);
+    });
+
+    it("hides another tenant's candidate even when addressed by id", async () => {
+      await asRole('app_rw', A);
+      const r = await c.query(
+        `SELECT 1 FROM match_candidates WHERE id = 'ca222222-0000-0000-0000-000000000001'`,
+      );
+      expect(r.rowCount).toBe(0);
+    });
+
+    it('rejects a write into another tenant — event_observations', async () => {
+      await asRole('app_rw', A);
+      await expectRejected(
+        `INSERT INTO event_observations (id, tenant_id, transaction_id, kind, statement_line_id)
+         VALUES (gen_random_uuid(), $1, 'e2222222-0000-0000-0000-000000000001', 'statement_line',
+                 (SELECT id FROM statement_lines WHERE tenant_id = current_tenant_id()))`,
+        [B],
+      );
+      await c.query('RESET ROLE');
+      const r = await c.query(
+        `SELECT 1 FROM event_observations WHERE transaction_id = 'e2222222-0000-0000-0000-000000000001' AND kind = 'statement_line'`,
+      );
+      expect(r.rowCount, 'nothing may leak across the boundary').toBe(0);
+    });
+
+    it('rejects a write into another tenant — match_candidates', async () => {
+      await asRole('app_rw', A);
+      await expectRejected(
+        `INSERT INTO match_candidates (id, tenant_id, statement_line_id, document_id, proposed_by)
+         VALUES (gen_random_uuid(), $1, (SELECT id FROM statement_lines WHERE tenant_id = current_tenant_id()),
+                 'd2222222-0000-0000-0000-000000000001', 'user')`,
+        [B],
+      );
+      await c.query('RESET ROLE');
+      const r = await c.query(
+        `SELECT 1 FROM match_candidates WHERE document_id = 'd2222222-0000-0000-0000-000000000001' AND proposed_by = 'user'`,
+      );
+      expect(r.rowCount, 'nothing may leak across the boundary').toBe(0);
+    });
+
+    it('fails closed with no tenant context', async () => {
+      await asRole('app_rw', null);
+      expect(await count('match_candidates')).toBe(0);
+      expect(await count('event_observations')).toBe(0);
+    });
+
+    it('grants the worker NO bypass here — an ordinary tenant table, unlike jobs', async () => {
+      await asRole('app_worker', null);
+      expect(await count('event_observations')).toBe(0);
+      await asRole('app_worker', B);
+      expect(await count('event_observations')).toBe(1);
     });
   });
 

@@ -44,12 +44,38 @@ export interface TenantSpec {
  * safe even if a future migration tightens a cascade to RESTRICT.
  */
 const TENANT_SCOPED_TABLES = [
-  'review_tasks',
-  'transaction_splits',
+  // transactions FIRST — ahead of even transaction_splits and
+  // event_observations. Deleting a transactions row cascades away its
+  // transaction_splits (0006) AND its event_observations (0032) in the SAME
+  // statement, which is what 0032's deferred trigger 2
+  // (`assert_document_id_matches_observation`) needs: deleting
+  // event_observations on its OWN, while the untouched, still non-void
+  // transaction still names the same document_id, trips "disagrees with its
+  // document observation" the instant a document-backed transaction exists —
+  // found by running this suite once a write path (R5b) started actually
+  // populating event_observations; before that every DELETE below matched
+  // zero rows and the ordering bug was invisible. Listed again below,
+  // redundantly, so the tenant is provably clean of both regardless of how a
+  // future write path shapes them.
   'transactions',
+  'transaction_splits',
+  // event_observations (0032): document_id/statement_line_id are plain
+  // REFERENCES (no cascade — "evidence outlives links"), so this must go
+  // before documents and statement_lines. match_candidates cascades from
+  // both, but is deleted alongside it for the same reason.
+  'match_candidates',
+  'event_observations',
+  'review_tasks',
   'document_field_corrections',
   'document_tax_subtotals',
   'document_lines',
+  // statement_lines/statements/financial_accounts (0031) were missing here
+  // entirely until R5a added them (docs/STATEMENTS.md §5.3.1) — statements
+  // is a plain REFERENCES to documents (no cascade), so it must precede
+  // documents, and financial_accounts a plain REFERENCES to accounts, so it
+  // must precede accounts.
+  'statement_lines',
+  'statements',
   'documents',
   'extraction_runs',
   'captures',
@@ -58,6 +84,7 @@ const TENANT_SCOPED_TABLES = [
   'invoices',
   'items',
   'parties',
+  'financial_accounts',
   'accounts',
   'memberships',
 ] as const;

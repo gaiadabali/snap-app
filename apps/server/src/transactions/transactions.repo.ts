@@ -10,6 +10,17 @@ import { linesGap } from '../extraction/validators.js';
 import { taxSubtotalsFromLines } from '../extraction/tax-subtotals';
 import { readTenant } from '../repo.js';
 import { rulesFor } from '../taxrules/taxrules.repo.js';
+import {
+  mergeObservations,
+  taxCodeFor,
+  type DraftSpec,
+  type MergeAccounts,
+  type MergeDocumentEvidence,
+  type MergeGroup,
+  type MergeStatementLineEvidence,
+  type MergeVariance,
+  type TaxCodeRow,
+} from './merge.js';
 
 // Australia-specific: the no-rule-set-installed fallback for deriving a
 // document's per-category tax split at post time. Mirrors the same
@@ -81,6 +92,13 @@ const ACCOUNTS = {
   },
   accountsPayable: { code: '2-1000', name: 'Trade Creditors', type: 'liability' as const },
   rounding: { code: '6-9100', name: 'Cash Rounding', type: 'expense' as const },
+  // R5b (`docs/STATEMENTS.md` §5.3.1): the merge rule's own two new control
+  // accounts. `variance` absorbs a human-named disagreement between a
+  // receipt's total and the statement line that cleared it (a tip, a
+  // surcharge, ...); `uncategorisedIncome` is the credit-side mirror of
+  // `expense` (6-0000) for a statement line with no document at all.
+  variance: { code: '6-9200', name: 'Payment variance', type: 'expense' as const },
+  uncategorisedIncome: { code: '4-9000', name: 'Uncategorised Receipts', type: 'income' as const },
 };
 
 /**
@@ -95,8 +113,6 @@ const SALE_ACCOUNTS = {
 };
 
 /* ── Tax codes ───────────────────────────────────────────────────────────── */
-
-type TaxCodeRow = { id: string; code: string; claims_credit: boolean };
 
 /**
  * The tenant's country, read inside the CALLER'S transaction.
@@ -154,37 +170,13 @@ async function loadTaxCodes(t: Tx, country: string): Promise<Map<string, TaxCode
   return byCode;
 }
 
-/**
- * Peppol UNCL5305 category (BT-151) → the tax code for THIS tenant's country.
- *
- * The standard-rated code differs per jurisdiction — `GST` in Australia, `PPN`
- * in Indonesia — and returning a bare `'GST'` here was half of the collision
- * described on `loadTaxCodes`. The exempt/zero/none codes are looked up in the
- * country's own set, so `N-T` now resolves within one country rather than
- * whichever row happened to load last.
- *
- * `S` (standard) is the only rate this maps to a capital code for —
- * and never does, because nothing in the schema yet marks a purchase as
- * capital; every standard-rated purchase becomes non-capital `GST`. Worth
- * revisiting once categorisation lands, not invented here.
- */
-function taxCodeFor(gstCategoryCode: string | null, country: string): string {
-  const standard = country === 'ID' ? 'PPN' : 'GST';
-  switch (gstCategoryCode) {
-    case 'S':
-      return standard;
-    case 'Z':
-      return country === 'ID' ? 'PPN-BEBAS' : 'FRE';
-    case 'E':
-      return country === 'ID' ? 'NON-PPN' : 'INP';
-    default:
-      return 'N-T';
-  }
-}
+// `taxCodeFor` used to live here. R5b (`docs/STATEMENTS.md` §5.3.1) moved it,
+// unchanged, to `merge.ts` — "the shared helper" the design calls for, so the
+// country-awareness fixed alongside `loadTaxCodes` above cannot be
+// reintroduced by a second, independent copy the next time this file grows a
+// posting path. Imported at the top of this file.
 
 /* ── Draft from a document ──────────────────────────────────────────────── */
-
-type Group = { categoryCode: string | null; taxable: string; tax: string };
 
 export type DraftOutcome =
   | { ok: true; transactionId: string }
@@ -194,6 +186,386 @@ export type DraftOutcome =
   | { ok: false; reason: 'ambiguous_tax_categories' }
   | { ok: false; reason: 'lines_dont_reconcile'; gap: string };
 
+/* ── Evidence loaders: the impure shell around `mergeObservations` ───────── */
+
+type DocumentEvidenceRefusal =
+  | { ok: false; reason: 'missing' }
+  | { ok: false; reason: 'not_confirmed'; reviewStatus: string }
+  | { ok: false; reason: 'ambiguous_tax_categories' }
+  | { ok: false; reason: 'lines_dont_reconcile'; gap: string };
+
+type DocumentEvidenceResult =
+  | {
+      ok: true;
+      evidence: MergeDocumentEvidence;
+      cardBrand: string | null;
+      cardLast4: string | null;
+    }
+  | DocumentEvidenceRefusal;
+
+/**
+ * Locks and reads a confirmed document's debit-side evidence — everything
+ * `mergeObservations` needs from a receipt, resolved. Shared by
+ * `draftTransactionFromDocument` (the receipt-only path, unchanged in
+ * behaviour) and `supersedeAndPost` (R5b, the merge path): the exact same
+ * subtotals → derive-from-lines → header-fallback logic
+ * `draftTransactionFromDocument` always had, extracted rather than
+ * duplicated, per `docs/STATEMENTS.md` §5.3.1's own instruction ("extracted
+ * without changing its output for the receipt-only case").
+ *
+ * Does NOT check "already has a live transaction" — that guarantee means two
+ * different things to its two callers (a fresh draft must refuse; a supersede
+ * expects one and is about to replace it), so it stays the caller's own,
+ * explicit check.
+ */
+async function loadDocumentEvidence(
+  t: Tx,
+  tenantId: string,
+  documentId: string,
+  consumptionTax: Pick<ConsumptionTaxSpec, 'inclusiveFraction' | 'baseFraction'>,
+): Promise<DocumentEvidenceResult> {
+  // Locks the document for the life of the caller's transaction, so two
+  // concurrent posts/merges of the same scan cannot both proceed.
+  const docRows = await t.execute<{
+    id: string;
+    is_tax_invoice: boolean;
+    review_status: string;
+    issue_date: string | null;
+    document_number: string | null;
+    currency: string;
+    tax_exclusive_amount: string | null;
+    tax_amount: string | null;
+    payable_amount: string | null;
+    rounding_amount: string;
+    card_brand: string | null;
+    card_last4: string | null;
+    supplier_id: string | null;
+    supplier_name: string | null;
+  }>(sql`
+    select d.id, d.is_tax_invoice, d.review_status::text as review_status,
+           d.issue_date::text as issue_date, d.document_number, d.currency::text as currency,
+           d.tax_exclusive_amount::text as tax_exclusive_amount,
+           d.tax_amount::text as tax_amount,
+           d.payable_amount::text as payable_amount,
+           d.rounding_amount::text as rounding_amount,
+           d.card_brand, d.card_last4, d.supplier_id,
+           p.legal_name as supplier_name
+      from documents d
+      left join parties p on p.id = d.supplier_id
+     where d.id = ${documentId} and d.deleted_at is null
+     for update of d
+  `);
+  const doc = docRows.rows[0];
+  if (!doc) return { ok: false, reason: 'missing' };
+
+  if (doc.review_status !== 'auto_accepted' && doc.review_status !== 'reviewed') {
+    return { ok: false, reason: 'not_confirmed', reviewStatus: doc.review_status };
+  }
+
+  const subtotals = await t.execute<{
+    category_code: string;
+    taxable_amount: string;
+    tax_amount: string;
+  }>(sql`
+    select category_code, taxable_amount::text as taxable_amount, tax_amount::text as tax_amount
+      from document_tax_subtotals where document_id = ${documentId}
+  `);
+
+  let groups: MergeGroup[];
+  if (subtotals.rows.length > 0) {
+    groups = subtotals.rows.map((r) => ({
+      categoryCode: r.category_code,
+      taxable: money.money(r.taxable_amount || '0'),
+      tax: money.money(r.tax_amount || '0'),
+    }));
+  } else {
+    // No per-category reconciliation on record. One tax treatment falls back
+    // to the header totals; more than one is DERIVED from the lines below, by
+    // a function that refuses rather than guesses. The original rule — never
+    // recompute what the validators own — is kept by that refusal, not by
+    // declining to look.
+    const lineCats = await t.execute<{ gst_category_code: string | null; net: string }>(sql`
+      select gst_category_code, sum(line_net_amount)::text as net
+        from document_lines where document_id = ${documentId}
+       group by gst_category_code
+    `);
+    if (lineCats.rows.length === 0) return { ok: false, reason: 'ambiguous_tax_categories' };
+
+    if (lineCats.rows.length > 1) {
+      // More than one tax treatment and no stored subtotals. This used to be
+      // an outright refusal, and while nothing could WRITE
+      // `document_tax_subtotals` it meant the mixed GST/GST-free docket — the
+      // product's whole wedge — could never be posted to the ledger.
+      //
+      // `taxSubtotalsFromLines` is not the guess the old comment rightly
+      // forbade: it derives the split with exact decimal arithmetic and
+      // returns NOTHING when it cannot state one honestly — lines that do not
+      // reconcile to the payable, or a printed GST that disagrees with the
+      // lines' own GST-free flags. So the refusal below still fires for every
+      // case that earned it.
+      //
+      // Derived here as well as persisted on extraction, because documents
+      // extracted before that write existed have lines and no subtotals, and
+      // a migration cannot recover what was never computed.
+      const rows = await t.execute<{ gst_category_code: string | null; line_net_amount: string }>(sql`
+        select gst_category_code, line_net_amount::text as line_net_amount
+          from document_lines where document_id = ${documentId} order by line_number
+      `);
+      const derived = taxSubtotalsFromLines(
+        rows.rows.map((r) => ({
+          amount: r.line_net_amount,
+          gstFree: r.gst_category_code === 'Z',
+        })),
+        doc.tax_amount,
+        doc.payable_amount,
+        consumptionTax,
+      );
+      if (derived.length === 0) return { ok: false, reason: 'ambiguous_tax_categories' };
+
+      groups = derived.map((d) => ({
+        categoryCode: d.categoryCode,
+        taxable: money.money(d.taxableAmount),
+        tax: money.money(d.taxAmount),
+      }));
+    } else {
+      const lineSum = await t.execute<{ sum: string | null }>(sql`
+        select sum(line_net_amount)::text as sum from document_lines where document_id = ${documentId}
+      `);
+      const gap = linesGap(Number(lineSum.rows[0]?.sum ?? 0), doc.payable_amount, doc.tax_amount);
+      if (Math.abs(gap) >= 0.02) {
+        return { ok: false, reason: 'lines_dont_reconcile', gap: gap.toFixed(4) };
+      }
+
+      groups = [
+        {
+          categoryCode: lineCats.rows[0]!.gst_category_code,
+          taxable: money.money(doc.tax_exclusive_amount ?? '0'),
+          tax: money.money(doc.tax_amount ?? '0'),
+        },
+      ];
+    }
+  }
+
+  return {
+    ok: true,
+    cardBrand: doc.card_brand,
+    cardLast4: doc.card_last4,
+    evidence: {
+      issueDate: doc.issue_date,
+      documentNumber: doc.document_number,
+      supplierId: doc.supplier_id,
+      supplierName: doc.supplier_name,
+      currency: doc.currency,
+      isTaxInvoice: doc.is_tax_invoice,
+      roundingAmount: money.money(doc.rounding_amount || '0'),
+      groups,
+    },
+  };
+}
+
+type StatementLineEvidenceResult =
+  | { ok: true; evidence: MergeStatementLineEvidence }
+  | { ok: false; reason: 'missing_statement_line' };
+
+/**
+ * Locks and reads a statement line's evidence, joined through to the ledger
+ * account its `financial_accounts` row IS (0031's "what makes the
+ * double-entry side work without a second ledger"). RLS scopes this to the
+ * caller's tenant already; a cross-tenant id simply reads back nothing.
+ */
+async function loadStatementLineEvidence(
+  t: Tx,
+  tenantId: string,
+  statementLineId: string,
+): Promise<StatementLineEvidenceResult> {
+  const rows = await t.execute<{
+    posted_date: string;
+    value_date: string | null;
+    amount_signed: string;
+    description_raw: string;
+    account_id: string;
+    currency: string;
+  }>(sql`
+    select sl.posted_date::text as posted_date, sl.value_date::text as value_date,
+           sl.amount_signed::text as amount_signed, sl.description_raw,
+           fa.account_id, fa.currency::text as currency
+      from statement_lines sl
+      join statements st on st.id = sl.statement_id
+      join financial_accounts fa on fa.id = st.financial_account_id
+     where sl.id = ${statementLineId} and sl.tenant_id = ${tenantId}
+     for update of sl
+  `);
+  const row = rows.rows[0];
+  if (!row) return { ok: false, reason: 'missing_statement_line' };
+  return {
+    ok: true,
+    evidence: {
+      postedDate: row.posted_date,
+      valueDate: row.value_date,
+      amountSigned: money.money(row.amount_signed),
+      currency: row.currency,
+      descriptionRaw: row.description_raw,
+      accountId: row.account_id,
+    },
+  };
+}
+
+/**
+ * Every ledger account `mergeObservations` might reference, resolved
+ * (find-or-create, via the same idempotent `ensureAccount` every other
+ * posting path uses) in one place. The payment/bank leg follows §5.3.1's
+ * resolution order exactly:
+ *
+ *  1. a matched statement line's own financial account — always, when there
+ *     is one, because that IS the account the money moved through;
+ *  2. otherwise, a `financial_accounts` row whose `account_last4` equals the
+ *     document's `card_last4`, when exactly one such row exists;
+ *  3. otherwise, the pre-R5 fallback: a card-brand suspense liability, or
+ *     Trade Creditors when no card was read at all — unchanged, so a
+ *     document-only draft with no matching financial account behaves exactly
+ *     as it did before this ticket.
+ */
+async function resolveMergeAccounts(
+  t: Tx,
+  tenantId: string,
+  opts: {
+    cardBrand: string | null;
+    cardLast4: string | null;
+    statementLineAccountId: string | null;
+  },
+): Promise<MergeAccounts> {
+  const expenseAccountId = await ensureAccount(
+    t,
+    tenantId,
+    ACCOUNTS.expense.code,
+    ACCOUNTS.expense.name,
+    ACCOUNTS.expense.type,
+  );
+  const gstReceivableAccountId = await ensureAccount(
+    t,
+    tenantId,
+    ACCOUNTS.gstReceivable.code,
+    ACCOUNTS.gstReceivable.name,
+    ACCOUNTS.gstReceivable.type,
+  );
+  const gstUnclaimableAccountId = await ensureAccount(
+    t,
+    tenantId,
+    ACCOUNTS.gstUnclaimable.code,
+    ACCOUNTS.gstUnclaimable.name,
+    ACCOUNTS.gstUnclaimable.type,
+  );
+  const roundingAccountId = await ensureAccount(
+    t,
+    tenantId,
+    ACCOUNTS.rounding.code,
+    ACCOUNTS.rounding.name,
+    ACCOUNTS.rounding.type,
+  );
+  const varianceAccountId = await ensureAccount(
+    t,
+    tenantId,
+    ACCOUNTS.variance.code,
+    ACCOUNTS.variance.name,
+    ACCOUNTS.variance.type,
+  );
+  const uncategorisedIncomeAccountId = await ensureAccount(
+    t,
+    tenantId,
+    ACCOUNTS.uncategorisedIncome.code,
+    ACCOUNTS.uncategorisedIncome.name,
+    ACCOUNTS.uncategorisedIncome.type,
+  );
+
+  let paymentAccountId: string;
+  if (opts.statementLineAccountId) {
+    paymentAccountId = opts.statementLineAccountId;
+  } else if (opts.cardLast4) {
+    const matches = await t.execute<{ account_id: string }>(sql`
+      select account_id from financial_accounts
+       where tenant_id = ${tenantId} and account_last4 = ${opts.cardLast4} and not is_archived
+    `);
+    paymentAccountId =
+      matches.rows.length === 1
+        ? matches.rows[0]!.account_id
+        : await resolveBrandOrPayableAccount(t, tenantId, opts.cardBrand);
+  } else {
+    paymentAccountId = await resolveBrandOrPayableAccount(t, tenantId, opts.cardBrand);
+  }
+
+  return {
+    expenseAccountId,
+    gstReceivableAccountId,
+    gstUnclaimableAccountId,
+    roundingAccountId,
+    paymentAccountId,
+    varianceAccountId,
+    // Same 6-0000 bucket a document-backed draft's own debit splits use —
+    // R5d's "Uncategorised Purchases" is not a second account.
+    uncategorisedExpenseAccountId: expenseAccountId,
+    uncategorisedIncomeAccountId,
+  };
+}
+
+async function resolveBrandOrPayableAccount(
+  t: Tx,
+  tenantId: string,
+  cardBrand: string | null,
+): Promise<string> {
+  return cardBrand
+    ? ensureAccount(
+        t,
+        tenantId,
+        `2-11${cardBrand.slice(0, 2).toUpperCase()}`,
+        `Credit Card — ${cardBrand}`,
+        'liability',
+      )
+    : ensureAccount(
+        t,
+        tenantId,
+        ACCOUNTS.accountsPayable.code,
+        ACCOUNTS.accountsPayable.name,
+        ACCOUNTS.accountsPayable.type,
+      );
+}
+
+/** Stamped into every merged draft's `external_refs.merge.rule_version` — the
+ *  replay stamp `docs/STATEMENTS.md` §5.3.1 calls for. Bumped only if the
+ *  merge rule's OUTPUT for the same evidence would change; the value itself
+ *  is opaque, never parsed back. */
+const MERGE_RULE_VERSION = 'r5b.2026-09-18';
+
+async function insertDraftTransaction(
+  t: Tx,
+  tenantId: string,
+  transactionId: string,
+  documentId: string | null,
+  draft: DraftSpec,
+): Promise<void> {
+  await t.execute(sql`
+    insert into transactions (
+      id, tenant_id, txn_date, settled_date, payee_id, memo, currency, status, source, document_id, external_refs
+    ) values (
+      ${transactionId}, ${tenantId}, coalesce(${draft.txnDate}::date, current_date), ${draft.settledDate}::date,
+      ${draft.payeeId}, ${draft.memo}, ${draft.currency}::currency_code, 'draft', ${draft.source}::txn_source,
+      ${documentId}, ${JSON.stringify(draft.externalRefs)}::jsonb
+    )
+  `);
+
+  let lineNumber = 1;
+  for (const split of draft.splits) {
+    await t.execute(sql`
+      insert into transaction_splits (
+        id, tenant_id, transaction_id, line_number, account_id, amount, tax_code_id, gst_amount, description
+      ) values (
+        ${randomUUID()}, ${tenantId}, ${transactionId}, ${lineNumber}, ${split.accountId},
+        ${split.amount}, ${split.taxCodeId}, ${split.gstAmount}, ${split.description}
+      )
+    `);
+    lineNumber += 1;
+  }
+}
+
 /**
  * Proposes a draft transaction from a confirmed document.
  *
@@ -202,7 +574,9 @@ export type DraftOutcome =
  * `docs/PLAN.md`) and otherwise from a single aggregate built from the
  * document's own header totals, guarded by the same lines-vs-total check the
  * review screen shows (`linesGap`) so a document whose lines do not add up
- * cannot silently become a "balanced" posting.
+ * cannot silently become a "balanced" posting. Both paths are
+ * `loadDocumentEvidence`'s, above; this function is now that evidence run
+ * through `mergeObservations` with no statement line (R5b).
  *
  * The database still has the last word: this only ever proposes a DRAFT, and
  * the deferred sum-zero trigger is inert for drafts (migration 0006). Nothing
@@ -216,6 +590,11 @@ export type DraftOutcome =
  * the claimable `GST Receivable` asset. That is the literal meaning of "must
  * not produce a claimable GST split": no split increases a recoverable asset
  * unless the evidence document is one.
+ *
+ * R5b also makes this insert its `kind = 'document'` `event_observations` row
+ * in the SAME transaction — migration 0032's deferred trigger requires one of
+ * every non-void, document-backed transaction at COMMIT, and this is the only
+ * path that creates one today.
  */
 export async function draftTransactionFromDocument(
   userId: string,
@@ -235,47 +614,13 @@ export async function draftTransactionFromDocument(
     : AU_CONSUMPTION_TAX;
 
   return tx(getDb(), userId, tenantId, async (t) => {
-    // Locks the document for the life of this transaction, so two concurrent
-    // posts of the same scan cannot both pass the "no transaction yet" check
-    // below and each insert one.
-    const docRows = await t.execute<{
-      id: string;
-      is_tax_invoice: boolean;
-      review_status: string;
-      issue_date: string | null;
-      document_number: string | null;
-      currency: string;
-      tax_exclusive_amount: string | null;
-      tax_amount: string | null;
-      payable_amount: string | null;
-      rounding_amount: string;
-      payment_method: string | null;
-      card_brand: string | null;
-      supplier_id: string | null;
-      supplier_name: string | null;
-    }>(sql`
-      select d.id, d.is_tax_invoice, d.review_status::text as review_status,
-             d.issue_date::text as issue_date, d.document_number, d.currency::text as currency,
-             d.tax_exclusive_amount::text as tax_exclusive_amount,
-             d.tax_amount::text as tax_amount,
-             d.payable_amount::text as payable_amount,
-             d.rounding_amount::text as rounding_amount,
-             d.payment_method, d.card_brand, d.supplier_id,
-             p.legal_name as supplier_name
-        from documents d
-        left join parties p on p.id = d.supplier_id
-       where d.id = ${documentId} and d.deleted_at is null
-       for update of d
-    `);
-    const doc = docRows.rows[0];
-    if (!doc) return { ok: false, reason: 'missing' };
-
-    // Rule 3 first, deliberately ahead of the confirmation gate below: a
-    // document already carrying a live transaction must be refused as
+    // Rule 3, deliberately ahead of everything `loadDocumentEvidence` checks:
+    // a document already carrying a live transaction must be refused as
     // "already posted" even if something later reset its review status —
     // that guarantee should not depend on review_status still agreeing with
     // history. A voided transaction does not count; that is what voiding is
-    // for.
+    // for. (`supersedeAndPost` below does NOT run this check — an existing
+    // live transaction is exactly what it expects to replace.)
     const existing = await t.execute<{ id: string; status: string }>(sql`
       select id, status::text as status from transactions
        where document_id = ${documentId} and tenant_id = ${tenantId} and status <> 'void'
@@ -290,239 +635,242 @@ export async function draftTransactionFromDocument(
       };
     }
 
-    if (doc.review_status !== 'auto_accepted' && doc.review_status !== 'reviewed') {
-      return { ok: false, reason: 'not_confirmed', reviewStatus: doc.review_status };
-    }
-
-    const subtotals = await t.execute<{
-      category_code: string;
-      taxable_amount: string;
-      tax_amount: string;
-    }>(sql`
-      select category_code, taxable_amount::text as taxable_amount, tax_amount::text as tax_amount
-        from document_tax_subtotals where document_id = ${documentId}
-    `);
-
-    let groups: Group[];
-    if (subtotals.rows.length > 0) {
-      groups = subtotals.rows.map((r) => ({
-        categoryCode: r.category_code,
-        taxable: r.taxable_amount,
-        tax: r.tax_amount,
-      }));
-    } else {
-      // No per-category reconciliation on record. One tax treatment falls
-      // back to the header totals; more than one is DERIVED from the lines
-      // below, by a function that refuses rather than guesses. The original
-      // rule — never recompute what the validators own — is kept by that
-      // refusal, not by declining to look.
-      const lineCats = await t.execute<{ gst_category_code: string | null; net: string }>(sql`
-        select gst_category_code, sum(line_net_amount)::text as net
-          from document_lines where document_id = ${documentId}
-         group by gst_category_code
-      `);
-      if (lineCats.rows.length === 0) return { ok: false, reason: 'ambiguous_tax_categories' };
-
-      if (lineCats.rows.length > 1) {
-        // More than one tax treatment and no stored subtotals. This used to be
-        // an outright refusal, and while nothing could WRITE
-        // `document_tax_subtotals` it meant the mixed GST/GST-free docket —
-        // the product's whole wedge — could never be posted to the ledger.
-        //
-        // `taxSubtotalsFromLines` is not the guess the old comment rightly
-        // forbade: it derives the split with exact decimal arithmetic and
-        // returns NOTHING when it cannot state one honestly — lines that do
-        // not reconcile to the payable, or a printed GST that disagrees with
-        // the lines' own GST-free flags. So the refusal below still fires for
-        // every case that earned it.
-        //
-        // Derived here as well as persisted on extraction, because documents
-        // extracted before that write existed have lines and no subtotals, and
-        // a migration cannot recover what was never computed.
-        const rows = await t.execute<{ gst_category_code: string | null; line_net_amount: string }>(sql`
-          select gst_category_code, line_net_amount::text as line_net_amount
-            from document_lines where document_id = ${documentId} order by line_number
-        `);
-        const derived = taxSubtotalsFromLines(
-          rows.rows.map((r) => ({
-            amount: r.line_net_amount,
-            gstFree: r.gst_category_code === 'Z',
-          })),
-          doc.tax_amount,
-          doc.payable_amount,
-          consumptionTax,
-        );
-        if (derived.length === 0) return { ok: false, reason: 'ambiguous_tax_categories' };
-
-        groups = derived.map((d) => ({
-          categoryCode: d.categoryCode,
-          taxable: d.taxableAmount,
-          tax: d.taxAmount,
-        }));
-      } else {
-
-      const lineSum = await t.execute<{ sum: string | null }>(sql`
-        select sum(line_net_amount)::text as sum from document_lines where document_id = ${documentId}
-      `);
-      const gap = linesGap(
-        Number(lineSum.rows[0]?.sum ?? 0),
-        doc.payable_amount,
-        doc.tax_amount,
-      );
-      if (Math.abs(gap) >= 0.02) {
-        return { ok: false, reason: 'lines_dont_reconcile', gap: gap.toFixed(4) };
-      }
-
-      groups = [
-        {
-          categoryCode: lineCats.rows[0]!.gst_category_code,
-          taxable: doc.tax_exclusive_amount ?? '0',
-          tax: doc.tax_amount ?? '0',
-        },
-      ];
-      }
-    }
+    const loaded = await loadDocumentEvidence(t, tenantId, documentId, consumptionTax);
+    if (!loaded.ok) return loaded;
 
     const country = await tenantCountry(t, tenantId);
     const taxCodes = await loadTaxCodes(t, country);
-    const expenseAccountId = await ensureAccount(
-      t,
-      tenantId,
-      ACCOUNTS.expense.code,
-      ACCOUNTS.expense.name,
-      ACCOUNTS.expense.type,
-    );
-
-    const splits: Array<{
-      accountId: string;
-      amount: Money;
-      taxCodeId: string | null;
-      gstAmount: Money;
-      description: string | null;
-    }> = [];
-
-    for (const group of groups) {
-      const code = taxCodeFor(group.categoryCode, country);
-      const taxCode = taxCodes.get(code);
-      const taxable = money.money(group.taxable || '0');
-      const gst = money.money(group.tax || '0');
-
-      splits.push({
-        accountId: expenseAccountId,
-        amount: taxable,
-        taxCodeId: taxCode?.id ?? null,
-        gstAmount: gst,
-        description: group.categoryCode ? `Purchases — ${group.categoryCode}` : 'Purchases',
-      });
-
-      if (!money.isZero(gst)) {
-        const claimable = (taxCode?.claims_credit ?? false) && doc.is_tax_invoice === true;
-        const controlAccountId = claimable
-          ? await ensureAccount(
-              t,
-              tenantId,
-              ACCOUNTS.gstReceivable.code,
-              ACCOUNTS.gstReceivable.name,
-              ACCOUNTS.gstReceivable.type,
-            )
-          : await ensureAccount(
-              t,
-              tenantId,
-              ACCOUNTS.gstUnclaimable.code,
-              ACCOUNTS.gstUnclaimable.name,
-              ACCOUNTS.gstUnclaimable.type,
-            );
-        splits.push({
-          accountId: controlAccountId,
-          amount: gst,
-          taxCodeId: null, // control posting — excluded from BAS aggregation, never double-counted
-          gstAmount: money.ZERO,
-          description: claimable ? 'GST receivable' : 'GST — not claimable (no valid tax invoice)',
-        });
-      }
-    }
-
-    const rounding = money.money(doc.rounding_amount || '0');
-    if (!money.isZero(rounding)) {
-      const roundingAccountId = await ensureAccount(
-        t,
-        tenantId,
-        ACCOUNTS.rounding.code,
-        ACCOUNTS.rounding.name,
-        ACCOUNTS.rounding.type,
-      );
-      splits.push({
-        accountId: roundingAccountId,
-        amount: rounding,
-        taxCodeId: null,
-        gstAmount: money.ZERO,
-        description: 'Cash rounding',
-      });
-    }
-
-    // The payment leg balances whatever the debit-side splits above came to.
-    // This is ordinary double-entry, not a re-implementation of the trigger:
-    // the trigger still runs at post time and is what this ticket's test
-    // proves independently.
-    const debitTotal = money.add(...splits.map((s) => s.amount));
-    const paymentAccountId = doc.card_brand
-      ? await ensureAccount(
-          t,
-          tenantId,
-          `2-11${doc.card_brand.slice(0, 2).toUpperCase()}`,
-          `Credit Card — ${doc.card_brand}`,
-          'liability',
-        )
-      : await ensureAccount(
-          t,
-          tenantId,
-          ACCOUNTS.accountsPayable.code,
-          ACCOUNTS.accountsPayable.name,
-          ACCOUNTS.accountsPayable.type,
-        );
-    splits.push({
-      accountId: paymentAccountId,
-      amount: money.negate(debitTotal),
-      taxCodeId: null,
-      gstAmount: money.ZERO,
-      description: doc.document_number ? `Payable — ${doc.document_number}` : 'Payable',
+    const accounts = await resolveMergeAccounts(t, tenantId, {
+      cardBrand: loaded.cardBrand,
+      cardLast4: loaded.cardLast4,
+      statementLineAccountId: null,
     });
 
+    // R5b: this IS `mergeObservations` with no statement line — "extracted
+    // without changing its output for the receipt-only case"
+    // (`docs/STATEMENTS.md` §5.3.1).
+    const merged = mergeObservations(
+      { document: loaded.evidence, statementLine: null },
+      { taxCodes, country, accounts, ruleVersion: MERGE_RULE_VERSION },
+    );
+    if (!merged.ok) {
+      // Unreachable with `statementLine: null` (amount_disagreement and
+      // currency_mismatch both require one; no_evidence requires neither
+      // side, and `document` is always non-null here) — defensive, not a
+      // real branch.
+      throw new Error(
+        `mergeObservations unexpectedly refused a document-only draft for ${documentId}: ${JSON.stringify(merged)}`,
+      );
+    }
+
     // Pre-flight, per `money.ts`'s own stated purpose — never the authority.
-    if (!money.balances(splits.map((s) => s.amount))) {
+    if (!money.balances(merged.draft.splits.map((s) => s.amount))) {
       throw new Error(
         `draftTransactionFromDocument built unbalanced splits for document ${documentId}: ` +
-          JSON.stringify(splits),
+          JSON.stringify(merged.draft.splits),
       );
     }
 
     const transactionId = randomUUID();
-    const memo = doc.document_number
-      ? `${doc.supplier_name ?? 'Supplier'} — ${doc.document_number}`
-      : (doc.supplier_name ?? 'Scanned purchase');
+    await insertDraftTransaction(t, tenantId, transactionId, documentId, merged.draft);
+
+    // R5b (`docs/STATEMENTS.md` §5.3.1): the observation row migration 0032's
+    // deferred trigger requires of every non-void, document-backed
+    // transaction at COMMIT. The document was already confirmed by a human,
+    // separately (0009's "two separate acts") — this draft act is what
+    // records that its evidence observes this event, not a second
+    // confirmation of the document itself.
     await t.execute(sql`
-      insert into transactions (
-        id, tenant_id, txn_date, payee_id, memo, currency, status, source, document_id
-      ) values (
-        ${transactionId}, ${tenantId}, coalesce(${doc.issue_date}::date, current_date),
-        ${doc.supplier_id}, ${memo}, ${doc.currency}::currency_code, 'draft', 'scan', ${documentId}
-      )
+      insert into event_observations (id, tenant_id, transaction_id, kind, document_id, confirmed_by, confirmed_at)
+      values (${randomUUID()}, ${tenantId}, ${transactionId}, 'document', ${documentId}, ${userId}, now())
     `);
 
-    let lineNumber = 1;
-    for (const split of splits) {
-      await t.execute(sql`
-        insert into transaction_splits (
-          id, tenant_id, transaction_id, line_number, account_id, amount, tax_code_id, gst_amount, description
-        ) values (
-          ${randomUUID()}, ${tenantId}, ${transactionId}, ${lineNumber}, ${split.accountId},
-          ${split.amount}, ${split.taxCodeId}, ${split.gstAmount}, ${split.description}
-        )
-      `);
-      lineNumber += 1;
+    return { ok: true, transactionId };
+  });
+}
+
+/* ── Supersede, never edit ────────────────────────────────────────────────
+ * `docs/STATEMENTS.md` §5.3.1 "Materialisation: supersede, never edit", Lane R
+ * ticket R5b. A posted transaction is immutable (0009 guarantee 3); when an
+ * event's evidence set changes, the live transaction(s) materialising the OLD
+ * evidence are voided and a fresh merged transaction is drafted and posted —
+ * in ONE `withTenantAs`, so migration 0032's deferred constraint triggers see
+ * only the FINAL state at commit, regardless of the order these writes happen
+ * in. D-S6 (§14.1c): accepting a match IS the act of posting it — this
+ * function ends with a post, not a draft a second call must confirm.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+export interface SupersedeInput {
+  documentId: string | null;
+  statementLineId: string | null;
+  variance?: MergeVariance;
+  /** `match_candidates` ids behind this merge (R5c). Omitted for a
+   *  document-only draft-turned-merge or a manual link with no suggestion. */
+  candidateIds?: string[];
+}
+
+export type SupersedeOutcome =
+  | { ok: true; transactionId: string }
+  | { ok: false; reason: 'no_evidence' }
+  | { ok: false; reason: 'missing_document' }
+  | { ok: false; reason: 'missing_statement_line' }
+  | { ok: false; reason: 'document_not_confirmed'; reviewStatus: string }
+  | { ok: false; reason: 'ambiguous_tax_categories' }
+  | { ok: false; reason: 'lines_dont_reconcile'; gap: string }
+  | { ok: false; reason: 'amount_disagreement'; documentAmount: Money; lineAmount: Money }
+  | { ok: false; reason: 'currency_mismatch'; documentCurrency: string; lineCurrency: string };
+
+/**
+ * Void whatever live transaction(s) currently materialise `input`'s evidence,
+ * draft the merged transaction `mergeObservations` proposes for the FULL
+ * evidence set, re-point (or create) the `event_observations` rows onto it,
+ * and post it — through `runPostUpdate` below, the same UPDATE
+ * `postTransaction` calls, so its "one and only place `transactions.status`
+ * becomes `'posted'`" comment stays literally true.
+ *
+ * Per §5.3.1: "every match changes the payment leg... so there is no safe
+ * in-place path" — a document-only transaction posts to a card-brand suspense
+ * account; once matched, the payment leg becomes the real bank account. There
+ * is no supported "supersede nothing" call: at least one of `documentId` /
+ * `statementLineId` must be given, or this refuses `no_evidence`.
+ */
+export async function supersedeAndPost(
+  userId: string,
+  tenantId: string,
+  input: SupersedeInput,
+): Promise<SupersedeOutcome> {
+  if (!input.documentId && !input.statementLineId) {
+    return { ok: false, reason: 'no_evidence' };
+  }
+
+  const tenant = await readTenant(userId, tenantId);
+  const taxRules = tenant?.tax_rules_id ? await rulesFor(tenant) : null;
+  const consumptionTax: Pick<ConsumptionTaxSpec, 'inclusiveFraction' | 'baseFraction'> = taxRules
+    ? {
+        inclusiveFraction: taxRules.consumptionTax.inclusiveFraction,
+        baseFraction: taxRules.consumptionTax.baseFraction,
+      }
+    : AU_CONSUMPTION_TAX;
+
+  return tx(getDb(), userId, tenantId, async (t) => {
+    let docLoaded: DocumentEvidenceResult | null = null;
+    if (input.documentId) {
+      docLoaded = await loadDocumentEvidence(t, tenantId, input.documentId, consumptionTax);
+      if (!docLoaded.ok) {
+        if (docLoaded.reason === 'missing') return { ok: false, reason: 'missing_document' };
+        if (docLoaded.reason === 'not_confirmed') {
+          return { ok: false, reason: 'document_not_confirmed', reviewStatus: docLoaded.reviewStatus };
+        }
+        return docLoaded;
+      }
     }
 
-    return { ok: true, transactionId };
+    let lineLoaded: StatementLineEvidenceResult | null = null;
+    if (input.statementLineId) {
+      lineLoaded = await loadStatementLineEvidence(t, tenantId, input.statementLineId);
+      if (!lineLoaded.ok) return lineLoaded;
+    }
+
+    const country = await tenantCountry(t, tenantId);
+    const taxCodes = await loadTaxCodes(t, country);
+    const accounts = await resolveMergeAccounts(t, tenantId, {
+      cardBrand: docLoaded?.cardBrand ?? null,
+      cardLast4: docLoaded?.cardLast4 ?? null,
+      statementLineAccountId: lineLoaded?.evidence.accountId ?? null,
+    });
+
+    const merged = mergeObservations(
+      {
+        document: docLoaded?.evidence ?? null,
+        statementLine: lineLoaded?.evidence ?? null,
+        variance: input.variance,
+      },
+      { taxCodes, country, accounts, ruleVersion: MERGE_RULE_VERSION, candidateIds: input.candidateIds },
+    );
+    if (!merged.ok) return merged;
+
+    // Pre-flight, per `money.ts`'s own stated purpose — never the authority.
+    if (!money.balances(merged.draft.splits.map((s) => s.amount))) {
+      throw new Error(`supersedeAndPost built unbalanced splits: ${JSON.stringify(merged.draft.splits)}`);
+    }
+
+    // Every LIVE transaction currently materialising either piece of
+    // evidence — there may be two: the receipt's own and a line-posted-
+    // standalone one (§5.3.1 Q4).
+    const existingIds = new Set<string>();
+    if (input.documentId) {
+      const r = await t.execute<{ transaction_id: string }>(sql`
+        select transaction_id from event_observations
+         where tenant_id = ${tenantId} and document_id = ${input.documentId} and kind = 'document'
+      `);
+      if (r.rows[0]) existingIds.add(r.rows[0].transaction_id);
+    }
+    if (input.statementLineId) {
+      const r = await t.execute<{ transaction_id: string }>(sql`
+        select transaction_id from event_observations
+         where tenant_id = ${tenantId} and statement_line_id = ${input.statementLineId} and kind = 'statement_line'
+      `);
+      if (r.rows[0]) existingIds.add(r.rows[0].transaction_id);
+    }
+
+    const newTransactionId = randomUUID();
+
+    for (const oldId of existingIds) {
+      await t.execute(sql`
+        update transactions
+           set status = 'void', voided_at = now(),
+               void_reason = ${`superseded: evidence merged into ${newTransactionId}`},
+               external_refs = external_refs || jsonb_build_object('superseded_by', ${newTransactionId}::text)
+         where id = ${oldId} and tenant_id = ${tenantId} and status <> 'void'
+      `);
+    }
+
+    await insertDraftTransaction(t, tenantId, newTransactionId, input.documentId, merged.draft);
+
+    // Re-point each evidence row already observing an event onto the new
+    // transaction (never delete-then-insert: a voided old row must carry NO
+    // observation at COMMIT, per 0032's trigger 1, and re-pointing is what
+    // lets that be true in the SAME statement set as the insert above,
+    // regardless of order). Insert fresh when there was nothing to re-point.
+    if (input.documentId) {
+      const repointed = await t.execute(sql`
+        update event_observations
+           set transaction_id = ${newTransactionId}, confirmed_by = ${userId}, confirmed_at = now()
+         where tenant_id = ${tenantId} and document_id = ${input.documentId} and kind = 'document'
+      `);
+      if ((repointed.rowCount ?? 0) === 0) {
+        await t.execute(sql`
+          insert into event_observations (id, tenant_id, transaction_id, kind, document_id, confirmed_by, confirmed_at)
+          values (${randomUUID()}, ${tenantId}, ${newTransactionId}, 'document', ${input.documentId}, ${userId}, now())
+        `);
+      }
+    }
+    if (input.statementLineId) {
+      const repointed = await t.execute(sql`
+        update event_observations
+           set transaction_id = ${newTransactionId}, confirmed_by = ${userId}, confirmed_at = now()
+         where tenant_id = ${tenantId} and statement_line_id = ${input.statementLineId} and kind = 'statement_line'
+      `);
+      if ((repointed.rowCount ?? 0) === 0) {
+        await t.execute(sql`
+          insert into event_observations (id, tenant_id, transaction_id, kind, statement_line_id, confirmed_by, confirmed_at)
+          values (${randomUUID()}, ${tenantId}, ${newTransactionId}, 'statement_line', ${input.statementLineId}, ${userId}, now())
+        `);
+      }
+    }
+
+    // D-S6: accepting a match IS the act of posting it — one tap, not
+    // accept-then-post. `runPostUpdate` is the exact UPDATE `postTransaction`
+    // performs; deferred triggers (0006's balance check, 0032's two) are all
+    // checked once, at this same COMMIT.
+    const posted = await runPostUpdate(t, tenantId, newTransactionId, userId);
+    if (!posted.ok) {
+      // Unreachable: the row was just inserted as 'draft' by this same
+      // transaction, under the same connection's lock.
+      throw new Error(`supersedeAndPost: freshly drafted transaction ${newTransactionId} failed to post: ${JSON.stringify(posted)}`);
+    }
+
+    return { ok: true, transactionId: newTransactionId };
   });
 }
 
@@ -760,37 +1108,59 @@ export type PostOutcome =
 
 /**
  * Draft → posted. The one and only place `transactions.status` becomes
- * `'posted'`, which is what arms migration 0006's `trg_txn_balanced_on_post`.
+ * `'posted'`, which is what arms migration 0006's `trg_txn_balanced_on_post`
+ * (and, since R5b, 0032's two deferred triggers as well).
+ *
+ * Extracted from `postTransaction` below (R5b, `docs/STATEMENTS.md` §5.3.1:
+ * "post it — through the same UPDATE `postTransaction` already owns,
+ * extracted into a shared helper so that comment stays true") so
+ * `supersedeAndPost` can run this exact UPDATE inside ITS OWN, larger
+ * transaction rather than opening a second `withTenantAs` — voiding the old
+ * transaction(s), inserting the new one, re-pointing observations, and
+ * posting must all be one commit, or the deferred triggers would be checked
+ * against a half-built intermediate state.
+ *
+ * `t` is the CALLER's transaction: this function neither opens nor commits
+ * one, so every deferred trigger armed by the `UPDATE` below is checked at
+ * the caller's COMMIT, not here.
+ */
+async function runPostUpdate(t: Tx, tenantId: string, transactionId: string, userId: string): Promise<PostOutcome> {
+  const rows = await t.execute<{ id: string; status: string }>(sql`
+    select id, status::text as status from transactions
+     where id = ${transactionId} and tenant_id = ${tenantId}
+     for update
+  `);
+  const row = rows.rows[0];
+  if (!row) return { ok: false, reason: 'missing' };
+  if (row.status !== 'draft') return { ok: false, reason: 'not_draft', status: row.status };
+
+  await t.execute(sql`
+    update transactions
+       set status = 'posted', posted_at = now(), posted_by = ${userId}
+     where id = ${transactionId} and tenant_id = ${tenantId}
+  `);
+  return { ok: true };
+}
+
+/**
+ * Draft → posted. The one and only place `transactions.status` becomes
+ * `'posted'` — via `runPostUpdate` above, which is now that place's single
+ * implementation, shared with `supersedeAndPost`.
  *
  * That trigger is `DEFERRABLE INITIALLY DEFERRED`, so it does not run on the
- * `UPDATE` below — it runs when this function's `withTenantAs` transaction
- * commits, i.e. when this call returns. An unbalanced transaction makes THIS
- * CALL reject, not the `UPDATE` statement, which is why the caller must
- * expect a rejected promise here rather than a normal falsy outcome — there
- * is no TypeScript-level balance check upstream of it to catch first.
+ * `UPDATE` inside `runPostUpdate` — it runs when THIS function's
+ * `withTenantAs` transaction commits, i.e. when this call returns. An
+ * unbalanced transaction makes THIS CALL reject, not the `UPDATE` statement,
+ * which is why the caller must expect a rejected promise here rather than a
+ * normal falsy outcome — there is no TypeScript-level balance check upstream
+ * of it to catch first.
  */
 export async function postTransaction(
   userId: string,
   tenantId: string,
   transactionId: string,
 ): Promise<PostOutcome> {
-  return tx(getDb(), userId, tenantId, async (t) => {
-    const rows = await t.execute<{ id: string; status: string }>(sql`
-      select id, status::text as status from transactions
-       where id = ${transactionId} and tenant_id = ${tenantId}
-       for update
-    `);
-    const row = rows.rows[0];
-    if (!row) return { ok: false, reason: 'missing' };
-    if (row.status !== 'draft') return { ok: false, reason: 'not_draft', status: row.status };
-
-    await t.execute(sql`
-      update transactions
-         set status = 'posted', posted_at = now(), posted_by = ${userId}
-       where id = ${transactionId} and tenant_id = ${tenantId}
-    `);
-    return { ok: true };
-  });
+  return tx(getDb(), userId, tenantId, (t) => runPostUpdate(t, tenantId, transactionId, userId));
 }
 
 /* ── List ────────────────────────────────────────────────────────────────── */

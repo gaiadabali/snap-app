@@ -233,9 +233,26 @@ describeIfDb('re-extraction', () => {
     const [debit, credit] = accounts.rows;
     if (!debit || !credit) throw new Error('fixture failed to provision a chart of accounts');
 
+    // ONE STATEMENT, and that is the point. 0032's
+    // `assert_document_id_matches_observation` is DEFERRED, so it fires at
+    // COMMIT — and every `q()` here commits on its own. Inserting the
+    // transaction and its observation as two calls fires the trigger at the
+    // first commit, when the observation does not exist yet, and the fixture
+    // fails describing a state it was halfway through creating.
+    //
+    // `draftTransactionFromDocument` writes both inside one `withTenantAs`,
+    // which is why the real path never sees this. A raw-SQL fixture has to
+    // reproduce that atomicity rather than work around the trigger: the
+    // invariant — a non-void transaction naming a document HAS its observation
+    // — is exactly what the register exists to guarantee.
     await q(sql`
-      insert into transactions (id, tenant_id, document_id, txn_date, memo, status)
-      values (${txnId}, ${TENANT}, ${documentId}, current_date, 'test', 'draft')
+      with t as (
+        insert into transactions (id, tenant_id, document_id, txn_date, memo, status)
+        values (${txnId}, ${TENANT}, ${documentId}, current_date, 'test', 'draft')
+        returning id, tenant_id, document_id
+      )
+      insert into event_observations (id, tenant_id, transaction_id, kind, document_id)
+      select ${randomUUID()}, t.tenant_id, t.id, 'document', t.document_id from t
     `);
     await q(sql`
       insert into transaction_splits (id, tenant_id, transaction_id, line_number, account_id, amount)
