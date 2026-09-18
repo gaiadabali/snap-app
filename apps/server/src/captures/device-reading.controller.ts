@@ -151,7 +151,23 @@ export class DeviceReadingController {
       // the value reached this handler and was dropped. §1.2's 4GB floor is a
       // support DECISION nobody has evidence for; storing this is what turns
       // it into a query after a few hundred captures.
-      deviceMeta: (body.device ?? {}) as Record<string, unknown>,
+      //
+      // `engineVersion` folds into the SAME jsonb rather than getting a column
+      // of its own — it is the platform's version string (an ML Kit build, an
+      // iOS Vision revision), not ours, the same reasoning 0028 gave for
+      // `device`. It was reachable here and going nowhere until OD-12's
+      // agreement work needed "agreement rate per field, per engine version,
+      // per device model" and found the device-model half answerable and the
+      // engine-version half not — because nothing had ever written it past
+      // this line. THIRD TIME in this codebase a value was computed, handed to
+      // a handler, and dropped before reaching anywhere useful: OD-8's preview
+      // (computed, never shown), `totalMemoryMb` (reached the handler, dropped
+      // until 0028), and this. If there is a fourth, it is worth asking why
+      // this class of bug keeps recurring rather than patching it again.
+      deviceMeta: { ...(body.device ?? {}), engineVersion: body.engineVersion } as Record<
+        string,
+        unknown
+      >,
     });
 
     const grounding = Object.entries(body.preview ?? {})

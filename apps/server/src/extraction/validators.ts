@@ -253,9 +253,16 @@ type Jurisdiction = {
   dateOrderHint: string;
 };
 
+// Australia-specific: 1/11 is the GST inclusive fraction under Australian law
+// only. This constant is the no-rule-set-installed fallback for this file;
+// once this surface goes multi-jurisdiction it needs the tenant's installed
+// tax rule set threaded in here instead (see `jurisdictionOf` below, which
+// already resolves it correctly via `taxFromInclusive`).
+const AU_GST_INCLUSIVE_FRACTION = { n: 1, d: 11 };
+
 /** Australia, exactly as this file has always behaved. */
 const AUSTRALIA: Jurisdiction = {
-  taxOf: (inclusive) => money.gstFromInclusive(money.money(inclusive)),
+  taxOf: (inclusive) => money.gstFromInclusive(money.money(inclusive), AU_GST_INCLUSIVE_FRACTION),
   taxName: 'GST',
   taxIdName: 'ABN',
   taxIdCheckable: true,

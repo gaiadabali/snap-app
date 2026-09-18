@@ -168,9 +168,9 @@ describeIfDb('re-extraction', () => {
 
   it('runs twice over the same capture instead of failing', async () => {
     const capture = await makeCapture();
-    const first = await saveExtraction(WORKER, TENANT, capture, reading(), META);
+    const first = await saveExtraction(WORKER, TENANT, capture, reading(), META, null);
     // The bug: this call used to throw a foreign-key violation and roll back.
-    const second = await saveExtraction(WORKER, TENANT, capture, reading({ payable: '120.00' }), META);
+    const second = await saveExtraction(WORKER, TENANT, capture, reading({ payable: '120.00' }), META, null);
 
     expect(second.documentId).toBe(first.documentId);
 
@@ -189,7 +189,7 @@ describeIfDb('re-extraction', () => {
 
   it('does not overwrite a field a human has settled', async () => {
     const capture = await makeCapture();
-    const { documentId } = await saveExtraction(WORKER, TENANT, capture, reading(), META);
+    const { documentId } = await saveExtraction(WORKER, TENANT, capture, reading(), META, null);
 
     // A person corrects the total. That must lock it.
     const edit = await updateDocument(KATE, TENANT, documentId, { payableAmount: '999.00' });
@@ -201,7 +201,7 @@ describeIfDb('re-extraction', () => {
     expect(locked.rows[0]?.locked_fields).toContain('header.payable_amount');
 
     // A later model disagrees. It loses.
-    await saveExtraction(WORKER, TENANT, capture, reading({ payable: '110.00' }), META);
+    await saveExtraction(WORKER, TENANT, capture, reading({ payable: '110.00' }), META, null);
 
     const after = await q<{ payable_amount: string; review_status: string }>(sql`
       select payable_amount::text, review_status::text from documents where id = ${documentId}
@@ -219,7 +219,7 @@ describeIfDb('re-extraction', () => {
 
   it('leaves a document behind a posted transaction completely alone', async () => {
     const capture = await makeCapture();
-    const { documentId } = await saveExtraction(WORKER, TENANT, capture, reading(), META);
+    const { documentId } = await saveExtraction(WORKER, TENANT, capture, reading(), META, null);
 
     // A posted transaction referencing it. Balanced, because the database
     // refuses to post anything else. The two accounts come from this
@@ -246,7 +246,7 @@ describeIfDb('re-extraction', () => {
     // `txn_posted_has_timestamp` check).
     await q(sql`update transactions set status = 'posted', posted_at = now(), posted_by = ${KATE} where id = ${txnId}`);
 
-    await saveExtraction(WORKER, TENANT, capture, reading({ payable: '500.00' }), META);
+    await saveExtraction(WORKER, TENANT, capture, reading({ payable: '500.00' }), META, null);
 
     const after = await q<{ payable_amount: string }>(sql`
       select payable_amount::text from documents where id = ${documentId}

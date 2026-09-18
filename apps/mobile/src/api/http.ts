@@ -41,6 +41,7 @@ import type {
   Payment,
   PaymentMethod,
   Permissions,
+  PatchCaptureDocumentRequest,
   PersonalSummary,
   PlanUsage,
   PointBalance,
@@ -252,6 +253,23 @@ export class HttpApi implements SnapApi {
           return { kind: 'sent' };
         } catch (error) {
           if (error instanceof ApiError && error.status === 0) return { kind: 'offline' };
+          // `docs/ON-DEVICE.md` §7.2 (OD-11): a correction sent for a capture
+          // whose extraction has not produced a document yet answers 409 with
+          // `error: 'document_not_ready'`. That is the ONE 4xx this app knows
+          // will resolve itself — extraction finishes independently of
+          // whether the phone is even online — so it must not take the
+          // `'rejected'` path below, which `flush` drops after one attempt.
+          // Every other 409 (an optimistic-concurrency conflict, say) is
+          // thrown as a plain string with no `error` code, precisely so it
+          // does NOT match here and falls through to being dropped: a stale
+          // version needs a fresh read from a person, not a blind resend.
+          if (
+            error instanceof ApiError &&
+            error.status === 409 &&
+            error.code === 'document_not_ready'
+          ) {
+            return { kind: 'retry', message: error.message };
+          }
           return {
             kind: 'rejected',
             message: error instanceof Error ? error.message : 'The server refused it.',
@@ -499,6 +517,51 @@ export class HttpApi implements SnapApi {
   async updateDocument(id: string, body: UpdateDocumentRequest): Promise<DocumentView> {
     const doc = await this.request<DocumentView>('PATCH', `/v1/documents/${id}`, { body });
     return this.hydrateDocument(doc);
+  }
+
+  /**
+   * OD-11, `docs/ON-DEVICE.md` §7.2: corrects a document that may not exist
+   * yet, because extraction has not run for this capture.
+   *
+   * The "queued offline, replayed once signal returns" path is already
+   * covered by `request()`'s own network-failure handling and `drain()`'s
+   * `document_not_ready` recognition (see `outbox.ts`). What THIS catch adds
+   * is the other half of the hazard: the phone can be perfectly ONLINE and
+   * still get `409 document_not_ready`, if the person corrects a field in the
+   * seconds between the capture landing and the worker picking it up — no
+   * network failure ever happens, so `request()` never queues it on its own.
+   * Without this, that correction would surface as an error to the person
+   * instead of being deferred, which is the exact "quietly loses a human
+   * edit" failure mode the ticket names. So a `document_not_ready` response
+   * is queued here, with a freshly minted key the outbox then owns for every
+   * retry — the same contract `request()` already gives a network failure.
+   */
+  async correctCaptureDocument(
+    captureId: string,
+    body: PatchCaptureDocumentRequest,
+  ): Promise<DocumentView> {
+    const path = `/v1/captures/${encodeURIComponent(captureId)}/document`;
+    const workspaceId = await awaitWorkspace();
+    try {
+      const doc = await this.request<DocumentView>('PATCH', path, { body, workspaceId });
+      return this.hydrateDocument(doc);
+    } catch (error) {
+      if (
+        error instanceof ApiError &&
+        error.status === 409 &&
+        error.code === 'document_not_ready' &&
+        workspaceId
+      ) {
+        await loadOutbox();
+        await enqueue({ id: newKey(), method: 'PATCH', path, body, workspaceId });
+        throw new ApiError(
+          0,
+          "The server hasn't finished reading this receipt yet. Your correction is saved and will apply automatically.",
+          'queued',
+        );
+      }
+      throw error;
+    }
   }
 
   async confirmDocument(id: string): Promise<DocumentView> {

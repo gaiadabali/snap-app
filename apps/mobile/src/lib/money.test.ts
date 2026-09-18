@@ -49,13 +49,13 @@ describe('GST direction — the classic Australian bug', () => {
   });
 
   it('takes 1/11 out of a GST-INCLUSIVE purchase', () => {
-    expect(gstFromInclusive('110.00')).toBe('10.0000');
-    expect(gstFromInclusive('1848.00')).toBe('168.0000');
+    expect(gstFromInclusive('110.00', { n: 1, d: 11 })).toBe('10.0000');
+    expect(gstFromInclusive('1848.00', { n: 1, d: 11 })).toBe('168.0000');
   });
 
   it('is not symmetric — the two directions must never be swapped', () => {
     // $110 inclusive contains $10 of GST; $110 ex-GST attracts $11.
-    expect(gstFromInclusive('110.00')).toBe('10.0000');
+    expect(gstFromInclusive('110.00', { n: 1, d: 11 })).toBe('10.0000');
     expect(gstOnSale('110.00')).toBe('11.0000');
   });
 });

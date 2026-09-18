@@ -27,7 +27,7 @@ import {
   type AuthUser,
 } from '../common/auth.guard.js';
 import { listBudgets, listInvoices, listTrips } from '../business/business.repo.js';
-import { toWire } from '../documents/documents.controller.js';
+import { consumptionTaxFor, toWire } from '../documents/documents.controller.js';
 import { listDocuments, readPlan, readTenant, type PlanRow } from '../repo.js';
 import { add, ZERO } from '@snap/api-contract/money';
 
@@ -52,9 +52,12 @@ export class SummariesController {
   /** Everything in the workspace, as the app's own type. */
   private async views(user: AuthUser, tenantId: string): Promise<DocumentView[]> {
     const rows = await listDocuments(user.userId, tenantId, 'all');
+    // One resolution for the whole workspace, not one per row.
+    const tenant = await readTenant(user.userId, tenantId);
+    const consumptionTax = await consumptionTaxFor(tenant);
     // Aggregation reads amounts and dates only; it never displays a document's
     // pages, so there is no reason to pay for `listCapturePages` per row here.
-    return rows.map((r) => toWire(r, [], []));
+    return rows.map((r) => toWire(r, [], [], consumptionTax));
   }
 
   @Get('overview')

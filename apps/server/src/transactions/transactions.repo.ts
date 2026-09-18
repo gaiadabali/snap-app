@@ -3,9 +3,25 @@ import { randomUUID } from 'node:crypto';
 import { money, withTenantAs, type Money, type Tx } from '@snap/db';
 import { sql } from 'drizzle-orm';
 
+import type { ConsumptionTaxSpec } from '@snap/tax-rules';
+
 import { getDb } from '../db.js';
 import { linesGap } from '../extraction/validators.js';
 import { taxSubtotalsFromLines } from '../extraction/tax-subtotals';
+import { readTenant } from '../repo.js';
+import { rulesFor } from '../taxrules/taxrules.repo.js';
+
+// Australia-specific: the no-rule-set-installed fallback for deriving a
+// document's per-category tax split at post time. Mirrors the same
+// null-means-Australia convention `documents.controller.ts`'s
+// `consumptionTaxFromRules` and `extraction/validators.ts`'s `jurisdictionOf`
+// already use — a workspace onboarded before tax rule sets existed is treated
+// as Australian here, not refused, because this re-derives a split for an
+// ALREADY-CONFIRMED document rather than producing a fresh statutory figure.
+const AU_CONSUMPTION_TAX: Pick<ConsumptionTaxSpec, 'inclusiveFraction' | 'baseFraction'> = {
+  inclusiveFraction: { n: 1, d: 11 },
+  baseFraction: { n: 1, d: 1 },
+};
 
 /**
  * Where a confirmed scan becomes a posted, balanced ledger entry.
@@ -151,6 +167,18 @@ export async function draftTransactionFromDocument(
   tenantId: string,
   documentId: string,
 ): Promise<DraftOutcome> {
+  // Resolved before the transaction below, same pattern as
+  // `documents.controller.ts`'s `update()`: the divisor is the jurisdiction,
+  // 1/11 in Australia and 11/111 in Indonesia (docs/INDONESIA.md §2.2).
+  const tenant = await readTenant(userId, tenantId);
+  const taxRules = tenant?.tax_rules_id ? await rulesFor(tenant) : null;
+  const consumptionTax: Pick<ConsumptionTaxSpec, 'inclusiveFraction' | 'baseFraction'> = taxRules
+    ? {
+        inclusiveFraction: taxRules.consumptionTax.inclusiveFraction,
+        baseFraction: taxRules.consumptionTax.baseFraction,
+      }
+    : AU_CONSUMPTION_TAX;
+
   return tx(getDb(), userId, tenantId, async (t) => {
     // Locks the document for the life of this transaction, so two concurrent
     // posts of the same scan cannot both pass the "no transaction yet" check
@@ -267,6 +295,7 @@ export async function draftTransactionFromDocument(
           })),
           doc.tax_amount,
           doc.payable_amount,
+          consumptionTax,
         );
         if (derived.length === 0) return { ok: false, reason: 'ambiguous_tax_categories' };
 

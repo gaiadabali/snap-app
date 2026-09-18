@@ -44,6 +44,14 @@ const WS_HOME = 'ws_marsh_household';
 const TAX_INVOICE_THRESHOLD = M('82.50');
 const BUYER_ABN_THRESHOLD = M('1000.00');
 
+// Australia-specific: this whole generator produces the "truckie_long" AU
+// demo (ABNs, AUD, ATO thresholds throughout), and `@snap/tax-rules`
+// deliberately has no Australian rule set to resolve instead — its own
+// README: "Australia stays where it is ... wrapping AU as a rule set is a
+// separate decision." If this script ever generates a non-AU demo, it needs
+// the corresponding installed tax rule set threaded in here instead.
+const AU_CONSUMPTION_TAX = { inclusiveFraction: { n: 1, d: 11 }, baseFraction: { n: 1, d: 1 } };
+
 /** Days before today. Keeps the demo timeline permanently fresh. */
 const daysAgo = (n: number): string => {
   const d = new Date();
@@ -188,7 +196,7 @@ function subtotalsFor(
   taxAmount: string,
   payableAmount: string,
 ) {
-  return taxSubtotalsFromLines(lines, taxAmount, payableAmount);
+  return taxSubtotalsFromLines(lines, taxAmount, payableAmount, AU_CONSUMPTION_TAX);
 }
 
 function splitExact(total: Money, shares: number[]): Money[] {
@@ -358,7 +366,7 @@ function abnIsValid(abn: string | null): boolean {
 const docs = SEEDS.map((s, i) => {
   const inclusive = M(s.inclusive);
   const gstFree = s.gstFreePortion ? M(s.gstFreePortion) : money.ZERO;
-  const gst = money.gstFromInclusive(money.subtract(inclusive, gstFree));
+  const gst = money.gstFromInclusive(money.subtract(inclusive, gstFree), AU_CONSUMPTION_TAX.inclusiveFraction);
   const exclusive = money.subtract(inclusive, gst);
 
   const abnValid = abnIsValid(s.abn);
@@ -538,7 +546,7 @@ function generate(
         const gstFree = t.gstFreeShare
           ? money.money((Number(inclusive) * t.gstFreeShare).toFixed(2))
           : money.ZERO;
-        const gst = money.gstFromInclusive(money.subtract(inclusive, gstFree));
+        const gst = money.gstFromInclusive(money.subtract(inclusive, gstFree), AU_CONSUMPTION_TAX.inclusiveFraction);
         const day = m === 0 ? 1 + Math.floor(rand() * Math.max(1, today - 1)) : 1 + Math.floor(rand() * 28);
         const merchant = t.merchants[Math.floor(rand() * t.merchants.length)]!;
         const business = workspace === 'business';
@@ -627,7 +635,7 @@ const subscriptionDocs: GenDoc[] = [];
       if (m === 0 && sub.day > todayDate) continue;
       const inclusive = M(sub.amount);
       const gstFree = sub.gstFree ? inclusive : money.ZERO;
-      const gst = money.gstFromInclusive(money.subtract(inclusive, gstFree));
+      const gst = money.gstFromInclusive(money.subtract(inclusive, gstFree), AU_CONSUMPTION_TAX.inclusiveFraction);
       const issueDate = monthsAgo(m, sub.day);
       n += 1;
       subscriptionDocs.push({
@@ -1017,7 +1025,7 @@ const BILL_SEEDS: BillSeed[] = [
 const today = daysAgo(0);
 const bills = BILL_SEEDS.map((b) => {
   const total = M(b.inclusive);
-  const gst = money.gstFromInclusive(total);
+  const gst = money.gstFromInclusive(total, AU_CONSUMPTION_TAX.inclusiveFraction);
   const dueDate = daysAgo(b.daysAgo - b.dueDays);
   const paid = b.paid === true;
   return {

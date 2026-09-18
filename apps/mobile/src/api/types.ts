@@ -91,6 +91,7 @@ import type {
   CreateCaptureResponse,
   TaxPackFile,
   UpdateDocumentRequest,
+  PatchCaptureDocumentRequest,
   CreditBalance,
   CreditPack,
   CreditPurchase,
@@ -172,6 +173,22 @@ export interface SnapApi {
   getDocument(id: string): Promise<DocumentView | null>;
   /** Edits a document. Does NOT post it — editing and posting are separate acts. */
   updateDocument(id: string, body: UpdateDocumentRequest): Promise<DocumentView>;
+  /**
+   * Corrects a document that may not exist yet (OD-11, `docs/ON-DEVICE.md`
+   * §7.2). For a Stage 2 edit made against the on-device preview, before the
+   * server's own extraction has run — addressed by CAPTURE, not document id,
+   * because there is no document id yet at the moment the edit is made.
+   *
+   * QUEUED, always — this write is exactly the one the outbox exists for.
+   * The server answers `409 document_not_ready` until extraction produces a
+   * document; `apps/mobile/src/api/http.ts` recognises that specific code and
+   * keeps the write queued for the outbox to retry, rather than dropping it
+   * the way any other rejected write is dropped.
+   */
+  correctCaptureDocument(
+    captureId: string,
+    body: PatchCaptureDocumentRequest,
+  ): Promise<DocumentView>;
   /** Confirms and posts to the ledger, locking the confirmed fields. */
   confirmDocument(id: string): Promise<DocumentView>;
   /**

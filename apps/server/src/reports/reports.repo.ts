@@ -5,6 +5,11 @@ import { getDb } from '../db.js';
 
 const tx = withTenantAs;
 
+// Australia-specific: the BAS itself is an ATO form, so 1/11 is correct for
+// every BAS this file will ever produce. Not a candidate for threading a
+// tenant rule set through — there is no Indonesian BAS.
+const AU_GST_INCLUSIVE_FRACTION = { n: 1, d: 11 };
+
 /**
  * BAS: G1, G10, G11, 1A, 1B, and the unclaimable-GST figure — Lane M.
  *
@@ -88,7 +93,7 @@ type Row = {
  * split posted to the wrong control account.
  */
 function reconcile(label: '1A' | '1B', reported: Money, base: Money, count: number): BasCheck {
-  const expected = money.gstFromInclusive(base);
+  const expected = money.gstFromInclusive(base, AU_GST_INCLUSIVE_FRACTION);
   const diff = money.subtract(reported, expected);
   const absDiff = money.compare(diff, money.ZERO) < 0 ? money.negate(diff) : diff;
   const tolerance = money.money((Math.max(count, 1) * 0.01).toFixed(2));

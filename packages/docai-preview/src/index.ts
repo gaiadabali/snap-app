@@ -17,3 +17,4 @@
 // package in that style handed to a bundler, and it took the whole mobile
 // image build down with it.
 export * from './structure';
+export * from './agreement';

@@ -15,18 +15,17 @@
  * Kept as a pure module because it is the part worth testing. The screen that
  * renders it has a camera, a network and a router in it; this has none of
  * those, and the whole of §7.1 can be asserted without any of them.
+ *
+ * The comparator itself — `PREVIEW_FIELDS`, `meaningful()`, `sameValue()` —
+ * moved to `@snap/docai-preview`'s `agreement.ts` for OD-12, which needs the
+ * identical rules on the server to compare a device layout against the
+ * model's extraction. Re-exported from here so nothing importing them from
+ * this file has to change.
  */
 
-/** The field paths the preview can produce, mapped to what the server calls them. */
-export const PREVIEW_FIELDS = {
-  'header.supplier': 'supplierName',
-  'header.supplier_abn': 'supplierAbn',
-  'header.issue_date': 'issueDate',
-  'header.payable_amount': 'payableAmount',
-  'header.tax_amount': 'taxAmount',
-} as const;
+import { PREVIEW_FIELDS, meaningful, sameValue, type PreviewPath } from '@snap/docai-preview';
 
-export type PreviewPath = keyof typeof PREVIEW_FIELDS;
+export { PREVIEW_FIELDS, type PreviewPath };
 
 export type PreviewField = {
   value: string | null;
@@ -127,42 +126,6 @@ export function displayValue(field: PreviewField | undefined): string | null {
   if (raw === null || raw === undefined) return null;
   const text = String(raw).trim();
   return text === '' ? null : text;
-}
-
-/**
- * Is a server value a real answer, or the absence of one?
- *
- * `'0.0000'` is what an unset money column serialises to. §7.1's third row —
- * server read `null` — has to catch it, or "no GST found" is silently
- * presented as "GST is zero".
- */
-function meaningful(value: string | null | undefined): boolean {
-  if (value === null || value === undefined) return false;
-  const text = String(value).trim();
-  if (text === '') return false;
-  if (/^0+(\.0+)?$/.test(text)) return false;
-  return true;
-}
-
-/**
- * Are these the same reading, allowing for how each side spells it?
- *
- * Money is compared numerically: `36.20` and `36.2000` are the same amount and
- * flagging them as a disagreement would train people to ignore the chip. A
- * name is compared case- and space-insensitively, because the recogniser
- * returns what is printed — `KALINDA GROCERS` — and the server's document
- * carries `Kalinda Grocers`.
- */
-function sameValue(path: PreviewPath, a: string, b: string): boolean {
-  if (path === 'header.payable_amount' || path === 'header.tax_amount') {
-    const na = Number(a.replace(/[$,\s]/g, ''));
-    const nb = Number(b.replace(/[$,\s]/g, ''));
-    if (Number.isFinite(na) && Number.isFinite(nb)) return Math.abs(na - nb) < 0.005;
-  }
-  if (path === 'header.supplier_abn') {
-    return a.replace(/\D/g, '') === b.replace(/\D/g, '');
-  }
-  return a.trim().toLowerCase().replace(/\s+/g, ' ') === b.trim().toLowerCase().replace(/\s+/g, ' ');
 }
 
 /**

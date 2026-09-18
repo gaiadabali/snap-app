@@ -126,6 +126,55 @@ describe('the offline outbox', () => {
     expect(pendingCount()).toBe(0);
   });
 
+  it('keeps a write queued on "retry", and does NOT stop the drain for it', async () => {
+    // OD-11 (`docs/ON-DEVICE.md` §7.2): a correction rejected with
+    // `document_not_ready` is a state that resolves on its own, not a dead
+    // write and not evidence the connection is down. Unlike `'rejected'`, it
+    // must survive the flush; unlike `'offline'`, it must not block whatever
+    // comes after it in the queue.
+    await enqueue(entry('not-ready-yet'));
+    await enqueue(entry('unrelated-write'));
+
+    const seen: string[] = [];
+    const result = await flush(async (e) => {
+      seen.push(e.id);
+      if (e.id === 'not-ready-yet') return { kind: 'retry', message: 'document_not_ready' };
+      return { kind: 'sent' };
+    });
+
+    // Both were attempted — a retry does not halt the drain the way offline does.
+    expect(seen).toEqual(['not-ready-yet', 'unrelated-write']);
+    expect(result.stoppedOffline).toBe(false);
+    expect(result.sent).toBe(1);
+    expect(result.retrying.map((e) => e.id)).toEqual(['not-ready-yet']);
+    // Still queued, at its position, for the next drain — NOT dropped the way
+    // a `'rejected'` write is.
+    expect(pending().map((e) => e.id)).toEqual(['not-ready-yet']);
+  });
+
+  it('replays a "retry" write with the SAME key until it actually sends', async () => {
+    await enqueue(entry('stable-key'));
+    const keys: string[] = [];
+
+    await flush(async (e) => {
+      keys.push(e.id);
+      return { kind: 'retry', message: 'document_not_ready' };
+    });
+    await flush(async (e) => {
+      keys.push(e.id);
+      return { kind: 'retry', message: 'document_not_ready' };
+    });
+    await flush(async (e) => {
+      keys.push(e.id);
+      return { kind: 'sent' };
+    });
+
+    // The same Idempotency-Key on every attempt — a regenerated one would look
+    // like a new write to the server and defeat the whole point of retrying.
+    expect(keys).toEqual(['stable-key', 'stable-key', 'stable-key']);
+    expect(pendingCount()).toBe(0);
+  });
+
   it('keeps each write in the workspace it was made in', async () => {
     // A write queued in the business must not land in the household because
     // the user switched workspaces while offline.

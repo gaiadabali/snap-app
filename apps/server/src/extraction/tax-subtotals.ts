@@ -1,4 +1,5 @@
 import { money } from '@snap/db';
+import type { ConsumptionTaxSpec } from '@snap/tax-rules';
 
 /**
  * Per-category tax subtotals — Peppol BG-23, and the one capability no
@@ -46,7 +47,17 @@ export type TaxSubtotal = {
   categoryCode: TaxCategoryCode;
   /** BT-119, as `NUMERIC(6,4)` renders it: `10.0000` / `0.0000`. */
   rate: string;
-  /** BT-116 — the NET amount for this category, GST excluded. */
+  /**
+   * BT-116 — the taxable base the DOCUMENT states for this category, GST
+   * excluded.
+   *
+   * NOT necessarily `inclusiveAmount - taxAmount`. Under Indonesia's DPP
+   * Nilai Lain (docs/INDONESIA.md §2.3) a faktur pajak prints a base that is
+   * 11/12 of the net amount, so `taxable + tax != inclusive` by construction.
+   * This is `net x consumptionTax.baseFraction` — equal to `net` wherever
+   * `baseFraction` is 1/1 (Australia, and any jurisdiction with no such
+   * adjustment), and NOT equal to it under DPP Nilai Lain.
+   */
   taxableAmount: string;
   /** BT-117 */
   taxAmount: string;
@@ -82,6 +93,43 @@ const RECONCILE_TOLERANCE = money.money('0.01');
  */
 const GST_TOLERANCE = money.money('0.02');
 
+function isRational(r: unknown): r is { n: number; d: number } {
+  return (
+    typeof r === 'object' &&
+    r !== null &&
+    Number.isFinite((r as { n: unknown }).n) &&
+    Number.isFinite((r as { d: unknown }).d) &&
+    (r as { d: number }).d > 0
+  );
+}
+
+/**
+ * Refuse rather than guess when no rule set was supplied.
+ *
+ * The exact failure `packages/tax-rules/README.md` names: "No rule set
+ * installed -> every calculation throws. There is deliberately no fallback."
+ * Silently falling back to Australia's 1/11 and 1/1 here would misstate the
+ * taxable base on every Indonesian document that reaches this function —
+ * `docs/INDONESIA.md` §2.3 is the whole reason this parameter exists.
+ */
+function requireConsumptionTax(
+  consumptionTax: Pick<ConsumptionTaxSpec, 'inclusiveFraction' | 'baseFraction'> | null | undefined,
+): asserts consumptionTax is Pick<ConsumptionTaxSpec, 'inclusiveFraction' | 'baseFraction'> {
+  if (
+    !consumptionTax ||
+    !isRational(consumptionTax.inclusiveFraction) ||
+    !isRational(consumptionTax.baseFraction)
+  ) {
+    throw new Error(
+      'taxSubtotalsFromLines requires the installed tax rule set\'s inclusiveFraction and ' +
+        'baseFraction (ConsumptionTaxSpec from @snap/tax-rules) — there is deliberately no ' +
+        'default. Indonesia\'s DPP Nilai Lain means "taxable + tax = inclusive" does not hold ' +
+        '(docs/INDONESIA.md §2.3), so guessing a rule set here would silently misstate a ' +
+        "PPN-bearing document's taxable base.",
+    );
+  }
+}
+
 function sumInclusive(lines: SubtotalLine[], gstFree: boolean) {
   return money.add(
     ...lines
@@ -104,12 +152,24 @@ function sumInclusive(lines: SubtotalLine[], gstFree: boolean) {
  *   what was charged. Computed only when the document prints no GST at all.
  * @param payableAmount When given, the lines must reconcile to it within a
  *   cent or nothing is emitted.
+ * @param consumptionTax The taxpayer's installed tax rule set —
+ *   `inclusiveFraction` and `baseFraction` from `ConsumptionTaxSpec`
+ *   (`@snap/tax-rules`). Required, with no default: `docs/INDONESIA.md` §2.3
+ *   found that Indonesian PPN under DPP Nilai Lain breaks the identity
+ *   `taxable + tax == inclusive` that this file used to assume when deriving
+ *   `taxableAmount` by subtraction, and `inclusiveFraction` is 11/111 for
+ *   Indonesia, not the 1/11 this file used to hardcode via
+ *   `money.gstFromInclusive`. A caller with no rule set resolved must resolve
+ *   one (`TaxRulesRegistry.requireFor`) before calling this — there is
+ *   deliberately no fallback, per `packages/tax-rules/README.md`.
  */
 export function taxSubtotalsFromLines(
   lines: SubtotalLine[],
   printedTaxAmount: string | null | undefined,
-  payableAmount?: string | null,
+  payableAmount: string | null | undefined,
+  consumptionTax: Pick<ConsumptionTaxSpec, 'inclusiveFraction' | 'baseFraction'>,
 ): TaxSubtotal[] {
+  requireConsumptionTax(consumptionTax);
   const usable = lines.filter((l) => l.amount != null);
   if (usable.length === 0) return [];
 
@@ -132,7 +192,7 @@ export function taxSubtotalsFromLines(
   const gst =
     printedTaxAmount != null && printedTaxAmount !== ''
       ? money.money(printedTaxAmount)
-      : money.gstFromInclusive(taxableInclusive);
+      : money.gstFromInclusive(taxableInclusive, consumptionTax.inclusiveFraction);
 
   // The printed GST and the lines' own GST-free flags must agree, or we do not
   // know which of them is wrong and cannot state a split either way.
@@ -144,17 +204,25 @@ export function taxSubtotalsFromLines(
   // GST is not a tenth of it. `validators.ts` already raises `gst_arithmetic`
   // for exactly this disagreement; the honest response here is to show no split
   // rather than a split we cannot support (D16).
-  const impliedGst = money.gstFromInclusive(taxableInclusive);
+  const impliedGst = money.gstFromInclusive(taxableInclusive, consumptionTax.inclusiveFraction);
   const gstGap = money.subtract(gst, impliedGst);
   const gstDrift = money.compare(gstGap, money.ZERO) < 0 ? money.negate(gstGap) : gstGap;
   if (money.compare(gstDrift, GST_TOLERANCE) > 0) return [];
 
   const out: TaxSubtotal[] = [];
   if (money.compare(taxableInclusive, money.ZERO) !== 0) {
+    // NOT `taxableInclusive - gst`. That identity is false by construction
+    // under DPP Nilai Lain (docs/INDONESIA.md §2.3): a faktur pajak prints a
+    // DPP that is 11/12 of the net amount, not the net amount itself, so the
+    // document's own taxable base has to be derived via baseFraction. Where
+    // baseFraction is 1/1 (Australia, and every jurisdiction with no such
+    // adjustment) this is exactly `taxableInclusive - gst`, unchanged.
+    const netAmount = money.subtract(taxableInclusive, gst);
+    const documentBase = money.applyFraction(netAmount, consumptionTax.baseFraction);
     out.push({
       categoryCode: 'S',
       rate: RATE_STANDARD,
-      taxableAmount: money.subtract(taxableInclusive, gst),
+      taxableAmount: documentBase,
       taxAmount: gst,
       inclusiveAmount: taxableInclusive,
     });

@@ -3,7 +3,7 @@ import { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { api, type PersonalSummary } from '@/api';
+import { IS_DEMO, api, type PersonalSummary } from '@/api';
 import { AddButton, Field, Sheet } from '@/components/form';
 import { GradientHero, HeroBody, HeroFigure, HeroLabel, Raised } from '@/components/rich';
 import { Body, Figure, Label, Screen, Small } from '@/components/ui';
@@ -166,8 +166,15 @@ export default function BudgetsScreen() {
               }}
             />
 
+            {/* This used to say budgets would sync "once the server lands" —
+                stale the moment `HttpApi` shipped (`api/http.ts`), since a
+                budget is workspace-scoped there and every member reads the
+                same one already. The demo build has no server underneath
+                it, so it says the true thing for that build instead. */}
             <Small style={{ textAlign: 'center' }}>
-              Saved on this device. They will sync across your household once the server lands.
+              {IS_DEMO
+                ? 'Saved on this device only — this is demo data, reset it from Settings.'
+                : 'Everyone in this household sees the same budgets.'}
             </Small>
           </>
         )}

@@ -121,7 +121,7 @@ describeIfDb('saveExtraction awards a scan point', () => {
     const capture = await makeCapture();
     const before = await getPointBalance(UPLOADER);
 
-    await saveExtraction(WORKER, TENANT, capture, reading(), META);
+    await saveExtraction(WORKER, TENANT, capture, reading(), META, null);
 
     expect(await getPointBalance(UPLOADER)).toBe(before + 1);
     expect(await getPointBalance(WORKER)).toBe(0); // never the worker's own identity
@@ -132,11 +132,11 @@ describeIfDb('saveExtraction awards a scan point', () => {
 
   it('a re-extraction of the SAME capture does not pay a second point', async () => {
     const capture = await makeCapture();
-    await saveExtraction(WORKER, TENANT, capture, reading('110.00'), META);
+    await saveExtraction(WORKER, TENANT, capture, reading('110.00'), META, null);
     const afterFirst = await getPointBalance(UPLOADER);
 
     // A better model re-reads the same receipt later — same capture id.
-    await saveExtraction(WORKER, TENANT, capture, reading('120.00'), META);
+    await saveExtraction(WORKER, TENANT, capture, reading('120.00'), META, null);
 
     expect(await getPointBalance(UPLOADER)).toBe(afterFirst);
     const ledger = await listPointLedger(UPLOADER);

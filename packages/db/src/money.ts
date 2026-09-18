@@ -82,16 +82,82 @@ export function balances(amounts: Money[]): boolean {
 }
 
 /**
- * Australian GST on a GST-inclusive amount: exactly 1/11, rounded half-up to
- * the cent. Used to sanity-check extracted totals before they reach the ledger.
+ * A rate as an exact fraction — numerator over denominator.
+ *
+ * Structurally identical to `Rational` in `@snap/tax-rules/src/contract.ts`.
+ * Declared locally rather than imported, to stay in step with the mobile-side
+ * copy in `packages/api-contract/src/money.ts` (which cannot import anything
+ * from outside its own package — see that file's comment). A real
+ * `ConsumptionTaxSpec.inclusiveFraction` or `.baseFraction` from
+ * `@snap/tax-rules` satisfies this structurally; no import is required to
+ * pass one in.
  */
-export function gstFromInclusive(inclusive: Money): Money {
-  const units = toUnits(inclusive);
-  // Round half away from zero: (|u| * 2 + 11) / 22, sign restored.
+export interface Rational {
+  n: number;
+  d: number;
+}
+
+function checkRational(rate: Rational | null | undefined, fn: string): asserts rate is Rational {
+  if (
+    rate == null ||
+    typeof rate.n !== 'number' ||
+    typeof rate.d !== 'number' ||
+    !Number.isFinite(rate.n) ||
+    !Number.isFinite(rate.d) ||
+    rate.n < 0 ||
+    rate.d <= 0
+  ) {
+    throw new Error(
+      `${fn} requires a tax rate from an installed tax rule set (for example ` +
+        `ConsumptionTaxSpec.inclusiveFraction or .baseFraction from @snap/tax-rules) — there is ` +
+        'deliberately no default. packages/tax-rules/README.md: "No rule set installed -> every ' +
+        'calculation throws." A silently assumed 1/11 for a jurisdiction that is not Australia is ' +
+        'exactly the failure that rule exists to prevent.',
+    );
+  }
+}
+
+/**
+ * amount x rate, exactly, rounded half away from zero to 4dp — this module's
+ * native scale, matching `money_amount NUMERIC(19,4)`.
+ *
+ * The general primitive behind `gstFromInclusive`, and behind deriving the
+ * DPP Nilai Lain base an Indonesian faktur prints (`ConsumptionTaxSpec
+ * .baseFraction`, docs/INDONESIA.md §2.3): `taxable + tax == inclusive` does
+ * NOT hold there, so a caller must apply `baseFraction` to the net amount
+ * rather than assume the identity. `rate` always comes from the caller's
+ * installed tax rule set — never a constant in this file.
+ */
+export function applyFraction(amount: Money, rate: Rational): Money {
+  checkRational(rate, 'applyFraction');
+  const units = toUnits(amount);
   const negative = units < 0n;
   const abs = negative ? -units : units;
-  const rounded = (abs * 2n + 11n) / 22n;
+  const n = BigInt(rate.n);
+  const d = BigInt(rate.d);
+  // Half away from zero: (abs*n*2 + d) / (d*2) — the same technique this
+  // function has always used for 1/11, generalised to an arbitrary fraction.
+  const rounded = (abs * n * 2n + d) / (d * 2n);
   return fromUnits(negative ? -rounded : rounded);
+}
+
+/**
+ * Tax inside a GST/PPN-inclusive amount, rounded half-up. Used to sanity-check
+ * extracted totals before they reach the ledger.
+ *
+ * `rate` is `inclusiveFraction` from the taxpayer's installed tax rule set —
+ * 1/11 for Australian GST, 11/111 for Indonesian PPN under DPP Nilai Lain.
+ * This function used to compute `(abs * 2 + 11) / 22` unconditionally; that
+ * hardcoded 1/11 is the live defect `docs/STATEMENTS.md` §12 ticket S2 and
+ * `docs/INDONESIA.md` §7.4 record for every Indonesian document. There is no
+ * default parameter and no `?? 1/11` here: a caller with no rule set
+ * installed must resolve one first (`TaxRulesRegistry.requireFor`, which
+ * itself throws `NoRulesInstalled`), and omitting the rate here throws too,
+ * rather than silently computing under Australian law.
+ */
+export function gstFromInclusive(inclusive: Money, rate: Rational): Money {
+  checkRational(rate, 'gstFromInclusive');
+  return applyFraction(inclusive, rate);
 }
 
 /** For display only. Never feed the result back into arithmetic. */

@@ -181,10 +181,18 @@ describeIfDb('POST /v1/captures/:id/device-reading', () => {
       platform: 'android',
       model: 'samsung SM-A715F',
       totalMemoryMb: 7519,
+      // OD-12's agreement work needs "agreement rate per field, per engine
+      // version, per device model" queryable — this was the third value
+      // (after the OD-8 preview and `totalMemoryMb`) computed by the handler
+      // and dropped before this, unqueryable because it never reached a row.
+      engineVersion: '19.0.1',
     });
   });
 
-  it('leaves device_meta empty when the client sends no device block', async () => {
+  it('leaves device_meta with only engineVersion when the client sends no device block', async () => {
+    // `engineVersion` is a top-level DTO field, not part of `device` — it is
+    // required on every request (DeviceReadingDto), so it is the one key that
+    // survives even when the client sends no device block at all.
     const { layoutId } = await controller.record(
       user,
       TENANT,
@@ -194,7 +202,7 @@ describeIfDb('POST /v1/captures/:id/device-reading', () => {
     const row = (
       await admin.query('select device_meta from document_layouts where id = $1', [layoutId])
     ).rows[0];
-    expect(row.device_meta).toEqual({});
+    expect(row.device_meta).toEqual({ engineVersion: '19.0.1' });
   });
 
   it('refuses a capture belonging to another tenant', async () => {

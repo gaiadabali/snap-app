@@ -97,7 +97,8 @@ async function markFailed(id: string, message: string): Promise<void> {
 export type SendOutcome =
   | { kind: 'sent' }
   | { kind: 'offline' }
-  | { kind: 'rejected'; message: string };
+  | { kind: 'rejected'; message: string }
+  | { kind: 'retry'; message: string };
 
 /**
  * Sends everything queued, oldest first, and stops at the first sign of being
@@ -113,20 +114,34 @@ export type SendOutcome =
  * blocks every write behind it. What the user sees is the failure, which is
  * the honest outcome; what they must not get is an app that silently stops
  * sending anything.
+ *
+ * `'retry'` is NOT `'rejected'`, even though both arrive as a 4xx off the
+ * wire. `docs/ON-DEVICE.md` §7.2 (OD-11): a correction sent for a capture
+ * whose extraction has not produced a document yet answers 409
+ * `document_not_ready`, and that is a state the outbox WILL see resolve on
+ * its own — extraction finishes independently of the phone. Treating it like
+ * any other 4xx and dropping it is exactly how a first implementation loses a
+ * human's correction: the person edited a field, closed the app, and the edit
+ * is gone because it happened to race the worker. So it stays queued, at its
+ * original position, and is tried again on the next drain — but it does NOT
+ * stop the whole flush the way `'offline'` does, because a temporarily
+ * not-ready CAPTURE is not evidence the connection is down, and every other
+ * queued write for every other resource has no reason to wait behind it.
  */
 export async function flush(
   send: (entry: OutboxEntry) => Promise<SendOutcome>,
-): Promise<{ sent: number; failed: OutboxEntry[]; stoppedOffline: boolean }> {
+): Promise<{ sent: number; failed: OutboxEntry[]; retrying: OutboxEntry[]; stoppedOffline: boolean }> {
   await loadOutbox();
   let sent = 0;
   const failed: OutboxEntry[] = [];
+  const retrying: OutboxEntry[] = [];
 
   // A copy: `entries` is mutated as we go, and iterating it directly would
   // skip items as earlier ones are removed.
   for (const entry of [...entries]) {
     const outcome = await send(entry);
     if (outcome.kind === 'offline') {
-      return { sent, failed, stoppedOffline: true };
+      return { sent, failed, retrying, stoppedOffline: true };
     }
     if (outcome.kind === 'rejected') {
       await markFailed(entry.id, outcome.message);
@@ -134,10 +149,18 @@ export async function flush(
       await remove(entry.id);
       continue;
     }
+    if (outcome.kind === 'retry') {
+      // Deliberately NOT removed. `attempts`/`lastError` are updated so a UI
+      // can say what is happening, but the entry stays queued in place for
+      // the next drain — the whole point being that this is not a failure.
+      await markFailed(entry.id, outcome.message);
+      retrying.push({ ...entry, lastError: outcome.message });
+      continue;
+    }
     await remove(entry.id);
     sent += 1;
   }
-  return { sent, failed, stoppedOffline: false };
+  return { sent, failed, retrying, stoppedOffline: false };
 }
 
 /** Drops everything. For sign-out: a queue is one person's unsent work. */

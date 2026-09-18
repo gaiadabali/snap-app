@@ -96,7 +96,11 @@ export function EditFields({
   if (gstFree < 0 || gstFree > total) problems.push('The GST-free part cannot exceed the total.');
 
   // Shown live, so the consequence of a correction is visible before saving.
-  const newGst = total > 0 ? gstFromInclusive((total - gstFree).toFixed(4)) : '0.0000';
+  // Australia-specific: 82.50 tax-invoice threshold below is an ATO figure,
+  // so this whole edit flow is AU-only for now. Will need the tenant's
+  // installed tax rule set's inclusiveFraction once this surface goes
+  // multi-jurisdiction.
+  const newGst = total > 0 ? gstFromInclusive((total - gstFree).toFixed(4), { n: 1, d: 11 }) : '0.0000';
 
   async function save() {
     setError(null);

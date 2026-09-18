@@ -2,12 +2,14 @@ import type {
   CapturePageUpload,
   CreateCaptureRequest,
   CreateCaptureResponse,
+  PatchCaptureDocumentRequest,
   UpdateDocumentRequest,
 } from '@snap/api-contract';
 
 import { DEMO } from '@/fixtures/demo';
 import { gstFromInclusive } from '@/lib/money';
 
+import { ApiError } from './http';
 import { MUTATION } from './mutations';
 import { clearPersisted, loadPersisted, persist, type Persisted } from './persist';
 import {
@@ -842,7 +844,11 @@ export class MockApi implements SnapApi {
         const gstFreeRaw = path === 'totals.gst_free' ? value : next.gstFreeAmount;
         const gstFree = gstFreeRaw == null ? null : String(gstFreeRaw);
         const taxable = subtractDecimal(payable, gstFree ?? '0');
-        const gst = gstFromInclusive(taxable);
+        // Australia-specific: this mock/demo edit flow is AU-only (the 82.50
+        // tax-invoice threshold below is an ATO figure). Will need the
+        // tenant's installed tax rule set's inclusiveFraction once this
+        // surface goes multi-jurisdiction.
+        const gst = gstFromInclusive(taxable, { n: 1, d: 11 });
         Object.assign(next, {
           payableAmount: payable,
           gstFreeAmount: gstFree,
@@ -873,6 +879,29 @@ export class MockApi implements SnapApi {
 
     docs = docs.map((d, i) => (i === idx ? next : d));
     return next;
+  }
+
+  /**
+   * OD-11's capture-addressed correction. `DocumentView` carries no separate
+   * capture id (unlike the server's `documents.capture_id`) — the demo's own
+   * `awaitExtraction` mints a document's id AS `doc_${captureId}`, which is
+   * the only place in this fixture world a capture and its document are
+   * linked, so that is the convention this looks the document up by. The
+   * fixture has no "extraction still running" state — every capture in it
+   * already has a document — so the only new behaviour to model is the miss:
+   * an id matching nothing answers the same `409 document_not_ready` the real
+   * server does, so the app cannot tell the demo and the real API apart by
+   * how this fails. A hit just applies the same edit `updateDocument` does.
+   */
+  async correctCaptureDocument(
+    captureId: string,
+    body: PatchCaptureDocumentRequest,
+  ): Promise<DocumentView> {
+    const doc = docs.find((d) => d.id === `doc_${captureId}`);
+    if (!doc) {
+      throw new ApiError(409, "This receipt hasn't been read yet.", 'document_not_ready');
+    }
+    return this.updateDocument(doc.id, body);
   }
 
   async confirmDocument(id: string): Promise<DocumentView> {

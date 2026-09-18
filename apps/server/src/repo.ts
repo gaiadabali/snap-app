@@ -8,6 +8,7 @@ import type {
   ComplianceFailure,
   ExtractionFinding,
 } from '@snap/api-contract';
+import type { ConsumptionTaxSpec, TaxRules } from '@snap/tax-rules';
 import { sql } from 'drizzle-orm';
 
 import { getDb } from './db.js';
@@ -722,6 +723,41 @@ export async function getCaptureProgress(
   });
 }
 
+/**
+ * Whether a capture's extraction has produced a document yet, and which one.
+ *
+ * `PATCH /v1/captures/:id/document` (OD-11, `docs/ON-DEVICE.md` §7.2) needs
+ * exactly this — a document id or the fact that there is none yet — and
+ * nothing `getCaptureProgress` also carries (capture status, the worker's
+ * last error). Coupling the correction endpoint to that shape would mean it
+ * breaks every time the progress poll grows a field the correction does not
+ * care about; a distinct reader for a distinct question does not.
+ *
+ * The two-level result (capture missing vs. capture present with no document)
+ * is what lets the controller tell "wrong capture id" (404) apart from "right
+ * capture, extraction has not run yet" (409) — the whole reason this ticket
+ * exists is that a correction arriving before extraction is a NORMAL state
+ * the outbox will retry, not an error to reject outright.
+ */
+export async function getDocumentIdForCapture(
+  userId: string,
+  tenantId: string,
+  captureId: string,
+): Promise<{ captureExists: true; documentId: string | null } | { captureExists: false }> {
+  return withTenantAs(getDb(), userId, tenantId, async (tx) => {
+    const rows = await tx.execute<{ id: string; document_id: string | null }>(sql`
+      select c.id, d.id as document_id
+        from captures c
+        left join documents d on d.capture_id = c.id and d.deleted_at is null
+       where c.id = ${captureId}
+       limit 1
+    `);
+    const row = rows.rows[0];
+    if (!row) return { captureExists: false as const };
+    return { captureExists: true as const, documentId: row.document_id };
+  });
+}
+
 /** The stored original behind a document, for serving the image. */
 export async function getCaptureForDocument(
   userId: string,
@@ -1106,6 +1142,18 @@ function engineFor(model: string): 'claude_vision' | 'ocr_llm' {
  * run was never recorded, is a row nobody can explain later; and the run is
  * what makes the extraction replayable against a better model.
  */
+// Australia-specific: the no-rule-set-installed fallback for the per-category
+// tax split written below. Mirrors the same null-means-Australia convention
+// `documents.controller.ts`'s `consumptionTaxFromRules` and
+// `extraction/validators.ts`'s `jurisdictionOf` already use. Kept as a plain
+// literal (not imported from either of those) because this file must not
+// import `taxrules.repo.ts` — that module already imports `readTenant` FROM
+// this file, and importing `rulesFor` back would be a circular import.
+const AU_CONSUMPTION_TAX: Pick<ConsumptionTaxSpec, 'inclusiveFraction' | 'baseFraction'> = {
+  inclusiveFraction: { n: 1, d: 11 },
+  baseFraction: { n: 1, d: 1 },
+};
+
 export async function saveExtraction(
   workerUserId: string,
   tenantId: string,
@@ -1119,7 +1167,29 @@ export async function saveExtraction(
     outputTokens: number | null;
     raw: string;
   },
+  // The same rule set `worker.ts` already resolved to run `validate()` against
+  // this result — threaded through rather than re-resolved here, so the tax
+  // split this function writes cannot disagree with the law the extraction was
+  // validated under.
+  //
+  // REQUIRED, NOT OPTIONAL, and that is the whole point. An explicit `null`
+  // means "this tenant has no rule set installed, treat it as Australia" and is
+  // a decision the caller has made. An OMITTED argument would mean "I forgot",
+  // and the two must not be spelled the same way. This function is the
+  // extraction write path: the defect this parameter exists to fix was a
+  // hardcoded AU 1/11 that silently emptied the tax split on every Indonesian
+  // faktur, and `gstFromInclusive` was deliberately made to throw rather than
+  // default for exactly that reason. Re-introducing a silent default one layer
+  // up here would put the same bug back where nothing can see it.
+  taxRules: TaxRules | null,
 ): Promise<{ documentId: string }> {
+  const consumptionTax: Pick<ConsumptionTaxSpec, 'inclusiveFraction' | 'baseFraction'> = taxRules
+    ? {
+        inclusiveFraction: taxRules.consumptionTax.inclusiveFraction,
+        baseFraction: taxRules.consumptionTax.baseFraction,
+      }
+    : AU_CONSUMPTION_TAX;
+
   const { documentId, uploadedBy } = await withTenantAs(getDb(), workerUserId, tenantId, async (tx) => {
     const e = result.extraction;
 
@@ -1345,6 +1415,7 @@ export async function saveExtraction(
       e.lines.map((l) => ({ amount: l.amount.value, gstFree: l.gstFree.value === true })),
       e.taxAmount.value,
       e.payableAmount.value,
+      consumptionTax,
     );
     for (const s of subtotals) {
       await tx.execute(sql`

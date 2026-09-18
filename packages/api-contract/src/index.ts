@@ -168,6 +168,30 @@ export interface UpdateDocumentRequest {
   confirm?: boolean;
 }
 
+/**
+ * `PATCH /v1/captures/:captureId/document` — `docs/ON-DEVICE.md` §7.2, §11 (OD-11).
+ *
+ * Addressed by CAPTURE rather than by document, because a Stage 2 correction
+ * can be made — and queued in the offline outbox — before the server's
+ * extraction has produced a document to edit at all. Until it has, the server
+ * answers `409 document_not_ready` and the outbox is expected to retry with
+ * its existing back-off, carrying the SAME `Idempotency-Key`: the point is
+ * that the correction is not lost, only deferred.
+ *
+ * `edits` uses the same field-path vocabulary as `UpdateDocumentRequest.edits`
+ * (`supplier.name`, `supplier.abn`, `header.issue_date`, `totals.payable`,
+ * `totals.gst_free`) — this is the same correction, made possible earlier.
+ */
+export interface PatchCaptureDocumentRequest {
+  edits: Record<string, string | number | null>;
+  /** Which on-device engine produced the preview being corrected. Advisory —
+   *  the server does not validate it — kept for OD-12's agreement findings,
+   *  which compare a device engine's readings against the server's own. */
+  previewEngine?: 'device-vision' | 'device-mlkit';
+  /** Optimistic concurrency, once a document exists to carry a version. */
+  version?: number;
+}
+
 /** `POST /v1/documents/:id/post` — the act that actually moves the books. */
 export interface PostDocumentRequest {
   /** Splits must sum to exactly zero, or the database rejects the posting. */

@@ -32,6 +32,13 @@ export type ToolResult = {
 const aud = (v: string | number): string =>
   `$${Number(v).toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
+// Australia-specific: these tools answer GST questions under Australian law
+// only (see the file banner above — "ATO", "IRD or ATO" confusion is the
+// exact failure this module exists to prevent). When this assistant surface
+// goes multi-jurisdiction it will need the tenant's installed tax rule set's
+// inclusiveFraction threaded in here instead of this constant.
+const AU_GST_INCLUSIVE_FRACTION = { n: 1, d: 11 };
+
 export const TOOLS = {
   /**
    * GST inside a GST-inclusive amount.
@@ -43,7 +50,7 @@ export const TOOLS = {
     const inclusive = money.money(input.inclusiveAmount);
     const gstFree = money.money(input.gstFreeAmount ?? '0');
     const taxable = money.subtract(inclusive, gstFree);
-    const gst = money.gstFromInclusive(taxable);
+    const gst = money.gstFromInclusive(taxable, AU_GST_INCLUSIVE_FRACTION);
 
     return {
       answer:

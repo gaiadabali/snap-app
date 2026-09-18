@@ -17,6 +17,7 @@ import {
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { DocumentView, ExtractionFinding, PageSource } from '@snap/api-contract';
 import { money } from '@snap/db';
+import type { ConsumptionTaxSpec, TaxRules } from '@snap/tax-rules';
 import {
   IsArray,
   IsBoolean,
@@ -52,6 +53,7 @@ import {
   type CapturePageRow,
   type DocumentRow,
   type LineRow,
+  type TenantRow,
 } from '../repo.js';
 import { abnIsValid, expectedGst, validate } from '../extraction/validators.js';
 import { rulesFor } from '../taxrules/taxrules.repo.js';
@@ -59,6 +61,7 @@ import { getCaptureForDocument } from '../repo.js';
 import { get as readObject } from '../storage.js';
 import { issueImageToken } from '../tokens.js';
 import { gstFreeAmount, taxSubtotalsFromLines } from '../extraction/tax-subtotals';
+import { deviceAgreementFindings } from './device-agreement.js';
 
 /* ── DTOs ────────────────────────────────────────────────────────────────── */
 
@@ -169,6 +172,36 @@ export class RejectDto {
 
 /* ── Serialisation ───────────────────────────────────────────────────────── */
 
+// Australia-specific: the no-rule-set-installed fallback, used only via
+// `consumptionTaxOf` below. Not a silent default inside `taxSubtotalsFromLines`
+// itself (that function still throws on a missing rate) — this is an explicit
+// resolution decision, mirroring `jurisdictionOf`'s existing null-means-
+// Australia convention in `extraction/validators.ts`: a workspace with no
+// installed rule set is serialised as Australian rather than refused, because
+// `toWire` is presenting an already-extracted document, not producing a fresh
+// statutory figure (contrast `taxrules.repo.ts`'s `rulesFor`, which refuses
+// for BAS / consumption-tax reporting).
+const AU_CONSUMPTION_TAX: Pick<ConsumptionTaxSpec, 'inclusiveFraction' | 'baseFraction'> = {
+  inclusiveFraction: { n: 1, d: 11 },
+  baseFraction: { n: 1, d: 1 },
+};
+
+/** Same mapping, from an already-resolved rule set (or `null` for Australia). */
+export function consumptionTaxFromRules(
+  rules: TaxRules | null,
+): Pick<ConsumptionTaxSpec, 'inclusiveFraction' | 'baseFraction'> {
+  if (!rules) return AU_CONSUMPTION_TAX;
+  return { inclusiveFraction: rules.consumptionTax.inclusiveFraction, baseFraction: rules.consumptionTax.baseFraction };
+}
+
+/** The tenant's installed rule set, or Australia when none is installed. */
+export async function consumptionTaxFor(
+  tenant: TenantRow | null,
+): Promise<Pick<ConsumptionTaxSpec, 'inclusiveFraction' | 'baseFraction'>> {
+  const rules = tenant?.tax_rules_id ? await rulesFor(tenant) : null;
+  return consumptionTaxFromRules(rules);
+}
+
 /**
  * The wire shape, matching the mobile app's `DocumentView`.
  *
@@ -176,7 +209,12 @@ export class RejectDto {
  * weeks; renaming fourteen screens to match whatever the database calls a
  * column would be work with no benefit to anyone.
  */
-export function toWire(document: DocumentRow, lines: LineRow[], pages: CapturePageRow[]): DocumentView {
+export function toWire(
+  document: DocumentRow,
+  lines: LineRow[],
+  pages: CapturePageRow[],
+  consumptionTax: Pick<ConsumptionTaxSpec, 'inclusiveFraction' | 'baseFraction'>,
+): DocumentView {
   const compliance = document.ato_compliance ?? {};
   const failures = compliance.failures ?? [];
   const findings: ExtractionFinding[] = compliance.findings ?? [];
@@ -193,6 +231,7 @@ export function toWire(document: DocumentRow, lines: LineRow[], pages: CapturePa
     })),
     document.tax_amount,
     payable,
+    consumptionTax,
   );
 
   const wireLines = lines.map((l) => ({
@@ -293,12 +332,16 @@ export class DocumentsController {
       ? (filter as (typeof allowed)[number])
       : 'all';
     const rows = await listDocuments(user.userId, tenantId, chosen);
+    // One resolution for the whole list, not one per row: the rule set is the
+    // same for every document in a workspace.
+    const tenant = await readTenant(user.userId, tenantId);
+    const consumptionTax = await consumptionTaxFor(tenant);
     // Lines and pages are not fetched for a list, for the same reason: 500
     // documents with their lines (or their pages) is a payload nobody
     // scrolls, and the review screen fetches both on open. The list view
     // never pages through a document, so there is no reader here for the
     // "never empty" invariant on `pages` to protect.
-    return rows.map((row) => toWire(row, [], []));
+    return rows.map((row) => toWire(row, [], [], consumptionTax));
   }
 
   @Get(':id')
@@ -311,7 +354,18 @@ export class DocumentsController {
     const found = await getDocument(user.userId, tenantId, id);
     if (!found) throw new NotFoundException('No such document.');
     const pages = await listCapturePages(user.userId, tenantId, found.document.capture_id);
-    return toWire(found.document, found.lines, pages);
+    const tenant = await readTenant(user.userId, tenantId);
+    const consumptionTax = await consumptionTaxFor(tenant);
+    const view = toWire(found.document, found.lines, pages, consumptionTax);
+    // OD-12 (docs/ON-DEVICE.md §11 Stage 2): additive — appended onto whatever
+    // `toWire` already put in `findings` from `ato_compliance`, never
+    // replacing it. See `device-agreement.ts`'s header for why this is
+    // computed fresh on every read rather than written once by the worker.
+    const agreementFindings = await deviceAgreementFindings(user.userId, tenantId, found.document);
+    if (agreementFindings.length > 0) {
+      view.findings = [...view.findings, ...agreementFindings];
+    }
+    return view;
   }
 
   @Get(':id/pages/:pageNumber/image')
@@ -382,7 +436,9 @@ export class DocumentsController {
     const after = await getDocument(user.userId, tenantId, id);
     if (!after) throw new NotFoundException('No such document.');
     const pages = await listCapturePages(user.userId, tenantId, after.document.capture_id);
-    return toWire(after.document, after.lines, pages);
+    const tenant = await readTenant(user.userId, tenantId);
+    const consumptionTax = await consumptionTaxFor(tenant);
+    return toWire(after.document, after.lines, pages, consumptionTax);
   }
 
   @Patch(':id')
@@ -483,7 +539,7 @@ export class DocumentsController {
 
     const after = await getDocument(user.userId, tenantId, id);
     const afterPages = await listCapturePages(user.userId, tenantId, after!.document.capture_id);
-    return toWire(after!.document, after!.lines, afterPages);
+    return toWire(after!.document, after!.lines, afterPages, consumptionTaxFromRules(taxRules));
   }
 
   @Put(':id/lines')
@@ -498,7 +554,9 @@ export class DocumentsController {
     const after = await getDocument(user.userId, tenantId, id);
     if (!after) throw new NotFoundException('No such document.');
     const pages = await listCapturePages(user.userId, tenantId, after.document.capture_id);
-    return toWire(after.document, after.lines, pages);
+    const tenant = await readTenant(user.userId, tenantId);
+    const consumptionTax = await consumptionTaxFor(tenant);
+    return toWire(after.document, after.lines, pages, consumptionTax);
   }
 
   @Post(':id/confirm')
@@ -528,7 +586,9 @@ export class DocumentsController {
     if (!outcome.ok) throw new NotFoundException('No such document.');
     const after = await getDocument(user.userId, tenantId, id);
     const pages = await listCapturePages(user.userId, tenantId, after!.document.capture_id);
-    return toWire(after!.document, after!.lines, pages);
+    const tenant = await readTenant(user.userId, tenantId);
+    const consumptionTax = await consumptionTaxFor(tenant);
+    return toWire(after!.document, after!.lines, pages, consumptionTax);
   }
 
   @Post(':id/reject')

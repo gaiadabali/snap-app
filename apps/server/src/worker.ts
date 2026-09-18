@@ -5,6 +5,7 @@ import { sql } from 'drizzle-orm';
 import { chain } from './ai/router.js';
 import { config } from './config.js';
 import { getDb } from './db.js';
+import { runAgreementCheck } from './extraction/agreement.js';
 import { BedrockClaudeProvider, OllamaCloudProvider, type ExtractionProvider, type PageImage } from './extraction/provider.js';
 import { extractionPromptFor } from './extraction/prompt.js';
 import { runExtraction } from './extraction/run.js';
@@ -135,14 +136,24 @@ async function handle(job: Job): Promise<void> {
 
     if (outcome.ok) {
       const { run } = outcome;
-      await saveExtraction(WORKER_USER, job.tenantId, captureId, run.result, {
-        model: spec.id,
-        promptVersion: run.meta.promptVersion,
-        latencyMs: run.meta.latencyMs,
-        inputTokens: run.meta.inputTokens,
-        outputTokens: run.meta.outputTokens,
-        raw: run.meta.raw,
-      });
+      await saveExtraction(
+        WORKER_USER,
+        job.tenantId,
+        captureId,
+        run.result,
+        {
+          model: spec.id,
+          promptVersion: run.meta.promptVersion,
+          latencyMs: run.meta.latencyMs,
+          inputTokens: run.meta.inputTokens,
+          outputTokens: run.meta.outputTokens,
+          raw: run.meta.raw,
+        },
+        // The same rule set (or null) just resolved above for `validate()` —
+        // the per-category tax split this writes must agree with the law the
+        // extraction was validated under.
+        taxRules,
+      );
       console.log(
         `job ${job.id}: ${spec.id} → ${run.result.reviewStatus}` +
           ` (${run.result.findings.length} findings, ${run.meta.latencyMs} ms)`,
@@ -161,6 +172,13 @@ async function handle(job: Job): Promise<void> {
       // with zero cost beyond the config read, whenever `DOCAI_SIDECAR_URL`
       // is unset.
       await runShadowOcr(WORKER_USER, job.tenantId, captureId, run.result.extraction, pageRows);
+
+      // OD-12 (docs/ON-DEVICE.md §11 Stage 2): compares whatever device
+      // reading has already arrived for this capture against the model's own
+      // extraction and logs the agreement, shadow-style — never throws,
+      // writes nothing. See `agreement.ts`'s header for why the finding shown
+      // to a user is recomputed at read time instead of persisted here.
+      await runAgreementCheck(WORKER_USER, job.tenantId, captureId, run.result.extraction);
       return;
     }
 
