@@ -213,6 +213,24 @@ export function PricingPlans() {
               <span className="ml-1 text-[14px] font-medium text-[var(--color-ink-muted)]">/mo</span>
               <div className="mt-1 text-[13px] text-[var(--color-ink-faint)]">The funnel — no card needed</div>
             </div>
+            {/*
+              NOT THE SIGNUP BONUS, and not rendered anywhere.
+
+              "20 scans/month" is a true statement about the retired monthly
+              tiering this component describes — nothing imports `PricingPlans`
+              (see the note at the top of `page.tsx`). Under the model that
+              actually ships, a new account is granted `FREE_SCANS_AT_SIGNUP`
+              scans once, not an allowance that resets, and every live surface
+              says ten.
+
+              Left as it is rather than renumbered, because changing it to 10
+              would assert "10 scans/month", which is a claim about a product
+              that does not exist. If this component is ever brought back, its
+              figures have to be re-derived from whatever model it is being
+              brought back for — they are not merely stale, they are about
+              something else. `free-scans.test.ts` scopes its patterns so this
+              line cannot trip it, and explains why.
+            */}
             <ul className="mt-6 flex-1 space-y-2 text-[14px] text-[var(--color-ink)]">
               <li>20 scans/month</li>
               <li>Batch extraction (results within an hour)</li>

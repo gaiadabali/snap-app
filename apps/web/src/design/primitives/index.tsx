@@ -157,8 +157,23 @@ export function Section({
   className?: string;
   id?: string;
 }) {
+  /**
+   * `ground` paints NO background, on purpose.
+   *
+   * It used to fill `--color-ground`, which is the same colour `body` already
+   * paints — so the fill was a no-op everywhere except in the one place it
+   * mattered: it made every section an opaque lid over anything drawn behind
+   * the document. That is what kept the bed (`_components/scan-bed.tsx`)
+   * invisible on the home page, and it would keep any future page-level
+   * surface invisible too.
+   *
+   * `surface` and `void` still fill, because those genuinely are a different
+   * colour from the page and are meant to cover what is behind them — the void
+   * band in particular is the page's one dark moment and lands harder for
+   * being solid.
+   */
   const tones = {
-    ground: 'bg-[var(--color-ground)] text-[var(--color-ink)]',
+    ground: 'text-[var(--color-ink)]',
     surface: 'bg-[var(--color-surface)] text-[var(--color-ink)]',
     void: 'bg-[var(--color-void)] text-[var(--color-void-ink)]',
   } as const;
@@ -657,7 +672,10 @@ export function ArrowLink({
     <Link
       href={href}
       className={cx(
-        'group inline-flex items-center gap-3 text-[15px] font-medium',
+        // `tap` expands the pointer target to meet WCAG 2.5.8 without adding
+        // a pixel of height — see the note in globals.css. These links sit
+        // inside pinned screens measured to the pixel.
+        'tap group inline-flex items-center gap-3 text-[15px] font-medium',
         tone === 'void'
           ? 'text-[var(--color-void-ink)]'
           : 'text-[var(--color-ink)] hover:text-[var(--color-accent)]',

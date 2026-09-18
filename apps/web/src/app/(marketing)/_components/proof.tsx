@@ -1,6 +1,8 @@
 import { ArrowLink, ButtonLink, LedgerRow, Reveal, Rule, cx } from '@/design/primitives';
 import { BUSINESS_SURFACES_ENABLED } from '@/lib/features';
 
+import { FREE_SCANS_AT_SIGNUP } from '../pricing/credit-packs';
+
 import {
   HAS_PLACEHOLDERS,
   MEASUREMENT,
@@ -116,8 +118,23 @@ function Standing() {
             food. You will know inside three scans whether it reads your paperwork properly.
           </p>
           <div className="flex flex-wrap items-center gap-6">
+            {/*
+              Derived, not typed. This button said "Scan 20 free" while an
+              account is granted TEN — `credits.repo.ts` inserts
+              `('scans', 10, 10, 'signup_bonus')` and its own test asserts that
+              amount. So the loudest call to action on the home page advertised
+              twice the free allowance the product actually hands over.
+
+              That is the same fault `credit-packs.test.ts` exists to prevent
+              for prices, and the same law: overstating what a customer gets
+              for free is a misleading representation under ACL s18, not a
+              typo. Every other surface already said ten — the hero, the
+              pricing section, /features, /how-it-works, /pricing — so this was
+              one string that had been left behind, and the fix is to stop it
+              being a string at all.
+            */}
             <ButtonLink href="/register" size="lg">
-              Scan 20 free, no card
+              Scan {FREE_SCANS_AT_SIGNUP} free, no card
             </ButtonLink>
             {BUSINESS_SURFACES_ENABLED ? (
               <ArrowLink href="/pricing#practice">Bring a practice</ArrowLink>

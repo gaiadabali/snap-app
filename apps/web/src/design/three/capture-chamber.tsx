@@ -51,6 +51,27 @@ const INTRO_SECONDS = 1.6;
 const INTRO_TARGET = 0.42;
 
 /**
+ * The same concession, extended to the POSE — and it is the fix for what the
+ * hero actually looked like.
+ *
+ * `settle` below turns the sheet square and brings it forward as the section
+ * is scrolled, which is the one thing a flat card cannot do and the reason
+ * this scene exists. But it was reading from scroll ALONE, and the hero is the
+ * top of the document: at rest the pin track sits at about 0.38, which is
+ * barely past the 0.3 the settle starts from. So the first thing every visitor
+ * saw was a docket turned 31° away and set back to about 80% — small, averted
+ * and dim in the middle of a 460px frame. Measured on the live page, not
+ * guessed; it is what the owner's screenshot shows.
+ *
+ * The read already solved this with an intro that plays once on arrival, so
+ * the pose uses the same mechanism and the same `max()`: the sheet eases to a
+ * presented three-quarter view by itself, and scrolling can only ever bring it
+ * further square. Scroll never fights the intro, and nobody has to scroll to
+ * find out that the hero has a subject.
+ */
+const INTRO_SETTLE = 0.72;
+
+/**
  * Where in the hero's TRACK the read runs.
  *
  * Retuned for pinning. These used to describe the hero's pass through the
@@ -353,7 +374,10 @@ function Docket({
      * square to the camera as the section takes the viewport — so the reward
      * for scrolling is that the document turns to face you.
      */
-    const settle = THREE.MathUtils.smoothstep(progress.current, 0.3, 0.82);
+    const settle = Math.max(
+      INTRO_SETTLE * THREE.MathUtils.smoothstep(t, 0.2, INTRO_SECONDS),
+      THREE.MathUtils.smoothstep(progress.current, 0.3, 0.82),
+    );
     const targetY = THREE.MathUtils.lerp(-0.58, -0.04, settle);
     const targetX = THREE.MathUtils.lerp(0.26, 0.02, settle);
     const targetZ = THREE.MathUtils.lerp(-0.85, 0.12, settle);

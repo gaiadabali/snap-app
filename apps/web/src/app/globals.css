@@ -108,6 +108,9 @@
     --color-void-ink:    #EDEBE7;
     --color-void-muted:  #8E949E;
     --color-void-rule:   #1E232A;
+
+    --bed-wash: 1;
+    --bed-lamp: 1;
   }
 }
 
@@ -135,6 +138,9 @@
   --color-void-ink:    #EDEBE7;
   --color-void-muted:  #8E949E;
   --color-void-rule:   #1E232A;
+
+  --bed-wash: 1;
+  --bed-lamp: 1;
 }
 
 html {
@@ -143,6 +149,21 @@ html {
   /* The sticky header's real height, measured. Used to pull the first screen
      up under it and to clear content below it — one number, two jobs. */
   --header-h: 65px;
+
+  /*
+   * How hard the bed's two LIGHTS are allowed to push. Lines are mixed from
+   * `--color-ink` and invert for free; light does not, and these are the
+   * light-theme values.
+   *
+   * The grounds are warm off-white on purpose — the note at the top of this
+   * file records that they were changed from blue precisely so #1878D8 would
+   * have somewhere to land. A blue wash at dark-theme strength puts the tint
+   * straight back and turns docket paper grey, which is the one thing the
+   * palette was rewritten to stop. Dark has no such problem: there the same
+   * light is the only thing separating the ground from a black rectangle.
+   */
+  --bed-wash: 0.34;
+  --bed-lamp: 0.42;
 }
 
 body {
@@ -377,6 +398,35 @@ body {
  * The curve's amplitude lives inside the band, so nothing it does can reach
  * the column.
  */
+/*
+ * THE RAIL DOES NOT EXIST BELOW 1400px, and until now it only said so.
+ *
+ * Every other `.page-spine*` rule is inside the `@media (min-width: 1400px)`
+ * below — including `position: fixed`, the size, and `fill: none`. So under
+ * 1400px the component still rendered, as a completely unstyled `<svg>`: in
+ * normal flow, width 100%, height derived from its own `viewBox` (0 0 100
+ * 1000, `preserveAspectRatio="none"`), and its four paths filled with the SVG
+ * default, which is BLACK.
+ *
+ * On a 390px handset that is a 390x3900 black shape sitting above the hero and
+ * pushing the `h1` to y=4078. Measured, not inferred: `getBoundingClientRect`
+ * on the live page returned exactly those numbers, and the first screenful of
+ * the home page was a black crescent with no words on it.
+ *
+ * It survived because the rail is a wide-screen flourish that nobody looks at
+ * on a phone, and because nothing fails — the page is valid, complete, 200, and
+ * every word is in the DOM, four thousand pixels down. This is the same class
+ * of fault as the three pages `.sect-3d` blanked: real content, correct markup,
+ * invisible.
+ *
+ * `display: none` here, `display: block` in the query. One declaration each,
+ * and the component's own docstring ("it only renders from 1400px") becomes
+ * true rather than aspirational.
+ */
+.page-spine {
+  display: none;
+}
+
 @media (min-width: 1400px) {
   /*
    * The rail takes the whole left margin now, not a 56px slot inside it.
@@ -387,6 +437,7 @@ body {
    * and still nothing can reach the column.
    */
   .page-spine {
+    display: block;
     position: fixed;
     top: 0;
     bottom: 0;
@@ -637,10 +688,47 @@ body {
   }
 }
 
+/*
+ * OPACITY AND TRANSFORM ARE DECOUPLED, and that is the whole repair.
+ *
+ * The fade used to run the full length of the travel: 0 to 1 across 0-22% and
+ * 1 to 0 across 80-100%. Two adjacent pin tracks are on screen together at a
+ * handoff, so both sections spent a fifth of a track part-transparent at the
+ * same time — measured at 1477x750, seven boundaries where the outgoing
+ * section sat at 0.69 and the incoming at 0.81 simultaneously, with a dead
+ * band of ground between them. Nothing was broken; it simply read as two
+ * half-erased screens and a hole, which is what the owner was looking at.
+ *
+ * It was invisible to me for a while because a settled screenshot never shows
+ * it — it only exists BETWEEN two rest states, so you have to sample the
+ * scroll to find it. That is why the sampler in the verification pass steps
+ * through the whole document rather than stopping at each section.
+ *
+ * The keyframes at 12% and 90% carry opacity ALONE. A keyframe that omits
+ * `transform` does not pin it, so the travel still interpolates across the
+ * whole 0-22% and 80-100% arc exactly as before — the section arrives from
+ * behind and recedes the same distance. Only the fade is compressed, to the
+ * first and last tenth. So each screen is opaque for far more of its life, two
+ * sections are rarely translucent at once, and the depth move is untouched.
+ */
 @keyframes sect-3d {
+  /*
+   * The Y travel is 2.5rem, not 5rem, and that is about the SEAM.
+   *
+   * Each `.screen` centres its content in a 100svh box, so at a handoff you
+   * see the bottom of one box and the top of the next — both of which are
+   * empty margin. The entry offset used to push the arriving section a further
+   * 5rem DOWN and the exit pushed the leaving one 5rem UP, so the transform
+   * was actively widening the one gap it is scrolled through. Halving it
+   * narrows the dead band by 5rem without touching the depth move, which is
+   * carried by the -18rem in Z and the rotateX, not by the vertical nudge.
+   */
   0% {
     opacity: 0;
-    transform: perspective(1600px) translate3d(0, 5rem, -18rem) rotateX(7deg);
+    transform: perspective(1600px) translate3d(0, 2.5rem, -18rem) rotateX(7deg);
+  }
+  12% {
+    opacity: 1;
   }
   22% {
     opacity: 1;
@@ -650,9 +738,12 @@ body {
     opacity: 1;
     transform: perspective(1600px) translate3d(0, 0, 0) rotateX(0deg);
   }
+  90% {
+    opacity: 1;
+  }
   100% {
     opacity: 0;
-    transform: perspective(1600px) translate3d(0, -5rem, -18rem) rotateX(-7deg);
+    transform: perspective(1600px) translate3d(0, -2.5rem, -18rem) rotateX(-7deg);
   }
 }
 
@@ -944,6 +1035,31 @@ body {
   }
 }
 
+/*
+ * The hero's caption, on a short screen.
+ *
+ * The scene gained a `figcaption` — a rule and two lines of label, so the
+ * figure stands on something instead of ending in mid-air. That is about 40px,
+ * and at 1477x750 it put the hero 7px over its pinned box: 757 of 750.
+ *
+ * Seven pixels is not a rounding error here. A pinned `.screen` is
+ * `justify-content: center` with `overflow: hidden`, so anything over the box
+ * is clipped at BOTH ends, silently and symmetrically — the comment on
+ * `--spacing` below says so and this is the case it was written for. Measured
+ * with `offsetHeight` / `scrollHeight`, never `getBoundingClientRect`, because
+ * `.sect-3d` has every section under a 3D transform and the rect comes back
+ * perspective-scaled by a constant 0.846.
+ *
+ * The caption is the newest thing in that column and the cheapest to tighten,
+ * so it gives the pixels back rather than the docket or the type.
+ */
+@media (min-width: 1024px) and (max-height: 800px) {
+  .screen figure > figcaption {
+    margin-top: 0.5rem;
+    padding-top: 0.4rem;
+  }
+}
+
 /* The hero's docket is the tallest object on the page, and on a short screen it
    is the only thing keeping the hero off one screen.
  *
@@ -1072,6 +1188,95 @@ body {
       .pin-track .read-card__answer {
         animation-timeline: --screen;
         animation-range: calc(44% + (var(--i, 0) * 5%)) calc(60% + (var(--i, 0) * 5%));
+      }
+    }
+  }
+}
+
+/* ── Hit area ────────────────────────────────────────────────────────────
+ *
+ * WCAG 2.5.8 (AA) wants a target of at least 24x24 CSS pixels. Measured on a
+ * 390px handset, every `ArrowLink` on this site renders 23px tall and the
+ * footer's navigation links render 15px — so the pointer targets on the
+ * surface built for "a tradie reading on a phone" are all just under the line,
+ * and the footer is well under it.
+ *
+ * The obvious fix is vertical padding, and it is the wrong one HERE. The
+ * pinned hero fits its screen at exactly 750 of 750 at 1477x750; two pixels of
+ * padding on the link in that column does not make the page taller, it makes
+ * `.screen`'s `overflow: hidden` clip the section — silently, at both ends.
+ *
+ * So the target grows and the box does not. An absolutely positioned
+ * pseudo-element takes no part in layout, inherits the link's own click
+ * behaviour, and is invisible. 23px plus 8px of reach is 31px; the footer's
+ * 15px becomes 27px.
+ */
+.tap {
+  position: relative;
+}
+
+.tap::after {
+  content: "";
+  position: absolute;
+  /* -5px, not -4px. At -4 the footer's 13.5px links measured 23px of target:
+     one pixel under, which is a fail and reads as a pass. Measured, adjusted,
+     re-measured — 25px in the footer, 33px on an ArrowLink. */
+  inset: -5px -3px;
+  /* Decorative only: it must never sit above real content, and it must not
+     become a second hover surface for anything else. */
+  pointer-events: auto;
+}
+
+/* ── A price list is not a reveal ────────────────────────────────────────
+ *
+ * `LedgerRow` staggers its arrival by `--i`, and inside a pinned section that
+ * stagger is a scroll RANGE rather than a delay: `calc(32% + i*3%)` to
+ * `calc(50% + i*3%)`. Seven rows therefore do not finish until 68% of the
+ * track, which is the moment the section releases — so at every ordinary
+ * scroll position the bottom of the list was still part-way through its fade.
+ *
+ * On a docket or a deduction worksheet that is the intended effect: rows deal
+ * in as you scroll through the lock. On a PRICE LIST it is a bug with no error
+ * attached. A row at 40% opacity does not read as "arriving", it reads as
+ * "unavailable" — the 500 and 1,000 scan packs looked like tiers you could not
+ * buy, which is precisely backwards.
+ *
+ * So the stagger survives and the window closes early: 1.2% per row instead of
+ * 3%, finishing by about 55% of the track. The list still deals in; it is
+ * simply finished by the time anyone can read it.
+ */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    /*
+     * Unpinned — the handset, and any page without a `.pin-track`. The stagger
+     * here is a VIEW range, and the generic one runs `entry 2% + i*6%` to
+     * `cover 30% + i*6%`: seven rows put the last one at `entry 38% / cover
+     * 72%`, so on a phone the bottom half of the price list sat part-faded for
+     * most of the time the section was on screen. Same bug as the pinned case,
+     * different timeline, and the pinned fix did not cover it — caught by
+     * screenshotting the section at 390px instead of assuming the desktop fix
+     * generalised.
+     *
+     * Specificity (0,2,0) beats both `.anim-deal` base rules, including the
+     * desktop 3D one, so this does not depend on source order.
+     */
+    .ledger-tight .anim-deal {
+      animation-range:
+        entry calc(4% + (var(--i, 0) * 2%))
+        cover calc(24% + (var(--i, 0) * 2%));
+    }
+  }
+}
+
+@media (min-width: 1024px) {
+  @supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+      /* Pinned: the track drives it, inside the 30-68% window the section is
+         actually held for. (0,3,0), so it wins over the unpinned rule above. */
+      .pin-track .ledger-tight .anim-deal {
+        animation-range:
+          calc(32% + (var(--i, 0) * 1.2%))
+          calc(46% + (var(--i, 0) * 1.2%));
       }
     }
   }
@@ -1446,4 +1651,344 @@ body {
       }
     }
   }
+}
+
+/* ── The bed's pointer properties ────────────────────────────────────────
+ *
+ * Registered rather than left as plain custom properties, for two reasons that
+ * both bite silently.
+ *
+ * A plain `--fi` is a token, not a number: `opacity: calc(var(--fi) * 0.9)` is
+ * only valid because whatever was substituted happened to parse, and if the
+ * island ever writes `1 ` or the declaration is dropped, the whole `opacity`
+ * declaration becomes invalid at computed-value time and the layer falls back
+ * to fully opaque — a full-screen grid, permanently on. Typed as `<number>`
+ * with an initial value, the worst case is `0`, which is off.
+ *
+ * And the transition: only a registered property has a defined interpolation,
+ * so the loupe's fade is guaranteed rather than dependent on how the engine
+ * handles an untyped substitution.
+ */
+@property --fi {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
+}
+
+@property --fx {
+  syntax: "<percentage>";
+  inherits: true;
+  initial-value: 50%;
+}
+
+@property --fy {
+  syntax: "<percentage>";
+  inherits: true;
+  initial-value: 34%;
+}
+
+/* ── The bed ─────────────────────────────────────────────────────────────
+ *
+ * The surface the whole document lies on. See
+ * `app/(marketing)/_components/scan-bed.tsx` for what it is a picture of and
+ * why it is that rather than a gradient.
+ *
+ * Five layers, one element each, because they move at five different rates and
+ * a single element can only carry one transform. Back to front:
+ *
+ *   wash   one soft light, crossing the document once, top to bottom
+ *   cols   an irregular column field, drifting sideways
+ *   feed   ruled paper travelling past, slower than the page
+ *   tape   a measuring scale down the right margin, faster than the feed
+ *   loupe  the fine grid that resolves under the pointer
+ *
+ * THE SEAMLESS TRICK, because it is what makes this cheap. `feed` and `tape`
+ * are repeating patterns, so translating either by exactly one period lands on
+ * an identical image. Both therefore animate ONE period and repeat with
+ * `animation-iteration-count`, which a scroll timeline honours by dividing the
+ * scroll range between iterations. 1,288px of apparent travel costs an element
+ * 92px taller than the viewport instead of one 1,288px taller, and nothing is
+ * ever painted that is not on screen.
+ *
+ * Colours are mixed out of `--color-ink` rather than written down. Ink inverts
+ * with the theme, so one declaration is a faint dark rule on docket paper and a
+ * faint light rule on the dark ground — both themes, no fourth copy of a
+ * measured hex.
+ */
+.bed {
+  position: fixed;
+  inset: 0;
+  /*
+   * NEGATIVE, and it is the one number here that has to be right. `.sect-3d`
+   * transforms every section, and a transformed element paints with the
+   * positioned group — so a bed at `z-index: 0` would sit in that same group:
+   * under the pinned sections, which come later in the DOM, but OVER everything
+   * still in normal flow, which is the final CTA and the entire page below
+   * 1024px. Negative-z is the one paint step that is above the body's
+   * background fill and below all content, transformed or not.
+   */
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  contain: strict;
+
+  /* Pointer position, written by the island at most once per frame. The
+     defaults are the rest position, so the loupe is correct before — and
+     without — any JavaScript. */
+  --fx: 50%;
+  --fy: 34%;
+  --fi: 0;
+
+  --bed-line: color-mix(in oklab, var(--color-ink) 9%, transparent);
+  --bed-tick: color-mix(in oklab, var(--color-ink) 20%, transparent);
+  /* The loupe's grid is the one thing on the bed that is meant to be SEEN, so
+     it does not share the ambient line weight. At `--bed-tick` it measured as
+     present and read as nothing. */
+  --bed-loupe-line: color-mix(in oklab, var(--color-ink) 34%, transparent);
+}
+
+/* One light, crossing the whole document once. The only thing on the bed that
+   is not a line — and the reason the ruled layers read as paper rather than as
+   graph paper. */
+.bed__wash {
+  position: absolute;
+  inset: -25%;
+  background:
+    radial-gradient(
+      58vmax 42vmax at 74% 16%,
+      color-mix(in oklab, var(--color-accent) 20%, transparent),
+      transparent 64%
+    ),
+    radial-gradient(
+      46vmax 38vmax at 16% 76%,
+      color-mix(in oklab, var(--color-scan) 13%, transparent),
+      transparent 62%
+    );
+  /* Matches the 0% keyframe, so a browser with no scroll timelines — and a
+     reader with reduced motion — gets the wash at the strength it is meant to
+     start at rather than at full. */
+  opacity: calc(0.40 * var(--bed-wash, 1));
+}
+
+/*
+ * The column field. Three periods — 233, 389 and 613 — that share no factor, so
+ * the composite spacing never resolves into a visible repeat at any width the
+ * page is read at. Even columns would be exactly the metronome this site keeps
+ * being told off for; these are irregular by construction, not by hand.
+ */
+.bed__cols {
+  position: absolute;
+  inset: 0 -140px;
+  background-image:
+    linear-gradient(90deg, var(--bed-line) 0 1px, transparent 1px),
+    linear-gradient(90deg, var(--bed-line) 0 1px, transparent 1px),
+    linear-gradient(90deg, var(--bed-line) 0 1px, transparent 1px);
+  background-size: 233px 100%, 389px 100%, 613px 100%;
+  background-position: 17px 0, 61px 0, 130px 0;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent);
+}
+
+/* Ruled paper. 92px is the feed pitch, and every travel distance below is a
+   multiple of it. */
+.bed__feed {
+  position: absolute;
+  inset: -96px 0;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    var(--bed-line) 0 1px,
+    transparent 1px 92px
+  );
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 16%, #000 80%, transparent);
+  mask-image: linear-gradient(to bottom, transparent, #000 16%, #000 80%, transparent);
+}
+
+/*
+ * The scale. Minor tick every 14px, major every 98px — seven minors to a major,
+ * so one 98px translate is seamless for both layers at once.
+ *
+ * It sits in the right margin, opposite the reading rail, and runs about three
+ * times the feed's speed. That difference is the point: two ruled things moving
+ * at visibly different rates is what gives a flat page depth, and it is cheaper
+ * and far more on-subject than any amount of blur.
+ */
+.bed__tape {
+  position: absolute;
+  top: -104px;
+  bottom: -104px;
+  right: 0;
+  width: 26px;
+  background-image:
+    linear-gradient(to left, var(--bed-line) 0 7px, transparent 7px),
+    linear-gradient(to left, var(--bed-tick) 0 18px, transparent 18px);
+  background-size: 100% 14px, 100% 98px;
+  background-repeat: repeat-y;
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 22%, #000 78%, transparent);
+  mask-image: linear-gradient(to bottom, transparent, #000 22%, #000 78%, transparent);
+  /* A scale belongs in a margin, and a handset has none — at 390px this 26px
+     strip is 7% of the screen and sits under the text instead of beside it. */
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .bed__tape {
+    display: block;
+  }
+}
+
+/*
+ * The loupe — the interactive one.
+ *
+ * A 24px grid and a faint accent tint, both masked to a soft radius at the
+ * pointer. Under the cursor the bed RESOLVES; everywhere else it stays as
+ * coarse as it was. That is the product's own idea — resolution arrives where
+ * the machine is looking — rather than a glow chasing a mouse, and the
+ * difference between those two is the whole reason it is here.
+ *
+ * `--fi` is the only thing that fades, as a plain opacity transition rather
+ * than an animation, so it costs nothing while the pointer is still.
+ */
+.bed__loupe {
+  position: absolute;
+  inset: 0;
+  opacity: calc(var(--fi, 0) * 0.9);
+  transition: opacity 500ms cubic-bezier(0.16, 1, 0.3, 1);
+  background-image:
+    radial-gradient(
+      circle 300px at var(--fx) var(--fy),
+      color-mix(in oklab, var(--color-accent) 14%, transparent),
+      transparent 70%
+    ),
+    linear-gradient(90deg, var(--bed-loupe-line) 0 1px, transparent 1px),
+    linear-gradient(180deg, var(--bed-loupe-line) 0 1px, transparent 1px);
+  background-size: 100% 100%, 26px 26px, 26px 26px;
+  -webkit-mask-image: radial-gradient(
+    circle 265px at var(--fx) var(--fy),
+    #000 0%,
+    rgb(0 0 0 / 0.5) 46%,
+    transparent 74%
+  );
+  mask-image: radial-gradient(
+    circle 265px at var(--fx) var(--fy),
+    #000 0%,
+    rgb(0 0 0 / 0.5) 46%,
+    transparent 74%
+  );
+}
+
+/*
+ * The motion. `scroll(root block)` — the DOCUMENT's own progress, which always
+ * resolves, on every page, with no named timeline to go missing. That is not a
+ * stylistic preference: `.sect-3d` blanked three pages by naming a timeline
+ * that did not exist in scope, and an unresolved timeline does not fall back,
+ * it freezes on the 0% keyframe. Nothing in this layer hides anything at 0%
+ * either, so the worst case here is a bed that sits still.
+ */
+@supports (animation-timeline: scroll(root block)) {
+  @media (prefers-reduced-motion: no-preference) {
+    .bed__feed {
+      animation: bed-feed linear both;
+      animation-timeline: scroll(root block);
+      /* 14 periods of 92px = 1,288px of travel across the document. */
+      animation-iteration-count: 14;
+    }
+
+    .bed__tape {
+      animation: bed-tape linear both;
+      animation-timeline: scroll(root block);
+      /* 40 periods of 98px = 3,920px — about three times the feed. */
+      animation-iteration-count: 40;
+    }
+
+    .bed__cols {
+      animation: bed-cols linear both;
+      animation-timeline: scroll(root block);
+    }
+
+    .bed__wash {
+      animation: bed-wash linear both;
+      animation-timeline: scroll(root block);
+    }
+  }
+}
+
+@keyframes bed-feed {
+  from { transform: translateY(0); }
+  to   { transform: translateY(-92px); }
+}
+
+@keyframes bed-tape {
+  from { transform: translateY(0); }
+  to   { transform: translateY(-98px); }
+}
+
+@keyframes bed-cols {
+  from { transform: translate3d(72px, 0, 0); }
+  to   { transform: translate3d(-72px, 0, 0); }
+}
+
+/* The light crosses once, top to bottom, and swells through the middle of the
+   document. One pass over sixteen thousand pixels is deliberately at the edge
+   of perceptible: it is the thing you notice having happened, not the thing you
+   watch happen. */
+@keyframes bed-wash {
+  0%   { transform: translate3d(6%, -16%, 0) scale(1.06); opacity: calc(0.40 * var(--bed-wash, 1)); }
+  45%  { transform: translate3d(-4%, 6%, 0) scale(1.14); opacity: calc(0.62 * var(--bed-wash, 1)); }
+  100% { transform: translate3d(5%, 20%, 0) scale(1.02); opacity: calc(0.34 * var(--bed-wash, 1)); }
+}
+
+/* ── The carriage ────────────────────────────────────────────────────────
+ *
+ * A band of light that crosses each pinned screen once while it is held —
+ * scanning it. It is the pinned page's missing half: the reader was already
+ * scrubbing each section's CONTENTS through its lock, and now the surface
+ * under those contents is being read at the same time.
+ *
+ * It is LIGHT, not a laser. The cyan scan line is a real motif here
+ * (`.scan-line`, which docs/DESIGN-HANDOFF.md §12.2 reserves for capture and
+ * extraction imagery) and drawing it across nine screens of body copy would
+ * both spend the motif and make the page hard to read. So the carriage is a
+ * wide, soft wash passing BEHIND the content — the light under a platen
+ * moving, which is the same gesture at a register the page can carry nine
+ * times.
+ *
+ * `z-index: -1` keeps it above the section's own background and below the
+ * section's content, inside the stacking context that the pin's
+ * `position: sticky` and `.sect-3d`'s transform have already created.
+ */
+@media (min-width: 1024px) {
+  @supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+      .pin-track > .screen::before {
+        content: "";
+        position: absolute;
+        inset-inline: 0;
+        top: 0;
+        height: 46vh;
+        z-index: -1;
+        pointer-events: none;
+        background: linear-gradient(
+          to bottom,
+          transparent,
+          color-mix(in oklab, var(--color-scan) 9%, transparent) 42%,
+          color-mix(in oklab, var(--color-scan) 16%, transparent) 54%,
+          color-mix(in oklab, var(--color-accent) 7%, transparent) 62%,
+          transparent
+        );
+        animation: carriage-pass linear both;
+        animation-timeline: --screen;
+        /* Inside the 30–68% band the section is actually pinned for. Outside
+           it the carriage runs while the screen is still arriving or already
+           leaving, and is simply missed. */
+        animation-range: 26% 72%;
+      }
+    }
+  }
+}
+
+@keyframes carriage-pass {
+  0%   { transform: translateY(-46vh); opacity: 0; }
+  12%  { opacity: var(--bed-lamp, 1); }
+  88%  { opacity: var(--bed-lamp, 1); }
+  100% { transform: translateY(100vh); opacity: 0; }
 }

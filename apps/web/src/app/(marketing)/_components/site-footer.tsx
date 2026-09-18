@@ -68,7 +68,7 @@ export function SiteFooter() {
                   <li key={link.href}>
                     <Link
                       href={link.href}
-                      className="text-[13.5px] text-[var(--color-ink-muted)] transition-colors hover:text-[var(--color-ink)]"
+                      className="tap text-[13.5px] text-[var(--color-ink-muted)] transition-colors hover:text-[var(--color-ink)]"
                     >
                       {link.label}
                     </Link>

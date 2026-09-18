@@ -27,6 +27,7 @@ import {
   FREE_SCANS_AT_SIGNUP,
 } from './pricing/credit-packs';
 import { ReadComparison } from './_components/read-comparison';
+import { ScanBed } from './_components/scan-bed';
 import { Proof, PROOF_HEAD } from './_components/proof';
 
 export const metadata: Metadata = {
@@ -158,6 +159,13 @@ function Door({
 export default function HomePage() {
   return (
     <>
+      {/* The bed the document lies on — a ruled feed, an irregular column
+          field, a scale down the right margin and one travelling light, all
+          driven by the document's own scroll. First in the fragment because it
+          is `z-index: -1`: it has to be behind everything, and being first is
+          the cheapest way to say so. See `_components/scan-bed.tsx`. */}
+      <ScanBed />
+
       {/* The reading rail — the page's only progress indicator now that the
           header's has gone. See `_components/page-spine.tsx`. */}
       <PageSpine />
@@ -187,7 +195,7 @@ export default function HomePage() {
            * From `lg` the phone moves to its own column and spans both rows,
            * putting the copy and the doors back in one stack beside it.
            */}
-          <div className="grid gap-10 lg:grid-cols-[1.15fr_0.85fr] lg:items-center lg:gap-16">
+          <div className="grid gap-10 lg:grid-cols-[1.06fr_0.94fr] lg:items-center lg:gap-14">
             <div className="lg:col-start-1 lg:row-start-1">
               <div className="anim-load t-label text-[var(--color-ink-muted)]">
                 GST · BAS · deductions — built for Australian trades
@@ -212,14 +220,41 @@ export default function HomePage() {
               className="anim-load lg:col-start-2 lg:row-start-1 lg:row-span-2"
               style={{ ['--i' as string]: 3 }}
             >
-              <Scene
-                enabled={SCENES_3D_ENABLED}
-                className="hero-scene mx-auto aspect-[3/4] w-full max-w-[340px] lg:max-w-[460px]"
-              >
-                <div className="flex h-full items-center justify-center">
-                  <ReceiptScanCard className="w-full" scanning={false} />
-                </div>
-              </Scene>
+              {/*
+                The scene, given a caption and a rule to stand on.
+
+                It used to end in mid-air: a 460px frame with a docket floating
+                in it and three hundred pixels of nothing underneath, against a
+                left column that ran all the way down. A figure with a caption
+                is an object on a page; the same figure without one is a hole
+                the layout failed to fill. The caption also says what is being
+                looked at, which the frame alone never did.
+
+                Nothing in it is a figure. Every number the docket carries is
+                in `ReceiptScanCard` below — which stays in the DOM even once
+                the canvas covers it — so this stays a label, and docs/WEB.md
+                §4.4's rule that a scene may never be the only place a figure
+                exists is not quietly worked around by putting the figures in
+                the caption instead.
+              */}
+              <figure className="mx-auto w-full max-w-[340px] lg:max-w-[440px]">
+                <Scene
+                  enabled={SCENES_3D_ENABLED}
+                  className="hero-scene aspect-[3/4] w-full"
+                >
+                  <div className="flex h-full items-center justify-center">
+                    <ReceiptScanCard className="w-full" scanning={false} />
+                  </div>
+                </Scene>
+                <figcaption className="mt-5 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 border-t border-[var(--color-rule)] pt-3">
+                  <span className="t-label text-[var(--color-ink-faint)]">
+                    Capture · demo workspace
+                  </span>
+                  <span className="font-mono text-[11px] tabular text-[var(--color-ink-muted)]">
+                    Three lines read · ABN checked · posted
+                  </span>
+                </figcaption>
+              </figure>
             </div>
 
             {/*
@@ -233,7 +268,7 @@ export default function HomePage() {
               className={
                 BUSINESS_SURFACES_ENABLED
                   ? 'anim-load grid gap-4 sm:grid-cols-2 lg:col-start-1 lg:row-start-2'
-                  : 'anim-load flex flex-col gap-5 lg:col-start-1 lg:row-start-2'
+                  : 'anim-load flex flex-col gap-8 lg:col-start-1 lg:row-start-2'
               }
               style={{ ['--i' as string]: 4 }}
             >
@@ -251,25 +286,94 @@ export default function HomePage() {
               */}
               <GetTheAppButtons />
 
-              <Door
-                kicker="Start free, no card"
-                title="Sole trader, tradie, or on the road"
-                price="Free"
-                note="10 free scans"
-                href="/register"
-                cta="Start scanning"
-              />
               {BUSINESS_SURFACES_ENABLED ? (
-                <Door
-                  kicker="I look after clients"
-                  title="Accounting or bookkeeping practice"
-                  price="$19"
-                  note="per client / month"
-                  href="/pricing#practice"
-                  cta="See practice pricing"
-                />
+                <>
+                  <Door
+                    kicker="Start free, no card"
+                    title="Sole trader, tradie, or on the road"
+                    price="Free"
+                    note="10 free scans"
+                    href="/register"
+                    cta="Start scanning"
+                  />
+                  <Door
+                    kicker="I look after clients"
+                    title="Accounting or bookkeeping practice"
+                    price="$19"
+                    note="per client / month"
+                    href="/pricing#practice"
+                    cta="See practice pricing"
+                  />
+                </>
               ) : (
-                <ArrowLink href="/pricing">What a scan costs after the first ten</ArrowLink>
+                /*
+                 * The one door, as a ruled line rather than a fourth box.
+                 *
+                 * With BUSINESS_SURFACES_ENABLED off there is no second door
+                 * to sit beside, so the `Door` card was a full-width panel
+                 * holding four short strings — and it landed under the two
+                 * platform badges, which are themselves boxes, under a
+                 * headline, under a lede. Four stacked rectangles of falling
+                 * size is the metronome docs/DESIGN-HANDOFF.md §12.1 rejected
+                 * three directions over, and this stylesheet states the
+                 * alternative in its own opening comment: "a ruled book, not a
+                 * stack of boxes".
+                 *
+                 * So the same facts are set as a ledger line — audience,
+                 * price, what happens after the free ten — which is both the
+                 * page's native form and MORE information than the card
+                 * carried, since the per-scan price now appears beside the
+                 * word "free" instead of only behind a link.
+                 *
+                 * `Door` is untouched and still used above. Flipping the flag
+                 * restores the two-card hero exactly as it was.
+                 */
+                <div>
+                  <div className="t-label text-[var(--color-ink-faint)]">
+                    Start free, no card — sole trader, tradie, or on the road
+                  </div>
+
+                  {/*
+                    `animate={false}` on both, and it is not a style call.
+
+                    `Rule` draws itself with `.anim-rule`, which inside a
+                    `.pin-track` is scrubbed by the track's own timeline over
+                    30–46%. The hero is the FIRST screen, and its track already
+                    reads about 38% at scroll zero — so a scroll-driven rule in
+                    this section greets every visitor half drawn and stays that
+                    way until they scroll. Measured on the live page: the strip
+                    rendered with a stub of rule about 190px long under a line
+                    of type running the full column.
+
+                    Everything above the fold has to arrive on a CLOCK, which
+                    is what `.anim-load` on the wrapper already does. That is
+                    the same reason the hero's other blocks use it.
+                  */}
+                  <div className="mt-4">
+                    <Rule tone="strong" animate={false} />
+                    <div className="flex flex-wrap items-baseline justify-between gap-x-10 gap-y-2 py-4">
+                      <div className="flex items-baseline gap-3">
+                        <span className="font-mono text-[30px] leading-none tabular text-[var(--color-ink)]">
+                          Free
+                        </span>
+                        <span className="text-[14px] text-[var(--color-ink-muted)]">
+                          first {FREE_SCANS_AT_SIGNUP} scans
+                        </span>
+                      </div>
+                      <span className="font-mono text-[13px] tabular text-[var(--color-ink-muted)]">
+                        then {HOME_CENTS_PER_SCAN}c a scan · no subscription
+                      </span>
+                    </div>
+                    <Rule animate={false} />
+                  </div>
+
+                  <div className="mt-6 flex flex-wrap items-center gap-x-8 gap-y-4">
+                    <ButtonLink href="/register" size="lg">
+                      Start scanning
+                    </ButtonLink>
+                    <ArrowLink href="/pricing">What a scan costs after the first ten</ArrowLink>
+                  </div>
+                </div>
               )}
             </div>
           </div>
@@ -687,59 +791,118 @@ export default function HomePage() {
         <SectionHead
           kicker="Pricing"
           title="Ten scans free. Then you pay per scan."
-          lede="No subscription, no seats, no monthly allowance to run out of. One scan costs one credit, and credits do not expire."
+          // Trimmed. This used to run "No subscription, no seats, no monthly
+          // allowance to run out of" — which is the same triple negative the
+          // column beside the ledger now makes concretely, against figures the
+          // reader can check. Saying it twice in one screen, once vaguely and
+          // once with evidence, only weakens the evidence.
+          lede="One scan costs one credit, and credits do not expire."
           className="mt-6"
         />
 
         {/*
-          Rewritten 2026-09-17 with the model. This was three plan cards —
-          Free / Sole Trader $29 / Practice $19 per client — and there are no
-          plans any more. Figures come from `pricing/credit-packs`, which
-          derives them from the owner's rule (model cost x 3) exactly as
-          migration 0027 does, so the home page cannot quote a price the
+          ── The price list, as a price list ──────────────────────────────
+
+          This was two bordered cards side by side, and three things about it
+          did not survive being looked at.
+
+          1. **The left card was mostly empty.** It held a label, the figure
+             10, two sentences and a button, in a `justify-between` column
+             stretched to match a neighbour carrying six ledger rows. About
+             two hundred pixels of nothing sat between the paragraph and the
+             button — not restraint, just a box that had been asked to be as
+             tall as the box next to it.
+
+          2. **The rows read as disabled.** `LedgerRow` staggers its arrival
+             by `--i`, and with six rows the last one did not finish until 68%
+             of the pinned track — the exact moment the section releases. So
+             at any ordinary scroll position the bottom of the list was
+             half-faded, and a half-faded row in a PRICE LIST does not say
+             "arriving", it says "unavailable". The tier you most want to sell
+             looked greyed out. Fixed with `.ledger-tight` in globals.css,
+             which compresses the stagger into the held window; the list still
+             deals in, it just finishes while it can be read.
+
+          3. **It said "free" for the third time.** The hero says it, this
+             section's own `title` says it, and then a card said it again with
+             a border around it.
+
+          What replaces them is the thing this actually is: one ruled price
+          list, in the idiom the rest of the site is built in — the stylesheet
+          opens by calling it "a ruled book, not a stack of boxes". The free
+          ten are its first row, because that is what they are, and the packs
+          follow under their own sub-label so "first 10 scans, free" and
+          "10 scans, $0.33" cannot be read as contradicting each other.
+
+          It also lets the page finally say the interesting thing, which the
+          two cards had no room for: every pack is the same rate. `packPrice`
+          is `credits × CREDIT_PRICE_AUD` with no volume curve, so that claim
+          is arithmetic the reader can check against the column above it
+          rather than a promise. Nothing here is hardcoded — the figures still
+          come from `pricing/credit-packs`, so this cannot quote a price the
           checkout would not honour.
         */}
-        <div className="pop-3d mt-12 grid gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
-          <div className="flex flex-col justify-between gap-8 rounded-[var(--radius-md)] border border-[var(--color-accent)] bg-[var(--color-ground)] p-6">
-            <div>
-              <div className="t-label text-[var(--color-ink-faint)]">Start here</div>
-              <div className="mt-4 flex items-baseline gap-2">
-                <span className="font-mono text-[34px] tabular text-[var(--color-ink)]">
-                  {FREE_SCANS_AT_SIGNUP}
-                </span>
-                <span className="text-[13px] text-[var(--color-ink-muted)]">free scans, no card</span>
-              </div>
-              <p className="mt-4 text-[14px] leading-relaxed text-[var(--color-ink-muted)]">
-                Enough to photograph a week of receipts and judge it on your own paperwork. Nothing
-                recurs, so there is nothing to cancel afterwards.
-              </p>
+        <div className="mt-10 grid gap-x-16 gap-y-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
+          {/* Capped. At the full track width a row ran 655px between "1,000 scans"
+                and "$33.00", which is a long way to carry the eye across nothing —
+                the ledger rows elsewhere on this page have a `note` filling that
+                span and these do not. */}
+          <div className="ledger-tight min-w-0 lg:max-w-[30rem]">
+            <div className="t-label text-[var(--color-ink-faint)]">What a scan costs</div>
+
+            <div className="mt-5">
+              <Rule tone="strong" />
+              <LedgerRow
+                index={0}
+                emphasis
+                label={`Your first ${FREE_SCANS_AT_SIGNUP} scans`}
+                note="On signup. No card, and nothing that recurs."
+                value={<span className="text-[var(--color-good)]">Free</span>}
+              />
             </div>
-            <ButtonLink href="/register" className="w-full">
-              Start scanning
-            </ButtonLink>
+
+            <div className="mt-6 t-label text-[var(--color-ink-faint)]">Top up, any time</div>
+            <div className="mt-3">
+              <Rule />
+              {CREDIT_PACKS.map((pack, i) => (
+                <LedgerRow
+                  key={pack.credits}
+                  label={`${pack.credits.toLocaleString('en-AU')} scans`}
+                  value={<Money amount={pack.priceAud} />}
+                  index={i + 1}
+                />
+              ))}
+              <div className="flex items-baseline justify-between gap-4 border-t-2 border-[var(--color-ink)] pt-4">
+                <span className="text-[14px] text-[var(--color-ink)]">Every pack, same rate</span>
+                <span className="font-mono text-[18px] tabular text-[var(--color-accent)]">
+                  {HOME_CENTS_PER_SCAN}c a scan
+                </span>
+              </div>
+            </div>
           </div>
 
-          <div className="flex flex-col justify-between gap-6 rounded-[var(--radius-md)] border border-[var(--color-rule-strong)] bg-[var(--color-ground)] p-6">
-            <div>
-              <div className="t-label text-[var(--color-ink-faint)]">After that</div>
-              <div className="mt-4 flex items-baseline gap-2">
-                <span className="font-mono text-[34px] tabular text-[var(--color-ink)]">
-                  {HOME_CENTS_PER_SCAN}c
-                </span>
-                <span className="text-[13px] text-[var(--color-ink-muted)]">per scan, incl GST</span>
-              </div>
-              <div className="mt-5">
-                {CREDIT_PACKS.map((pack, i) => (
-                  <LedgerRow
-                    key={pack.credits}
-                    label={`${pack.credits.toLocaleString('en-AU')} scans`}
-                    value={<Money amount={pack.priceAud} />}
-                    index={i}
-                  />
-                ))}
-              </div>
+          <div className="min-w-0 lg:pt-10">
+            <Reveal>
+              <p className="t-lede max-w-[40ch] text-[var(--color-ink-muted)]">
+                Buying a thousand does not make a scan any cheaper than buying fifty. There is no
+                volume tier to negotiate, no plan to be moved onto, and no month in which unused
+                credits disappear.
+              </p>
+            </Reveal>
+
+            <Reveal delay={1}>
+              <p className="mt-5 max-w-[40ch] text-[15px] leading-relaxed text-[var(--color-ink-muted)]">
+                The free ten are enough to photograph a week of receipts and judge it on your own
+                paperwork — which is the only test that settles it.
+              </p>
+            </Reveal>
+
+            <div className="mt-9 flex flex-wrap items-center gap-x-8 gap-y-4">
+              <ButtonLink href="/register" size="lg">
+                Start scanning
+              </ButtonLink>
+              <ArrowLink href="/pricing">Why that price, and what a credit buys</ArrowLink>
             </div>
-            <ArrowLink href="/pricing">Why that price, and what a credit buys</ArrowLink>
           </div>
         </div>
       </Section>

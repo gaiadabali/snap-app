@@ -117,7 +117,7 @@ export function SiteHeader() {
             <ThemeToggle />
             <Link
               href="/sign-in"
-              className="px-1 text-[14px] text-[var(--color-ink-muted)] transition-colors hover:text-[var(--color-ink)]"
+              className="tap px-1 text-[14px] text-[var(--color-ink-muted)] transition-colors hover:text-[var(--color-ink)]"
             >
               Sign in
             </Link>
