@@ -34,19 +34,37 @@ All four clear D23. The reason §2.2 recommends against Gemma 4 E2B is the
 BUDGET (§1.3), not the licence — see the module docstring in `devices.py` for
 the parallel point about function vs. fit.
 
-A FORMAT MISMATCH THE TICKET DID NOT FLAG, WORTH RECORDING BEFORE A PHONE
-BUILD IS ATTEMPTED. Gemma 4 E2B's published artefact is `.litertlm`
+A FORMAT MISMATCH FLAGGED IN AN EARLIER PASS, RESOLVED 2026-09-18 -- ONE
+RESULT EACH WAY. Gemma 4 E2B's published artefact is `.litertlm`
 (MediaPipe/LiteRT-LM format); `llama.rn` loads GGUF (`llama.cpp`) format and
 `react-native-executorch` loads `.pte` (ExecuTorch) format. Neither runtime
-consumes `.litertlm` directly. A GGUF or ExecuTorch re-export of Gemma 4 E2B
-may exist in the community but was not found and verified as part of this
-ticket (search engines were not reachable in this pass) — record this as an
-**open blocker**, not silently assume one runtime "just works": `MODELS`
-below carries the caveat so the dev-build engineer sees it before spending a
-day on a conversion that may not be needed, or discovers it is.
-Florence-2-base is small enough that an ExecuTorch (`.pte`) export is the
-documented path for `react-native-executorch`; no GGUF conversion of
-Florence-2 is claimed anywhere in the research this ticket inherits.
+consumes `.litertlm` directly.
+
+  * Gemma 4 E2B -- CONFIRMED REACHABLE, no export needed. `unsloth/gemma-4-E2B-it-GGUF`
+    is a real, public repo (`apache-2.0` on its own `cardData`,
+    `Gemma4ForConditionalGeneration` architecture) **[verified]** HF API,
+    2026-09-18. The Q4_K_M tier is `gemma-4-E2B-it-Q4_K_M.gguf` at
+    3,106,738,272 bytes, plus `mmproj-F16.gguf` at 985,654,080 bytes for the
+    vision path -- both sizes read off the repo's own file tree
+    **[verified]**. llama.cpp's Gemma 4 support is a dated, merged PR
+    (`ggml-org/llama.cpp` #21309, 2026-04-02) **[verified]** GitHub API, not a
+    claim taken on trust. Point `llama.rn` at those two files directly.
+  * Florence-2-base -- CONFIRMED NOT REACHABLE through optimum-executorch's
+    documented CLI path, as of this pass. The export was actually attempted
+    (CPU torch 2.14, `optimum-executorch` from the `main` branch, 2026-09-18),
+    not judged from documentation alone. `--task image-to-text` isn't a
+    registered task in `optimum-executorch` at all (`TypeError: 'NoneType'
+    object is not callable`). `--task image-text-to-text` -- the closest
+    registered task, and Florence-2-base's own published `pipeline_tag` --
+    downloads the real checkpoint but loads it through generic
+    `AutoModelForPreTraining`, which comes back with a LOAD REPORT marking
+    essentially the entire vision tower and language model
+    `UNEXPECTED`/`MISSING`: the checkpoint's weights don't land on the
+    loader's expected keys, so the graph that would be exported carries
+    random weights, not Florence-2-base's trained ones. See
+    `docs/ON-DEVICE.md` §2.2 for the full transcript and exact commands.
+    **Florence-2-base cannot currently be exported to a correct `.pte` this
+    way; no working artefact exists for `react-native-executorch` to load.**
 
 NO MEASUREMENT IS FABRICATED HERE. Every number this module reports came from
 a POST the phone sent; there is no default, no placeholder figure, and no
@@ -83,26 +101,49 @@ MODELS: dict[str, dict] = {
             'docs/ON-DEVICE.md §2.1 — LiteRT-LM model page and Google Open '
             'Source blog, Mar 2026 [verified]'
         ),
-        'on_disk_bytes_cited': 2_580_000_000,  # 2.58 GB, ON-DEVICE.md §2.1/§2.2 [cited from Google]
+        'on_disk_bytes_cited': 2_580_000_000,  # 2.58 GB, ON-DEVICE.md §2.1/§2.2 [cited from Google, for the .litertlm artefact -- NOT what llama.rn will download; see gguf_artefact below]
         'runtime_options': ('llama.rn',),
         'runtime_caveat': (
-            "Published artefact is `.litertlm`; llama.rn loads GGUF. A GGUF "
-            "re-export was not found/verified in this pass -- confirm one "
-            "exists (or convert) BEFORE budgeting phone time on this model."
+            'RESOLVED 2026-09-18: no export needed. unsloth/gemma-4-E2B-it-GGUF '
+            'is a verified real artefact (apache-2.0, Gemma4ForConditionalGeneration) '
+            'and llama.cpp has carried Gemma 4 support since PR #21309 '
+            '(2026-04-02, verified). Point llama.rn at gguf_artefact below.'
         ),
+        # Confirmed 2026-09-18 against the repo's own file tree via the HF API
+        # (`GET /api/models/unsloth/gemma-4-E2B-it-GGUF/tree/main`) -- not an
+        # estimate, and not the .litertlm figure above (different artefact).
+        'gguf_artefact': {
+            'repo': 'unsloth/gemma-4-E2B-it-GGUF',
+            'licence': 'Apache-2.0',  # cardData on the repo itself [verified]
+            'weights_file': 'gemma-4-E2B-it-Q4_K_M.gguf',
+            'weights_bytes': 3_106_738_272,
+            'mmproj_file': 'mmproj-F16.gguf',  # required for the vision path
+            'mmproj_bytes': 985_654_080,
+            'combined_first_run_download_bytes': 3_106_738_272 + 985_654_080,  # ~4.09 GB
+            'llama_cpp_support_pr': 'ggml-org/llama.cpp#21309',
+            'llama_cpp_support_merged': '2026-04-02',
+        },
     },
     'florence-2-base': {
         'label': 'Florence-2-base',
         'licence': 'MIT',
         'passes_d23': True,
         'licence_source': 'docs/ON-DEVICE.md §2.1 — HF model card [verified]',
-        'on_disk_bytes_cited': 500_000_000,  # ~0.5 GB f16, ON-DEVICE.md §2.1 [estimate]
+        'on_disk_bytes_cited': 500_000_000,  # ~0.5 GB f16, ON-DEVICE.md §2.1 [estimate]; the real checkpoint (microsoft/Florence-2-base model.safetensors) measured 463,221,266 bytes [verified] HF file tree, 2026-09-18 -- close to the estimate, recorded here for provenance even though the export itself failed
         'runtime_options': ('react-native-executorch',),
         'runtime_caveat': (
-            'No GGUF path exists for this architecture; an ExecuTorch (.pte) '
-            'export is the intended route for react-native-executorch. '
-            'Confirm an exported .pte is in hand before the dev-build run.'
+            'BLOCKED, attempted and failed 2026-09-18, not just judged unlikely: '
+            '`optimum-cli export executorch --task image-to-text` fails (task not '
+            'registered); `--task image-text-to-text` (the closest registered task, '
+            'and this model\'s own pipeline_tag) downloads the real checkpoint but '
+            'loads it via generic AutoModelForPreTraining, whose LOAD REPORT marks '
+            'essentially the whole vision tower and language model UNEXPECTED/MISSING '
+            '-- the exported graph would carry random weights, not this model\'s. '
+            'No correct .pte exists for react-native-executorch to load. Full '
+            'transcript: docs/ON-DEVICE.md §2.2.'
         ),
+        'export_attempted': True,
+        'export_succeeded': False,
     },
 }
 

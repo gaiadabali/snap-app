@@ -28,7 +28,46 @@ import { get as readObject } from './storage.js';
  * scaling story: they never block on each other and never take the same job.
  */
 
-const WORKER_USER = process.env.WORKER_USER_ID ?? '';
+/**
+ * The identity this worker acts as. REFUSES rather than defaulting.
+ *
+ * This was `process.env.WORKER_USER_ID ?? ''`, and that empty string cost this
+ * project every extraction it ever attempted in production. The variable was
+ * absent from `deploy/.env`, so every `withTenantAs(db, '', tenant, ...)` threw
+ * `not a uuid: ""` — a message that points at a database helper, three layers
+ * below a missing line of configuration.
+ *
+ * Nothing caught it. The worker started, reported `worker up`, claimed jobs and
+ * failed each one; captures piled up at `received` from 2026-09-16 to
+ * 2026-09-18 and `documents` stayed empty. From the phone it looked like a slow
+ * server. The only reason anybody found it is that somebody scanned a receipt
+ * and said the app was stuck.
+ *
+ * A misconfiguration must fail at BOOT, loudly, naming the variable — not turn
+ * into a runtime error that reads like a bug in someone's code. That is the
+ * same rule `provider.ts` follows for the API key and the tax-rules registry
+ * follows for a missing rule set: no fallback, and the refusal carries the
+ * reason.
+ */
+const WORKER_USER = requireWorkerUser();
+
+function requireWorkerUser(): string {
+  const raw = (process.env.WORKER_USER_ID ?? '').trim();
+  if (!raw) {
+    throw new Error(
+      'WORKER_USER_ID is not set. The extraction worker has no identity to act as, so every ' +
+        'job would fail with `withTenantAs: not a uuid: ""` — which reads like a database bug ' +
+        'and is not one. Set it to the service user (worker@snapapps.internal) in deploy/.env. ' +
+        'This refusal exists because the empty-string default silently broke every extraction ' +
+        'in production for days.',
+    );
+  }
+  // A non-uuid would fail identically but later, inside a transaction, per job.
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(raw)) {
+    throw new Error(`WORKER_USER_ID is not a uuid: ${JSON.stringify(raw)}`);
+  }
+  return raw;
+}
 
 function providerFor(model: string, rules: TaxRules | null): ExtractionProvider {
   // The prompt is part of the jurisdiction, not a constant. A workspace with

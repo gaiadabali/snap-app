@@ -4,7 +4,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Image, Modal, TextInput, View } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 
-import { abnIsValid, api, type DocumentLine, type DocumentView, type Permissions } from '@/api';
+import {
+  abnIsValid,
+  api,
+  ApiError,
+  type DocumentLine,
+  type DocumentView,
+  type Permissions,
+} from '@/api';
 import { Avatar } from '@/components/form';
 import { EditFields } from '@/components/EditFields';
 import { Findings } from '@/components/Findings';
@@ -73,7 +80,9 @@ export default function DocumentScreen() {
   const [editing, setEditing] = useState<null | 'abn'>(null);
   const [draft, setDraft] = useState('');
   const [perms, setPerms] = useState<Permissions | null>(null);
-  const [stillWaiting, setStillWaiting] = useState(false);
+  /** How the wait ended. 'waiting' while polling; 'slow' on timeout; 'failed'
+   *  when the server said the job died — which must never be shown as slow. */
+  const [waitState, setWaitState] = useState<'waiting' | 'slow' | 'failed'>('waiting');
 
   /**
    * The four §7.1 transitions, computed once the server's document arrives.
@@ -123,8 +132,21 @@ export default function DocumentScreen() {
         const extracted = await api().awaitExtraction(pendingCapture);
         setDoc(extracted);
         setPerms(await api().getPermissions(extracted.workspaceId));
-      } catch {
-        setStillWaiting(true);
+      } catch (err) {
+        // SLOW AND FAILED ARE NOT THE SAME THING, and this used to treat them
+        // as one. `awaitExtraction` throws `extraction_timeout` after 90s of
+        // polling, and `extraction_failed` the moment the server reports the
+        // job died — both landed here and both rendered "taking longer than
+        // usual, it will appear in your receipts".
+        //
+        // For a real failure that sentence is a PROMISE THE APP CANNOT KEEP.
+        // A capture whose page bytes are gone, or whose worker had no
+        // identity, never appears anywhere; telling somebody to wait for it
+        // leaves them checking a list forever. Production ran for three days
+        // in exactly that state and the app said "taking longer than usual"
+        // the whole time.
+        const code = err instanceof ApiError ? err.code : undefined;
+        setWaitState(code === 'extraction_failed' ? 'failed' : 'slow');
       }
       return;
     }
@@ -165,7 +187,7 @@ export default function DocumentScreen() {
   // THE PROVISIONAL SCREEN. Shown the moment the capture is uploaded, before
   // the server has read anything — which is the whole of Stage 1.
   if (!doc && parsedPreview) {
-    return <ProvisionalReview preview={parsedPreview} stillWaiting={stillWaiting} />;
+    return <ProvisionalReview preview={parsedPreview} waitState={waitState} />;
   }
 
   if (!doc) {

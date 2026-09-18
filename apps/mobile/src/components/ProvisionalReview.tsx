@@ -36,11 +36,19 @@ const ROWS: Array<{ path: keyof Preview & string; label: string }> = [
 
 export function ProvisionalReview({
   preview,
-  stillWaiting = false,
+  waitState = 'waiting',
 }: {
   preview: Preview;
-  /** The wait for the server's read gave up. Not an error — see below. */
-  stillWaiting?: boolean;
+  /**
+   * How the wait ended.
+   *
+   * `slow` is not an error: the capture is stored and the document will appear
+   * when extraction finishes. `failed` IS terminal — the server said the job
+   * died, and the receipt will NOT appear by itself. Those had one shared
+   * boolean and one shared sentence, so a dead job told the person to go and
+   * wait for something that was never coming.
+   */
+  waitState?: 'waiting' | 'slow' | 'failed';
 }) {
   const p = usePalette();
   const insets = useSafeAreaInsets();
@@ -118,15 +126,38 @@ export function ProvisionalReview({
 
         <Small>{CONFIRM_BLOCKED_COPY}</Small>
 
-        {stillWaiting ? (
-          // The wait timed out. The capture is stored and the document will
-          // appear in the review list; saying so is honest and saying "failed"
-          // would not be. This is the state the handset actually reached when
-          // extraction was slow, and it is the one that used to show nothing.
+        {waitState === 'slow' ? (
+          // Timed out, but nothing said the job died. The capture is stored and
+          // the document will appear in the review list; saying so is honest,
+          // and saying "failed" would not be.
           <Small>
             The server is taking longer than usual. Your receipt is saved — it will appear in
             your receipts when it is read.
           </Small>
+        ) : null}
+
+        {waitState === 'failed' ? (
+          // TERMINAL, and it must not borrow the sentence above. The server
+          // reported the job dead: this receipt will NOT turn up on its own,
+          // so telling somebody to wait for it sends them to check a list
+          // forever. Production spent three days in exactly this state while
+          // the app said "taking longer than usual".
+          <View
+            style={{
+              padding: space.md,
+              borderRadius: radius.md,
+              borderWidth: 1,
+              borderColor: p.risk,
+              gap: space.xs,
+            }}
+          >
+            <Label style={{ color: p.risk }}>Could not be read</Label>
+            <Small>
+              The server could not read this receipt, and it will not appear in your receipts on
+              its own. Your photo is still saved. Try scanning it again — better light and all
+              four corners in frame usually fixes it.
+            </Small>
+          </View>
         ) : null}
       </ScrollView>
     </Screen>

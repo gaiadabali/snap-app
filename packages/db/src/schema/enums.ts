@@ -129,3 +129,16 @@ export const billStatus = pgEnum('bill_status', ['unpaid', 'paid', 'overdue', 'v
  * nothing to read but the render, so it is 'pdf_render'.
  */
 export const pageSource = pgEnum('page_source', ['capture', 'pdf_native', 'pdf_render']);
+
+/**
+ * What told the app a savings-goal contribution happened (0030).
+ *
+ * 'manual' is the only value the API will ever write today. 'opening_balance'
+ * is written exactly once, by migration 0030 itself, to carry forward a
+ * pre-existing `goals.saved` figure honestly rather than inventing history
+ * for it. A 'statement_line' member (docs/STATEMENTS.md Lane T — an observed
+ * bank transfer the user confirmed) is deliberately absent until that
+ * pipeline exists to produce one; adding it later is `ALTER TYPE
+ * contribution_source ADD VALUE 'statement_line'`, not a table reshape.
+ */
+export const contributionSource = pgEnum('contribution_source', ['manual', 'opening_balance']);

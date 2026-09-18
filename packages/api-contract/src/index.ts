@@ -788,12 +788,47 @@ export interface Goal {
   id: string;
   name: string;
   target: string;
+  /** DERIVED — the sum of this goal's GoalContribution rows, never a free-floating figure. */
   saved: string;
   /** null for an open-ended goal. */
   targetDate: string | null;
   /** What must go in each month to land it on time. null when open-ended. */
   perMonth: string | null;
   done: boolean;
+}
+
+/**
+ * One recorded contribution to a savings goal.
+ *
+ * `saved` on the goal is the sum of these. Deleting one adjusts the total,
+ * because the record is the total's evidence, not a byproduct of it.
+ */
+export interface GoalContribution {
+  id: string;
+  goalId: string;
+  amount: string;
+  /** When the money actually went in, not when this row was typed. */
+  occurredOn: string;
+  createdAt: string;
+  /** Who recorded it, for a shared workspace. null if that person has since left. */
+  createdByName: string | null;
+  /**
+   * What told the app this happened — never call a 'manual' row "verified".
+   *
+   * 'manual' — the user typed a number in. A claim, not an observation: the
+   * app has not seen this money move.
+   *
+   * 'opening_balance' — carried forward from before contributions were
+   * tracked, so an old goal's total still reconciles instead of the gap being
+   * papered over. Written once, by a migration, never by a user action.
+   *
+   * A future 'statement_line' source — grounded in a bank transfer the app
+   * read from a statement and the user confirmed — needs statement ingestion
+   * (docs/STATEMENTS.md Lane T), which does not exist yet. Until it does, this
+   * union has exactly the two members above; do not treat their absence as
+   * an oversight.
+   */
+  source: 'manual' | 'opening_balance';
 }
 
 /* ── Settings, plan, connections, export ────────────────────────────────── */

@@ -85,6 +85,8 @@ export class CreateGoalDto {
 
 export class ContributeDto {
   @Matches(DECIMAL) amount!: string;
+  /** When the money actually went in. Defaults to today when omitted. */
+  @IsOptional() @Matches(/^\d{4}-\d{2}-\d{2}$/) occurredOn?: string;
 }
 
 export class CreatePartyDto {
@@ -405,17 +407,49 @@ export class BusinessController {
     );
   }
 
+  @Get('goals/:id/contributions')
+  @ApiOperation({ summary: "A goal's contributions, newest first — the evidence behind `saved`" })
+  async goalContributions(
+    @CurrentUser() user: AuthUser,
+    @WorkspaceId() tenantId: string,
+    @Param('id') id: string,
+  ) {
+    return (await repo.listGoalContributions(user.userId, tenantId, id)).map(toGoalContribution);
+  }
+
   @Post('goals/:id/contribute')
   @HttpCode(200)
-  @ApiOperation({ summary: 'Add to a goal' })
+  @ApiOperation({ summary: 'Add to a goal — recorded as a contribution, not a bare increment' })
   async contribute(
     @CurrentUser() user: AuthUser,
     @WorkspaceId() tenantId: string,
     @Param('id') id: string,
     @ValidBody(ContributeDto) body: ContributeDto,
   ) {
-    await repo.contributeToGoal(user.userId, tenantId, id, body.amount);
-    return { added: body.amount };
+    const contribution = await repo.addGoalContribution(
+      user.userId,
+      tenantId,
+      id,
+      body.amount,
+      body.occurredOn ?? null,
+    );
+    return {
+      contribution: toGoalContribution(contribution),
+      goals: (await repo.listGoals(user.userId, tenantId)).map(toGoal),
+    };
+  }
+
+  @Delete('goals/:id/contributions/:contributionId')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Remove a contribution — the total adjusts with it' })
+  async removeGoalContribution(
+    @CurrentUser() user: AuthUser,
+    @WorkspaceId() tenantId: string,
+    @Param('id') id: string,
+    @Param('contributionId') contributionId: string,
+  ) {
+    await repo.removeGoalContribution(user.userId, tenantId, id, contributionId);
+    return { goals: (await repo.listGoals(user.userId, tenantId)).map(toGoal) };
   }
 
   @Delete('goals/:id')
@@ -527,5 +561,17 @@ function toGoal(g: { id: string; name: string; target: string; saved: string; ta
     targetDate: g.target_date,
     perMonth,
     done,
+  };
+}
+
+function toGoalContribution(c: repo.GoalContributionRow) {
+  return {
+    id: c.id,
+    goalId: c.goal_id,
+    amount: c.amount,
+    occurredOn: c.occurred_on,
+    createdAt: c.created_at,
+    createdByName: c.created_by_name,
+    source: c.source,
   };
 }

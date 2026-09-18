@@ -36,6 +36,7 @@ import type {
   DocumentLine,
   DocumentView,
   Goal,
+  GoalContribution,
   Invitation,
   Invoice,
   Item,
@@ -219,6 +220,22 @@ let trips: Trip[] = DEMO.trips.map((t) => ({ ...t }));
 let items: Item[] = DEMO.items.map((i) => ({ ...i }));
 let movements: StockMovement[] = DEMO.stockMovements.map((m) => ({ ...m }));
 let goals: Goal[] = DEMO.goals.map((g) => ({ ...g }));
+/**
+ * One 'opening_balance' contribution per demo goal that already has money in
+ * it — mirroring migration 0030's real backfill honestly rather than
+ * inventing per-transaction history the demo data never had.
+ */
+let goalContributions: GoalContribution[] = DEMO.goals
+  .filter((g) => Number(g.saved) > 0)
+  .map((g) => ({
+    id: `gc_opening_${g.id}`,
+    goalId: g.id,
+    amount: g.saved,
+    occurredOn: isoDaysAgo(180),
+    createdAt: new Date(Date.now() - 180 * 86_400_000).toISOString(),
+    createdByName: null,
+    source: 'opening_balance' as const,
+  }));
 let connections: Connection[] = DEMO.connections.map((c) => ({ ...c }));
 let settings: BusinessSettings = { ...DEMO.settings };
 let members = DEMO.members.map((m) => ({ ...m }));
@@ -1530,25 +1547,47 @@ export class MockApi implements SnapApi {
     return [...goals];
   }
 
-  async contributeToGoal(goalId: string, amount: string): Promise<Goal[]> {
+  async contributeToGoal(goalId: string, amount: string, occurredOn?: string): Promise<Goal[]> {
     await settle(220);
-    goals = goals.map((g) => {
-      if (g.id !== goalId) return g;
-      const saved = addDecimal(g.saved, amount);
-      const done = Number(saved) >= Number(g.target);
-      return {
-        ...g,
-        saved,
-        done,
-        perMonth: done || !g.targetDate ? null : perMonthFor(g.target, saved, g.targetDate),
-      };
-    });
+    if (Number(amount) <= 0) throw new Error('Enter an amount above zero.');
+    goalContributions = [
+      ...goalContributions,
+      {
+        id: `gc_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
+        goalId,
+        amount,
+        occurredOn: occurredOn ?? new Date().toISOString().slice(0, 10),
+        createdAt: new Date().toISOString(),
+        createdByName: sessionFor(WHO)?.user.displayName ?? 'You',
+        source: 'manual',
+      },
+    ];
+    recomputeGoalSaved(goalId);
+    return [...goals];
+  }
+
+  async listGoalContributions(goalId: string): Promise<GoalContribution[]> {
+    await settle(140);
+    return goalContributions
+      .filter((c) => c.goalId === goalId)
+      .sort((a, b) =>
+        a.occurredOn !== b.occurredOn
+          ? b.occurredOn.localeCompare(a.occurredOn)
+          : b.createdAt.localeCompare(a.createdAt),
+      );
+  }
+
+  async removeGoalContribution(goalId: string, contributionId: string): Promise<Goal[]> {
+    await settle(180);
+    goalContributions = goalContributions.filter((c) => c.id !== contributionId);
+    recomputeGoalSaved(goalId);
     return [...goals];
   }
 
   async deleteGoal(goalId: string): Promise<Goal[]> {
     await settle(170);
     goals = goals.filter((g) => g.id !== goalId);
+    goalContributions = goalContributions.filter((c) => c.goalId !== goalId);
     return [...goals];
   }
 
@@ -1962,6 +2001,32 @@ function subtractDecimal(a: string, b: string): string {
 
 function addDecimal(a: string, b: string): string {
   return sumDecimal([a, b]);
+}
+
+function isoDaysAgo(n: number): string {
+  return new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10);
+}
+
+/**
+ * Mirrors the server's trigger-maintained guarantee (migration 0030):
+ * `saved` is never written directly, only recomputed from the contribution
+ * rows behind it, so the mock cannot drift from its own evidence any more
+ * than the real API can.
+ */
+function recomputeGoalSaved(goalId: string): void {
+  const total = goalContributions
+    .filter((c) => c.goalId === goalId)
+    .reduce((sum, c) => addDecimal(sum, c.amount), '0.0000');
+  goals = goals.map((g) => {
+    if (g.id !== goalId) return g;
+    const done = Number(total) >= Number(g.target);
+    return {
+      ...g,
+      saved: total,
+      done,
+      perMonth: done || !g.targetDate ? null : perMonthFor(g.target, total, g.targetDate),
+    };
+  });
 }
 
 function toUnits(value: string): bigint {

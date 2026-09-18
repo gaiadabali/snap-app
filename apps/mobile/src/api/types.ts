@@ -58,6 +58,7 @@ import type {
   DocumentLine,
   DocumentView,
   Goal,
+  GoalContribution,
   Invitation,
   Invoice,
   InvoiceLine,
@@ -308,7 +309,17 @@ export interface SnapApi {
   listRecurring(): Promise<Recurring[]>;
   listGoals(): Promise<Goal[]>;
   createGoal(name: string, target: string, targetDate: string | null): Promise<Goal[]>;
-  contributeToGoal(goalId: string, amount: string): Promise<Goal[]>;
+  /**
+   * Records a contribution — never a bare increment. `occurredOn` is when the
+   * money actually went in; omit it for today. A manual contribution is a
+   * claim the user made, not something the app observed: nothing here is
+   * "verified" until statement ingestion exists.
+   */
+  contributeToGoal(goalId: string, amount: string, occurredOn?: string): Promise<Goal[]>;
+  /** The evidence behind a goal's `saved` figure, newest first. */
+  listGoalContributions(goalId: string): Promise<GoalContribution[]>;
+  /** Removes one contribution. The goal's `saved` total adjusts with it. */
+  removeGoalContribution(goalId: string, contributionId: string): Promise<Goal[]>;
   deleteGoal(goalId: string): Promise<Goal[]>;
 
   // ── Settings ──

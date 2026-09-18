@@ -527,15 +527,96 @@ export async function createGoal(
   });
 }
 
-export async function contributeToGoal(
+export type GoalContributionRow = {
+  id: string;
+  goal_id: string;
+  amount: string;
+  occurred_on: string;
+  created_at: string;
+  created_by_name: string | null;
+  source: 'manual' | 'opening_balance';
+};
+
+/**
+ * A goal's contributions, newest movement first.
+ *
+ * `goals.saved` (0030) is the sum of exactly these rows, maintained by a
+ * trigger — this listing is what lets a user (or a test) see the evidence
+ * behind that number instead of trusting it.
+ */
+export async function listGoalContributions(
+  userId: string,
+  tenantId: string,
+  goalId: string,
+): Promise<GoalContributionRow[]> {
+  return tx(getDb(), userId, tenantId, async (t) => {
+    const rows = await t.execute<GoalContributionRow>(sql`
+      select c.id, c.goal_id, c.amount::text, c.occurred_on::text, c.created_at::text,
+             u.display_name as created_by_name, c.source::text as source
+        from goal_contributions c
+        left join users u on u.id = c.created_by
+       where c.goal_id = ${goalId}
+       order by c.occurred_on desc, c.created_at desc
+    `);
+    return rows.rows;
+  });
+}
+
+/**
+ * Records a contribution — this is the only write `saved` needs. The column
+ * itself is never touched here: `trg_goal_contributions_recompute` (0030)
+ * derives it from the row this inserts, so there is exactly one place a
+ * dollar can enter a goal's total and one record explaining where it came
+ * from.
+ *
+ * Always `source = 'manual'`: this is the user typing a number in, a claim
+ * rather than an observation. Nothing in this codebase can yet ground a
+ * contribution in an observed bank movement (docs/STATEMENTS.md Lane T is
+ * unbuilt) — see the `contribution_source` enum comment.
+ */
+export async function addGoalContribution(
   userId: string,
   tenantId: string,
   goalId: string,
   amount: string,
+  occurredOn: string | null,
+): Promise<GoalContributionRow> {
+  return tx(getDb(), userId, tenantId, async (t) => {
+    const id = randomUUID();
+    const rows = await t.execute<GoalContributionRow>(sql`
+      with inserted as (
+        insert into goal_contributions (id, tenant_id, goal_id, amount, occurred_on, source, created_by)
+        values (${id}, ${tenantId}, ${goalId}, ${amount}, coalesce(${occurredOn}::date, current_date), 'manual', ${userId})
+        returning *
+      )
+      select inserted.id, inserted.goal_id, inserted.amount::text, inserted.occurred_on::text,
+             inserted.created_at::text, u.display_name as created_by_name, inserted.source::text as source
+        from inserted
+        left join users u on u.id = inserted.created_by
+    `);
+    return rows.rows[0];
+  });
+}
+
+/**
+ * Removes a contribution. `saved` adjusts with it (the same trigger, run in
+ * reverse) — this is half the point of having a record at all: a wrong
+ * contribution can be taken back rather than living in the total forever.
+ *
+ * Scoped by BOTH `goalId` and `contributionId`, not the id alone: RLS already
+ * confines this to the caller's tenant, but scoping to the goal too means a
+ * contribution can only ever be removed through the goal it actually belongs
+ * to, matching the nested route (`/goals/:id/contributions/:contributionId`).
+ */
+export async function removeGoalContribution(
+  userId: string,
+  tenantId: string,
+  goalId: string,
+  contributionId: string,
 ): Promise<void> {
   await tx(getDb(), userId, tenantId, async (t) => {
     await t.execute(sql`
-      update goals set saved = saved + ${amount}, updated_at = now() where id = ${goalId}
+      delete from goal_contributions where id = ${contributionId} and goal_id = ${goalId}
     `);
   });
 }

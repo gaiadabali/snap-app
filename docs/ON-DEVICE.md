@@ -149,17 +149,51 @@ cannot yet:
 
 | Model | Runtime | Licence (D23) | Time-to-first-field | Peak memory | First-run download |
 |---|---|---|---|---|---|
-| Gemma 4 E2B | `llama.rn` | **Apache-2.0 — passes** **[verified]** §2.1; `npm view llama.rn license` → MIT, 2026-09-18 | **PENDING — no device attached.** Run `python apps/server/bench/vlm_spike_server.py --device galaxy-a71-8gb --model gemma-4-e2b` against a real handset | **PENDING**, same run | **PENDING**, same run — cited estimate is 2.58 GB (§2.1), not a measurement |
-| Florence-2-base | `react-native-executorch` | **MIT — passes** **[verified]** §2.1; `npm view react-native-executorch license` → MIT, 2026-09-18 | **PENDING — no device attached.** Run `python apps/server/bench/vlm_spike_server.py --device galaxy-a71-8gb --model florence-2-base` against a real handset | **PENDING**, same run | **PENDING**, same run — cited estimate is ~0.5 GB f16 (§2.1), not a measurement |
+| Gemma 4 E2B | `llama.rn` | **Apache-2.0 — passes** **[verified]** §2.1; `npm view llama.rn license` → MIT, 2026-09-18 | **PENDING — no device attached.** Run `python apps/server/bench/vlm_spike_server.py --device galaxy-a71-8gb --model gemma-4-e2b` against a real handset | **PENDING**, same run | **PENDING**, same run. Artefact CONFIRMED to exist (below) — the eventual figure is bounded by the GGUF + mmproj size, not the cited 2.58 GB `.litertlm` |
+| Florence-2-base | `react-native-executorch` | **MIT — passes** **[verified]** §2.1; `npm view react-native-executorch license` → MIT, 2026-09-18 | **BLOCKED before a device is relevant** — the `.pte` export this route needs does not exist and could not be produced in this pass (below). Nothing to run yet | n/a — no exportable artefact | n/a — no exportable artefact |
 
-**A format mismatch found while building the harness, not resolvable without more research
-[estimate/uncertain — record before spending phone time].** Gemma 4 E2B ships as `.litertlm`
-(MediaPipe/LiteRT-LM); `llama.rn` loads GGUF. No GGUF re-export of Gemma 4 E2B was found and verified
-in this pass. Florence-2-base has no GGUF path either; `react-native-executorch` loads `.pte`
-(ExecuTorch), so an ExecuTorch export of Florence-2-base is the intended route and needs confirming
-in hand before a dev-build run. Neither gap changes the licence verdict — both models and both
-runtimes clear D23 — but a first phone session should confirm the artefact exists before it spends a
-day discovering it does not.
+**The format-mismatch question is now resolved for both models, 2026-09-18 — one confirmed reachable, one confirmed NOT reachable in this pass.**
+
+*Gemma 4 E2B — CONFIRMED.* `unsloth/gemma-4-E2B-it-GGUF` is a real, public Hugging Face repo
+**[verified]** `https://huggingface.co/api/models/unsloth/gemma-4-E2B-it-GGUF`, licence `apache-2.0`
+on the repo's own `cardData` **[verified]**, `config.architectures = ["Gemma4ForConditionalGeneration"]`.
+The file that matches the quant tier used elsewhere in this doc is
+**`gemma-4-E2B-it-Q4_K_M.gguf`, 3,106,738,272 bytes (2.89 GiB)** **[verified]** repo file tree,
+2026-09-18; a Gemma-4 vision path additionally needs the multimodal projector,
+**`mmproj-F16.gguf`, 985,654,080 bytes (0.92 GiB)** **[verified]**, same tree — so the realistic
+first-run download for an image-capable `llama.rn` build is **≈ 4.09 GB**, not the 2.58 GB
+`.litertlm` figure §2.1 cites (that number is for a different artefact format entirely and should
+not be quoted as this model's download cost going forward). llama.cpp's Gemma 4 support is likewise
+verified as a real, dated PR, not a claim taken on trust: **`ggml-org/llama.cpp` PR #21309, "model:
+support gemma 4 (vision + moe, no audio)", merged 2026-04-02** **[verified]** GitHub API, matching
+the "carried native Gemma 4 support since April 2026" claim exactly. Net: point `llama.rn` at
+`gemma-4-E2B-it-Q4_K_M.gguf` + `mmproj-F16.gguf`; no export step is required for this model.
+
+*Florence-2-base — NOT REACHABLE, attempted and failed, 2026-09-18 [measured attempt, R0 — one
+environment, one run; not corpus-tier evidence, but a real reproducible error].* The self-export
+route was actually run, not just judged unlikely from documentation:
+
+1. `pip install "optimum-executorch @ git+https://github.com/huggingface/optimum-executorch.git" transformers timm` on CPU-only `torch==2.14.0+cpu` succeeded.
+2. `optimum-cli export executorch -m microsoft/Florence-2-base --task image-to-text -o out --recipe xnnpack` fails immediately: `TypeError: 'NoneType' object is not callable` at `optimum/exporters/executorch/__main__.py:138`, because `image-to-text` is not a key in `optimum.exporters.executorch.task_registry.task_registry` at all **[verified]** — reading the installed package's `tasks/` directory, the only registered task strings are `automatic-speech-recognition`, `text-generation`, `image-classification`, `fill-mask`, `image-text-to-text`, `multimodal-text-to-text`, `object-detection`, `text2text-generation`. `--task image-to-text` is a red herring surfaced by the CLI's own `--help` (which lists generic HF pipeline task names, not this package's actual registry).
+3. Retried with `--task image-text-to-text` — Florence-2-base's own published `pipeline_tag` **[verified]** HF API — since that is the one registered task closest to Florence-2's shape (`optimum/exporters/executorch/tasks/multimodal_text_to_text.py`, which loads via generic `AutoModelForPreTraining.from_pretrained()` rather than a named-architecture recipe). The checkpoint downloaded (`model.safetensors`, 463,221,266 bytes **[verified]**, consistent with §2.1's "≈0.5 GB f16" estimate) and the run produced a **"LOAD REPORT" naming every `vision_tower.*` and `language_model.*` weight either `UNEXPECTED` (present in the checkpoint, not matched to the loader's expected key names) or `MISSING` (absent, so randomly reinitialized)** — effectively the entire DaViT vision tower and the BART-style encoder-decoder language model, i.e. the model this path would go on to export is not Florence-2-base's trained weights, it is Florence-2-base's module shapes with fresh random values. This is the awkward-shape prediction in the 2026-09-18 model-format check landing as a concrete, reproducible key-mismatch, not a hypothetical.
+4. The same run then hit a second, unrelated failure further down the pipeline — `ImportError: DLL load failed while importing parsing: An Application Control policy has blocked this file` on `pandas` (a transitive import of the `xnnpack` recipe's `executorch.devtools.inspector`) — which is a Windows Application Control (WDAC-class) policy on *this* machine blocking a compiled DLL, not a Florence-2 or ExecuTorch fact. Recorded so a re-run on a different host isn't confused by it, and explicitly NOT used as evidence about exportability — item 3 is.
+
+**Verdict: Florence-2-base cannot currently be exported to a correct `.pte` through
+`optimum-executorch`'s documented CLI path, because the only task registration close enough to its
+architecture (`image-text-to-text`, via generic `AutoModelForPreTraining`) does not restore its
+checkpoint's weights — the vision tower and language-model weights come back reinitialized rather
+than loaded.** This is a result, not a gap: it took a genuine attempt to reach a checkpoint-loading
+failure rather than a missing-registration failure, and it is worse news than "not supported yet" —
+a less careful run could produce a `.pte` file that *looks* like a successful export and contains no
+real Florence-2 weights. A real export would need either a Florence-2-specific recipe contributed
+upstream to `optimum-executorch`, or a hand-written `torch.export` of the model's two halves (DaViT
+encoder, BART-style decoder) with a manually-checked state-dict mapping — both are work items larger
+than this spike, and neither is started. Nothing changes the licence verdict: MIT still passes D23;
+the finding is entirely about the export path, not the weights' terms.
+
+Neither finding changes the runtime-dependency shape from OD-14: whichever of these two ships,
+`llama.rn` or `react-native-executorch`, still adds native libraries to the APK, and that binary-size
+cost is not measured here (see the OD-15 ticket note on this).
 
 **Device note.** `apps/server/bench/devices.py` records the owner's 2026-09-18 decision to accept
 `galaxy-a71-8gb` (7519 MB measured, ~1.8× the 4 GB floor) as the bench device for *functional* results
@@ -931,8 +965,41 @@ this ticket asks for, and §2.2 should say so rather than leaving a blank.
 *And a cost this ticket inherits from OD-14:* whichever runtime is chosen ships
 NATIVE LIBRARIES, exactly as `onnxruntime-react-native` did at +32.8 MiB. A
 spike build carrying them is fine; shipping one is a separate decision that
-needs the same measurement OD-14 now has.
-**Harness delivered 2026-09-18; measurement still PENDING — no device attached.**
+needs the same measurement OD-14 now has. Neither `llama.rn` nor
+`react-native-executorch` is added to `apps/mobile/package.json` by this pass —
+that measurement, if the export question below clears, belongs in a separate
+spike build (`spike/od-14-ppocr`'s pattern), not in the shipping app.
+
+**Export question settled, 2026-09-18 — before any phone time, as instructed. One reachable, one not.**
+
+- **Gemma 4 E2B — CONFIRMED, no export needed.** `unsloth/gemma-4-E2B-it-GGUF`
+  is real: `apache-2.0` on the repo's own `cardData`, `Gemma4ForConditionalGeneration`
+  architecture **[verified]** HF API, 2026-09-18. The Q4_K_M tier is
+  **`gemma-4-E2B-it-Q4_K_M.gguf`, 3,106,738,272 bytes**, plus the vision
+  projector **`mmproj-F16.gguf`, 985,654,080 bytes** — **≈4.09 GB combined**
+  first-run download for an image-capable build, both sizes read directly off
+  the repo's file tree **[verified]**. llama.cpp's Gemma 4 support is
+  `ggml-org/llama.cpp` PR #21309, merged 2026-04-02 **[verified]** GitHub API —
+  the "since April 2026" claim checks out exactly. Point `llama.rn` at these
+  two files; nothing to export.
+- **Florence-2-base — NOT REACHABLE, attempted and failed.** The self-export
+  was actually run (`optimum-cli export executorch`, CPU torch 2.14, this
+  machine, 2026-09-18), not just judged unlikely. `--task image-to-text` fails
+  immediately (`TypeError: 'NoneType' object is not callable` — that task
+  string isn't in `optimum-executorch`'s task registry at all). The closest
+  registered task, `--task image-text-to-text` (Florence-2-base's own
+  published `pipeline_tag`), downloads the real checkpoint but loads it
+  through generic `AutoModelForPreTraining`, which returns a **LOAD REPORT
+  marking essentially the entire vision tower and language model
+  `UNEXPECTED`/`MISSING`** — the checkpoint's weights don't land on the
+  loader's expected keys, so the graph that would be exported carries random
+  weights, not Florence-2-base's. **Florence-2-base cannot currently be
+  exported to a correct `.pte` through optimum-executorch's documented CLI
+  path, because no task recipe restores its checkpoint correctly** — full
+  detail and the exact commands in §2.2. This is the result the ticket asked
+  for either way; it is not a blank cell.
+
+**Harness delivered 2026-09-18; export question settled 2026-09-18; time-to-first-field/peak-memory/first-run-download measurement still PENDING — no device attached, and Florence-2-base additionally has no `.pte` to measure with even once one is.**
 
 Licence floor checked first, per D23: Gemma 4 E2B (Apache-2.0, LiteRT-LM page), Florence-2-base
 (MIT, HF card), `react-native-executorch` (MIT) and `llama.rn` (MIT) all pass. `adb devices` was
@@ -952,23 +1019,30 @@ committed as a result). `apps/server/bench/devices.py` gained a dated, explicit 
 device for FUNCTION and RELATIVE comparison; `may_decide_fit('galaxy-a71-8gb')` is unchanged and
 still refuses to let it settle FIT.
 
-*Run once a phone is attached:*
+*Run once a phone is attached (Gemma 4 E2B only — see above for why Florence-2-base has no
+artefact to run yet):*
 ```
 adb reverse tcp:8100 tcp:8100
 python apps/server/bench/vlm_spike_server.py --device galaxy-a71-8gb --model gemma-4-e2b
-python apps/server/bench/vlm_spike_server.py --device galaxy-a71-8gb --model florence-2-base
 ```
-each paired with a dev-build screen in `apps/mobile/` (out of this ticket's file ownership) that
-loads the model, times model-load and time-to-first-field, samples peak memory, and POSTs the
-JSON `vlm_spike.validate_result` documents to `/result`. On shutdown the server prints a pasteable
-§2.2 row. **Before that run:** confirm a GGUF export of Gemma 4 E2B and a `.pte` export of
-Florence-2-base actually exist — the harness surfaces this as `runtime_caveat` because neither
-model's published artefact format matches its intended runtime directly (see §2.2).
+paired with a dev-build screen in `apps/mobile/` (out of this ticket's file ownership, and NOT
+built by this ticket — see the OD-14 native-library cost note above) that loads
+`gemma-4-E2B-it-Q4_K_M.gguf` + `mmproj-F16.gguf` via `llama.rn`, times model-load and
+time-to-first-field, samples peak memory, and POSTs the JSON `vlm_spike.validate_result` documents
+to `/result`. On shutdown the server prints a pasteable §2.2 row.
+`python apps/server/bench/vlm_spike_server.py --device galaxy-a71-8gb --model florence-2-base`
+remains wired in the harness for if/when a working `.pte` exists, but running it today has nothing
+to load.
 
 *Done when:* time-to-first-field, peak memory and first-run download recorded on both floor
 devices via `react-native-executorch` or `llama.rn`, and §2.2 updated with measured rows — a
-result either way. **Not yet met**: no floor device (nor even the accepted bench device) was
-physically available to this ticket. The harness that makes the run a single command is met.
+result either way. **Not yet met, and now split into two different kinds of "not yet":** Gemma 4
+E2B is blocked only on a physical device (no floor device, nor even the accepted bench device, was
+available to this ticket) — the artefact question is closed. Florence-2-base is blocked upstream of
+any device: the `.pte` this route needs does not exist and this ticket's own export attempt did not
+produce a correct one (§2.2). The harness that makes the eventual run a single command is met; the
+export question this ticket was told to settle before spending phone time is also met, for both
+models, in both directions.
 
 ### Housekeeping
 

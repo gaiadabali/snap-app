@@ -32,6 +32,7 @@ import {
   billingProvider,
   firmRole,
   captureStatus,
+  contributionSource,
   docType,
   extractionEngine,
   gstBasis,
@@ -833,8 +834,38 @@ export const goals = pgTable('goals', {
   tenantId: uuid('tenant_id').notNull(),
   name: text('name').notNull(),
   target: moneyAmount('target').notNull(),
+  /**
+   * DERIVED, not free-floating (0030): maintained by `trg_goals_saved_authoritative`
+   * as the sum of this goal's `goal_contributions`, recomputed on every write to
+   * either table so it cannot drift from its own evidence — see 0030's comment.
+   */
   saved: moneyAmount('saved').notNull(),
   targetDate: date('target_date'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+/**
+ * One row per dollar someone can point at (0030).
+ *
+ * `goals.saved` used to be incremented in place with no record behind it — a
+ * balance that could not be explained, corrected or undone. Every contribution
+ * now has a `source`: 'manual' is the only value the API writes;
+ * 'opening_balance' is written once, by migration 0030, to carry forward
+ * history that predates this table honestly rather than inventing it.
+ * `sourceStatementLineId` is reserved for a future grounded contribution
+ * (docs/STATEMENTS.md Lane T) and is NULL on every row today, enforced by a
+ * CHECK — see the migration comment for why it has no FK yet.
+ */
+export const goalContributions = pgTable('goal_contributions', {
+  id: uuid('id').primaryKey(),
+  tenantId: uuid('tenant_id').notNull(),
+  goalId: uuid('goal_id').notNull(),
+  amount: moneyAmount('amount').notNull(),
+  /** When the money actually went in, not when this row was typed. */
+  occurredOn: date('occurred_on').notNull(),
+  source: contributionSource('source').notNull().default('manual'),
+  sourceStatementLineId: uuid('source_statement_line_id'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  createdBy: uuid('created_by'),
 });

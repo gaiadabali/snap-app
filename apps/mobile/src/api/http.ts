@@ -30,6 +30,7 @@ import type {
   DocumentLine,
   DocumentView,
   Goal,
+  GoalContribution,
   Invoice,
   Item,
   MemberList,
@@ -878,9 +879,23 @@ export class HttpApi implements SnapApi {
     return this.goalsFor();
   }
 
-  async contributeToGoal(goalId: string, amount: string): Promise<Goal[]> {
+  async contributeToGoal(goalId: string, amount: string, occurredOn?: string): Promise<Goal[]> {
     await this.request('POST', `/v1/goals/${goalId}/contribute`, {
-      body: { amount },
+      body: { amount, occurredOn },
+      workspaceId: await this.idForKind('personal'),
+    });
+    return this.goalsFor();
+  }
+
+  async listGoalContributions(goalId: string): Promise<GoalContribution[]> {
+    return this.get<GoalContribution[]>(
+      `/v1/goals/${goalId}/contributions`,
+      await this.idForKind('personal'),
+    );
+  }
+
+  async removeGoalContribution(goalId: string, contributionId: string): Promise<Goal[]> {
+    await this.request('DELETE', `/v1/goals/${goalId}/contributions/${contributionId}`, {
       workspaceId: await this.idForKind('personal'),
     });
     return this.goalsFor();

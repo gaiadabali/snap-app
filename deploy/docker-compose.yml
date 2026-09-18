@@ -148,7 +148,22 @@ services:
       STORAGE_DIR: /data/storage
     volumes:
       - storage_data:/data/storage
-      - ${OLLAMA_ENV_FILE_HOST:-/dev/null}:/run/secrets/ollama.env:ro
+      # NO `:-/dev/null` DEFAULT. It used to read
+      #   ${OLLAMA_ENV_FILE_HOST:-/dev/null}:/run/secrets/ollama.env:ro
+      # and OLLAMA_ENV_FILE_HOST was EMPTY in deploy/.env, so compose
+      # mounted /dev/null here and the worker read an empty secrets file.
+      # `provider.ts` then reported "No extraction provider key" — which is
+      # also what it says when the file is merely unreadable, so the message
+      # could not distinguish a missing key from a missing MOUNT.
+      #
+      # Unset now means compose REFUSES to start rather than starting a
+      # worker that cannot do the one thing it exists for. A default that
+      # silently succeeds is worse than no default.
+      #
+      # The file must also be readable by the container user (uid 1001);
+      # a bind mount carries host ownership straight through, and 0600
+      # root-owned fails with the same message again.
+      - ${OLLAMA_ENV_FILE_HOST:?set it in deploy/.env to the host path of the ollama key file, readable by uid 1001}:/run/secrets/ollama.env:ro
     depends_on:
       postgres:
         condition: service_healthy

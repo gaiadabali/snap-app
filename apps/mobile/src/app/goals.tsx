@@ -3,7 +3,7 @@ import { useCallback, useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { api, type Goal } from '@/api';
+import { api, type Goal, type GoalContribution } from '@/api';
 import { AddButton, Empty, Field, Loading, Sheet } from '@/components/form';
 import { GradientHero, HeroBody, HeroFigure, HeroLabel, Raised } from '@/components/rich';
 import { Body, Button, Chip, Figure, Label, Screen, Small } from '@/components/ui';
@@ -23,6 +23,8 @@ export default function GoalsScreen() {
   const [goals, setGoals] = useState<Goal[] | null>(null);
   const [adding, setAdding] = useState(false);
   const [contributing, setContributing] = useState<Goal | null>(null);
+  const [viewingHistoryId, setViewingHistoryId] = useState<string | null>(null);
+  const [history, setHistory] = useState<GoalContribution[] | null>(null);
   const [name, setName] = useState('');
   const [target, setTarget] = useState('');
   const [date, setDate] = useState('');
@@ -43,6 +45,9 @@ export default function GoalsScreen() {
   const saved = all.reduce((a, g) => a + Number(g.saved), 0);
   const targets = all.reduce((a, g) => a + Number(g.target), 0);
   const perMonth = all.reduce((a, g) => a + Number(g.perMonth ?? 0), 0);
+  // Derived from `all` rather than snapshotted at open time, so removing a
+  // contribution updates the total shown in the history sheet immediately.
+  const viewingHistory = viewingHistoryId ? (all.find((g) => g.id === viewingHistoryId) ?? null) : null;
 
   async function create() {
     setError(null);
@@ -78,6 +83,30 @@ export default function GoalsScreen() {
         text: 'Delete',
         style: 'destructive',
         onPress: () => void api().deleteGoal(goal.id).then(setGoals),
+      },
+    ]);
+  }
+
+  async function openHistory(goal: Goal) {
+    setViewingHistoryId(goal.id);
+    setHistory(null);
+    setHistory(await api().listGoalContributions(goal.id));
+  }
+
+  function removeContribution(goalId: string, contribution: GoalContribution) {
+    Alert.alert('Remove this contribution?', `${formatAud(contribution.amount)} comes back out of the total.`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Remove',
+        style: 'destructive',
+        onPress: () => {
+          void api()
+            .removeGoalContribution(goalId, contribution.id)
+            .then((updated) => {
+              setGoals(updated);
+              setHistory((h) => h?.filter((c) => c.id !== contribution.id) ?? h);
+            });
+        },
       },
     ]);
   }
@@ -181,6 +210,17 @@ export default function GoalsScreen() {
                           <Small>{formatAud((Number(g.target) - Number(g.saved)).toFixed(4))} to go</Small>
                         )}
                       </View>
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={`See contributions to ${g.name}`}
+                        hitSlop={8}
+                        onPress={() => void openHistory(g)}
+                        style={{ paddingVertical: 9, paddingHorizontal: space.sm }}
+                      >
+                        <Small muted={false} style={{ color: p.inkMuted, fontWeight: '700' }}>
+                          History
+                        </Small>
+                      </Pressable>
                       {!g.done ? (
                         <Button
                           label="Add"
@@ -250,6 +290,49 @@ export default function GoalsScreen() {
           prefix="$"
           autoFocus
         />
+      </Sheet>
+
+      <Sheet
+        open={viewingHistory !== null}
+        title={viewingHistory ? `${viewingHistory.name} — contributions` : ''}
+        subtitle={
+          viewingHistory ? `${formatAud(viewingHistory.saved)} recorded so far` : undefined
+        }
+        submitLabel="Done"
+        onClose={() => setViewingHistoryId(null)}
+        onSubmit={() => setViewingHistoryId(null)}
+      >
+        {history === null ? (
+          <Loading />
+        ) : history.length === 0 ? (
+          <Small>Nothing recorded yet.</Small>
+        ) : (
+          history.map((c) => (
+            <View
+              key={c.id}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}
+            >
+              <View style={{ flex: 1, gap: 2 }}>
+                <Body strong>{formatAud(c.amount)}</Body>
+                <Small>
+                  {formatShortDate(c.occurredOn)}
+                  {' · '}
+                  {c.source === 'opening_balance'
+                    ? 'Starting balance, from before contributions were tracked'
+                    : `Added by ${c.createdByName ?? 'you'}`}
+                </Small>
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Remove this contribution of ${formatAud(c.amount)}`}
+                hitSlop={8}
+                onPress={() => viewingHistoryId && removeContribution(viewingHistoryId, c)}
+              >
+                <Text style={{ color: p.inkFaint, fontSize: 18 }}>×</Text>
+              </Pressable>
+            </View>
+          ))
+        )}
       </Sheet>
     </Screen>
   );
