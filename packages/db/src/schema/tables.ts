@@ -35,6 +35,7 @@ import {
   contributionSource,
   docType,
   extractionEngine,
+  financialAccountType,
   gstBasis,
   pageSource,
   reviewStatus,
@@ -44,6 +45,7 @@ import {
   invoiceStatus,
   partyKind,
   paymentMethod,
+  statementBalanceCheck,
   stockMovementKind,
   subStatus,
   tenantKind,
@@ -868,4 +870,67 @@ export const goalContributions = pgTable('goal_contributions', {
   sourceStatementLineId: uuid('source_statement_line_id'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   createdBy: uuid('created_by'),
+});
+
+// ── Statements (0031, docs/STATEMENTS.md Lane T, ticket T3) ────────────────
+//
+// `statement_lines` is designed to stand as an observation in its own right
+// (§0, §5.3) — Lane R's `event_observations` (ticket R5, not built here) is
+// what will later point AT a row here, alongside a `documents` row, to merge
+// two observations of one economic event. Nothing here auto-merges or
+// deletes either side.
+
+export const financialAccounts = pgTable('financial_accounts', {
+  id: uuid('id').primaryKey(),
+  tenantId: uuid('tenant_id').notNull(),
+  /** The chart-of-accounts row this financial account IS (§5.1). */
+  accountId: uuid('account_id').notNull(),
+  institution: text('institution').notNull(),
+  displayName: text('display_name'),
+  /** Masked only — same discipline as documents.card_last4. Never a full number. */
+  accountLast4: char('account_last4', { length: 4 }),
+  accountType: financialAccountType('account_type').notNull(),
+  currency: currencyCode('currency').notNull(),
+  isArchived: boolean('is_archived').notNull().default(false),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const statements = pgTable('statements', {
+  id: uuid('id').primaryKey(),
+  tenantId: uuid('tenant_id').notNull(),
+  /** The statement PDF/CSV — still a `document`, still the immutable original. */
+  documentId: uuid('document_id').notNull(),
+  financialAccountId: uuid('financial_account_id').notNull(),
+  periodStart: date('period_start').notNull(),
+  periodEnd: date('period_end').notNull(),
+  openingBalance: moneyAmount('opening_balance').notNull(),
+  closingBalance: moneyAmount('closing_balance').notNull(),
+  /** Written by T4's validator (§4); every row lands here as 'pending'. */
+  balanceCheck: statementBalanceCheck('balance_check').notNull().default('pending'),
+  balanceResidual: moneyAmount('balance_residual'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const statementLines = pgTable('statement_lines', {
+  id: uuid('id').primaryKey(),
+  tenantId: uuid('tenant_id').notNull(),
+  statementId: uuid('statement_id').notNull(),
+  lineNumber: integer('line_number').notNull(),
+  /** What this line will fill transactions.settled_date with, once R5 ships. */
+  postedDate: date('posted_date').notNull(),
+  valueDate: date('value_date'),
+  /** As printed, never normalised — the original is the record. */
+  descriptionRaw: text('description_raw').notNull(),
+  descriptionNormalised: text('description_normalised'),
+  /** Debits positive — the same convention as transaction_splits.amount (0006). */
+  amountSigned: moneyAmount('amount_signed').notNull(),
+  runningBalance: moneyAmount('running_balance'),
+  counterpartyHint: text('counterparty_hint'),
+  /** Masked only, same discipline as documents.card_last4. */
+  cardLast4: char('card_last4', { length: 4 }),
+  /** {"amount":"...","currency":"...","rate":"..."} for FX rows; {} otherwise. */
+  foreignFx: jsonb('foreign_fx').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });

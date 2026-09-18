@@ -6,6 +6,8 @@ import { chain } from './ai/router.js';
 import { config } from './config.js';
 import { getDb } from './db.js';
 import { runAgreementCheck } from './extraction/agreement.js';
+import { classifyExtractedText, type Classification } from './extraction/classify.js';
+import { extractPdfText } from './extraction/pdf.js';
 import { BedrockClaudeProvider, OllamaCloudProvider, type ExtractionProvider, type PageImage } from './extraction/provider.js';
 import { extractionPromptFor } from './extraction/prompt.js';
 import { runExtraction } from './extraction/run.js';
@@ -99,11 +101,88 @@ function providerFor(model: string, rules: TaxRules | null): ExtractionProvider 
 
 type Job = { id: string; tenantId: string | null; payload: unknown };
 
+/**
+ * T1 (`docs/STATEMENTS.md` §12 Lane T): classifies a capture as a statement or
+ * a receipt from its OWN native PDF text, BEFORE `providerFor`/`runExtraction`
+ * ever run — see `extraction/classify.ts`'s header for the signal itself and
+ * why it is trustworthy. Returns `null` for "no opinion, leave it a receipt",
+ * which is the same outcome `classifyExtractedText` already returns for a
+ * document with too few signals — this function adds exactly one more reason
+ * to land there: not being a PDF at all, or the PDF not being readable.
+ *
+ * Reads `captures.original_storage_key` directly rather than through
+ * `capture_pages`, because `capture_pages` holds only RASTERISED bytes —
+ * `pdf.ts`'s `DemuxedPage` never carries a page's text back out of `demuxPdf`
+ * — so the original upload is the only place a real text layer can still be
+ * read from. That is also this function's one known limitation, reported
+ * rather than hidden: `captures.controller.ts`'s `upload()` never persists
+ * the RAW PDF bytes for a capture that gets demuxed into `capture_pages` rows
+ * (only the rendered PNG pages are written to storage), so for a capture
+ * uploaded through today's multi-page intake path, `readObject` below throws
+ * ENOENT and this function falls through to its own catch — safely, but
+ * silently, to 'receipt'. It classifies correctly today for every capture
+ * whose `original_storage_key` genuinely holds the original file (pre-0018
+ * single-page captures, and any fixture or future intake path that persists
+ * it) and is a no-op-safe default everywhere else. Persisting the raw PDF (or
+ * its extracted text) at intake is `captures.controller.ts`/schema work
+ * outside this ticket's file list — flagged as a follow-up, not fixed here.
+ *
+ * Exported for direct testing — `worker-statement-routing.test.ts` covers
+ * both this function in isolation and the end-to-end fork through `runOnce`.
+ */
+export async function classifyCapture(tenantId: string, captureId: string): Promise<Classification | null> {
+  try {
+    const original = await withTenantAs(getDb(), WORKER_USER, tenantId, async (tx) => {
+      const rows = await tx.execute<{ key: string; mime: string }>(sql`
+        select original_storage_key as key, original_mime_type as mime
+          from captures where id = ${captureId} limit 1
+      `);
+      return rows.rows[0];
+    });
+    if (!original || original.mime !== 'application/pdf') return null;
+
+    const bytes = readObject(original.key);
+    const pageTexts = await extractPdfText(bytes);
+    return classifyExtractedText(pageTexts);
+  } catch (error) {
+    console.warn(
+      `capture ${captureId}: could not read the original as a PDF to classify it — ` +
+        `${error instanceof Error ? error.message : String(error)} — leaving it a receipt`,
+    );
+    return null;
+  }
+}
+
 async function handle(job: Job): Promise<void> {
   const payload = job.payload as { captureId?: string } | null;
   const captureId = payload?.captureId;
   if (!captureId || !job.tenantId) {
     console.error(`job ${job.id}: no captureId or tenant; skipping`);
+    return;
+  }
+
+  const classification = await classifyCapture(job.tenantId, captureId);
+  if (classification?.kind === 'statement') {
+    // T2 (`statement-schema.json` and the per-page statement extraction path)
+    // does not exist yet — recorded and stopped here rather than falling
+    // through into the receipt-shaped reader, which would read a closing
+    // balance as a payable total (`docs/STATEMENTS.md` §2). Reuses the same
+    // `extraction_runs` write the provider-failure path already makes: there
+    // is no 'skipped' member of `run_status` (`packages/db/src/schema/
+    // enums.ts` — queued/running/succeeded/failed/superseded), and adding one
+    // is a schema decision outside this ticket's file list. `saveExtraction`
+    // — the only writer of a `documents` row — is never called on this path,
+    // which is the actual guarantee T1 asks for: the receipt schema never
+    // runs against a statement.
+    console.log(`job ${job.id}: capture ${captureId} classified as a statement — ${classification.reason}`);
+    await saveExtractionFailure(
+      WORKER_USER,
+      job.tenantId,
+      captureId,
+      'statement_classified',
+      classification.reason,
+      'text-classifier',
+    );
     return;
   }
 

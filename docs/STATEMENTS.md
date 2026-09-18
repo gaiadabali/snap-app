@@ -987,6 +987,42 @@ schema is never applied to a statement.
 a test proves a deliberately over-long statement chunks rather than truncating.
 
 **T3 — `financial_accounts`, `statements`, `statement_lines` + RLS.** §5.1.
+
+**DONE 2026-09-18** — `0031_statements.sql`. Three tables, RLS enabled AND
+forced on each (verified directly in `pg_class`: a forced policy binds the table
+owner too, not just `app_rw`). Isolation proved by disabling RLS on
+`statement_lines` and watching six tests fail — including a cross-tenant INSERT
+actually succeeding and "fails closed with no tenant context" returning 3 rows
+instead of 0 — then restoring.
+
+*Three decisions worth carrying forward:*
+
+**One signed `amount_signed`, not amount + direction.** The ticket said
+"amount, direction". `transaction_splits.amount` is already signed, and a
+second sign convention is a second set of rules to get wrong. Reused, not
+reinvented.
+
+**`balance_check` / `balance_residual` are declared and written by nothing** —
+on purpose. T4 computes `pass`/`residual`; T5 writes `unverifiable` for a CSV
+with no balance to check. §2 catalogues four columns that waited years for a
+writer; these are deliberate placeholders with their writers named, which is a
+different thing from an oversight.
+
+**No jurisdiction in the DDL.** No country column, no date-order assumption, and
+deliberately NO default currency — unlike `documents.currency`, which defaults
+`'AUD'`. Per D-S1 both markets are in scope, and `statementRules` stays an
+app-layer parameter.
+
+*Wired to the dormant columns without wiring them:* `statements.document_id` is
+document-backed, so a re-uploaded statement flags through the EXISTING
+`documents.dedup_group_id` path rather than a second statement-shaped one —
+"flag, never auto-merge" means one place to get it wrong, not two. And the
+column is named `posted_date` so R5 can read it straight into
+`transactions.settled_date` with no transformation.
+
+*Left undone and flagged, not silently taken:* `goal_contributions.source_statement_line_id`
+(0030) can now have its FK, since `statement_lines` exists. That belongs to
+whoever owns that table, not to T3.
 *Done when:* the RLS negative-case suite covers them the way the existing tables
 are covered — **a test asserting another tenant is refused**, not that the owner
 is allowed.
@@ -1188,6 +1224,23 @@ stops competing with this work for the same weeks.
 *Cost:* `ROADMAP.md` §6 calls E1 the highest-value buildable thing precisely
 because it is small and standalone. Folding it into a larger lane means it lands
 later than it would have alone, and its business half lands later still (D-S2).
+
+### 14.1b Settled by the owner, 2026-09-18
+
+**D-S5 — The borrowed Ollama Cloud key stays the production extraction
+provider, for now.**
+*Asked because it contradicts a standing rule.* The owner's global working
+rules describe that provider as *"borrowed + SHARED + weekly-rate-limited (NOT
+a prepaid token balance). Fine for dev/testing; do NOT make it a hard prod
+dependency."* As of 2026-09-18 it IS a hard production dependency: every
+extraction runs through it, and the app produces no documents without it.
+*Decision:* accepted, explicitly and for now.
+*Cost, stated plainly:* the weekly cap is shared with other projects and is not
+ours to control. When it is reached, extraction stops for everybody — captures
+will queue at `received` exactly as they did during the 2026-09-16 outage, and
+the app will look broken in the same way. There is no second provider
+configured to fall back to. This is a known, accepted, temporary exposure and
+not a thing anyone has measured the headroom of.
 
 ### 14.2 Still open
 

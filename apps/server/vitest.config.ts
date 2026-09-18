@@ -13,6 +13,18 @@ export default defineConfig({
     // skipped suite reads as a green run. See the setup file.
     globalSetup: ['../../packages/db/test/require-db.setup.ts'],
     include: ['src/**/*.test.ts'],
+    // The 5s default is wrong for what this suite actually does, and it has
+    // been passing on luck. These are real-HTTP, real-Postgres tests: the T7
+    // cap test builds a 120-page PDF and uploads it, the e2e suites provision
+    // tenants and run extraction. `statement-caps.e2e.test.ts` timed out at
+    // 5000ms on a loaded machine with no code change behind it — the classic
+    // shape of a test that fails in CI and not on the desk.
+    //
+    // `packages/db` already set 30s for the same reason ("container startup
+    // and ten migrations comfortably exceed the 5s default"); this matches it
+    // rather than inventing a second number.
+    testTimeout: 30_000,
+    hookTimeout: 60_000,
     environment: 'node',
     /**
      * One file at a time, in one thread.

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { demuxPdf } from './pdf.js';
+import { demuxPdf, extractPdfText } from './pdf.js';
 
 /**
  * `demuxPdf` is the one part of Phase 0 intake that touches a third-party
@@ -106,5 +106,50 @@ describe('demuxPdf', () => {
     expect(pages[0]!.source).toBe('pdf_native');
     expect(pages[1]!.source).toBe('pdf_render');
     expect(pages.every((p) => isPng(p.bytes))).toBe(true);
+  });
+});
+
+/**
+ * T1 (`docs/STATEMENTS.md` §12 Lane T) needs the text `demuxPdf` computes
+ * internally and then discards — `worker.ts`'s classification step reads it
+ * straight from the original PDF, never from a rendered page. This is that
+ * standalone pass, tested on its own: no canvas, no rasterisation, just text.
+ */
+describe('extractPdfText', () => {
+  it('returns each page\'s embedded text, in page order, with no rendering involved', async () => {
+    const pdf = multiPagePdf([
+      'BT /F1 12 Tf 20 250 Td (Statement page one opening balance) Tj ET',
+      'BT /F1 12 Tf 20 250 Td (Statement page two closing balance) Tj ET',
+    ]);
+    const texts = await extractPdfText(pdf);
+    expect(texts).toHaveLength(2);
+    expect(texts[0]).toContain('opening balance');
+    expect(texts[1]).toContain('closing balance');
+  });
+
+  it('returns an empty string for a page with no text layer at all, rather than throwing', async () => {
+    const pdf = onePagePdf('0 0 1 rg 10 10 100 100 re f');
+    const texts = await extractPdfText(pdf);
+    expect(texts).toEqual(['']);
+  });
+
+  it('applies no NATIVE_TEXT_THRESHOLD — even a couple of stray characters come back, unlike demuxPdf\'s source tag', async () => {
+    const pdf = onePagePdf('BT /F1 12 Tf 20 250 Td (12) Tj ET');
+    const texts = await extractPdfText(pdf);
+    expect(texts[0]).toBe('12');
+  });
+
+  it('rejects bytes that are not a real PDF, same as demuxPdf', async () => {
+    await expect(extractPdfText(Buffer.from('this is not a pdf'))).rejects.toThrow();
+  });
+
+  it('reads a multi-page PDF exactly once — same order demuxPdf uses', async () => {
+    const pdf = multiPagePdf([
+      'BT /F1 12 Tf 20 250 Td (Page A content) Tj ET',
+      'BT /F1 12 Tf 20 250 Td (Page B content) Tj ET',
+      'BT /F1 12 Tf 20 250 Td (Page C content) Tj ET',
+    ]);
+    const texts = await extractPdfText(pdf);
+    expect(texts).toEqual(['Page A content', 'Page B content', 'Page C content']);
   });
 });

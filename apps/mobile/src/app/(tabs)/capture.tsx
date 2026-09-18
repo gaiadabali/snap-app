@@ -1,16 +1,22 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Crypto from 'expo-crypto';
+import * as DocumentPicker from 'expo-document-picker';
 import { File } from 'expo-file-system';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
 
 import { readOnDevice, recordReading, type DeviceRead } from '@/lib/device-read';
+import {
+  assertFilePickAllowed,
+  assertWithinUploadLimit,
+  resolvePickedMimeType,
+} from '@/lib/file-intake';
 import type { QualityGateWarning } from '@/lib/quality-gate';
 import { ActivityIndicator, Alert, Image, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { api, type CapturePageUpload } from '@/api';
+import { api, type CapturePageUpload, ApiError } from '@/api';
 import { QualityGateNotice } from '@/components/QualityGateNotice';
 import { ScanLine } from '@/components/ScanLine';
 import { Body, Button, Card, Figure, Label, Screen, Small } from '@/components/ui';
@@ -60,8 +66,14 @@ interface PendingCapture {
   pages: TrayPage[];
 }
 
-/** At most this many pages, matching the limit `CreateCaptureRequest.pages` accepts. */
-const MAX_PAGES = 20;
+/**
+ * At most this many pages, matching the server's `MAX_CAPTURE_PAGES`
+ * (`apps/server/src/captures/captures.controller.ts`). T7 raised that cap
+ * from 20 to 50 so a real statement fits; this constant had drifted and
+ * still said 20, which would have stopped a photographed multi-page
+ * statement well short of what the server now accepts.
+ */
+const MAX_PAGES = 50;
 
 function pageStatusLabel(status: PageStatus | undefined): string {
   switch (status) {
@@ -307,6 +319,8 @@ export default function CaptureScreen() {
     const paint = () => setPageStatus({ ...statuses });
     paint();
 
+    // Set when the server REFUSED the content rather than failed to receive it.
+    let refusal: string | null = null;
     for (const upload of pc.uploads) {
       if (upload.alreadyStored) {
         // These exact bytes are already held by the server — re-uploading
@@ -334,10 +348,19 @@ export default function CaptureScreen() {
         const bytes = page.bytes ?? (await new File(page.uri).arrayBuffer());
         await uploadPageWithRetry(upload.uploadUrl, bytes, page.mimeType);
         statuses[upload.pageNumber] = 'done';
-      } catch {
+      } catch (err) {
         // This one page failed; the loop carries on to the rest rather than
         // abandoning pages that have nothing wrong with them.
         statuses[upload.pageNumber] = 'failed';
+        // A 4xx IS NOT A TRANSIENT FAILURE, and telling somebody to retry it
+        // sends them round a loop that cannot end. The server refuses content
+        // it cannot read — a CSV whose columns do not map, an ambiguous date,
+        // a running balance that does not add up — and it says WHY in a
+        // message written to be read. That message is the useful thing;
+        // "tap Retry" is not.
+        if (err instanceof ApiError && err.status >= 400 && err.status < 500) {
+          refusal = err.message;
+        }
       }
       paint();
     }
@@ -349,9 +372,13 @@ export default function CaptureScreen() {
       // for the same document.
       setPhase('framing');
       setError(
-        failed.length === 1
-          ? `Page ${failed[0]!.pageNumber} did not upload. The rest is safe — tap Retry to finish.`
-          : `${failed.length} pages did not upload. The rest is safe — tap Retry to finish.`,
+        // The server's own words when it refused the content, because retrying
+        // an unmappable file just fails the same way. Only a genuine transport
+        // failure gets the "tap Retry" copy.
+        refusal ??
+          (failed.length === 1
+            ? `Page ${failed[0]!.pageNumber} did not upload. The rest is safe — tap Retry to finish.`
+            : `${failed.length} pages did not upload. The rest is safe — tap Retry to finish.`),
       );
       return;
     }
@@ -436,6 +463,58 @@ export default function CaptureScreen() {
     setPages([]);
   }
 
+  /**
+   * Registers a capture for `allPages` and uploads every one of them.
+   *
+   * Shared by the shutter (camera pages, possibly several) and `onPickFile`
+   * (a single picked PDF, CSV or other file) — T6's whole point is that a
+   * picked file enters the SAME pipeline a photo does, not a parallel one.
+   * Everything from here down — dedup, the presigned upload, the outbox on a
+   * dropped connection, the provisional-review handoff — is code this
+   * function reuses rather than duplicates.
+   */
+  async function registerAndUpload(allPages: TrayPage[]): Promise<void> {
+    // ── Register the capture; the server dedupes before any upload ──
+    const capture = await api().createCapture({
+      // Advisory only: the server recomputes the authoritative hash of every
+      // page from the bytes it actually receives. A client-supplied hash
+      // must never be trusted for what is a legal record.
+      pages: allPages.map((page) => ({
+        sha256: page.sha256,
+        mimeType: page.mimeType,
+        byteSize: page.byteSize,
+      })),
+      capturedAt: new Date().toISOString(),
+      // No on-device legibility measurement exists. Sending a number here
+      // would assert a confidence nobody checked — worse than sending
+      // nothing, which is the same principle the whole extraction pipeline
+      // is built on.
+    });
+
+    if (capture.duplicate) {
+      // Silently returning home was worse than useless: the user cannot tell
+      // whether the app worked. Photographing the same docket twice — or
+      // picking the same statement file twice — is normal, and the honest
+      // answer is that they already have it.
+      setPhase('framing');
+      setPages([]);
+      Alert.alert(
+        'You already have this one',
+        'These exact bytes were captured before, so it has not been added twice. One receipt, one claim.',
+        [
+          { text: 'Keep scanning', style: 'cancel' },
+          { text: 'See receipts', onPress: () => router.push('/receipts') },
+        ],
+      );
+      return;
+    }
+
+    // ── Upload every page straight to object storage, not through the API,
+    //     then wait for extraction ──
+    setPages([]);
+    await uploadAndExtract({ captureId: capture.captureId, uploads: capture.uploads, pages: allPages });
+  }
+
   async function onShutter() {
     setError(null);
     // A new capture cycle starts clean; `shoot()` sets this again below if the
@@ -448,7 +527,7 @@ export default function CaptureScreen() {
     }
 
     try {
-      // ── 1. Take the final page (or the only one) ──
+      // ── Take the final page (or the only one) ──
       setPhase('hashing');
       const shot = await shoot();
       const allPages: TrayPage[] = [
@@ -464,49 +543,135 @@ export default function CaptureScreen() {
           bytes: Platform.OS === 'web' ? shot.bytes : undefined,
         },
       ];
-
-      // ── 2. Register the capture; the server dedupes before any upload ──
-      const capture = await api().createCapture({
-        // Advisory only: the server recomputes the authoritative hash of
-        // every page from the bytes it actually receives. A client-supplied
-        // hash must never be trusted for what is a legal record.
-        pages: allPages.map((page) => ({
-          sha256: page.sha256,
-          mimeType: page.mimeType,
-          byteSize: page.byteSize,
-        })),
-        capturedAt: new Date().toISOString(),
-        // No on-device legibility measurement exists. Sending a number here
-        // would assert a confidence nobody checked — worse than sending
-        // nothing, which is the same principle the whole extraction pipeline
-        // is built on.
-      });
-
-      if (capture.duplicate) {
-        // Silently returning home was worse than useless: the user cannot
-        // tell whether the app worked. Photographing the same docket twice is
-        // normal — you are not sure the first one took — and the honest
-        // answer is that they already have it.
-        setPhase('framing');
-        setPages([]);
-        Alert.alert(
-          'You already have this one',
-          'These exact bytes were captured before, so it has not been added twice. One receipt, one claim.',
-          [
-            { text: 'Keep scanning', style: 'cancel' },
-            { text: 'See receipts', onPress: () => router.push('/receipts') },
-          ],
-        );
-        return;
-      }
-
-      // ── 3. Upload every page straight to object storage, not through the
-      //        API, then wait for extraction ──
-      setPages([]);
-      await uploadAndExtract({ captureId: capture.captureId, uploads: capture.uploads, pages: allPages });
+      await registerAndUpload(allPages);
     } catch (err) {
       setPhase('framing');
       setError(err instanceof Error ? err.message : 'Capture failed. Please try again.');
+    }
+  }
+
+  /**
+   * Picks a PDF, CSV or other file from the device and hands its bytes back
+   * hashed, exactly as `shoot()` does for a photograph.
+   *
+   * T6 — `docs/STATEMENTS.md` §5.6 / §12: on a handset the ONLY route into a
+   * capture was the camera, so three of D-S3's four intake modes (uploaded
+   * PDF, uploaded file, CSV) had no client at all. This is that route.
+   *
+   * `copyToCacheDirectory: true` matters more than it looks: a file the OS
+   * hands back can be a `content://` URI that `expo-file-system`'s `File`
+   * cannot open directly — the sandbox reality the ticket names. Asking the
+   * picker to copy it into the app's cache first means what comes back is
+   * always a real, readable path, on both platforms, before a single byte is
+   * hashed.
+   *
+   * Returns `null` on cancellation — an ordinary thing to do, not an error,
+   * exactly as `pickFileOnWeb` already treats it.
+   */
+  async function pickFile(): Promise<{
+    uri: string;
+    bytes: ArrayBuffer;
+    sha256: string;
+    mimeType: string;
+  } | null> {
+    const result = await DocumentPicker.getDocumentAsync({
+      // CSV IS BACK, because T5 landed and the server now imports one for
+      // real — it was removed for the hours in between rather than left as an
+      // affordance that met a guaranteed 400.
+      //
+      // Two things had to be true before restoring it, not one. The server
+      // accepting `text/csv` was the obvious half. The other: a CSV the server
+      // REFUSES — columns it cannot map, an ambiguous date, a running balance
+      // that does not add up — used to surface as "Page 1 did not upload, tap
+      // Retry", which is a loop that cannot end, since retrying an unmappable
+      // file fails identically. The upload catch now shows the server's own
+      // reason for any 4xx and reserves the retry copy for genuine transport
+      // failures.
+      type: ['application/pdf', 'text/csv', 'text/comma-separated-values', 'image/*'],
+      copyToCacheDirectory: true,
+      multiple: false,
+    });
+    if (result.canceled || !result.assets?.[0]) return null;
+    const asset = result.assets[0];
+
+    // Fail fast on the reported size, before reading a single byte — but the
+    // size is not always reported by every content provider, so the actual
+    // byte length is checked again below regardless.
+    if (typeof asset.size === 'number') assertWithinUploadLimit(asset.size);
+
+    const bytes = await new File(asset.uri).arrayBuffer();
+    assertWithinUploadLimit(bytes.byteLength);
+
+    // A Uint8Array, NOT the bare ArrayBuffer — see `shoot()`'s comment above
+    // for the exact crash this avoids: `Crypto.digest` is typed to take a
+    // BufferSource but Expo's native bridge only marshals a TYPED array into
+    // the Kotlin ByteArray it needs.
+    const digest = await Crypto.digest(Crypto.CryptoDigestAlgorithm.SHA256, new Uint8Array(bytes));
+    const sha256 = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
+
+    return {
+      uri: asset.uri,
+      bytes,
+      sha256,
+      mimeType: resolvePickedMimeType(asset.mimeType, asset.name),
+    };
+  }
+
+  /**
+   * Handles the "Upload a PDF, CSV or file" control.
+   *
+   * A picked file is registered and uploaded as its OWN, single-page
+   * capture immediately — it never joins `pages`. That is what makes the
+   * "a PDF must be the only page in its capture" rule hold by construction:
+   * there is no tray state in which a photographed page and a picked file
+   * could ever be combined.
+   *
+   * No on-device preview is attempted for a picked file. `readOnDevice`
+   * already returns `null` for a non-image page — see its own module
+   * comment, "the photo is a PDF page" is one of the documented cases — but
+   * this does not even call it: a CSV or PDF is never something the phone's
+   * OCR module should be handed, and skipping the attempt entirely means
+   * there is no window in which a broken or empty provisional screen could
+   * show. §9 of `docs/ON-DEVICE.md`: server-only is a real outcome here, not
+   * a failure — the flow falls straight into the same "NO DEVICE READ" path
+   * `onShutter` already takes on a phone with no recogniser.
+   */
+  async function onPickFile() {
+    setError(null);
+    try {
+      assertFilePickAllowed(pages.length);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not add that file.');
+      return;
+    }
+
+    try {
+      setPhase('hashing');
+      const picked = await pickFile();
+      if (!picked) {
+        // Cancelled the picker — not an error, same as declining the camera.
+        setPhase('framing');
+        return;
+      }
+
+      // No device read for a file — see this function's own comment.
+      deviceReadRef.current = null;
+      setQualityWarning(null);
+
+      const filePage: TrayPage = {
+        uri: picked.uri,
+        sha256: picked.sha256,
+        mimeType: picked.mimeType,
+        byteSize: picked.bytes.byteLength,
+        // Same reasoning as `shoot()`'s web branch: on a device `uri` is a
+        // real cached path the upload step can re-read lazily, so the bytes
+        // are not held here twice.
+        bytes: Platform.OS === 'web' ? picked.bytes : undefined,
+      };
+      await registerAndUpload([filePage]);
+    } catch (err) {
+      setPhase('framing');
+      setError(err instanceof Error ? err.message : 'Could not add that file.');
     }
   }
 
@@ -864,6 +1029,33 @@ export default function CaptureScreen() {
                 {pages.length} page{pages.length === 1 ? '' : 's'} held — the shutter takes the
                 last one and files them as one document.
               </Small>
+            ) : null}
+
+            {/* T6 — the native handset route into three of D-S3's four intake
+                modes (uploaded PDF, uploaded file, CSV) that had no way in
+                before this. Web already has one via `pickFileOnWeb` — the
+                shutter itself opens a file input there — so this is native
+                only, and hidden once pages are already held: a picked file
+                must be the only page in its capture, and there is nothing
+                useful this control can do until the tray is cleared. */}
+            {Platform.OS !== 'web' && pages.length === 0 ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Upload a PDF, CSV or other file instead of using the camera"
+                hitSlop={8}
+                onPress={() => void onPickFile()}
+              >
+                <Text
+                  style={{
+                    color: '#FFFFFF',
+                    fontSize: 13,
+                    fontWeight: '700',
+                    textDecorationLine: 'underline',
+                  }}
+                >
+                  Upload a PDF, CSV or file instead
+                </Text>
+              </Pressable>
             ) : null}
           </View>
         )}

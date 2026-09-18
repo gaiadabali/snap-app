@@ -112,7 +112,14 @@ const standardFontDataUrl = pathToFileURL(
  * broken content stream to a blank page rather than throwing mid-document,
  * which is the right behaviour for "twenty other pages are fine".
  */
-export async function demuxPdf(bytes: Buffer): Promise<DemuxedPage[]> {
+/**
+ * Opens a PDF via pdfjs-dist with the settings `demuxPdf` and
+ * `extractPdfText` both need — the loading options, not the per-page work,
+ * which is genuinely different between the two (one rasterises, one does
+ * not). Centralised so the two never drift on how a PDF gets opened, only
+ * on what they each then do with it.
+ */
+async function openPdf(bytes: Buffer) {
   const lib = await pdfjs();
   const loadingTask = lib.getDocument({
     data: new Uint8Array(bytes),
@@ -125,8 +132,12 @@ export async function demuxPdf(bytes: Buffer): Promise<DemuxedPage[]> {
     // silently failing to shape text.
     disableFontFace: true,
   });
-
   const doc = await loadingTask.promise;
+  return { doc, loadingTask };
+}
+
+export async function demuxPdf(bytes: Buffer): Promise<DemuxedPage[]> {
+  const { doc, loadingTask } = await openPdf(bytes);
   try {
     const pages: DemuxedPage[] = [];
     for (let i = 1; i <= doc.numPages; i++) {
@@ -173,6 +184,50 @@ export async function demuxPdf(bytes: Buffer): Promise<DemuxedPage[]> {
     // document proxy it resolves to. Releasing it here, rather than leaving
     // it to GC, matters because it is what frees pdfjs-dist's worker-side
     // page caches; skipping it is a slow leak across many PDF uploads.
+    await loadingTask.destroy();
+  }
+}
+
+/**
+ * Extracts each page's embedded text layer, in page order, with NO
+ * rasterisation — `docs/STATEMENTS.md` §12 T1's classification signal.
+ *
+ * `demuxPdf` above already computes this same text per page, but only to
+ * decide `pdf_native` vs `pdf_render`, and throws it away once that one bit
+ * is known — `DemuxedPage` has no field for it. Reading it back out of a
+ * rendered PNG is not possible (a raster has no text layer), so classifying
+ * a PDF's CONTENT — as opposed to classifying each page's PROVENANCE, which
+ * `demuxPdf` already does — needs its own pass over the same bytes. This
+ * function is that pass: it shares `openPdf`'s loading options so the two
+ * never drift on how a PDF gets opened, but it never touches `@napi-rs/canvas`
+ * or `getViewport`/`render` at all, so classifying a document costs nothing
+ * like a second demux — no rasterisation, no page images allocated.
+ *
+ * An empty string for a page means exactly what it means in `demuxPdf`: no
+ * embedded text was found (a scanned page, most likely). Unlike `demuxPdf`,
+ * there is no length threshold applied here — `classifyExtractedText`
+ * (`extraction/classify.ts`) reads the joined text of every page together
+ * and decides on whole phrases, not on a single page's character count.
+ *
+ * Throws exactly as `demuxPdf` does for bytes that are not a real PDF —
+ * deliberately not swallowed here, because the one caller that matters
+ * (`worker.ts`'s classification step, T1) already treats "could not read
+ * this as a PDF at all" as no signal and routes to the receipt path, the
+ * same as every other ambiguous case `classify.ts` documents.
+ */
+export async function extractPdfText(bytes: Buffer): Promise<string[]> {
+  const { doc, loadingTask } = await openPdf(bytes);
+  try {
+    const pages: string[] = [];
+    for (let i = 1; i <= doc.numPages; i++) {
+      const page = await doc.getPage(i);
+      const textContent = await page.getTextContent();
+      const text = textContent.items.map((item) => ('str' in item ? item.str : '')).join('');
+      pages.push(text);
+      page.cleanup();
+    }
+    return pages;
+  } finally {
     await loadingTask.destroy();
   }
 }

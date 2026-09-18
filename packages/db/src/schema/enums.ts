@@ -142,3 +142,35 @@ export const pageSource = pgEnum('page_source', ['capture', 'pdf_native', 'pdf_r
  * contribution_source ADD VALUE 'statement_line'`, not a table reshape.
  */
 export const contributionSource = pgEnum('contribution_source', ['manual', 'opening_balance']);
+
+/* ── Statements (0031, docs/STATEMENTS.md Lane T, ticket T3) ───────────── */
+
+/**
+ * What kind of account a `financial_accounts` row represents.
+ *
+ * Drives what a statement for it can plausibly carry — a credit_card
+ * statement's opening/closing balance is a debt, not cash — but that
+ * interpretation belongs to the code that reads these tables (Lane R / T4),
+ * not to a CHECK in this schema.
+ */
+export const financialAccountType = pgEnum('financial_account_type', [
+  'transaction',
+  'savings',
+  'credit_card',
+  'ewallet',
+]);
+
+/**
+ * A statement's balance-check verdict (docs/STATEMENTS.md §4, ticket T4).
+ *
+ * 'pending' is what 0031 itself writes on every row: T4 is the validator
+ * that computes 'pass'/'residual', and T5 (CSV intake) is the documented
+ * writer of 'unverifiable' for a CSV with no opening/closing balance to
+ * check against. Neither writer exists yet.
+ */
+export const statementBalanceCheck = pgEnum('statement_balance_check', [
+  'pending',
+  'pass',
+  'residual',
+  'unverifiable',
+]);

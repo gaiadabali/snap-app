@@ -10,11 +10,12 @@ import {
   Param,
   Post,
   Put,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
-import type { CapturePageInput, CreateCaptureResponse } from '@snap/api-contract';
+import type { CapturePageInput, CreateCaptureResponse, StatementBalanceCheck } from '@snap/api-contract';
 import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
@@ -46,8 +47,11 @@ import {
   finalizeCapturePages,
   getCaptureProgress,
   listCapturePages,
+  markCaptureStored,
   recordCapturePage,
 } from '../repo.js';
+import { put as storagePut } from '../storage.js';
+import { importCsvStatement } from '../statements/csv-import.js';
 import { issueUploadToken, readUploadToken } from '../tokens.js';
 import { pageKey, putAtKey } from './page-storage.js';
 
@@ -98,8 +102,17 @@ export class CapturePageInputDto {
   @Matches(/^[0-9a-f]{64}$/i, { message: 'sha256 must be 64 hex characters.' })
   sha256!: string;
 
-  @Matches(/^(image\/[a-z0-9.+-]+|application\/pdf)$/i, {
-    message: 'mimeType must be an image type or application/pdf.',
+  /**
+   * `text/csv` added for `docs/STATEMENTS.md` T5 — mode (c), a bank CSV
+   * export. `apps/mobile/src/lib/file-intake.ts`'s `resolvePickedMimeType`
+   * already declares exactly this string for a picked CSV (never a spelling
+   * variant), so the wire contract only needs to accept the one value a real
+   * client sends — no `text/comma-separated-values`, no
+   * `application/vnd.ms-excel`, both of which that function already
+   * normalises away before this DTO ever sees them.
+   */
+  @Matches(/^(image\/[a-z0-9.+-]+|application\/pdf|text\/csv)$/i, {
+    message: 'mimeType must be an image type, application/pdf, or text/csv.',
   })
   mimeType!: string;
 
@@ -292,14 +305,26 @@ export class CapturesController {
   @ApiOperation({
     summary: 'Upload one page of the original bytes',
     description:
-      'The body is the raw page — an image, or a PDF. The server recomputes the hash and stores the bytes unmodified — under the ATO rules the original is the legal record — then, for a PDF, expands it into its real pages (§4 of the multi-page capture contract).',
+      'The body is the raw page — an image, a PDF, or (docs/STATEMENTS.md T5) a CSV statement export. The server recomputes the hash and stores the bytes unmodified — under the ATO rules the original is the legal record — then, for a PDF, expands it into its real pages (§4 of the multi-page capture contract); for a CSV, reads it directly into a statement, with no page image and no queued extraction at all.',
   })
   async upload(
     @CurrentUser() user: AuthUser,
     @Param('token') token: string,
     @Headers('content-type') contentType: string | undefined,
     @Req() request: { body?: unknown },
-  ): Promise<{ sha256: string; byteSize: number; queued: boolean; pages: number }> {
+    // `docs/STATEMENTS.md` T5 — which `financial_accounts` row a CSV belongs
+    // to. A query param, not a JSON body field: this endpoint's body IS the
+    // raw file, and no client sends this today (there is no account-picker
+    // UI yet) — see the T5 report for why a placeholder account is
+    // auto-provisioned when it is absent, which is every real call right now.
+    @Query('financialAccountId') financialAccountId?: string,
+  ): Promise<{
+    sha256: string;
+    byteSize: number;
+    queued: boolean;
+    pages: number;
+    statement?: { balanceCheck: StatementBalanceCheck; lineCount: number };
+  }> {
     const claim = readUploadToken(token);
     // Expired or forged. Not distinguished, because the client can do nothing
     // different with the two and the difference is useful only to an attacker.
@@ -312,8 +337,9 @@ export class CapturesController {
 
     const normalisedType = (contentType ?? '').toLowerCase();
     const isPdf = normalisedType === 'application/pdf';
-    if (!isPdf && !/^image\//.test(normalisedType)) {
-      throw new BadRequestException('Content-Type must be an image type or application/pdf.');
+    const isCsv = normalisedType === 'text/csv';
+    if (!isPdf && !isCsv && !/^image\//.test(normalisedType)) {
+      throw new BadRequestException('Content-Type must be an image type, application/pdf, or text/csv.');
     }
 
     // A PDF demuxes into an a-priori unknown number of physical pages, which
@@ -329,8 +355,83 @@ export class CapturesController {
         'A PDF must be the only page in its capture. Upload it on its own, or photograph the pages individually instead.',
       );
     }
+    // A CSV is a whole statement, never one photo of one — the same rule as
+    // a PDF, for the same reason (`apps/mobile/src/lib/file-intake.ts`'s
+    // `assertFilePickAllowed` already enforces this client-side; this is the
+    // server refusing to trust that alone).
+    if (isCsv && claim.pageCount > 1) {
+      throw new BadRequestException('A CSV must be the only page in its capture.');
+    }
+
+    if (isCsv) {
+      // No page image, no `capture_pages` row, no queued extraction — §5.6
+      // is explicit that mode (c) needs none of that ("Extraction needed:
+      // None"). The original bytes still go through the same L0 "originals"
+      // store a PDF's do, immediately above, for the same reason: the file
+      // is the legal record, and `documents.capture_id` needs a `captures`
+      // row whose `original_storage_key` actually resolves.
+      const original = storagePut(claim.tenantId, bytes);
+      await markCaptureStored(user.userId, claim.tenantId, claim.captureId, original.key);
+
+      const result = await importCsvStatement(user.userId, claim.tenantId, {
+        captureId: claim.captureId,
+        bytes,
+        financialAccountId,
+      });
+      if (!result.ok) {
+        throw new BadRequestException(result.reason);
+      }
+      return {
+        sha256: original.sha256,
+        byteSize: bytes.byteLength,
+        // Not queued: nothing further runs. `false` here is accurate, not a
+        // downgrade — a receipt's `true` means "a worker will finish this
+        // soon"; a CSV is already finished by the time this responds.
+        queued: false,
+        pages: 0,
+        statement: { balanceCheck: result.balanceCheck, lineCount: result.lineCount },
+      };
+    }
 
     if (isPdf) {
+      // The raw PDF, written to the L0 "originals" store BEFORE anything
+      // else touches it — this was the missing half of "the PDF itself
+      // stays the L0 original" a few lines below: that comment described
+      // where `original_storage_key` should end up pointing, but nothing
+      // ever wrote bytes there. `capture_pages` only ever holds RASTERISED
+      // renders (below), never the PDF's own bytes or its text layer, so
+      // without this write `original_storage_key` pointed at nothing —
+      // `readObject` on it threw ENOENT — and any reader that needs the
+      // real PDF (T1's statement classifier, `worker.ts`'s
+      // `classifyCapture`, which runs `extractPdfText` against exactly this
+      // key) silently got `null` back and fell through to the receipt path.
+      //
+      // `storage.put` — not `page-storage.ts`'s `pageKey`/`putAtKey` — is
+      // used deliberately: that module is `storage.ts`'s own "single whole
+      // document, content-addressed under `<tenant>/originals/`" primitive,
+      // the same one an ordinary (non-multipage) capture already uses, and
+      // it hashes the BYTES ACTUALLY RECEIVED rather than trusting the
+      // client's declared hash from `POST /v1/captures` — the same rule
+      // every other identity decision in this file already follows.
+      // `markCaptureStored` — declared in `repo.ts`, previously called by
+      // nothing — is exactly "correct `original_storage_key` once the real
+      // bytes are known", so this wires it up rather than inventing a
+      // second way to do the same update.
+      //
+      // Idempotent by construction: a retried PUT of the same PDF hashes to
+      // the same key and overwrites it with identical bytes, and
+      // `markCaptureStored` sets the same value again — no corruption, no
+      // duplication, whether or not `alreadyDemuxed` (below) turns out true.
+      //
+      // Stated cost, not a silent one: storage roughly doubles for a PDF
+      // capture — the original bytes here, plus every rasterised page below
+      // (pages need pixels either way, for the model and for on-screen
+      // paging). That is the intended L0-original / L1-derivative split
+      // `storage.ts`'s own header describes, not a regression this
+      // introduces.
+      const original = storagePut(claim.tenantId, bytes);
+      await markCaptureStored(user.userId, claim.tenantId, claim.captureId, original.key);
+
       // Read BEFORE recording anything, so a retried PUT — the same PDF,
       // re-sent because the first response never arrived — can tell "I
       // already finished this" from "this is the first attempt". Without it,
@@ -408,9 +509,8 @@ export class CapturesController {
         await enqueueExtraction(user.userId, claim.tenantId, claim.captureId);
       }
 
-      const uploadedSha256 = createHash('sha256').update(bytes).digest('hex');
       return {
-        sha256: uploadedSha256,
+        sha256: original.sha256,
         byteSize: bytes.byteLength,
         queued: true,
         pages: rendered.length,

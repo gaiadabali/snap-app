@@ -53,6 +53,9 @@ describeIfDb('RLS tenant isolation', () => {
     const ids = [[A, B]];
     await c.query(`DELETE FROM jobs WHERE kind = 'rls_probe'`);
     await c.query('DELETE FROM audit_log WHERE tenant_id = ANY($1::uuid[])', ids);
+    await c.query('DELETE FROM statement_lines WHERE tenant_id = ANY($1::uuid[])', ids);
+    await c.query('DELETE FROM statements WHERE tenant_id = ANY($1::uuid[])', ids);
+    await c.query('DELETE FROM financial_accounts WHERE tenant_id = ANY($1::uuid[])', ids);
     await c.query('DELETE FROM transaction_splits WHERE tenant_id = ANY($1::uuid[])', ids);
     await c.query('DELETE FROM transactions WHERE tenant_id = ANY($1::uuid[])', ids);
     await c.query('DELETE FROM documents WHERE tenant_id = ANY($1::uuid[])', ids);
@@ -153,6 +156,30 @@ describeIfDb('RLS tenant isolation', () => {
          'header.supplier_abn','12345678901',false,'{}'::text[],NULL,NULL,0),
         (gen_random_uuid(),$2,'c2222222-0000-0000-0000-000000000001','f2222222-0000-0000-0000-000000000001',
          'header.payable_amount','550.00',true,ARRAY['s2'],'{"x0":0,"y0":0,"x1":1,"y1":1}'::jsonb,1,0.9500)`,
+      [A, B],
+    );
+    await c.query(
+      // financial_accounts (0031): links to the 'Card' liability accounts already
+      // seeded above, one per tenant.
+      `INSERT INTO financial_accounts (id, tenant_id, account_id, institution, account_type, currency) VALUES
+        ('fa111111-0000-0000-0000-000000000001',$1,'a1111111-0000-0000-0000-000000000002','Test Bank A','credit_card','AUD'),
+        ('fa222222-0000-0000-0000-000000000001',$2,'b2222222-0000-0000-0000-000000000002','Test Bank B','credit_card','AUD')`,
+      [A, B],
+    );
+    await c.query(
+      // statements (0031): reuses the documents already seeded above as the
+      // statement's immutable original — the fixture only needs a real
+      // document_id, not one classified doc_type='statement'.
+      `INSERT INTO statements (id, tenant_id, document_id, financial_account_id, period_start, period_end, opening_balance, closing_balance) VALUES
+        ('ba111111-0000-0000-0000-000000000001',$1,'d1111111-0000-0000-0000-000000000001','fa111111-0000-0000-0000-000000000001','2026-08-01','2026-08-31',100.0000,200.0000),
+        ('ba222222-0000-0000-0000-000000000001',$2,'d2222222-0000-0000-0000-000000000001','fa222222-0000-0000-0000-000000000001','2026-08-01','2026-08-31',500.0000,600.0000)`,
+      [A, B],
+    );
+    await c.query(
+      // statement_lines (0031): one observed movement per tenant.
+      `INSERT INTO statement_lines (id, tenant_id, statement_id, line_number, posted_date, description_raw, amount_signed) VALUES
+        (gen_random_uuid(),$1,'ba111111-0000-0000-0000-000000000001',1,'2026-08-05','COFFEE SHOP A',15.5000),
+        (gen_random_uuid(),$2,'ba222222-0000-0000-0000-000000000001',1,'2026-08-05','COFFEE SHOP B',25.5000)`,
       [A, B],
     );
   });
@@ -416,6 +443,72 @@ describeIfDb('RLS tenant isolation', () => {
                  '{"x0":0,"y0":0,"x1":1,"y1":1}'::jsonb, 1)`,
         [A],
       );
+    });
+  });
+
+  // financial_accounts / statements / statement_lines (migration 0031,
+  // docs/STATEMENTS.md Lane T ticket T3): same ordinary-tenant-table shape as
+  // capture_pages and document_layouts — no elevated worker policy — so this
+  // is the negative-case suite T3's done-when calls for: a tenant is
+  // REFUSED another tenant's statement lines, asserted with a raw query
+  // under `withTenant` (asRole here), not merely allowed through its own.
+  describe('financial_accounts / statements / statement_lines', () => {
+    it('app_rw with tenant A sees only tenant A rows', async () => {
+      await asRole('app_rw', A);
+      expect(await count('financial_accounts')).toBe(1);
+      expect(await count('statements')).toBe(1);
+      expect(await count('statement_lines')).toBe(1);
+    });
+
+    it('switching tenant context changes the visible set', async () => {
+      await asRole('app_rw', A);
+      expect(await count('statement_lines')).toBe(1);
+      await asRole('app_rw', B);
+      expect(await count('statement_lines')).toBe(1);
+      const r = await c.query<{ description_raw: string }>('SELECT description_raw FROM statement_lines');
+      expect(r.rows[0].description_raw).toBe('COFFEE SHOP B');
+    });
+
+    it("hides another tenant's statement lines even when addressed by statement_id", async () => {
+      await asRole('app_rw', A);
+      const r = await c.query(
+        `SELECT 1 FROM statement_lines WHERE statement_id = 'ba222222-0000-0000-0000-000000000001'`,
+      );
+      expect(r.rowCount).toBe(0);
+    });
+
+    it("hides another tenant's financial account even when addressed by id", async () => {
+      await asRole('app_rw', A);
+      const r = await c.query(
+        `SELECT 1 FROM financial_accounts WHERE id = 'fa222222-0000-0000-0000-000000000001'`,
+      );
+      expect(r.rowCount).toBe(0);
+    });
+
+    it('rejects a write into another tenant', async () => {
+      await asRole('app_rw', A);
+      await expectRejected(
+        `INSERT INTO statement_lines (id, tenant_id, statement_id, line_number, posted_date, description_raw, amount_signed)
+         VALUES (gen_random_uuid(), $1, 'ba222222-0000-0000-0000-000000000001', 2, '2026-08-06', 'SMUGGLED', 1.0000)`,
+        [B],
+      );
+      await c.query('RESET ROLE');
+      const r = await c.query(`SELECT 1 FROM statement_lines WHERE description_raw = 'SMUGGLED'`);
+      expect(r.rowCount, 'nothing may leak across the boundary').toBe(0);
+    });
+
+    it('fails closed with no tenant context', async () => {
+      await asRole('app_rw', null);
+      expect(await count('financial_accounts')).toBe(0);
+      expect(await count('statements')).toBe(0);
+      expect(await count('statement_lines')).toBe(0);
+    });
+
+    it('grants the worker NO bypass here — an ordinary tenant table, unlike jobs', async () => {
+      await asRole('app_worker', null);
+      expect(await count('statement_lines')).toBe(0);
+      await asRole('app_worker', B);
+      expect(await count('statement_lines')).toBe(1);
     });
   });
 

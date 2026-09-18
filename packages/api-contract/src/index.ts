@@ -41,8 +41,22 @@ export type ReviewStatus = 'auto_accepted' | 'needs_review' | 'reviewed' | 'reje
 
 /** Where a page's bytes came from. 'capture' is the ordinary camera path; the
  *  other two only exist once a PDF has been demuxed (§4 of the multi-page
- *  capture contract). */
+ *  capture contract).
+ *
+ *  Deliberately NO member for a CSV row dump (`docs/STATEMENTS.md` T5): a CSV
+ *  statement never produces a rasterised page at all, so it never reaches
+ *  `capture_pages` or this type — see the T5 report for why that is the
+ *  resolution rather than an oversight. */
 export type PageSource = 'capture' | 'pdf_native' | 'pdf_render';
+
+/**
+ * The balance-check verdict on a `statements` row (`docs/STATEMENTS.md` §4,
+ * §5.6). `'unverifiable'` is not a soft synonym for `'pass'` — it is the
+ * state a CSV with no printed opening/closing balance MUST land in, because
+ * §4's identity has nothing to check. A client showing this to a person must
+ * say so, not render it as if it were verified.
+ */
+export type StatementBalanceCheck = 'pending' | 'pass' | 'residual' | 'unverifiable';
 
 // ── Upload ────────────────────────────────────────────────────────────────
 
