@@ -1703,6 +1703,29 @@ neither `/gst/i` nor `/ppn/i`, and the same assertion run against
 so the matcher is shown to bite; (8) tenant B can neither list nor accept
 tenant A's candidate — 404, and no row changes.
 
+**DONE 2026-09-18.** Five endpoints; candidate generation is a filter on FACTS
+with **no numeric threshold beyond equality** — `date_gap_days` ranks and never
+excludes, a 400-day gap still appears. `card_last4` present-and-different is the
+only exclusion, and that is a fact. R7 still owns the threshold, unrepeated.
+
+*The concurrency failure mode is not the one this document predicted, and it was
+found by running it.* §5.3.1 expected the loser of two simultaneous accepts to
+hit `event_observations_line_once` (23505). It does not: both calls take
+`SELECT … FOR UPDATE` on the line, so the loser BLOCKS, then wakes, sees the
+winner's committed observation, and tries to void the winner's transaction —
+which trips the OTHER deferred trigger, `assert_no_observation_on_void` (23514),
+at its COMMIT. Both codes now map to 409. Anyone re-deriving this independently
+should expect 23514.
+
+*A bug caught in its own first draft:* excluding any document that already had an
+observation would have made the receipt-first flow — §5.3.1 Q4's primary
+scenario — permanently unmatchable. Exclusion is now "carries BOTH kinds", i.e.
+genuinely merged already.
+
+`withinPostingLag` in `packages/tax-rules` is the first reader of S4's
+`statementRules.postingLagDays`, and its test swaps the window to prove it reads
+the rule set rather than a baked-in number.
+
 **R5d — A statement line stands alone.** `POST /v1/statement-lines/:id/post`
 and `POST /v1/statements/:id/post-unmatched` (bulk), owner/admin: the merge
 with no document — `source = 'import'`, an uncategorised debit or credit split
@@ -1717,6 +1740,21 @@ receipt-first orders end split-for-split equal (§5.3.1 Q4); (4) `PersonalSummar
 is **unchanged** by this ticket — it still derives from documents until M9 —
 asserted, so that change stays a decision (§14.2 item 5) rather than a side
 effect.
+
+**DONE 2026-09-18.** Money in is never recorded as negative spending — a credit
+posts to `BANK-IMPORT` / `4-9000 Uncategorised Receipts` with **no split in an
+expense account**, asserted rather than assumed. Bulk post reports what it
+skipped (`{posted: [], skipped: 3}` on a re-run), because silently skipping is
+how somebody concludes the button did nothing.
+
+*The test worth keeping:* post a line standalone, then match a receipt to it —
+versus matching receipt-first — and both orders end **split-for-split equal**,
+with the standalone voided. That is `mergeObservations`'s purity holding end to
+end, and it is what makes the register order-independent rather than merely
+order-tolerant.
+
+Per **D-S7** the old "`PersonalSummary` unchanged" assertion was NOT written; the
+file says why, so nobody re-adds it.
 
 **R5e — `dedup_group_id` gets its writer.** The fingerprints in §5.3.1, written
 in `saveExtraction` and the statement writers; one `review_tasks` row, `reason =
@@ -1741,6 +1779,40 @@ are both refused; (2) a contribution grounded in a debit line is refused;
 and the first stands; (4) deleting a statement line a contribution names is
 refused — asserted, because the cascade from `statements` would otherwise take
 it silently; (5) `drift.test.ts` is green after `enums.ts` gains the member.
+
+**R5f-1 AND R5f-2 DONE 2026-09-18 — the owner's original complaint is closed.**
+Their words were *"not really direct addition where system cannot proof the
+addition"*, and the proof is now in the DATABASE, not only in the code:
+
+- The pointer exists **exactly** when `source` claims it, checked in both
+  directions — so neither a grounded row without a line nor a manual row with one
+  can be written.
+- A **debit** line is refused. You cannot ground savings in money going out.
+- Contributions grounded in one line can **never sum past that line's amount** —
+  $350 cannot be allocated from a $300 deposit, and the second claim is refused
+  while the first stands.
+- The FK is `ON DELETE RESTRICT`: a line cannot be deleted from under a
+  contribution that names it.
+
+Every one was verified by dropping the constraint, watching the bad write
+SUCCEED, then restoring it.
+
+`occurred_on` comes from the bank's `posted_date` and a client-supplied
+`occurredOn` is **ignored** — the whole point is that the date is not from
+somebody's memory. The wire carries `statementLineDescription` as DATA rather
+than a server-rendered sentence, so the app composes *"From your statement,
+14 Aug"*. **The word "verified" appears nowhere**: the app observed a line on a
+statement, which is a stronger claim than a typed number and a weaker one than
+an audit, and the copy has to be honest about which.
+
+A grounded contribution is deliberately NOT an `event_observations` row. The
+line's own economic event is a transfer or deposit; the goal is an allocation on
+top of it.
+
+*Teardown note:* `goal_contributions` is not in `TENANT_SCOPED_TABLES` (it
+cascades from `tenants`), so a suite that grounds contributions and then calls
+`wipeTenant` must delete them first or trip the new RESTRICT — flagged so it does
+not read as a mystery failure.
 
 **R5f-2 — Grounded goal contributions: the write path.**
 `POST /v1/business/goals/:id/contributions` accepts `{statementLineId, amount?}`;

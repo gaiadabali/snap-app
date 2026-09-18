@@ -459,6 +459,29 @@ export interface DocumentView {
    * everyone else. Birthday presents are the reason this exists.
    */
   visibility: 'shared' | 'private';
+  /**
+   * How this receipt is CLEARED, from the bank's own record — `docs/STATEMENTS.md`
+   * §5.3.1 Q2 ("Cleared 14 Aug via Visa ···4417"). `null` until R5c's merge
+   * links a statement line to this document's transaction; present once it does,
+   * whichever order the receipt and the statement arrived in.
+   *
+   * Optional, not merely nullable: `DocumentView` is built by
+   * `documents.controller.ts`, outside this ticket's owned files, so an
+   * existing object literal that has never heard of this field must still
+   * typecheck. A future ticket that wires the read path can drop the `?`.
+   *
+   * D-S2 / Q6: carries NOTHING about tax, on purpose — no `gst*` member here
+   * or anywhere else this file adds, not even a nullable one. `settlement` is
+   * "the bank agrees this cleared", which is meaningful in EVERY workspace,
+   * personal included.
+   */
+  settlement?: {
+    statementLineId: string;
+    postedDate: IsoDate;
+    /** e.g. "Visa ···4417" or the account's own label — never a raw account number. */
+    accountLabel: string;
+    amountSigned: MoneyString;
+  } | null;
 }
 
 export interface BasSummary {
@@ -821,13 +844,21 @@ export interface GoalContribution {
   id: string;
   goalId: string;
   amount: string;
-  /** When the money actually went in, not when this row was typed. */
+  /**
+   * When the money actually went in, not when this row was typed. For a
+   * `'statement_line'` row this is the line's OWN `posted_date` — the server
+   * derives it; a client-supplied date is never accepted for a grounded
+   * contribution (docs/STATEMENTS.md §12 R5f-2).
+   */
   occurredOn: string;
   createdAt: string;
   /** Who recorded it, for a shared workspace. null if that person has since left. */
   createdByName: string | null;
   /**
-   * What told the app this happened — never call a 'manual' row "verified".
+   * What told the app this happened — never call a 'manual' row, or a
+   * 'statement_line' one, "verified". The app OBSERVED a line on a bank
+   * statement, which is a stronger claim than a typed number and a weaker
+   * one than an audit — "verified" overclaims either way.
    *
    * 'manual' — the user typed a number in. A claim, not an observation: the
    * app has not seen this money move.
@@ -836,13 +867,31 @@ export interface GoalContribution {
    * tracked, so an old goal's total still reconciles instead of the gap being
    * papered over. Written once, by a migration, never by a user action.
    *
-   * A future 'statement_line' source — grounded in a bank transfer the app
-   * read from a statement and the user confirmed — needs statement ingestion
-   * (docs/STATEMENTS.md Lane T), which does not exist yet. Until it does, this
-   * union has exactly the two members above; do not treat their absence as
-   * an oversight.
+   * 'statement_line' — GROUNDED in a `statement_lines` row the app read from
+   * a bank statement (docs/STATEMENTS.md §5.3.1, Lane R ticket R5f-1/R5f-2):
+   * `statementLineDescription` names it. The server derives `amount`
+   * (default: the whole line), `occurredOn` (the line's `posted_date`) and
+   * this `source` — the client supplies only `statementLineId` and,
+   * optionally, a smaller `amount`; a client-supplied date is ignored.
    */
-  source: 'manual' | 'opening_balance';
+  source: 'manual' | 'opening_balance' | 'statement_line';
+  /**
+   * The bank statement line's own description, present only for a
+   * `source === 'statement_line'` row — this IS the provenance, carried
+   * verbatim so the UI can say where the money was observed without
+   * inventing a sentence server-side. Personal-language copy to match the
+   * existing register (`apps/mobile/src/app/goals.tsx`'s "Added by {name}" /
+   * "Starting balance, from before contributions were tracked"):
+   * `From your statement, {shortDate(occurredOn)}` — e.g. "From your
+   * statement, 14 Aug" — with this field available if a fuller sentence
+   * naming what the line said is wanted (e.g. "From your statement —
+   * Salary credit, 14 Aug"). D-S2 binds: never a tax word here, and never
+   * "verified" (see `source` above). Optional, not merely nullable — additive
+   * to this contract (docs/STATEMENTS.md §12 R5f-2): existing object literals
+   * built before this field existed (fixtures, mock data) stay valid without
+   * it, and a reader must treat an absent value the same as `null`.
+   */
+  statementLineDescription?: string | null;
 }
 
 /* ── Settings, plan, connections, export ────────────────────────────────── */
@@ -1559,4 +1608,193 @@ export interface PointLedgerEntry {
   ref: string | null;
   app: string;
   createdAt: IsoDateTime;
+}
+
+/* ── Reconciliation (Lane R, R5c) ─────────────────────────────────────────────
+ * `docs/STATEMENTS.md` §5.3.1 / §12. `event_observations` is FACTS: a row
+ * exists iff a human (or the posting act itself) has established that this
+ * evidence observes this event. `match_candidates` is HYPOTHESES and their
+ * outcomes: `suggested -> accepted | rejected`, `accepted -> unlinked`.
+ *
+ * D-S2 / §5.3.1 Q6: NOTHING below carries a tax figure — no `gst*`/`ppn*`
+ * member anywhere in this section, not even a nullable one. A personal
+ * workspace never sees GST, and these types make that true by construction
+ * rather than by the server remembering to omit a field.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+export type MatchCandidateStatus = 'suggested' | 'accepted' | 'rejected' | 'unlinked';
+export type MatchProposer = 'matcher' | 'user';
+export type MatchVarianceKind = 'tip' | 'surcharge' | 'other';
+
+/**
+ * FACTS, never a score — §5.3.1 Q3, read literally: "the candidate generator
+ * is a filter on facts... with no score." `amountExact` is always `true` for
+ * a candidate the matcher itself proposed (the exact-amount filter runs
+ * before a row exists at all); it stays a named fact rather than being
+ * dropped because a manual link (`POST /v1/reconciliation/matches`) can
+ * record one for a pair the matcher would never have suggested, and a false
+ * value there is meaningful to R7.
+ *
+ * `dateGapDays` RANKS candidates for display; it never excludes one — there
+ * is no date window (§5.3.1 Q3: "no date window").
+ *
+ * `withinPostingLag` is a LABEL from the tenant's installed tax rule set
+ * (`@snap/tax-rules`'s `withinPostingLag`, S4's `statementRules.postingLagDays`).
+ * `null` when the tenant has no rule set installed — an Australian tenant,
+ * today, always — asserted as a real state, not skipped: a match suggestion
+ * is not a statutory figure, so the "no rule set -> refuse" discipline that
+ * binds a tax calculation does not bind this label.
+ */
+export interface MatchEvidence {
+  amountExact: boolean;
+  /** Whole days, signed: the line's `postedDate` minus the document's
+   *  `issueDate`. `null` when the document has no `issueDate` to compare. */
+  dateGapDays: number | null;
+  /** `'equal'` — both sides carry a card, and they agree (the pair would not
+   *  exist at all otherwise: both-present-and-different is an EXCLUSION, a
+   *  fact checked before a candidate is generated, not a label on one).
+   *  `'absent'` — either side carries no card to compare. */
+  cardLast4: 'equal' | 'absent';
+  /** `pg_trgm` `similarity()` of the line's and the document's normalised
+   *  names, `0`..`1`. Recorded for ranking and for R7; never filtered on. */
+  merchantSimilarity: number;
+  withinPostingLag: boolean | null;
+}
+
+/**
+ * A hypothesis — matcher-proposed or user-made — that one statement line and
+ * one document observe the same economic event, and what became of it.
+ *
+ * The two display blocks are §5.3.1 Q2's "two columns... with the evidence
+ * facts written as words": everything a reconciliation card needs to render
+ * without a second fetch.
+ */
+export interface MatchCandidateView {
+  id: string;
+  statementLineId: string;
+  documentId: string;
+  status: MatchCandidateStatus;
+  proposedBy: MatchProposer;
+  evidence: MatchEvidence;
+  /** A human's account of an amount disagreement, set only at accept or at a
+   *  manual link — never derived by the matcher, which never proposes a
+   *  variance (exact amount is part of the generation filter itself). */
+  variance: { kind: MatchVarianceKind; amount: MoneyString } | null;
+  decidedAt: IsoDateTime | null;
+  statementLine: {
+    postedDate: IsoDate;
+    amountSigned: MoneyString;
+    descriptionRaw: string;
+    /** The bank/card account this line belongs to — a display label
+     *  (`display_name` or `institution`), never a raw account number. */
+    accountLabel: string;
+  };
+  document: {
+    supplierName: string | null;
+    issueDate: IsoDate | null;
+    payableAmount: MoneyString;
+    cardLast4: string | null;
+  };
+}
+
+/** `POST /v1/reconciliation/candidates/:id/accept` and
+ *  `POST /v1/reconciliation/matches`'s optional variance block — a human
+ *  naming the reason for an amount disagreement (a tip, a surcharge), never
+ *  the amount itself: the server derives that from the evidence at hand. */
+export interface MatchVarianceRequest {
+  kind: MatchVarianceKind;
+}
+
+export interface AcceptMatchCandidateRequest {
+  variance?: MatchVarianceRequest;
+}
+
+/** `POST /v1/reconciliation/matches` — a manual link the matcher would not
+ *  necessarily have proposed itself (it is not subject to the generator's
+ *  card-mismatch exclusion, which governs what is SUGGESTED, not what a
+ *  person may deliberately link). */
+export interface ManualMatchRequest {
+  statementLineId: string;
+  documentId: string;
+  variance?: MatchVarianceRequest;
+}
+
+/**
+ * One piece of evidence established as observing a posted transaction —
+ * `event_observations`, read-side. `summary` is the one-line sentence
+ * §5.3.1 Q2 calls for (*"same card ending 4417 · cleared two days later"*),
+ * rendered server-side from `evidence`/the underlying rows, never stored.
+ */
+export interface EventObservationView {
+  id: string;
+  kind: 'document' | 'statement_line';
+  documentId: string | null;
+  statementLineId: string | null;
+  confirmedAt: IsoDateTime;
+  summary: string;
+}
+
+/** One bank/card movement — `statement_lines`, read-side. `matchedTransactionId`
+ *  is `null` until a document observes the same event (via `event_observations`),
+ *  at which point it names the ONE posted transaction that merge produced. */
+export interface StatementLineView {
+  id: string;
+  statementId: string;
+  postedDate: IsoDate;
+  valueDate: IsoDate | null;
+  amountSigned: MoneyString;
+  descriptionRaw: string;
+  cardLast4: string | null;
+  accountLabel: string;
+  matchedTransactionId: string | null;
+}
+
+/**
+ * `GET /v1/transactions` rows — §5.3.1 Q2: "rows gain `settledDate` and
+ * `observations[]`... plus `supersededBy`." Not yet read from
+ * `transactions.controller.ts` (outside this ticket's owned files); defined
+ * here, complete, so the wiring ticket has a contract to build against
+ * rather than inventing one under time pressure.
+ */
+export interface TransactionRow {
+  id: string;
+  txnDate: IsoDate;
+  /** `null` when this event has no statement-line observation yet. */
+  settledDate: IsoDate | null;
+  status: 'draft' | 'posted' | 'void';
+  source: 'scan' | 'import' | 'manual';
+  memo: string | null;
+  reference: string | null;
+  currency: string;
+  documentId: string | null;
+  postedAt: IsoDateTime | null;
+  voidReason: string | null;
+  /** Every piece of evidence a human has confirmed observes this event —
+   *  empty only for a transaction with neither a document nor a statement
+   *  line, which today means a hand-typed one. */
+  observations: EventObservationView[];
+  /** The id of the transaction that replaced this one, when this row was
+   *  voided by a supersede (`docs/STATEMENTS.md` §5.3.1 "Materialisation:
+   *  supersede, never edit"). `null` for a live row and for a void row from
+   *  any other cause. */
+  supersededBy: string | null;
+  /**
+   * Deliberately NOT the full ledger split shape (accounts.ts's internal
+   * `TransactionSplitRow` also carries `taxCodeId`/`taxCode`/`gstAmount`) —
+   * per D-S2, nothing this ticket adds to `packages/api-contract` carries a
+   * tax figure, and this type is new here. A future ticket that wires
+   * `GET /v1/transactions` to this contract, for a screen that needs the tax
+   * breakdown too, adds those fields there under its own review rather than
+   * inheriting them from this one by accident.
+   */
+  splits: Array<{
+    id: string;
+    lineNumber: number;
+    accountId: string;
+    accountCode: string;
+    accountName: string;
+    accountType: string;
+    amount: MoneyString;
+    description: string | null;
+  }>;
 }

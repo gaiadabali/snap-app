@@ -56,12 +56,14 @@ export {
   consumptionTaxPaid,
   consumptionTaxDisclosure,
   datePlausible,
+  daysBetween,
   incomeTax,
   periodOf,
   personalAllowance,
   standardDeduction,
   taxFromInclusive,
   taxOnSale,
+  withinPostingLag,
 } from './interpreter.js';
 export type {
   AlternativeRegimeResult,

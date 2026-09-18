@@ -131,17 +131,18 @@ export const billStatus = pgEnum('bill_status', ['unpaid', 'paid', 'overdue', 'v
 export const pageSource = pgEnum('page_source', ['capture', 'pdf_native', 'pdf_render']);
 
 /**
- * What told the app a savings-goal contribution happened (0030, widened 0032).
+ * What told the app a savings-goal contribution happened (0030, widened
+ * 0032, grounded 0033).
  *
- * 'manual' is the only value the API writes today. 'opening_balance' was
- * written exactly once, by migration 0030 itself, to carry forward a
- * pre-existing `goals.saved` figure honestly rather than inventing history
- * for it. 'statement_line' was added by 0032 (docs/STATEMENTS.md Lane R,
- * ticket R5a) — the grounding rule that lets the API actually write it
- * (`(source = 'statement_line') = (source_statement_line_id IS NOT NULL)`,
- * plus the FK) is a later migration (R5f-1), so this member exists here with
- * nothing producing it yet, same discipline 0030's own comment used to
- * explain the wait the other way around.
+ * 'manual' is the user typing a number in — a claim, not an observation.
+ * 'opening_balance' was written exactly once, by migration 0030 itself, to
+ * carry forward a pre-existing `goals.saved` figure honestly rather than
+ * inventing history for it. 'statement_line' was added by 0032
+ * (docs/STATEMENTS.md Lane R, ticket R5a) with nothing producing it yet;
+ * 0033 (ticket R5f-1) is what lets the API actually write it — the CHECK
+ * `(source = 'statement_line') = (source_statement_line_id IS NOT NULL)`,
+ * the RESTRICT FK to `statement_lines`, and a trigger requiring the line be
+ * money IN and never over-claimed across contributions grounded in it.
  */
 export const contributionSource = pgEnum('contribution_source', [
   'manual',

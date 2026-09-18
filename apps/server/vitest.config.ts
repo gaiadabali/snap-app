@@ -13,6 +13,11 @@ export default defineConfig({
     // skipped suite reads as a green run. See the setup file.
     globalSetup: ['../../packages/db/test/require-db.setup.ts'],
     include: ['src/**/*.test.ts'],
+    // Runs before every test FILE, so a single-file run has the same
+    // environment a whole-suite run does. Ten files here read TOKEN_SECRET
+    // transitively and none set it: the suite was green only because some
+    // other file set it first. See the setup file for the full story.
+    setupFiles: ['./src/test-support/env.setup.ts'],
     // The 5s default is wrong for what this suite actually does, and it has
     // been passing on luck. These are real-HTTP, real-Postgres tests: the T7
     // cap test builds a 120-page PDF and uploads it, the e2e suites provision

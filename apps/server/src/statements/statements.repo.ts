@@ -6,6 +6,7 @@ import { sql } from 'drizzle-orm';
 
 import { getDb } from '../db.js';
 import { flagPossibleDuplicate } from '../repo.js';
+import { supersedeAndPost } from '../transactions/transactions.repo.js';
 
 /**
  * Database access for statement intake (`docs/STATEMENTS.md` §12 T5).
@@ -293,4 +294,171 @@ export async function recordBalanceCheckVerdict(
  *  first writer of a `statement_lines` row at all. */
 function normaliseDescription(raw: string): string {
   return raw.trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+/* ── R5d: a statement line stands alone ─────────────────────────────────────
+ * `docs/STATEMENTS.md` §12 Lane R, ticket R5d, as changed by D-S7 (§14.1c):
+ * "not every bank line will ever have a receipt... those are real money and
+ * the tracker has to be able to record them from the bank alone." A single or
+ * bulk post is the human act D-S7 requires before a line becomes a LEDGER
+ * TRANSACTION — the line already counts as SPENDING the moment it is read
+ * (that reading is `M9`'s, not this file's: it queries `statement_lines`
+ * directly and subtracts what `event_observations` already accounts for).
+ *
+ * This does not open a second posting road. `supersedeAndPost`
+ * (`../transactions/transactions.repo.ts`, R5b) already runs
+ * `mergeObservations` with `document: null` — §5.3.1's Purchases/Receipts
+ * split, `source = 'import'` — and posts in the same commit as R5c's
+ * `document_id`-only supersede does with `statementLineId` only. Calling it
+ * with `documentId: null` IS this ticket's posting path; the only thing this
+ * file adds is the "already has a live observation → skip, do not
+ * re-supersede an unchanged evidence set" guard R5d's own acceptance
+ * criteria (2) requires and `supersedeAndPost` does not provide on its own —
+ * left to its caller on purpose, because R5c's accept legitimately WANTS to
+ * supersede a line that already carries a standalone observation (criterion
+ * 3, `§5.3.1` Q4), and a single shared function cannot mean both "skip" and
+ * "replace" for the same precondition.
+ */
+
+export type PostStandaloneOutcome =
+  | { ok: true; transactionId: string }
+  | { ok: false; reason: 'missing_statement_line' }
+  | { ok: false; reason: 'already_observed'; transactionId: string };
+
+/**
+ * A statement line's live `event_observations` row, if any — `kind =
+ * 'statement_line'` is the only kind a line can carry (0032's
+ * `event_observations_pointer_matches_kind`), and `event_observations_line_once`
+ * (0032, plain UNIQUE, NOT deferred) means at most one row can ever exist for
+ * it at a time, and only ever pointing at a LIVE transaction (0032's trigger 1
+ * — a void transaction carries no observation, checked at every commit that
+ * touches either). So "does this line have a live observation" is exactly
+ * "does a row exist here", no join to `transactions.status` required.
+ */
+async function liveObservationForLine(
+  t: Tx,
+  tenantId: string,
+  statementLineId: string,
+): Promise<string | null> {
+  const rows = await t.execute<{ transaction_id: string }>(sql`
+    select transaction_id from event_observations
+     where tenant_id = ${tenantId} and statement_line_id = ${statementLineId} and kind = 'statement_line'
+  `);
+  return rows.rows[0]?.transaction_id ?? null;
+}
+
+/**
+ * Posts one statement line as spending on its own, with no document —
+ * acceptance criterion (1): a −84.20 line posts as
+ * `Uncategorised Purchases +84.20 / account −84.20`, a +2,500.00 line as
+ * `account +2,500.00 / Uncategorised Receipts −2,500.00` (`mergeObservations`'s
+ * own no-document branch, unchanged by this file). `txn_date` is
+ * `value_date ?? posted_date` and `settled_date` is `posted_date` — again
+ * `mergeObservations`'s existing rule for a statement-line-only evidence set,
+ * not re-derived here.
+ *
+ * Refuses `already_observed` rather than superseding, so a second call
+ * against the same already-posted (or already-matched) line is a no-op from
+ * the caller's point of view, not a silent re-post — the same "silently
+ * skipping is how somebody concludes the button did nothing" the bulk path
+ * below reports a count for.
+ */
+export async function postStatementLineStandalone(
+  userId: string,
+  tenantId: string,
+  statementLineId: string,
+): Promise<PostStandaloneOutcome> {
+  const precheck = await withTenantAs(getDb(), userId, tenantId, async (t) => {
+    const line = await t.execute<{ id: string }>(sql`
+      select id from statement_lines where id = ${statementLineId} and tenant_id = ${tenantId}
+    `);
+    if (!line.rows[0]) return { ok: false as const, reason: 'missing_statement_line' as const };
+
+    const liveTransactionId = await liveObservationForLine(t, tenantId, statementLineId);
+    if (liveTransactionId) {
+      return { ok: false as const, reason: 'already_observed' as const, transactionId: liveTransactionId };
+    }
+    return { ok: true as const };
+  });
+  if (!precheck.ok) return precheck;
+
+  // `supersedeAndPost` opens its own `withTenantAs` — the precheck above
+  // cannot be extended into the same database transaction without duplicating
+  // its evidence-loading/tax-code/account-resolution machinery, which is
+  // exactly the "second posting path" this ticket was told not to write. The
+  // narrow race this leaves (two concurrent standalone posts of the same
+  // freshly-unmatched line) is not a correctness gap: `mergeObservations` is
+  // pure and deterministic for one evidence set, so the loser of that race
+  // supersedes the winner's transaction with an IDENTICAL split set — one
+  // extra void row, never a wrong balance, never two live transactions for
+  // one line (`event_observations_line_once` still refuses that, immediately,
+  // not deferred).
+  const outcome = await supersedeAndPost(userId, tenantId, { documentId: null, statementLineId });
+  if (outcome.ok) return outcome;
+
+  if (outcome.reason === 'missing_statement_line') return outcome;
+
+  // Every other `SupersedeOutcome` refusal requires a document (
+  // `document_not_confirmed`, `ambiguous_tax_categories`, `lines_dont_reconcile`)
+  // or requires BOTH sides present (`amount_disagreement`, `currency_mismatch`),
+  // and `no_evidence` requires neither — unreachable with `documentId: null` and
+  // a real `statementLineId`, exactly as `draftTransactionFromDocument`'s own
+  // "unreachable" branch documents for its own call into `mergeObservations`.
+  throw new Error(
+    `postStatementLineStandalone: unexpected refusal for line ${statementLineId}: ${JSON.stringify(outcome)}`,
+  );
+}
+
+export interface PostUnmatchedOutcome {
+  /** Every transaction id created by this call, one per newly-posted line. */
+  posted: string[];
+  /** Lines this call left untouched because they already carried a live
+   *  observation — named as a COUNT, per acceptance criterion (2), so the
+   *  caller can report "N posted, M already recorded" rather than letting a
+   *  skip disappear silently. */
+  skipped: number;
+}
+
+/**
+ * Bulk sibling of `postStatementLineStandalone`: every line on a statement
+ * that has no live observation yet is posted standalone; every line that
+ * already has one — whether from a previous standalone post or an R5c
+ * match — is left alone and counted, never silently dropped.
+ *
+ * Sequential, one `postStatementLineStandalone` call per line, rather than one
+ * giant transaction: R5b's "one economic event, one road" already treats each
+ * line as its own event with its own commit, and a 300-line statement failing
+ * halfway through should leave the lines before the failure posted, not roll
+ * every one of them back for one bad row.
+ */
+export async function postUnmatchedStatementLines(
+  userId: string,
+  tenantId: string,
+  statementId: string,
+): Promise<PostUnmatchedOutcome> {
+  const lineIds = await withTenantAs(getDb(), userId, tenantId, async (t) => {
+    const rows = await t.execute<{ id: string }>(sql`
+      select id from statement_lines
+       where statement_id = ${statementId} and tenant_id = ${tenantId}
+       order by line_number
+    `);
+    return rows.rows.map((r) => r.id);
+  });
+
+  const posted: string[] = [];
+  let skipped = 0;
+  for (const lineId of lineIds) {
+    const outcome = await postStatementLineStandalone(userId, tenantId, lineId);
+    if (outcome.ok) {
+      posted.push(outcome.transactionId);
+    } else {
+      // `already_observed` is the expected skip; `missing_statement_line`
+      // cannot happen here (the id came from this same statement moments
+      // earlier) short of a concurrent hard delete — counted the same way
+      // rather than thrown, so one vanished line cannot fail an entire
+      // 300-line bulk post.
+      skipped += 1;
+    }
+  }
+  return { posted, skipped };
 }

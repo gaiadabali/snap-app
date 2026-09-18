@@ -9,6 +9,7 @@ import {
   Post,
   Put,
   Query,
+  UnprocessableEntityException,
   UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -86,6 +87,20 @@ export class CreateGoalDto {
 export class ContributeDto {
   @Matches(DECIMAL) amount!: string;
   /** When the money actually went in. Defaults to today when omitted. */
+  @IsOptional() @Matches(/^\d{4}-\d{2}-\d{2}$/) occurredOn?: string;
+}
+
+export class GroundContributionDto {
+  @IsString() statementLineId!: string;
+  /** Optional: defaults to the whole line server-side. Never a larger figure than the line. */
+  @IsOptional() @Matches(DECIMAL) amount?: string;
+  /**
+   * Accepted, never used. docs/STATEMENTS.md §12 R5f-2: a grounded
+   * contribution's date comes from the bank (`statement_lines.posted_date`),
+   * never from what a person remembers — declared here only so a client
+   * sending the same shape as `ContributeDto` is not rejected outright by
+   * `ValidBody`'s `forbidNonWhitelisted`.
+   */
   @IsOptional() @Matches(/^\d{4}-\d{2}-\d{2}$/) occurredOn?: string;
 }
 
@@ -439,6 +454,46 @@ export class BusinessController {
     };
   }
 
+  @Post('business/goals/:id/contributions')
+  @HttpCode(201)
+  @ApiOperation({
+    summary: 'Ground a contribution in an observed bank movement',
+    description:
+      "The client supplies only statementLineId and, optionally, a smaller amount — the server derives amount (default: the whole line), occurredOn (the line's own posted_date) and source. A body-supplied occurredOn is ignored: the date comes from the bank, not from what a person remembers. docs/STATEMENTS.md §12 R5f-2.",
+  })
+  async groundContribution(
+    @CurrentUser() user: AuthUser,
+    @WorkspaceId() tenantId: string,
+    @Param('id') id: string,
+    @ValidBody(GroundContributionDto) body: GroundContributionDto,
+  ) {
+    const outcome = await repo.addGroundedGoalContribution(
+      user.userId,
+      tenantId,
+      id,
+      body.statementLineId,
+      body.amount ?? null,
+    );
+    if (!outcome.ok) {
+      switch (outcome.reason) {
+        case 'line_not_found':
+          throw new NotFoundException('No such statement line.');
+        case 'not_money_in':
+          throw new UnprocessableEntityException(
+            `That line is money out (-$${Math.abs(Number(outcome.lineAmount)).toFixed(2)}) — only money coming in can ground a savings contribution.`,
+          );
+        case 'exceeds_line':
+          throw new UnprocessableEntityException(
+            `That is more than the $${Number(outcome.lineAmount).toFixed(2)} on this line ($${Number(outcome.available).toFixed(2)} of it is still unclaimed).`,
+          );
+      }
+    }
+    return {
+      contribution: toGoalContribution(outcome.contribution),
+      goals: (await repo.listGoals(user.userId, tenantId)).map(toGoal),
+    };
+  }
+
   @Delete('goals/:id/contributions/:contributionId')
   @HttpCode(200)
   @ApiOperation({ summary: 'Remove a contribution — the total adjusts with it' })
@@ -573,5 +628,6 @@ function toGoalContribution(c: repo.GoalContributionRow) {
     createdAt: c.created_at,
     createdByName: c.created_by_name,
     source: c.source,
+    statementLineDescription: c.statement_line_description,
   };
 }

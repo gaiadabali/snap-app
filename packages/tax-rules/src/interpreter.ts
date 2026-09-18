@@ -700,6 +700,44 @@ export function datePlausible(
   return { ok: true, reason: null };
 }
 
+/* ── Statements ────────────────────────────────────────────────────────────── */
+
+/**
+ * Whole calendar days from `fromIso` to `toIso` (both `YYYY-MM-DD`), signed —
+ * negative when `toIso` is earlier. `Date.UTC` rather than string arithmetic:
+ * a calendar-day count has to cross month and leap-year boundaries correctly,
+ * which `datePlausible`'s style of splitting and comparing strings above does
+ * not attempt because it never needs to. Deterministic and timezone-free
+ * because both inputs are date-only and every conversion happens at UTC
+ * midnight, never the process's local zone.
+ */
+export function daysBetween(fromIso: string, toIso: string): number {
+  const toEpochDay = (iso: string): number => {
+    const [y, m, d] = iso.split('-').map(Number) as [number, number, number];
+    return Date.UTC(y, m - 1, d); // Date.UTC's month is 0-indexed; iso's is not.
+  };
+  return Math.round((toEpochDay(toIso) - toEpochDay(fromIso)) / 86_400_000);
+}
+
+/**
+ * Did a statement line clear within the jurisdiction's ordinary posting-lag
+ * window (`rules.statementRules.postingLagDays`)?
+ *
+ * `docs/STATEMENTS.md` §5.3.1 (Lane R, R5c): this is a LABEL on a match
+ * candidate, read for display, never a filter — a candidate outside the
+ * window is still shown, just not marked as ordinary. The window itself is
+ * not a threshold this function invents; it is `S4`'s field, read here for
+ * the first time. The caller decides what to do when no rule set is
+ * installed at all (`reconciliation/matcher.ts`): this function requires a
+ * `TaxRules`, so "no engine" is the caller's `null`, not a fallback baked in
+ * here — the same discipline every other function in this file follows.
+ */
+export function withinPostingLag(rules: TaxRules, issued: string, posted: string): boolean {
+  const gapDays = daysBetween(issued, posted);
+  const { min, max } = rules.statementRules.postingLagDays;
+  return gapDays >= min && gapDays <= max;
+}
+
 /* ── helpers ───────────────────────────────────────────────────────────────── */
 
 function percentOf(part: string, whole: string): string {

@@ -18,7 +18,9 @@ import {
   TaxRulesCatalogueController,
   TaxRulesController,
 } from './taxrules/taxrules.controller.js';
+import { ReconciliationController } from './reconciliation/reconciliation.controller.js';
 import { SettingsController } from './settings/settings.controller.js';
+import { StatementsController } from './statements/statements.controller.js';
 import { SummariesController } from './summaries/summaries.controller.js';
 import { TransactionsController } from './transactions/transactions.controller.js';
 import { WorkspacesController } from './workspaces/workspaces.controller.js';
@@ -98,6 +100,8 @@ export class HealthController {
     ReleasesController,
     ImagesController,
     TransactionsController,
+    ReconciliationController,
+    StatementsController,
     ReportsController,
     TaxRulesController,
     TaxRulesCatalogueController,

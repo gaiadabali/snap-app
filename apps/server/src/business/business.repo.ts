@@ -534,7 +534,9 @@ export type GoalContributionRow = {
   occurred_on: string;
   created_at: string;
   created_by_name: string | null;
-  source: 'manual' | 'opening_balance';
+  source: 'manual' | 'opening_balance' | 'statement_line';
+  /** The grounding line's own `description_raw` — provenance, NULL unless `source = 'statement_line'`. */
+  statement_line_description: string | null;
 };
 
 /**
@@ -552,9 +554,11 @@ export async function listGoalContributions(
   return tx(getDb(), userId, tenantId, async (t) => {
     const rows = await t.execute<GoalContributionRow>(sql`
       select c.id, c.goal_id, c.amount::text, c.occurred_on::text, c.created_at::text,
-             u.display_name as created_by_name, c.source::text as source
+             u.display_name as created_by_name, c.source::text as source,
+             sl.description_raw as statement_line_description
         from goal_contributions c
         left join users u on u.id = c.created_by
+        left join statement_lines sl on sl.id = c.source_statement_line_id
        where c.goal_id = ${goalId}
        order by c.occurred_on desc, c.created_at desc
     `);
@@ -590,11 +594,105 @@ export async function addGoalContribution(
         returning *
       )
       select inserted.id, inserted.goal_id, inserted.amount::text, inserted.occurred_on::text,
-             inserted.created_at::text, u.display_name as created_by_name, inserted.source::text as source
+             inserted.created_at::text, u.display_name as created_by_name, inserted.source::text as source,
+             null::text as statement_line_description
         from inserted
         left join users u on u.id = inserted.created_by
     `);
     return rows.rows[0];
+  });
+}
+
+export type GroundedContributionOutcome =
+  | { ok: true; contribution: GoalContributionRow }
+  | { ok: false; reason: 'line_not_found' }
+  | { ok: false; reason: 'not_money_in'; lineAmount: string }
+  | { ok: false; reason: 'exceeds_line'; lineAmount: string; available: string };
+
+/**
+ * Grounds a contribution in an OBSERVED bank movement, rather than a typed
+ * number — docs/STATEMENTS.md §5.3.1 "What grounds a goal contribution",
+ * Lane R ticket R5f-2. The owner's own framing: savings goals need to
+ * "understand money in from statements" instead of a "direct addition where
+ * system cannot proof the addition."
+ *
+ * Every field the client is not trusted to assert is derived here, never
+ * taken from the request body:
+ *
+ *  - `amount` defaults to the WHOLE line; a smaller explicit amount is
+ *    accepted, a larger one is refused (`exceeds_line`) — this is also what
+ *    0033's grounding trigger enforces at the database's own edge, so this
+ *    check exists to turn that trigger's `RAISE EXCEPTION` into a value the
+ *    caller can present, not to replace it.
+ *  - `occurred_on` is always the line's own `posted_date` — never a caller
+ *    supplied date, because the whole point is that the date comes from the
+ *    bank rather than a person's memory of when the money moved.
+ *  - `source` is always `'statement_line'`.
+ *
+ * The line is locked (`FOR UPDATE`) for the duration, same discipline as
+ * `recordPayment`/`payBill` locking their invoice/bill row: two grounded
+ * contributions racing against one line must not both see the same
+ * available amount.
+ */
+export async function addGroundedGoalContribution(
+  userId: string,
+  tenantId: string,
+  goalId: string,
+  statementLineId: string,
+  amount: string | null,
+): Promise<GroundedContributionOutcome> {
+  return tx(getDb(), userId, tenantId, async (t) => {
+    const lineRows = await t.execute<{ amount_signed: string; posted_date: string }>(sql`
+      select amount_signed::text, posted_date::text
+        from statement_lines
+       where id = ${statementLineId}
+       for update
+    `);
+    const line = lineRows.rows[0];
+    if (!line) return { ok: false, reason: 'line_not_found' as const };
+
+    const lineAmount = money.money(line.amount_signed);
+    if (money.compare(lineAmount, money.ZERO) <= 0) {
+      return { ok: false, reason: 'not_money_in' as const, lineAmount: line.amount_signed };
+    }
+
+    const groundedRows = await t.execute<{ total: string }>(sql`
+      select coalesce(sum(amount), 0)::text as total
+        from goal_contributions
+       where source_statement_line_id = ${statementLineId}
+         and source = 'statement_line'
+    `);
+    const alreadyGrounded = money.money(groundedRows.rows[0]?.total ?? '0');
+    const available = money.subtract(lineAmount, alreadyGrounded);
+    const requested = money.money(amount ?? line.amount_signed);
+
+    if (money.compare(requested, available) > 0) {
+      return {
+        ok: false,
+        reason: 'exceeds_line' as const,
+        lineAmount: line.amount_signed,
+        available,
+      };
+    }
+
+    const id = randomUUID();
+    const rows = await t.execute<GoalContributionRow>(sql`
+      with inserted as (
+        insert into goal_contributions
+          (id, tenant_id, goal_id, amount, occurred_on, source, source_statement_line_id, created_by)
+        values
+          (${id}, ${tenantId}, ${goalId}, ${requested}, ${line.posted_date}::date, 'statement_line',
+           ${statementLineId}, ${userId})
+        returning *
+      )
+      select inserted.id, inserted.goal_id, inserted.amount::text, inserted.occurred_on::text,
+             inserted.created_at::text, u.display_name as created_by_name, inserted.source::text as source,
+             sl.description_raw as statement_line_description
+        from inserted
+        left join users u on u.id = inserted.created_by
+        left join statement_lines sl on sl.id = inserted.source_statement_line_id
+    `);
+    return { ok: true as const, contribution: rows.rows[0]! };
   });
 }
 

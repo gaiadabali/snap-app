@@ -851,16 +851,25 @@ export const goals = pgTable('goals', {
 });
 
 /**
- * One row per dollar someone can point at (0030).
+ * One row per dollar someone can point at (0030), now including dollars the
+ * BANK put there (0033, docs/STATEMENTS.md §5.3.1, Lane R ticket R5f-1).
  *
  * `goals.saved` used to be incremented in place with no record behind it — a
  * balance that could not be explained, corrected or undone. Every contribution
- * now has a `source`: 'manual' is the only value the API writes;
- * 'opening_balance' is written once, by migration 0030, to carry forward
- * history that predates this table honestly rather than inventing it.
- * `sourceStatementLineId` is reserved for a future grounded contribution
- * (docs/STATEMENTS.md Lane T) and is NULL on every row today, enforced by a
- * CHECK — see the migration comment for why it has no FK yet.
+ * has a `source`: 'manual' is the user typing a number in, a claim rather
+ * than an observation; 'opening_balance' was written once, by migration
+ * 0030, to carry forward history that predates this table honestly rather
+ * than inventing it; 'statement_line' is GROUNDED — the app observed a
+ * deposit on a bank statement and the contribution points at that row via
+ * `sourceStatementLineId`, RESTRICT-FK'd to `statementLines.id` (0033).
+ * `(source = 'statement_line') = (sourceStatementLineId IS NOT NULL)` is a
+ * CHECK, both directions; a deferred-free trigger (`trg_goal_contribution_grounded`,
+ * 0033) additionally enforces that the line is money IN
+ * (`amountSigned > 0`) and that every contribution grounded in one line
+ * never sums past that line's own amount — a bank deposit cannot fund two
+ * goals' full claims at once. Never call a 'statement_line' row "verified":
+ * the app observed a line on a statement, which is a stronger claim than a
+ * typed number and a weaker one than an audit.
  */
 export const goalContributions = pgTable('goal_contributions', {
   id: uuid('id').primaryKey(),
