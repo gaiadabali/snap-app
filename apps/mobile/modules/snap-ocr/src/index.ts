@@ -98,3 +98,21 @@ export async function recognise(
   if (!native) return null;
   return native.recognise(uri, { maxLongEdge: options.maxLongEdge ?? 2048 });
 }
+
+/**
+ * `device-ppocr` — OD-14 (`docs/ON-DEVICE.md` §11 Stage 3), a second Android
+ * engine alongside ML Kit above. Re-exported here so a caller can reach it
+ * the same way it reaches `recognise`/`isAvailable`, but everything about it
+ * lives in `./ppocr/` and is OFF BY DEFAULT (`PPOCR_ENABLED = false`) with no
+ * on-device comparison run yet — see `./ppocr/recognise.ts`'s doc comment.
+ * Exporting it does not wire it into the capture flow; nothing in
+ * `apps/mobile/src` calls it.
+ */
+export {
+  isPpocrAvailable,
+  PPOCR_ENABLED,
+  PPOCR_ENGINE_ID,
+  PPOCR_ENGINE_VERSION,
+  recognisePpocr,
+} from './ppocr';
+export type { PpocrDeviceInfo, PpocrRecogniseResult } from './ppocr';

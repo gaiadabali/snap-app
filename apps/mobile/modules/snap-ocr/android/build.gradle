@@ -39,4 +39,13 @@ dependencies {
   // tweak. Do not.
   implementation 'com.google.android.gms:play-services-mlkit-text-recognition:19.0.1'
   implementation 'com.google.android.gms:play-services-tasks:18.2.0'
+
+  // OD-14 (docs/ON-DEVICE.md §11 Stage 3). JVM-only — no Android framework,
+  // no emulator, no device — because `Geometry.kt`, `DbPostProcess.kt`,
+  // `CtcDecode.kt` and `Dictionary.kt` deliberately have no `android.*`
+  // import, so their tests run under plain `test` (`./gradlew testDebugUnitTest`),
+  // not `androidTest`. `PpocrTensors.kt` and `PpocrModule.kt` DO use
+  // `android.graphics` / `expo.modules.kotlin` and are therefore NOT covered
+  // by these tests — see their own doc comments.
+  testImplementation 'junit:junit:4.13.2'
 }

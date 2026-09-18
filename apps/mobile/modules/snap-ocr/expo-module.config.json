@@ -1,6 +1,9 @@
 {
   "platforms": ["android"],
   "android": {
-    "modules": ["com.gaiada.snapocr.SnapOcrModule"]
+    "modules": [
+      "com.gaiada.snapocr.SnapOcrModule",
+      "com.gaiada.snapocr.ppocr.PpocrModule"
+    ]
   }
 }
