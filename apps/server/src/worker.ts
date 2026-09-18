@@ -12,7 +12,9 @@ import { BedrockClaudeProvider, OllamaCloudProvider, type ExtractionProvider, ty
 import { extractionPromptFor } from './extraction/prompt.js';
 import { runExtraction } from './extraction/run.js';
 import { runShadowOcr } from './extraction/shadow.js';
+import { OllamaCloudStatementProvider, type StatementChunkProvider } from './extraction/statement-provider.js';
 import { listCapturePages, readTenant, saveExtraction, saveExtractionFailure } from './repo.js';
+import { importPdfStatement } from './statements/pdf-statement-import.js';
 import { rulesFor } from './taxrules/taxrules.repo.js';
 import { get as readObject } from './storage.js';
 
@@ -99,6 +101,28 @@ function providerFor(model: string, rules: TaxRules | null): ExtractionProvider 
     : new OllamaCloudProvider(model, undefined, undefined, prompt);
 }
 
+/**
+ * The statement-reading sibling of `providerFor` (T2, `docs/STATEMENTS.md`
+ * §12 Lane T). Deliberately NOT `BedrockClaudeProvider`-branched the way
+ * `providerFor` is: Bedrock is not wired up at all yet (`provider.ts`'s own
+ * stub), so a statement job under `EXTRACTION_PROVIDER=bedrock` fails exactly
+ * the same way a receipt job already does today — loudly, at the point the
+ * call is made, not with a second silent fallback invented here.
+ *
+ * Constructing `OllamaCloudStatementProvider` reads the Ollama key
+ * synchronously (its constructor's default parameter calls
+ * `readOllamaCloudKey`, mirroring `OllamaCloudProvider`'s own
+ * `readKeyFromEnvFile` default) — so a missing key fails BEFORE any chunk is
+ * requested, the same "reached the provider stage" signal
+ * `worker-statement-routing.test.ts` already relies on for the receipt path.
+ */
+function statementProviderFor(model: string): StatementChunkProvider {
+  if (config().EXTRACTION_PROVIDER === 'bedrock') {
+    throw new Error('bedrock-claude is not wired up yet for statement reading either — see provider.ts.');
+  }
+  return new OllamaCloudStatementProvider(model);
+}
+
 type Job = { id: string; tenantId: string | null; payload: unknown };
 
 /**
@@ -132,17 +156,8 @@ type Job = { id: string; tenantId: string | null; payload: unknown };
  */
 export async function classifyCapture(tenantId: string, captureId: string): Promise<Classification | null> {
   try {
-    const original = await withTenantAs(getDb(), WORKER_USER, tenantId, async (tx) => {
-      const rows = await tx.execute<{ key: string; mime: string }>(sql`
-        select original_storage_key as key, original_mime_type as mime
-          from captures where id = ${captureId} limit 1
-      `);
-      return rows.rows[0];
-    });
-    if (!original || original.mime !== 'application/pdf') return null;
-
-    const bytes = readObject(original.key);
-    const pageTexts = await extractPdfText(bytes);
+    const pageTexts = await readOriginalPdfText(tenantId, captureId);
+    if (pageTexts === null) return null;
     return classifyExtractedText(pageTexts);
   } catch (error) {
     console.warn(
@@ -151,6 +166,43 @@ export async function classifyCapture(tenantId: string, captureId: string): Prom
     );
     return null;
   }
+}
+
+/**
+ * Reads a capture's ORIGINAL upload as a PDF's per-page text, or `null` when
+ * it is not a PDF at all — the shared body `classifyCapture` above was built
+ * around, factored out so T2's statement-extraction branch in `handle()` can
+ * call it again for the SAME capture without a second copy of the
+ * "read `original_storage_key`, check the mime type, `extractPdfText`" logic.
+ *
+ * Calling it twice per statement job (once via `classifyCapture`, once here)
+ * re-parses the same small PDF's text layer a second time — a stated,
+ * accepted cost, not an oversight: this is a background job on a document
+ * that has already been judged worth a model call, and re-parsing embedded
+ * PDF text (no rasterisation, no network) is microseconds next to that. The
+ * alternative — changing `classifyCapture`'s return shape to also hand back
+ * the page texts — would touch the one function `worker-statement-routing
+ * .test.ts` already asserts an exact shape for (`result?.kind`,
+ * `result?.signals`), for a saving this small.
+ *
+ * Throws on a genuine read/parse failure (unlike `classifyCapture`, which
+ * swallows the same error into `null` because "leave it a receipt" is always
+ * safe there) — the statement branch has already committed to reading this
+ * capture as a statement, so a failure here is reported as an extraction
+ * failure, not silently downgraded.
+ */
+async function readOriginalPdfText(tenantId: string, captureId: string): Promise<string[] | null> {
+  const original = await withTenantAs(getDb(), WORKER_USER, tenantId, async (tx) => {
+    const rows = await tx.execute<{ key: string; mime: string }>(sql`
+      select original_storage_key as key, original_mime_type as mime
+        from captures where id = ${captureId} limit 1
+    `);
+    return rows.rows[0];
+  });
+  if (!original || original.mime !== 'application/pdf') return null;
+
+  const bytes = readObject(original.key);
+  return extractPdfText(bytes);
 }
 
 async function handle(job: Job): Promise<void> {
@@ -163,27 +215,95 @@ async function handle(job: Job): Promise<void> {
 
   const classification = await classifyCapture(job.tenantId, captureId);
   if (classification?.kind === 'statement') {
-    // T2 (`statement-schema.json` and the per-page statement extraction path)
-    // does not exist yet — recorded and stopped here rather than falling
-    // through into the receipt-shaped reader, which would read a closing
-    // balance as a payable total (`docs/STATEMENTS.md` §2). Reuses the same
-    // `extraction_runs` write the provider-failure path already makes: there
-    // is no 'skipped' member of `run_status` (`packages/db/src/schema/
-    // enums.ts` — queued/running/succeeded/failed/superseded), and adding one
-    // is a schema decision outside this ticket's file list. `saveExtraction`
-    // — the only writer of a `documents` row — is never called on this path,
-    // which is the actual guarantee T1 asks for: the receipt schema never
-    // runs against a statement.
+    // T2 (`docs/STATEMENTS.md` §12 Lane T): T1 stopped here and recorded a
+    // `statement_classified` failure because there was nowhere to go yet.
+    // There is now — `statements/pdf-statement-import.ts` runs the per-page
+    // chunked reader (`extraction/statement-run.ts`) and, on success, writes
+    // `documents`/`statements`/`statement_lines` directly. `saveExtraction`
+    // — the receipt-shaped writer — is STILL never called on this path,
+    // which is what T1's original guarantee actually protects: the receipt
+    // schema never runs against a statement. A statement's own schema does.
     console.log(`job ${job.id}: capture ${captureId} classified as a statement — ${classification.reason}`);
+
+    let pageTexts: string[];
+    try {
+      const texts = await readOriginalPdfText(job.tenantId, captureId);
+      if (texts === null) {
+        throw new Error('the original PDF could not be re-read for statement extraction after classification');
+      }
+      pageTexts = texts;
+    } catch (error) {
+      // Deliberately NOT re-thrown, unlike the "every model failed" case
+      // below: this is `classifyCapture`'s own documented, structural gap
+      // (the original PDF bytes were never persisted for this capture) —
+      // retrying the job cannot change that outcome, so completing it here
+      // (recorded, not silently dropped) is honest rather than optimistic.
+      const message = error instanceof Error ? error.message : String(error);
+      await saveExtractionFailure(WORKER_USER, job.tenantId, captureId, 'statement_extraction', message, 'pdf-text');
+      return;
+    }
+
+    // 'chat', not 'vision': the whole cost argument (`docs/STATEMENTS.md`
+    // §5.2, `statement-provider.ts`'s header) is that a native-text statement
+    // needs no pixels at all — only a text-capable model, per `ai/router.ts`'s
+    // capability split.
+    const textModels = chain('chat');
+    let lastStatementError = 'no models tried';
+    for (const spec of textModels) {
+      let provider: StatementChunkProvider;
+      try {
+        provider = statementProviderFor(spec.id);
+      } catch (error) {
+        // A configuration failure (no key, Bedrock not wired) — the same
+        // model would fail identically on retry, so this still counts as a
+        // reason to escalate to the NEXT model, exactly like a provider
+        // failure caught inside `importPdfStatement` below.
+        lastStatementError = `${spec.id}: ${error instanceof Error ? error.message : String(error)}`;
+        console.warn(`job ${job.id}: ${lastStatementError} — escalating`);
+        continue;
+      }
+
+      const result = await importPdfStatement(WORKER_USER, job.tenantId, provider, { captureId, pageTexts });
+      if (result.ok) {
+        console.log(
+          `job ${job.id}: statement ${result.statementId} → ${result.balanceCheck} (${result.lineCount} rows)`,
+        );
+        return;
+      }
+
+      lastStatementError = `${spec.id}: ${result.reason}`;
+
+      // 'truncated' — the cap is ours, a stronger model hits the same
+      // per-chunk cap (`run.ts`'s own reasoning, reused verbatim).
+      // 'unreadable' — a business-rule refusal (no workspace, no rule set, a
+      // genuine running-balance gap, an unparseable row): a DIFFERENT reading
+      // model is not what fixes any of those, so retrying only spends a call
+      // to reproduce the same refusal.
+      if (result.stage === 'truncated' || result.stage === 'unreadable') {
+        console.warn(`job ${job.id}: ${lastStatementError} — not escalating (${result.stage})`);
+        break;
+      }
+
+      console.warn(`job ${job.id}: ${lastStatementError} — escalating`);
+    }
+
+    // Every model failed. Recorded the same way the receipt path's own final
+    // failure is (below) — AND re-thrown, so `runOnce` releases the job with
+    // backoff instead of completing it. A statement extraction failure is
+    // symmetrical with a receipt one here: some causes are permanent (a
+    // genuine balance gap, no rule set installed) and some are transient (a
+    // provider outage), and this function cannot tell them apart any better
+    // than the receipt path already admits it cannot — see `runOnce`'s own
+    // comment on why a released job is safer than a swallowed error.
     await saveExtractionFailure(
       WORKER_USER,
       job.tenantId,
       captureId,
-      'statement_classified',
-      classification.reason,
-      'text-classifier',
+      'statement_extraction',
+      lastStatementError,
+      textModels.map((m) => m.id).join(','),
     );
-    return;
+    throw new Error(lastStatementError);
   }
 
   // Every stored page, in page order. Never a normalised derivative: the

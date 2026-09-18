@@ -98,30 +98,85 @@ const SALE_ACCOUNTS = {
 
 type TaxCodeRow = { id: string; code: string; claims_credit: boolean };
 
-async function loadTaxCodes(t: Tx): Promise<Map<string, TaxCodeRow>> {
+/**
+ * The tenant's country, read inside the CALLER'S transaction.
+ *
+ * Deliberately not `readTenant`, which opens its own connection: this is
+ * consulted while a posting transaction is open, and a second connection
+ * cannot see that transaction's uncommitted rows and would take a second trip
+ * for a column already one join away.
+ */
+async function tenantCountry(t: Tx, tenantId: string): Promise<string> {
+  const rows = await t.execute<{ country: string }>(sql`
+    select country from tenants where id = ${tenantId} limit 1
+  `);
+  const country = rows.rows[0]?.country;
+  if (!country) throw new Error(`tenant ${tenantId} has no country; cannot choose a tax code`);
+  return country;
+}
+
+/**
+ * The tenant's OWN country's tax codes, and only those.
+ *
+ * This selected every global row and keyed the map by `code` alone. `N-T`
+ * exists in BOTH the Australian and Indonesian sets (verified in production:
+ * two rows, AU and ID), so one silently overwrote the other and which one
+ * survived depended on row order. `tax_codes.country` was right there and
+ * never read.
+ *
+ * The damage was bounded only by luck: migration 0026 added
+ * `transaction_splits_tax_code_country`, which REFUSES a split whose tax code
+ * belongs to another country. So the first Indonesian tenant to post a
+ * standard-rated document would have been handed the Australian `GST` code by
+ * `taxCodeFor('S')` and met a trigger refusal — loud, but baffling, and
+ * pointing at the ledger rather than at this function.
+ *
+ * Latent rather than live today: every production tenant is AU and no
+ * transaction has ever been posted. It would have bitten on the first ID
+ * tenant, which is the market `packages/tax-rules`' `id-2026` set exists for.
+ */
+async function loadTaxCodes(t: Tx, country: string): Promise<Map<string, TaxCodeRow>> {
   const rows = await t.execute<TaxCodeRow>(sql`
-    select id, code, claims_credit from tax_codes where tenant_id is null
+    select id, code, claims_credit from tax_codes
+     where tenant_id is null and country = ${country}
   `);
   const byCode = new Map<string, TaxCodeRow>();
   for (const r of rows.rows) byCode.set(r.code, r);
+  if (byCode.size === 0) {
+    // Refuse rather than post with no tax code at all. An empty map would make
+    // every lookup below undefined and the failure would surface as a null
+    // constraint three layers away.
+    throw new Error(
+      `No global tax codes for country ${JSON.stringify(country)}. ` +
+        'Posting would produce splits with no tax code; see packages/db migrations 0007 and 0026.',
+    );
+  }
   return byCode;
 }
 
 /**
- * Peppol UNCL5305 category (BT-151), as far as it decides which AU tax code
- * applies. `S` (standard) is the only rate this maps to a capital code for —
+ * Peppol UNCL5305 category (BT-151) → the tax code for THIS tenant's country.
+ *
+ * The standard-rated code differs per jurisdiction — `GST` in Australia, `PPN`
+ * in Indonesia — and returning a bare `'GST'` here was half of the collision
+ * described on `loadTaxCodes`. The exempt/zero/none codes are looked up in the
+ * country's own set, so `N-T` now resolves within one country rather than
+ * whichever row happened to load last.
+ *
+ * `S` (standard) is the only rate this maps to a capital code for —
  * and never does, because nothing in the schema yet marks a purchase as
  * capital; every standard-rated purchase becomes non-capital `GST`. Worth
  * revisiting once categorisation lands, not invented here.
  */
-function taxCodeFor(gstCategoryCode: string | null): string {
+function taxCodeFor(gstCategoryCode: string | null, country: string): string {
+  const standard = country === 'ID' ? 'PPN' : 'GST';
   switch (gstCategoryCode) {
     case 'S':
-      return 'GST';
+      return standard;
     case 'Z':
-      return 'FRE';
+      return country === 'ID' ? 'PPN-BEBAS' : 'FRE';
     case 'E':
-      return 'INP';
+      return country === 'ID' ? 'NON-PPN' : 'INP';
     default:
       return 'N-T';
   }
@@ -328,7 +383,8 @@ export async function draftTransactionFromDocument(
       }
     }
 
-    const taxCodes = await loadTaxCodes(t);
+    const country = await tenantCountry(t, tenantId);
+    const taxCodes = await loadTaxCodes(t, country);
     const expenseAccountId = await ensureAccount(
       t,
       tenantId,
@@ -346,7 +402,7 @@ export async function draftTransactionFromDocument(
     }> = [];
 
     for (const group of groups) {
-      const code = taxCodeFor(group.categoryCode);
+      const code = taxCodeFor(group.categoryCode, country);
       const taxCode = taxCodes.get(code);
       const taxable = money.money(group.taxable || '0');
       const gst = money.money(group.tax || '0');
@@ -586,7 +642,8 @@ export async function draftTransactionFromInvoice(
       return { ok: false, reason: 'lines_dont_reconcile', gap };
     }
 
-    const taxCodes = await loadTaxCodes(t);
+    const country = await tenantCountry(t, tenantId);
+    const taxCodes = await loadTaxCodes(t, country);
     const revenueAccountId = await ensureAccount(
       t,
       tenantId,

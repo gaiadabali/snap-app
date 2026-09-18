@@ -233,7 +233,25 @@ describeIfDb('worker statement routing (T1)', () => {
   /* ── Level 2: the real fork, through runOnce ──────────────────────────── */
 
   describe('runOnce — the end-to-end fork', () => {
-    it('a statement: records the classification, never writes a document, stops the job cleanly', async () => {
+    it('a statement: proceeds PAST classification into T2s per-page extraction, never runs the receipt schema', async () => {
+      // T1 used to stop at classification and record a `statement_classified`
+      // failure because there was nowhere to go (see the superseded assertion
+      // this test used to make, in git history). T2 gives it somewhere to go:
+      // `statements/pdf-statement-import.ts`'s per-page reader. No network
+      // call actually happens here either — same trick the receipt-path tests
+      // below use — `OllamaCloudStatementProvider`'s key is read SYNCHRONOUSLY
+      // in its constructor (`statement-provider.ts`, mirroring `provider.ts`'s
+      // `OllamaCloudProvider`), so clearing every Ollama env var makes
+      // `statementProviderFor` throw before any chunk is requested. Reaching
+      // that failure, escalating through every configured chat model, and
+      // recording it is the fast, offline, deterministic proof that
+      // classification routed this capture all the way into T2's reader —
+      // while `documents` staying empty proves the RECEIPT schema still never
+      // ran against it, which is T1's original guarantee, still held.
+      delete process.env.OLLAMA_API_KEY;
+      delete process.env.OLLAMA_CLOUD_API_KEY;
+      delete process.env.OLLAMA_ENV_FILE;
+
       const bytes = onePagePdf(STATEMENT_TEXT);
       const { key, byteSize } = put(TENANT, bytes);
       const captureId = await makeCapture('application/pdf', key, byteSize);
@@ -247,15 +265,19 @@ describeIfDb('worker statement routing (T1)', () => {
       ).rows;
       expect(runs).toHaveLength(1);
       expect(runs[0].status).toBe('failed');
-      expect(runs[0].error).toMatch(/^statement_classified:/);
-      expect(runs[0].error).toMatch(/native text layer shows/);
+      expect(runs[0].error).toMatch(/^statement_extraction:/);
+      expect(runs[0].error).toMatch(/No extraction provider key/);
 
       const documents = await admin.query(`select id from documents where capture_id = $1`, [captureId]);
       expect(documents.rows).toHaveLength(0);
 
+      // Unlike T1's old "nowhere to go" stop, an exhausted statement
+      // extraction attempt is a genuine, possibly-transient failure (the
+      // SAME shape the receipt path already treats this way) — the job is
+      // released with backoff, not completed silently.
       const job = (await admin.query(`select completed_at, last_error from jobs where id = $1`, [jobId])).rows[0];
-      expect(job.completed_at).not.toBeNull();
-      expect(job.last_error).toBeNull();
+      expect(job.completed_at).toBeNull();
+      expect(job.last_error).toMatch(/No extraction provider key/);
     });
 
     it('a receipt (no PDF signal): proceeds PAST classification and reaches the real extraction attempt', async () => {

@@ -163,6 +163,34 @@ about accuracy is a guess until they exist.
 
 ## 6. What is worth building, in order
 
+> **STALE AS WRITTEN — corrected 2026-09-18.** This section was verified against
+> `a2ca189` on 2026-09-16 and two days of work have overtaken it. It is the file
+> that calls itself "the single entry point", so being wrong here is expensive:
+> it cost a session a wrong answer about what was planned. The tracks below are
+> left intact as the record; this block is what is actually true.
+>
+> - **A3 — DONE.** `bench/ocr_score.py` already reports whitespace-insensitive
+>   CER as the headline.
+> - **A1' — DONE and deployed.** `docai` is a compose service with
+>   `DOCAI_SIDECAR_URL` set; `snap-apps-docai-1` runs healthy in production.
+> - **E1 — SUPERSEDED by the owner's D-S4** (`STATEMENTS.md` §14.1), which
+>   folded it into Lane R as **R9**: one per-line split, surfaced twice. It is no
+>   longer a standalone Track 1 item and should not be started as one.
+> - **Track 3 — still correct.** Everything there waits on B1, the gold set,
+>   which waits on Hansel. Unchanged.
+>
+> **What is actually next, in dependency order:** `STATEMENTS.md` Lane T's **T2**
+> (the statement extraction path — T1 classifies and T3 stores, but nothing yet
+> READS a statement, so the lane is inert without it) and **T4** (the balance
+> check as a first-class validator, which §12 calls "the ticket that makes the
+> rest measurable"); then Lane R's **R5** (`event_observations` and the merge
+> rule), which is what turns a statement line into a grounded savings-goal
+> contribution rather than a number somebody typed.
+>
+> Stages 0-3 of `ON-DEVICE.md` are all complete as of 2026-09-18. **There is no
+> stage 4** — the scheme runs 0 to 3 and the word appears nowhere in this
+> repository. It has been asked for three times, so it is written down here.
+
 Three tracks. Only one of them is blocked.
 
 ### Track 1 — Unblocked, and it is the wedge

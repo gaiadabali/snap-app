@@ -64,7 +64,17 @@ export interface ExtractionProvider {
 
 /* ── Parsing ─────────────────────────────────────────────────────────────── */
 
-const asField = <T>(raw: unknown, coerce: (v: unknown) => T | null): Field<T> => {
+/**
+ * `asField`/`str`/`digits`/`decimal`/`bool`/`int` are exported (not just
+ * module-private) so `extraction/statement-provider.ts` can parse the
+ * statement schema's chunk responses with the SAME coercion rules — a model's
+ * "$1,204.50" or "true"/"yes" looks the same whether it is answering the
+ * receipt schema or the statement schema, and a second implementation is a
+ * second place for the two to drift (the exact reasoning `statements/
+ * csv-dates.ts` and `csv-amounts.ts` already give for reusing
+ * `validators.ts`'s date-ambiguity helpers instead of re-deriving them).
+ */
+export const asField = <T>(raw: unknown, coerce: (v: unknown) => T | null): Field<T> => {
   if (raw == null || typeof raw !== 'object') return { value: null, confidence: 0 };
   const o = raw as { value?: unknown; confidence?: unknown };
   const confidence =
@@ -74,7 +84,7 @@ const asField = <T>(raw: unknown, coerce: (v: unknown) => T | null): Field<T> =>
   return { value: o.value == null ? null : coerce(o.value), confidence };
 };
 
-const str = (v: unknown): string | null => {
+export const str = (v: unknown): string | null => {
   const s = String(v).trim();
   return s === '' ? null : s;
 };
@@ -82,7 +92,7 @@ const digits = (v: unknown): string | null => {
   const d = String(v).replace(/\D/g, '');
   return d === '' ? null : d;
 };
-const decimal = (v: unknown): string | null => {
+export const decimal = (v: unknown): string | null => {
   // Tolerates "$1,848.00" and "1 848,00" — models produce both, and the
   // alternative to accepting them is discarding a correct reading over
   // punctuation.
@@ -316,6 +326,16 @@ export class OllamaCloudProvider implements ExtractionProvider {
  * that helpfully prints the credential it failed with is how keys end up in
  * log aggregators.
  */
+/**
+ * Exported so `extraction/statement-provider.ts` can build a TEXT-only
+ * provider against the same Ollama Cloud account/key — one place that reads
+ * the credential, per `readKeyFromEnvFile`'s own "never logged, never
+ * returned" rule below.
+ */
+export function readOllamaCloudKey(): string {
+  return readKeyFromEnvFile();
+}
+
 function readKeyFromEnvFile(): string {
   const fromEnv = process.env.OLLAMA_API_KEY ?? process.env.OLLAMA_CLOUD_API_KEY;
   if (fromEnv) return fromEnv;

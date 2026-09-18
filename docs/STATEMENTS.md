@@ -1,8 +1,9 @@
 # Statements, reconciliation, and what "smarter" actually means
 
 **Date:** 2026-09-17 · **Status:** research, plus four scope decisions taken by
-the owner on 2026-09-17 and recorded in §14.1. The queue in §12 is **proposed**;
-nothing in it is scheduled.
+the owner on 2026-09-17 and recorded in §14.1. §5.3.1 holds the R5 design of
+2026-09-18 — **proposed**, not decided; its open questions are §14.2 items 4
+and 5. The queue in §12 is **proposed**; nothing in it is scheduled.
 **Answers:** what it would take to read bank and credit-card statements, categorise
 them, show money in as well as money out, and never post one expense twice.
 **Does not answer:** how long any of it takes, or what ships first. §14.2 holds
@@ -302,6 +303,487 @@ is a **missing-substantiation flag**, which on the business side is a GST or PPN
 credit at risk, and that is worth money.
 
 None of those three states is expressible today.
+
+### 5.3.1 R5 — the observation register and the merge rule
+
+**Status: proposed**, by the architecture pass of 2026-09-18, against the tree
+of that date. It elaborates §5.3 into something `senior-db` and `senior-be` can
+build without re-deriving it. It decides nothing on the owner's behalf: the two
+questions it cannot settle are §14.2 items 4 and 5. Every claim about existing
+code below was read, not recalled — `0031_statements.sql`,
+`0030_goal_contributions.sql`, `0006_ledger.sql`, `0007_ops.sql`,
+`0023_admin_audit_and_gaps.sql`, `apps/server/src/transactions/transactions.repo.ts`,
+`apps/server/src/statements/*.ts`, `apps/server/src/worker.ts`, and
+`packages/db/test/{rls,drift}.test.ts`.
+
+#### The seam that already exists
+
+One economic event reaches the ledger by exactly one road today:
+`draftTransactionFromDocument` → `postTransaction`
+(`apps/server/src/transactions/transactions.repo.ts`). Read closely, that road
+is **already a merge of one observation**: splits from `document_tax_subtotals`
+or the lines, `txn_date` from `issue_date` (falling back to `current_date`), a
+payment leg to a brand-derived liability (`2-11VI Credit Card — visa`) or to
+Trade Creditors when no card was read, `source = 'scan'`, and
+`transactions.document_id` as the evidence pointer. `postTransaction` is, by its
+own comment, *"the one and only place `transactions.status` becomes
+`'posted'`"*. Nothing anywhere in `apps/server` writes `voided_at` or sets a
+transaction `'void'` — voiding exists in the schema and has never happened.
+`settled_date` is NULL on every row. R5 adds a second observation to that
+road; it does not build a second road.
+
+#### Q1 — `event_observations` is a table, and it holds facts only
+
+**A table**, one row per *(piece of evidence, transaction)*. Not a view: a view
+cannot hold the human's confirmation. Not a pattern over
+`transactions.document_id` plus a new `statement_line_id` column: a column
+holds one, and the cardinalities this lane needs are
+
+| Event | Evidence rows |
+|---|---|
+| receipt settled by a card line | a `documents` row **and** a `statement_lines` row |
+| transfer between two owned accounts (§6, R6) | **two** `statement_lines` rows, no document |
+| card payment from a bank account (§6, R6) | two `statement_lines` rows on two `financial_accounts` |
+| statement line nobody has paper for | one `statement_lines` row |
+
+One event ← many evidence rows; one evidence row → at most one **live** event.
+That is a link table, and it sits beside the ledger without competing with it:
+`transactions` + `transaction_splits` say *what happened to which accounts*,
+balanced by Postgres; `event_observations` says *how we know*. The existing
+`transactions.document_id` stays — `v_bas_lines` reads `is_tax_invoice`
+through it and the re-extraction guard in `repo.ts#saveExtraction` reads it —
+and becomes a **checked duplication** of the event's document observation,
+asserted by a constraint trigger rather than remembered by convention (the
+0026 discipline: *"two copies of one fact … is a CHECKED duplication"*).
+
+**Hypotheses do not go in the same table.** §5.3's sketch put
+`match_confidence` and `confirmed_by` on one row; that makes every reader
+filter on "is this confirmed yet", and the one that forgets double-counts. A
+suggested match is not an observation of the event — it is a claim that the
+line *might* observe it. So there are two tables:
+
+- **`event_observations`** — facts. A row exists **iff** a human (or the posting
+  act itself) has established that this evidence observes this live event.
+  No status column. Unlinking deletes the row; the evidence it pointed at is
+  never touched.
+- **`match_candidates`** — hypotheses and their outcomes. Every suggestion the
+  matcher makes, every manual link a user makes, and what became of it:
+  `suggested → accepted | rejected`, and `accepted → unlinked`. This is where
+  §5.4's *"labels the user generates for free"* accumulate for R7, with the
+  raw evidence facts kept beside each label.
+
+`review_tasks` (0007) is **not** reused for candidates, though its own comment
+already names `'possible_duplicate'`: it has no outcome column (accepted vs
+rejected is exactly the label R7 needs), no FK to `statement_lines`, no
+per-pair uniqueness (a rejected pair would be re-suggested forever), and a
+300-line statement would swamp a queue built for per-document findings. It
+keeps its existing role for document-level flags, including the
+`'possible_duplicate'` it was always meant to carry (see *dedup* below).
+
+#### DDL sketch
+
+Two migrations, because `ALTER TYPE … ADD VALUE` cannot be *used* in the
+transaction that adds it except from inside a function body compiled later —
+`0023_admin_audit_and_gaps.sql:44-52` records the rule and
+`packages/db/scripts/db.mjs` wraps each file in one transaction. The
+`goal_contributions` CHECK below is a bare use, so it goes in the second file.
+Numbers are the next two free at the time of writing.
+
+```sql
+-- 0032 — event_observations, match_candidates, and the enum member 0030 left out
+CREATE TYPE observation_kind       AS ENUM ('document', 'statement_line');
+CREATE TYPE match_candidate_status AS ENUM ('suggested', 'accepted', 'rejected', 'unlinked');
+CREATE TYPE match_proposer         AS ENUM ('matcher', 'user');
+ALTER TYPE contribution_source ADD VALUE 'statement_line';   -- used only in 0033
+
+CREATE TABLE match_candidates (
+  id                 uuid PRIMARY KEY,
+  tenant_id          uuid NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  statement_line_id  uuid NOT NULL REFERENCES statement_lines(id) ON DELETE CASCADE,
+  -- The other side. In R5 it is always a document: candidates reference
+  -- EVIDENCE, never a transaction, because transaction ids change on every
+  -- supersede (below) and document ids do not. A line already posted
+  -- standalone (R5d) is still matched to the receipt's DOCUMENT; the merge
+  -- then supersedes both transactions. R6 makes this nullable and adds a
+  -- counterpart_line_id for transfers, with a CHECK that exactly one is set —
+  -- a constraint change, not a reshape. A line matched to a hand-typed
+  -- transaction is Lane M's (see "does not do", below).
+  document_id        uuid NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+  status             match_candidate_status NOT NULL DEFAULT 'suggested',
+  proposed_by        match_proposer NOT NULL,
+  matcher_version    text,             -- which generator proposed it; NULL for a user
+  -- FACTS, never a score: {"amount_exact":true,"date_gap_days":2,
+  --   "card_last4":"equal"|"absent","merchant_similarity":0.83,
+  --   "within_posting_lag":true|false|null}. R7 calibrates from these plus
+  --   `status`; nothing in R5 reads them to decide anything.
+  evidence           jsonb NOT NULL DEFAULT '{}',
+  -- A human's account of an amount difference, set only at accept. Never
+  -- derived by the matcher. 'tip' | 'surcharge' | 'other'.
+  variance_kind      text CHECK (variance_kind IN ('tip', 'surcharge', 'other')),
+  variance_amount    money_amount,
+  decided_by         uuid REFERENCES users(id) ON DELETE SET NULL,
+  decided_at         timestamptz,
+  created_at         timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT match_candidates_decided         CHECK ((status = 'suggested') = (decided_at IS NULL)),
+  CONSTRAINT match_candidates_variance_pair   CHECK ((variance_kind IS NULL) = (variance_amount IS NULL)),
+  -- One row per pair, for the life of the pair: a rejected pair is never
+  -- re-suggested, and re-linking flips this row rather than adding one.
+  -- (R6 re-declares this NULLS NOT DISTINCT over the widened counterpart set.)
+  CONSTRAINT match_candidates_pair_unique UNIQUE (statement_line_id, document_id)
+);
+CREATE INDEX match_candidates_open_line_idx ON match_candidates (tenant_id, statement_line_id) WHERE status = 'suggested';
+CREATE INDEX match_candidates_open_doc_idx  ON match_candidates (tenant_id, document_id)       WHERE status = 'suggested';
+CREATE INDEX match_candidates_labels_idx    ON match_candidates (tenant_id, status, decided_at); -- R7's held-out pulls
+
+CREATE TABLE event_observations (
+  id                 uuid PRIMARY KEY,
+  tenant_id          uuid NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  transaction_id     uuid NOT NULL REFERENCES transactions(id) ON DELETE CASCADE,
+  kind               observation_kind NOT NULL,
+  document_id        uuid REFERENCES documents(id),        -- no cascade: evidence outlives links
+  statement_line_id  uuid REFERENCES statement_lines(id),  -- no cascade: same
+  candidate_id       uuid REFERENCES match_candidates(id) ON DELETE SET NULL, -- NULL for the posting-act row
+  confirmed_by       uuid REFERENCES users(id) ON DELETE SET NULL,
+  confirmed_at       timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT event_observations_pointer_matches_kind CHECK (
+       (kind = 'document'       AND document_id IS NOT NULL AND statement_line_id IS NULL)
+    OR (kind = 'statement_line' AND statement_line_id IS NOT NULL AND document_id IS NULL)),
+  -- One evidence row observes at most one live event. Plain UNIQUE is enough
+  -- because only live links live here; NULLs are distinct by default.
+  CONSTRAINT event_observations_document_once UNIQUE (document_id),
+  CONSTRAINT event_observations_line_once     UNIQUE (statement_line_id)
+);
+-- R5 scope: one document per event. Two documents for one purchase (an EFTPOS
+-- docket AND a tax invoice) is dedup's domain (below) and is NOT joined here.
+-- A later lane lifts this index; nothing else has to change.
+CREATE UNIQUE INDEX event_observations_one_document_per_event
+  ON event_observations (transaction_id) WHERE kind = 'document';
+CREATE INDEX event_observations_txn_idx ON event_observations (tenant_id, transaction_id);
+```
+
+Two **deferred constraint triggers**, in the 0006 idiom (checked once at
+COMMIT, so a write path may void, insert and re-point in any order inside one
+transaction):
+
+1. **A link always points at a live event.** For every transaction touched by
+   an `event_observations` INSERT/UPDATE or a `transactions` `UPDATE OF status`:
+   `status = 'void'` with any observation still attached ⇒ RAISE. This is what
+   forces the supersede path (below) to re-point links before it commits, and
+   what makes "an orphaned link to a voided entry" impossible rather than
+   unlikely.
+2. **`transactions.document_id` agrees with the register.** For every non-void
+   transaction touched: `document_id IS NOT DISTINCT FROM (SELECT document_id
+   FROM event_observations WHERE transaction_id = t.id AND kind = 'document')`
+   ⇒ else RAISE. Manual transactions (NULL both sides) pass; the drafts
+   `draftTransactionFromDocument` creates pass because R5b makes that path
+   insert its observation row in the same transaction.
+
+**Backfill**, on the same footing as 0030's: every non-void transaction with a
+`document_id` gets one `kind = 'document'` row (`confirmed_by = posted_by`,
+`confirmed_at = coalesce(posted_at, created_at)`), followed by a self-check
+that the two counts agree, `RAISE EXCEPTION` otherwise. Drafts are included: a
+draft's document is its evidence already.
+
+**RLS**: both tables in the 0031 loop (enable + force + `tenant_isolation` +
+grants) with the same `pg_class` self-check at the end of the file. Mirrors in
+`packages/db/src/schema/enums.ts` and `tables.ts`, or `drift.test.ts` fails.
+Both tables (and `financial_accounts`, `statements`, `statement_lines`, which
+`csv-import.e2e.test.ts` notes are missing) join `TENANT_SCOPED_TABLES` in
+`apps/server/src/test-support/tenant.ts` and the wipe list in
+`packages/db/test/rls.test.ts`.
+
+Two supporting indexes for the matcher, cheap now and needed at volume:
+`statement_lines (tenant_id, amount_signed)` and
+`documents (tenant_id, payable_amount) WHERE deleted_at IS NULL AND doc_type <> 'statement'`.
+
+```sql
+-- 0033 — goal_contributions can now be grounded (0030's deferred half)
+ALTER TABLE goal_contributions DROP CONSTRAINT goal_contributions_no_statement_line_yet;
+ALTER TABLE goal_contributions
+  ADD CONSTRAINT goal_contributions_statement_line_grounded
+    CHECK ((source = 'statement_line') = (source_statement_line_id IS NOT NULL)),
+  ADD CONSTRAINT goal_contributions_statement_line_fk
+    FOREIGN KEY (source_statement_line_id) REFERENCES statement_lines(id) ON DELETE RESTRICT;
+CREATE INDEX goal_contributions_line_idx ON goal_contributions (source_statement_line_id)
+  WHERE source_statement_line_id IS NOT NULL;
+-- Constraint trigger, 0030's own style: a grounded contribution's line must be
+-- money IN (amount_signed > 0), and the contributions grounded in one line may
+-- not sum past it. Fires on INSERT/UPDATE of goal_contributions.
+```
+
+`ON DELETE RESTRICT`, not cascade: a statement is evidence and is not deleted,
+and a contribution that names a line refuses to outlive it silently.
+
+#### The merge rule, as a function
+
+`mergeObservations(evidence, rules) → DraftSpec | Refusal` is **pure**: same
+evidence, same rule version ⇒ byte-identical splits. That is README principle
+2 (*extraction is a versioned, replayable function*) applied to posting, and
+it is what makes both ordering (Q4) and reversal (Q5) fall out for free. It is
+the split-building half of `draftTransactionFromDocument`, extracted without
+changing its output for the receipt-only case (the existing
+`transactions.test.ts` must stay green through the refactor), plus these
+rules — §5.3's table, made executable:
+
+| Field | Rule |
+|---|---|
+| `txn_date` | document `issue_date`; if none, line `value_date`, else line `posted_date`. **Never `current_date` when a line is present** — today's fallback would date a purchase after the money left. |
+| `settled_date` | line `posted_date` (0031 named the column for this; no transformation). NULL when there is no line. |
+| debit-side splits | from the document, exactly as today (subtotals → tax codes → GST control legs → rounding). With **no document**: one split to `6-0000 Uncategorised Purchases` for a debit line, or to `4-9000 Uncategorised Receipts` (income, new, via the existing `ensureAccount`) for a credit line. Sign follows `amount_signed`. |
+| payment leg | **the line's `amount_signed`, straight into `financial_accounts.account_id`, no sign flip** — 0031's stated promise. Resolution order when there is no line: a `financial_accounts` row whose `account_last4 = documents.card_last4` and is the only such row → its `account_id`; else today's brand liability / Trade Creditors, unchanged. |
+| amount | the **line's**, when both exist. `sum(debit side) + amount_signed ≠ 0` is an `amount_disagreement` **refusal** unless the caller supplies a human-stated `variance_kind`; then one extra split to `6-9200 Payment variance` (expense, `N-T`) for the difference, described by the kind. The matcher never supplies a variance. |
+| `source` | `'scan'` with a document; `'import'` without (the enum member §2 found unset). |
+| `payee_id`, `memo` | from the document as today; with no document, `memo = description_raw`, payee NULL (M10's job). |
+| `currency` | document currency must equal the account's, else `currency_mismatch` refusal. FX is `foreign_fx`'s domain and outside R5. |
+| `external_refs` | `{"merge":{"rule_version":"…","candidate_ids":[…]}}` — the replay stamp, the same reason `tenants.tax_rules_version` exists. |
+| tax codes | selected by `tax_codes.country = tenants.country`. Today's `loadTaxCodes` reads every system code regardless of country and keys a `Map` by `code`, so `'N-T'` — present in both AU and ID sets — resolves to whichever row came last, and `taxCodeFor('S')` hands an ID tenant the Australian `GST` code, which 0026's trigger then refuses at post time. **The merge must not inherit this**; R5b fixes it at the shared helper. |
+
+Refusals are values, not exceptions (`{ ok: false, reason }`), in the
+`DraftOutcome` style the repo already uses, and each one has a test.
+
+#### Materialisation: supersede, never edit
+
+A posted transaction is immutable (0009 guarantee 3: *"only the second act
+moves the books"*). So when an event's evidence set changes, the live
+transaction is not edited — it is **superseded**, in one database transaction:
+
+1. Build the new draft from the full evidence set with `mergeObservations`.
+2. `status = 'void'`, `voided_at = now()`, `void_reason = 'superseded: <why>'`,
+   `external_refs || {"superseded_by": <new id>}` on every transaction that
+   currently materialises any of that evidence (there may be **two**: the
+   receipt's and a line-only one).
+3. Insert the new transaction and its splits; re-point the existing
+   `event_observations` rows and insert the new one.
+4. Post it — through the same UPDATE `postTransaction` owns today, extracted
+   into a shared helper so that comment stays true. 0006's deferred trigger
+   checks the balance at commit; trigger 1 above checks no link was left on a
+   void row. Either failure rolls the whole act back and surfaces as the 409
+   `TransactionsController#post` already emits for an unbalanced posting.
+
+Every match therefore changes the payment leg (from a brand suspense account to
+the real bank account) and so always supersedes; there is no in-place path to
+keep straight. The voided rows stay as history, with the reason and the
+successor on them. `review_tasks.transaction_id` and any `external_refs.xero`
+would point at a voided row after a supersede — neither is written by anything
+today; noted so it is not rediscovered.
+
+Accepting a match **is** the posting act. The receipt was confirmed by a human
+already (separately, as 0009 requires); the statement line is cleared money;
+the person tapping *accept* is saying the two are one. It carries the same
+owner/admin rule as `TransactionsController#post`. Accepting against a document
+that is still `needs_review` is refused (`document_not_confirmed`) and points
+at the review screen — document confirmation remains its own prior act.
+
+#### Q4 — ordering is a non-question, by construction
+
+The end state of an event is `mergeObservations(final evidence set)`. Arrival
+order only decides *which* transactions get superseded on the way:
+
+- **Receipt first.** Confirm → draft → post: a receipt-only transaction (today's
+  path, now with its `kind = 'document'` observation row). Statement lands
+  days later → candidate → accept → that transaction is superseded by the
+  merged one.
+- **Statement first.** Lines land; nothing posts. A line is either matched
+  later (candidate → accept → merged transaction, superseding the receipt's if
+  the receipt was posted in between) or posted standalone by a human act
+  (`source = 'import'`, uncategorised) and matched later still — in which case
+  the standalone one is superseded too.
+
+Both roads end at the identical row set. That is the test: run the two orders
+against the same fixtures and assert the final posted transaction is
+split-for-split equal, with the same `txn_date`, `settled_date` and `source`,
+and that every intermediate transaction is `'void'` with `superseded_by` set.
+
+#### Q3 — flag, never auto-merge; and no number to invent
+
+R5 **never auto-confirms**. Every `event_observations` row that involves a
+statement line is created by a human accepting a candidate or making a manual
+link. That is the literal reading of the column comment, and it means R5 needs
+no threshold to function — the calibrated one is R7's, on labels that R5
+starts accumulating on day one.
+
+The candidate generator is a filter on **facts**, ranked for display, with no
+score:
+
+- same tenant, same currency; the line is not a live observation and the
+  document is not matched;
+- `amount_signed = −payable_amount` for a purchase (`payable_amount` for a
+  `credit_note` — a refund);
+- `card_last4`: **both present and different ⇒ excluded** (a fact — the card
+  ending 9021 did not pay a docket that says 4417); both equal ⇒ recorded;
+  either absent ⇒ recorded as absent. S1 is why this is available at all;
+- **no date window.** `date_gap_days = posted_date − issue_date` is recorded
+  and used to rank; `within_posting_lag` is a *label* from
+  `statementRules.postingLagDays` when the tenant has a rule set installed
+  (S4 declared it; nothing reads it yet — this is the first reader, in
+  `interpreter.ts`), and **NULL when none is**. `rulesFor` throws for a tenant
+  with no `tax_rules_id` (`taxrules.repo.ts:81-83`), and there is still no
+  Australian rule set, so a matcher that refused without one would be dead in
+  the launch market. A match suggestion is not a statutory figure, so the
+  README's "no rule set → every calculation throws" does not bind it; the
+  label is simply absent;
+- `merchant_similarity = similarity(description_normalised, name_normalised)`
+  from `pg_trgm` (enabled since 0001, unused since), recorded, not filtered on.
+
+Ranking for display: card equal first, then `|date_gap_days|` ascending, then
+similarity descending. Every candidate is shown; the page size is a UI choice,
+not a threshold. Exact amount only means a tip-adjusted or surcharged line is
+never *suggested* in R5 — it is linked **manually** through R8's surface, with
+the variance named by the person. §5.4's tolerance is R7's number, measured.
+
+The matcher is **idempotent** (a pair with any existing `match_candidates` row
+is skipped) and runs on read — `GET …/candidates` for a statement or a document
+computes what is missing first — and on document confirm. Nothing needs a hook
+in `csv-import.ts` or T2's writer, both of which are being written right now;
+a hook can be added once they are still.
+
+An unconfirmed candidate is exactly that: a row in `match_candidates` with
+`status = 'suggested'`, visible in the reconciliation surface, touching neither
+document, line nor ledger. It expires never; it is resolved by a person or
+stays a suggestion.
+
+#### Q2 — retained and linked; how a person sees both sides
+
+Nothing is merged and nothing is discarded. The receipt stays a `documents` row
+with its capture; the statement stays a `documents` row (`doc_type =
+'statement'`) with its `statements` and `statement_lines`; the link is the
+`event_observations` pair on one transaction. Three read surfaces make the
+link visible without a join in anyone's head:
+
+- `GET /v1/transactions` rows gain `settledDate` and `observations[]` — each
+  with `kind`, the `documentId` or `statementLineId`, and a one-line summary —
+  plus `supersededBy`.
+- `GET /v1/documents/:id` gains `settlement: { statementLineId, postedDate,
+  accountLabel, amountSigned } | null` — *"Cleared 14 Aug via Visa ···4417"*
+  on the review screen, with the statement PDF one tap away through
+  `statements.document_id`.
+- A statement line view carries `matchedTransactionId | null`, and from it
+  the receipt.
+
+A candidate renders as two columns — the receipt (supplier, issue date, total,
+card) and the bank line (`description_raw`, posted date, amount, account) —
+with the evidence facts written as words: *"same card ending 4417 · cleared two
+days later"*. That is §10.5's *"suggestion with a stated reason"*; the
+sentences are rendered from `evidence`, never stored.
+
+#### Q5 — reversal is the same act, backwards
+
+`POST /v1/reconciliation/observations/:id/unlink` (owner/admin) deletes the
+statement-line observation, flips its candidate to `'unlinked'`, and
+re-materialises the remaining evidence: the merged transaction is superseded
+by a receipt-only one, which — by purity — is split-for-split the transaction
+that existed before the match. The statement line returns to the unmatched
+queue (it is **not** re-posted standalone; a person can do that again). Nothing
+is deleted but the link row; the candidate row is the durable record that this
+pair was once accepted and then not, which is a negative label R7 can use.
+
+The test: match, unlink, and assert the live receipt-only transaction equals
+the pre-match one on every split, that the merged one is `'void'` with
+`superseded_by` pointing at it, and that the line has no observation and one
+`'unlinked'` candidate.
+
+#### Q6 — what the merge is worth in a personal workspace, with no tax figure
+
+`tenants.kind = 'personal'` never shows GST — enforced at
+`analytics.ts:300-322` and by `verify.ts`, not styled. Nothing in R5's wire
+types carries a tax field at all, nullable or otherwise:
+`MatchCandidateView`, `EventObservationView`, `StatementLineView` and the
+`settlement` block have no `gst*` member by construction, and a test drives a
+personal fixture through every new endpoint and asserts the JSON matches
+neither `/gst/i` nor `/ppn/i` — then flips the fixture to `business` and
+proves the same test would fail on `DocumentView.gstAtRisk`, so it is checking
+something. What personal gets from the merge, in the language it is allowed:
+
+1. **Cleared.** A receipt with a statement observation is *cleared*; one
+   without, after the statement covering its date has been read, is *not seen
+   by the bank yet* — R8's missing-from-bank, without a tax word.
+2. **A bank row that knows what was bought.** The $84.20 line becomes
+   groceries and household through the receipt's lines (R9), which is the only
+   way `byCategory` (`analytics.ts:97`) stops summing everything under the
+   constant `'Uncategorised'` that `documents.controller.ts:266` returns today.
+3. **No double count when statements feed the summary.** `PersonalSummary` is
+   derived from documents (`summaries.controller.ts:141-149`). When M9 adds
+   statement spending, the merge is what stops one fuel stop counting twice —
+   the unit becomes the event, not the document plus the line.
+4. **A savings goal the bank agrees with.** A credit into savings grounds a
+   `goal_contributions` row (below), so `goals.saved` points at a movement
+   rather than a number someone typed — D16's *"a number asserted with nothing
+   to point at"*, closed for goals.
+5. **"No receipt for this payment."** The same row that is a substantiation
+   risk in business is, in personal, a payment the person may want to look at.
+   R8 owns the screen; the state exists from R5.
+
+`settled_date` is written in personal too — it is harmless there and it is
+what makes the cash-basis BAS derivable the day D34 reverses, with no backfill.
+
+#### What grounds a goal contribution
+
+0030 left `source_statement_line_id` with a CHECK forcing NULL *"until Lane T
+shipped"*. It has. 0032/0033 above add the member, the FK and the grounding
+rule. What a grounded contribution **is**: a `statement_lines` row with
+`amount_signed > 0` (money in — deposit positive is `csv-import.ts#rowAmount`'s
+own reading of 0006 for an asset account) on any of the tenant's
+`financial_accounts`, whose amount covers every contribution grounded in it.
+The server writes `amount` (default: the whole line), `occurred_on =
+posted_date` and `source = 'statement_line'`; the client supplies only
+`statementLineId` and, optionally, a smaller amount. A grounded contribution is
+**not** an `event_observations` row: the line's economic event is a transfer or
+a deposit and belongs to the ledger; "this counts toward the holiday" is an
+allocation on top of it, which is what 0030 built `goal_contributions` to be.
+Account type is deliberately not restricted — a deposit into a transaction
+account can be a goal's — sign and sum are.
+
+#### `dedup_group_id` gets its writer
+
+`documents.dedup_group_id` — *"business-key fingerprint group; flag, never
+auto-merge"* — is document-to-document and is **separate** from the
+receipt-to-line register above. R5e gives it the writer §2 says it never had:
+
+- receipts: `md5(tenant_id || supplier name_normalised || issue_date ||
+  payable_amount)::uuid`, computed in `saveExtraction`; NULL when any part is
+  missing. Byte-identical re-uploads never reach this (`captures_sha_unique`);
+  this catches the re-photographed docket and the re-exported PDF.
+- statements: `md5(tenant_id || financial_account_id || period_start ||
+  period_end || opening_balance || closing_balance)::uuid` in the statement
+  writers — 0031's own note that a re-uploaded statement flags *"through the
+  EXISTING `documents.dedup_group_id` path rather than a second
+  statement-shaped one"*.
+- a group reaching two members raises one `review_tasks` row, `reason =
+  'possible_duplicate'` (the string 0007's comment already carries), naming the
+  group. Resolution is the existing reject flow on the duplicate, or "keep
+  both", which resolves the task. Never auto-reject, never auto-merge, and —
+  in R5 — never joined into one event (the partial unique index above).
+
+#### What R5 deliberately does not do
+
+- No auto-confirmation and no tolerance on amount (R7).
+- No FX: a document in a different currency from the account is refused (`foreign_fx` is unread).
+- No two-document events; no one-line-settles-two-receipts. The schema permits
+  the second (several `statement_line` rows per transaction) because R6 needs
+  it for transfers; the merge refuses it in R5.
+- No categorisation from the merchant string (M10); a line-only event posts uncategorised.
+- No matching of a line to a **hand-typed** transaction (`source = 'manual'`).
+  That needs a rule for which of a person's own splits is the payment leg to
+  replace, and it is Lane M's to state; the register's shape does not preclude
+  it.
+- No change to how a document becomes confirmed.
+- No `audit_log` writes: nothing in `apps/server` writes that table today and
+  R5 does not invent the idiom; the candidate rows, `void_reason` and
+  `superseded_by` are the record.
+
+#### Found while designing, all pre-existing
+
+- `loadTaxCodes` ignores `tax_codes.country` (above). Live for any ID tenant
+  that posts a standard-rated document today.
+- `draftTransactionFromDocument` dates an undated receipt `current_date`.
+- Brand-derived liabilities (`2-11VI …`) are a suspense account for "paid by a
+  card we have no statement for", and will coexist with the real
+  `financial_accounts` ledger account for the same card until R6/M9 decide
+  whether to fold them.
+- T5's placeholder `financial_accounts` row (*"(unassigned — auto-created for
+  CSV import)"*) has no CRUD surface; every CSV line lands on it, so matched
+  payment legs post to a placeholder asset account until one exists.
+- `apps/server/src/test-support/tenant.ts` does not wipe the three 0031 tables.
 
 ### 5.4 The match key nobody else has
 
@@ -880,6 +1362,11 @@ CSV path, the missing file picker on the handset, and the page caps. `R9` is
 work, it was invisible until the intake decision was made concrete, and without it
 three of the four decided intake modes have no route on a phone.
 
+**Lane R was re-cut on 2026-09-18** against §5.3.1: `R5` is now an umbrella
+over `R5a`–`R5h`, in dependency order, and `R6`–`R9` each say which piece of
+`R5` they stand on. The umbrella's *done when* is unchanged; it closes when
+`R5h` does. Two questions that re-cut could not settle are §14.2 items 4 and 5.
+
 ### Lane S — Make the existing contract true first
 
 **S0 — The documented extraction schema and the implemented one must agree.**
@@ -1032,6 +1519,31 @@ statement with one row deliberately removed reports a non-zero residual and name
 the row range where the running balance first disagrees. *This is the ticket that
 makes the rest measurable.*
 
+**DONE 2026-09-18.** `evaluateBalanceCheck()` is the single entry point — the
+identity check and the running-balance gap check in one call, so no caller has
+to compose the two primitives and get the composition wrong. A statement opening
+1000.00 and printing 1375.00, with a +300.00 row deleted, reports
+`balanceCheck: 'residual'` and `balanceResidual: '300.0000'` — **exactly the
+missing row**, in BigInt, never floats. A residual computed in floating point
+would be the bug this ticket exists to catch.
+
+The gap names a RANGE, not a row: the break sits between the last agreeing
+balance and the first that does not, rendered `"rows 2-3"`. A bare row number
+sends somebody to the wrong line of a 200-row statement, and the numbering rides
+on T5's existing `sourceRow` mapping rather than introducing a second count.
+
+**`unverifiable` has no route to `pass`** — it returns from a different branch
+entirely, and a test asserts that a CLEAN gap check on a balance-less statement
+still lands `unverifiable`. That is the subtle case: finding nothing wrong is
+not the same as proving nothing is wrong, and D-S3 binds us to the difference.
+Verified by forcing `pass` and watching four tests fail across both the pure
+functions and real Postgres.
+
+*Two exports T2's PDF path should call once its rows are inserted:*
+`evaluateBalanceCheck(...)` then `recordBalanceCheckVerdict(...)`. CSV writes the
+verdict at INSERT time because it computes before the row exists; the recorder is
+the complementary shape for a caller whose lines arrive after.
+
 **T5 — CSV statement intake, and the verdict it is not allowed to claim.** §5.6.
 Mode (c) is unbuilt end to end: `text/csv` is refused at
 `apps/server/src/captures/captures.controller.ts:58-61` and again at `:251-254`,
@@ -1099,18 +1611,196 @@ model billing at 50 pages are not addressed by this ticket.
 
 ### Lane R — Reconcile
 
+Design: §5.3.1. Order: `R5a` → `R5b` → {`R5c`, `R5d`, `R5e`, `R5f-1` → `R5f-2`}
+→ `R5g` → `R5h`; `R6`–`R9` stand on `R5b`. Every suite named below runs as the
+real application roles (`snap_app` / `snap_worker`), never the admin connection
+— `rls.test.ts`'s header says why — and every guard is proven by breaking it
+once and watching the named test fail.
+
 **R5 — `event_observations` and the merge rule.** §5.3. *Done when:* a receipt
 and its statement line produce **one** posted transaction whose `txn_date` comes
 from the receipt, whose `settled_date` comes from the statement, and whose splits
 come from the receipt's lines — with both documents retained and linked.
+*Re-cut 2026-09-18* into `R5a`–`R5h` below; the umbrella closes when `R5h` does.
 
-**R6 — Transfers and credit-card payments.** §6. *Done when:* a transfer between
-two owned accounts appears in neither spending nor income, and a card payment
-does not double-count the purchases on that card. Test both as refusals.
+**R5a — Schema: the observation register, the candidate ledger, and the enum
+member 0030 left out.** Migration `0032` per §5.3.1's DDL sketch: the three
+enums, `ALTER TYPE contribution_source ADD VALUE 'statement_line'` (referenced
+nowhere else in the file — `0023`'s rule), `match_candidates`,
+`event_observations`, the two deferred constraint triggers, the backfill with
+its count self-check, the two matcher indexes, RLS in the 0031 loop with its
+`pg_class` self-check, Drizzle mirrors in `enums.ts` / `tables.ts`, and both
+tables (plus the three 0031 tables) added to `test-support/tenant.ts`'s wipe
+list and `rls.test.ts`'s. *Done when:* (1) `drift.test.ts` is green with both
+tables declared; (2) `rls.test.ts` carries a **cross-tenant refusal** for each —
+tenant B's INSERT into A's rows rejected, a no-context SELECT returning 0 — and
+disabling RLS on one table makes those cases fail (0031's method); (3) a test
+voids a transaction that still carries an observation and asserts COMMIT is
+refused, and the same with the link re-pointed first commits; (4) a test gives
+a non-void transaction a `document_id` its document observation disagrees with
+and asserts COMMIT is refused; (5) against a database holding one posted
+document-backed transaction, the migration leaves exactly one observation row
+with `confirmed_by = posted_by`, and a seeded disagreement makes the migration
+fail and leave nothing behind.
 
-**R7 — The match key and its threshold.** §5.4. *Done when:* the false-match rate
-is **stated as a number on held-out confirmations**, not chosen; and no match
-auto-confirms below it. Do not repeat `LOW_CONFIDENCE_THRESHOLD`'s placeholder.
+**R5b — The merge rule as a pure function, and supersede-never-edit.**
+`apps/server/src/transactions/`. Extract the split-building half of
+`draftTransactionFromDocument` into `mergeObservations(evidence, rules)` with
+the rules in §5.3.1's table; add `supersedeAndPost` (void every live
+transaction materialising the evidence, insert the merged one, re-point and
+insert observation rows, post — one `withTenantAs`); extract the posting
+UPDATE into a helper `postTransaction` also calls, so its "one and only place"
+comment stays true; make the existing draft path insert its `kind =
+'document'` observation. Tax codes by `tenants.country`. Refusals as values.
+*Done when:* (1) `transactions.test.ts` and `transactions.sale.test.ts` pass
+unchanged; (2) the same evidence set merged twice yields identical split
+arrays — accounts, amounts, tax codes, `gst_amount`, order; (3) the umbrella's
+*done when* as an end-to-end test against real Postgres: a receipt issued
+12 Aug for 84.20 across two tax treatments plus a line posted 14 Aug for
+−84.20 ⇒ exactly one non-void transaction, `txn_date = 2026-08-12`,
+`settled_date = 2026-08-14`, `source = 'scan'`, splits = the receipt's
+subtotals and control legs plus one −84.20 leg into the financial account's
+`account_id`, two observation rows on it, `transactions.document_id` = the
+receipt; (4) each refusal has a test — `amount_disagreement` without a
+`variance_kind`, `currency_mismatch`, `document_not_confirmed` — and a −89.20
+line accepted with `variance_kind = 'tip'` adds exactly one +5.00 split to
+`6-9200` under `N-T`; (5) an `id-2026` tenant posting a standard-rated document
+gets the ID `PPN` code and 0026's trigger does **not** fire — write this test
+first and watch it fail today; (6) a receipt with no `issue_date` and a line
+takes `txn_date = value_date ?? posted_date`, never today's date; (7) after a
+supersede the old row is `'void'`, `void_reason` begins `superseded:`,
+`external_refs.superseded_by` names the new id, and no observation points at
+it.
+
+**R5c — Candidates, and accept / reject / unlink / manual link.** New module
+`apps/server/src/reconciliation/` (`matcher.ts`, `reconciliation.repo.ts`,
+`reconciliation.controller.ts`), wire types in `packages/api-contract`
+(`MatchCandidateView`, `MatchEvidence`, `EventObservationView`,
+`StatementLineView`; `TransactionRow` gains `settledDate`, `observations`,
+`supersededBy`; `DocumentView` gains `settlement`). Endpoints:
+`GET /v1/reconciliation/candidates?statementId|documentId&status`,
+`POST …/candidates/:id/accept {variance?:{kind}}`, `POST …/candidates/:id/reject`,
+`POST /v1/reconciliation/matches {statementLineId, documentId, variance?}`,
+`POST /v1/reconciliation/observations/:id/unlink`. Accept, manual link and
+unlink carry `TransactionsController#post`'s owner/admin check; reject is any
+non-readonly member. The matcher follows §5.3.1 Q3 exactly — facts, ranking,
+no threshold — and `packages/tax-rules/src/interpreter.ts` gains
+`withinPostingLag(rules, issued, posted)`, the first reader of S4's field.
+*Done when:* (1) four 12.50 lines on two cards against one 12.50 receipt with
+`card_last4 = 4417`: the two lines on 9021 are **not** candidates, the two on
+4417 are, ranked by `|date_gap_days|`; (2) a tenant with no rule set receives
+candidates with `within_posting_lag: null` — asserted, not skipped — and an
+`id-2026` tenant receives `true` / `false`; (3) running the matcher twice adds
+no row for any pair, and a rejected pair is never re-suggested; (4) accept runs
+R5b's supersede and returns the new `transactionId`; accepting against a
+`needs_review` document is a 409 `document_not_confirmed`; (5) two concurrent
+accepts of two candidates for one line, against real Postgres: exactly one
+succeeds and the other surfaces `event_observations_line_once` as a 409, not
+a 500; (6) unlink passes §5.3.1 Q5's test; (7) **the personal refusal**: a
+personal fixture driven through every endpoint here yields JSON matching
+neither `/gst/i` nor `/ppn/i`, and the same assertion run against
+`GET /v1/documents/:id` on a `business` fixture with `gstAtRisk` set fails —
+so the matcher is shown to bite; (8) tenant B can neither list nor accept
+tenant A's candidate — 404, and no row changes.
+
+**R5d — A statement line stands alone.** `POST /v1/statement-lines/:id/post`
+and `POST /v1/statements/:id/post-unmatched` (bulk), owner/admin: the merge
+with no document — `source = 'import'`, an uncategorised debit or credit split
+plus the account leg, `txn_date = value_date ?? posted_date`, `settled_date =
+posted_date`, one `statement_line` observation. *Done when:* (1) a −84.20 line
+posts as `Uncategorised Purchases +84.20 / account −84.20`, a +2,500.00 line
+as `account +2,500.00 / Uncategorised Receipts −2,500.00`; (2) bulk over a
+300-line statement posts every unmatched line and skips every line with a live
+observation, asserted by count; (3) a later accept for one of those lines
+supersedes its standalone transaction, and the statement-first and
+receipt-first orders end split-for-split equal (§5.3.1 Q4); (4) `PersonalSummary`
+is **unchanged** by this ticket — it still derives from documents until M9 —
+asserted, so that change stays a decision (§14.2 item 5) rather than a side
+effect.
+
+**R5e — `dedup_group_id` gets its writer.** The fingerprints in §5.3.1, written
+in `saveExtraction` and the statement writers; one `review_tasks` row, `reason =
+'possible_duplicate'`, when a group reaches two; never auto-merge, never
+auto-reject. *Done when:* (1) one docket photographed twice — different bytes,
+same supplier, date and total — yields two documents sharing one
+`dedup_group_id` and exactly one task naming both; (2) a receipt missing any
+fingerprint part gets NULL and no task; (3) an identical CSV re-imported never
+reaches this path — `captures_sha_unique` fires first, asserted — while a
+re-exported statement for the same account and period with different bytes is
+grouped; (4) resolving the task through the existing reject flow leaves both
+`documents` rows present with `deleted_at` NULL — a refusal-to-delete test.
+
+**R5f-1 — Grounded goal contributions: the constraints.** Migration `0033` per
+§5.3.1: drop `goal_contributions_no_statement_line_yet`; add the
+`(source = 'statement_line') = (source_statement_line_id IS NOT NULL)` CHECK,
+the FK `ON DELETE RESTRICT`, the index, and the grounding constraint trigger
+(line is money in; grounded contributions never sum past it). *Done when:*
+(1) `source = 'statement_line'` with a NULL pointer, and `'manual'` with one,
+are both refused; (2) a contribution grounded in a debit line is refused;
+(3) of two contributions that together exceed the line, the second is refused
+and the first stands; (4) deleting a statement line a contribution names is
+refused — asserted, because the cascade from `statements` would otherwise take
+it silently; (5) `drift.test.ts` is green after `enums.ts` gains the member.
+
+**R5f-2 — Grounded goal contributions: the write path.**
+`POST /v1/business/goals/:id/contributions` accepts `{statementLineId, amount?}`;
+the server derives `amount` (default the whole line), `occurred_on =
+posted_date`, `source = 'statement_line'`; `GoalContributionRow.source` widens
+and the listing carries the line's `description_raw` as provenance. *Done
+when:* (1) a +500.00 savings credit grounds a 500.00 contribution dated the
+line's `posted_date`, and `goals.saved` follows through 0030's trigger; (2) an
+`amount` above the line's is a 422 naming the line's amount; (3) an
+`occurredOn` in the body is ignored for a grounded contribution — asserted;
+(4) the goal screen shows the provenance in personal language (*"from your
+statement, 14 Aug"*), with the copy test from R5c run on it.
+
+**R5g — Both sides on screen.** The reconciliation surface on mobile: unmatched
+lines per statement; candidates as two-column cards with `evidence` rendered as
+sentences (*"same card ending 4417 · cleared two days later"*); accept, reject,
+manual link, unlink; and `settlement` on the document screen (*"Cleared 14 Aug
+via Visa ···4417"*). §10.5 is the brief — suggestion with a stated reason,
+one-tap reject — and `docs/DESIGN-HANDOFF.md` §3 and §12 bind. *Done when:*
+(1) driven against the real server on a device or the web build: accept a
+candidate, then see one transaction in the ledger list carrying both
+observations; (2) `settlement` renders only when non-null and never a tax
+word in personal, checked at the rendered layer with R5c's fixture;
+(3) reject removes the card and the pair does not return on refresh;
+(4) unlink is reachable from the transaction and returns the line to the
+unmatched list; (5) every figure on screen is a server field — no client-side
+arithmetic.
+
+**R5h — QA gate for the register.** Run R5a–R5g's suites as the application
+roles; drive receipt-first and statement-first end to end over HTTP; break each
+guard once — RLS off on one new table, a deferred trigger dropped, the country
+filter on tax codes removed, `amount_exact` relaxed to a tolerance — and record
+which test failed for each; confirm no numeric threshold exists in
+`reconciliation/matcher.ts` beyond exact equality, and that
+`LOW_CONFIDENCE_THRESHOLD` is not referenced there. *Done when:* the
+break-and-watch table is in the ticket report with a named failing test for
+every guard, and no guard is without one.
+
+**R6 — Transfers and credit-card payments.** §6, on the register: `match_candidates`
+gains `counterpart_line_id`, `document_id` becomes nullable and a CHECK requires
+exactly one counterpart; the matcher proposes opposite-signed equal-amount
+pairs across two of the tenant's `financial_accounts` — facts and ranking, the
+same no-threshold rule as R5c; the merge's two-line case is two account legs
+and no expense or income split. Decide here what becomes of the brand-derived
+`2-11xx` suspense liabilities (§5.3.1, *found while designing*). *Depends on:*
+R5b, R5c. *Done when:* a transfer between two owned accounts appears in neither
+spending nor income, and a card payment does not double-count the purchases on
+that card — both tested as refusals — and a test asserts the two-line event has
+**no split on any expense or income account**, not merely a right total.
+
+**R7 — The match key and its threshold.** §5.4. The labels are R5's
+`match_candidates` rows — `status`, `evidence`, `decided_at`. A `score` may be
+added to candidates, never to `event_observations`; an auto-accepted link
+writes a distinct `status` (`'auto_accepted'`, added by this ticket) with
+`decided_by` NULL, so a machine link can never be mistaken for a human one.
+*Depends on:* R5c, and enough labels — a count this ticket must state, not
+assume. *Done when:* the false-match rate is **stated as a number on held-out
+confirmations**, not chosen, with held-out meaning *by `decided_at`* rather than
+a random split so a re-decided pair cannot leak; no match auto-confirms below
+it; and `LOW_CONFIDENCE_THRESHOLD`'s placeholder is not repeated.
 
 **R8 — The three unmatched states surfaced, in the language the workspace
 permits.** Missing-from-bank, missing-substantiation, amount-disagreement.
@@ -1120,28 +1810,38 @@ row surfaces as *"no receipt for this payment"* with no tax figure, because
 `AnalyticsSummary` is contractually null there
 (`packages/api-contract/src/index.ts:597`) and
 `packages/tax-rules/src/verify.ts:341-347` refuses a personal filing period for
-the tax. *Done when:* each of the three states has a screen and a test; the
-business flag names the amount at risk; and a test drives the personal workspace
-through the same unmatched row and asserts the rendered output contains **no GST
-or PPN figure** — a refusal, in the style of `registry.test.ts:50`, not a happy
-path.
+the tax. Amount-disagreement is R5b's `variance_kind` made visible: a manual
+link whose amounts differ asks the person to **name** the difference; the
+screen never proposes a kind. The age after which a line counts as
+missing-substantiation is a display parameter and a judgement call — §5.3
+says 60 days and nothing has measured that. *Depends on:* R5c, R5g. *Done
+when:* each of the three states has a screen and a test; the business flag
+names the amount at risk; and a test drives the personal workspace through the
+same unmatched row and asserts the rendered output contains **no GST or PPN
+figure** — a refusal, in the style of `registry.test.ts:50`, not a happy path.
 
-**R9 — E1, folded in (D-S4).** One per-line split, two surfaces. §7.3.
-*Do:* write `document_lines.category_id` (`packages/db/src/schema/tables.ts:391`)
-and `document_tax_subtotals` (`:395`) from the same extraction pass, and read them
-twice — as **spending categories** in `PersonalSummary` and the reconciliation
-review screen, and as **tax subtotals** in the business review UI and BAS pack,
-which stay dark until D34 reverses. Close the two gaps in §7.3: gate the existing
-*"Split by tax treatment"* block (`apps/mobile/src/app/document/[id].tsx:291-315`)
-on workspace kind, and give `BasSummary` the workspace test the analytics path
-already has at `summaries.controller.ts:169`.
-*Done when:* (a) a supermarket docket matched to one bank row splits that row
-across more than one **spending** category in a personal workspace, proven on the
-split totals; (b) **a test asserts the refusal** — for a personal workspace every
-summary and document payload the client can reach carries `gstClaimable === null`,
-`gstAtRisk === null` and no rendered GST or PPN figure, verified by flipping the
-fixture to `business` and watching the same test fail; (c) the market-scan claim
-in `docs/GAPS.md:451` appears in no personal-facing copy while D34 stands.
+**R9 — E1, folded in (D-S4).** One per-line split, two surfaces. §7.3. The
+split-of-record is the **ledger split**: R5b's `mergeObservations` groups the
+receipt's lines by tax treatment today; R9 changes the grouping key to
+(`category_id`, tax treatment) and writes `transaction_splits.category_id` and
+`document_line_id`, so one row is read as a spending category in personal and a
+tax subtotal in business. *Do:* write `document_lines.category_id`
+(`packages/db/src/schema/tables.ts:391`) and `document_tax_subtotals` (`:395`)
+from the same extraction pass, and read them twice — as **spending categories**
+in `PersonalSummary` and the reconciliation review screen (retiring the constant
+`'Uncategorised'` at `documents.controller.ts:266`), and as **tax subtotals** in
+the business review UI and BAS pack, which stay dark until D34 reverses. Close
+the two gaps in §7.3: gate the existing *"Split by tax treatment"* block
+(`apps/mobile/src/app/document/[id].tsx`) on workspace kind, and give
+`BasSummary` the workspace test the analytics path already has at
+`summaries.controller.ts:169`. *Depends on:* R5b. *Done when:* (a) a supermarket
+docket matched to one bank row splits that row across more than one **spending**
+category in a personal workspace, proven on the split totals; (b) **a test
+asserts the refusal** — for a personal workspace every summary and document
+payload the client can reach carries `gstClaimable === null`, `gstAtRisk ===
+null` and no rendered GST or PPN figure, verified by flipping the fixture to
+`business` and watching the same test fail; (c) the market-scan claim in
+`docs/GAPS.md:451` appears in no personal-facing copy while D34 stands.
 
 ### Lane M — Money in, and getting smarter
 
@@ -1260,6 +1960,25 @@ work.
    only gets good with use, so the feature is at its worst on the first
    statement — which is also the only one a trialling user will see. The
    onboarding has to survive that, and no amount of engine accuracy fixes it.
+
+Two more were raised by the R5 design pass of 2026-09-18 (§5.3.1). Both carry a
+recommendation there; neither is decided.
+
+4. **Is accepting a match the same act as posting?** §5.3.1 proposes one act —
+   accept posts the merged transaction, under the owner/admin rule posting
+   already has — because the receipt was confirmed separately beforehand and
+   the bank line is cleared money. The alternative is two taps, accept then
+   post, which 0009's *"two separate acts"* could be read to require. The
+   answer changes `R5c`'s endpoint semantics and `R5g`'s screen.
+5. **Do statement lines count as spending before a person posts them?**
+   §5.3.1 keeps the machine out of the ledger: a line becomes a transaction only
+   through a human act — accept, or `R5d`'s post-as-spending, single or bulk.
+   If the personal tracker should show statement spending the moment a
+   statement is read, either `M9` reads `statement_lines` directly and
+   subtracts the matched ones (the register is what makes that subtraction
+   possible), or `R5d` posts automatically, which is the machine moving the
+   books. `R5d` asserts `PersonalSummary` is unchanged precisely so this stays
+   a choice.
 
 ---
 

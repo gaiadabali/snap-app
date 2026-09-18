@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://snapapps.example/schemas/statement/v1.json",
+  "title": "Snap Apps statement extraction — v1, per-page chunk",
+  "description": "Strict output contract for ONE CHUNK of a bank/card statement (`docs/STATEMENTS.md` §12 T2). This is the SECOND schema in this codebase, deliberately a sibling of extraction-schema.json rather than a widened version of it — a statement's nouns (a period, a running balance, a sequence of movements) are genuinely different from a receipt's (goods, GST categories, a payable amount). The unit of extraction is a PAGE, not a whole document: a 300-row statement cannot be read in one model call without hitting the shared output-token cap (`extraction/provider.ts`'s TruncatedOutputError), so `extraction/statement-run.ts` sends one page (or a small run of pages) per call and stitches the results back into one statement. A chunk that shows a 'balance brought forward'/'balance carried forward' line — common at the top of every page after the first — must report that figure in opening_balance, NEVER as a row in `lines`: doing the latter would count that money twice when chunks are stitched together.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "page_range", "opening_balance", "closing_balance", "lines", "extraction_notes"],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+
+    "page_range": {
+      "description": "The 1-based page numbers THIS chunk covers, within the whole statement. Not asked of the model in the wire format sent to it — supplied by the caller and echoed back here so a stored chunk result is self-describing on replay.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["from", "to"],
+      "properties": {
+        "from": { "type": "integer", "minimum": 1 },
+        "to": { "type": "integer", "minimum": 1 }
+      }
+    },
+
+    "opening_balance": {
+      "description": "This chunk's own opening/brought-forward balance, when it prints one — typically page 1's header, or a carried-forward figure restated at the top of a later page. null (with a null_reason) on every chunk that shows neither.",
+      "$ref": "#/$defs/MoneyField"
+    },
+    "closing_balance": {
+      "description": "This chunk's own closing/carried-forward balance, when it prints one — typically the statement's final page or summary block.",
+      "$ref": "#/$defs/MoneyField"
+    },
+
+    "lines": {
+      "description": "Every transaction row printed on this chunk's pages, in the order printed. Never a 'balance brought forward' / 'balance carried forward' row — see opening_balance / closing_balance above.",
+      "type": "array",
+      "maxItems": 150,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["posted_date", "value_date", "description", "amount_signed", "running_balance", "card_last4"],
+        "properties": {
+          "posted_date": { "$ref": "#/$defs/DateField", "description": "The date this movement cleared. Destined for transactions.settled_date (docs/STATEMENTS.md §5.1)." },
+          "value_date": { "$ref": "#/$defs/DateField", "description": "Only when the statement prints a SEPARATE value date from the posted date." },
+          "description": { "$ref": "#/$defs/TextField", "description": "As printed, verbatim. Never normalised, never paraphrased." },
+          "amount_signed": {
+            "description": "The change to the account's OWN PRINTED running balance for this row: (balance after) minus (balance before). Positive when the balance rose, negative when it fell — the page's own arithmetic, not a ledger convention. If the statement instead prints separate debit/credit columns, a debit is negative here and a credit is positive.",
+            "$ref": "#/$defs/MoneyField"
+          },
+          "running_balance": { "$ref": "#/$defs/MoneyField", "description": "The balance printed immediately after this row, when the statement prints one." },
+          "card_last4": { "$ref": "#/$defs/TextField", "description": "Last 4 digits ONLY, when a card number appears against this row. Never return a full or partial PAN beyond 4 digits — masked again in code regardless (`extraction/types.ts#maskCardLast4`)." }
+        }
+      }
+    },
+
+    "extraction_notes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["legible", "warnings"],
+      "properties": {
+        "legible": { "type": "boolean", "description": "Is this chunk a true and clear reproduction of its pages?" },
+        "warnings": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  },
+
+  "$defs": {
+    "FieldMeta": {
+      "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+      "null_reason": {
+        "description": "REQUIRED whenever value is null. 'not_present' (this chunk genuinely does not show it), 'illegible' (present but unreadable), 'ambiguous' (several candidates, no basis to choose).",
+        "enum": ["not_present", "illegible", "ambiguous", null]
+      }
+    },
+    "TextField": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value", "confidence", "null_reason"],
+      "properties": {
+        "value": { "type": ["string", "null"] },
+        "confidence": { "$ref": "#/$defs/FieldMeta/confidence" },
+        "null_reason": { "$ref": "#/$defs/FieldMeta/null_reason" }
+      }
+    },
+    "MoneyField": {
+      "description": "Decimal amount in the statement's own currency, as a string so precision is never lost to floating point. Return the number as printed (or as computed per amount_signed's own rule); never round, never convert currency.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value", "confidence", "null_reason"],
+      "properties": {
+        "value": { "type": ["string", "null"] },
+        "confidence": { "$ref": "#/$defs/FieldMeta/confidence" },
+        "null_reason": { "$ref": "#/$defs/FieldMeta/null_reason" }
+      }
+    },
+    "DateField": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value", "confidence", "null_reason"],
+      "properties": {
+        "value": { "type": ["string", "null"], "format": "date", "description": "ISO 8601 YYYY-MM-DD." },
+        "confidence": { "$ref": "#/$defs/FieldMeta/confidence" },
+        "null_reason": { "$ref": "#/$defs/FieldMeta/null_reason" }
+      }
+    }
+  }
+}

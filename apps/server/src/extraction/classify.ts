@@ -98,13 +98,21 @@ const HEADING_PATTERNS = [
   /\bmutasi\s+rekening\b/i,
 ];
 
-const OPENING_BALANCE_PATTERNS = [
+/**
+ * Exported for reuse by `extraction/statement-run.ts` (T2): a per-page
+ * statement reader has the SAME "is this line actually a balance marker, not
+ * a transaction" question the classifier answers at the whole-document level
+ * — a "balance brought forward" row reprinted at the top of page 2+ must
+ * never be counted as a movement, or the stitched statement double-counts it.
+ * One set of AU/ID phrase patterns, not two.
+ */
+export const OPENING_BALANCE_PATTERNS = [
   /\bopening\s+balance\b/i,
   /\bbalance\s+brought\s+forward\b/i,
   /\bsaldo\s+awal\b/i,
 ];
 
-const CLOSING_BALANCE_PATTERNS = [
+export const CLOSING_BALANCE_PATTERNS = [
   /\bclosing\s+balance\b/i,
   /\bbalance\s+carried\s+forward\b/i,
   /\bending\s+balance\b/i,

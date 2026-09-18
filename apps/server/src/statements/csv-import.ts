@@ -23,7 +23,7 @@ import type { TaxRules } from '@snap/tax-rules';
 import { readTenant } from '../repo.js';
 import { rulesFor } from '../taxrules/taxrules.repo.js';
 import { parseAmount, type AmountFormat } from './csv-amounts.js';
-import { computeBalanceCheck, findRunningBalanceGap, type CandidateLine } from './balance-check.js';
+import { evaluateBalanceCheck, type CandidateLine } from './balance-check.js';
 import { detectColumnMapping, type ColumnMapping } from './csv-columns.js';
 import { parseStatementDate } from './csv-dates.js';
 import { decodeCsvBytes, detectDelimiter, parseCsvRows } from './csv-text.js';
@@ -246,7 +246,10 @@ export async function importCsvStatement(
     return { ok: false, reason: 'That CSV has no readable transaction rows.' };
   }
 
-  const gap = findRunningBalanceGap(lines);
+  // T4's first-class validator (`balance-check.ts`) — one call for both the
+  // identity check and the running-balance gap check, rather than composing
+  // the two primitives here by hand.
+  const { check: balance, gap } = evaluateBalanceCheck({ openingBalance, closingBalance, lines });
   if (gap) {
     // `gap.lineNumber` is 1-based into `lines`, so it addresses the same
     // array position `sourceRow` was recorded at — translated back to the
@@ -260,8 +263,6 @@ export async function importCsvStatement(
         'This usually means a row is missing from the export — refusing rather than importing a gap silently.',
     };
   }
-
-  const balance = computeBalanceCheck({ openingBalance, closingBalance, lines });
 
   const postedDates = lines.map((l) => l.postedDate).sort();
   const periodStart = postedDates[0]!;

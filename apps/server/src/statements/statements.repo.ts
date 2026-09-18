@@ -152,6 +152,20 @@ export interface CreateStatementFromCsvInput {
  * transaction commits, with nothing queued and no worker involved (§5.6:
  * mode (c) needs no extraction at all).
  */
+/**
+ * Generic aliases (T2, `docs/STATEMENTS.md` §12 Lane T): `createStatementFromCsv`
+ * below writes exactly the same three tables regardless of how its `lines`
+ * were obtained — nothing in its body reads a CSV, a delimiter, or a column
+ * mapping. `statements/pdf-statement-import.ts` (T2's per-page PDF path)
+ * calls it under `createStatementFromPdf`, an alias rather than a duplicate
+ * implementation, because "a PDF statement and a CSV statement differ in how
+ * rows are obtained, not in what a row means or how a date or amount is
+ * read" is this ticket's own instruction. The CSV-specific name is left in
+ * place, unrenamed, so `csv-import.ts` and its tests are untouched.
+ */
+export type StatementLineInput = CsvStatementLineInput;
+export type CreateStatementInput = CreateStatementFromCsvInput;
+
 export async function createStatementFromCsv(
   userId: string,
   tenantId: string,
@@ -208,6 +222,49 @@ export async function createStatementFromCsv(
     await tx.execute(sql`update captures set status = 'extracted' where id = ${input.captureId}`);
 
     return { documentId, statementId };
+  });
+}
+
+/** The function-level half of the generic alias documented above the type aliases. */
+export const createStatementFromPdf = createStatementFromCsv;
+
+/**
+ * Records a balance-check verdict onto an already-existing `statements` row
+ * (`docs/STATEMENTS.md` §12 T4 — "T3's author named T4 as the writer of the
+ * computed verdict").
+ *
+ * `createStatementFromCsv` above already writes `balance_check` /
+ * `balance_residual` at INSERT time, because the CSV path computes the
+ * verdict before the row exists at all. This function is the other shape:
+ * an UPDATE for a caller that inserts `statements` (and its lines) first and
+ * only then runs `evaluateBalanceCheck` — the PDF path (T2), whenever it
+ * lands, is expected to look like that, since its lines arrive from a
+ * multi-page extraction run rather than one synchronous parse. Both shapes
+ * write through the SAME two columns, so `'pending'` (0031's column default)
+ * never survives to a statement nobody's checked, and `'unverifiable'` is
+ * written exactly when the honesty rule says to write it — never silently
+ * left as `'pending'` and never upgraded to `'pass'` by a caller that forgot
+ * to call this.
+ *
+ * RLS (0031, forced) already scopes the UPDATE to the caller's tenant; a
+ * `statementId` from another tenant simply matches zero rows, the same
+ * "not found, not leaked" shape `getFinancialAccount` above uses.
+ */
+export async function recordBalanceCheckVerdict(
+  userId: string,
+  tenantId: string,
+  statementId: string,
+  verdict: { balanceCheck: StatementBalanceCheck; balanceResidual: string | null },
+): Promise<{ updated: boolean }> {
+  return withTenantAs(getDb(), userId, tenantId, async (tx) => {
+    const result = await tx.execute(sql`
+      update statements
+         set balance_check = ${verdict.balanceCheck}::statement_balance_check,
+             balance_residual = ${verdict.balanceResidual},
+             updated_at = now()
+       where id = ${statementId}
+    `);
+    return { updated: (result.rowCount ?? 0) > 0 };
   });
 }
 

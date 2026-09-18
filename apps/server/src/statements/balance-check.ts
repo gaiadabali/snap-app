@@ -3,16 +3,17 @@
  * running-balance gap check that is a CSV's best substitute for it.
  *
  * `docs/STATEMENTS.md` §4 is unambiguous about what a real balance check is:
- * `opening_balance + Σ amount_signed = closing_balance`. T4 (not yet built)
- * owns that check as a first-class validator for every intake mode. This
- * file exists because T5 cannot wait for T4 to land: a CSV either carries
- * both balances — in which case the SAME identity applies and this computes
- * it — or it does not, in which case §5.6 requires an explicit
- * `'unverifiable'` verdict rather than silence or a default `'pending'`
- * that never resolves. If T4 lands later with its own, more general
- * validator, this function is a candidate for the CSV path to call into it
- * instead; until then it is not a duplicate of a check that already exists
- * anywhere in the server.
+ * `opening_balance + Σ amount_signed = closing_balance`. T4 owns that check
+ * as a first-class validator for every intake mode — CSV today (T5),
+ * whatever the PDF path (T2) becomes later. `evaluateBalanceCheck` below is
+ * that validator's single entry point: it runs the identity check AND the
+ * running-balance gap check together and hands back one verdict, so a
+ * caller adopts it rather than re-deriving the combination itself. T5
+ * predates T4 landing and originally called `computeBalanceCheck` /
+ * `findRunningBalanceGap` directly; `csv-import.ts` now calls
+ * `evaluateBalanceCheck` instead, with no change in behaviour — this file
+ * was never a duplicate of a check that exists elsewhere, and T4 did not
+ * rebuild it, only completed it.
  *
  * THE ONE THING THIS FILE REFUSES TO DO: report `'pass'` for a statement
  * that never had an independent closing balance to check against. Deriving
@@ -80,6 +81,14 @@ export interface RunningBalanceGap {
   /** 1-based `statement_lines.line_number` of the FIRST row whose printed
    *  running balance disagrees with the previous row plus this row's amount. */
   lineNumber: number;
+  /** `line_number` of the last row before it that carried a printed running
+   *  balance — `null` when the disagreeing row is the first one with a
+   *  balance at all (nothing earlier to compare against). Together with
+   *  `lineNumber` this is the row RANGE a human should go and look at: the
+   *  break sits somewhere between these two printed rows, not necessarily
+   *  at `lineNumber` itself — a missing row lands its shortfall on the next
+   *  row that happens to print a balance. */
+  previousLineNumber: number | null;
   expected: Money;
   printed: Money;
 }
@@ -97,15 +106,53 @@ export interface RunningBalanceGap {
  */
 export function findRunningBalanceGap(lines: CandidateLine[]): RunningBalanceGap | null {
   let previous: Money | null = null;
+  let previousLineNumber: number | null = null;
   for (const line of lines) {
     if (line.runningBalance === null) continue;
     if (previous !== null) {
       const expected = add(previous, line.amountSigned);
       if (compare(expected, line.runningBalance) !== 0) {
-        return { lineNumber: line.lineNumber, expected, printed: line.runningBalance };
+        return { lineNumber: line.lineNumber, previousLineNumber, expected, printed: line.runningBalance };
       }
     }
     previous = line.runningBalance;
+    previousLineNumber = line.lineNumber;
   }
   return null;
+}
+
+/** Human-readable row RANGE for a `RunningBalanceGap` — "rows 4-5" when there
+ *  is an earlier printed balance to bound the range with, "row 2 (no earlier
+ *  printed balance to compare against)" when the very first balance-bearing
+ *  row is already wrong. Never a single bare row number: a human counting
+ *  lines in their file needs to know a row is missing BETWEEN two rows, and
+ *  a bare "row 5" reads as "row 5 is the culprit" rather than "something
+ *  between here and the last good row is missing". */
+export function describeBalanceGap(gap: RunningBalanceGap): string {
+  if (gap.previousLineNumber === null) {
+    return `row ${gap.lineNumber} (no earlier printed balance to compare against)`;
+  }
+  return `rows ${gap.previousLineNumber}-${gap.lineNumber}`;
+}
+
+export interface StatementBalanceVerdict {
+  check: BalanceCheckResult;
+  gap: RunningBalanceGap | null;
+}
+
+/**
+ * The first-class validator (`docs/STATEMENTS.md` §12 T4): runs the balance
+ * IDENTITY check and the running-balance GAP check together, in one call, so
+ * every statement intake path — CSV today, the PDF path (T2) whenever it
+ * lands — gets the full verdict (pass / residual / unverifiable, AND, when
+ * a running-balance column exists, the localised row range) without having
+ * to remember to call two separate primitives and combine them correctly
+ * itself. `computeBalanceCheck` and `findRunningBalanceGap` stay exported
+ * directly too — this is a composition on top of them, not a replacement.
+ */
+export function evaluateBalanceCheck(input: BalanceCheckInput): StatementBalanceVerdict {
+  return {
+    check: computeBalanceCheck(input),
+    gap: findRunningBalanceGap(input.lines),
+  };
 }
