@@ -52,9 +52,22 @@ function up() {
 }
 
 function waitReady() {
+  // ASK THE DATABASE A QUESTION, don't ask whether a server is listening.
+  //
+  // This used `pg_isready -U postgres -d snapapps`, which reports only that a
+  // server accepts connections — it does NOT verify the database exists, and
+  // the `-d` flag does not make it. The postgres image runs a TEMPORARY server
+  // during initdb, before `POSTGRES_DB` is created, and `pg_isready` answers
+  // yes to that one. So `up()` could return, `migrate()` could run, and psql
+  // would fail with `database "snapapps" does not exist` against a container
+  // that was seconds away from being fine.
+  //
+  // It broke CI on 2026-09-18 — a green branch, a red build, and an error that
+  // reads like broken infrastructure rather than a race. `SELECT 1` against the
+  // database by name cannot pass until the database is actually there.
   docker([
     'exec', CONTAINER, 'sh', '-c',
-    `for i in $(seq 90); do pg_isready -U postgres -d ${DB} >/dev/null 2>&1 && exit 0; sleep 1; done; exit 1`,
+    `for i in $(seq 90); do psql -U postgres -d ${DB} -tAc 'select 1' >/dev/null 2>&1 && exit 0; sleep 1; done; exit 1`,
   ]);
   console.log('postgres ready');
   console.log(`DATABASE_URL=${URL}`);
