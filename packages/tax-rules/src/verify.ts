@@ -321,6 +321,78 @@ export function inspectRules(rules: unknown): RulesProblem[] {
     }
   }
 
+  /* ── Statements ───────────────────────────────────────────────────────── */
+  const sr = k.statementRules;
+  if (!sr) {
+    // No default. A rule set that omits this is refused, not backfilled with
+    // an AU-shaped guess — that is the exact silent-Australian-rules failure
+    // this file exists to prevent, just moved to a new parameter.
+    p.push({ path: 'statementRules', message: 'required — posting-lag window and bank-interest treatment' });
+  } else {
+    const lag = sr.postingLagDays;
+    if (!lag || typeof lag !== 'object') {
+      p.push({ path: 'statementRules.postingLagDays', message: 'required, {min: integer, max: integer}' });
+    } else {
+      if (!Number.isInteger(lag.min) || lag.min < 0) {
+        p.push({ path: 'statementRules.postingLagDays.min', message: 'non-negative integer' });
+      }
+      if (!Number.isInteger(lag.max) || lag.max < 0) {
+        p.push({ path: 'statementRules.postingLagDays.max', message: 'non-negative integer' });
+      }
+      if (
+        Number.isInteger(lag.min) &&
+        Number.isInteger(lag.max) &&
+        lag.min >= 0 &&
+        lag.max >= 0 &&
+        lag.max < lag.min
+      ) {
+        p.push({
+          path: 'statementRules.postingLagDays.max',
+          message: `${lag.max} is less than min ${lag.min}`,
+        });
+      }
+    }
+
+    const bi = sr.bankInterest;
+    if (!bi) {
+      p.push({ path: 'statementRules.bankInterest', message: 'required' });
+    } else {
+      const kinds = ['assessable', 'final_withholding', 'exempt'];
+      if (!kinds.includes(bi.kind)) {
+        p.push({ path: 'statementRules.bankInterest.kind', message: kinds.join(' | ') });
+      }
+      if (bi.kind === 'final_withholding') {
+        if (!isRational(bi.rate)) {
+          p.push({
+            path: 'statementRules.bankInterest.rate',
+            message: 'a final-withholding treatment must state its rate',
+          });
+        } else {
+          p.push(...checkRational(bi.rate, 'statementRules.bankInterest.rate'));
+        }
+      } else if (bi.rate != null) {
+        // Mirrors AlternativeRegime.rate: a rate stated where none applies is
+        // a rate somebody will eventually multiply by.
+        p.push({
+          path: 'statementRules.bankInterest.rate',
+          message: `must be null when kind is ${JSON.stringify(bi.kind)}, not a rate`,
+        });
+      }
+      if (typeof bi.declaredOnReturn !== 'boolean') {
+        p.push({ path: 'statementRules.bankInterest.declaredOnReturn', message: 'required boolean' });
+      }
+      if (!bi.authority) {
+        p.push({ path: 'statementRules.bankInterest.authority', message: 'required — a treatment needs a law' });
+      }
+      if (!bi.note) {
+        p.push({
+          path: 'statementRules.bankInterest.note',
+          message: 'required — shown to a person explaining why the app does or does not ask',
+        });
+      }
+    }
+  }
+
   /* ── Periods ──────────────────────────────────────────────────────────── */
   const pr = k.periods;
   if (!pr) {

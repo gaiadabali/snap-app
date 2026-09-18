@@ -371,6 +371,77 @@ export interface PeriodSpec {
   annualReturnName: string;
 }
 
+/* ── Statements ────────────────────────────────────────────────────────────── */
+
+/**
+ * How bank interest is taxed for the taxpayer this rule set serves.
+ *
+ * Not the consumption tax and not an income-tax bracket — a third thing, and
+ * the reason it needs its own shape rather than living in `withholdingNote`
+ * (informational prose only): a statement line of bank interest is exactly
+ * the kind of figure a statement reader will be tempted to run through the
+ * ordinary income-tax scale, and for Indonesia that would double-count a tax
+ * already final at source.
+ *
+ * Indonesia: interest on savings and time deposits is withheld at a **final**
+ * 20% by the bank (PP 131/2000), so it is never re-declared as ordinary
+ * income on the annual return. Australia has no equivalent final-withholding
+ * regime for personal bank interest — it is ordinary assessable income,
+ * declared in full and taxed at the marginal rate.
+ */
+export interface BankInterestTreatment {
+  /**
+   * `assessable` — added to ordinary income and taxed at the marginal rate.
+   * `final_withholding` — tax is withheld at source at a fixed rate and that
+   * is the end of the taxpayer's obligation for this income.
+   * `exempt` — no tax arises at all.
+   */
+  kind: 'assessable' | 'final_withholding' | 'exempt';
+  /**
+   * The rate withheld at source. Required when `kind` is
+   * `final_withholding`; must be `null` otherwise, mirroring
+   * `AlternativeRegime.rate` — a rate stated where none applies is a rate
+   * someone will eventually multiply by.
+   */
+  rate: Rational | null;
+  /**
+   * Whether the amount is still reported on the annual return even though the
+   * tax on it is already settled. Indonesia: false — a final tax is final.
+   */
+  declaredOnReturn: boolean;
+  /** The instrument that sets this treatment. */
+  authority: string;
+  /** Shown to a person, so the app can explain why it does or does not ask. */
+  note: string;
+}
+
+/**
+ * Parameters that govern reading a bank statement, as distinct from a
+ * receipt.
+ *
+ * `docs/STATEMENTS.md` §7.4 found two rows this contract could not yet
+ * express: a statement's posting-lag window and how bank interest is taxed.
+ * Both are genuinely per-jurisdiction — the posting lag varies by banking
+ * system and clearing convention, and the interest treatment is a matter of
+ * law, not observation — so neither belongs as a constant in code that reads
+ * statements for every country at once.
+ */
+export interface StatementRules {
+  /**
+   * How many days a transaction's posting date may lag its actual date
+   * before the reader should treat the gap as something other than ordinary
+   * bank clearing time.
+   *
+   * `docs/STATEMENTS.md` §15 is explicit that the 0–3 day figure used during
+   * design was an **estimate** — it varies by institution and product — and
+   * exists as a rule-set parameter precisely so it does not calcify into a
+   * constant nobody measured.
+   */
+  postingLagDays: { min: number; max: number };
+  /** How this jurisdiction taxes bank interest that appears on a statement. */
+  bankInterest: BankInterestTreatment;
+}
+
 /* ── Ledger ────────────────────────────────────────────────────────────────── */
 
 /**
@@ -453,6 +524,7 @@ export interface TaxRules {
 
   taxId: TaxIdSpec;
   documentRules: DocumentRules;
+  statementRules: StatementRules;
   periods: PeriodSpec;
   taxCodes: PackTaxCode[];
 

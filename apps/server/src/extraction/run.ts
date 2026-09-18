@@ -4,7 +4,7 @@ import type { TaxRules } from '@snap/tax-rules';
 
 import { TruncatedOutputError } from './provider.js';
 import type { ExtractionProvider, PageImage, ProviderResult } from './provider.js';
-import type { ValidatedExtraction } from './types.js';
+import { maskCardLast4, type ValidatedExtraction } from './types.js';
 import { linesGap, validate } from './validators.js';
 
 /**
@@ -146,6 +146,18 @@ export function toDocument(run: ExtractionRun): {
   taxExclusiveAmount: string | null;
   taxAmount: string | null;
   payableAmount: string | null;
+  /** BT-114. '0' rather than null: `documents.rounding_amount` is NOT NULL. */
+  roundingAmount: string;
+  dueDate: string | null;
+  paymentMethod: string | null;
+  /**
+   * ALWAYS ≤ 4 digits or null — `maskCardLast4` applied again here, not just
+   * trusted from the parse step, because `ValidatedExtraction` is a public
+   * type and nothing stops a future caller building one by hand (three of the
+   * test fixtures in this codebase already do exactly that).
+   */
+  cardLast4: string | null;
+  cardBrand: string | null;
   gstFreeAmount: string | null;
   isTaxInvoice: boolean;
   docType: 'tax_invoice' | 'receipt';
@@ -194,6 +206,11 @@ export function toDocument(run: ExtractionRun): {
     taxExclusiveAmount: e.taxExclusiveAmount.value,
     taxAmount: e.taxAmount.value,
     payableAmount: e.payableAmount.value,
+    roundingAmount: e.roundingAmount?.value ?? '0',
+    dueDate: e.dueDate?.value ?? null,
+    paymentMethod: e.payment?.method.value ?? null,
+    cardLast4: maskCardLast4(e.payment?.cardLast4.value ?? null),
+    cardBrand: e.payment?.cardBrand.value ?? null,
     gstFreeAmount: gstFreeTotal > 0 ? gstFreeTotal.toFixed(4) : null,
     isTaxInvoice: v.isTaxInvoice,
     docType: v.isTaxInvoice ? 'tax_invoice' : 'receipt',

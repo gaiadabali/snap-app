@@ -13,7 +13,7 @@ import { sql } from 'drizzle-orm';
 
 import { getDb } from './db.js';
 import { awardScanPoint } from './credits/points.repo.js';
-import type { ValidatedExtraction } from './extraction/types.js';
+import { maskCardLast4, type ValidatedExtraction } from './extraction/types.js';
 
 /**
  * Every database access the API makes.
@@ -1193,6 +1193,30 @@ export async function saveExtraction(
   const { documentId, uploadedBy } = await withTenantAs(getDb(), workerUserId, tenantId, async (tx) => {
     const e = result.extraction;
 
+    // S1 (docs/STATEMENTS.md §12 Lane S): `documents.card_last4` / `card_brand`
+    // / `payment_method` / `rounding_amount` / `due_date` all existed and were
+    // written by nothing. `maskCardLast4` is applied AGAIN here — a third time
+    // after `provider.ts` and `run.ts#toDocument` — because this function is
+    // the actual write boundary and a `ValidatedExtraction` can reach it from
+    // anywhere (see the three test fixtures in this codebase that build one by
+    // hand). "Masked PAN only" is enforced at the boundary that matters, not
+    // trusted from upstream. `documents.card_last4` is also `CHAR(4)`, so even
+    // a bug here would fail the insert rather than store a longer value.
+    // THESE FIVE ARE WRITTEN WITHOUT `keep()`, AND THAT IS ONLY SAFE TODAY.
+    // Every other column below goes through `keep()` so a re-extraction cannot
+    // overwrite a value a human corrected and locked. These do not, because
+    // none of them is human-editable: `EDITABLE_PATHS` is exactly
+    // supplier.name, supplier.abn, header.issue_date, totals.payable and
+    // totals.gst_free, so no lock can exist on these paths to be honoured.
+    // The moment one of them becomes editable it MUST move to `keep()` —
+    // otherwise the next extraction silently discards the correction and the
+    // locking OD-11 built is bypassed by a code path that never knew about it.
+    const cardLast4 = maskCardLast4(e.payment?.cardLast4.value ?? null);
+    const cardBrand = e.payment?.cardBrand.value ?? null;
+    const paymentMethod = e.payment?.method.value ?? null;
+    const roundingAmount = e.roundingAmount?.value ?? '0';
+    const dueDate = e.dueDate?.value ?? null;
+
     // Whoever captured the receipt — a point for a completed scan belongs to
     // this person, not to the worker's own service identity that is running
     // this transaction. Read once, up front, so it is available regardless
@@ -1337,6 +1361,11 @@ export async function saveExtraction(
           tax_amount           = ${keep('header.tax_amount', e.taxAmount.value, 'tax_amount')},
           tax_inclusive_amount = ${keep('header.payable_amount', e.payableAmount.value, 'tax_inclusive_amount')},
           payable_amount       = ${keep('header.payable_amount', e.payableAmount.value, 'payable_amount')},
+          rounding_amount      = ${roundingAmount},
+          due_date             = ${dueDate}::date,
+          payment_method       = ${paymentMethod},
+          card_last4           = ${cardLast4},
+          card_brand           = ${cardBrand},
           review_status        = ${contested.length > 0 ? 'needs_review' : result.reviewStatus},
           confidence_overall   = ${result.confidenceOverall},
           updated_at           = now()
@@ -1362,17 +1391,19 @@ export async function saveExtraction(
       await tx.execute(sql`
         insert into documents (
           id, tenant_id, capture_id, current_run_id, doc_type, is_tax_invoice,
-          ato_compliance, document_number, issue_date, currency, supplier_id,
+          ato_compliance, document_number, issue_date, due_date, currency, supplier_id,
           tax_exclusive_amount, tax_amount, tax_inclusive_amount, payable_amount,
+          rounding_amount, payment_method, card_last4, card_brand,
           review_status, confidence_overall, created_by, retention_until
         ) values (
           ${documentId}, ${tenantId}, ${captureId}, ${runId},
           ${result.isTaxInvoice ? 'tax_invoice' : 'receipt'}, ${result.isTaxInvoice},
           ${JSON.stringify({ failures: result.complianceFailures, findings: result.findings })}::jsonb,
-          ${e.documentNumber.value}, ${e.issueDate.value}::date,
+          ${e.documentNumber.value}, ${e.issueDate.value}::date, ${dueDate}::date,
           ${(e.currency.value ?? 'AUD').toUpperCase()}, ${supplierId},
           ${e.taxExclusiveAmount.value}, ${e.taxAmount.value},
           ${e.payableAmount.value}, ${e.payableAmount.value},
+          ${roundingAmount}, ${paymentMethod}, ${cardLast4}, ${cardBrand},
           ${result.reviewStatus}, ${result.confidenceOverall}, ${workerUserId},
           -- Five years from the issue date: the ATO's retention period, computed
           -- now so a purge job never has to guess.

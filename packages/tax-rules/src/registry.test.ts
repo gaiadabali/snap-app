@@ -126,6 +126,37 @@ describe('rules verification refuses', () => {
     expect(problemPaths(bad)).toContain('incomeTax.alternativeRegimes[1].rate');
   });
 
+  it('a rule set missing statementRules entirely', () => {
+    // docs/STATEMENTS.md §7.4's last two rows: posting-lag window and
+    // bank-interest treatment. No default is added for a rule set that omits
+    // this — that would be the same silent-Australian-rules failure this
+    // suite exists to catch, just moved to a new parameter.
+    const bad = clone(ID_2026);
+    // @ts-expect-error deliberately invalid, which is the point
+    delete bad.statementRules;
+    expect(problemPaths(bad)).toContain('statementRules');
+  });
+
+  it('a posting-lag window whose max is less than its min', () => {
+    const bad = clone(ID_2026);
+    bad.statementRules.postingLagDays = { min: 5, max: 3 };
+    expect(problemPaths(bad)).toContain('statementRules.postingLagDays.max');
+  });
+
+  it('a final-withholding bank-interest treatment with no rate', () => {
+    const bad = clone(ID_2026);
+    bad.statementRules.bankInterest.rate = null;
+    expect(problemPaths(bad)).toContain('statementRules.bankInterest.rate');
+  });
+
+  it('a bank-interest rate stated for a treatment that is not final-withholding', () => {
+    // Mirrors the deemed-profit check on AlternativeRegime.rate: a rate stated
+    // where none applies is a rate somebody will eventually multiply by.
+    const bad = clone(ID_2026);
+    bad.statementRules.bankInterest.kind = 'assessable'; // rate is still 20/100
+    expect(problemPaths(bad)).toContain('statementRules.bankInterest.rate');
+  });
+
   it('a rule set with no sources, because a rate must be traceable to a law', () => {
     const bad = clone(ID_2026);
     bad.sources = [];

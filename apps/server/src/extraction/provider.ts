@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 
 import { EXTRACTION_PROMPT, PROMPT_VERSION } from './prompt.js';
-import type { Extraction, ExtractedLine, Field } from './types.js';
+import { maskCardLast4, type Extraction, type ExtractedLine, type Field, type Payment } from './types.js';
 
 /**
  * Where the reading happens.
@@ -127,6 +127,21 @@ export function parseExtraction(text: string): Extraction {
 
   const raw = JSON.parse(body.slice(start, end + 1)) as Record<string, unknown>;
   const notes = (raw.notes ?? {}) as Record<string, unknown>;
+  const paymentRaw = (raw.payment ?? {}) as Record<string, unknown>;
+
+  // The ONE place a model's answer becomes a `cardLast4`. `maskCardLast4`
+  // keeps at most 4 digits no matter what the model actually returned — a
+  // full PAN, a partial one, or one with a brand name stuck to it — so a
+  // violation of RULE 9/8 in the prompt cannot become a stored PAN. See the
+  // `Payment` doc comment in `types.ts` for why this is enforced twice more
+  // downstream rather than trusted to have happened here.
+  const cardLast4 = (v: unknown): string | null => maskCardLast4(v == null ? null : String(v));
+
+  const payment: Payment = {
+    method: asField(paymentRaw.method, str),
+    cardLast4: asField(paymentRaw.cardLast4, cardLast4),
+    cardBrand: asField(paymentRaw.cardBrand, str),
+  };
 
   const lines: ExtractedLine[] = Array.isArray(raw.lines)
     ? (raw.lines as unknown[]).map((l) => {
@@ -161,6 +176,9 @@ export function parseExtraction(text: string): Extraction {
     taxExclusiveAmount: asField(raw.taxExclusiveAmount, decimal),
     taxAmount: asField(raw.taxAmount, decimal),
     payableAmount: asField(raw.payableAmount, decimal),
+    roundingAmount: asField(raw.roundingAmount, decimal),
+    dueDate: asField(raw.dueDate, str),
+    payment,
     lines,
     notes: {
       legible: notes.legible !== false,

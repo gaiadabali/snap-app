@@ -51,6 +51,48 @@ import {
 import { issueUploadToken, readUploadToken } from '../tokens.js';
 import { pageKey, putAtKey } from './page-storage.js';
 
+/**
+ * The largest capture this endpoint admits, in PAGES — receipts and
+ * statements share one cap here (`docs/STATEMENTS.md` §12, Lane T, T7).
+ *
+ * The old cap was 20, sized for a photographed receipt or a short multi-page
+ * tax invoice. `docs/STATEMENTS.md` §5.6 names the shape that does not fit
+ * under it: "**A 40-page annual statement does not fit under the current
+ * caps** and something has to give." That figure — 40 pages, the largest
+ * statement the document says the product intends to accept — is the one
+ * piece of actual evidence in this repository for where the line should sit.
+ * Everything past it is a judgement call, labelled as one: 10 pages of
+ * headroom above that figure (a cover page, a fees schedule, an
+ * off-by-a-page recount from the client), landing on 50. Nothing here
+ * measures a real institution's longest statement, so the buffer is not
+ * presented as more than a guess with a stated margin.
+ *
+ * This one constant now bounds two different things that used to be bounded
+ * (or not bounded at all) separately:
+ *
+ *  1. How many pages a client may DECLARE up front in `CreateCaptureDto`,
+ *     below — the shape a capture built from individually photographed or
+ *     scanned statement pages takes.
+ *  2. How many physical pages a single uploaded PDF may DEMUX into — checked
+ *     in `upload()`, after `demuxPdf`. Before this change that axis had NO
+ *     cap at all: a PDF always declares exactly ONE page at capture-creation
+ *     time (the "PDF must be the only page in its capture" rule a few dozen
+ *     lines below), so the declared-pages cap never applied to it. A 5,000
+ *     page PDF sailed through registration and was refused nowhere before
+ *     hitting whatever timeout or OOM the worker met first — an unbounded,
+ *     unpredictable failure mode, not a deliberate one. This is the gap T7
+ *     closes; a PDF over the cap is now refused here, by name, before a
+ *     single byte is written to `capture_pages`.
+ *
+ * Cost consequence, reported rather than silently absorbed: a capture at this
+ * cap costs the extraction worker up to 2.5x what the old 20-page cap ever
+ * allowed. §5.2/T2 already chunks per-page extraction to avoid
+ * `TruncatedOutputError`, but nothing here changes worker-side timeouts or
+ * per-page billing for the new ceiling — that is this ticket's reported
+ * follow-up, not something this endpoint can absorb on its own.
+ */
+const MAX_CAPTURE_PAGES = 50;
+
 export class CapturePageInputDto {
   /** Hex SHA-256 of THIS PAGE's bytes. Advisory: the server recomputes it. */
   @Matches(/^[0-9a-f]{64}$/i, { message: 'sha256 must be 64 hex characters.' })
@@ -61,6 +103,25 @@ export class CapturePageInputDto {
   })
   mimeType!: string;
 
+  /**
+   * 30 MB, UNCHANGED by T7 — deliberately, not by oversight.
+   *
+   * This is not headroom picked to be comfortable; it is close to a hard
+   * ceiling this endpoint does not control. `main.ts`'s `FastifyAdapter` is
+   * constructed with `bodyLimit: 32 * 1024 * 1024`, and the raw-body content
+   * parsers registered there for `image/*` and `application/pdf` carry the
+   * same 32 MB limit — both outside the file this ticket owns. A single PUT
+   * to `/v1/uploads/:token` cannot physically deliver more than 32 MB
+   * regardless of what this DTO declares, so raising this past ~30 MB would
+   * advertise a cap the transport already refuses to honour, which is worse
+   * than the receipt-sized cap it would replace. A real statement's larger
+   * byte size is the DECLARED-PAGE-COUNT axis above, not this one: a 40-page
+   * statement is either one native PDF file (typically low-single-digit MB
+   * for real text, well inside 30 MB) or up to 40 individually photographed
+   * pages, each its own 30 MB budget. Raising the true ceiling would mean
+   * touching `main.ts`'s Fastify body limit, which is outside this ticket's
+   * file list — reported as a follow-up rather than silently left unstated.
+   */
   @IsInt()
   @Min(1)
   @Max(30 * 1024 * 1024, { message: 'That page is larger than 30 MB.' })
@@ -69,14 +130,16 @@ export class CapturePageInputDto {
 
 export class CreateCaptureDto {
   /**
-   * 1..20, in page order. The OLD flat `{sha256, mimeType, byteSize,
-   * pageCount}` shape is gone outright — see
+   * 1..MAX_CAPTURE_PAGES, in page order. The OLD flat `{sha256, mimeType,
+   * byteSize, pageCount}` shape is gone outright — see
    * `docs/contracts/phase0-multipage.md` §3 — because nothing had shipped
    * against it.
    */
   @IsArray()
   @ArrayMinSize(1, { message: 'A capture needs at least one page.' })
-  @ArrayMaxSize(20, { message: 'A capture cannot declare more than 20 pages.' })
+  @ArrayMaxSize(MAX_CAPTURE_PAGES, {
+    message: `A capture cannot declare more than ${MAX_CAPTURE_PAGES} pages.`,
+  })
   @ValidateNested({ each: true })
   @Type(() => CapturePageInputDto)
   pages!: CapturePageInputDto[];
@@ -279,6 +342,18 @@ export class CapturesController {
       const rendered = await demuxPdf(bytes);
       if (rendered.length === 0) {
         throw new BadRequestException('That PDF has no pages to read.');
+      }
+      // A PDF declares exactly ONE page at capture-creation time (the
+      // solo-PDF rule below), so `ArrayMaxSize(MAX_CAPTURE_PAGES)` on
+      // `CreateCaptureDto.pages` never sees its true page count — only the
+      // demux above reveals that. This is the check that actually stops a
+      // 5,000-page PDF, checked before ANY page is written to
+      // `capture_pages` or stored, so a refusal here leaves no partial
+      // state to clean up.
+      if (rendered.length > MAX_CAPTURE_PAGES) {
+        throw new BadRequestException(
+          `That PDF has ${rendered.length} pages, more than the ${MAX_CAPTURE_PAGES}-page cap.`,
+        );
       }
       // In page order, for the capture-level dedup hash below.
       const pageHashes: string[] = [];

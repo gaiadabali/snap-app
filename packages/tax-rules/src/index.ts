@@ -7,6 +7,7 @@
 
 export type {
   AlternativeRegime,
+  BankInterestTreatment,
   ConsumptionTaxSpec,
   CurrencySpec,
   DocumentRules,
@@ -17,6 +18,7 @@ export type {
   PersonalAllowance,
   Rational,
   StandardDeduction,
+  StatementRules,
   TaxBracket,
   TaxIdSpec,
   TaxRules,

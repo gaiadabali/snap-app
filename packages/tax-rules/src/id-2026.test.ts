@@ -45,6 +45,16 @@ describe('the rules itself', () => {
     expect(ID_2026.periods.consumptionTaxPeriod).toBe('none');
     expect(ID_2026.taxCodes.every((c) => c.claimsCredit === false)).toBe(true);
   });
+
+  it('declares a posting-lag window and a bank-interest treatment', () => {
+    // docs/STATEMENTS.md §7.4's last two rows — the parameters the contract
+    // could not express until now.
+    expect(ID_2026.statementRules.postingLagDays).toEqual({ min: 0, max: 3 });
+    expect(ID_2026.statementRules.bankInterest.kind).toBe('final_withholding');
+    expect(ID_2026.statementRules.bankInterest.rate).toEqual({ n: 20, d: 100 });
+    // Final means final: not folded into the PPh 21 scale on the annual return.
+    expect(ID_2026.statementRules.bankInterest.declaredOnReturn).toBe(false);
+  });
 });
 
 describe('PPN — the 12%-on-11/12 structure', () => {

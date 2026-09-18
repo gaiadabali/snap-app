@@ -2,10 +2,10 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://snapapps.example/schemas/extraction/v1.json",
   "title": "Snap Apps document extraction — v1 (AU)",
-  "description": "Strict output contract for receipt/invoice extraction. Used with strict:true tool use or output_config.format. EVERY value is wrapped in a Field object carrying confidence and a bounding box. The model MUST return value:null with a reason rather than guessing — a confident wrong ABN silently creates an unclaimable GST credit, which is worse than a missing one.",
+  "description": "Strict output contract for receipt/invoice extraction. Used with strict:true tool use or output_config.format. EVERY value is wrapped in a Field object carrying a confidence and, optionally, a bounding box (`bbox`). `bbox` is NOT requested from this vision-extraction path today — no field below is ever emitted with one by `apps/server/src/extraction/provider.ts`, which is `additionalProperties:false`-strict about what it parses. Where a box exists, it comes from a SEPARATE pipeline: on-device grounding (`docs/ON-DEVICE.md` OD-7, `document_field_grounding`) matches an already-extracted value back to a span in the phone's own DocDOM after the fact. `docs/GAPS.md` C1 measured the alternative — asking the model to point at pixels for every field — on 24 receipts and found it bought nothing (zero hallucinations caught either way) while costing accuracy (minimax-m3 fell from 87 correct answers to 69), so it is deliberately not adopted for THIS schema's fields. The model MUST return value:null with a reason rather than guessing — a confident wrong ABN silently creates an unclaimable GST credit, which is worse than a missing one.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema_version", "doc_type", "header", "lines", "tax_subtotals", "extraction_notes"],
+  "required": ["schema_version", "doc_type", "header", "lines", "extraction_notes"],
   "properties": {
     "schema_version": { "const": "1.0.0" },
 
@@ -45,7 +45,7 @@
         "tax_exclusive_amount": { "$ref": "#/$defs/MoneyField", "description": "BT-109" },
         "tax_amount":           { "$ref": "#/$defs/MoneyField", "description": "BT-110, total GST" },
         "tax_inclusive_amount": { "$ref": "#/$defs/MoneyField", "description": "BT-112" },
-        "rounding_amount":      { "$ref": "#/$defs/MoneyField", "description": "BT-114. Australian cash sales round to 5c; record the difference here rather than distorting a total." },
+        "rounding_amount":      { "$ref": "#/$defs/MoneyField", "description": "BT-114. Australian cash sales round to 5c; record the difference here rather than distorting a total. Written to `documents.rounding_amount`, which already had a NOT NULL DEFAULT 0 and an existing (previously dead) posting rule in `transactions.repo.ts` that creates a rounding split whenever this is non-zero." },
         "payable_amount":       { "$ref": "#/$defs/MoneyField", "description": "BT-115" },
 
         "gst_inclusive_statement": {
@@ -59,7 +59,7 @@
           "required": ["method", "card_last4", "card_brand"],
           "properties": {
             "method":     { "$ref": "#/$defs/TextField", "description": "EFTPOS, VISA, CASH, AMEX, ACCOUNT" },
-            "card_last4": { "$ref": "#/$defs/TextField", "description": "Last 4 digits ONLY. Never return a full or partial PAN beyond 4 digits — doing so drags the platform into PCI-DSS scope." },
+            "card_last4": { "$ref": "#/$defs/TextField", "description": "Last 4 digits ONLY. Never return a full or partial PAN beyond 4 digits — doing so drags the platform into PCI-DSS scope. Enforced in code, not only by this instruction: `extraction/types.ts#maskCardLast4` truncates to the last 4 digits at parse time (`provider.ts`), again at `run.ts#toDocument` / `repo.ts#saveExtraction`, and `documents.card_last4` is itself `CHAR(4)` — a longer value fails the write rather than being silently accepted (ticket S1, `docs/STATEMENTS.md` §12 Lane S)." },
             "card_brand": { "$ref": "#/$defs/TextField" }
           }
         }
@@ -93,9 +93,9 @@
     },
 
     "tax_subtotals": {
-      "description": "Peppol BG-23, one entry per (category, rate). REQUIRED even when there is only one — an Australian grocery receipt legitimately mixes GST-free fresh food with taxable packaged goods, and a single total cannot express that. Validators reconcile these against the lines.",
+      "description": "Peppol BG-23, one entry per (category, rate). NOT part of what the model is asked to return — `apps/server/src/extraction/provider.ts` never puts this key in the parsed shape. Per-cent GST arithmetic is exactly the kind of thing a vision model is bad at and code is exact at (see the header comment of `extraction/tax-subtotals.ts`), so these are DERIVED deterministically, after extraction, from `lines` and `header.tax_amount`/`header.payable_amount` by `taxSubtotalsFromLines()`, then stored in `document_tax_subtotals`. This property documents that OUTPUT shape — the Peppol wire/export form — not an input the model must supply. An Australian grocery receipt legitimately mixes GST-free fresh food with taxable packaged goods, and a single total cannot express that; that is why the derivation exists, not why the model is asked for it directly.",
       "type": "array",
-      "minItems": 1,
+      "minItems": 0,
       "maxItems": 10,
       "items": {
         "type": "object",

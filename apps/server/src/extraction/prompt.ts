@@ -39,6 +39,9 @@ Shape — every field is {"value": <value or null>, "confidence": <0..1>}:
  "taxExclusiveAmount":{"value":string|null,"confidence":n},
  "taxAmount":{"value":string|null,"confidence":n},
  "payableAmount":{"value":string|null,"confidence":n},
+ "roundingAmount":{"value":string|null,"confidence":n},
+ "dueDate":{"value":"YYYY-MM-DD"|null,"confidence":n},
+ "payment":{"method":{"value":string|null,"confidence":n},"cardLast4":{"value":string|null,"confidence":n},"cardBrand":{"value":string|null,"confidence":n}},
  "lines":[{"description":{...},"quantity":{...},"unitPrice":{...},"amount":{...},"gstFree":{...}}],
  "notes":{"legible":true|false,"imageIssues":[string],"warnings":[string]}
 }
@@ -74,15 +77,23 @@ RULES
    They should sum to the total; if they do not, still report what you read and
    add a warning. Do not invent a line to make the arithmetic work.
 
-9. CONFIDENCE is your own honest estimate per field. A crisp, well-lit figure
-   is high. A faded thermal print, a crease through the digits or glare across
-   the total is low, and saying so is more useful than a confident guess.
+9. PAYMENT. "cardLast4" is the LAST FOUR DIGITS ONLY, never more — do not
+   return a full or partial card number beyond four digits, even if more of it
+   is printed on the docket. "method" is how it was paid (EFTPOS, VISA, CASH,
+   AMEX, ACCOUNT). "roundingAmount" is only the cash-rounding adjustment (BT-114,
+   Australian tills round to 5c) — leave it null unless the docket shows one.
+   "dueDate" is rare on a retail receipt; leave it null unless a due date is
+   actually printed, using the same day/month/year rule as "issueDate".
 
-10. "notes.legible" is false if the image is too poor to extract from at all.
+10. CONFIDENCE is your own honest estimate per field. A crisp, well-lit figure
+    is high. A faded thermal print, a crease through the digits or glare across
+    the total is low, and saying so is more useful than a confident guess.
+
+11. "notes.legible" is false if the image is too poor to extract from at all.
     Put glare, blur, crop and crease problems in "imageIssues".`;
 
 /** Kept with the prompt: a change to either invalidates a stored run. */
-export const PROMPT_VERSION = '2026-09-11.1';
+export const PROMPT_VERSION = '2026-09-18.1';
 
 /**
  * The prompt for a workspace running a non-Australian tax rule set.
@@ -176,8 +187,14 @@ RULES
 7. LINES. One entry per printed line, in order, with the amount as printed. Do
    not invent a line to make the arithmetic work.
 
-8. CONFIDENCE is your own honest estimate per field. A faded thermal print or
+8. PAYMENT. "cardLast4" is the LAST FOUR DIGITS ONLY, never more — never return
+   a full or partial card number beyond four digits, even if more of it is
+   printed. "roundingAmount" is only a cash-rounding adjustment; leave it null
+   unless the docket shows one. "dueDate" is rare on a receipt; leave it null
+   unless one is actually printed, using the date order above.
+
+9. CONFIDENCE is your own honest estimate per field. A faded thermal print or
    glare across the total is low, and saying so is more useful than a guess.
 
-9. "notes.legible" is false if the image is too poor to extract from at all.`;
+10. "notes.legible" is false if the image is too poor to extract from at all.`;
 }

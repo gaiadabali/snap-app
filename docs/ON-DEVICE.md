@@ -834,11 +834,16 @@ a calibrated threshold, and a phone that cannot run it captures exactly as today
 
 ### Stage 3 — own weights and the VLM re-test
 
-**OD-14 · PP-OCRv6 tiny/small via `onnxruntime-react-native` (Android)** — `senior-integrator` ·
+**OD-14 · PP-OCRv6 tiny/small via `onnxruntime-react-native` (Android)** — `medior` ·
 **opus·medium**: DB post-processing, crop-and-warp and CTC decode in native code with exact
 coordinate mapping is non-obvious, multi-file work where a wrong first cut is a full redo.
 *Done when:* on the Galaxy A16 5G, `device-ppocr` beats `device-mlkit` on OD-5's metrics on the
 same gold set, within §1.3, or the ticket is closed with the measured reason.
+
+*Was assigned `senior-integrator`, reassigned 2026-09-18 after that role declined it on scope:*
+nothing here crosses a service boundary. It is one Android module — tensors, CTC decode and Gradle
+plumbing — with no gateway call, no event bridge and no tenancy to reason about. The dependency
+`onnxruntime-react-native` made it *look* like integration work and it is not.
 
 **OD-15 · Gemma 4 E2B and Florence-2-base floor-device spike** — `medior` · default.
 *Done when:* time-to-first-field, peak memory and first-run download recorded on both floor

@@ -27,6 +27,27 @@ export type ExtractedLine = {
   gstFree: Field<boolean>;
 };
 
+/**
+ * `docs/extraction-schema.json`'s `header.payment`, BT-... none — this is not
+ * a Peppol business term, it is `documents.card_last4` / `card_brand` /
+ * `payment_method`, which existed in the schema and the database and were
+ * wired to nothing (`docs/STATEMENTS.md` §2, ticket S1).
+ *
+ * `cardLast4` is masked at the ONE place raw model output becomes an
+ * `Extraction` — `parseExtraction` in `provider.ts`, via `maskCardLast4`
+ * below — so a full or partial PAN never exists inside this type at all, not
+ * even transiently. `run.ts#toDocument` and `repo.ts#saveExtraction` apply
+ * the same function again before it reaches storage, because "the model was
+ * told not to" is not a control.
+ */
+export type Payment = {
+  /** EFTPOS, VISA, CASH, AMEX, ACCOUNT — as printed. */
+  method: Field<string>;
+  /** ALWAYS ≤ 4 digits. See `maskCardLast4`. Never a full or partial PAN. */
+  cardLast4: Field<string>;
+  cardBrand: Field<string>;
+};
+
 export type Extraction = {
   schemaVersion: string;
   docType: Field<'tax_invoice' | 'receipt' | 'invoice' | 'statement' | 'unknown'>;
@@ -42,6 +63,18 @@ export type Extraction = {
   taxExclusiveAmount: Field<string>;
   taxAmount: Field<string>;
   payableAmount: Field<string>;
+  /**
+   * BT-114. Australian cash sales round to 5c; this is the difference, not a
+   * distortion of `payableAmount`. Optional so every existing fixture that
+   * built an `Extraction` before this field existed still type-checks —
+   * `schema-contract.test.ts` is what actually enforces this is populated by
+   * the real parser, not the TS optionality flag.
+   */
+  roundingAmount?: Field<string>;
+  /** BT-9. Rare on a retail receipt, present on an invoice with payment terms. */
+  dueDate?: Field<string>;
+  /** See `Payment` above. Optional for the same fixture-compatibility reason. */
+  payment?: Payment;
   lines: ExtractedLine[];
   notes: {
     legible: boolean;
@@ -49,6 +82,25 @@ export type Extraction = {
     warnings: string[];
   };
 };
+
+/**
+ * The one function every path that can produce a `card_last4` must call.
+ *
+ * Strips everything but digits, then keeps only the LAST four. Never a hash,
+ * never a partial PAN beyond four digits, never the full number — "masked PAN
+ * only" (`packages/db/src/schema/tables.ts` comment on `documents.card_last4`)
+ * is a hard constraint, not a prompt instruction, so it is enforced here in
+ * code that runs regardless of what the model actually returned.
+ *
+ * `''` and values with no digits at all become `null` rather than an empty
+ * string, so a blank never gets stored where "no card was read" belongs.
+ */
+export function maskCardLast4(raw: string | null | undefined): string | null {
+  if (raw == null) return null;
+  const digitsOnly = raw.replace(/\D/g, '');
+  if (digitsOnly === '') return null;
+  return digitsOnly.slice(-4);
+}
 
 /** Why a document cannot support a GST credit as it stands. */
 export type ComplianceFailure =

@@ -257,6 +257,29 @@ export const ID_2026: TaxRules = {
     ],
   },
 
+  /* ── Statements ─────────────────────────────────────────────────────────
+     docs/STATEMENTS.md §7.4's last two rows. The posting-lag figure is an
+     ESTIMATE — §15 marks it as varying by institution and product, listed
+     here as data rather than a constant so it can be corrected without a
+     code change. Bank interest is a THIRD tax, distinct from PPN and from
+     the PPh 21 scale: final at source, never re-declared. */
+  statementRules: {
+    postingLagDays: { min: 0, max: 3 },
+    bankInterest: {
+      // PP 131/2000: interest on savings and time deposits is withheld at a
+      // final 20% by the bank. It is not ordinary income and is not run
+      // through the PPh 21 scale above.
+      kind: 'final_withholding',
+      rate: { n: 20, d: 100 },
+      declaredOnReturn: false,
+      authority: 'PP 131/2000; PMK 51/PMK.03/2001',
+      note:
+        'Interest on savings and time deposits is taxed at a final 20% withheld ' +
+        'by the bank at source. Because the tax is final, it is not added to ' +
+        'ordinary income and is not re-declared on the SPT Tahunan.',
+    },
+  },
+
   periods: {
     // A personal taxpayer is not a PKP and files no SPT Masa PPN. `none` is
     // the legal position, not a missing feature. Any monthly PPN figure this
@@ -368,6 +391,11 @@ export const ID_2026: TaxRules = {
       claim: 'Faktur pajak validity requires DJP clearance and upload by the 20th',
       authority: 'PER-11/PJ/2025',
       url: 'https://e-invoicingcompliancecorner.com/indonesia',
+    },
+    {
+      claim: 'Interest on savings and time deposits is a final 20% tax withheld by the bank',
+      authority: 'PP 131/2000; PMK 51/PMK.03/2001',
+      url: 'https://peraturan.go.id/id/pp-no-131-tahun-2000',
     },
   ],
 };

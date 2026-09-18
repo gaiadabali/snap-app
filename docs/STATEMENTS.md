@@ -657,8 +657,8 @@ what statement handling needs. Verified by reading it:
 | Cash-rounding increment | 5c | — | **Yes** — `tillRounding` (`:80`) |
 | Exempt categories for the per-line split | GST-free | PP 49/2022 basics | **Yes** — `exemptCategories` (`:140`), commented *"for the per-line split"* |
 | Recoverability | registered only | PKP only | **Yes** — `recoverable` (`:138`) |
-| **Statement posting-lag window** | 0–3 days (estimated) | unknown | **No** — would need the contract widened |
-| **Bank-interest treatment** | — | — | **No** — `withholdingNote` (`:451`) is informational prose only |
+| **Statement posting-lag window** | 0–3 days (estimated) | unknown | **Yes, since S4** — `statementRules.postingLagDays` |
+| **Bank-interest treatment** | final withholding, 20% (PP 131/2000) | — | **Yes, since S4** — `statementRules.bankInterest` |
 
 So the parameterisation work is smaller than `INDONESIA.md` §8 implies, and it is
 concentrated in one place: **`gstFromInclusive` still hardcodes 1/11 and does not
@@ -891,9 +891,39 @@ list and asserts the TypeScript type covers it — verified by deleting a field 
 watching it fail. *Blocks:* everything, because the statement schema is the
 second contract in this file and must not inherit the defect.
 
+**DONE 2026-09-18.** Built as a GENERAL contract test, not five special cases:
+`schema-contract.test.ts` walks every path the JSON marks required and demands a
+recorded decision — `mapped` (proven by running the real `parseExtraction`) or
+`excluded` with a reason. An undecided required path fails the suite, so the
+statement schema cannot inherit this defect on day one.
+
+Implemented: `payment` (method/card_last4/card_brand), `rounding_amount`,
+`due_date`. Amended instead: `tax_subtotals` left `required` — it is *derived*
+by `taxSubtotalsFromLines()`, never asked of the model, because per-cent GST
+arithmetic is what code is exact at and a vision model is not; `minItems` was
+also wrong at 1 and is now 0. `bbox` was never in a `required` array at all —
+the divergence was the prose overclaiming *"EVERY value carries a bounding
+box"*. Grounding lives in OD-7's separate pipeline, and GAPS C1 measured that it
+bought nothing (87→69 correct), so it stays optional.
+
+*Finding:* `due_date` was never in the `required` array either, despite §2 above
+saying so. §2 was wrong; most receipts have no due date.
+
 **S1 — Persist `card_last4` and `card_brand`.** The model is already asked for
 them; the columns exist. *Done when:* a captured card receipt has a non-null
 `card_last4` in the database. *Blocks:* R7's match key.
+
+**DONE 2026-09-18.** Masked PAN enforced three times, not once: at parse time in
+`provider.ts`, AGAIN at the write boundary in `saveExtraction` (a
+`ValidatedExtraction` is a public type and three existing fixtures build one by
+hand, bypassing the parser), and by `documents.card_last4` being `CHAR(4)` so a
+bug in both still fails the insert. Verified with a Luhn-shaped 16-digit test PAN
+pushed through `saveExtraction` against real Postgres: stored value `'1111'`.
+No migration — every column already existed and was written by nothing.
+
+*Newly live, worth watching:* `transactions.repo.ts` maps card brand to a
+liability account (`2-11${brand}`). `card_brand` was `NULL` on every row until
+now, so that rule has never run on real data.
 
 **S2 — `gstFromInclusive` must ask the rule set instead of hardcoding 1/11.**
 Confirmed live on this branch at `packages/api-contract/src/money.ts:65-72`
@@ -928,6 +958,22 @@ contract cannot express, widen the contract and the interpreter"*; a rule set th
 needs its own logic has become code. *Do:* widen `contract.ts` for these two
 before Lane R needs them. *Done when:* both are declared per rule set, `verify.ts`
 refuses a rule set that omits them, and a test fires that refusal.
+
+**DONE 2026-09-18.** `statementRules` on `TaxRules` carries `postingLagDays` and
+`bankInterest`; `verify.ts` refuses a rule set that omits it, an inverted
+`postingLagDays` range, a `final_withholding` with no rate, and a rate stated for
+any other kind. The refusal was verified by gutting the check and watching
+`expected [] to include 'statementRules'` fail, then restoring. `id-2026` declares
+0–3 days (an **estimate**, varying by institution — not a measurement) and interest
+as final withholding at 20% under PP 131/2000.
+
+*Note for Lane R:* `interpreter.ts` does not yet READ either field. Nothing
+consumes them, so nothing was wired — declaration and refusal only. Lane R must
+add the reading, and this line exists so that is not mistaken for done.
+
+*And note what did not happen:* there is still no Australian rule set in
+`packages/tax-rules` — the README's *"Australia stays where it is"* stands, so
+"both shipped rule sets" is one rule set today.
 
 ### Lane T — Read a statement
 
@@ -989,6 +1035,31 @@ against the largest statement the product intends to accept. *Done when:* a
 40-page statement PDF either imports or is **refused with a message naming the
 cap**, and a test asserts which — silence at the boundary is the failure mode
 here.
+
+**DONE 2026-09-18, and the ticket was wrong about the defect.** The caps were not
+merely too small: on the PDF path there was **no page cap at all**. A PDF must be
+the only page in its capture, so `ArrayMaxSize` bounded the *declared* array —
+always exactly one for a PDF — and never the physical page count, which only
+`demuxPdf` reveals inside `upload()`. A 5,000-page PDF passed registration
+unchecked and would have failed later, wherever the worker happened to exhaust
+time or memory. That is precisely the "silence at the boundary" this ticket names,
+and it was on the one axis nobody was looking at.
+
+`MAX_CAPTURE_PAGES = 50` now bounds **both** the declared array and the post-demux
+physical count, before any row reaches `capture_pages`. 40 pages comes from §5.6's
+stated target; the extra 10 is a margin and is labelled in the code as a judgement
+call, because nothing here measures a real institution's longest statement.
+Verified by breaking both guards and watching the tests fail (`expected 400, got
+200`; `expected 400, got 201`).
+
+*The byte cap was deliberately NOT raised.* `apps/server/src/main.ts` sets the
+Fastify `bodyLimit` to 32 MB, so a single upload physically cannot exceed it.
+Raising the DTO past ~30 MB would advertise a ceiling the transport refuses to
+honour. **If a statement ever needs to exceed ~30 MB, `main.ts` must change too.**
+
+*Unsized follow-up:* the worker can now be handed 2.5× the pages it was ever asked
+for. T2's chunking helps, but wall-clock timeouts, memory ceilings and per-page
+model billing at 50 pages are not addressed by this ticket.
 
 ### Lane R — Reconcile
 
