@@ -2084,15 +2084,21 @@ export class MockApi implements SnapApi {
 
   async listAvailableTaxRules(): Promise<AvailableTaxRules[]> {
     await settle(120);
+    /* Indonesia ONLY, because that is the truth: `BUILTIN` in
+       apps/server/src/taxrules/taxrules.repo.ts is `[ID_2026]` and
+       packages/tax-rules/src/rules/ contains one file. There is no Australian
+       rule set in the registry — `au-2026` appears only in a test of the
+       id-derivation helper.
+
+       An earlier version of this mock returned Australia as well. That was
+       fiction, and it is the reason the empty-list bug on the registration
+       screen looked fine in every local check: the mock answered a question
+       the real deployment cannot. A mock that is more capable than the server
+       does not de-risk anything, it just moves the discovery to production. */
     return [
       {
-        rulesId: 'au-2026-personal', country: 'AU', countryName: 'Australia',
-        version: '2026.1', taxYear: '2026-27', scope: 'personal',
-        consumptionTaxName: 'GST', currency: 'AUD',
-      },
-      {
-        rulesId: 'id-2026-personal', country: 'ID', countryName: 'Indonesia',
-        version: '2026.1', taxYear: '2026', scope: 'personal',
+        rulesId: 'id-2026', country: 'ID', countryName: 'Indonesia',
+        version: '2026.1.0', taxYear: '2026', scope: 'personal',
         consumptionTaxName: 'PPN', currency: 'IDR',
       },
     ];
