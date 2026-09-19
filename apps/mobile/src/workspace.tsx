@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, ScrollView, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Icon } from '@/components/Icon';
 
 import { api, setActiveWorkspaceId, type MemberRole, type Workspace, type WorkspaceSummary } from '@/api';
 import { Avatar, Choice, Field, Sheet } from '@/components/form';
@@ -311,7 +312,7 @@ export function WorkspaceSwitch({ style }: { style?: StyleProp<ViewStyle> }) {
         <Body strong style={{ flex: 1 }} numberOfLines={1}>
           {active.name}
         </Body>
-        <Text style={{ color: p.inkMuted, fontSize: 14 }}>▾</Text>
+        <Icon name="chevronDown" size={16} color={p.inkMuted} />
       </Pressable>
       <WorkspacePicker open={picking} onClose={() => setPicking(false)} />
     </>

@@ -98,6 +98,21 @@ import type {
   CreditPurchase,
   PointBalance,
   PointLedgerEntry,
+  AvailableTaxRules,
+  SavedCard,
+  AddSavedCardRequest,
+  UsageKind,
+  UsagePeriod,
+  Reward,
+  RewardRedemption,
+  NotificationPrefs,
+  AlertItem,
+  PrivacySettings,
+  OtpPurpose,
+  RequestOtpRequest,
+  RequestOtpResponse,
+  VerifyOtpRequest,
+  ResetPasswordRequest,
 } from '@snap/api-contract';
 
 /**
@@ -387,6 +402,71 @@ export interface SnapApi {
   getPointBalance(): Promise<PointBalance>;
   /** `GET /v1/points/ledger` — most recent first, how the balance was earned. */
   listPointLedger(limit?: number): Promise<PointLedgerEntry[]>;
+
+  /**
+   * `GET /v1/tax-rules-catalogue` — the rule sets this deployment can install,
+   * which is also the list of countries a new account may pick from and the
+   * currency each one implies.
+   *
+   * READ-ONLY on purpose. Choosing and installing a set for a workspace is the
+   * business of the tax-rules work in flight on this branch; this client only
+   * needs to render the options at registration.
+   */
+  listAvailableTaxRules(): Promise<AvailableTaxRules[]>;
+
+  // ── Wallet (2026-09-19 redesign) ──
+  /** `GET /v1/wallet/cards` — saved instruments, default first. */
+  listSavedCards(): Promise<SavedCard[]>;
+  /**
+   * `POST /v1/wallet/cards`. The PAN and CVC in the request are exchanged for
+   * a processor token and discarded; what comes back carries `last4` only.
+   */
+  addSavedCard(input: AddSavedCardRequest): Promise<SavedCard>;
+  /** `DELETE /v1/wallet/cards/:id`. Removing the default promotes the next. */
+  removeSavedCard(cardId: string): Promise<void>;
+  /** `POST /v1/wallet/cards/:id/default`. */
+  setDefaultCard(cardId: string): Promise<SavedCard>;
+
+  // ── Usage ──
+  /**
+   * `GET /v1/usage?kind=&month=` — itemised spend for one month, `YYYY-MM`.
+   * A projection for the Usage screen, not a ledger; see `UsagePeriod`.
+   */
+  getUsage(kind: UsageKind, month: string): Promise<UsagePeriod>;
+  /** `GET /v1/usage/months?kind=` — which months have anything to show. */
+  listUsageMonths(kind: UsageKind): Promise<string[]>;
+
+  // ── Rewards ──
+  /** `GET /v1/rewards` — what points can be traded for. */
+  listRewards(): Promise<Reward[]>;
+  /**
+   * `POST /v1/rewards/:id/redeem` — spend points, receive scan credits.
+   *
+   * See the warning on `Reward` in the contract: this endpoint contradicts
+   * `PointLedgerEntry`'s "redemption happens in yourtal, not in this product",
+   * and the conflict is open rather than resolved.
+   */
+  redeemReward(rewardId: string): Promise<RewardRedemption>;
+
+  // ── Alerts & preferences ──
+  /** `GET /v1/alerts` — the in-app feed, newest first. */
+  listAlerts(): Promise<AlertItem[]>;
+  /** `POST /v1/alerts/read` — marks every unread alert read. */
+  markAlertsRead(): Promise<void>;
+  /** `GET /v1/me/notifications` — USER-scoped switches. */
+  getNotificationPrefs(): Promise<NotificationPrefs>;
+  updateNotificationPrefs(patch: Partial<NotificationPrefs>): Promise<NotificationPrefs>;
+  /** `GET /v1/me/privacy`. */
+  getPrivacySettings(): Promise<PrivacySettings>;
+  updatePrivacySettings(patch: Partial<PrivacySettings>): Promise<PrivacySettings>;
+
+  // ── Auth: codes and password reset ──
+  /** `POST /v1/auth/otp/request`. Never reveals whether the address exists. */
+  requestOtp(input: RequestOtpRequest): Promise<RequestOtpResponse>;
+  /** `POST /v1/auth/otp/verify`. Returns a session for `register`/`sign-in`. */
+  verifyOtp(input: VerifyOtpRequest): Promise<Session | null>;
+  /** `POST /v1/auth/password/reset`. */
+  resetPassword(input: ResetPasswordRequest): Promise<Session>;
 }
 
 /**

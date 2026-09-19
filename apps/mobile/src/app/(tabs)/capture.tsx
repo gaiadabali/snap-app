@@ -5,6 +5,7 @@ import { File } from 'expo-file-system';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
+import { Icon, type IconName } from '@/components/Icon';
 
 import { readOnDevice, recordReading, type DeviceRead } from '@/lib/device-read';
 import {
@@ -984,7 +985,7 @@ export default function CaptureScreen() {
             >
               <SideControl
                 label="Add page"
-                glyph="+"
+                icon="plus"
                 accessibilityLabel="Add another page to this document"
                 onPress={() => void onAddPage()}
               />
@@ -1017,7 +1018,7 @@ export default function CaptureScreen() {
 
               <SideControl
                 label={torch ? 'Torch on' : 'Torch'}
-                glyph="⚡"
+                icon="bolt"
                 on={torch}
                 accessibilityLabel={torch ? 'Turn the torch off' : 'Turn the torch on'}
                 onPress={() => setTorch((t) => !t)}
@@ -1073,13 +1074,13 @@ export default function CaptureScreen() {
  */
 function SideControl({
   label,
-  glyph,
+  icon,
   onPress,
   accessibilityLabel,
   on = false,
 }: {
   label: string;
-  glyph: string;
+  icon: IconName;
   onPress: () => void;
   accessibilityLabel: string;
   on?: boolean;
@@ -1110,7 +1111,7 @@ function SideControl({
                   : 'rgba(0,0,0,0.25)',
             }}
           >
-            <Text style={{ color: on ? '#14181D' : '#FFFFFF', fontSize: 22 }}>{glyph}</Text>
+            <Icon name={icon} size={24} color={on ? '#14181D' : '#FFFFFF'} />
           </View>
           <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '700' }}>{label}</Text>
         </>

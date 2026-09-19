@@ -1,6 +1,7 @@
 import { useRouter, type Href } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+import { Icon, type IconName } from '@/components/Icon';
 
 import { CategoryIcon, Raised, radius } from '@/components/rich';
 import { Body, Chip, Divider, Figure, Label, Small } from '@/components/ui';
@@ -32,7 +33,7 @@ export function sumMoney(values: string[]): string {
 }
 
 /** One of the round shortcuts under the hero. */
-export function Action({ glyph, label, href }: { glyph: string; label: string; href: Href }) {
+export function Action({ icon, label, href }: { icon: IconName; label: string; href: Href }) {
   const p = usePalette();
   const router = useRouter();
   return (
@@ -52,7 +53,7 @@ export function Action({ glyph, label, href }: { glyph: string; label: string; h
           justifyContent: 'center',
         }}
       >
-        <Text style={{ fontSize: 22 }}>{glyph}</Text>
+        <Icon name={icon} size={24} color={p.accentText} />
       </View>
       <Small muted={false} style={{ fontWeight: '600' }} numberOfLines={1}>
         {label}
@@ -63,7 +64,7 @@ export function Action({ glyph, label, href }: { glyph: string; label: string; h
 
 /** A line in the attention card: what is wrong, what it is worth, where to fix it. */
 export function AttentionRow({
-  glyph,
+  icon,
   title,
   detail,
   value,
@@ -71,7 +72,7 @@ export function AttentionRow({
   href,
   first,
 }: {
-  glyph: string;
+  icon: IconName;
   title: string;
   detail: string;
   value: string;
@@ -107,7 +108,7 @@ export function AttentionRow({
           justifyContent: 'center',
         }}
       >
-        <Text style={{ fontSize: 17 }}>{glyph}</Text>
+        <Icon name={icon} size={19} color={fg} />
       </View>
       <View style={{ flex: 1, gap: 1 }}>
         <Body strong>{title}</Body>

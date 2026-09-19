@@ -1,6 +1,7 @@
 import { useRouter, type Href } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
 
+import { Icon, type IconName } from '@/components/Icon';
 import { Body, Chip, Label, Small } from '@/components/ui';
 import { Raised } from '@/components/rich';
 import { BUSINESS_FEATURES_ENABLED } from '@/config';
@@ -24,7 +25,7 @@ import { WorkspaceSwitch, useWorkspace } from '@/workspace';
 type Entry = {
   label: string;
   hint: string;
-  glyph: string;
+  icon: IconName;
   hue: string;
   href?: Href;
   soon?: boolean;
@@ -36,54 +37,54 @@ const BUSINESS_GROUPS: Group[] = [
   {
     title: 'Money in',
     entries: [
-      { label: 'New invoice', hint: 'Bill a customer now', glyph: '✏️', hue: '#1878D8', href: '/invoice/new' },
-      { label: 'Invoices', hint: 'Create, send and track', glyph: '📄', hue: '#2D9CDB', href: '/invoices' },
-      { label: 'Estimates', hint: 'Quotes awaiting approval', glyph: '📝', hue: '#5B6EF5', href: '/invoices?kind=estimate' },
-      { label: 'Customers', hint: 'Who owes you what', glyph: '👥', hue: '#27AE60', href: '/parties?kind=customer' },
-      { label: 'Payments', hint: 'Record money received', glyph: '💰', hue: '#F2994A', href: '/payments' },
+      { label: 'New invoice', hint: 'Bill a customer now', icon: 'edit', hue: '#1878D8', href: '/invoice/new' },
+      { label: 'Invoices', hint: 'Create, send and track', icon: 'doc', hue: '#2D9CDB', href: '/invoices' },
+      { label: 'Estimates', hint: 'Quotes awaiting approval', icon: 'edit', hue: '#5B6EF5', href: '/invoices?kind=estimate' },
+      { label: 'Customers', hint: 'Who owes you what', icon: 'users', hue: '#27AE60', href: '/parties?kind=customer' },
+      { label: 'Payments', hint: 'Record money received', icon: 'wallet', hue: '#F2994A', href: '/payments' },
     ],
   },
   {
     title: 'Money out',
     entries: [
-      { label: 'Receipts', hint: 'Everything you have scanned', glyph: '🧾', hue: '#1CA8DB', href: '/receipts' },
-      { label: 'Suppliers', hint: 'Who you buy from', glyph: '🚚', hue: '#9B6BF2', href: '/parties?kind=supplier' },
-      { label: 'Bills', hint: 'Purchase invoices to pay', glyph: '📥', hue: '#EF6C7E', href: '/bills' },
-      { label: 'Mileage', hint: 'Log trips for D1', glyph: '🛣', hue: '#4FC3C7', href: '/mileage' },
+      { label: 'Receipts', hint: 'Everything you have scanned', icon: 'receipt', hue: '#1CA8DB', href: '/receipts' },
+      { label: 'Suppliers', hint: 'Who you buy from', icon: 'truck', hue: '#9B6BF2', href: '/parties?kind=supplier' },
+      { label: 'Bills', hint: 'Purchase invoices to pay', icon: 'download', hue: '#EF6C7E', href: '/bills' },
+      { label: 'Mileage', hint: 'Log trips for D1', icon: 'road', hue: '#4FC3C7', href: '/mileage' },
     ],
   },
   {
     title: 'Stock',
     entries: [
-      { label: 'Items', hint: 'Products and services', glyph: '📦', hue: '#F2994A', href: '/items' },
-      { label: 'Stock take', hint: 'Count and adjust', glyph: '🔢', hue: '#6C8AE4', href: '/stocktake' },
+      { label: 'Items', hint: 'Products and services', icon: 'box', hue: '#F2994A', href: '/items' },
+      { label: 'Stock take', hint: 'Count and adjust', icon: 'grid', hue: '#6C8AE4', href: '/stocktake' },
     ],
   },
   {
     title: 'Tax & reports',
     entries: [
-      { label: 'Tax & BAS', hint: 'GST position and deductions', glyph: '◧', hue: '#1878D8', href: '/tax' },
-      { label: 'Analytics', hint: 'Where the money went', glyph: '📈', hue: '#5B6EF5', href: '/analytics' },
-      { label: 'Reports', hint: 'Profit, spending, daybook', glyph: '📊', hue: '#27AE60', href: '/reports' },
-      { label: 'Tax pack', hint: 'Export for your accountant', glyph: '📤', hue: '#9B6BF2', href: '/taxpack' },
-      { label: 'Xero sync', hint: 'Push to your ledger', glyph: '🔗', hue: '#2D9CDB', href: '/connections' },
+      { label: 'Tax & BAS', hint: 'GST position and deductions', icon: 'report', hue: '#1878D8', href: '/tax' },
+      { label: 'Analytics', hint: 'Where the money went', icon: 'chart', hue: '#5B6EF5', href: '/analytics' },
+      { label: 'Reports', hint: 'Profit, spending, daybook', icon: 'report', hue: '#27AE60', href: '/reports' },
+      { label: 'Tax pack', hint: 'Export for your accountant', icon: 'upload', hue: '#9B6BF2', href: '/taxpack' },
+      { label: 'Xero sync', hint: 'Push to your ledger', icon: 'link', hue: '#2D9CDB', href: '/connections' },
     ],
   },
   {
     title: 'Workspace',
     entries: [
-      { label: 'People', hint: 'Who is in this workspace', glyph: '👥', hue: '#1878D8', href: '/members' },
-      { label: 'Business', hint: 'ABN, GST basis, occupation', glyph: '🏢', hue: '#55677E', href: '/settings' },
-      { label: 'Categories', hint: 'How spending is sorted', glyph: '🏷', hue: '#EF6C7E', href: '/categories' },
-      { label: 'Credits', hint: 'Scans this workspace has bought or been given', glyph: '💳', hue: '#1878D8', href: '/credits' },
-      { label: 'Points', hint: 'Yours, earned by scanning', glyph: '✦', hue: '#9B6BF2', href: '/points' },
+      { label: 'People', hint: 'Who is in this workspace', icon: 'users', hue: '#1878D8', href: '/members' },
+      { label: 'Business', hint: 'ABN, GST basis, occupation', icon: 'building', hue: '#55677E', href: '/settings' },
+      { label: 'Categories', hint: 'How spending is sorted', icon: 'tag', hue: '#EF6C7E', href: '/categories' },
+      { label: 'Credits', hint: 'Scans this workspace has bought or been given', icon: 'card', hue: '#1878D8', href: '/credits' },
+      { label: 'Points', hint: 'Yours, earned by scanning', icon: 'spark', hue: '#9B6BF2', href: '/points' },
       // NOT 'Credits'. `/credits` above is the balance, the packs and the
       // purchase history; this screen is THIS MONTH'S USAGE — scans used, and
       // what happens if you run out. Both were labelled 'Credits' after the
       // subscription was dropped and 'Plan' was relabelled without noticing the
       // entry above already existed, so the menu showed the same word twice
       // pointing at two different screens.
-      { label: 'Usage', hint: 'Scans used this month', glyph: '⭐', hue: '#F2994A', href: '/plan' },
+      { label: 'Usage', hint: 'Scans used this month', icon: 'star', hue: '#F2994A', href: '/plan' },
     ],
   },
 ];
@@ -92,38 +93,49 @@ const PERSONAL_GROUPS: Group[] = [
   {
     title: 'Spending',
     entries: [
-      { label: 'All spending', hint: 'Everything you have scanned', glyph: '🧾', hue: '#1CA8DB', href: '/receipts' },
-      { label: 'Analytics', hint: 'Where the money went', glyph: '📈', hue: '#5B6EF5', href: '/analytics' },
-      { label: 'Budgets', hint: 'What each category allows', glyph: '🎯', hue: '#3BA55C', href: '/budgets' },
+      { label: 'All spending', hint: 'Everything you have scanned', icon: 'receipt', hue: '#1CA8DB', href: '/receipts' },
+      { label: 'Analytics', hint: 'Where the money went', icon: 'chart', hue: '#5B6EF5', href: '/analytics' },
+      { label: 'Budgets', hint: 'What each category allows', icon: 'target', hue: '#3BA55C', href: '/budgets' },
     ],
   },
   {
     title: 'Planning',
     entries: [
-      { label: 'Recurring', hint: 'Subscriptions and standing bills', glyph: '🔁', hue: '#6C8AE4', href: '/recurring' },
-      { label: 'Savings goals', hint: 'Put a name on it', glyph: '🏦', hue: '#F2994A', href: '/goals' },
+      { label: 'Recurring', hint: 'Subscriptions and standing bills', icon: 'repeat', hue: '#6C8AE4', href: '/recurring' },
+      { label: 'Savings goals', hint: 'Put a name on it', icon: 'bank', hue: '#F2994A', href: '/goals' },
     ],
   },
   {
     title: 'Your account',
     entries: [
-      { label: 'Credits', hint: 'Scans you have bought or been given', glyph: '💳', hue: '#1878D8', href: '/credits' },
-      { label: 'Points', hint: 'Earned by scanning', glyph: '✦', hue: '#9B6BF2', href: '/points' },
+      { label: 'Credits', hint: 'Scans you have bought or been given', icon: 'card', hue: '#1878D8', href: '/credits' },
+      { label: 'Points', hint: 'Earned by scanning', icon: 'spark', hue: '#9B6BF2', href: '/points' },
+      { label: 'Rewards', hint: 'Trade points for scan credits', icon: 'star', hue: '#F2994A', href: '/rewards' },
+      { label: 'Purchases', hint: 'Every top up and its status', icon: 'doc', hue: '#2D9CDB', href: '/orders' },
       // NOT 'Credits'. `/credits` above is the balance, the packs and the
       // purchase history; this screen is THIS MONTH'S USAGE — scans used, and
       // what happens if you run out. Both were labelled 'Credits' after the
       // subscription was dropped and 'Plan' was relabelled without noticing the
       // entry above already existed, so the menu showed the same word twice
       // pointing at two different screens.
-      { label: 'Usage', hint: 'Scans used this month', glyph: '⭐', hue: '#F2994A', href: '/plan' },
+      { label: 'Usage', hint: 'Scans used this month', icon: 'star', hue: '#F2994A', href: '/plan' },
     ],
   },
   {
     title: 'Household',
     entries: [
-      { label: 'People', hint: 'Share with your family', glyph: '👥', hue: '#1878D8', href: '/members' },
-      { label: 'Categories', hint: 'How spending is sorted', glyph: '🏷', hue: '#9B6BF2', href: '/categories' },
-      { label: 'Settings', hint: 'Workspace and privacy', glyph: '⚙️', hue: '#55677E', href: '/settings' },
+      { label: 'People', hint: 'Share with your family', icon: 'users', hue: '#1878D8', href: '/members' },
+      { label: 'Categories', hint: 'How spending is sorted', icon: 'tag', hue: '#9B6BF2', href: '/categories' },
+      { label: 'Settings', hint: 'Workspace and privacy', icon: 'cog', hue: '#55677E', href: '/settings' },
+    ],
+  },
+  {
+    title: 'App',
+    entries: [
+      { label: 'Notifications', hint: 'What we are allowed to tell you', icon: 'bell', hue: '#5B6EF5', href: '/notifications' },
+      { label: 'Privacy and data', hint: 'What is kept, and for how long', icon: 'shield', hue: '#1B6E4F', href: '/privacy' },
+      { label: 'Export receipts', hint: 'Take everything with you', icon: 'upload', hue: '#4FC3C7', href: '/export' },
+      { label: 'Help', hint: 'Answers, and how to reach us', icon: 'help', hue: '#6C8AE4', href: '/help' },
     ],
   },
 ];
@@ -177,13 +189,13 @@ export function MenuContent({ onNavigate }: { onNavigate?: () => void }) {
                     justifyContent: 'center',
                   }}
                 >
-                  <Text style={{ fontSize: 17 }}>{e.glyph}</Text>
+                  <Icon name={e.icon} size={19} color={e.hue} />
                 </View>
                 <View style={{ flex: 1, gap: 1 }}>
                   <Body strong>{e.label}</Body>
                   <Small numberOfLines={1}>{e.hint}</Small>
                 </View>
-                {e.soon ? <Chip>Soon</Chip> : <Small style={{ fontSize: 18 }}>›</Small>}
+                {e.soon ? <Chip>Soon</Chip> : <Icon name="chevronRight" size={18} color={p.inkFaint} />}
               </Pressable>
             ))}
           </Raised>

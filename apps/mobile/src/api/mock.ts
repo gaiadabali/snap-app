@@ -58,6 +58,23 @@ import type {
   SalesSummary,
   Session,
   SnapApi,
+  AvailableTaxRules,
+  SavedCard,
+  AddSavedCardRequest,
+  CardBrand,
+  UsageKind,
+  UsageItem,
+  UsagePeriod,
+  Reward,
+  RewardRedemption,
+  NotificationPrefs,
+  AlertItem,
+  PrivacySettings,
+  OtpPurpose,
+  RequestOtpRequest,
+  RequestOtpResponse,
+  VerifyOtpRequest,
+  ResetPasswordRequest,
   StockMovement,
   TaxPack,
   Trip,
@@ -594,6 +611,176 @@ function reprice(invoice: Invoice): Invoice {
     status,
   };
 }
+
+/* ── Wallet / preferences state (2026-09-19 redesign) ─────────────────────── */
+
+let savedCards: SavedCard[] = [
+  {
+    id: 'card_seed_4417',
+    provider: 'card',
+    brand: 'visa',
+    last4: '4417',
+    expiryMonth: 8,
+    expiryYear: 2029,
+    label: 'Visa ending 4417',
+    isDefault: true,
+    createdAt: '2026-09-02T04:10:00.000Z',
+  },
+];
+
+function brandOf(digits: string): CardBrand {
+  if (/^4/.test(digits)) return 'visa';
+  if (/^(5[1-5]|2[2-7])/.test(digits)) return 'mastercard';
+  if (/^3[47]/.test(digits)) return 'amex';
+  return 'other';
+}
+
+function labelOf(brand: CardBrand): string {
+  return { visa: 'Visa', mastercard: 'Mastercard', amex: 'Amex', other: 'Card' }[brand];
+}
+
+function maskEmail(email: string): string {
+  const [user = '', domain = ''] = email.split('@');
+  return `${user.slice(0, 1)}${'•'.repeat(Math.max(1, user.length - 1))}@${domain}`;
+}
+
+/** Itemised spend, mirroring the prototype's own demo months. */
+const usageByMonth: Record<UsageKind, Record<string, UsageItem[]>> = {
+  credits: {
+    '2026-09': [
+      { id: 'u1', label: 'Woolworths Metro', occurredAt: '2026-09-16', amount: 1 },
+      { id: 'u2', label: 'Shell Coles Express', occurredAt: '2026-09-16', amount: 1 },
+      { id: 'u3', label: 'Chemist Warehouse', occurredAt: '2026-09-15', amount: 1 },
+      { id: 'u4', label: 'Sushi Hub Bourke St', occurredAt: '2026-09-15', amount: 1 },
+      { id: 'u5', label: 'Mr Wong', occurredAt: '2026-09-12', amount: 1 },
+      { id: 'u6', label: 'Kmart Broadway', occurredAt: '2026-09-12', amount: 1 },
+      { id: 'u7', label: 'Origin Energy, two pages', occurredAt: '2026-09-11', amount: 2 },
+      { id: 'u8', label: 'Coles Newtown', occurredAt: '2026-09-11', amount: 1 },
+      { id: 'u9', label: 'Telstra', occurredAt: '2026-09-07', amount: 1 },
+      { id: 'u10', label: 'Bulk import, eight receipts', occurredAt: '2026-09-05', amount: 8 },
+      { id: 'u11', label: 'Officeworks', occurredAt: '2026-09-02', amount: 1 },
+    ],
+    '2026-08': [
+      { id: 'u12', label: 'Ampol Alexandria', occurredAt: '2026-08-30', amount: 1 },
+      { id: 'u13', label: 'Woolworths Metro', occurredAt: '2026-08-28', amount: 1 },
+      { id: 'u14', label: 'Bunnings Warehouse', occurredAt: '2026-08-24', amount: 1 },
+      { id: 'u15', label: 'Sydney Water, two pages', occurredAt: '2026-08-18', amount: 2 },
+      { id: 'u16', label: 'Bulk import, six receipts', occurredAt: '2026-08-12', amount: 6 },
+      { id: 'u17', label: 'IGA Marrickville', occurredAt: '2026-08-05', amount: 1 },
+    ],
+    '2026-07': [
+      { id: 'u18', label: 'Coles Newtown', occurredAt: '2026-07-28', amount: 1 },
+      { id: 'u19', label: "Dan Murphy's", occurredAt: '2026-07-21', amount: 1 },
+      { id: 'u20', label: 'Officeworks', occurredAt: '2026-07-14', amount: 1 },
+      { id: 'u21', label: 'Origin Energy', occurredAt: '2026-07-07', amount: 1 },
+      { id: 'u22', label: 'Bulk import, four receipts', occurredAt: '2026-07-02', amount: 4 },
+    ],
+  },
+  points: {
+    '2026-09': [
+      { id: 'p1', label: 'yourtal, Priority listing', occurredAt: '2026-09-14', amount: 250 },
+      { id: 'p2', label: 'yourtal, Extra photo slots', occurredAt: '2026-09-09', amount: 120 },
+      { id: 'p3', label: 'yourtal, Featured for a week', occurredAt: '2026-09-02', amount: 400 },
+    ],
+    '2026-08': [
+      { id: 'p4', label: 'yourtal, Priority listing', occurredAt: '2026-08-21', amount: 250 },
+      { id: 'p5', label: 'yourtal, Extra photo slots', occurredAt: '2026-08-12', amount: 120 },
+      { id: 'p6', label: 'yourtal, Listing boost', occurredAt: '2026-08-04', amount: 300 },
+    ],
+    '2026-07': [
+      { id: 'p7', label: 'yourtal, Featured for a week', occurredAt: '2026-07-23', amount: 400 },
+      { id: 'p8', label: 'yourtal, Extra photo slots', occurredAt: '2026-07-09', amount: 120 },
+    ],
+  },
+};
+
+/** Points traded for scan credits — see the warning on `Reward`. */
+const REWARDS: Reward[] = [
+  {
+    id: 'rw-10',
+    name: '10 scan credits',
+    description: 'Ten more receipts, on the house.',
+    cost: 200,
+    credits: 10,
+    imageUrl: null,
+    available: true,
+  },
+  {
+    id: 'rw-25',
+    name: '25 scan credits',
+    description: 'A month of ordinary shopping for most households.',
+    cost: 450,
+    credits: 25,
+    imageUrl: null,
+    available: true,
+  },
+  {
+    id: 'rw-60',
+    name: '60 scan credits',
+    description: 'The best rate — worth saving up for.',
+    cost: 1000,
+    credits: 60,
+    imageUrl: null,
+    available: true,
+  },
+  {
+    id: 'rw-150',
+    name: '150 scan credits',
+    description: 'A full tax year of receipts for a busy household.',
+    cost: 2200,
+    credits: 150,
+    imageUrl: null,
+    available: true,
+  },
+];
+
+let alerts: AlertItem[] = [
+  {
+    id: 'al1',
+    kind: 'budget',
+    title: 'Eating out is close',
+    body: '$185.36 of $320 with 12 days to go.',
+    href: '/budgets',
+    createdAt: '2026-09-15T07:20:00.000Z',
+    readAt: null,
+  },
+  {
+    id: 'al2',
+    kind: 'review',
+    title: 'One receipt to check',
+    body: 'Chemist Warehouse came back at 71% confidence.',
+    href: '/receipts',
+    createdAt: '2026-09-15T06:05:00.000Z',
+    readAt: null,
+  },
+  {
+    id: 'al3',
+    kind: 'credits',
+    title: 'Credits running low',
+    body: 'Seven scans left. Scanning stops when they run out.',
+    href: '/credits',
+    createdAt: '2026-09-14T22:40:00.000Z',
+    readAt: '2026-09-15T01:00:00.000Z',
+  },
+];
+
+let notificationPrefs: NotificationPrefs = {
+  budgetTight: true,
+  reviewNeeded: true,
+  lowCredits: false,
+  recurringDue: true,
+  productNews: false,
+};
+
+let privacySettings: PrivacySettings = {
+  analyticsOptIn: false,
+  crashReports: true,
+  contributeToModel: false,
+  retentionMonths: 84,
+};
+
+/** The last code issued. A real server would not keep this in memory. */
+let lastOtp: { email: string; code: string; purpose: OtpPurpose } | null = null;
 
 export class MockApi implements SnapApi {
   // ── Identity ──
@@ -1912,7 +2099,187 @@ export class MockApi implements SnapApi {
     await settle(130);
     return [...pointLedger].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, limit);
   }
+
+  /* ── Wallet, usage, rewards & preferences (2026-09-19 redesign) ──────────
+     Backed by module-level state so the demo BEHAVES: adding a card makes it
+     selectable at checkout, spending credits shows up in usage, and marking
+     alerts read stays read for the session. A mock that only returns fixtures
+     lets a broken write path pass review. */
+
+  async listAvailableTaxRules(): Promise<AvailableTaxRules[]> {
+    await settle(120);
+    return [
+      {
+        rulesId: 'au-2026-personal', country: 'AU', countryName: 'Australia',
+        version: '2026.1', taxYear: '2026-27', scope: 'personal',
+        consumptionTaxName: 'GST', currency: 'AUD',
+      },
+      {
+        rulesId: 'id-2026-personal', country: 'ID', countryName: 'Indonesia',
+        version: '2026.1', taxYear: '2026', scope: 'personal',
+        consumptionTaxName: 'PPN', currency: 'IDR',
+      },
+    ];
+  }
+
+  async listSavedCards(): Promise<SavedCard[]> {
+    await settle(120);
+    return [...savedCards].sort((a, b) => Number(b.isDefault) - Number(a.isDefault));
+  }
+
+  async addSavedCard(input: AddSavedCardRequest): Promise<SavedCard> {
+    await settle(420);
+    const digits = input.number.replace(/\D/g, '');
+    if (digits.length < 12) throw new Error('That card number is too short.');
+    if (!/^\d{3,4}$/.test(input.cvc)) throw new Error('Check the security code.');
+
+    // The PAN never lands in state — only the last four, as the contract says.
+    const card: SavedCard = {
+      id: `card_${Date.now().toString(36)}`,
+      provider: input.provider,
+      brand: brandOf(digits),
+      last4: digits.slice(-4),
+      expiryMonth: input.expiryMonth,
+      expiryYear: input.expiryYear,
+      label: `${labelOf(brandOf(digits))} ending ${digits.slice(-4)}`,
+      isDefault: input.makeDefault ?? savedCards.length === 0,
+      createdAt: new Date().toISOString(),
+    };
+    savedCards = card.isDefault
+      ? [...savedCards.map((c) => ({ ...c, isDefault: false })), card]
+      : [...savedCards, card];
+    return card;
+  }
+
+  async removeSavedCard(cardId: string): Promise<void> {
+    await settle(200);
+    const gone = savedCards.find((c) => c.id === cardId);
+    savedCards = savedCards.filter((c) => c.id !== cardId);
+    // Removing the default promotes the next one, or there is no default.
+    if (gone?.isDefault && savedCards.length > 0) {
+      savedCards = savedCards.map((c, i) => ({ ...c, isDefault: i === 0 }));
+    }
+  }
+
+  async setDefaultCard(cardId: string): Promise<SavedCard> {
+    await settle(160);
+    savedCards = savedCards.map((c) => ({ ...c, isDefault: c.id === cardId }));
+    const card = savedCards.find((c) => c.id === cardId);
+    if (!card) throw new Error('That card is no longer saved.');
+    return card;
+  }
+
+  async getUsage(kind: UsageKind, month: string): Promise<UsagePeriod> {
+    await settle(180);
+    const items = (usageByMonth[kind] ?? {})[month] ?? [];
+    return { month, kind, total: items.reduce((a, i) => a + i.amount, 0), items };
+  }
+
+  async listUsageMonths(kind: UsageKind): Promise<string[]> {
+    await settle(90);
+    return Object.keys(usageByMonth[kind] ?? {}).sort().reverse();
+  }
+
+  async listRewards(): Promise<Reward[]> {
+    await settle(200);
+    const balance = pointLedger.reduce((a, e) => a + e.delta, 0);
+    // Affordability is a fact about the catalogue as this user sees it, so it
+    // is resolved here rather than left for the screen to recompute.
+    return REWARDS.map((r) => ({ ...r, available: r.available && balance >= r.cost }));
+  }
+
+  async redeemReward(rewardId: string): Promise<RewardRedemption> {
+    await settle(420);
+    const reward = REWARDS.find((r) => r.id === rewardId);
+    if (!reward) throw new Error('That reward is no longer available.');
+    const balance = pointLedger.reduce((a, e) => a + e.delta, 0);
+    if (balance < reward.cost) throw new Error('Not enough points for that one yet.');
+
+    // A redemption is a NEGATIVE ledger entry — see the warning on `Reward`.
+    pointLedger = [
+      ...pointLedger,
+      {
+        id: `pl_${Date.now().toString(36)}`,
+        delta: -reward.cost,
+        reason: `Redeemed: ${reward.name}`,
+        ref: reward.id,
+        app: 'snap',
+        createdAt: new Date().toISOString(),
+      },
+    ];
+    creditBalance += reward.credits;
+    return {
+      rewardId: reward.id,
+      pointsSpent: reward.cost,
+      creditsGranted: reward.credits,
+      pointsBalance: balance - reward.cost,
+      creditsBalance: creditBalance,
+    };
+  }
+
+  async listAlerts(): Promise<AlertItem[]> {
+    await settle(160);
+    return [...alerts].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+
+  async markAlertsRead(): Promise<void> {
+    await settle(120);
+    const now = new Date().toISOString();
+    alerts = alerts.map((a) => (a.readAt ? a : { ...a, readAt: now }));
+  }
+
+  async getNotificationPrefs(): Promise<NotificationPrefs> {
+    await settle(100);
+    return notificationPrefs;
+  }
+
+  async updateNotificationPrefs(patch: Partial<NotificationPrefs>): Promise<NotificationPrefs> {
+    await settle(160);
+    notificationPrefs = { ...notificationPrefs, ...patch };
+    return notificationPrefs;
+  }
+
+  async getPrivacySettings(): Promise<PrivacySettings> {
+    await settle(100);
+    return privacySettings;
+  }
+
+  async updatePrivacySettings(patch: Partial<PrivacySettings>): Promise<PrivacySettings> {
+    await settle(160);
+    const next = { ...privacySettings, ...patch };
+    // The substantiation floor is not negotiable from the client.
+    next.retentionMonths = Math.max(60, next.retentionMonths);
+    privacySettings = next;
+    return privacySettings;
+  }
+
+  async requestOtp(input: RequestOtpRequest): Promise<RequestOtpResponse> {
+    await settle(400);
+    lastOtp = { email: input.email.toLowerCase(), code: '424242', purpose: input.purpose };
+    return { retryAfterSeconds: 30, maskedTarget: maskEmail(input.email) };
+  }
+
+  async verifyOtp(input: VerifyOtpRequest): Promise<Session | null> {
+    await settle(400);
+    const ok =
+      lastOtp !== null &&
+      lastOtp.email === input.email.toLowerCase() &&
+      lastOtp.purpose === input.purpose &&
+      lastOtp.code === input.code.trim();
+    if (!ok) throw new Error('That code is not right. Check the last text and try again.');
+    lastOtp = null;
+    // A reset still has to set a password before there is a session.
+    if (input.purpose === 'reset-password') return null;
+    return this.signIn(input.email);
+  }
+
+  async resetPassword(input: ResetPasswordRequest): Promise<Session> {
+    await settle(450);
+    if (input.newPassword.length < 8) throw new Error('Use at least eight characters.');
+    return this.signIn(input.email);
+  }
 }
+
 
 /** The same shape with nothing in it, so a new workspace has a real answer. */
 function emptyMileage(): MileageSummary {

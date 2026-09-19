@@ -189,7 +189,7 @@ export default function NewInvoiceScreen() {
               })}
             </Raised>
           )}
-          <Button label="＋  Add item" tone="outline" onPress={() => setPicker('item')} />
+          <Button label="Add item" icon="plus" tone="outline" onPress={() => setPicker('item')} />
         </View>
 
         {/* ── Totals ── */}

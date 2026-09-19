@@ -76,20 +76,31 @@ Things a redesign may not quietly change:
 
 ---
 
-## 4. Colour — light ("docket paper")
+## 4. Colour — light ("cool paper")
 
-The grounds were blue until 2026-09-14. That meant the brand blue sat on a tint
-of itself and stopped reading as an accent. They are now a faintly warm
-off-white under a cool blue; that temperature contrast is doing the work.
+The grounds have moved twice, so the short version first: they are **cool** as
+of 2026-09-19, and both clients share the values below.
+
+The long version. They were blue (`#F2F7FE` / `#E5EFFC`) until 2026-09-14, when
+they went to warm docket paper (`#FAF9F7` / `#F2F0EC`) on the argument that the
+brand blue was sitting on a tint of itself and had stopped reading as an accent.
+On 2026-09-19 the mobile redesign ("Snap Apps Prototype.dc.html") moved them to
+the cool set below and web followed the same day.
+
+That is not a reversal of the 2026-09-14 reasoning — it is a narrower reading of
+it. The old blues were saturated enough to compete with the accent; `#F7F9FC` is
+two points off neutral and does not. What it buys back is a UI that shares a
+temperature with its own brand blue instead of leaving `#1878D8` as the one cool
+thing on a warm page.
 
 | Token | Hex | Use |
 |---|---|---|
-| `ground` | `#FAF9F7` | Page background |
-| `surface` | `#F2F0EC` | Recessed band, card fill |
-| `surface-alt` | `#E7E4DE` | Pressed / secondary fill |
+| `ground` | `#F7F9FC` | Page background |
+| `surface` | `#EAF0F8` | Recessed band, card fill |
+| `surface-alt` | `#DCE5F2` | Pressed / secondary fill |
 | `ink` | `#14181D` | Primary text |
 | `ink-muted` | `#5A6068` | Body, secondary text |
-| `ink-faint` | `#8D9299` | Labels, captions |
+| `ink-faint` | `#858B93` | Labels, captions |
 | `accent` | `#1878D8` | Brand blue — primary action |
 | `accent-deep` | `#0060C0` | Hover / pressed |
 | `accent-soft` | `#E4EEFA` | Tinted fill |
@@ -101,8 +112,8 @@ off-white under a cool blue; that temperature contrast is doing the work.
 | `warn-soft` | `#F7EEDC` | |
 | `good` | `#1B6E4F` | Validated, balanced |
 | `good-soft` | `#E2EFE9` | |
-| `rule` | `#E2DFD8` | Hairline |
-| `rule-strong` | `#C9C5BC` | Emphasised hairline, input border |
+| `rule` | `#DCE3EE` | Hairline |
+| `rule-strong` | `#C2CEDF` | Emphasised hairline, input border |
 | `void` | `#101319` | The one inverted band |
 | `void-ink` | `#F4F2EE` | Text on void |
 | `void-muted` | `#8E949E` | |
@@ -112,12 +123,12 @@ off-white under a cool blue; that temperature contrast is doing the work.
 
 | Token | Hex | | Token | Hex |
 |---|---|---|---|---|
-| `ground` | `#0E1116` | | `risk` | `#F08B80` |
-| `surface` | `#161A21` | | `risk-soft` | `#2C1A18` |
-| `surface-alt` | `#1F242C` | | `warn` | `#E5B871` |
-| `ink` | `#EDEBE7` | | `warn-soft` | `#2A2114` |
-| `ink-muted` | `#9BA1A9` | | `good` | `#6FD3AC` |
-| `ink-faint` | `#6C737C` | | `good-soft` | `#11241D` |
+| `ground` | `#121820` | | `risk` | `#F08B80` |
+| `surface` | `#1B222C` | | `risk-soft` | `#2C1A18` |
+| `surface-alt` | `#242C38` | | `warn` | `#E5B871` |
+| `ink` | `#F4F3F0` | | `warn-soft` | `#2A2114` |
+| `ink-muted` | `#9AA2AA` | | `good` | `#6FD3AC` |
+| `ink-faint` | `#7C848D` | | `good-soft` | `#11241D` |
 | `accent` | `#4DA3F5` | | `rule` | `#262B33` |
 | `accent-deep` | `#1878D8` | | `rule-strong` | `#3A414B` |
 | `accent-soft` | `#13243A` | | `void` | `#060809` |
@@ -376,11 +387,17 @@ Sample testimonials must stay visibly marked as samples or come out entirely.
 §3.7 gives the legal reason; the commercial reason is that one unverifiable
 claim discredits every real number on a compliance product.
 
-### 12.5 Mobile palette — closed
+### 12.5 Mobile palette — closed, then reopened and closed again
 
-Done in commit `bafe7fb`. `apps/mobile/src/theme/tokens.ts` now carries the web
-values byte-for-byte (`ground #FAF9F7`, dark `#0E1116`). One palette, two
-clients, as required. No further work.
+First closed in commit `bafe7fb`, which put `apps/mobile/src/theme/tokens.ts` on
+the web values byte-for-byte (`ground #FAF9F7`, dark `#0E1116`).
+
+Reopened on 2026-09-19 by the mobile redesign, whose prototype ships its own
+cool neutrals. Rather than let the two clients drift apart again, **web moved to
+match mobile** — see §4. Both now carry `ground #F7F9FC` / dark `#121820`.
+
+One palette, two clients, still the requirement. The thing to preserve is not a
+particular hex but the fact that neither client changes a neutral alone.
 
 ### 12.6 Mechanism-led copy — open, and the largest remaining job
 

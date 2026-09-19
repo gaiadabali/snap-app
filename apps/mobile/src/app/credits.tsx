@@ -1,20 +1,21 @@
-import { useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useState } from 'react';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, {
-  FadeInDown,
-  useAnimatedStyle,
-  useSharedValue,
-  withSequence,
-  withTiming,
-} from 'react-native-reanimated';
 
-import { api, type CreditPack, type CreditPurchase } from '@/api';
-import { Loading } from '@/components/form';
-import { Raised } from '@/components/rich';
-import { Body, Chip, Divider, Figure, Label, Screen, Small } from '@/components/ui';
-import { formatAud, formatShortDate, radius, space, usePalette } from '@/theme';
+import { api, type CreditPack, type SavedCard } from '@/api';
+import { Icon } from '@/components/Icon';
+import { GradientHero } from '@/components/rich';
+import {
+  Body,
+  Button,
+  Card,
+  Notice,
+  Screen,
+  ScreenHeader,
+  Small,
+} from '@/components/ui';
+import { control, formatAud, numeric, radius, space, type, usePalette } from '@/theme';
 
 /**
  * Credits: scans bought with money, or granted free. Tenant-scoped, never
@@ -25,228 +26,279 @@ import { formatAud, formatShortDate, radius, space, usePalette } from '@/theme';
  * "what did I buy, or get for free, on top of that" and never expires. Two
  * meters that behave differently must never share one number.
  *
- * There are three server resources here, not one — `GET /v1/credit-packs`,
- * `GET /v1/credits` and `GET /v1/credits/purchases` — because the server does
- * not compose them into a screen-shaped response either. This is the view
- * model this SCREEN wants, built from the three real ones; it is not a wire
- * type, and nothing here is exported for another screen to depend on.
+ * Rebuilt 2026-09-19 as the prototype's "Credits" screen: balance, a grid of
+ * packs, the saved cards to charge, and a checkout bar pinned to the bottom
+ * that only becomes live once BOTH a pack and a method are chosen. The bar is
+ * pinned rather than inline because the packs grid can push it under the fold
+ * on a small phone, and a checkout you have to scroll to find is a checkout
+ * people abandon.
  */
 export default function CreditsScreen() {
   const p = usePalette();
+  const router = useRouter();
   const insets = useSafeAreaInsets();
+
   const [packs, setPacks] = useState<CreditPack[] | null>(null);
   const [remaining, setRemaining] = useState<number | null>(null);
-  const [purchases, setPurchases] = useState<CreditPurchase[] | null>(null);
-  const [buying, setBuying] = useState<string | null>(null);
+  const [cards, setCards] = useState<SavedCard[] | null>(null);
+  const [pack, setPack] = useState<CreditPack | null>(null);
+  const [cardId, setCardId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  const load = useCallback(async () => {
-    // In parallel: three independent resources, not one endpoint pretending
-    // to be three.
-    const [packRows, balance, purchaseRows] = await Promise.all([
-      api().listCreditPacks(),
-      api().getCreditBalance(),
-      api().listCreditPurchases(),
-    ]);
-    setPacks(packRows);
-    setRemaining(balance.creditsRemaining);
-    setPurchases(purchaseRows);
-  }, []);
 
   useFocusEffect(
     useCallback(() => {
-      void load();
-    }, [load]),
+      let live = true;
+      void api().listCreditPacks().then((x) => live && setPacks(x)).catch(() => live && setPacks([]));
+      void api().getCreditBalance().then((b) => live && setRemaining(b.creditsRemaining)).catch(() => {});
+      void api()
+        .listSavedCards()
+        .then((x) => {
+          if (!live) return;
+          setCards(x);
+          // Preselect the default, which is what almost everyone wants.
+          setCardId((cur) => cur ?? x.find((c) => c.isDefault)?.id ?? null);
+        })
+        .catch(() => live && setCards([]));
+      return () => {
+        live = false;
+      };
+    }, []),
   );
 
-  async function buy(pack: CreditPack) {
-    setError(null);
-    setBuying(pack.code);
-    try {
-      // Two calls, not one: `start` records intent only (no payment
-      // processor exists yet to redirect to), and `fulfil` is this demo
-      // standing in for what a processor's webhook will call once one
-      // exists. Collapsing them into a single "purchase" call would hide
-      // that there is no checkout here — see docs/ECOSYSTEM.md D27.
-      const started = await api().startCreditPurchase(pack.code);
-      await api().fulfilCreditPurchase(started.id);
-      await load();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not complete that purchase.');
-    } finally {
-      setBuying(null);
-    }
-  }
-
-  const loaded = packs !== null && remaining !== null && purchases !== null;
+  const hasCards = (cards?.length ?? 0) > 0;
+  const ready = !!pack && !!cardId;
 
   return (
     <Screen>
       <ScrollView
         contentContainerStyle={{
-          padding: space.lg,
+          padding: 20,
           paddingTop: insets.top + space.md,
-          paddingBottom: insets.bottom + space.xxl,
-          gap: space.lg,
+          paddingBottom: space.xl,
+          gap: 14,
         }}
       >
-        <View style={{ gap: space.xs }}>
-          <Label>Credits</Label>
-          <Figure size="h1">Scans you own</Figure>
-          <Small>
-            Bought with money, or granted free. This never resets — it is separate from your
-            plan's monthly quota (see Plan).
-          </Small>
+        <ScreenHeader title="Credits" onBack={() => router.back()} />
+
+        <GradientHero style={{ borderRadius: 22 }}>
+          <Text style={[type.label, { color: 'rgba(255,255,255,0.95)' }]}>Credits you own</Text>
+          <Text
+            style={{
+              fontSize: 44,
+              lineHeight: 50,
+              fontWeight: '700',
+              color: '#FFFFFF',
+              marginTop: 5,
+              ...numeric,
+            }}
+          >
+            {remaining ?? '—'}
+          </Text>
+          <Text style={[type.body, { color: 'rgba(255,255,255,0.95)', marginTop: 4 }]}>
+            Credits never expire and never reset.
+          </Text>
+        </GradientHero>
+
+        {/* Packs */}
+        <View style={{ gap: space.sm }}>
+          <Text style={[type.label, { color: p.inkMuted }]}>Top up</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 9 }}>
+            {(packs ?? []).map((pk) => {
+              const on = pack?.code === pk.code;
+              return (
+                <Pressable
+                  key={pk.code}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: on }}
+                  accessibilityLabel={`${pk.credits} scans for ${formatAud(pk.priceAud)}`}
+                  onPress={() => setPack(on ? null : pk)}
+                  style={{
+                    // Three per row, accounting for the two 9pt gaps.
+                    width: '31.5%',
+                    flexGrow: 1,
+                    borderWidth: 1.5,
+                    borderColor: on ? p.accent : p.rule,
+                    backgroundColor: on ? p.accentSoft : p.surface,
+                    borderRadius: radius.md,
+                    paddingVertical: 14,
+                    paddingHorizontal: space.sm,
+                    alignItems: 'center',
+                    gap: 3,
+                  }}
+                >
+                  <Text style={{ ...type.h3, fontSize: 18, fontWeight: '700', ...numeric, color: p.ink }}>
+                    {pk.credits}
+                  </Text>
+                  <Small>scans</Small>
+                  <Text style={[type.bodyStrong, numeric, { color: p.ink }]}>{formatAud(pk.priceAud)}</Text>
+                </Pressable>
+              );
+            })}
+            {packs?.length === 0 ? <Small>No packs are on sale right now.</Small> : null}
+          </View>
         </View>
 
-        {!loaded ? (
-          <Loading />
-        ) : (
-          <>
-            <BalanceCard remaining={remaining} />
+        {/* Pay with */}
+        <View style={{ gap: space.sm }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Text style={[type.label, { color: p.inkMuted }]}>Pay with</Text>
+            {hasCards ? (
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => router.push('/wallet/add')}
+                style={{ minHeight: control.tap, justifyContent: 'center', paddingHorizontal: 10, marginRight: -10 }}
+              >
+                <Text style={[type.smallStrong, { color: p.accentText }]}>Add another</Text>
+              </Pressable>
+            ) : null}
+          </View>
 
-            {/* A new account starts with 10 free scans — a fixed fact of
-                onboarding, not a row this screen can fetch: the server's
-                balance is one aggregate number (`creditsRemaining`), with no
-                per-grant breakdown endpoint to say which part of it was
-                free. Said here as copy instead of invented as data. */}
-            <Small>Every account starts with 10 free scans, included in the balance above.</Small>
-
-            <View style={{ gap: space.sm }}>
-              <Label>Buy more</Label>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
-                {packs.map((pack, i) => (
-                  <PackTile
-                    key={pack.code}
-                    pack={pack}
-                    index={i}
-                    busy={buying === pack.code}
-                    disabled={buying !== null}
-                    onBuy={() => void buy(pack)}
-                  />
-                ))}
-              </View>
-              {error ? (
-                <Small muted={false} style={{ color: p.risk }}>
-                  {error}
-                </Small>
-              ) : null}
-              <Small>
-                No real checkout exists yet: buying here starts a purchase and fulfils it
-                immediately, the same two steps a payment processor's webhook will do later.
-              </Small>
-            </View>
-
-            <View style={{ gap: space.sm }}>
-              <Label>Purchase history</Label>
-              <Raised style={{ padding: 0 }}>
-                {purchases.length === 0 ? (
-                  <View style={{ padding: space.lg }}>
-                    <Small>No purchases yet.</Small>
-                  </View>
-                ) : (
-                  purchases.map((x, i) => (
-                    <View key={x.id}>
-                      {i > 0 ? <Divider /> : null}
-                      <Animated.View
-                        entering={FadeInDown.duration(240).delay(i * 40)}
-                        style={{
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          gap: space.md,
-                          paddingHorizontal: space.lg,
-                          paddingVertical: 13,
-                        }}
-                      >
-                        <View style={{ flex: 1, gap: 1 }}>
-                          <Body strong>{x.credits} scans</Body>
-                          <Small>{formatShortDate(x.createdAt.slice(0, 10))}</Small>
-                        </View>
-                        <Figure size="body">{formatAud(x.priceAud)}</Figure>
-                        {x.status !== 'paid' ? (
-                          <Chip tone={x.status === 'failed' ? 'risk' : 'warn'}>{x.status}</Chip>
-                        ) : null}
-                      </Animated.View>
+          {cards === null ? (
+            <Small>Loading your payment methods…</Small>
+          ) : hasCards ? (
+            <Card padded={false}>
+              {cards.map((c, i) => {
+                const on = cardId === c.id;
+                return (
+                  <Pressable
+                    key={c.id}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: on }}
+                    onPress={() => setCardId(c.id)}
+                    style={{
+                      minHeight: 62,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 13,
+                      paddingHorizontal: space.lg,
+                      paddingVertical: 11,
+                      borderTopWidth: i === 0 ? 0 : 1,
+                      borderTopColor: p.rule,
+                    }}
+                  >
+                    <View
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 10,
+                        backgroundColor: p.surfaceAlt,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Icon name={c.provider === 'card' ? 'card' : 'wallet'} size={20} color={p.inkStrong} />
                     </View>
-                  ))
-                )}
-              </Raised>
-            </View>
-          </>
-        )}
+                    <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+                      <Body strong numberOfLines={1}>
+                        {c.label}
+                      </Body>
+                      <Small>
+                        {c.provider === 'card'
+                          ? `Expires ${String(c.expiryMonth).padStart(2, '0')}/${String(c.expiryYear).slice(-2)}`
+                          : 'Confirmed on this device'}
+                      </Small>
+                    </View>
+                    <Radio on={on} />
+                  </Pressable>
+                );
+              })}
+            </Card>
+          ) : (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push('/wallet/add')}
+              style={{
+                backgroundColor: p.surface,
+                borderRadius: radius.md,
+                padding: 18,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 13,
+              }}
+            >
+              <View
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 11,
+                  backgroundColor: p.surfaceAlt,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Icon name="plus" size={20} color={p.accent} />
+              </View>
+              <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+                <Body strong>No payment method yet</Body>
+                <Small>Add a card or wallet before your first top up.</Small>
+              </View>
+            </Pressable>
+          )}
+        </View>
+
+        {error ? <Notice tone="risk" icon="alert">{error}</Notice> : null}
+
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.push('/orders')}
+          style={{ minHeight: control.tap, justifyContent: 'center' }}
+        >
+          <Text style={[type.bodyStrong, { color: p.accentText }]}>See past purchases</Text>
+        </Pressable>
       </ScrollView>
+
+      {/* Checkout bar */}
+      <View
+        style={{
+          borderTopWidth: 1,
+          borderTopColor: p.rule,
+          backgroundColor: p.ground,
+          paddingHorizontal: 20,
+          paddingTop: space.md,
+          paddingBottom: insets.bottom + 14,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 14,
+        }}
+      >
+        <View style={{ flex: 1, minWidth: 0, gap: 1 }}>
+          <Small>{pack ? `${pack.credits} scans` : 'Choose a pack'}</Small>
+          <Text style={[type.h2, numeric, { color: p.ink }]}>
+            {pack ? formatAud(pack.priceAud) : '—'}
+          </Text>
+        </View>
+        <Button
+          label="Pay"
+          disabled={!ready}
+          style={{ paddingHorizontal: 22 }}
+          onPress={() => {
+            if (!pack || !cardId) return;
+            setError(null);
+            router.push({ pathname: '/pay', params: { pack: pack.code, card: cardId } });
+          }}
+        />
+      </View>
     </Screen>
   );
 }
 
-/** The headline balance. Pulses on a real change — a purchase landing — never on its own. */
-function BalanceCard({ remaining }: { remaining: number }) {
-  const scale = useSharedValue(1);
-  const prev = useRef(remaining);
-
-  useEffect(() => {
-    if (prev.current !== remaining) {
-      scale.value = withSequence(withTiming(1.06, { duration: 140 }), withTiming(1, { duration: 180 }));
-      prev.current = remaining;
-    }
-  }, [remaining, scale]);
-
-  const style = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
-
-  return (
-    <Animated.View entering={FadeInDown.duration(260)}>
-      <Raised style={{ gap: 4, alignItems: 'flex-start' }}>
-        <Label>Remaining</Label>
-        <Animated.View style={style}>
-          <Figure size="display" tone="accent">
-            {remaining}
-          </Figure>
-        </Animated.View>
-        <Small>{remaining === 1 ? 'scan' : 'scans'} ready to use, any time</Small>
-      </Raised>
-    </Animated.View>
-  );
-}
-
-function PackTile({
-  pack,
-  index,
-  busy,
-  disabled,
-  onBuy,
-}: {
-  pack: CreditPack;
-  index: number;
-  busy: boolean;
-  disabled: boolean;
-  onBuy: () => void;
-}) {
+function Radio({ on }: { on: boolean }) {
   const p = usePalette();
   return (
-    <Animated.View
-      entering={FadeInDown.duration(240).delay(index * 40)}
-      style={{ flexGrow: 1, flexBasis: '30%', minWidth: 96 }}
+    <View
+      style={{
+        width: 22,
+        height: 22,
+        borderRadius: 11,
+        borderWidth: 2,
+        borderColor: on ? p.accent : p.ruleStrong,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
     >
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`Buy ${pack.credits} scans for ${formatAud(pack.priceAud)}`}
-        disabled={disabled}
-        onPress={onBuy}
-        style={({ pressed }) => ({
-          borderRadius: radius.lg,
-          borderWidth: 1.5,
-          borderColor: p.rule,
-          backgroundColor: pressed ? p.surfaceAlt : p.surface,
-          padding: space.md,
-          gap: 4,
-          alignItems: 'center',
-          opacity: disabled && !busy ? 0.5 : 1,
-        })}
-      >
-        <Figure size="h2">{pack.credits}</Figure>
-        <Small>scans</Small>
-        <Body strong>{busy ? '…' : formatAud(pack.priceAud)}</Body>
-      </Pressable>
-    </Animated.View>
+      {on ? (
+        <View style={{ width: 11, height: 11, borderRadius: 6, backgroundColor: p.accent }} />
+      ) : null}
+    </View>
   );
 }

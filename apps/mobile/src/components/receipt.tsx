@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Image, Modal, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Icon } from '@/components/Icon';
 
 import type { DocumentView } from '@/api';
 import { Body, Chip, Label, Small } from '@/components/ui';
@@ -396,7 +397,7 @@ export function BalanceNote({ doc }: { doc: DocumentView }) {
         paddingVertical: 10,
       }}
     >
-      <Text style={{ fontSize: 15 }}>{balanced ? '✓' : '⚠'}</Text>
+      <Icon name={balanced ? 'check' : 'alert'} size={16} color={balanced ? p.good : p.warn} />
       <Body style={{ flex: 1, color: balanced ? p.accent : p.warn }}>
         {balanced
           ? `${doc.lines.length} line${doc.lines.length === 1 ? '' : 's'} adding to ${formatAud(doc.payableAmount)}`

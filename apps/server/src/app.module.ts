@@ -18,6 +18,14 @@ import {
   TaxRulesCatalogueController,
   TaxRulesController,
 } from './taxrules/taxrules.controller.js';
+import {
+  AlertsController,
+  AuthCodesController,
+  MePreferencesController,
+  RewardsController,
+  UsageController,
+  WalletController,
+} from './redesign/redesign.controller.js';
 import { ReconciliationController } from './reconciliation/reconciliation.controller.js';
 import { SettingsController } from './settings/settings.controller.js';
 import { StatementsController } from './statements/statements.controller.js';
@@ -107,6 +115,16 @@ export class HealthController {
     TaxRulesCatalogueController,
     CreditsController,
     PointsController,
+
+    /* The 2026-09-19 mobile redesign. Read the file header before relying on
+       any of these — they are in-process stubs, and the three auth-code
+       routes deliberately refuse rather than pretend. */
+    WalletController,
+    UsageController,
+    RewardsController,
+    AlertsController,
+    MePreferencesController,
+    AuthCodesController,
   ],
 })
 export class AppModule {}

@@ -1,8 +1,16 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import type { ReactNode } from 'react';
-import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import {
+  StyleSheet,
+  Text,
+  View,
+  useColorScheme,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 
-import { numeric, radius, space, type, usePalette } from '@/theme';
+import { Icon, type IconName } from '@/components/Icon';
+import { heroGradient, hueFor, numeric, radius, space, type, usePalette } from '@/theme';
 
 /**
  * The richer surface of the design system.
@@ -19,52 +27,71 @@ import { numeric, radius, space, type, usePalette } from '@/theme';
    One hue per category so the eye can sort the list before reading a word.
    Chosen for even perceived brightness so no single row shouts louder than
    the rest, and legible on both grounds. */
-const CATEGORY: Record<string, { hue: string; glyph: string }> = {
-  Fuel: { hue: '#F2994A', glyph: '⛽' },
-  'Meals on the road': { hue: '#EF6C7E', glyph: '🍽' },
-  Accommodation: { hue: '#9B6BF2', glyph: '🛏' },
-  'Truck parts & maintenance': { hue: '#2D9CDB', glyph: '🔧' },
-  Tolls: { hue: '#1CA8DB', glyph: '🛣' },
-  'Phone & internet': { hue: '#5B6EF5', glyph: '📱' },
-  'Protective clothing': { hue: '#27AE60', glyph: '🦺' },
-  'Truck cleaning supplies': { hue: '#4FC3C7', glyph: '🧼' },
-  Insurance: { hue: '#6C8AE4', glyph: '🛡' },
-  'Laundry on the road': { hue: '#E876B8', glyph: '🧺' },
+/**
+ * Business categories, which the prototype does not cover — it is a personal
+ * -finance board. The personal hues now come from `hueFor` in the theme so the
+ * two clients agree; only these business rows are held locally, on the same
+ * palette range so the two workspaces never look like the same data reordered.
+ */
+const CATEGORY: Record<string, { hue: string; ink: string; icon: IconName }> = {
+  Fuel: { hue: '#F2994A', ink: '#9A5A12', icon: 'fuel' },
+  'Meals on the road': { hue: '#EF6C7E', ink: '#B8384C', icon: 'fork' },
+  Accommodation: { hue: '#9B6BF2', ink: '#7A46D8', icon: 'bag' },
+  'Truck parts & maintenance': { hue: '#2D9CDB', ink: '#1A6E9E', icon: 'cog' },
+  Tolls: { hue: '#1CA8DB', ink: '#116C8C', icon: 'fuel' },
+  'Phone & internet': { hue: '#5B6EF5', ink: '#4453C9', icon: 'bolt' },
+  'Protective clothing': { hue: '#27AE60', ink: '#1B7A43', icon: 'shield' },
+  'Truck cleaning supplies': { hue: '#4FC3C7', ink: '#2A8286', icon: 'spark' },
+  Insurance: { hue: '#6C8AE4', ink: '#4A64B8', icon: 'shield' },
+  'Laundry on the road': { hue: '#E876B8', ink: '#A6407C', icon: 'bag' },
+};
 
-  // Personal. A separate palette range from the business categories above so
-  // the two workspaces never look like the same data in a different order.
-  Groceries: { hue: '#3BA55C', glyph: '🛒' },
-  'Eating out': { hue: '#F2994A', glyph: '🍜' },
-  Transport: { hue: '#5B6EF5', glyph: '🚆' },
-  'Bills & utilities': { hue: '#6C8AE4', glyph: '💡' },
-  Health: { hue: '#EF6C7E', glyph: '💊' },
-  Shopping: { hue: '#9B6BF2', glyph: '🛍' },
-  Home: { hue: '#4FC3C7', glyph: '🏠' },
-  Fun: { hue: '#E876B8', glyph: '🎬' },
+/** Icon per personal category. Hue and ink come from the theme's `hueFor`. */
+const PERSONAL_ICON: Record<string, IconName> = {
+  Groceries: 'cart',
+  'Eating out': 'fork',
+  Transport: 'fuel',
+  'Bills & utilities': 'bolt',
+  Health: 'heart',
+  Shopping: 'bag',
+  Home: 'home',
+  'Home & garden': 'home',
+  Fun: 'spark',
 };
 
 export function categoryHue(category: string): string {
-  return CATEGORY[category]?.hue ?? '#8A9BB0';
+  return CATEGORY[category]?.hue ?? hueFor(category).hue;
 }
 
-/** Tinted disc carrying the category glyph. */
+/**
+ * Tinted disc carrying the category icon.
+ *
+ * The glyphs used to be emoji. They rendered at a different weight on every
+ * platform — and on Android several of them arrived as a blank box — so they
+ * are stroke icons now, tinted with the category's own ink rather than drawn
+ * in whatever colours the vendor font ships.
+ */
 export function CategoryIcon({ category, size = 44 }: { category: string; size?: number }) {
-  const meta = CATEGORY[category];
-  const hue = meta?.hue ?? '#8A9BB0';
+  const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
+  const business = CATEGORY[category];
+  const personal = hueFor(category, scheme);
+  const hue = business?.hue ?? personal.hue;
+  const ink = business?.ink ?? personal.ink;
+  const icon = business?.icon ?? PERSONAL_ICON[category] ?? 'tag';
   return (
     <View
       style={{
         width: size,
         height: size,
         borderRadius: size / 2,
-        // 22% tint of the category hue: enough colour to sort by, never enough
+        // A tint of the category hue: enough colour to sort by, never enough
         // to compete with the amount on the right.
         backgroundColor: `${hue}38`,
         alignItems: 'center',
         justifyContent: 'center',
       }}
     >
-      <Text style={{ fontSize: size * 0.44 }}>{meta?.glyph ?? '🧾'}</Text>
+      <Icon name={icon} size={Math.round(size * 0.48)} color={ink} />
     </View>
   );
 }
@@ -85,24 +112,24 @@ export function GradientHero({
   tone?: 'brand' | 'risk';
 }) {
   const p = usePalette();
+  /* The brand stops, from the 2026-09-19 prototype. Deeper and flatter than
+     the first build's sky-blue ramp: the redesign runs the gradient *within*
+     the dark half of the brand blue, which is what lets 40pt white figures sit
+     on it without the top-left corner washing them out. */
   const colors: [string, string, string] =
     tone === 'risk'
       ? ['#E0574B', '#C4322A', '#9E2419']
-      : ['#2FA4E8', '#1878D8', '#0F5BB5'];
+      : [...heroGradient.colors];
   return (
     <LinearGradient
       colors={colors}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
+      locations={tone === 'risk' ? undefined : [...heroGradient.locations]}
+      start={heroGradient.start}
+      end={heroGradient.end}
       style={[
         {
-          borderRadius: 22,
-          padding: space.xl,
-          shadowColor: tone === 'risk' ? '#9E2419' : '#0F5BB5',
-          shadowOpacity: 0.3,
-          shadowRadius: 18,
-          shadowOffset: { width: 0, height: 8 },
-          elevation: 8,
+          borderRadius: radius.xxl,
+          padding: 22,
           overflow: 'hidden',
         },
         style,

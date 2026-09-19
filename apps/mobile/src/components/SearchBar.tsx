@@ -1,4 +1,5 @@
 import { Pressable, Text, TextInput, View } from 'react-native';
+import { Icon } from '@/components/Icon';
 
 import { Chip } from '@/components/ui';
 import { radius, space, usePalette } from '@/theme';
@@ -70,7 +71,7 @@ export function SearchBar({
         paddingHorizontal: space.md,
       }}
     >
-      <Text style={{ fontSize: 15, color: p.inkFaint }}>⌕</Text>
+      <Icon name="search" size={18} color={p.inkFaint} />
       <TextInput
         value={value}
         onChangeText={onChangeText}

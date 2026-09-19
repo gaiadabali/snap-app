@@ -5,7 +5,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, type DocumentView } from '@/api';
 import { CategoryBar, CategoryIcon } from '@/components/rich';
-import { Body, Chip, Figure, Label, Screen, Small } from '@/components/ui';
+import { Body, Button, Chip, Figure, Label, Screen, ScreenHeader, Small } from '@/components/ui';
+import { Icon } from '@/components/Icon';
 import { Empty } from '@/components/form';
 import {
   PeriodChips,
@@ -136,6 +137,7 @@ export default function ReceiptsScreen() {
         }
         ListHeaderComponent={
           <View style={{ paddingHorizontal: space.lg, paddingTop: space.sm, gap: space.md }}>
+            <ScreenHeader title="Spending" onBack={() => router.back()} />
             <WorkspaceSwitch />
 
             <SearchBar value={query} onChangeText={setQuery} />
@@ -191,21 +193,35 @@ export default function ReceiptsScreen() {
         )}
         ListEmptyComponent={
           docs === null ? null : (
-            <View style={{ padding: space.lg }}>
-              {query || period !== 'all' ? (
-                <Empty
-                  title="Nothing matches"
-                  detail={
-                    query
-                      ? `No receipt in this period matches “${query}”. Try All, or a different spelling.`
-                      : 'No receipts in this period. Try a wider one.'
-                  }
-                />
+            <View style={{ padding: space.lg, gap: space.md }}>
+              {query ? (
+                <>
+                  <Empty
+                    title="Nothing matches"
+                    detail={`No receipt in this period matches “${query}”. Try a wider period, or a different spelling.`}
+                  />
+                  <Button label="Clear search" tone="outline" onPress={() => setQuery('')} />
+                </>
+              ) : loaded.length > 0 ? (
+                <>
+                  <Empty
+                    title="Nothing in this period"
+                    detail="No receipts fall inside these dates. Try a wider one."
+                  />
+                  <Button label="Show everything" tone="outline" onPress={() => setPeriod('all')} />
+                </>
               ) : (
-                <Empty
-                  title="Nothing scanned yet"
-                  detail="Tap Scan to capture your first receipt."
-                />
+                <>
+                  <Empty
+                    title="Nothing scanned yet"
+                    detail="Photograph your first receipt and it lands here, searchable, with the original attached."
+                  />
+                  <Button
+                    label="Scan a receipt"
+                    icon="camera"
+                    onPress={() => router.push('/capture')}
+                  />
+                </>
               )}
             </View>
           )
@@ -239,7 +255,10 @@ export default function ReceiptsScreen() {
               </View>
             </View>
 
-            <Figure size="h2">{formatAud(item.payableAmount)}</Figure>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
+              <Figure size="h2">{formatAud(item.payableAmount)}</Figure>
+              <Icon name="chevronRight" size={17} color={p.inkFaint} />
+            </View>
           </Pressable>
         )}
       />

@@ -107,10 +107,10 @@ export default function BusinessHome() {
 
         {/* Four shortcuts. Scan is not among them — it is the middle tab. */}
         <View style={{ flexDirection: 'row', paddingHorizontal: space.lg, gap: space.sm }}>
-          <Action glyph="🧾" label="Receipts" href="/receipts" />
-          <Action glyph="📈" label="Analytics" href="/analytics" />
-          <Action glyph="✏️" label="Invoice" href="/invoice/new" />
-          <Action glyph="📥" label="Bills" href="/bills" />
+          <Action icon="receipt" label="Receipts" href="/receipts" />
+          <Action icon="chart" label="Analytics" href="/analytics" />
+          <Action icon="tag" label="Invoice" href="/invoice/new" />
+          <Action icon="upload" label="Bills" href="/bills" />
         </View>
 
         {/* Only shown when there is something to do. An empty card is noise. */}
@@ -121,7 +121,7 @@ export default function BusinessHome() {
               {needsReview > 0 ? (
                 <AttentionRow
                   first
-                  glyph="👀"
+                  icon="search"
                   title="Receipts to check"
                   detail="Confirm what was read from the photo"
                   value={String(needsReview)}
@@ -132,7 +132,7 @@ export default function BusinessHome() {
               {Number(atRisk) > 0 ? (
                 <AttentionRow
                   first={needsReview === 0}
-                  glyph="⚠️"
+                  icon="alert"
                   title="GST credits at risk"
                   detail={`${overview?.bas.atRiskCount ?? 0} missing a valid tax invoice`}
                   value={formatAud(atRisk)}

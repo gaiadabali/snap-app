@@ -51,19 +51,19 @@ export type ScenePalette = Record<PaletteToken, string>;
  * server/first-client render, where `getComputedStyle` is unavailable.
  */
 const BOOTSTRAP: ScenePalette = {
-  ground: '#FAF9F7',
-  surface: '#F2F0EC',
-  'surface-alt': '#E7E4DE',
+  ground: '#F7F9FC',
+  surface: '#EAF0F8',
+  'surface-alt': '#DCE5F2',
   ink: '#14181D',
   'ink-muted': '#5A6068',
-  'ink-faint': '#8D9299',
+  'ink-faint': '#858B93',
   accent: '#1878D8',
   'accent-deep': '#0060C0',
   scan: '#1CA8DB',
   risk: '#C4322A',
   good: '#1B6E4F',
-  rule: '#E2DFD8',
-  'rule-strong': '#C9C5BC',
+  rule: '#DCE3EE',
+  'rule-strong': '#C2CEDF',
   void: '#101319',
 };
 

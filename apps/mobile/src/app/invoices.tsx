@@ -73,7 +73,7 @@ export default function InvoicesScreen() {
               </View>
             </GradientHero>
             {kind === 'invoice' ? (
-              <Button label="＋  New invoice" onPress={() => router.push('/invoice/new')} />
+              <Button label="New invoice" icon="plus" onPress={() => router.push('/invoice/new')} />
             ) : null}
           </View>
         }

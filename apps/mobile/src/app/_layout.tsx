@@ -2,16 +2,25 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SystemUI from 'expo-system-ui';
 import { useEffect } from 'react';
-import { Platform, View, useColorScheme } from 'react-native';
+import { Platform, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { usePalette } from '@/theme';
+import { ThemeProvider, usePalette, useTheme } from '@/theme';
 import { SessionGate } from '@/session';
 import { WorkspaceProvider } from '@/workspace';
 
 export default function RootLayout() {
+  return (
+    <ThemeProvider>
+      <RootChrome />
+    </ThemeProvider>
+  );
+}
+
+/** Split out so it can read the theme the provider above supplies. */
+function RootChrome() {
   const p = usePalette();
-  const scheme = useColorScheme();
+  const { scheme } = useTheme();
 
   /**
    * Paint the ground explicitly.
@@ -44,15 +53,21 @@ export default function RootLayout() {
           screenOptions={{
             headerStyle: { backgroundColor: p.ground },
             headerTintColor: p.ink,
-            headerTitleStyle: { fontWeight: '600' },
+            /* The redesign's screen title: 24/30 bold, hard left, no centre
+               alignment and no shadow. Set once here so every pushed screen
+               that still uses the navigator's header matches the ones that
+               draw their own `<ScreenHeader>`. */
+            headerTitleAlign: 'left',
+            headerTitleStyle: { fontSize: 24, fontWeight: '700', color: p.ink },
+            headerBackTitle: '',
             headerShadowVisible: false,
+            headerLeft: undefined,
             contentStyle: { backgroundColor: p.ground },
           }}
         >
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="receipts" options={{ title: 'Receipts' }} />
+          <Stack.Screen name="receipts" options={{ headerShown: false }} />
           <Stack.Screen name="analytics" options={{ title: 'Analytics' }} />
-          <Stack.Screen name="budgets" options={{ title: 'Budgets' }} />
           <Stack.Screen name="members" options={{ title: 'People' }} />
           <Stack.Screen
             name="join"
@@ -77,6 +92,28 @@ export default function RootLayout() {
           <Stack.Screen name="items" options={{ title: 'Items' }} />
           <Stack.Screen name="parties" options={{ title: 'Contacts' }} />
           <Stack.Screen name="reports" options={{ title: 'Reports' }} />
+
+          {/* The 2026-09-19 redesign. These draw their own back arrow and
+              title with `<ScreenHeader>`, the way the prototype does, so the
+              navigator's header is off for all of them. */}
+          <Stack.Screen name="credits" options={{ headerShown: false }} />
+          <Stack.Screen name="wallet/add" options={{ headerShown: false }} />
+          <Stack.Screen name="wallet/card" options={{ headerShown: false }} />
+          <Stack.Screen name="orders" options={{ headerShown: false }} />
+          <Stack.Screen name="order/[id]" options={{ headerShown: false }} />
+          <Stack.Screen
+            name="pay"
+            options={{ headerShown: false, gestureEnabled: false, animation: 'fade' }}
+          />
+          <Stack.Screen name="usage" options={{ headerShown: false }} />
+          <Stack.Screen name="rewards" options={{ headerShown: false }} />
+          <Stack.Screen name="alerts" options={{ headerShown: false }} />
+          <Stack.Screen name="notifications" options={{ headerShown: false }} />
+          <Stack.Screen name="privacy" options={{ headerShown: false }} />
+          <Stack.Screen name="fingerprint" options={{ headerShown: false }} />
+          <Stack.Screen name="help" options={{ headerShown: false }} />
+          <Stack.Screen name="export" options={{ headerShown: false }} />
+          <Stack.Screen name="goal/[id]" options={{ headerShown: false }} />
         </Stack>
           </View>
         </WorkspaceProvider>

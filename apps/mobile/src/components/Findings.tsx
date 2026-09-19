@@ -1,4 +1,5 @@
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
+import { Icon, type IconName } from '@/components/Icon';
 
 import type { ExtractionFinding } from '@/api';
 import { Raised } from '@/components/rich';
@@ -19,10 +20,10 @@ import { radius, space, usePalette } from '@/theme';
 
 const ORDER: Record<ExtractionFinding['severity'], number> = { error: 0, warning: 1, note: 2 };
 
-const GLYPH: Record<ExtractionFinding['severity'], string> = {
-  error: '✕',
-  warning: '⚠',
-  note: 'ℹ',
+const GLYPH: Record<ExtractionFinding['severity'], IconName> = {
+  error: 'close',
+  warning: 'alert',
+  note: 'info',
 };
 
 export function Findings({ findings }: { findings: ExtractionFinding[] }) {
@@ -75,9 +76,7 @@ export function Findings({ findings }: { findings: ExtractionFinding[] }) {
                 justifyContent: 'center',
               }}
             >
-              <Text style={{ fontSize: 13, color: tone(finding.severity), fontWeight: '700' }}>
-                {GLYPH[finding.severity]}
-              </Text>
+              <Icon name={GLYPH[finding.severity]} size={15} color={tone(finding.severity)} />
             </View>
 
             <View style={{ flex: 1, gap: 3 }}>

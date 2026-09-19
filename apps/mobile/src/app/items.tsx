@@ -1,6 +1,7 @@
 import { Redirect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { FlatList, Text, View } from 'react-native';
+import { Icon } from '@/components/Icon';
 
 import { api, type Item } from '@/api';
 import { AddButton, Choice, Field, Sheet } from '@/components/form';
@@ -103,7 +104,7 @@ export default function ItemsScreen() {
                     justifyContent: 'center',
                   }}
                 >
-                  <Text style={{ fontSize: 18 }}>{isService ? '🛠' : '📦'}</Text>
+                  <Icon name={isService ? 'cog' : 'box'} size={19} color={p.inkStrong} />
                 </View>
 
                 <View style={{ flex: 1, gap: 2 }}>

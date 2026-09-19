@@ -47,6 +47,20 @@ import type {
   PlanUsage,
   PointBalance,
   PointLedgerEntry,
+  AvailableTaxRules,
+  SavedCard,
+  AddSavedCardRequest,
+  UsageKind,
+  UsagePeriod,
+  Reward,
+  RewardRedemption,
+  NotificationPrefs,
+  AlertItem,
+  PrivacySettings,
+  RequestOtpRequest,
+  RequestOtpResponse,
+  VerifyOtpRequest,
+  ResetPasswordRequest,
   Recurring,
   SalesSummary,
   Session,
@@ -1046,5 +1060,124 @@ export class HttpApi implements SnapApi {
       `/v1/points/ledger${limit ? `?limit=${limit}` : ''}`,
       null,
     );
+  }
+
+  /* ── Wallet, usage, rewards & preferences (2026-09-19 redesign) ──────────
+     All USER-scoped: `workspaceId: null` so the client does not attach the
+     active workspace header. A person in two households has one wallet, one
+     set of notification switches and one privacy choice. */
+
+  listAvailableTaxRules(): Promise<AvailableTaxRules[]> {
+    /* `/v1/tax-rules-catalogue`, NOT `/v1/tax-rules/available` — the route
+       already exists and is deliberately not workspace-scoped, because
+       onboarding needs it before a workspace does. */
+    return this.get<AvailableTaxRules[]>('/v1/tax-rules-catalogue', null);
+  }
+
+  listSavedCards(): Promise<SavedCard[]> {
+    return this.get<SavedCard[]>('/v1/wallet/cards', null);
+  }
+
+  addSavedCard(input: AddSavedCardRequest): Promise<SavedCard> {
+    /* Never queued for offline replay. The outbox persists bodies to disk, and
+       this one carries a PAN and a CVC — see `AddSavedCardRequest`. A card
+       added with no connection has to fail loudly and be retyped. */
+    return this.request<SavedCard>('POST', '/v1/wallet/cards', {
+      body: input,
+      workspaceId: null,
+      queue: false,
+    });
+  }
+
+  removeSavedCard(cardId: string): Promise<void> {
+    return this.request<void>('DELETE', `/v1/wallet/cards/${cardId}`, { workspaceId: null });
+  }
+
+  setDefaultCard(cardId: string): Promise<SavedCard> {
+    return this.request<SavedCard>('POST', `/v1/wallet/cards/${cardId}/default`, {
+      workspaceId: null,
+    });
+  }
+
+  getUsage(kind: UsageKind, month: string): Promise<UsagePeriod> {
+    return this.get<UsagePeriod>(`/v1/usage?kind=${kind}&month=${month}`, null);
+  }
+
+  listUsageMonths(kind: UsageKind): Promise<string[]> {
+    return this.get<string[]>(`/v1/usage/months?kind=${kind}`, null);
+  }
+
+  listRewards(): Promise<Reward[]> {
+    return this.get<Reward[]>('/v1/rewards', null);
+  }
+
+  redeemReward(rewardId: string): Promise<RewardRedemption> {
+    return this.request<RewardRedemption>('POST', `/v1/rewards/${rewardId}/redeem`, {
+      workspaceId: null,
+      // Never replayed from the outbox: a queued redemption that fires twice
+      // spends the points twice, and there is no idempotency key here.
+      queue: false,
+    });
+  }
+
+  listAlerts(): Promise<AlertItem[]> {
+    return this.get<AlertItem[]>('/v1/alerts', null);
+  }
+
+  markAlertsRead(): Promise<void> {
+    return this.request<void>('POST', '/v1/alerts/read', { workspaceId: null });
+  }
+
+  getNotificationPrefs(): Promise<NotificationPrefs> {
+    return this.get<NotificationPrefs>('/v1/me/notifications', null);
+  }
+
+  updateNotificationPrefs(patch: Partial<NotificationPrefs>): Promise<NotificationPrefs> {
+    return this.request<NotificationPrefs>('PATCH', '/v1/me/notifications', {
+      body: patch,
+      workspaceId: null,
+    });
+  }
+
+  getPrivacySettings(): Promise<PrivacySettings> {
+    return this.get<PrivacySettings>('/v1/me/privacy', null);
+  }
+
+  updatePrivacySettings(patch: Partial<PrivacySettings>): Promise<PrivacySettings> {
+    return this.request<PrivacySettings>('PATCH', '/v1/me/privacy', {
+      body: patch,
+      workspaceId: null,
+    });
+  }
+
+  requestOtp(input: RequestOtpRequest): Promise<RequestOtpResponse> {
+    return this.request<RequestOtpResponse>('POST', '/v1/auth/otp/request', {
+      body: input,
+      auth: false,
+      workspaceId: null,
+      queue: false,
+    });
+  }
+
+  async verifyOtp(input: VerifyOtpRequest): Promise<Session | null> {
+    const res = await this.request<AuthResponse | null>('POST', '/v1/auth/otp/verify', {
+      body: input,
+      auth: false,
+      workspaceId: null,
+      queue: false,
+    });
+    // A reset has no session yet — the password still has to be set.
+    if (!res) return null;
+    return this.adopt(res);
+  }
+
+  async resetPassword(input: ResetPasswordRequest): Promise<Session> {
+    const res = await this.request<AuthResponse>('POST', '/v1/auth/password/reset', {
+      body: input,
+      auth: false,
+      workspaceId: null,
+      queue: false,
+    });
+    return this.adopt(res);
   }
 }

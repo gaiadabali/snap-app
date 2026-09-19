@@ -1798,3 +1798,233 @@ export interface TransactionRow {
     description: string | null;
   }>;
 }
+
+/* ── Wallet, usage, rewards & device preferences ──────────────────────────────
+ * Added 2026-09-19 for the mobile redesign ("Snap Apps Prototype.dc.html").
+ *
+ * Everything here is CONSUMER-side and USER-scoped unless a member says
+ * otherwise. Two boundaries are worth stating once rather than rediscovering:
+ *
+ *   1. No tax figure appears anywhere in this section, for the same reason it
+ *      does not appear in reconciliation: a personal workspace never sees GST,
+ *      and the types should make that true by construction.
+ *   2. Card data is NOT held by this product. `SavedCard` is a reference to a
+ *      card held by a processor, carrying only what a human needs to recognise
+ *      which card they picked. See the note on `AddSavedCardRequest`.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+export type CardBrand = 'visa' | 'mastercard' | 'amex' | 'other';
+
+/** How a purchase is authorised. The two wallets settle on-device. */
+export type WalletProvider = 'card' | 'apple-pay' | 'google-pay';
+
+/**
+ * A payment instrument the user has saved for buying credit packs.
+ *
+ * NOT `PaymentMethod` — that name is already taken by the invoicing side,
+ * where it means how a customer paid a bill (`'bank' | 'card' | 'cash' |
+ * 'other'`). The two are unrelated and must not be merged: one is a record of
+ * money received, this one is a stored way to spend it.
+ */
+export interface SavedCard {
+  id: string;
+  provider: WalletProvider;
+  brand: CardBrand;
+  /** Exactly four digits. The only part of the PAN that exists here. */
+  last4: string;
+  expiryMonth: number;
+  /** Four digits. */
+  expiryYear: number;
+  /** What the user called it, or a generated "Visa ending 4417". */
+  label: string;
+  isDefault: boolean;
+  createdAt: IsoDateTime;
+}
+
+/**
+ * `POST /v1/wallet/cards`.
+ *
+ * `number` and `cvc` are accepted, used to mint a processor token, and then
+ * discarded — they are never persisted and never appear in a `SavedCard`. Any
+ * implementation that writes either to a database, a log or an error report is
+ * a PCI incident, not a bug to be fixed later. The fields are named plainly
+ * rather than hidden behind a "token" abstraction so that reviewing this is
+ * possible; the discipline is in the server, not in the shape.
+ */
+export interface AddSavedCardRequest {
+  provider: WalletProvider;
+  nameOnCard: string;
+  number: string;
+  expiryMonth: number;
+  expiryYear: number;
+  cvc: string;
+  makeDefault?: boolean;
+}
+
+export type UsageKind = 'credits' | 'points';
+
+/** One line of "where did they go?" for a month. */
+export interface UsageItem {
+  id: string;
+  /** Merchant, pack or reward — whatever consumed or produced the units. */
+  label: string;
+  occurredAt: IsoDate;
+  /**
+   * Units moved, always POSITIVE. The sign is implied by `UsagePeriod.kind`
+   * plus the endpoint: this is a spend report, not a ledger. The signed,
+   * append-only truth for points lives in `PointLedgerEntry`.
+   */
+  amount: number;
+}
+
+/**
+ * `GET /v1/usage?kind=&month=` — one month of itemised spend.
+ *
+ * A convenience projection, not a source of truth. It exists because the
+ * Usage screen wants "September, 19 credits, these 11 lines" and deriving that
+ * client-side from the ledger means paging the whole history onto a phone.
+ */
+export interface UsagePeriod {
+  /** `YYYY-MM`. */
+  month: string;
+  kind: UsageKind;
+  total: number;
+  items: UsageItem[];
+}
+
+/**
+ * A reward: points traded for scan credits, in this product.
+ *
+ * ⚠ THIS CONTRADICTS `PointLedgerEntry` ABOVE, and the contradiction is
+ * deliberate rather than an oversight, so it is written down here instead of
+ * being resolved by whoever reads it next.
+ *
+ * `PointLedgerEntry` says, in the code: "There is no redemption type here:
+ * redemption happens in yourtal, not in this product, and nothing in this
+ * contract should be read as assuming otherwise." That was true when it was
+ * written. The 2026-09-19 mobile prototype's Rewards screen says the opposite
+ * in as many words — "Trade points for scan credits... Points come off your
+ * balance straight away and the credits land on your account in the same
+ * moment. There is nothing to redeem by email and no code to keep."
+ *
+ * Both cannot hold. Until a product decision settles it:
+ *   - `redeemReward` below is the in-product trade the prototype describes;
+ *   - a redemption therefore writes a NEGATIVE `PointLedgerEntry.delta`, which
+ *     that type already permits ("a redemption (elsewhere) would be negative")
+ *     even though its prose does not expect one from here;
+ *   - the Usage screen still reports yourtal spend, because that channel has
+ *     not gone away.
+ *
+ * If the decision lands on "yourtal only", delete `redeemReward`, make `cost`
+ * a display-only figure and restore a `redeemUrl`. If it lands on "both", the
+ * comment on `PointLedgerEntry` needs rewriting, not this one.
+ */
+export interface Reward {
+  id: string;
+  name: string;
+  description: string;
+  /** Points it costs. */
+  cost: number;
+  /** Scan credits it grants. */
+  credits: number;
+  /** Absolute URL, or `null` while the catalogue has no artwork. */
+  imageUrl: string | null;
+  /** False when the reward is listed but cannot be claimed right now. */
+  available: boolean;
+}
+
+/** `POST /v1/rewards/:id/redeem` — what the trade actually moved. */
+export interface RewardRedemption {
+  rewardId: string;
+  pointsSpent: number;
+  creditsGranted: number;
+  /** The balances AFTER the trade, so the screen needs no second fetch. */
+  pointsBalance: number;
+  creditsBalance: number;
+}
+
+/**
+ * What the user wants to be told about. USER-scoped, not workspace-scoped: a
+ * person who belongs to two households does not want two sets of switches.
+ */
+export interface NotificationPrefs {
+  /** A category is close to its monthly allowance. */
+  budgetTight: boolean;
+  /** A capture came back with something worth a human's eye. */
+  reviewNeeded: boolean;
+  /** Credits are nearly out, so scanning is about to stop working. */
+  lowCredits: boolean;
+  /** A recurring charge is due. */
+  recurringDue: boolean;
+  /** Product news. Off by default, and stays off unless asked for. */
+  productNews: boolean;
+}
+
+export type AlertKind = 'budget' | 'review' | 'credits' | 'recurring' | 'system';
+
+/** One entry in the in-app alert feed. */
+export interface AlertItem {
+  id: string;
+  kind: AlertKind;
+  title: string;
+  body: string;
+  /** Where tapping it should land, as an app path. `null` for news. */
+  href: string | null;
+  createdAt: IsoDateTime;
+  /** `null` until the user has seen it. */
+  readAt: IsoDateTime | null;
+}
+
+/**
+ * Privacy choices. Every one defaults to the private option; a field absent
+ * from a stored row reads as `false`/minimum rather than as "not yet asked".
+ */
+export interface PrivacySettings {
+  /** Anonymous product analytics. */
+  analyticsOptIn: boolean;
+  /** Crash and error reports. */
+  crashReports: boolean;
+  /** Letting the extractor's output improve the shared model. */
+  contributeToModel: boolean;
+  /**
+   * How long an original image is kept after its document is deleted.
+   * The ATO substantiation floor is five years, so the server clamps this to
+   * at least 60 and the UI must not offer less.
+   */
+  retentionMonths: number;
+}
+
+/** Why a code was sent. Reused for the resend and the verify. */
+export type OtpPurpose = 'register' | 'reset-password' | 'sign-in';
+
+export interface RequestOtpRequest {
+  email: string;
+  purpose: OtpPurpose;
+}
+
+/**
+ * `POST /v1/auth/otp/request` response.
+ *
+ * Deliberately says nothing about whether the address exists — an endpoint
+ * that answers that is an account-enumeration oracle. It always reports
+ * "sent", and `retryAfterSeconds` is the only thing that varies.
+ */
+export interface RequestOtpResponse {
+  /** Seconds the client should disable "Resend" for. */
+  retryAfterSeconds: number;
+  /** Where the code went, masked: `k••••@example.com`. */
+  maskedTarget: string;
+}
+
+export interface VerifyOtpRequest {
+  email: string;
+  /** Six digits, as typed. Compared server-side in constant time. */
+  code: string;
+  purpose: OtpPurpose;
+}
+
+export interface ResetPasswordRequest {
+  email: string;
+  code: string;
+  newPassword: string;
+}

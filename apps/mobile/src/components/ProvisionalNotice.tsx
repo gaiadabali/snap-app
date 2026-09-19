@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
+import { Icon } from '@/components/Icon';
 
 import { Body, Label, Small } from '@/components/ui';
 import { radius, space, usePalette } from '@/theme';
@@ -42,7 +43,7 @@ export function ProvisionalNotice({
     // expected case and does not deserve the same weight as a disagreement.
     return (
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
-        <Body style={{ color: p.scan, fontSize: 12 }}>✓✓</Body>
+        <Icon name="check" size={14} color={p.scan} />
         <Small>{transition.copy}</Small>
       </View>
     );

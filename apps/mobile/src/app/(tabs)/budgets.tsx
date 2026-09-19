@@ -5,9 +5,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { IS_DEMO, api, type PersonalSummary } from '@/api';
 import { AddButton, Field, Sheet } from '@/components/form';
-import { GradientHero, HeroBody, HeroFigure, HeroLabel, Raised } from '@/components/rich';
-import { Body, Figure, Label, Screen, Small } from '@/components/ui';
-import { formatAud, space, usePalette } from '@/theme';
+import { GradientHero, Raised } from '@/components/rich';
+import { Body, Figure, Label, Screen, ScreenHeader, Small } from '@/components/ui';
+import { formatAud, numeric, space, type, usePalette } from '@/theme';
 
 /**
  * Budgets: what each category is allowed per month.
@@ -70,24 +70,63 @@ export default function BudgetsScreen() {
       <ScrollView
         contentContainerStyle={{
           padding: space.lg,
+          paddingTop: insets.top + space.md,
           paddingBottom: space.xxl + insets.bottom,
           gap: space.lg,
         }}
       >
+        <ScreenHeader title="Budgets" />
+
         {summary === null ? (
           <View style={{ paddingVertical: space.xxl, alignItems: 'center' }}>
             <ActivityIndicator color={p.accent} />
           </View>
         ) : (
           <>
+            {/* Four figures, not one. The prototype leads Budgets with the
+                whole picture — spent against budgeted, how far through the
+                month, and what today allows — because "what is my budget" is
+                not a question anyone opens this screen to ask. */}
             <GradientHero tone={over ? 'risk' : 'brand'}>
-              <View style={{ gap: space.xs }}>
-                <HeroLabel>Monthly budget</HeroLabel>
-                <HeroFigure>{formatAud(summary.budgetTotal, { cents: false })}</HeroFigure>
-                <HeroBody>
-                  {formatAud(summary.spentThisMonth, { cents: false })} spent in{' '}
-                  {summary.monthLabel}
-                </HeroBody>
+              <View style={{ gap: space.lg }}>
+                <View style={{ flexDirection: 'row', gap: space.lg }}>
+                  <HeroStat
+                    label="spent"
+                    value={formatAud(summary.spentThisMonth, { cents: false })}
+                  />
+                  <HeroStat
+                    label="budgeted"
+                    value={formatAud(summary.budgetTotal, { cents: false })}
+                  />
+                </View>
+                <View
+                  style={{
+                    height: 8,
+                    borderRadius: 4,
+                    backgroundColor: 'rgba(255,255,255,0.25)',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <View
+                    style={{
+                      width: `${Math.min(100, Math.max(2, (Number(summary.spentThisMonth) / Math.max(Number(summary.budgetTotal), 1)) * 100))}%`,
+                      height: '100%',
+                      backgroundColor: '#FFFFFF',
+                      opacity: 0.85,
+                      borderRadius: 4,
+                    }}
+                  />
+                </View>
+                <View style={{ flexDirection: 'row', gap: space.lg }}>
+                  <HeroStat
+                    label={`left in ${summary.monthLabel.split(' ')[0]}`}
+                    value={`${summary.daysLeftInMonth} day${summary.daysLeftInMonth === 1 ? '' : 's'}`}
+                  />
+                  <HeroStat
+                    label="safe to spend a day"
+                    value={formatAud(summary.safeToSpendPerDay)}
+                  />
+                </View>
               </View>
             </GradientHero>
 
@@ -225,5 +264,15 @@ function Stepper({ glyph, onPress }: { glyph: string; onPress: () => void }) {
         {glyph}
       </Text>
     </Pressable>
+  );
+}
+
+/** One figure on the budgets hero. */
+function HeroStat({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={{ flex: 1, gap: 2 }}>
+      <Text style={[type.h2, numeric, { color: '#FFFFFF' }]}>{value}</Text>
+      <Text style={[type.small, { color: 'rgba(255,255,255,0.95)' }]}>{label}</Text>
+    </View>
   );
 }

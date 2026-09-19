@@ -12,6 +12,7 @@ import {
   type KeyboardTypeOptions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Icon } from '@/components/Icon';
 
 import { Raised } from '@/components/rich';
 import { Body, Button, Figure, Label, Small } from '@/components/ui';
@@ -192,11 +193,14 @@ export function Toggle({
         <Body strong>{label}</Body>
         {hint ? <Small>{hint}</Small> : null}
       </View>
+      {/* A squircle, not a pill — the redesign's switch is 56x34 with a 12pt
+          radius and a square-ish knob, which is what keeps it from reading as
+          iOS chrome dropped into an Android build. */}
       <View
         style={{
-          width: 48,
-          height: 28,
-          borderRadius: 14,
+          width: 56,
+          height: 34,
+          borderRadius: 12,
           padding: 3,
           backgroundColor: value ? p.accent : p.ruleStrong,
           justifyContent: 'center',
@@ -204,9 +208,9 @@ export function Toggle({
       >
         <View
           style={{
-            width: 22,
-            height: 22,
-            borderRadius: 11,
+            width: 28,
+            height: 28,
+            borderRadius: 9,
             backgroundColor: '#FFFFFF',
             alignSelf: value ? 'flex-end' : 'flex-start',
           }}
@@ -352,7 +356,7 @@ export function AddButton({ label, onPress }: { label: string; onPress: () => vo
         backgroundColor: pressed ? p.accentSoft : 'transparent',
       })}
     >
-      <Text style={{ fontSize: 17, color: p.accent, fontWeight: '700' }}>＋</Text>
+      <Icon name="plus" size={18} color={p.accent} />
       <Body strong style={{ color: p.accent }}>
         {label}
       </Body>

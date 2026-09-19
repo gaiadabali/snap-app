@@ -1,39 +1,73 @@
+import { useCameraPermissions } from 'expo-camera';
 import { useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { abnIsValid, api, type Session, type Workspace } from '@/api';
-import { Choice, Field, Toggle } from '@/components/form';
-import { Raised } from '@/components/rich';
-import { Body, Button, Figure, Label, Screen, Small } from '@/components/ui';
-import { BUSINESS_FEATURES_ENABLED } from '@/config';
-import { radius, space, usePalette } from '@/theme';
+import { api, type Session } from '@/api';
+import { Icon, type IconName } from '@/components/Icon';
+import { GradientHero } from '@/components/rich';
+import {
+  Body,
+  Button,
+  Card,
+  IconTile,
+  Notice,
+  Screen,
+  Small,
+  Title,
+} from '@/components/ui';
+import { control, numeric, radius, space, type, usePalette } from '@/theme';
 
 /**
- * The first thing a new account sees.
+ * The first thing a new account sees, rebuilt against the 2026-09-19
+ * prototype.
  *
- * Three screens, in the order the answers matter, and each one is asked
- * because the app cannot do its job without it:
+ * Four steps, and the order is the prototype's: say what the app does, ask for
+ * the camera, set up the first budgets, then hand over. The earlier build
+ * asked business-or-personal first; that question is gone with
+ * `BUSINESS_FEATURES_ENABLED` off, and the redesign does not bring it back.
  *
- *   1. Business or personal — decides whether this workspace has a BAS at all.
- *   2. What it is called, and the ABN — an ABN is on every tax invoice you
- *      issue, and its checksum is checked here rather than at the point of
- *      billing a customer.
- *   3. GST registration, or a monthly budget — the one figure each side of the
- *      app is built around.
+ * Two things are asked here that the prototype does not show, because the
+ * server needs them and there is nowhere else to put them:
  *
- * Nothing else is asked. Occupation, categories and budgets per category all
- * have sensible starting points and can be changed later; front-loading them
- * is how onboarding gets abandoned.
+ *   - the household's NAME, folded into step 0 rather than given a step of its
+ *     own. `completeOnboarding` will not create a workspace without it.
+ *   - nothing else. Occupation, GST and the ABN are business-side and do not
+ *     apply; the old screen's fields for them are deleted rather than hidden.
+ *
+ * The category budgets in step 2 are written AFTER the workspace exists —
+ * `setBudget` needs somewhere to write them to.
  */
 
-/** A handful of the tax engine's profiles, by the ones people recognise. */
-const OCCUPATIONS = [
-  { value: 'truckie_long', label: 'Truck driver' },
-  { value: 'tradie', label: 'Tradesperson' },
-  { value: 'nurse', label: 'Nurse or carer' },
-  { value: 'sole', label: 'Sole trader, other' },
+const BULLETS: Array<{ icon: IconName; title: string; body: string }> = [
+  {
+    icon: 'camera',
+    title: 'One tap per receipt',
+    body:
+      'The shutter captures, fingerprints and files in one action. Multi-page invoices hold in a tray.',
+  },
+  {
+    icon: 'shield',
+    title: 'The original is the record',
+    body:
+      'Kept unmodified, never cropped or compressed, so the copy is one you can rely on.',
+  },
+  {
+    icon: 'target',
+    title: 'One number to watch',
+    body: 'What is left this month, and what that means per day.',
+  },
 ];
+
+const READY = [
+  'Ten scans included, free',
+  'Nothing to set up on a computer',
+  'Your records export whenever you want them',
+];
+
+type Draft = { name: string; amount: string };
+
+const MAX_CATEGORIES = 5;
 
 export function Onboarding({
   displayName,
@@ -44,41 +78,44 @@ export function Onboarding({
 }) {
   const p = usePalette();
   const insets = useSafeAreaInsets();
-  // Personal-only: there is nothing to choose, so the chooser step is
-  // skipped entirely rather than shown with one option pre-selected — a
-  // screen offering "a business" when business is not part of this release
-  // is exactly the kind of business surface the flag exists to hide.
-  const [step, setStep] = useState(BUSINESS_FEATURES_ENABLED ? 0 : 1);
-  const [kindChoice, setKindChoice] = useState<Workspace>('business');
-  const kind: Workspace = BUSINESS_FEATURES_ENABLED ? kindChoice : 'personal';
-  const [name, setName] = useState('');
-  const [abn, setAbn] = useState('');
-  const [gstRegistered, setGstRegistered] = useState(true);
-  const [gstBasis, setGstBasis] = useState<'cash' | 'accrual'>('cash');
-  const [occupation, setOccupation] = useState('truckie_long');
-  const [budget, setBudget] = useState('');
+  const [step, setStep] = useState(0);
+  const [household, setHousehold] = useState('');
+  const [drafts, setDrafts] = useState<Draft[]>([{ name: '', amount: '' }]);
+  const [permission, requestPermission] = useCameraPermissions();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const business = kind === 'business';
-  const abnDigits = abn.replace(/\D/g, '');
-  const abnProblem = abnDigits.length > 0 && !abnIsValid(abnDigits);
+  const named = drafts.filter((d) => d.name.trim() && Number(d.amount) > 0);
+  const monthly = named.reduce((a, d) => a + Number(d.amount), 0);
 
   async function finish() {
     setError(null);
     setBusy(true);
     try {
-      onDone(
-        await api().completeOnboarding({
-          workspaceName: name.trim(),
-          kind,
-          abn: business ? abnDigits || null : null,
-          gstRegistered: business ? gstRegistered : false,
-          gstBasis,
-          occupationProfileId: business ? occupation : null,
-          monthlyBudget: business ? null : budget ? Number(budget).toFixed(4) : null,
-        }),
-      );
+      const session = await api().completeOnboarding({
+        workspaceName: household.trim(),
+        kind: 'personal',
+        abn: null,
+        gstRegistered: false,
+        gstBasis: 'cash',
+        occupationProfileId: null,
+        monthlyBudget: monthly > 0 ? monthly.toFixed(4) : null,
+      });
+
+      /* Now that there is a workspace, write the per-category budgets.
+         Sequential, not `Promise.all`: each call returns the whole recomputed
+         summary, and firing them together means the last write wins on a
+         server that reads-modifies-writes. Three extra round trips at signup
+         is a fair price for not losing two of five budgets. */
+      for (const d of named) {
+        try {
+          await api().setBudget(d.name.trim(), Number(d.amount).toFixed(4));
+        } catch {
+          /* A budget that fails to save is recoverable from the Budgets
+             screen; failing the whole signup over one is not. */
+        }
+      }
+      onDone(session);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not set that up.');
       setBusy(false);
@@ -86,217 +123,279 @@ export function Onboarding({
   }
 
   const canAdvance =
-    step === 0 ? true : step === 1 ? name.trim().length > 0 && !abnProblem : true;
+    step === 0 ? household.trim().length > 1 : step === 2 ? drafts.every(isUsable) : true;
+
+  const cta = step === 3 ? 'Take your first receipt' : step === 2 && named.length === 0 ? 'Skip for now' : 'Continue';
 
   return (
     <Screen>
-      <ScrollView
-        contentContainerStyle={{
-          padding: space.lg,
-          paddingTop: insets.top + space.xl,
-          paddingBottom: insets.bottom + space.xxl,
-          gap: space.lg,
+      {/* Progress. Four steps, always — nothing is conditional now. */}
+      <View
+        style={{
+          flexDirection: 'row',
+          gap: 6,
+          paddingTop: insets.top + 14,
+          paddingHorizontal: 20,
         }}
+      >
+        {[0, 1, 2, 3].map((i) => (
+          <View
+            key={i}
+            style={{ flex: 1, height: 4, borderRadius: 2, backgroundColor: i <= step ? p.accent : p.rule }}
+          />
+        ))}
+      </View>
+
+      <ScrollView
+        contentContainerStyle={{ padding: 20, paddingTop: 24, paddingBottom: space.sm, gap: 18 }}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Progress, so the steps read as a known, finite count. Personal-only
-            drops the kind-picker step, so there are two dots, not three, and
-            the first one showing is `step - 1` of them rather than `step`. */}
-        <View style={{ flexDirection: 'row', gap: 6 }}>
-          {(BUSINESS_FEATURES_ENABLED ? [0, 1, 2] : [1, 2]).map((i) => (
-            <View
-              key={i}
-              style={{
-                flex: 1,
-                height: 4,
-                borderRadius: 2,
-                backgroundColor: i <= step ? p.accent : p.rule,
-              }}
-            />
-          ))}
+        <View style={{ alignItems: 'center', gap: space.sm, paddingBottom: 2 }}>
+          <Title level="h1" style={{ textAlign: 'center' }}>
+            {
+              [
+                `Welcome, ${displayName.split(' ')[0]}`,
+                'Let it see a receipt',
+                'What do you want to watch?',
+                'You are set up',
+              ][step]
+            }
+          </Title>
+          <Text style={[type.body, { color: p.inkMuted, textAlign: 'center', maxWidth: 330 }]}>
+            {
+              [
+                'Photograph a receipt and it becomes a record you can rely on.',
+                'Scanning needs the camera. Nothing is uploaded until you say so.',
+                'Give a category a monthly allowance. You can change any of it later.',
+                'Ten scans are already on your account.',
+              ][step]
+            }
+          </Text>
         </View>
 
         {step === 0 ? (
-          <>
-            <View style={{ gap: space.xs }}>
-              <Small>Welcome, {displayName.split(' ')[0]}</Small>
-              <Figure size="h1">What are you tracking?</Figure>
+          <View style={{ gap: space.md }}>
+            {BULLETS.map((b) => (
+              <Card key={b.title} style={{ flexDirection: 'row', gap: 14, padding: space.lg }}>
+                <IconTile name={b.icon} size={40} />
+                <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
+                  <Body strong>{b.title}</Body>
+                  <Small>{b.body}</Small>
+                </View>
+              </Card>
+            ))}
+            <View style={{ gap: 6, marginTop: space.xs }}>
+              <Text style={[type.label, { color: p.inkMuted }]}>What should we call this?</Text>
+              <TextInput
+                accessibilityLabel="Household name"
+                value={household}
+                onChangeText={setHousehold}
+                placeholder="Marsh Household"
+                placeholderTextColor={p.inkFaint}
+                style={{
+                  minHeight: control.input,
+                  borderWidth: 1.5,
+                  borderColor: p.rule,
+                  borderRadius: radius.md,
+                  backgroundColor: p.surface,
+                  paddingHorizontal: space.lg,
+                  ...type.input,
+                  color: p.ink,
+                }}
+              />
+              <Small>Only the people you invite ever see this.</Small>
             </View>
+          </View>
+        ) : null}
 
-            {(
-              [
-                {
-                  value: 'business' as const,
-                  title: 'A business',
-                  detail:
-                    'GST, tax invoices and a BAS position. Every receipt is checked against what the ATO requires before you can claim it.',
-                },
-                {
-                  value: 'personal' as const,
-                  title: 'Personal spending',
-                  detail:
-                    'Budgets and what is left this month. No GST, no ABN, no tax — because none of it applies to a household.',
-                },
-              ] as const
-            ).map((option) => {
-              const on = kind === option.value;
-              return (
-                <Pressable
-                  key={option.value}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected: on }}
-                  onPress={() => setKindChoice(option.value)}
+        {step === 1 ? (
+          <View style={{ gap: 14 }}>
+            <View
+              style={{
+                height: 196,
+                borderRadius: radius.xl,
+                backgroundColor: '#101418',
+                alignItems: 'center',
+                justifyContent: 'center',
+                overflow: 'hidden',
+              }}
+            >
+              <View
+                style={{
+                  position: 'absolute',
+                  top: 26,
+                  bottom: 26,
+                  left: 34,
+                  right: 34,
+                  borderWidth: 2,
+                  borderStyle: 'dashed',
+                  borderColor: 'rgba(255,255,255,0.8)',
+                  borderRadius: radius.lg,
+                }}
+              />
+              <Icon name="camera" size={38} color="rgba(255,255,255,0.62)" />
+            </View>
+            <Button
+              label={permission?.granted ? 'Camera allowed' : 'Allow the camera'}
+              icon={permission?.granted ? 'check' : 'camera'}
+              tone={permission?.granted ? 'outline' : 'accent'}
+              onPress={() => void requestPermission()}
+            />
+            <Small style={{ textAlign: 'center' }}>
+              You can allow it later from Settings. Scanning won&rsquo;t work until you do.
+            </Small>
+          </View>
+        ) : null}
+
+        {step === 2 ? (
+          <View style={{ gap: space.md }}>
+            {drafts.map((d, i) => (
+              <Card key={i} style={{ gap: 10, padding: space.lg }}>
+                <TextInput
+                  accessibilityLabel={`Category ${i + 1} name`}
+                  value={d.name}
+                  onChangeText={(v) => setDrafts(patch(drafts, i, { name: v }))}
+                  placeholder="Groceries"
+                  placeholderTextColor={p.inkFaint}
                   style={{
-                    borderRadius: radius.lg,
-                    borderWidth: 2,
-                    borderColor: on ? p.accent : p.rule,
-                    backgroundColor: on ? p.accentSoft : 'transparent',
-                    padding: space.lg,
-                    gap: 4,
+                    minHeight: control.input,
+                    borderWidth: 1.5,
+                    borderColor: p.rule,
+                    borderRadius: radius.md,
+                    backgroundColor: p.ground,
+                    paddingHorizontal: space.lg,
+                    ...type.input,
+                    color: p.ink,
+                  }}
+                />
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: space.sm,
+                    minHeight: control.amount,
+                    borderWidth: 1.5,
+                    borderColor: isUsable(d) ? p.rule : p.risk,
+                    borderRadius: radius.md,
+                    backgroundColor: p.ground,
+                    paddingHorizontal: space.lg,
                   }}
                 >
-                  <Body strong>{option.title}</Body>
-                  <Small>{option.detail}</Small>
-                </Pressable>
-              );
-            })}
+                  <Icon name="wallet" size={22} color={p.inkMuted} />
+                  <TextInput
+                    accessibilityLabel={`Category ${i + 1} monthly amount`}
+                    value={d.amount}
+                    onChangeText={(v) => setDrafts(patch(drafts, i, { amount: v.replace(/[^\d.]/g, '') }))}
+                    placeholder="900"
+                    placeholderTextColor={p.inkFaint}
+                    keyboardType="decimal-pad"
+                    style={{ flex: 1, minWidth: 0, ...type.figure, ...numeric, color: p.ink }}
+                  />
+                  <Small>per month</Small>
+                </View>
+                {drafts.length > 1 ? (
+                  <Button
+                    label="Remove"
+                    tone="ghost"
+                    onPress={() => setDrafts(drafts.filter((_, j) => j !== i))}
+                  />
+                ) : null}
+              </Card>
+            ))}
 
-            <Small>
-              You can add the other one later — they stay completely separate, with their own
-              people and their own records.
-            </Small>
-          </>
-        ) : step === 1 ? (
-          <>
-            <View style={{ gap: space.xs }}>
-              {BUSINESS_FEATURES_ENABLED ? (
-                <Label>Step 2 of 3</Label>
-              ) : (
-                <Small>Welcome, {displayName.split(' ')[0]}</Small>
-              )}
-              <Figure size="h1">{business ? 'Your business' : 'Your household'}</Figure>
-            </View>
-
-            <Raised style={{ gap: space.lg }}>
-              <Field
-                label={business ? 'Trading name' : 'Name'}
-                value={name}
-                onChangeText={setName}
-                placeholder={business ? 'K. Marsh Transport' : 'Marsh Household'}
-                autoFocus
+            {drafts.length < MAX_CATEGORIES ? (
+              <Button
+                label="Create another budget"
+                icon="plus"
+                tone="outline"
+                onPress={() => setDrafts([...drafts, { name: '', amount: '' }])}
               />
-              {business ? (
-                <Field
-                  label="ABN"
-                  value={abn}
-                  onChangeText={setAbn}
-                  keyboardType="number-pad"
-                  placeholder="51 824 753 556"
-                  hint={
-                    abnProblem
-                      ? 'That fails the ATO modulus-89 checksum — check the digits.'
-                      : 'Optional now, but required on every tax invoice you issue.'
-                  }
-                />
-              ) : null}
-            </Raised>
-
-            {business ? (
-              <Raised style={{ gap: space.md }}>
-                <Label>Occupation</Label>
-                <Small>Decides which deduction rows the app offers you at tax time.</Small>
-                <Choice value={occupation} onChange={setOccupation} options={OCCUPATIONS} />
-              </Raised>
-            ) : null}
-          </>
-        ) : (
-          <>
-            <View style={{ gap: space.xs }}>
-              <Label>{BUSINESS_FEATURES_ENABLED ? 'Step 3 of 3' : 'Step 2 of 2'}</Label>
-              <Figure size="h1">{business ? 'GST' : 'Monthly budget'}</Figure>
-            </View>
-
-            {business ? (
-              <Raised style={{ gap: space.lg }}>
-                <Toggle
-                  label="Registered for GST"
-                  hint="Required once turnover reaches $75,000 a year"
-                  value={gstRegistered}
-                  onChange={setGstRegistered}
-                />
-                {gstRegistered ? (
-                  <>
-                    <Choice
-                      label="Accounting basis"
-                      value={gstBasis}
-                      onChange={setGstBasis}
-                      options={[
-                        { value: 'cash', label: 'Cash' },
-                        { value: 'accrual', label: 'Accrual' },
-                      ]}
-                    />
-                    <Small>
-                      {gstBasis === 'cash'
-                        ? 'Cash: GST counts in the quarter money changes hands. Most small businesses are on this.'
-                        : 'Accrual: GST counts in the quarter the invoice is issued.'}
-                    </Small>
-                  </>
-                ) : (
-                  <Small>
-                    Without GST registration the app still tracks spending and deductions, but
-                    there is no BAS to prepare and no GST to claim back.
-                  </Small>
-                )}
-              </Raised>
             ) : (
-              <Raised style={{ gap: space.md }}>
-                <Field
-                  label="What do you want to spend each month?"
-                  value={budget}
-                  onChangeText={setBudget}
-                  keyboardType="decimal-pad"
-                  prefix="$"
-                  autoFocus
-                  hint="A single figure is enough to start. Split it by category whenever you like."
-                />
-              </Raised>
+              <Small style={{ textAlign: 'center' }}>
+                That&rsquo;s the five you can set up here. Add more from Budgets later.
+              </Small>
             )}
 
-            {!business ? (
-              <Small>
-                Your account starts with 10 free scans — no card, no plan. Check Credits any time to
-                see what is left.
-              </Small>
-            ) : null}
+            <Small>
+              {named.length === 0
+                ? 'Skip this if you would rather see what you actually spend first.'
+                : `${named.length} ${named.length === 1 ? 'budget' : 'budgets'}, ${formatTotal(monthly)} a month.`}
+            </Small>
+          </View>
+        ) : null}
 
-            {error ? (
-              <View style={{ backgroundColor: p.riskSoft, borderRadius: radius.md, padding: space.md }}>
-                <Small muted={false} style={{ color: p.risk }}>
-                  {error}
-                </Small>
-              </View>
-            ) : null}
-          </>
-        )}
+        {step === 3 ? (
+          <View style={{ gap: 14 }}>
+            <GradientHero>
+              <Text style={[type.label, { color: 'rgba(255,255,255,0.95)' }]}>Included</Text>
+              <Text style={[type.hero, numeric, { color: '#FFFFFF', marginTop: 6 }]}>10 scans</Text>
+              <Text style={[type.body, { color: 'rgba(255,255,255,0.95)', marginTop: 6 }]}>
+                Free, no card. Credits never expire.
+              </Text>
+            </GradientHero>
+            <View style={{ gap: 10 }}>
+              {READY.map((r) => (
+                <View key={r} style={{ flexDirection: 'row', alignItems: 'center', gap: 11 }}>
+                  <View
+                    style={{
+                      width: 22,
+                      height: 22,
+                      borderRadius: 11,
+                      backgroundColor: p.goodSoft,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Icon name="check" size={14} color={p.good} />
+                  </View>
+                  <Body>{r}</Body>
+                </View>
+              ))}
+            </View>
+          </View>
+        ) : null}
 
-        <View style={{ flexDirection: 'row', gap: space.sm }}>
-          {step > (BUSINESS_FEATURES_ENABLED ? 0 : 1) ? (
-            <Button
-              label="Back"
-              tone="outline"
-              onPress={() => setStep(step - 1)}
-              style={{ flex: 1 }}
-            />
-          ) : null}
-          <Button
-            label={step === 2 ? 'Finish' : 'Continue'}
-            onPress={() => (step === 2 ? void finish() : setStep(step + 1))}
-            disabled={!canAdvance}
-            busy={busy}
-            style={{ flex: 2 }}
-          />
-        </View>
+        {error ? <Notice tone="risk" icon="alert">{error}</Notice> : null}
       </ScrollView>
+
+      {/* The step controls sit outside the scroll view so they never scroll
+          away from someone who has already decided. */}
+      <View
+        style={{
+          flexDirection: 'row',
+          gap: 10,
+          padding: 20,
+          paddingTop: space.md,
+          paddingBottom: insets.bottom + 18,
+          borderTopWidth: 1,
+          borderTopColor: p.rule,
+        }}
+      >
+        {step > 0 ? (
+          <Button label="Back" tone="outline" style={{ flex: 1 }} onPress={() => setStep(step - 1)} />
+        ) : null}
+        <Button
+          label={cta}
+          style={{ flex: 1 }}
+          busy={busy}
+          disabled={!canAdvance}
+          onPress={() => (step === 3 ? void finish() : setStep(step + 1))}
+        />
+      </View>
     </Screen>
   );
+}
+
+/** A row is usable when it is empty or complete — never half-filled. */
+function isUsable(d: Draft): boolean {
+  const blank = !d.name.trim() && !d.amount.trim();
+  return blank || (d.name.trim().length > 0 && Number(d.amount) > 0);
+}
+
+function patch(list: Draft[], i: number, change: Partial<Draft>): Draft[] {
+  return list.map((d, j) => (j === i ? { ...d, ...change } : d));
+}
+
+function formatTotal(n: number): string {
+  return `$${n.toLocaleString('en-AU', { maximumFractionDigits: 0 })}`;
 }

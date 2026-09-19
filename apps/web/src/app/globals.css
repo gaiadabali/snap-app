@@ -7,23 +7,32 @@
  * #1CA8DB scan line — sampled from the launch teaser and shared byte-for-byte
  * with apps/mobile/src/theme/tokens.ts. Those do not change here.
  *
- * What DID change (2026-09-14): the grounds. They used to be blue too
- * (#F2F7FE / #E5EFFC), which meant the brand blue had nowhere to land — an
- * accent sitting on a tinted version of itself stops reading as an accent.
- * The grounds are now docket paper: a faintly warm off-white under a cool
- * blue. That temperature contrast is what makes #1878D8 finally register.
+ * What DID change, twice, is the grounds.
+ *
+ * 2026-09-14 moved them from blue (#F2F7FE / #E5EFFC) to docket paper
+ * (#FAF9F7 / #F2F0EC) on the argument that an accent sitting on a tinted
+ * version of itself stops reading as an accent.
+ *
+ * 2026-09-19 moved them back to a cool set (#F7F9FC / #EAF0F8), sampled from
+ * "Snap Apps Prototype.dc.html". The earlier argument was sound about the OLD
+ * blues, which were saturated enough to compete; these are not. #F7F9FC is
+ * two points off neutral, so the accent still lands, and the cool cast is what
+ * ties the UI to the brand blue instead of leaving it a lone warm surface.
+ *
+ * Mobile moved on the same day. Keep the two in step: these neutrals are
+ * shared, and `apps/mobile/src/theme/tokens.ts` carries the same history.
  *
  * Red is reserved for money at risk. It is never decorative.
  */
 
 @theme {
-  /* ── Light: docket paper ─────────────────────────────────────────────── */
-  --color-ground:      #FAF9F7;
-  --color-surface:     #F2F0EC;
-  --color-surface-alt: #E7E4DE;
+  /* ── Light: cool paper ───────────────────────────────────────────────── */
+  --color-ground:      #F7F9FC;
+  --color-surface:     #EAF0F8;
+  --color-surface-alt: #DCE5F2;
   --color-ink:         #14181D;
   --color-ink-muted:   #5A6068;
-  --color-ink-faint:   #8D9299;
+  --color-ink-faint:   #858B93;
 
   /* Identity — measured from the teaser. Do not drift from mobile. */
   --color-accent:      #1878D8;
@@ -40,8 +49,8 @@
   --color-good-soft:   #E2EFE9;
 
   /* True hairlines. A ruled book, not a stack of boxes. */
-  --color-rule:        #E2DFD8;
-  --color-rule-strong: #C9C5BC;
+  --color-rule:        #DCE3EE;
+  --color-rule-strong: #C2CEDF;
 
   /* Inverted band — the one dark moment on the page. */
   --color-void:        #101319;
@@ -85,12 +94,12 @@
 :root[data-theme="dark"],
 :root:not([data-theme="light"]) {
   @media (prefers-color-scheme: dark) {
-    --color-ground:      #0E1116;
-    --color-surface:     #161A21;
-    --color-surface-alt: #1F242C;
-    --color-ink:         #EDEBE7;
-    --color-ink-muted:   #9BA1A9;
-    --color-ink-faint:   #6C737C;
+    --color-ground:      #121820;
+    --color-surface:     #1B222C;
+    --color-surface-alt: #242C38;
+    --color-ink:         #F4F3F0;
+    --color-ink-muted:   #9AA2AA;
+    --color-ink-faint:   #7C848D;
     --color-accent:      #4DA3F5;
     --color-accent-deep: #1878D8;
     --color-accent-soft: #13243A;
@@ -102,8 +111,8 @@
     --color-warn-soft:   #2A2114;
     --color-good:        #6FD3AC;
     --color-good-soft:   #11241D;
-    --color-rule:        #262B33;
-    --color-rule-strong: #3A414B;
+    --color-rule:        #2C3542;
+    --color-rule-strong: #3A4452;
     --color-void:        #060809;
     --color-void-ink:    #EDEBE7;
     --color-void-muted:  #8E949E;
@@ -115,12 +124,12 @@
 }
 
 :root[data-theme="dark"] {
-  --color-ground:      #0E1116;
-  --color-surface:     #161A21;
-  --color-surface-alt: #1F242C;
-  --color-ink:         #EDEBE7;
-  --color-ink-muted:   #9BA1A9;
-  --color-ink-faint:   #6C737C;
+  --color-ground:      #121820;
+  --color-surface:     #1B222C;
+  --color-surface-alt: #242C38;
+  --color-ink:         #F4F3F0;
+  --color-ink-muted:   #9AA2AA;
+  --color-ink-faint:   #7C848D;
   --color-accent:      #4DA3F5;
   --color-accent-deep: #1878D8;
   --color-accent-soft: #13243A;
@@ -132,8 +141,8 @@
   --color-warn-soft:   #2A2114;
   --color-good:        #6FD3AC;
   --color-good-soft:   #11241D;
-  --color-rule:        #262B33;
-  --color-rule-strong: #3A414B;
+  --color-rule:        #2C3542;
+  --color-rule-strong: #3A4452;
   --color-void:        #060809;
   --color-void-ink:    #EDEBE7;
   --color-void-muted:  #8E949E;
