@@ -59,7 +59,9 @@ export function SignIn({ onSignedIn }: { onSignedIn: (s: Session) => void }) {
 
   useEffect(() => {
     void api().listDemoAccounts().then(setAccounts).catch(() => {});
-    void api().listAvailableTaxRules().then(setCountries).catch(() => {});
+    /* Expected to 401 before sign-in — see the note by <CountryPicker>. The
+       catch is the normal path, not an error case, so nothing is surfaced. */
+    void api().listAvailableTaxRules().then(setCountries).catch(() => setCountries([]));
   }, []);
 
   function go(next: Step) {
@@ -184,7 +186,7 @@ export function SignIn({ onSignedIn }: { onSignedIn: (s: Session) => void }) {
 
   /* ── Register ───────────────────────────────────────────────────────── */
   if (step === 'register') {
-    const canSubmit = name.trim().length > 1 && emailOk && pwOk && !!country && agreed;
+    const canSubmit = name.trim().length > 1 && emailOk && pwOk && agreed;
     return (
       <Screen>
         <ScrollView contentContainerStyle={pad} keyboardShouldPersistTaps="handled">
@@ -211,7 +213,25 @@ export function SignIn({ onSignedIn }: { onSignedIn: (s: Session) => void }) {
             onToggle={() => setShowPw((v) => !v)}
             error={password.length > 0 && !pwOk ? 'Use at least ten characters.' : undefined}
           />
-          <CountryPicker options={countries} value={country} onChange={setCountry} />
+          {/* Only when the catalogue actually answered.
+              `/v1/tax-rules-catalogue` sits behind `SessionGuard`, so an
+              unauthenticated caller gets a 401 and this list stays empty —
+              which is the NORMAL case here, since registering is by
+              definition something you do before you have a session. In
+              production this picker therefore does not appear at all.
+
+              It is kept rather than deleted because the prototype puts the
+              question here and the endpoint only needs its guard relaxed to
+              catalogue-public (it exposes rule-set ids, country names,
+              versions and currencies — no tenant data) for it to work.
+
+              Either way the answer is NOT required to create an account, and
+              nothing yet persists it: installing a rule set per workspace
+              belongs to the tax-rules work, not to this screen. Requiring it
+              here disabled "Create account" outright in production. */}
+          {countries.length > 0 ? (
+            <CountryPicker options={countries} value={country} onChange={setCountry} />
+          ) : null}
 
           <Pressable
             accessibilityRole="checkbox"
