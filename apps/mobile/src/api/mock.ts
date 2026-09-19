@@ -66,7 +66,8 @@ import type {
   UsageItem,
   UsagePeriod,
   Reward,
-  RewardRedemption,
+  RedeemVoucherRequest,
+  VoucherRedemption,
   NotificationPrefs,
   AlertItem,
   PrivacySettings,
@@ -694,45 +695,20 @@ const usageByMonth: Record<UsageKind, Record<string, UsageItem[]>> = {
   },
 };
 
-/** Points traded for scan credits — see the warning on `Reward`. */
+/** yourtal listings. Spending happens there; only the voucher comes back. */
 const REWARDS: Reward[] = [
-  {
-    id: 'rw-10',
-    name: '10 scan credits',
-    description: 'Ten more receipts, on the house.',
-    cost: 200,
-    credits: 10,
-    imageUrl: null,
-    available: true,
-  },
-  {
-    id: 'rw-25',
-    name: '25 scan credits',
-    description: 'A month of ordinary shopping for most households.',
-    cost: 450,
-    credits: 25,
-    imageUrl: null,
-    available: true,
-  },
-  {
-    id: 'rw-60',
-    name: '60 scan credits',
-    description: 'The best rate — worth saving up for.',
-    cost: 1000,
-    credits: 60,
-    imageUrl: null,
-    available: true,
-  },
-  {
-    id: 'rw-150',
-    name: '150 scan credits',
-    description: 'A full tax year of receipts for a busy household.',
-    cost: 2200,
-    credits: 150,
-    imageUrl: null,
-    available: true,
-  },
+  { id: 'yt-scan-10', name: '10 free scans', description: 'A Snap Apps voucher for ten receipts.', cost: 200, imageUrl: null, deepLink: 'https://yourtal.com.au/store/yt-scan-10', available: true },
+  { id: 'yt-scan-25', name: '25 free scans', description: 'A Snap Apps voucher for a month of shopping.', cost: 450, imageUrl: null, deepLink: 'https://yourtal.com.au/store/yt-scan-25', available: true },
+  { id: 'yt-cafe', name: 'Cafe Giro, $10', description: 'Coffee on the way to the next job.', cost: 300, imageUrl: null, deepLink: 'https://yourtal.com.au/store/yt-cafe', available: true },
+  { id: 'yt-fuel', name: 'Ampol, $25 fuel', description: 'Redeemed at the pump, not here.', cost: 900, imageUrl: null, deepLink: 'https://yourtal.com.au/store/yt-fuel', available: true },
 ];
+
+/** Vouchers a demo user is holding, as if minted in yourtal. */
+const DEMO_VOUCHERS: Record<string, { title: string; credits: number }> = {
+  SNAP10: { title: '10 free scans', credits: 10 },
+  SNAP25: { title: '25 free scans', credits: 25 },
+};
+const spentVouchers = new Set<string>();
 
 let alerts: AlertItem[] = [
   {
@@ -2182,38 +2158,33 @@ export class MockApi implements SnapApi {
 
   async listRewards(): Promise<Reward[]> {
     await settle(200);
-    const balance = pointLedger.reduce((a, e) => a + e.delta, 0);
-    // Affordability is a fact about the catalogue as this user sees it, so it
-    // is resolved here rather than left for the screen to recompute.
-    return REWARDS.map((r) => ({ ...r, available: r.available && balance >= r.cost }));
+    /* `available` is yourtal's stock flag, NOT affordability. Greying a
+       listing out because this user cannot afford it would be this app
+       deciding something the store owns. */
+    return REWARDS;
   }
 
-  async redeemReward(rewardId: string): Promise<RewardRedemption> {
-    await settle(420);
-    const reward = REWARDS.find((r) => r.id === rewardId);
-    if (!reward) throw new Error('That reward is no longer available.');
-    const balance = pointLedger.reduce((a, e) => a + e.delta, 0);
-    if (balance < reward.cost) throw new Error('Not enough points for that one yet.');
+  async redeemVoucher(input: RedeemVoucherRequest): Promise<VoucherRedemption> {
+    await settle(520);
+    const code = input.code.trim().toUpperCase();
+    if (code.length < 6) throw new Error('A voucher code is at least six characters.');
 
-    // A redemption is a NEGATIVE ledger entry — see the warning on `Reward`.
-    pointLedger = [
-      ...pointLedger,
-      {
-        id: `pl_${Date.now().toString(36)}`,
-        delta: -reward.cost,
-        reason: `Redeemed: ${reward.name}`,
-        ref: reward.id,
-        app: 'snap',
-        createdAt: new Date().toISOString(),
-      },
-    ];
-    creditBalance += reward.credits;
+    const voucher = DEMO_VOUCHERS[code];
+    if (!voucher) throw new Error('That code is not a voucher we recognise.');
+    // Single-use: the only partial-redemption policy that makes sense while
+    // Snap grants whole credit packs. See `RedeemVoucherRequest`.
+    if (spentVouchers.has(code)) throw new Error('That voucher has already been used.');
+
+    spentVouchers.add(code);
+    creditBalance += voucher.credits;
+    /* No point ledger entry. The points were spent in yourtal when the
+       voucher was minted; nothing leaves this balance here. */
     return {
-      rewardId: reward.id,
-      pointsSpent: reward.cost,
-      creditsGranted: reward.credits,
-      pointsBalance: balance - reward.cost,
+      code,
+      title: voucher.title,
+      creditsGranted: voucher.credits,
       creditsBalance: creditBalance,
+      redeemedAt: new Date().toISOString(),
     };
   }
 

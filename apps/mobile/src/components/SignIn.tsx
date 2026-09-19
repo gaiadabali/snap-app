@@ -17,6 +17,7 @@ import {
   Small,
   Title,
 } from '@/components/ui';
+import { rememberCountry } from '@/lib/pending-country';
 import { control, radius, space, type, usePalette } from '@/theme';
 
 /**
@@ -59,8 +60,6 @@ export function SignIn({ onSignedIn }: { onSignedIn: (s: Session) => void }) {
 
   useEffect(() => {
     void api().listDemoAccounts().then(setAccounts).catch(() => {});
-    /* Expected to 401 before sign-in — see the note by <CountryPicker>. The
-       catch is the normal path, not an error case, so nothing is surfaced. */
     void api().listAvailableTaxRules().then(setCountries).catch(() => setCountries([]));
   }, []);
 
@@ -186,7 +185,7 @@ export function SignIn({ onSignedIn }: { onSignedIn: (s: Session) => void }) {
 
   /* ── Register ───────────────────────────────────────────────────────── */
   if (step === 'register') {
-    const canSubmit = name.trim().length > 1 && emailOk && pwOk && agreed;
+    const canSubmit = name.trim().length > 1 && emailOk && pwOk && !!country && agreed;
     return (
       <Screen>
         <ScrollView contentContainerStyle={pad} keyboardShouldPersistTaps="handled">
@@ -213,25 +212,10 @@ export function SignIn({ onSignedIn }: { onSignedIn: (s: Session) => void }) {
             onToggle={() => setShowPw((v) => !v)}
             error={password.length > 0 && !pwOk ? 'Use at least ten characters.' : undefined}
           />
-          {/* Only when the catalogue actually answered.
-              `/v1/tax-rules-catalogue` sits behind `SessionGuard`, so an
-              unauthenticated caller gets a 401 and this list stays empty —
-              which is the NORMAL case here, since registering is by
-              definition something you do before you have a session. In
-              production this picker therefore does not appear at all.
-
-              It is kept rather than deleted because the prototype puts the
-              question here and the endpoint only needs its guard relaxed to
-              catalogue-public (it exposes rule-set ids, country names,
-              versions and currencies — no tenant data) for it to work.
-
-              Either way the answer is NOT required to create an account, and
-              nothing yet persists it: installing a rule set per workspace
-              belongs to the tax-rules work, not to this screen. Requiring it
-              here disabled "Create account" outright in production. */}
-          {countries.length > 0 ? (
-            <CountryPicker options={countries} value={country} onChange={setCountry} />
-          ) : null}
+          {/* `/v1/tax-rules-catalogue` is deliberately unguarded so this can
+              be asked before a session exists. The answer decides which
+              country's rules the workspace runs under, so it is required. */}
+          <CountryPicker options={countries} value={country} onChange={setCountry} />
 
           <Pressable
             accessibilityRole="checkbox"
@@ -265,7 +249,12 @@ export function SignIn({ onSignedIn }: { onSignedIn: (s: Session) => void }) {
             busy={busy === 'register'}
             disabled={!canSubmit}
             onPress={() =>
-              void run('register', () => api().register(address, password, name.trim()))
+              void run('register', async () => {
+                // Remembered BEFORE the session exists, because creating it
+                // swaps this whole tree out for onboarding.
+                if (country) await rememberCountry(country.rulesId);
+                return api().register(address, password, name.trim());
+              })
             }
           />
 

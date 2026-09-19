@@ -4,6 +4,7 @@ import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, type Session } from '@/api';
+import { takePendingCountry } from '@/lib/pending-country';
 import { Icon, type IconName } from '@/components/Icon';
 import { GradientHero } from '@/components/rich';
 import {
@@ -92,6 +93,11 @@ export function Onboarding({
     setError(null);
     setBusy(true);
     try {
+      /* The country picked at registration. Absent means no engine is
+         installed, which is a real state the server models honestly — every
+         tax figure then refuses rather than defaulting to Australian law. */
+      const taxRulesId = await takePendingCountry();
+
       const session = await api().completeOnboarding({
         workspaceName: household.trim(),
         kind: 'personal',
@@ -100,6 +106,7 @@ export function Onboarding({
         gstBasis: 'cash',
         occupationProfileId: null,
         monthlyBudget: monthly > 0 ? monthly.toFixed(4) : null,
+        taxRulesId,
       });
 
       /* Now that there is a workspace, write the per-category budgets.

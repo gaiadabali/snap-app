@@ -23,6 +23,7 @@ import {
   AuthCodesController,
   MePreferencesController,
   RewardsController,
+  VouchersController,
   UsageController,
   WalletController,
 } from './redesign/redesign.controller.js';
@@ -122,6 +123,8 @@ export class HealthController {
     WalletController,
     UsageController,
     RewardsController,
+    VouchersController,
+  VouchersController,
     AlertsController,
     MePreferencesController,
     AuthCodesController,

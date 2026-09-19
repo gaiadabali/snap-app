@@ -1117,6 +1117,18 @@ export interface OnboardingInput {
   occupationProfileId?: string | null;
   /** Personal only: what the household intends to spend each month. */
   monthlyBudget?: string | null;
+  /**
+   * The tax engine to install, e.g. `au-2026` or `id-2026` (migration 0026).
+   *
+   * Absent means "no engine", NOT "Australia": a workspace without one refuses
+   * every tax calculation rather than computing plausible numbers under the
+   * wrong law. The mobile client asks for the country at registration and
+   * sends the answer through here.
+   *
+   * `OnboardingDto` on the server has accepted this since the engine landed;
+   * it was simply missing from this contract, so no client could send it.
+   */
+  taxRulesId?: string | null;
 }
 
 // ── The platform admin plane (docs/WEB.md §6) ──────────────────────────────
@@ -1599,6 +1611,12 @@ export interface PointBalance {
  * first. There is no redemption type here: redemption happens in yourtal,
  * not in this product, and nothing in this contract should be read as
  * assuming otherwise.
+ *
+ * This held, was briefly contradicted on 2026-09-19 by a points-for-credits
+ * trade added here, and holds again — the trade was removed once the yourtal
+ * side was checked. Points leave the balance in yourtal; what comes back to
+ * Snap Apps is a VOUCHER, redeemed through `RedeemVoucherRequest`. So every
+ * `delta` written by this product is still positive.
  */
 export interface PointLedgerEntry {
   id: string;
@@ -1893,55 +1911,68 @@ export interface UsagePeriod {
 }
 
 /**
- * A reward: points traded for scan credits, in this product.
+ * A yourtal listing that Snap Apps users are likely to want, shown here so the
+ * points they earn have a visible purpose.
  *
- * ⚠ THIS CONTRADICTS `PointLedgerEntry` ABOVE, and the contradiction is
- * deliberate rather than an oversight, so it is written down here instead of
- * being resolved by whoever reads it next.
+ * READ-ONLY, and deliberately so. Points are EARNED in Snap Apps and SPENT in
+ * yourtal — `PointLedgerEntry` above says exactly that and it is correct. An
+ * earlier pass of this file added a points-for-credits trade inside Snap Apps
+ * and flagged the contradiction; the trade was wrong and has been removed.
  *
- * `PointLedgerEntry` says, in the code: "There is no redemption type here:
- * redemption happens in yourtal, not in this product, and nothing in this
- * contract should be read as assuming otherwise." That was true when it was
- * written. The 2026-09-19 mobile prototype's Rewards screen says the opposite
- * in as many words — "Trade points for scan credits... Points come off your
- * balance straight away and the credits land on your account in the same
- * moment. There is nothing to redeem by email and no code to keep."
+ * The real loop (yourtal docs/09 sections 7 and 8):
  *
- * Both cannot hold. Until a product decision settles it:
- *   - `redeemReward` below is the in-product trade the prototype describes;
- *   - a redemption therefore writes a NEGATIVE `PointLedgerEntry.delta`, which
- *     that type already permits ("a redemption (elsewhere) would be negative")
- *     even though its prose does not expect one from here;
- *   - the Usage screen still reports yourtal spend, because that channel has
- *     not gone away.
+ *     scan a receipt          earn 1 point
+ *     spend points in yourtal a voucher is minted, with a code
+ *     bring the code here     Snap Apps honours it and grants credits
  *
- * If the decision lands on "yourtal only", delete `redeemReward`, make `cost`
- * a display-only figure and restore a `redeemUrl`. If it lands on "both", the
- * comment on `PointLedgerEntry` needs rewriting, not this one.
+ * So Snap Apps is a REDEEMER in yourtal's settlement protocol, never a store.
+ * `deepLink` hands the user to yourtal to do the spending.
  */
 export interface Reward {
   id: string;
   name: string;
   description: string;
-  /** Points it costs. */
+  /** Points yourtal charges for it. Display only — nothing here can buy it. */
   cost: number;
-  /** Scan credits it grants. */
-  credits: number;
   /** Absolute URL, or `null` while the catalogue has no artwork. */
   imageUrl: string | null;
-  /** False when the reward is listed but cannot be claimed right now. */
+  /** Opens yourtal at this listing. */
+  deepLink: string;
   available: boolean;
 }
 
-/** `POST /v1/rewards/:id/redeem` — what the trade actually moved. */
-export interface RewardRedemption {
-  rewardId: string;
-  pointsSpent: number;
-  creditsGranted: number;
-  /** The balances AFTER the trade, so the screen needs no second fetch. */
-  pointsBalance: number;
-  creditsBalance: number;
+/**
+ * `POST /v1/vouchers/redeem` — a yourtal voucher presented at Snap Apps.
+ *
+ * Snap Apps is the merchant here. The server authorises and captures against
+ * yourtal's voucher service (`authorize` -> `capture`, docs/09 section 8.1,
+ * idempotency key mandatory) and grants the credits the voucher paid for.
+ * The client only ever submits a code; it must never talk to yourtal directly,
+ * because a client that can authorise is a client that can drain a voucher.
+ *
+ * Two things are NOT settled and must be before this ships:
+ *   - yourtal denominates a voucher in `faceValueIdr`, and its own minor unit
+ *     is still open (their YT-0506). Snap's credit packs are priced in AUD.
+ *     Nothing here converts between them yet.
+ *   - partial redemption is a per-batch policy in yourtal (balance-carrying,
+ *     single-use, minimum spend). Snap grants whole credit packs, so only
+ *     single-use makes sense today; the others need a decision.
+ */
+export interface RedeemVoucherRequest {
+  /** As printed in yourtal: 6–24 characters. Compared case-insensitively. */
+  code: string;
 }
+
+export interface VoucherRedemption {
+  code: string;
+  /** What the voucher was for, in yourtal's words — e.g. "10 free scans". */
+  title: string;
+  creditsGranted: number;
+  /** The credits balance AFTER the grant, so no second fetch is needed. */
+  creditsBalance: number;
+  redeemedAt: IsoDateTime;
+}
+
 
 /**
  * What the user wants to be told about. USER-scoped, not workspace-scoped: a

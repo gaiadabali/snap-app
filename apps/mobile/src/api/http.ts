@@ -53,7 +53,8 @@ import type {
   UsageKind,
   UsagePeriod,
   Reward,
-  RewardRedemption,
+  RedeemVoucherRequest,
+  VoucherRedemption,
   NotificationPrefs,
   AlertItem,
   PrivacySettings,
@@ -1111,11 +1112,14 @@ export class HttpApi implements SnapApi {
     return this.get<Reward[]>('/v1/rewards', null);
   }
 
-  redeemReward(rewardId: string): Promise<RewardRedemption> {
-    return this.request<RewardRedemption>('POST', `/v1/rewards/${rewardId}/redeem`, {
+  redeemVoucher(input: RedeemVoucherRequest): Promise<VoucherRedemption> {
+    return this.request<VoucherRedemption>('POST', '/v1/vouchers/redeem', {
+      body: input,
       workspaceId: null,
-      // Never replayed from the outbox: a queued redemption that fires twice
-      // spends the points twice, and there is no idempotency key here.
+      // Never replayed from the outbox. A queued redemption that fires twice
+      // captures the voucher twice; yourtal's protocol makes every call carry
+      // an idempotency key precisely because retries are certain, and this
+      // client has no way to reuse one across a process restart.
       queue: false,
     });
   }

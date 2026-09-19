@@ -17,7 +17,6 @@ import type {
   NotificationPrefs,
   PrivacySettings,
   Reward,
-  RewardRedemption,
   SavedCard,
   UsageKind,
   UsagePeriod,
@@ -75,12 +74,10 @@ const DEFAULT_PRIVACY: PrivacySettings = {
   retentionMonths: 60,
 };
 
-/** Points traded for scan credits — see the warning on `Reward`. */
+/** yourtal listings, shown so points have a visible purpose. Display only. */
 const REWARDS: Reward[] = [
-  { id: 'rw-10', name: '10 scan credits', description: 'Ten more receipts, on the house.', cost: 200, credits: 10, imageUrl: null, available: true },
-  { id: 'rw-25', name: '25 scan credits', description: 'A month of ordinary shopping for most households.', cost: 450, credits: 25, imageUrl: null, available: true },
-  { id: 'rw-60', name: '60 scan credits', description: 'The best rate — worth saving up for.', cost: 1000, credits: 60, imageUrl: null, available: true },
-  { id: 'rw-150', name: '150 scan credits', description: 'A full tax year of receipts for a busy household.', cost: 2200, credits: 150, imageUrl: null, available: true },
+  { id: 'yt-scan-10', name: '10 free scans', description: 'A Snap Apps voucher for ten receipts.', cost: 200, imageUrl: null, deepLink: 'https://yourtal.com.au/store/yt-scan-10', available: true },
+  { id: 'yt-scan-25', name: '25 free scans', description: 'A Snap Apps voucher for a month of shopping.', cost: 450, imageUrl: null, deepLink: 'https://yourtal.com.au/store/yt-scan-25', available: true },
 ];
 
 function brandOf(digits: string): SavedCard['brand'] {
@@ -197,25 +194,46 @@ export class RewardsController {
     return REWARDS;
   }
 
-  /**
-   * ⚠ NOT IMPLEMENTED, and refuses rather than pretending.
-   *
-   * A redemption has to write a negative `point_ledger` row and grant credits
-   * in ONE transaction, or a crash between the two either loses points or
-   * mints credits. `point_ledger` permits a negative delta — the column is
-   * `CHECK (delta <> 0)`, not `> 0` — so the schema is ready, but the
-   * atomic pair is not written and must not be faked.
-   *
-   * It also contradicts `PointsController`'s standing comment that nothing in
-   * this product writes a negative entry. That conflict is documented on
-   * `Reward` in `@snap/api-contract` and needs a product decision before this
-   * becomes real.
-   */
-  @Post(':id/redeem')
-  @ApiOperation({ summary: 'Trade points for credits (NOT IMPLEMENTED — refuses)' })
-  redeem(@Param('id') _id: string): RewardRedemption {
-    throw new Error(
-      'Redeeming points is not implemented on the server yet. See the note on Reward in @snap/api-contract.',
+}
+
+/* ── Voucher redemption — Snap Apps as a yourtal merchant ─────────────────── */
+
+/**
+ * ⚠ NOT IMPLEMENTED, and refuses rather than pretending.
+ *
+ * Snap Apps is a REDEEMER in yourtal's settlement protocol (their docs/09
+ * §8): `POST /v1/vouchers/authorize` for the pack amount, then `capture` on
+ * success, `void` if we fail after authorising. Every call carries a mandatory
+ * idempotency key, and capture can never exceed authorise.
+ *
+ * It cannot be stubbed. A stub that grants credits for any code is a free
+ * credit faucet, and one that grants them without capturing leaves yourtal
+ * holding value it has already given away.
+ *
+ * Blocked on three things, none of them ours alone:
+ *   1. yourtal's voucher service does not exist yet — the schema and the
+ *      protocol are written (`packages/contracts/src/voucher/voucher.ts`),
+ *      the endpoints are not.
+ *   2. a voucher is denominated in `faceValueIdr` and yourtal's own IDR minor
+ *      unit is still open (their YT-0506). Credit packs here are priced in
+ *      AUD. Nothing converts between them.
+ *   3. partial redemption is a per-batch policy over there. Snap grants whole
+ *      packs, so only single-use fits today — that needs agreeing, not
+ *      assuming, because a user who silently loses the remainder of a voucher
+ *      is a user who stops trusting the store.
+ *
+ * Earning is unaffected and already works: a scan writes a positive
+ * `point_ledger` row. Only the way back is missing.
+ */
+@ApiTags('vouchers')
+@Controller('v1/vouchers')
+@UseGuards(SessionGuard)
+export class VouchersController {
+  @Post('redeem')
+  @ApiOperation({ summary: 'Redeem a yourtal voucher (NOT IMPLEMENTED — refuses)' })
+  redeem(): never {
+    throw new NotImplementedException(
+      'Voucher redemption is not available yet: yourtal has no voucher service to settle against.',
     );
   }
 }

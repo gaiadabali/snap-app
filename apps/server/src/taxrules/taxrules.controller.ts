@@ -46,7 +46,21 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
  */
 @ApiTags('tax-rules')
 @Controller('v1/tax-rules-catalogue')
-@UseGuards(SessionGuard)
+/* DELIBERATELY UNGUARDED.
+ *
+ * It carried `SessionGuard` until 2026-09-19, on the reasoning above that
+ * onboarding runs before a WORKSPACE exists. That was half the problem: the
+ * mobile client asks which country you are in on the REGISTRATION screen,
+ * which runs before a SESSION exists, so the guard returned 401 and the
+ * country list was always empty.
+ *
+ * Nothing here is tenant data — rule-set ids, country names, versions, tax
+ * years, scope and currency codes, all of it fixed by migration and identical
+ * for every caller. It is the same class of public catalogue as a pricing
+ * page. There is no user input, no per-caller variation and nothing to
+ * enumerate, so an unauthenticated read gives an attacker nothing they could
+ * not read in the repository.
+ */
 export class TaxRulesCatalogueController {
   @Get()
   @ApiOperation({

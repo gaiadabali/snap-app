@@ -104,7 +104,8 @@ import type {
   UsageKind,
   UsagePeriod,
   Reward,
-  RewardRedemption,
+  RedeemVoucherRequest,
+  VoucherRedemption,
   NotificationPrefs,
   AlertItem,
   PrivacySettings,
@@ -437,16 +438,15 @@ export interface SnapApi {
   listUsageMonths(kind: UsageKind): Promise<string[]>;
 
   // ── Rewards ──
-  /** `GET /v1/rewards` — what points can be traded for. */
+  /** `GET /v1/rewards` — yourtal listings, shown so points have a purpose. */
   listRewards(): Promise<Reward[]>;
   /**
-   * `POST /v1/rewards/:id/redeem` — spend points, receive scan credits.
+   * `POST /v1/vouchers/redeem` — present a yourtal voucher here.
    *
-   * See the warning on `Reward` in the contract: this endpoint contradicts
-   * `PointLedgerEntry`'s "redemption happens in yourtal, not in this product",
-   * and the conflict is open rather than resolved.
+   * The server authorises and captures against yourtal and grants the credits.
+   * Points are never spent from this app; see `Reward` in the contract.
    */
-  redeemReward(rewardId: string): Promise<RewardRedemption>;
+  redeemVoucher(input: RedeemVoucherRequest): Promise<VoucherRedemption>;
 
   // ── Alerts & preferences ──
   /** `GET /v1/alerts` — the in-app feed, newest first. */
