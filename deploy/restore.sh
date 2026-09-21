@@ -36,7 +36,7 @@ docker exec "$PG_CONTAINER" psql -U "$PGUSER" -d postgres -q \
 # gunzip -c into pg_restore reading custom format from stdin (single job —
 # custom format from a pipe cannot use --jobs, and the drill does not need it).
 gunzip -c "$dump" | docker exec -i "$PG_CONTAINER" pg_restore -U "$PGUSER" \
-  --dbname="$db" --no-owner --if-exists >/dev/null
+  --dbname="$db" --clean --if-exists --no-owner >/dev/null
 
 # ── The proof ────────────────────────────────────────────────────────────────
 # A restore is only proven by reading real data back, not by pg_restore's
