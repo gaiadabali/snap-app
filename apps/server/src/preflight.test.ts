@@ -134,3 +134,109 @@ describe('production preflight', () => {
     expect(result.ok).toBe(false);
   });
 });
+
+/**
+ * `docs/INTEGRATIONS.md` ticket X2. The boot half of gate G-SIM.
+ *
+ * Every case passes its environment explicitly. Reading the real
+ * `process.env` here would make these tests pass or fail depending on the
+ * developer's shell, which is the one thing a boot gate must not do.
+ */
+describe('the five simulated integrations, at boot', () => {
+  const clean = { NODE_ENV: 'production' } as const;
+
+  it('is silent when no simulator is asked for', () => {
+    // The positive control. Without it, the refusals below could be passing
+    // because the check fires unconditionally.
+    const result = evaluatePreflight(settings(), safe, clean);
+    expect(result.ok).toBe(true);
+    expect(result.warnings).toEqual([]);
+  });
+
+  it('REFUSES to start when production asks for a simulator without DEMO_ENV', () => {
+    // The operator believes Stripe is taking payments. What actually happens
+    // is that the integration resolves to ABSENT and the buy button quietly
+    // says card payments are not connected — discoverable only from a ticket
+    // about missing revenue.
+    const result = evaluatePreflight(settings(), safe, {
+      NODE_ENV: 'production',
+      STRIPE_SIMULATOR: 'true',
+    });
+    expect(result.ok).toBe(false);
+    expect(result.failures.join('\n')).toContain('STRIPE_SIMULATOR');
+    expect(result.failures.join('\n')).toContain('DEMO_ENV=staging');
+  });
+
+  it('names EVERY refused simulator, not just the first', () => {
+    const result = evaluatePreflight(settings(), safe, {
+      NODE_ENV: 'production',
+      STRIPE_SIMULATOR: 'true',
+      XERO_SIMULATOR: 'true',
+      KMS_SIMULATOR: 'true',
+    });
+    expect(result.ok).toBe(false);
+    const text = result.failures.join('\n');
+    for (const name of ['STRIPE_SIMULATOR', 'XERO_SIMULATOR', 'KMS_SIMULATOR']) {
+      expect(text).toContain(name);
+    }
+  });
+
+  it('BOOTS a demo host running simulators, and warns once per simulator', () => {
+    // A demo host with four simulators running is correctly configured and
+    // must still start. The warnings are what stop "simulated" from being
+    // forgotten.
+    const result = evaluatePreflight(settings({ DEMO_ENV: 'staging' }), safe, {
+      NODE_ENV: 'production',
+      DEMO_ENV: 'staging',
+      STRIPE_SIMULATOR: 'true',
+      XERO_SIMULATOR: 'true',
+    });
+    expect(result.ok).toBe(true);
+    expect(result.failures).toEqual([]);
+    expect(result.warnings.filter((w) => w.includes('SIMULATED')).length).toBe(2);
+  });
+
+  it('says nothing about a simulator that real credentials have overridden', () => {
+    // Real credentials win by design. Warning about a stale flag at every
+    // boot would train operators to ignore this whole section.
+    const result = evaluatePreflight(settings(), safe, {
+      NODE_ENV: 'production',
+      DEMO_ENV: 'staging',
+      STRIPE_SIMULATOR: 'true',
+      STRIPE_SECRET_KEY: 'sk_live_not_a_real_key',
+    });
+    expect(result.ok).toBe(true);
+    expect(result.warnings.join('\n')).not.toContain('Stripe');
+  });
+
+  it('counts a SIMULATED mailer as a way in, and a real one as the real thing', () => {
+    // Check 2 is "somebody can sign in at all". A simulated mailer delivers
+    // to an in-process sink, so it is a way for a DEMO to sign in — exactly
+    // as the Google simulator is — and it is not a way for a customer to.
+    const demo = evaluatePreflight(
+      settings({ GOOGLE_CLIENT_ID: undefined, DEMO_ENV: 'staging' }),
+      safe,
+      { NODE_ENV: 'production', DEMO_ENV: 'staging', MAILER_SIMULATOR: 'true' },
+    );
+    expect(demo.ok).toBe(true);
+
+    const real = evaluatePreflight(settings({ GOOGLE_CLIENT_ID: undefined }), safe, {
+      NODE_ENV: 'production',
+      SMTP_URL: 'smtps://mail.example:465',
+    });
+    expect(real.ok).toBe(true);
+    // A real mailer is not a simulator, so it draws no simulator warning.
+    expect(real.warnings.join('\n')).not.toContain('SIMULATED');
+  });
+
+  it('an EMPTY mailer credential is not a mailer', () => {
+    // How a compose file spells "unset" by accident. The old check read this
+    // as a configured mailer and would have let a server boot with no way in.
+    const result = evaluatePreflight(settings({ GOOGLE_CLIENT_ID: undefined }), safe, {
+      NODE_ENV: 'production',
+      SMTP_URL: '',
+    });
+    expect(result.ok).toBe(false);
+    expect(result.failures.join('\n')).toContain('No usable sign-in method');
+  });
+});

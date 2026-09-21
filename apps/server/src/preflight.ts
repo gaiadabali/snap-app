@@ -1,4 +1,5 @@
 import type { Config } from './config.js';
+import { evaluateSimulations, simulationMode, type Env } from './integrations/simulation.js';
 
 /**
  * What must be true before this server is allowed to serve production traffic.
@@ -29,7 +30,19 @@ export type PreflightResult = {
   warnings: string[];
 };
 
-export function evaluatePreflight(settings: Config, probe: PreflightProbe): PreflightResult {
+export function evaluatePreflight(
+  settings: Config,
+  probe: PreflightProbe,
+  /**
+   * The environment the five external integrations are read from. A
+   * parameter, with the process environment as its default, for the reason
+   * `integrations/simulation.ts` gives: that module is deliberately pure so
+   * it can also be called from `admin/crypto/kms.ts`, which must not import
+   * `config.ts`. Passing it explicitly is also what lets this file's suite
+   * drive every combination without mutating `process.env`.
+   */
+  env: Env = process.env,
+): PreflightResult {
   const failures: string[] = [];
   const warnings: string[] = [];
 
@@ -75,9 +88,18 @@ export function evaluatePreflight(settings: Config, probe: PreflightProbe): Pref
   // a real method.
   if (production) {
     const google = Boolean(settings.GOOGLE_CLIENT_ID);
-    const mailer = Boolean(process.env.MAILER_PROVIDER ?? process.env.SMTP_URL);
+    // Was `Boolean(process.env.MAILER_PROVIDER ?? process.env.SMTP_URL)`,
+    // which read an empty string as a configured mailer — the way a compose
+    // file spells "unset" by accident. `simulationMode` treats a blank
+    // credential as absent, and distinguishes the real transport from the
+    // simulated one, which matters below: a SIMULATED mailer delivers to an
+    // in-process sink, so it is a way for a demo to sign in and is not a way
+    // for a customer to.
+    const mailerMode = simulationMode('mailer', env);
+    const mailer = mailerMode === 'real';
     const simulator =
-      settings.DEMO_ENV === 'staging' && settings.GOOGLE_SIGNIN_SIMULATOR === true;
+      (settings.DEMO_ENV === 'staging' && settings.GOOGLE_SIGNIN_SIMULATOR === true) ||
+      mailerMode === 'simulated';
 
     if (!google && !mailer && !simulator) {
       failures.push(
@@ -130,13 +152,39 @@ export function evaluatePreflight(settings: Config, probe: PreflightProbe): Pref
   // and because reading an already-stored key deliberately still works under
   // the local provider (see that file's header), so its presence at boot is
   // not itself an error condition worth failing the whole process over.
-  if (production && process.env.ADMIN_KMS_MASTER_KEY && (process.env.ADMIN_KMS_PROVIDER ?? 'local') === 'local') {
+  // Reads `env` rather than `process.env` directly, as of X2: the two are the
+  // same thing at boot, and taking the parameter is what stops this check's
+  // own tests from passing or failing according to whether the developer
+  // running them happens to have a master key exported.
+  if (production && env.ADMIN_KMS_MASTER_KEY && (env.ADMIN_KMS_PROVIDER ?? 'local') === 'local') {
     warnings.push(
       'Admin AI keys are wrapped by the LOCAL KMS stand-in (apps/server/src/admin/crypto/kms.ts), not a cloud KMS. ' +
         'Storing or rotating a key now THROWS in production under this provider — set ADMIN_KMS_PROVIDER to a ' +
         'real KmsProvider before a staff member needs to store one. Reading an already-stored key is unaffected.',
     );
   }
+
+  // ── 5. The five simulated integrations. ───────────────────────────────────
+  //
+  // `docs/INTEGRATIONS.md` gate G-SIM: no simulator may be what is live by
+  // accident. `integrations/simulation.ts` already refuses to SELECT a
+  // simulator on a production host that has not declared itself a demo — so
+  // by the time this runs, the dangerous case has been prevented. What is
+  // left is the case it cannot fix on its own: an operator who set
+  // `STRIPE_SIMULATOR=true` on a real production host and now believes
+  // payments are being taken, when the truth is that the integration is
+  // ABSENT and the buy button says so quietly.
+  //
+  // That belief is the fatal part, not the flag. A boot that continued would
+  // make it discoverable only from a support ticket about missing revenue,
+  // which is precisely the "green everywhere except where it matters" shape
+  // this project keeps re-learning.
+  const simulations = evaluateSimulations(env);
+  for (const finding of simulations.refused) failures.push(finding.message);
+  // Active simulators are a warning, never a failure: a demo host with four
+  // of them running is correctly configured, and it must still be able to
+  // boot. One line each, so none of the four is the one nobody mentions.
+  for (const finding of simulations.active) warnings.push(finding.message);
 
   return { ok: failures.length === 0, failures, warnings };
 }
