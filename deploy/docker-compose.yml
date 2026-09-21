@@ -42,7 +42,11 @@ services:
       #   ALTER SYSTEM SET archive_mode = 'on';
       #   ALTER SYSTEM SET archive_command = 'test ! -f /wal-archive/%f && cp %p /wal-archive/%f';
       # then restart the container. Verified by `select pg_switch_wal()` and a
-      # file appearing under /wal-archive.
+      # file appearing under /wal-archive. ONE more step the first time the
+      # volume is mounted: a named volume arrives root-owned and the postgres
+      # user (uid 70) cannot write it — archive_command fails silently and
+      # pg_stat_archiver's failed_count climbs. `docker exec <pg> chown
+      # 70:70 /wal-archive && chmod 700 /wal-archive`, once per volume.
       - wal_archive_data:/wal-archive
     networks: [snap-internal]
     healthcheck:

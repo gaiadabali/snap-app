@@ -49,6 +49,13 @@ These two scripts close that, in two halves:
 
 ## Restore drill log
 
-- 2026-09-21: drill NOT yet run — restore.sh lands with deploy/restore.sh
-  (readiness plan Task 4). Paste the drill output here once run; a drill
-  without recorded output did not happen.
+- 2026-09-21: **DRILL PASSED** — dump `snapapps-20260921T081554Z.dump.gz`
+  (the first backup ever taken on delphi; the bootstrap cron that would have
+  installed backup.sh was deliberately skipped on this box, so nothing before
+  this date is recoverable) restored into throwaway `snapapps_restore_test`:
+  64 public tables, `transaction_splits` restored=0 == live=0 (staging holds
+  no transactions yet), exit 0. The drill's proof compares restored rows
+  against the live count, not against a hardcoded non-zero.
+- WAL archiving also live since 2026-09-21: `archive_mode=on`, `wal_level=replica`,
+  `pg_stat_archiver` archived_count climbing. PITR = weekly `pg_basebackup`
+  (Sundays, in backup.sh) + this archive.
