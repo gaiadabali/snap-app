@@ -30,8 +30,23 @@ let mailer: SmtpMailer;
 async function deliveriesFor(recipient: string) {
   // `getDb()` is the app connection; it cannot read this table. The suite
   // asserts that below and then reads with the owner connection.
+  //
+  // REFUSES rather than falling back to DATABASE_URL, which is what this
+  // line did first and what turned a missing CI variable into five tests
+  // failing with `permission denied` — a message that reads as "the RLS
+  // assertions are broken" rather than "you forgot an env var". Falling
+  // back to a connection that is CORRECTLY forbidden from reading the table
+  // under test can only ever produce a confusing failure.
+  const ownerUrl = process.env.DATABASE_OWNER_URL;
+  if (!ownerUrl) {
+    throw new Error(
+      'DATABASE_OWNER_URL is required by this suite: `mail_deliveries` is deliberately unreadable ' +
+        'by the application role (migration 0034), so verifying what was written needs the owner ' +
+        'connection. Set it to the same URL packages/db/scripts/db.mjs prints for postgres.',
+    );
+  }
   const { Client } = await import('pg');
-  const owner = new Client(process.env.DATABASE_OWNER_URL ?? url!);
+  const owner = new Client(ownerUrl);
   await owner.connect();
   try {
     const { rows } = await owner.query(

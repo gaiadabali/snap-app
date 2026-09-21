@@ -154,6 +154,11 @@ jobs:
           # than the one this job prepared.
           SNAP_TEST_APP_DATABASE_URL: postgres://snap_app:app-dev-password@127.0.0.1:55499/snapapps
           SNAP_TEST_ADMIN_DATABASE_URL: postgres://postgres:verify@127.0.0.1:55499/snapapps
+          # mail-delivery.db.test.ts (0034) reads `mail_deliveries` through
+          # DATABASE_OWNER_URL — the app role is forbidden to read that table
+          # BY DESIGN. The var name is deliberate: it is the connection that
+          # owns the data, not the one the application uses.
+          DATABASE_OWNER_URL: postgres://postgres:verify@127.0.0.1:55499/snapapps
         run: pnpm --filter @snap/server test
 
       - name: Web suite
