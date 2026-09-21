@@ -138,18 +138,22 @@ type Job = { id: string; tenantId: string | null; payload: unknown };
  * `capture_pages`, because `capture_pages` holds only RASTERISED bytes —
  * `pdf.ts`'s `DemuxedPage` never carries a page's text back out of `demuxPdf`
  * — so the original upload is the only place a real text layer can still be
- * read from. That is also this function's one known limitation, reported
- * rather than hidden: `captures.controller.ts`'s `upload()` never persists
- * the RAW PDF bytes for a capture that gets demuxed into `capture_pages` rows
- * (only the rendered PNG pages are written to storage), so for a capture
- * uploaded through today's multi-page intake path, `readObject` below throws
- * ENOENT and this function falls through to its own catch — safely, but
- * silently, to 'receipt'. It classifies correctly today for every capture
- * whose `original_storage_key` genuinely holds the original file (pre-0018
- * single-page captures, and any fixture or future intake path that persists
- * it) and is a no-op-safe default everywhere else. Persisting the raw PDF (or
- * its extracted text) at intake is `captures.controller.ts`/schema work
- * outside this ticket's file list — flagged as a follow-up, not fixed here.
+ * read from.
+ *
+ * Persistence of that original was once this function's structural gap:
+ * `captures.controller.ts`'s `upload()` used to demux the PDF into
+ * `capture_pages` rows without ever writing the raw bytes, so `readObject`
+ * threw ENOENT and every multi-page intake PDF silently fell through to
+ * 'receipt' — a real bank statement read as a docket. That gap is closed at
+ * the intake itself (`storagePut` writes the uploaded bytes content-addressed
+ * under `<tenant>/originals/`, and `markCaptureStored` points
+ * `original_storage_key` at them, before any page is recorded —
+ * `captures.controller.ts`'s PDF branch, landed in 6329cc7), so the bytes
+ * this function reads are the PDF's OWN, and `worker-pdf-intake.test.ts`
+ * pins the whole chain through the real HTTP endpoint. The catch below still
+ * earns its keep for rows whose key does not resolve — captures uploaded
+ * before that change, or a fixture row pointing at nothing — where 'receipt'
+ * remains the safe fallback.
  *
  * Exported for direct testing — `worker-statement-routing.test.ts` covers
  * both this function in isolation and the end-to-end fork through `runOnce`.
@@ -234,10 +238,11 @@ async function handle(job: Job): Promise<void> {
       pageTexts = texts;
     } catch (error) {
       // Deliberately NOT re-thrown, unlike the "every model failed" case
-      // below: this is `classifyCapture`'s own documented, structural gap
-      // (the original PDF bytes were never persisted for this capture) —
-      // retrying the job cannot change that outcome, so completing it here
-      // (recorded, not silently dropped) is honest rather than optimistic.
+      // below: an original that cannot be re-read here cannot be re-read by
+      // retrying either — the pre-persistence-intake rows (and any fixture
+      // row pointing at nothing) are the only captures this still reaches
+      // (see `classifyCapture`'s header), so completing the job with the
+      // failure recorded is honest rather than optimistic.
       const message = error instanceof Error ? error.message : String(error);
       await saveExtractionFailure(WORKER_USER, job.tenantId, captureId, 'statement_extraction', message, 'pdf-text');
       return;
