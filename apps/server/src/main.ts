@@ -156,6 +156,22 @@ export async function bootstrap(): Promise<NestFastifyApplication> {
    * JSON body in memory — including receipts and bank statements — to serve
    * a single route would be a poor trade.
    */
+  // Fastify's own default JSON parser can be overridden by adding another
+  // parser for the same type. What CANNOT be allowed to happen is Nest's
+  // FastifyAdapter registering its own JSON parser afterwards, during app
+  // init: addContentTypeParser then throws FST_ERR_CTP_ALREADY_PRESENT and
+  // the whole process refuses to boot — which is how a staging API spent an
+  // hour crash-looping while every green test suite saw nothing (no suite
+  // boots the real server; the e2e harness passes raw bodies by hand).
+  // The adapter's own escape hatch for this is the `_isParserRegistered`
+  // flag its useBodyParser sets, with the comment "To avoid the Nest
+  // application init to override our custom body parser, we mark the
+  // parsers as registered." Setting it here does exactly that. Note the
+  // consequence: Nest's urlencoded parser is skipped too, so
+  // application/x-www-form-urlencoded requests will 415 — this API speaks
+  // JSON, and nothing posts forms to it.
+  (app.getHttpAdapter() as unknown as { _isParserRegistered: boolean })._isParserRegistered =
+    true;
   fastify.addContentTypeParser(
     'application/json',
     { parseAs: 'string', bodyLimit: 1024 * 1024 },
