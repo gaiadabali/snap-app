@@ -40,20 +40,25 @@ gunzip -c "$dump" | docker exec -i "$PG_CONTAINER" pg_restore -U "$PGUSER" \
 
 # ── The proof ────────────────────────────────────────────────────────────────
 # A restore is only proven by reading real data back, not by pg_restore's
-# exit code: the two numbers that matter are the schema actually there and
-# the ledger's split count. transaction_splits being nonzero proves the
-# double-entry ledger — the product's core invariant — survived the
-# dump/restore round trip intact.
+# exit code. The two numbers that matter are the schema actually there and
+# the ledger's split count — the double-entry ledger is the product's core
+# invariant. The split count is compared against the LIVE database taken at
+# the start of this run, not against a hardcoded ">0": staging before its
+# first real transaction has zero splits, and zero restored must equal zero
+# live. Any mismatch means the dump/restore round trip loses data.
+live_splits=$(docker exec "$PG_CONTAINER" psql -U "$PGUSER" -d snapapps -tAc \
+  "select count(*) from transaction_splits" 2>/dev/null || echo unknown)
+
 tables=$(docker exec "$PG_CONTAINER" psql -U "$PGUSER" -d "$db" -tAc \
   "select count(*) from information_schema.tables where table_schema='public'")
 splits=$(docker exec "$PG_CONTAINER" psql -U "$PGUSER" -d "$db" -tAc \
   "select count(*) from transaction_splits" 2>/dev/null || echo 0)
 
 echo "==> tables restored: ${tables}"
-echo "==> transaction_splits rows: ${splits}"
+echo "==> transaction_splits rows: restored=${splits} live-at-drill-time=${live_splits}"
 
-if [ "${tables:-0}" -gt 0 ] && [ "${splits:-0}" -gt 0 ]; then
-  echo "==> DRILL PASSED — dump $(basename "$dump") restores and carries the ledger"
+if [ "${tables:-0}" -gt 0 ] && [ "$splits" = "$live_splits" ]; then
+  echo "==> DRILL PASSED — dump $(basename "$dump") restores and carries the ledger exactly"
 else
   echo "==> DRILL FAILED — inspect ${db} before trusting any restore story" >&2
   exit 1
