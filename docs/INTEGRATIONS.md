@@ -283,6 +283,59 @@ verification runs for real.
 *Done when:* P2's suite passes unchanged against it, and the timestamp-tolerance
 rejection is exercised by replaying an old signature.
 
+> **P1, P2, P3 DONE 2026-09-21.** 29 tests, of which the eight that matter
+> assert a CREDIT BALANCE against real Postgres rather than that a function
+> was called — granting twice or not at all is only visible in the balance.
+>
+> **No `stripe` SDK.** Two calls are needed (create a session, verify a
+> signature) and writing them directly is what makes the simulator worth
+> having: the code running against a simulated Stripe is byte-for-byte the
+> code that will run against the real one, including the form encoding and
+> the HMAC. An SDK would insert a layer the simulator would have to be
+> trusted to satisfy rather than one that is exercised.
+>
+> **Money is converted on the digits, never through a float.** `44.78 * 100`
+> is `4477.999999999999`; `price_aud` is a decimal string for that reason and
+> `audToCents` works on the characters. It REFUSES sub-cent precision rather
+> than rounding it away — and a test asserts the four decimal places
+> `numeric(12,4)` actually stores (`'44.7800'`) still convert, because the
+> stricter version of that check would have rejected every real price in the
+> table. That one was caught by a test failing, and the test was the thing
+> that was wrong the first time.
+>
+> **A refusal the ticket did not ask for.** `paymentProvider()` throws when
+> `STRIPE_SECRET_KEY` is set and `STRIPE_WEBHOOK_SECRET` is not. Without the
+> second, a payment completes at Stripe and the credits are never granted —
+> money taken, nothing delivered, invisible until a customer complains. That
+> is a worse failure than not being able to take money at all, so it is
+> refused at selection rather than at the first webhook.
+>
+> **`payment_status` is checked separately from the session being complete.**
+> An asynchronous method — BECS direct debit, which is the Australian case —
+> completes the checkout session while the money is still in flight.
+> Granting there would be granting on an intention.
+>
+> **The raw body is kept for this one route.** A Stripe signature covers the
+> exact bytes sent, so verifying a re-serialised object always fails. The
+> JSON parser in `main.ts` retains the original string only for
+> `/v1/credits/webhooks/`, rather than holding a copy of every receipt and
+> bank statement in memory to serve one endpoint.
+>
+> **Status codes are "should Stripe retry", not "did it work".** 400 for a
+> signature that will never verify; 200 for verified-and-nothing-to-do
+> (unhandled event type, already-paid purchase, missing metadata), because
+> retrying those forever buries the real failures; 500 only when WE failed,
+> which is the one case a retry fixes.
+>
+> **Found while editing:** `app.module.ts` registered `VouchersController`
+> twice. Removed.
+>
+> **Still open:** nothing is wired to a real Stripe account. `STRIPE_SECRET_KEY`
+> is unset everywhere, so `simulationMode('stripe')` answers `absent` and the
+> buy screen correctly says card payments are not connected. Going live is
+> setting two variables and pointing a Stripe webhook endpoint at
+> `/v1/credits/webhooks/stripe`.
+
 ---
 
 ## Lane Y — Xero

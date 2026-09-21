@@ -167,9 +167,18 @@ export class CreditsController {
       );
     }
 
-    return paymentProvider().createCheckout({
+    // `await`ed as of docs/INTEGRATIONS.md Lane P: selecting the provider
+    // may have to start the Stripe simulator, which is an HTTP server and
+    // has no address until it is listening.
+    const provider = await paymentProvider();
+    return provider.createCheckout({
       purchaseId: row.id,
       tenantId,
+      // Carried into the processor's metadata so the WEBHOOK can re-enter
+      // this tenant's RLS context. That request arrives with no session and
+      // no workspace; without an identity to act as, granting the credits
+      // would be a cross-tenant write.
+      userId: user.userId,
       packCode: row.pack_code,
       credits: row.credits,
       priceAud: row.price_aud,

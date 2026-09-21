@@ -7,6 +7,7 @@ import { CapturesController } from './captures/captures.controller.js';
 import { BusinessController } from './business/business.controller.js';
 import { CreditsController } from './credits/credits.controller.js';
 import { PointsController } from './credits/points.controller.js';
+import { StripeWebhookController } from './credits/stripe-webhook.controller.js';
 import { DocumentsController } from './documents/documents.controller.js';
 import { DownloadsController } from './export/downloads.controller.js';
 import { CaptureDocumentController } from './captures/capture-document.controller.js';
@@ -116,6 +117,7 @@ export class HealthController {
     TaxRulesCatalogueController,
     CreditsController,
     PointsController,
+    StripeWebhookController,
 
     /* The 2026-09-19 mobile redesign. Read the file header before relying on
        any of these — they are in-process stubs, and the three auth-code
@@ -124,7 +126,6 @@ export class HealthController {
     UsageController,
     RewardsController,
     VouchersController,
-  VouchersController,
     AlertsController,
     MePreferencesController,
     AuthCodesController,

@@ -269,3 +269,80 @@ export async function grantSignupBonusIfFirst(
     return { granted: true };
   });
 }
+
+/**
+ * Fulfilment from a payment processor's webhook.
+ *
+ * This is the function `fulfilCreditPurchase`'s header describes under
+ * "WHAT A REAL PROCESSOR MUST CALL INSTEAD OF THIS", built to that
+ * specification: the same sequence — update status, insert the grant, link
+ * `grant_id`, one transaction — but recording `provider` and `provider_ref`
+ * so a duplicate delivery is caught rather than granting twice.
+ *
+ * ── Three things make a repeat delivery safe, not one ─────────────────────
+ *
+ * Stripe retries a webhook until it gets a 2xx, and will happily deliver the
+ * same event twice on a network hiccup. So:
+ *
+ *  1. `FOR UPDATE` locks the purchase row for the length of the
+ *     check-then-write, which is what makes two SIMULTANEOUS deliveries safe
+ *     rather than merely usually fine.
+ *  2. An already-`paid` purchase returns unchanged. This is the common case
+ *     for a retry and it must not be an error — answering non-2xx would make
+ *     Stripe retry forever.
+ *  3. `credit_purchases_provider_ref_idx` (migration 0024) is unique over
+ *     `(provider, provider_ref)`, so even if 1 and 2 were both wrong the
+ *     database refuses the second grant. That index has been waiting for
+ *     this caller since it was written.
+ *
+ * ── Why it takes a userId and tenantId it did not authenticate ───────────
+ *
+ * A webhook has no session. These come from the processor's metadata, which
+ * WE set when creating the checkout and which arrives inside a payload whose
+ * HMAC signature has already been verified — so they are our own values
+ * handed back, not caller-supplied input. Everything then runs inside
+ * `withTenantAs`, under ordinary RLS, exactly as a signed-in request would.
+ * The alternative — searching for the purchase across tenants — is the
+ * cross-tenant read this schema exists to make impossible.
+ */
+export async function fulfilCreditPurchaseFromProvider(
+  userId: string,
+  tenantId: string,
+  purchaseId: string,
+  provider: 'stripe' | 'apple' | 'google',
+  providerRef: string,
+): Promise<CreditPurchaseRow | null> {
+  return withTenantAs(getDb(), userId, tenantId, async (tx) => {
+    const found = await tx.execute<CreditPurchaseRow>(sql`
+      select id, pack_code, credits, price_aud::text as price_aud, status::text as status,
+             provider::text as provider, to_json(created_at)#>>'{}' as created_at, to_json(paid_at)#>>'{}' as paid_at
+        from credit_purchases
+       where id = ${purchaseId} and tenant_id = current_tenant_id()
+       for update
+    `);
+    const purchase = found.rows[0];
+    if (!purchase) return null;
+    // A retry. Return it unchanged — see (2) above; an error here would make
+    // the processor retry indefinitely.
+    if (purchase.status === 'paid') return purchase;
+    if (purchase.status !== 'pending') throw new CreditPurchaseNotPendingError(purchase.status);
+
+    const grantId = randomUUID();
+    await tx.execute(sql`
+      insert into usage_grants (id, tenant_id, metric, amount, remaining, source)
+      values (${grantId}, current_tenant_id(), 'scans', ${purchase.credits}, ${purchase.credits}, 'topup_pack')
+    `);
+    const updated = await tx.execute<CreditPurchaseRow>(sql`
+      update credit_purchases
+         set status = 'paid',
+             paid_at = now(),
+             grant_id = ${grantId},
+             provider = ${provider}::billing_provider,
+             provider_ref = ${providerRef}
+       where id = ${purchaseId} and tenant_id = current_tenant_id()
+      returning id, pack_code, credits, price_aud::text as price_aud, status::text as status,
+                provider::text as provider, to_json(created_at)#>>'{}' as created_at, to_json(paid_at)#>>'{}' as paid_at
+    `);
+    return updated.rows[0]!;
+  });
+}

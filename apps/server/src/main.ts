@@ -141,6 +141,39 @@ export async function bootstrap(): Promise<NestFastifyApplication> {
   fastify.addContentTypeParser(/^image\//, rawBody, passthrough);
   fastify.addContentTypeParser(/^application\/pdf$/, rawBody, passthrough);
 
+  /**
+   * Keep the RAW body for the Stripe webhook, and only for it.
+   *
+   * docs/INTEGRATIONS.md Lane P. A Stripe signature is an HMAC over the
+   * exact bytes Stripe sent, so verifying a re-serialised object always
+   * fails: JSON.parse followed by JSON.stringify changes key order and
+   * whitespace. Fastify's default JSON parser throws the original bytes
+   * away.
+   *
+   * This replaces the JSON parser with one that parses identically and, for
+   * this one path, also hangs the original string on the request. Scoped by
+   * URL rather than applied everywhere because retaining a copy of every
+   * JSON body in memory — including receipts and bank statements — to serve
+   * a single route would be a poor trade.
+   */
+  fastify.addContentTypeParser(
+    'application/json',
+    { parseAs: 'string', bodyLimit: 1024 * 1024 },
+    (request, body: string, done) => {
+      if (request.url?.startsWith('/v1/credits/webhooks/')) {
+        (request as unknown as { rawBody?: string }).rawBody = body;
+      }
+      if (body === '') return done(null, undefined);
+      try {
+        done(null, JSON.parse(body));
+      } catch (error) {
+        const failure = error as Error & { statusCode?: number };
+        failure.statusCode = 400;
+        done(failure, undefined);
+      }
+    },
+  );
+
   app.useGlobalPipes(
     new ValidationPipe({
       // Anything not declared on a DTO is dropped rather than passed through:
