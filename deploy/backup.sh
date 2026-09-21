@@ -13,9 +13,10 @@
 #     record. This script does NOT delete anything under that directory,
 #     ever — it only produces an additional dated tar snapshot to protect
 #     against host disk failure. The primary durable copy is the bind-mounted
-#     host directory itself; ONE box holding both the only copy and its only
-#     backup is a known gap — see docs/DEPLOY.md §9 for the offsite-replication
-#     follow-up (rclone/restic to object storage) this does not yet do.
+#     host directory itself. The SECOND copy lives offsite: deploy/offsite.sh
+#     (restic → object storage) pushes the originals and the dumps off the
+#     box nightly — the 90-day snapshot prune below is a cache of those
+#     originals, never their retention.
 
 set -euo pipefail
 
@@ -51,7 +52,7 @@ tar -czf "${STORAGE_DIR}/storage-${STAMP}.tar.gz" -C "$(dirname "${STORAGE_HOST_
 echo "    wrote ${STORAGE_DIR}/storage-${STAMP}.tar.gz"
 echo "    (nothing under ${STORAGE_HOST_DIR} itself was touched or deleted — that is the primary 5-year record)"
 
-echo "==> pruning storage snapshots older than 90 days (the snapshots, never the originals)"
+echo "==> pruning storage snapshots older than 90 days (a rolling CACHE of the originals — the originals themselves are never touched, and their durable second copy is deploy/offsite.sh, not these tarballs)"
 find "${STORAGE_DIR}" -name '*.tar.gz' -mtime +90 -delete
 
 # ── Weekly base backup for PITR ─────────────────────────────────────────────

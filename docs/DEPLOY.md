@@ -353,6 +353,13 @@ Captured originals: the host path in `STORAGE_HOST_DIR` — legal records under
 ATO retention, so they must be in the backup set (`deploy/backup.sh`), not just
 in a container volume.
 
+**Offsite replication:** `deploy/offsite.sh` (restic → object storage) pushes
+the DB dumps, the weekly PITR base backups, and the storage originals off the
+box nightly, 30 minutes after the 03:15 backup. Until its secrets exist
+(`/etc/snap-apps/secrets/restic{,.env}` — see the script header) and its
+verify drill has been run, ONE DISK holds both the data and its only backup:
+the gap is recorded in the readiness plan, not closed.
+
 ---
 
 ## 10. Continuous deploy: GitHub → delphi polls → live
