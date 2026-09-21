@@ -10,6 +10,7 @@ import { PREFLIGHT_ROLE_SQL, evaluatePreflight } from './preflight.js';
 import { ErrorsFilter } from './common/errors.filter.js';
 import { closeDb, getDb } from './db.js';
 import { config, isGoogleSignInSimulatorEnabled } from './config.js';
+import { simulationMode } from './integrations/simulation.js';
 import { sql } from 'drizzle-orm';
 
 import cors from '@fastify/cors';
@@ -28,8 +29,10 @@ import { IdempotencyInterceptor } from './common/idempotency.interceptor.js';
  * (see `auth.controller.ts`), which leaves the magic link and Google. Both can
  * be *present as routes* while being incapable of completing:
  *
- *   - the magic link needs a real mailer, and the production mailer is still
- *     `NoopMailer`, which logs a warning and delivers nothing;
+ *   - the magic link needs a real mailer. As of docs/INTEGRATIONS.md Lane N
+ *     one EXISTS (`auth/smtp-mailer.ts`), so this clause is no longer a
+ *     hardcoded false — it asks `simulationMode('mailer')` whether this
+ *     deployment actually has one;
  *   - Google needs `GOOGLE_CLIENT_ID`.
  *
  * If neither can work, the honest outcome is a server that refuses to boot and
@@ -39,8 +42,6 @@ import { IdempotencyInterceptor } from './common/idempotency.interceptor.js';
  * whoever is trying to log in rather than at whoever deployed it, and is
  * exactly the shape this codebase already refuses elsewhere: the Bedrock
  * provider throws rather than quietly falling back offshore.
- *
- * Delete the mailer clause here the moment a real provider is wired.
  *
  * The simulated Google sign-in (`AuthController#googleSimulatorSignIn`,
  * gated by `isGoogleSignInSimulatorEnabled`) counts as a fourth way in,
@@ -57,17 +58,27 @@ function assertProductionHasAWayIn(settings: ReturnType<typeof config>): void {
   if (settings.NODE_ENV !== 'production') return;
 
   const google = Boolean(settings.GOOGLE_CLIENT_ID);
-  // No real Mailer implementation exists yet, so the magic link cannot deliver
-  // in production however it is configured.
-  const magicLink = false;
-  const simulator = isGoogleSignInSimulatorEnabled();
+  // WAS `const magicLink = false`, with a comment explaining that no real
+  // Mailer implementation existed. One does now, and leaving the constant
+  // would have been this project's signature bug in reverse: a control that
+  // keeps refusing after the reason for it is gone. A production host with
+  // working SMTP and no Google would have been unable to boot.
+  //
+  // `real` only. A SIMULATED mailer delivers to an in-process sink, which is
+  // a way for a demo to sign in (and `preflight.ts` counts it as one there)
+  // but is not a way for a customer to, and this function is about whether
+  // the front door works.
+  const mailerMode = simulationMode('mailer');
+  const magicLink = mailerMode === 'real';
+  const simulator = isGoogleSignInSimulatorEnabled() || mailerMode === 'simulated';
   if (google || magicLink || simulator) return;
 
   throw new Error(
     [
       'Refusing to start in production: no usable sign-in method.',
       '  - passwordless email sign-in is disabled in production, by design',
-      '  - the magic link needs a real Mailer; the production mailer is NoopMailer and delivers nothing',
+      '  - the magic link needs a real Mailer: set SMTP_URL (see docs/INTEGRATIONS.md Lane N). ' +
+        'Without it the mailer is NoopMailer and delivers nothing',
       '  - Google needs GOOGLE_CLIENT_ID, which is not set',
       '  - the simulated Google sign-in needs DEMO_ENV=staging AND GOOGLE_SIGNIN_SIMULATOR=true, ' +
         'neither of which is set (see apps/server/src/config.ts#isGoogleSignInSimulatorEnabled)',
@@ -255,6 +266,20 @@ export async function bootstrap(): Promise<NestFastifyApplication> {
     );
   }
   logger.log(`preflight ok · database role ${probe.databaseRole} · rls ${probe.bypassesRls ? 'BYPASSED' : 'enforced'}`);
+
+  // The mailer is selected ONCE, here, and installed for the process —
+  // docs/INTEGRATIONS.md Lane N. It happens after the preflight because a
+  // refusal there (SMTP_ALLOW_INSECURE in production) should surface as a
+  // boot failure alongside the others rather than on the first magic-link
+  // request, and because the simulated transport starts a listener: doing
+  // that on a host that is about to refuse to boot is pointless work.
+  //
+  // Every existing `getMailer()` call site is unchanged and simply starts
+  // getting the real transport.
+  const { installMailer, selectMailer } = await import('./auth/mailer.js');
+  const selected = await selectMailer();
+  installMailer(selected);
+  logger.log(`mailer · ${selected.constructor.name}`);
 
   await app.listen({ port: settings.PORT, host: '0.0.0.0' });
   logger.log(`listening on ${settings.PORT} · docs at /v1/docs · env ${settings.NODE_ENV}`);

@@ -37,6 +37,8 @@ import {
   extractionEngine,
   financialAccountType,
   gstBasis,
+  mailOutcome,
+  mailPurpose,
   matchCandidateStatus,
   matchProposer,
   observationKind,
@@ -988,4 +990,28 @@ export const eventObservations = pgTable('event_observations', {
   candidateId: uuid('candidate_id'),
   confirmedBy: uuid('confirmed_by'),
   confirmedAt: timestamp('confirmed_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+/**
+ * Every message this system tried to send, and what came back.
+ *
+ * `docs/INTEGRATIONS.md` Lane N / migration 0034. NOT tenant-scoped: a
+ * magic-link send happens before anyone is authenticated, for an address
+ * that may belong to no user. The API may INSERT here and may never SELECT
+ * — a readable mail log is an account-enumeration oracle, which is the very
+ * thing the identical-200 on `magic-link/request` exists to close.
+ */
+export const mailDeliveries = pgTable('mail_deliveries', {
+  id: uuid('id').primaryKey(),
+  purpose: mailPurpose('purpose').notNull(),
+  recipient: text('recipient').notNull(),
+  subject: text('subject').notNull(),
+  outcome: mailOutcome('outcome').notNull(),
+  /** NULL when the failure never got a reply — refused connection, TLS. */
+  smtpCode: integer('smtp_code'),
+  /** Never the message body: a magic link body carries a live bearer token. */
+  lastError: text('last_error'),
+  attempts: integer('attempts').notNull().default(1),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  lastAttemptAt: timestamp('last_attempt_at', { withTimezone: true }).notNull().defaultNow(),
 });

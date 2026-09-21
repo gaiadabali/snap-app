@@ -196,6 +196,68 @@ outcome.
 *Done when:* a hard 550 is recorded as `permanent` and does not retry; a 421 is
 recorded as `transient` and does retry, via `jobs`.
 
+> **N1, N2 DONE 2026-09-21. N3 DONE with one clause amended — read the
+> amendment, it is a decision and not a shortfall.**
+>
+> **Two bugs in this lane were found by probing the real libraries, not by
+> reading their documentation, and both would have shipped looking correct.**
+>
+> 1. **The headline TLS test was green for the wrong reason.** `hideSTARTTLS`
+>    does not disable STARTTLS — it removes the capability from EHLO while
+>    still honouring the verb, so nodemailer (which issues it anyway under
+>    `requireTLS`) negotiated happily. The test was actually passing on
+>    `smtp-server`'s **expired built-in certificate**. Simulating a server
+>    that genuinely cannot do TLS needs `disabledCommands: ['STARTTLS']`.
+>    There are now three distinguishable outcomes — delivered with
+>    `secure: true`, `ETLS` when STARTTLS is refused, `ESOCKET` on a bad
+>    certificate — so each assertion is about the thing it names.
+> 2. **`ESOCKET` is ambiguous and the first classifier got it backwards.**
+>    nodemailer uses it for a TLS failure *and* for a refused connection,
+>    which need opposite answers. The discriminator is `syscall`: present on
+>    an OS socket error (transient — the relay may be restarting), absent on
+>    a certificate rejection (permanent — it will not fix itself). A test
+>    caught this; reading the code would not have.
+>
+> **A stale control was found and removed.** `main.ts` carried
+> `const magicLink = false` with a comment explaining that no real Mailer
+> existed. One does now, and leaving it would have been this project's
+> signature bug in reverse — a control still refusing after its reason is
+> gone. A production host with working SMTP and no Google could not have
+> booted.
+>
+> **Migration 0034 found a schema-wide surprise.** This database has a
+> DEFAULT ACL granting `app_rw=arwd` on every table postgres creates, so
+> `GRANT INSERT ... TO app_rw` grants nothing new while *reading* like a
+> restriction. `mail_deliveries` now REVOKEs first, and its self-check
+> asserts app_rw holds INSERT and nothing else. Both self-checks were proven
+> to fire by breaking the grant and the policy in turn and watching each
+> raise. Verified against real Postgres: the API writes and gets
+> `permission denied` on SELECT.
+>
+> **Why the table may not be read by the app.** `magic-link/request` returns
+> an identical 200 whether the address exists, the mailer is broken, or the
+> send was dropped — a deliberate anti-enumeration property whose cost is
+> that a total mail outage is invisible from outside. `mail_deliveries` is
+> the inside view. Giving app_rw a SELECT policy would turn that log into
+> the same enumeration oracle by another route, so it has none.
+>
+> **AMENDED: a magic link is recorded but NOT queued for retry.** The ticket
+> said a 421 "does retry, via `jobs`". For magic links that is the wrong
+> thing to build, and `isRetryable()` says so in code with a test: queuing one
+> means writing a live bearer token into `jobs.payload`, at rest, readable by
+> the worker role, outliving the fifteen minutes it is valid for — undoing
+> the point of a short-lived single-use token. It is moot anyway, since
+> `magic-link-store.ts` holds issued tokens in the API process's own memory.
+> The user presses "send again", which is the same act a retry would have
+> performed, and the failure is still recorded so an operator sees it.
+> `firm_invite` (Lane F) carries no credential and is the case the retry path
+> is for.
+>
+> **Still open:** the retry CONSUMER. `isRetryable` and the outcome are in
+> place; no `mail_send` job kind is enqueued or claimed yet, because nothing
+> retryable is sent until Lane F's invites exist. Building a queue with no
+> producer would be untestable in the way this file keeps objecting to.
+
 ---
 
 ## Lane P — Stripe

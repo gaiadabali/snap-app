@@ -27,7 +27,7 @@ import { getDb } from '../db.js';
 import { issueMagicLinkToken, issueSession, readMagicLinkToken } from '../tokens.js';
 import { GoogleIdTokenError, verifyGoogleIdToken } from './google-verify.js';
 import { tryConsume } from './magic-link-store.js';
-import { getMailer } from './mailer.js';
+import { sendAndRecord } from './mail-delivery.js';
 import {
   dummyHash,
   hashPassword,
@@ -308,23 +308,28 @@ export class AuthController {
 
     const { token } = issueMagicLinkToken(email);
     const link = `${config().WEB_PUBLIC_URL}/auth/magic/callback?token=${encodeURIComponent(token)}`;
-    try {
-      await getMailer().send({
-        to: email,
-        subject: 'Sign in to Snap Apps',
-        text:
-          `Tap to sign in — this link expires in 15 minutes and works once:\n\n${link}\n\n` +
-          'If you did not request this, you can ignore it.',
-      });
-    } catch (error) {
-      // Logged, never surfaced: the doc comment above promises the SAME 200
-      // whether the address exists, the mailer is misconfigured, or a
-      // provider outage drops the send. Letting a transport failure become a
-      // different HTTP response than a normal send is exactly the kind of
-      // side channel this endpoint exists to close off, so it is swallowed
-      // here rather than left to whichever Mailer implementation happens to
-      // be installed to remember not to throw.
-      this.logger.error(`magic-link send to ${email} failed`, error instanceof Error ? error.stack : String(error));
+    // Returns an outcome, never throws — see `mail-delivery.ts`. The doc
+    // comment above promises the SAME 200 whether the address exists, the
+    // mailer is misconfigured, or a provider outage drops the send, and a
+    // function that threw would invite a catch block that accidentally
+    // behaved differently in one branch. That difference is the
+    // account-enumeration side channel this endpoint exists to close.
+    //
+    // As of docs/INTEGRATIONS.md Lane N the outcome is also RECORDED, which
+    // is the only way a total mail outage is detectable at all: from
+    // outside, a broken mailer and a delivered link are the same 200 by
+    // design.
+    const result = await sendAndRecord('magic_link', {
+      to: email,
+      subject: 'Sign in to Snap Apps',
+      text:
+        `Tap to sign in — this link expires in 15 minutes and works once:\n\n${link}\n\n` +
+        'If you did not request this, you can ignore it.',
+    });
+    if (result.outcome !== 'sent') {
+      this.logger.error(
+        `magic-link send to ${email} failed (${result.outcome}${result.code ? ` ${result.code}` : ''})`,
+      );
     }
     return { ok: true };
   }

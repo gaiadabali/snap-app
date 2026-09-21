@@ -208,3 +208,16 @@ export const matchCandidateStatus = pgEnum('match_candidate_status', [
 
 /** Who proposed a `match_candidates` row — the automated matcher, or a person making a manual link. */
 export const matchProposer = pgEnum('match_proposer', ['matcher', 'user']);
+
+/**
+ * What a `mail_deliveries` row was for. An enum rather than free text because
+ * each purpose implies a decision about whether that mail may be RETRIED —
+ * see `docs/INTEGRATIONS.md` Lane N and 0034's header.
+ */
+export const mailPurpose = pgEnum('mail_purpose', ['magic_link', 'firm_invite', 'notification']);
+
+/**
+ * How a send ended. Three values, not a boolean: a 550 must never be retried
+ * and a 421 must be, and collapsing them is the bug Lane N exists to avoid.
+ */
+export const mailOutcome = pgEnum('mail_outcome', ['sent', 'transient', 'permanent']);
