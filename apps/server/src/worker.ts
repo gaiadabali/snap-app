@@ -347,19 +347,33 @@ async function handle(job: Job): Promise<void> {
    * GST arithmetic complaint on every PPN line, demands an ABN that does not
    * exist, and calls a rupiah total a dollar figure.
    *
-   * A rule set that fails to load is left null rather than failing the job. The
-   * document still gets read and stored — losing the capture would be worse
-   * than validating it conservatively — and the findings a reviewer sees are
-   * the Australian ones, which is visibly wrong rather than quietly wrong.
+   * So the gate is the workspace's own country, not the presence of an id:
+   * a non-AU workspace with no usable rule set for its country THROWS. `runOnce`
+   * releases the thrown job with backoff (see its catch), so the capture is
+   * preserved and retried when the rule set is fixed — losing the capture is
+   * worse than delaying it, and validating it under the wrong law is worse
+   * than either. A rule set that loads for the wrong country refuses the same
+   * way: an installed `id-2026` on a workspace that has since moved to AU is
+   * the same wrong-law hazard in the other direction.
    */
+  const tenant = await readTenant(WORKER_USER, job.tenantId);
+  if (!tenant) {
+    throw new Error(`job ${job.id}: tenant ${job.tenantId} does not exist`);
+  }
   let taxRules: TaxRules | null = null;
-  try {
-    const tenant = await readTenant(WORKER_USER, job.tenantId);
-    if (tenant?.tax_rules_id) taxRules = await rulesFor(tenant);
-  } catch (error) {
-    console.error(
-      `job ${job.id}: tax rules did not load for tenant ${job.tenantId}; ` +
-        `validating without a rule set — ${error instanceof Error ? error.message : String(error)}`,
+  if (tenant.tax_rules_id) {
+    taxRules = await rulesFor(tenant);
+    if (taxRules.country !== tenant.country) {
+      throw new Error(
+        `job ${job.id}: workspace country ${tenant.country} does not match its installed ` +
+          `rule set ${taxRules.id} (${taxRules.country}) — refusing to validate under ` +
+          `the wrong jurisdiction`,
+      );
+    }
+  } else if (tenant.country !== 'AU') {
+    throw new Error(
+      `job ${job.id}: workspace country ${tenant.country} has no rule set installed — ` +
+        `refusing to validate under Australian rules`,
     );
   }
 
