@@ -80,7 +80,9 @@ export class AdminAiController {
     @Param('configId') configId: string,
     @ValidBody(SetAiKeyDto) body: SetAiKeyDto,
   ): Promise<AdminAiKeyRef> {
-    const encrypted = encryptApiKey(body.apiKey);
+    // `await` as of docs/INTEGRATIONS.md K1: a real KMS wraps over the
+    // network, so the seam that was synchronous could never have held one.
+    const encrypted = await encryptApiKey(body.apiKey);
     const keyId = await adminRepo.storeAiKey(
       user.userId,
       configId,

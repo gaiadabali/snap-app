@@ -158,9 +158,30 @@ export function evaluatePreflight(
   // running them happens to have a master key exported.
   if (production && env.ADMIN_KMS_MASTER_KEY && (env.ADMIN_KMS_PROVIDER ?? 'local') === 'local') {
     warnings.push(
-      'Admin AI keys are wrapped by the LOCAL KMS stand-in (apps/server/src/admin/crypto/kms.ts), not a cloud KMS. ' +
-        'Storing or rotating a key now THROWS in production under this provider — set ADMIN_KMS_PROVIDER to a ' +
-        'real KmsProvider before a staff member needs to store one. Reading an already-stored key is unaffected.',
+      'Admin AI keys are wrapped by the LOCAL KMS stand-in (apps/server/src/admin/crypto/kms.ts), not a real KMS. ' +
+        'Storing or rotating a key now THROWS in production under this provider. A real one now exists: set ' +
+        'ADMIN_KMS_PROVIDER=vault with VAULT_ADDR and VAULT_TOKEN (see deploy/vault/README.md) before a staff ' +
+        'member needs to store one. Reading an already-stored key is unaffected.',
+    );
+  }
+
+  // ── 4b. A Vault that is configured but sealed. ────────────────────────────
+  //
+  // Not fatal, and the distinction matters enough to state: a sealed Vault
+  // takes out the features that read a stored credential (admin AI keys,
+  // and Lane Y's Xero tokens) and NOTHING else. Capture, extraction, the
+  // ledger, BAS, statements and reconciliation never touch the KMS. Refusing
+  // to boot would turn a partial degradation into a total outage, and on a
+  // host where `snap-deploy` recreates containers every five minutes that
+  // would be a self-inflicted one.
+  //
+  // It is a warning rather than silence because the failure is otherwise
+  // invisible until a staff member tries to store a key and gets a 500.
+  if (production && (env.ADMIN_KMS_PROVIDER ?? 'local') === 'vault' && !env.VAULT_TOKEN) {
+    warnings.push(
+      'ADMIN_KMS_PROVIDER=vault but VAULT_TOKEN is not set, so every wrap and unwrap will be refused ' +
+        'with a 403. Credential-reading features are down; the rest of the product is unaffected. ' +
+        'See deploy/vault/README.md for minting the application token.',
     );
   }
 

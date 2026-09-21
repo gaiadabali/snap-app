@@ -121,6 +121,58 @@ internal network only; never a published port. `SKIP_CADDY=1` rules apply.
 it at boot, and the existing "LOCAL KMS stand-in" warning is gone from the live
 boot log.
 
+> **K1, K2 DONE 2026-09-21. K3 built and verified locally; NOT yet deployed.**
+>
+> **The seam had to become async, and that is the finding.** `KmsProvider` was
+> declared synchronous while its own comment said `wrap`/`unwrap` are "the two
+> calls a real provider would make OVER THE NETWORK". Both cannot be true. The
+> local stand-in being the only implementation is what kept the contradiction
+> invisible; the first real provider was always going to force it. One
+> production caller (`admin/ai.controller.ts`) and 13 assertions in
+> `kms.test.ts` changed — cheap now, and much less so once Lane Y stores a Xero
+> refresh token through the same envelope.
+>
+> **Verified against a real HashiCorp Vault 1.20.4, not only the simulator.**
+> `vault-transit.live.test.ts` is skipped unless `VAULT_ADDR`/`VAULT_TOKEN`
+> point at a live Vault, and it was run against one: round trip, a genuine KEK
+> rotation (`vault:v1:` ciphertext still decrypting after the key advanced to
+> v2), and permission-denied on a bad token. The simulator's fidelity is
+> established by the real thing passing the same assertions, which is the only
+> way that claim can be made honestly.
+>
+> **The rotation property had never been executed.** `kms.ts` has claimed since
+> it was written that the envelope exists so "rotating the KEK never requires
+> re-encrypting every stored secret". Nothing had ever rotated anything. It is
+> now a test, twice — against the simulator and against real Vault.
+>
+> **A refusal the ticket did not anticipate.** `encryptApiKey` now also refuses
+> the SIMULATED Vault when `NODE_ENV=production`, and not on cryptographic
+> grounds: the simulator's key material is `randomBytes(32)` in the process and
+> dies with it, so a key wrapped on a demo host becomes permanently unreadable
+> at the next container restart. That is silent data loss, not a weak cipher,
+> and a demo host is exactly where restarts are routine.
+>
+> **The compose config was booted, not just written.** `deploy/vault/config.hcl`
+> (file storage, mlock on, TLS off with the reasoning recorded in the file) was
+> run in a real container: initialised 3/2 Shamir, unsealed, and the compose
+> healthcheck observed flipping `unhealthy` → `healthy`. A sealed Vault reads as
+> unhealthy, which is correct and which `curl -f` alone would not have caught.
+>
+> **The operational cost, recorded rather than smoothed over:** a restarted
+> Vault comes back SEALED and nothing unseals it automatically — auto-unseal
+> needs the cloud KMS this deployment exists to avoid. `snap-deploy` recreates
+> containers on a five-minute poll, so somebody unseals it after any deploy that
+> touches the service. `deploy/vault/README.md` §1 states which features that
+> takes out (credential-reading only) and which it does not (all of capture,
+> extraction, ledger, BAS, statements, reconciliation), because treating a
+> sealed Vault as a product outage would cause a worse rollback than the fault.
+>
+> **Still open:** deploying it. `snap-apps-vault-1` does not exist on delphi
+> yet, `ADMIN_KMS_PROVIDER` is still unset there (so `local` is live), and the
+> transit engine has not been mounted. That is a server-side sequence with a
+> one-time key ceremony in it, and it is not something to do inside a build
+> commit.
+
 ---
 
 ## Lane N — SMTP, really spoken

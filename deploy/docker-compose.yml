@@ -68,6 +68,18 @@ services:
     environment:
       NODE_ENV: production
       DATABASE_URL: postgres://snap_app:${APP_DB_PASSWORD}@postgres:5432/snapapps
+      # ── The KMS. docs/INTEGRATIONS.md Lane K. ─────────────────────────
+      #
+      # `vault` rather than the default `local`: the local stand-in wraps
+      # secrets with an environment variable, and `encryptApiKey` REFUSES it
+      # in production by design. VAULT_TOKEN comes from .env (a periodic
+      # token, not the root token) and is what makes simulationMode() answer
+      # `real` — with it unset, the seam refuses rather than falling back.
+      ADMIN_KMS_PROVIDER: ${ADMIN_KMS_PROVIDER:-vault}
+      VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
+      VAULT_TOKEN: ${VAULT_TOKEN}
+      VAULT_TRANSIT_MOUNT: ${VAULT_TRANSIT_MOUNT:-transit}
+      VAULT_TRANSIT_KEY: ${VAULT_TRANSIT_KEY:-snap-dek}
       # WHERE THE ORIGINALS GO, said out loud.
       #
       # The volume below is mounted at /data/storage, but nothing told the app
@@ -118,6 +130,14 @@ services:
       # apps/server/src/config.ts's WORKER_DATABASE_URL comment.
       DATABASE_URL: postgres://snap_app:${APP_DB_PASSWORD}@postgres:5432/snapapps
       WORKER_DATABASE_URL: postgres://snap_worker:${APP_DB_PASSWORD}@postgres:5432/snapapps
+      # The KMS, same as the api — the worker reads provider keys (and, per
+      # docs/INTEGRATIONS.md Lane Y, will refresh Xero tokens) through the
+      # same envelope. See the api service for why `vault` and not `local`.
+      ADMIN_KMS_PROVIDER: ${ADMIN_KMS_PROVIDER:-vault}
+      VAULT_ADDR: ${VAULT_ADDR:-http://vault:8200}
+      VAULT_TOKEN: ${VAULT_TOKEN}
+      VAULT_TRANSIT_MOUNT: ${VAULT_TRANSIT_MOUNT:-transit}
+      VAULT_TRANSIT_KEY: ${VAULT_TRANSIT_KEY:-snap-dek}
       # The Ollama Cloud key is never baked into the image or this file — it
       # is read from a file on the HOST (OLLAMA_ENV_FILE_HOST in .env, e.g.
       # /etc/snap-apps/secrets/ollama.env, mode 0600, outside the repo) and
@@ -224,6 +244,47 @@ services:
       retries: 5
       start_period: 90s
 
+  vault:
+    # The KMS. docs/INTEGRATIONS.md Lane K, ticket K3.
+    #
+    # Internal only: never published to the host, never reachable from
+    # outside the compose network. It holds the key that protects every AI
+    # provider credential and (Lane Y) every Xero refresh token, so the one
+    # thing it must never have is a route from the internet. delphi is a
+    # SHARED host serving other vhosts on 80/443 — see CLAUDE.md — which is
+    # exactly why this gets no ports: entry is a compose-network hop from the
+    # api and worker containers, and nothing else.
+    #
+    # WHY VAULT AND NOT AWS/GCP KMS: chosen by the owner on 2026-09-21. This
+    # box touches no cloud provider, and docs/OCR.md D17's air-gapped profile
+    # forbids CDN egress outright. A KMS on the internal network keeps both
+    # true and still gives the two properties the local stand-in cannot: key
+    # material that never leaves the KMS, and rotation that does not
+    # re-encrypt what is already wrapped.
+    image: hashicorp/vault:1.20
+    restart: unless-stopped
+    # IPC_LOCK lets Vault mlock its memory so key material is never written
+    # to swap. Without it Vault logs a warning and runs anyway, which is the
+    # quiet kind of degradation this deployment should not accept.
+    cap_add: [IPC_LOCK]
+    environment:
+      VAULT_ADDR: http://127.0.0.1:8200
+    volumes:
+      - vault_data:/vault/file
+      - ./vault/config.hcl:/vault/config/config.hcl:ro
+    command: ["vault", "server", "-config=/vault/config/config.hcl"]
+    networks: [snap-internal]
+    healthcheck:
+      # 200 = unsealed and active. 501 = not initialised, 503 = SEALED —
+      # both are "up but unusable", and both must read as unhealthy here,
+      # because a sealed Vault means no credential can be stored or read.
+      # curl -f alone would treat neither as a failure worth reporting.
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8200/v1/sys/health | grep -q '\"sealed\":false' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
   web:
     # Published on LOOPBACK ONLY, for a reverse proxy on this host.
     #
@@ -328,6 +389,13 @@ networks:
 
 volumes:
   postgres_data:
+  # Vault's file storage backend: the sealed key material and its audit
+  # trail. Losing this volume means every AI provider key and every Xero
+  # refresh token stored under it becomes permanently unreadable — the
+  # ciphertext survives in Postgres and nothing can unwrap it. It belongs in
+  # the same backup set as the database, and the unseal keys belong
+  # somewhere this volume is not.
+  vault_data:
   # Legal records (originals) live here — 5-year ATO retention, see
   # docs/DEPLOY.md §9's backup section. A plain NAMED volume is fine for
   # Postgres (pg_dump is the correct backup method regardless of where its

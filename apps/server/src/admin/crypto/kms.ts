@@ -1,5 +1,9 @@
 import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
 
+import { simulationMode } from '../../integrations/simulation.js';
+import { startVaultSimulator } from '../../integrations/vault-simulator.js';
+import { VaultTransitKmsProvider } from './vault-transit.js';
+
 /**
  * Envelope encryption for platform AI provider keys.
  *
@@ -20,16 +24,34 @@ import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
  * material itself, only wrap/unwrap operations.
  *
  * THE PROVIDER SEAM. `KmsProvider` below is that boundary made explicit:
- * `wrap`/`unwrap` are the two operations a real KMS exposes, and
- * `LocalKmsProvider` — a master key read from `ADMIN_KMS_MASTER_KEY` (64 hex
- * characters = 32 bytes) — is the only implementation that exists in this
- * repo. There are no AWS/GCP/Vault credentials anywhere in this codebase, and
- * a provider that pretended to call a cloud KMS with none configured would be
- * worse than an honest absence: it would look wired up while silently doing
- * nothing a real KMS does (hardware-backed key material, access logging,
- * regional key policies). So there is no `AwsKmsProvider` stub — only this
- * documented seam, selected by `ADMIN_KMS_PROVIDER` (default `"local"`), for
- * whoever wires the real one in.
+ * `wrap`/`unwrap` are the two operations a real KMS exposes. Two
+ * implementations exist, selected by `ADMIN_KMS_PROVIDER` (default
+ * `"local"`):
+ *
+ *   local  — a master key read from `ADMIN_KMS_MASTER_KEY` (64 hex
+ *            characters = 32 bytes). The correct SHAPE, not a real KMS, and
+ *            refused for WRITES in production (below).
+ *   vault  — `crypto/vault-transit.ts`, HashiCorp Vault's Transit engine.
+ *            Real: key material never leaves Vault, every call is
+ *            authenticated and logged, and the KEK rotates without
+ *            re-encrypting anything already wrapped.
+ *
+ * AWS and GCP are still absent, and the original reasoning for their absence
+ * stands unchanged: a provider that pretended to call a cloud KMS with no
+ * credentials would be worse than an honest absence, because it would look
+ * wired up while doing none of what a real KMS does. There is no
+ * `AwsKmsProvider` stub.
+ *
+ * WHAT ABOUT THE VAULT SIMULATOR, THEN? It is not a stub in that sense, and
+ * the difference is the whole argument of `docs/INTEGRATIONS.md` §0: it is
+ * an HTTP server that speaks Vault's Transit API, so the provider talking to
+ * it is `VaultTransitKmsProvider` — the same class, making the same calls,
+ * parsing the same JSON, handling the same 403s — and not a second
+ * implementation that shortcuts them. Nothing "pretends" to call a KMS: a
+ * real call is made to something that answers like one. It is triple-gated
+ * by `integrations/simulation.ts`, and `encryptApiKey` refuses it in
+ * production for a reason that has nothing to do with cryptography — see the
+ * second refusal in that function.
  *
  * FAIL CLOSED IN PRODUCTION — this is the part that changed. Until now,
  * `docs/DEPLOY.md` §5 and the boot preflight (`apps/server/src/preflight.ts`)
@@ -117,8 +139,14 @@ function unseal(sealed: Buffer, key: Buffer): Buffer {
  */
 export interface KmsProvider {
   readonly id: string;
-  wrap(dek: Buffer): Buffer;
-  unwrap(wrapped: Buffer): Buffer;
+  /**
+   * What `kms_key_id` should record for a key this provider wrapped. Optional
+   * because the local stand-in has only the one epoch (`KMS_KEY_ID`), while
+   * Vault names a mount and a key.
+   */
+  readonly keyId?: string;
+  wrap(dek: Buffer): Promise<Buffer>;
+  unwrap(wrapped: Buffer): Promise<Buffer>;
 }
 
 /**
@@ -133,37 +161,114 @@ export interface KmsProvider {
  */
 class LocalKmsProvider implements KmsProvider {
   readonly id = 'local';
-  wrap(dek: Buffer): Buffer {
+  // Computed locally and instantly; `async` only because the INTERFACE is
+  // async. See `selectProvider` for why it had to become so.
+  async wrap(dek: Buffer): Promise<Buffer> {
     return seal(dek, masterKey());
   }
-  unwrap(wrapped: Buffer): Buffer {
+  async unwrap(wrapped: Buffer): Promise<Buffer> {
     return unseal(wrapped, masterKey());
   }
 }
 
 const KMS_PROVIDER_ENV = 'ADMIN_KMS_PROVIDER';
 
-function selectProvider(): KmsProvider {
-  const id = process.env[KMS_PROVIDER_ENV] ?? 'local';
+/**
+ * WHY THIS WHOLE SEAM BECAME ASYNC — `docs/INTEGRATIONS.md` Lane K, K1.
+ *
+ * `KmsProvider` was declared synchronous, and its own comment said
+ * `wrap`/`unwrap` are "the two calls a real provider (AWS KMS, GCP KMS,
+ * Vault transit) would make OVER THE NETWORK instead of computing locally".
+ * Those two statements cannot both hold. The seam anticipated a network call
+ * and then gave it a signature no network call can satisfy, so the first
+ * real provider was always going to force this change — the local stand-in
+ * being the only implementation is what kept it hidden.
+ *
+ * It is a small, contained break (one production caller,
+ * `admin/ai.controller.ts`), and it is worth taking now rather than when
+ * Lane Y stores a Xero refresh token through the same envelope.
+ */
+function buildProvider(id: string): KmsProvider | Promise<KmsProvider> {
   if (id === 'local') return new LocalKmsProvider();
-  // A real cloud provider ('aws' | 'gcp' | 'vault', say) is not implemented —
-  // there are no credentials anywhere in this repo, and a stub that pretends
-  // to call one would be worse than refusing outright (see the file header).
-  // Add a class implementing `KmsProvider` and a branch here when one exists;
-  // until then, selecting anything but "local" is a configuration mistake,
-  // not a silently-ignored setting.
+
+  if (id === 'vault') {
+    const mode = simulationMode('kms');
+
+    if (mode === 'real') {
+      const token = process.env.VAULT_TOKEN;
+      if (!token) {
+        throw new Error(
+          'ADMIN_KMS_PROVIDER="vault" and VAULT_ADDR is set, but VAULT_TOKEN is not. Vault ' +
+            'authenticates every request; without a token every wrap and unwrap is a 403.',
+        );
+      }
+      return new VaultTransitKmsProvider({
+        address: process.env.VAULT_ADDR!,
+        token,
+        mount: process.env.VAULT_TRANSIT_MOUNT,
+        keyName: process.env.VAULT_TRANSIT_KEY,
+      });
+    }
+
+    if (mode === 'simulated') {
+      // The simulator is an HTTP SERVER speaking Vault's Transit API, and the
+      // provider pointed at it is the same `VaultTransitKmsProvider` a real
+      // deployment uses — not a second implementation. That is the whole
+      // distinction `docs/INTEGRATIONS.md` §0 draws, and it is why this
+      // branch constructs the real class rather than something else.
+      return startVaultSimulator().then(
+        (sim) =>
+          new VaultTransitKmsProvider({
+            address: sim.address,
+            token: sim.token,
+            mount: process.env.VAULT_TRANSIT_MOUNT,
+            keyName: process.env.VAULT_TRANSIT_KEY,
+          }),
+      );
+    }
+
+    // `absent`: vault was selected, no VAULT_ADDR, and no permitted opt-in to
+    // the simulator. Refused rather than silently falling back to `local`,
+    // because a silent fallback here means production secrets wrapped by an
+    // environment variable while the configuration says otherwise.
+    throw new Error(
+      'ADMIN_KMS_PROVIDER="vault" but no Vault is configured and the simulator is not enabled. ' +
+        'Set VAULT_ADDR and VAULT_TOKEN to use a real Vault, or KMS_SIMULATOR=true on a ' +
+        'non-production host (or one with DEMO_ENV=staging) to run against the in-process ' +
+        'Transit simulator. There is deliberately no fallback to the local stand-in.',
+    );
+  }
+
+  // AWS and GCP remain unimplemented, and the original reasoning stands: a
+  // stub that pretended to call one would be worse than refusing outright.
   throw new Error(
-    `${KMS_PROVIDER_ENV}="${id}" is not implemented. Only "local" (the env-var stand-in) exists in this ` +
-      'codebase today. Implement a KmsProvider for the real KMS (see apps/server/src/admin/crypto/kms.ts) ' +
-      'before selecting it here.',
+    `${KMS_PROVIDER_ENV}="${id}" is not implemented. "local" (the env-var stand-in) and "vault" ` +
+      '(HashiCorp Vault Transit) exist in this codebase. Implement a KmsProvider for the real KMS ' +
+      '(see apps/server/src/admin/crypto/vault-transit.ts for the shape) before selecting it here.',
   );
 }
 
-let cachedProvider: KmsProvider | null = null;
+let cachedProvider: Promise<KmsProvider> | null = null;
 
-function provider(): KmsProvider {
-  if (!cachedProvider) cachedProvider = selectProvider();
+function provider(): Promise<KmsProvider> {
+  if (!cachedProvider) {
+    // Memoised as a PROMISE, not as a resolved value: two concurrent
+    // requests must not each start their own simulator or build their own
+    // client. Cleared on rejection so a transient misconfiguration does not
+    // poison the process for its lifetime.
+    cachedProvider = Promise.resolve()
+      .then(() => buildProvider(process.env[KMS_PROVIDER_ENV] ?? 'local'))
+      .catch((error: unknown) => {
+        cachedProvider = null;
+        throw error;
+      });
+  }
   return cachedProvider;
+}
+
+/** Test-only: drop the memoised provider so the next call re-reads the env. */
+export function resetKmsProviderForTesting(): void {
+  cachedProvider = null;
 }
 
 export interface EncryptedApiKey {
@@ -187,11 +292,11 @@ export interface EncryptedApiKey {
  * a warning, and why it only gates WRITING a new secret rather than reading
  * one already stored.
  */
-export function encryptApiKey(plaintext: string): EncryptedApiKey {
+export async function encryptApiKey(plaintext: string): Promise<EncryptedApiKey> {
   if (plaintext.length < 8) {
     throw new Error('That does not look like a real API key.');
   }
-  const active = provider();
+  const active = await provider();
   if (active.id === 'local' && isProductionEnv()) {
     throw new Error(
       'Refusing to store an AI provider key: the LOCAL KMS stand-in (a master key read from ' +
@@ -201,13 +306,38 @@ export function encryptApiKey(plaintext: string): EncryptedApiKey {
         `${KMS_PROVIDER_ENV} before storing a key in this environment — see docs/DEPLOY.md §5.`,
     );
   }
+
+  // The same refusal, for the case the original could not have anticipated:
+  // a SIMULATED Vault on a production-NODE_ENV demo host.
+  //
+  // This is not the usual "a simulator is less secure" objection. The
+  // simulator's key material is `randomBytes(32)` in this process's memory
+  // and dies with the process — so a key wrapped by it is not weakly
+  // protected, it is UNRECOVERABLE after the next restart, and the loss is
+  // silent until someone tries to read it. A demo host is exactly where a
+  // container restart is routine.
+  //
+  // Reading an already-stored key stays ungated, same as above and for the
+  // same reason.
+  if (simulationMode('kms') === 'simulated' && isProductionEnv()) {
+    throw new Error(
+      'Refusing to store an AI provider key: the KMS is the in-process Vault SIMULATOR. Its key ' +
+        'material lives in this process and dies with it, so anything wrapped now becomes ' +
+        'permanently unreadable at the next restart — a silent data loss, not a weak cipher. ' +
+        'Point VAULT_ADDR at a real Vault before storing a key on this host.',
+    );
+  }
+
   const dek = randomBytes(32);
   const ciphertext = seal(Buffer.from(plaintext, 'utf8'), dek);
-  const wrappedDek = active.wrap(dek);
+  const wrappedDek = await active.wrap(dek);
   return {
     ciphertext,
     wrappedDek,
-    kmsKeyId: KMS_KEY_ID,
+    // The provider names its own key where it can (Vault: mount + key name);
+    // the local stand-in has only the one epoch, so it falls back to the
+    // module constant. Provenance, so a stored row says what wrapped it.
+    kmsKeyId: active.keyId ?? KMS_KEY_ID,
     keyPrefix: plaintext.slice(0, 8),
     keyLast4: plaintext.slice(-4),
   };
@@ -230,7 +360,7 @@ export function encryptApiKey(plaintext: string): EncryptedApiKey {
  * one — the risk this file closes is new secrets being written under the
  * local stand-in, not reading what is already there.
  */
-export function decryptApiKey(ciphertext: Buffer, wrappedDek: Buffer): string {
-  const dek = provider().unwrap(wrappedDek);
+export async function decryptApiKey(ciphertext: Buffer, wrappedDek: Buffer): Promise<string> {
+  const dek = await (await provider()).unwrap(wrappedDek);
   return unseal(ciphertext, dek).toString('utf8');
 }

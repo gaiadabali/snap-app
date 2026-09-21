@@ -22,15 +22,15 @@ describe('admin AI-key envelope encryption', () => {
   it('round-trips the exact plaintext', async () => {
     const { encryptApiKey, decryptApiKey } = await import('./kms.js');
     const plaintext = 'sk-live-abcdefghijklmnopqrstuvwxyz0123';
-    const encrypted = encryptApiKey(plaintext);
-    const recovered = decryptApiKey(encrypted.ciphertext, encrypted.wrappedDek);
+    const encrypted = await encryptApiKey(plaintext);
+    const recovered = await decryptApiKey(encrypted.ciphertext, encrypted.wrappedDek);
     expect(recovered).toBe(plaintext);
   });
 
   it('the ciphertext and the wrapped DEK contain no readable trace of the plaintext', async () => {
     const { encryptApiKey } = await import('./kms.js');
     const plaintext = 'sk-live-super-secret-marker-value-zzz';
-    const encrypted = encryptApiKey(plaintext);
+    const encrypted = await encryptApiKey(plaintext);
     expect(encrypted.ciphertext.toString('latin1')).not.toContain(plaintext);
     expect(encrypted.ciphertext.toString('base64')).not.toContain(Buffer.from(plaintext).toString('base64'));
     expect(encrypted.wrappedDek.toString('latin1')).not.toContain(plaintext);
@@ -39,7 +39,7 @@ describe('admin AI-key envelope encryption', () => {
   it('exposes only a prefix and last 4 characters — never enough to reconstruct the key', async () => {
     const { encryptApiKey } = await import('./kms.js');
     const plaintext = 'sk-live-abcdefghijklmnopqrstuvwxyz0123';
-    const encrypted = encryptApiKey(plaintext);
+    const encrypted = await encryptApiKey(plaintext);
     expect(encrypted.keyPrefix).toBe(plaintext.slice(0, 8));
     expect(encrypted.keyLast4).toBe(plaintext.slice(-4));
     expect(encrypted.keyPrefix.length + encrypted.keyLast4.length).toBeLessThan(plaintext.length);
@@ -48,8 +48,8 @@ describe('admin AI-key envelope encryption', () => {
   it('two encryptions of the SAME key produce DIFFERENT ciphertext (fresh DEK, fresh IV each time)', async () => {
     const { encryptApiKey } = await import('./kms.js');
     const plaintext = 'sk-live-identical-plaintext-twice-abcd';
-    const a = encryptApiKey(plaintext);
-    const b = encryptApiKey(plaintext);
+    const a = await encryptApiKey(plaintext);
+    const b = await encryptApiKey(plaintext);
     expect(a.ciphertext.equals(b.ciphertext)).toBe(false);
     expect(a.wrappedDek.equals(b.wrappedDek)).toBe(false);
   });
@@ -57,12 +57,12 @@ describe('admin AI-key envelope encryption', () => {
   it('refuses to decrypt under the WRONG master key — the authentication tag fails, not a silent garbage result', async () => {
     const { encryptApiKey } = await import('./kms.js');
     const plaintext = 'sk-live-abcdefghijklmnopqrstuvwxyz0123';
-    const encrypted = encryptApiKey(plaintext);
+    const encrypted = await encryptApiKey(plaintext);
 
     vi.resetModules();
     process.env.ADMIN_KMS_MASTER_KEY = '22'.repeat(32); // a different key
     const { decryptApiKey } = await import('./kms.js');
-    expect(() => decryptApiKey(encrypted.ciphertext, encrypted.wrappedDek)).toThrow();
+    await expect(decryptApiKey(encrypted.ciphertext, encrypted.wrappedDek)).rejects.toThrow();
 
     vi.resetModules();
     process.env.ADMIN_KMS_MASTER_KEY = MASTER_KEY;
@@ -70,7 +70,7 @@ describe('admin AI-key envelope encryption', () => {
 
   it('rejects anything shorter than 8 characters — not a real API key', async () => {
     const { encryptApiKey } = await import('./kms.js');
-    expect(() => encryptApiKey('short')).toThrow();
+    await expect(encryptApiKey('short')).rejects.toThrow();
   });
 });
 
@@ -80,7 +80,7 @@ describe('admin AI-key envelope encryption — no master key configured', () => 
     delete process.env.ADMIN_KMS_MASTER_KEY;
     vi.resetModules();
     const mod = await import('./kms.js');
-    expect(() => mod.encryptApiKey('sk-live-abcdefghijklmnopqrstuvwxyz0123')).toThrow(
+    await expect(mod.encryptApiKey('sk-live-abcdefghijklmnopqrstuvwxyz0123')).rejects.toThrow(
       /ADMIN_KMS_MASTER_KEY/,
     );
     vi.resetModules();
@@ -124,7 +124,7 @@ describe('admin AI-key envelope encryption — fails closed on the LOCAL KMS pro
     delete process.env.ADMIN_KMS_PROVIDER;
     vi.resetModules();
     const { encryptApiKey } = await import('./kms.js');
-    expect(() => encryptApiKey('sk-live-abcdefghijklmnopqrstuvwxyz0123')).toThrow(
+    await expect(encryptApiKey('sk-live-abcdefghijklmnopqrstuvwxyz0123')).rejects.toThrow(
       /local KMS stand-in.*production/i,
     );
   });
@@ -135,7 +135,7 @@ describe('admin AI-key envelope encryption — fails closed on the LOCAL KMS pro
     const { encryptApiKey } = await import('./kms.js');
     let thrown: unknown;
     try {
-      encryptApiKey('sk-live-abcdefghijklmnopqrstuvwxyz0123');
+      await encryptApiKey('sk-live-abcdefghijklmnopqrstuvwxyz0123');
     } catch (e) {
       thrown = e;
     }
@@ -147,7 +147,7 @@ describe('admin AI-key envelope encryption — fails closed on the LOCAL KMS pro
     delete process.env.ADMIN_KMS_PROVIDER;
     vi.resetModules();
     const { encryptApiKey } = await import('./kms.js');
-    const encrypted = encryptApiKey('sk-live-abcdefghijklmnopqrstuvwxyz0123');
+    const encrypted = await encryptApiKey('sk-live-abcdefghijklmnopqrstuvwxyz0123');
     expect(encrypted.ciphertext.length).toBeGreaterThan(0);
   });
 
@@ -155,7 +155,7 @@ describe('admin AI-key envelope encryption — fails closed on the LOCAL KMS pro
     delete (process.env as Record<string, string | undefined>).NODE_ENV;
     vi.resetModules();
     const { encryptApiKey } = await import('./kms.js');
-    const encrypted = encryptApiKey('sk-live-abcdefghijklmnopqrstuvwxyz0123');
+    const encrypted = await encryptApiKey('sk-live-abcdefghijklmnopqrstuvwxyz0123');
     expect(encrypted.ciphertext.length).toBeGreaterThan(0);
   });
 
@@ -167,12 +167,12 @@ describe('admin AI-key envelope encryption — fails closed on the LOCAL KMS pro
     vi.resetModules();
     const dev = await import('./kms.js');
     const plaintext = 'sk-live-abcdefghijklmnopqrstuvwxyz0123';
-    const encrypted = dev.encryptApiKey(plaintext);
+    const encrypted = await dev.encryptApiKey(plaintext);
 
     process.env.NODE_ENV = 'production';
     vi.resetModules();
     const prod = await import('./kms.js');
-    const recovered = prod.decryptApiKey(encrypted.ciphertext, encrypted.wrappedDek);
+    const recovered = await prod.decryptApiKey(encrypted.ciphertext, encrypted.wrappedDek);
     expect(recovered).toBe(plaintext);
   });
 
@@ -180,7 +180,7 @@ describe('admin AI-key envelope encryption — fails closed on the LOCAL KMS pro
     process.env.ADMIN_KMS_PROVIDER = 'aws';
     vi.resetModules();
     const { encryptApiKey } = await import('./kms.js');
-    expect(() => encryptApiKey('sk-live-abcdefghijklmnopqrstuvwxyz0123')).toThrow(
+    await expect(encryptApiKey('sk-live-abcdefghijklmnopqrstuvwxyz0123')).rejects.toThrow(
       /ADMIN_KMS_PROVIDER.*not implemented/i,
     );
   });
