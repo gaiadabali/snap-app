@@ -32,6 +32,7 @@ export {
   compare,
   formatLocalAmount,
   inclusiveOf,
+  linesGap,
   multiplyRational,
   parseLocalAmount,
   rational,

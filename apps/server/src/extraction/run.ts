@@ -1,13 +1,13 @@
 import { createHash } from 'node:crypto';
 
-import type { TaxRules } from '@snap/tax-rules';
+import { add, compare, linesGap as decimalLinesGap, ZERO, type TaxRules } from '@snap/tax-rules';
 
 import type { GroundingRow } from '../repo.js';
 
 import { TruncatedOutputError } from './provider.js';
 import type { ExtractionProvider, PageImage, ProviderResult } from './provider.js';
 import { maskCardLast4, type Extraction, type ValidatedExtraction } from './types.js';
-import { linesGap, validate } from './validators.js';
+import { validate } from './validators.js';
 
 /**
  * One extraction run, start to finish.
@@ -302,9 +302,13 @@ export function toDocument(run: ExtractionRun): {
 } {
   const { extraction: e, ...v } = run.result;
 
-  const gstFreeTotal = e.lines
-    .filter((l) => l.gstFree.value === true)
-    .reduce((acc, l) => acc + Number(l.amount.value ?? 0), 0);
+  // Counted in BigInt, like the ledger. A Number accumulation drifts — a
+  // few cents of lines lands a quadrillionth off the total — and the
+  // balance check below sits on a 0.005 boundary, so drift can flip the
+  // verdict on a docket the paper says is exactly on the line.
+  const gstFreeTotal = add(
+    ...e.lines.filter((l) => l.gstFree.value === true).map((l) => l.amount.value ?? '0'),
+  );
 
   const lines = e.lines
     .filter((l) => l.amount.value != null)
@@ -317,8 +321,9 @@ export function toDocument(run: ExtractionRun): {
       gstFree: l.gstFree.value === true,
     }));
 
-  const lineSum = lines.reduce((acc, l) => acc + Number(l.amount), 0);
-  const payable = Number(e.payableAmount.value ?? 0);
+  const lineSum = add(...lines.map((l) => l.amount));
+  const gap = decimalLinesGap(lineSum, e.payableAmount.value, e.taxAmount.value);
+  const absGap = gap.startsWith('-') ? gap.slice(1) : gap;
 
   return {
     supplierName: e.supplierName.value,
@@ -334,7 +339,7 @@ export function toDocument(run: ExtractionRun): {
     paymentMethod: e.payment?.method.value ?? null,
     cardLast4: maskCardLast4(e.payment?.cardLast4.value ?? null),
     cardBrand: e.payment?.cardBrand.value ?? null,
-    gstFreeAmount: gstFreeTotal > 0 ? gstFreeTotal.toFixed(4) : null,
+    gstFreeAmount: compare(gstFreeTotal, ZERO) > 0 ? gstFreeTotal : null,
     isTaxInvoice: v.isTaxInvoice,
     docType: v.isTaxInvoice ? 'tax_invoice' : 'receipt',
     reviewStatus: v.reviewStatus,
@@ -346,9 +351,7 @@ export function toDocument(run: ExtractionRun): {
     // Via the validator's own rule, not a second copy of it: lines may be
     // GST-inclusive (a retail docket) or ex-GST (a commercial tax invoice),
     // and a naive comparison calls every invoice of the second kind broken.
-    linesBalance:
-      lines.length > 0 &&
-      Math.abs(linesGap(lineSum, e.payableAmount.value, e.taxAmount.value)) < 0.005,
+    linesBalance: lines.length > 0 && compare(absGap, '0.005') < 0,
     findings: v.findings,
   };
 }

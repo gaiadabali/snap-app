@@ -3,10 +3,13 @@ import { randomUUID } from 'node:crypto';
 import { money, withTenantAs, type Money, type Tx } from '@snap/db';
 import { sql } from 'drizzle-orm';
 
-import type { ConsumptionTaxSpec } from '@snap/tax-rules';
+import {
+  compare as moneyCompare,
+  linesGap as decimalLinesGap,
+  type ConsumptionTaxSpec,
+} from '@snap/tax-rules';
 
 import { getDb } from '../db.js';
-import { linesGap } from '../extraction/validators.js';
 import { taxSubtotalsFromLines } from '../extraction/tax-subtotals';
 import { readTenant } from '../repo.js';
 import { rulesFor } from '../taxrules/taxrules.repo.js';
@@ -331,9 +334,13 @@ async function loadDocumentEvidence(
       const lineSum = await t.execute<{ sum: string | null }>(sql`
         select sum(line_net_amount)::text as sum from document_lines where document_id = ${documentId}
       `);
-      const gap = linesGap(Number(lineSum.rows[0]?.sum ?? 0), doc.payable_amount, doc.tax_amount);
-      if (Math.abs(gap) >= 0.02) {
-        return { ok: false, reason: 'lines_dont_reconcile', gap: gap.toFixed(4) };
+      // Counted in BigInt, like the ledger. A Number gap check on a 0.02
+      // boundary lets 0.03 − 0.01 read as 0.019999999999999997 and admit a
+      // docket the paper says is exactly on the refusal line.
+      const gap = decimalLinesGap(lineSum.rows[0]?.sum ?? '0', doc.payable_amount, doc.tax_amount);
+      const absGap = gap.startsWith('-') ? gap.slice(1) : gap;
+      if (moneyCompare(absGap, '0.02') >= 0) {
+        return { ok: false, reason: 'lines_dont_reconcile', gap };
       }
 
       groups = [

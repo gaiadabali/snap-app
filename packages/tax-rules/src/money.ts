@@ -83,6 +83,37 @@ export function compare(a: string, b: string): number {
   return x < y ? -1 : x > y ? 1 : 0;
 }
 
+/**
+ * How far a document's lines sit from its total, as a signed decimal string.
+ *
+ * This is the pre-posting gap check the ledger runs before it writes — the
+ * same rule as the numeric `linesGap` in `apps/server/src/extraction/
+ * validators.ts`, but counted in BigInt rather than IEEE doubles. It matters
+ * because the check sits directly on a tolerance boundary: a payable of 2.02
+ * against 2.00 of lines is exactly 0.02 short, and a float accumulation lands
+ * a few quadrillionths past or short of that line, so the verdict can flip on
+ * drift rather than on the paper. A gap check that gates what may be posted
+ * must count the way the ledger counts.
+ *
+ * Positive means the lines are short of the total. When the document states
+ * its tax, the lines may be tax-inclusive or tax-exclusive; the gap reported
+ * is the smaller of the two readings, whichever convention the paper uses.
+ */
+export function linesGap(lineSum: string, payable: string | null, gst: string | null): string {
+  const sum = toUnits(lineSum);
+  const total = toUnits(payable ?? ZERO);
+  const inclusive = total - sum;
+  // Only meaningful when the document states its tax. With no tax stated
+  // there is one reading, and it is the inclusive one.
+  if (gst == null) return fromUnits(inclusive);
+  const exclusive = total - toUnits(gst) - sum;
+  return fromUnits(
+    (exclusive < 0n ? -exclusive : exclusive) < (inclusive < 0n ? -inclusive : inclusive)
+      ? exclusive
+      : inclusive,
+  );
+}
+
 export function isNegative(a: string): boolean {
   return toUnits(a) < 0n;
 }
