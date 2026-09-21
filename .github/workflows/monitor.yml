@@ -1,0 +1,68 @@
+# Snap Apps — EXTERNAL uptime monitor.
+#
+# deploy/monitor/uptime.sh checked this API's health from anywhere EXCEPT the
+# box that runs it. This workflow is the "anywhere": GitHub's runners are a
+# second vantage point that survives delphi being wedged, on fire, or
+# network-partitioned — the exact failure an in-box watcher cannot see.
+#
+# Schedule: every 15 minutes (uptime.sh is three curl calls and one TLS check;
+# anything slower than 15 min risks hours of unnoticed downtime).
+#
+# Alerting: on failure, posts one message to ALERT_WEBHOOK_URL (a Slack or
+# Discord incoming webhook) IF that repository secret is set. Whether or not
+# a webhook exists, the failed run itself is visible in the Actions tab and
+# emails the repo watchers by default. Secrets live in repo settings — never
+# here.
+#
+# Manual run: Actions → external-uptime-monitor → Run workflow, to test the
+# plumbing before trusting it.
+name: external-uptime-monitor
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch: {}
+
+permissions: {}
+
+jobs:
+  uptime:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run the external health checks
+        id: check
+        run: |
+          if out=$(bash deploy/monitor/uptime.sh 2>&1); then
+            echo "outcome=ok" >> "$GITHUB_OUTPUT"
+          else
+            echo "outcome=failed" >> "$GITHUB_OUTPUT"
+          fi
+          echo "$out"
+          {
+            echo "summary<<EOF"
+            echo "$out"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Alert webhook (only on failure, only if configured)
+        if: steps.check.outputs.outcome == 'failed'
+        env:
+          ALERT_WEBHOOK_URL: ${{ secrets.ALERT_WEBHOOK_URL }}
+        run: |
+          if [ -z "$ALERT_WEBHOOK_URL" ]; then
+            echo "ALERT_WEBHOOK_URL not configured — relying on the failed run itself to notify"
+            exit 0
+          fi
+          python3 -c 'import json,sys; print(json.dumps({"text": "snap-apps ALERT\n" + sys.stdin.read()}))' \
+            < <(echo "${{ steps.check.outputs.summary }}") > /tmp/payload.json
+          curl -fsS -X POST -H 'Content-Type: application/json' -d @/tmp/payload.json \
+            "$ALERT_WEBHOOK_URL" || echo "warning: could not post alert webhook"
+
+      - name: Fail the run so the Actions tab / watchers see it
+        if: steps.check.outputs.outcome == 'failed'
+        run: |
+          echo "snap-apps endpoints unhealthy:"
+          echo "${{ steps.check.outputs.summary }}"
+          exit 1

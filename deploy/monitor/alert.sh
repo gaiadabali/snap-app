@@ -54,7 +54,12 @@ if [ "${1:-}" = "--inbox" ]; then
   fi
 
   # 3. Vault sealed state: a sealed Vault is an outage of every provider key.
-  if curl -fsS --max-time 5 "$VAULT_ADDR/v1/sys/health" 2>/dev/null | grep -q '"sealed":false'; then
+  # Skipped with a note when Vault is not configured at all — the note keeps
+  # the gap VISIBLE in every summary without crying wolf. (Staging has no
+  # Vault yet; preflight says so at every boot.)
+  if [ -z "${VAULT_ADDR:-}" ]; then
+    record OK "vault: not configured — known gap, see preflight warning"
+  elif curl -fsS --max-time 5 "$VAULT_ADDR/v1/sys/health" 2>/dev/null | grep -q '"sealed":false'; then
     record OK "vault: unsealed"
   else
     record FAILED "vault: sealed or unreachable"

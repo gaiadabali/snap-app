@@ -33,6 +33,17 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD:?set POSTGRES_SUPERUSER_PASSWORD in .env}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      # The WAL archive. PITR = this archive + a weekly pg_basebackup (see
+      # deploy/backup.sh). Applied to the LIVE staging instance via ALTER
+      # SYSTEM (archive_mode needs a restart; POSTGRES_INITDB_ARGS does nothing
+      # for an existing data directory), with these settings recorded here so
+      # a fresh bootstrap lands the same way:
+      #   ALTER SYSTEM SET wal_level = 'replica';
+      #   ALTER SYSTEM SET archive_mode = 'on';
+      #   ALTER SYSTEM SET archive_command = 'test ! -f /wal-archive/%f && cp %p /wal-archive/%f';
+      # then restart the container. Verified by `select pg_switch_wal()` and a
+      # file appearing under /wal-archive.
+      - wal_archive_data:/wal-archive
     networks: [snap-internal]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d snapapps"]
@@ -389,6 +400,12 @@ networks:
 
 volumes:
   postgres_data:
+  # WAL archive: the rolling window that makes point-in-time recovery possible
+  # (Task 4 of the readiness plan). A named volume, not a bind mount, so the
+  # archive survives container recreation; it is ALSO swept into offsite
+  # replication by the Task 5 job, because a volume on the same disk as the
+  # data it archives is not a second copy.
+  wal_archive_data:
   # Vault's file storage backend: the sealed key material and its audit
   # trail. Losing this volume means every AI provider key and every Xero
   # refresh token stored under it becomes permanently unreadable — the
