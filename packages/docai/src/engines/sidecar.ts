@@ -38,7 +38,8 @@
  */
 
 import type { Block, Document } from '../docdom.js';
-import type { Capability, Engine, EngineSpec, PageInput } from '../registry.js';
+import type { Capability, Engine, EngineSpec, PageInput, WeightsLicence } from '../registry.js';
+import { violatesLicenceFloor } from '../registry.js';
 
 export type SidecarConfig = {
   /**
@@ -232,6 +233,52 @@ export class SidecarEngine implements Engine {
       models: Array<{ id: string; licence: string; loaded: boolean }>;
       device: string;
     };
+  }
+}
+
+/**
+ * Raised when the sidecar's /health reports weights we are not allowed to
+ * ship. The spec above (`specFor`) is a CLAIM about what should be running;
+ * /health reports what IS running, and D23's floor applies to the real
+ * weights, not the claim.
+ */
+export class SidecarLicenceFloorError extends Error {
+  constructor(violations: Array<{ id: string; licence: string }>) {
+    super(
+      'Licence floor violation: the docai-engine sidecar reported weights this product may not ship — ' +
+        violations.map((m) => `${m.id} (${m.licence})`).join(', ') +
+        ". D23 allows only apache-2.0 or mit. The engine will not be used; fix the sidecar's image.",
+    );
+    this.name = 'SidecarLicenceFloorError';
+  }
+}
+
+/**
+ * Cross-checks the RUNNING sidecar's licences (`/health`, whose `licence`
+ * field carries the sidecar's own `WEIGHTS_LICENCE`) against the same floor
+ * `violatesLicenceFloor()` applies to registry specs — the function whose
+ * existence this honours, applied to what is actually loaded rather than
+ * what we wrote down.
+ *
+ * Fail-closed on the licence STRING as well: the sidecar reports it as a
+ * free-form string, and a licence we cannot name is not one we can call
+ * redistributable. Only 'none' is exempt, exactly as the floor treats the
+ * pdf text layer — no weights, nothing to redistribute.
+ */
+export async function assertSidecarLicenceFloor(engine: SidecarEngine): Promise<void> {
+  const health = await engine.health();
+  const violations = violatesLicenceFloor(
+    health.models.map((m) => ({
+      ...engine.spec,
+      id: m.id,
+      weightsLicence: m.licence as WeightsLicence,
+      redistributable: true,
+    })),
+  );
+  if (violations.length > 0) {
+    throw new SidecarLicenceFloorError(
+      violations.map((v) => ({ id: v.id, licence: v.weightsLicence as string })),
+    );
   }
 }
 

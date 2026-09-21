@@ -41,6 +41,7 @@ vi.mock('../db.js', () => ({ getDb: () => ({ __fakeDb: true }) }));
 
 const mockRead = vi.fn();
 const mockGroundExtraction = vi.fn();
+const mockAssertSidecarLicenceFloor = vi.fn().mockResolvedValue(undefined);
 class FakePdfTextEngine {
   spec = { id: 'pdf-text' };
 }
@@ -54,6 +55,7 @@ vi.mock('@snap/docai', () => ({
   SidecarEngine: FakeSidecarEngine,
   read: (...args: unknown[]) => mockRead(...args),
   groundExtraction: (...args: unknown[]) => mockGroundExtraction(...args),
+  assertSidecarLicenceFloor: (...args: unknown[]) => mockAssertSidecarLicenceFloor(...args),
 }));
 
 const { runShadowOcr } = await import('./shadow.js');

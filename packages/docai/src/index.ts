@@ -12,4 +12,4 @@ export * from './registry.js';
 export * from './pipeline.js';
 export * from './grounding.js';
 export { PdfTextEngine, pdfTextEngineSpec } from './engines/pdf-text.js';
-export { SidecarEngine, SidecarUnavailableError } from './engines/sidecar.js';
+export { SidecarEngine, SidecarUnavailableError, assertSidecarLicenceFloor, SidecarLicenceFloorError } from './engines/sidecar.js';

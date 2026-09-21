@@ -5,6 +5,7 @@ import {
   DOCDOM_VERSION,
   PdfTextEngine,
   SidecarEngine,
+  assertSidecarLicenceFloor,
   groundExtraction,
   read as readDocument,
   type Document,
@@ -222,26 +223,34 @@ export async function runShadowOcr(
     await withDeadline(
       (async () => {
         const pageInputs = toPageInputs(pageRows);
-        const engines = [
-          new PdfTextEngine(),
-          new SidecarEngine({
-            baseUrl: sidecarUrl,
-            // Derived from the budget, with a floor and deliberately NO
-            // ceiling. An earlier version capped this at 10s so one slow page
-            // could not starve the rest — reasonable in the abstract, and
-            // wrong by a factor of two in practice: PP-OCRv5 on CPU takes
-            // ~20s on a full-page PDF render, so every call aborted client
-            // side while the sidecar went on to finish work nobody was
-            // waiting for. The symptom was a layout with zero spans and the
-            // page marked unreadable, next to a sidecar log full of 200s.
-            //
-            // The outer `withDeadline` is the real backstop, as the rest of
-            // this comment always said — so let it be, rather than second
-            // guessing it with a number picked before anyone had measured a
-            // page.
-            timeoutMs: Math.max(5_000, Math.floor(budgetMs / 2)),
-          }),
-        ];
+        const sidecar = new SidecarEngine({
+          baseUrl: sidecarUrl,
+          // Derived from the budget, with a floor and deliberately NO
+          // ceiling. An earlier version capped this at 10s so one slow page
+          // could not starve the rest — reasonable in the abstract, and
+          // wrong by a factor of two in practice: PP-OCRv5 on CPU takes
+          // ~20s on a full-page PDF render, so every call aborted client
+          // side while the sidecar went on to finish work nobody was
+          // waiting for. The symptom was a layout with zero spans and the
+          // page marked unreadable, next to a sidecar log full of 200s.
+          //
+          // The outer `withDeadline` is the real backstop, as the rest of
+          // this comment always said — so let it be, rather than second
+          // guessing it with a number picked before anyone had measured a
+          // page.
+          timeoutMs: Math.max(5_000, Math.floor(budgetMs / 2)),
+        });
+        const engines = [new PdfTextEngine(), sidecar];
+
+        // The licence floor, checked where the engine is selected rather than
+        // only in a test. `specFor` says apache-2.0; /health says what the
+        // sidecar actually loaded, and a deployment that swapped in non-free
+        // weights must fail THIS stage loudly, never read a page silently
+        // through them. Throw inside the stage's own try — the outer catch
+        // turns it into the one loud line the contract allows, and the
+        // extraction result the job already saved is untouched, exactly as
+        // for every other failure here.
+        await assertSidecarLicenceFloor(sidecar);
 
         const doc = await readDocument(pageInputs, engines, 'cloud-au');
 

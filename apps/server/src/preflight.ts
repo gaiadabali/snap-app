@@ -1,4 +1,6 @@
 import type { Config } from './config.js';
+import type { EngineSpec } from '@snap/docai';
+import { PdfTextEngine, SidecarEngine, violatesLicenceFloor } from '@snap/docai';
 import { evaluateSimulations, simulationMode, type Env } from './integrations/simulation.js';
 
 /**
@@ -30,6 +32,22 @@ export type PreflightResult = {
   warnings: string[];
 };
 
+/**
+ * The engines this deployment would actually run, from config alone — the
+ * same list `extraction/shadow.ts` assembles at the point of use. Building
+ * specs here costs nothing (no I/O: the sidecar's `/health` is a runtime
+ * question, checked where the engine is selected) and is what lets the
+ * boot-time check below run against the configured reality rather than a
+ * copy of it.
+ */
+export function configuredEngineSpecs(settings: Config): EngineSpec[] {
+  const engines: { spec: EngineSpec }[] = [new PdfTextEngine()];
+  if (settings.DOCAI_SIDECAR_URL) {
+    engines.push(new SidecarEngine({ baseUrl: settings.DOCAI_SIDECAR_URL }));
+  }
+  return engines.map((e) => e.spec);
+}
+
 export function evaluatePreflight(
   settings: Config,
   probe: PreflightProbe,
@@ -42,6 +60,13 @@ export function evaluatePreflight(
    * drive every combination without mutating `process.env`.
    */
   env: Env = process.env,
+  /**
+   * The engine specs this deployment is configured to run. A parameter, with
+   * the config-derived default, for the same reason `env` is one: it lets
+   * this file's suite drive the licence-floor check without constructing
+   * fake engines, and pins the check to the SAME specs the runtime uses.
+   */
+  engineSpecs: EngineSpec[] = configuredEngineSpecs(settings),
 ): PreflightResult {
   const failures: string[] = [];
   const warnings: string[] = [];
@@ -206,6 +231,29 @@ export function evaluatePreflight(
   // of them running is correctly configured, and it must still be able to
   // boot. One line each, so none of the four is the one nobody mentions.
   for (const finding of simulations.active) warnings.push(finding.message);
+
+  // ── 6. The licence floor (D23). ──────────────────────────────────────────
+  //
+  // Only apache-2.0 or mit weights may enter an image we hand to a customer.
+  // This reads the SPECS — what the configuration claims — and is therefore
+  // the cheap half of the check; the other half (what the sidecar actually
+  // loaded, from `/health`) runs where the engine is selected, in
+  // `extraction/shadow.ts`. Both halves exist because the failure is
+  // invisible either way until a procurement review or a customer's lawyer
+  // finds it: nothing about a running system looks different when an engine
+  // quietly ships weights nobody may redistribute.
+  //
+  // Not production-gated, deliberately: a non-free engine has no right side
+  // to run on. An engine that passes here still gets cross-checked at the
+  // point of use — this check catches the misconfigured spec, not a sidecar
+  // quietly running something else.
+  for (const engine of violatesLicenceFloor(engineSpecs)) {
+    failures.push(
+      `Engine "${engine.id}" declares weights under "${engine.weightsLicence}". D23 sets the floor ` +
+        'at apache-2.0 or mit: weights nobody may redistribute do not enter an image we ship. ' +
+        'Remove the engine from the configuration or swap in one whose weights pass the floor.',
+    );
+  }
 
   return { ok: failures.length === 0, failures, warnings };
 }
