@@ -101,6 +101,23 @@ const schema = z.object({
   EXTRACTION_PROVIDER: z.enum(['ollama', 'bedrock']).default('ollama'),
   EXTRACTION_MODEL: z.string().default('gemma4:31b'),
 
+  /**
+   * Per-tenant DAILY budget on extraction jobs admitted at intake.
+   *
+   * The second half of the statement-extraction cost caps (plan Task 10,
+   * audit item 20): the page cap in `pdf-statement-import.ts` bounds what ONE
+   * document may cost, and this bounds what ONE tenant may spend in a day.
+   * `captures.controller.ts` counts today's `extract` jobs for the tenant
+   * (one query) and refuses intake with 429 once this number is reached.
+   *
+   * 200 is a staging default, not a measured figure — roughly 200 receipts
+   * photographed in a day by one small business, stated as a guess so the
+   * cap exists at all rather than being presented as capacity planning.
+   * Override per deployment with the env var; production should set it
+   * deliberately.
+   */
+  EXTRACTION_DAILY_BUDGET: z.coerce.number().int().positive().default(200),
+
   /** Where the provider key lives, when it is not already in the environment. */
   OLLAMA_ENV_FILE: z.string().optional(),
   OLLAMA_API_KEY: z.string().optional(),

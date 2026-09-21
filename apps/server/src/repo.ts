@@ -566,6 +566,32 @@ export async function enqueueExtraction(
   });
 }
 
+/**
+ * How many extraction jobs this TENANT has been given today — the one
+ * counter query behind `captures.controller.ts`'s daily budget (plan Task
+ * 10, audit item 20).
+ *
+ * Counting `jobs` rows, not `extraction_runs`: the budget is about WORK
+ * ADMITTED, not work finished — a job still queued or already failed still
+ * cost (or will cost) a model call, and the queue is the only ledger of
+ * everything this tenant asked for. One day is `date_trunc('day', now())`,
+ * server time, matching how the worker's own daily windows read; a budget
+ * that rolls at midnight UTC is a budget whose reset hour everyone can look
+ * up, not a per-tenant timezone subtlety this ticket needs to solve.
+ */
+export async function countExtractionsToday(userId: string, tenantId: string): Promise<number> {
+  return withTenantAs(getDb(), userId, tenantId, async (tx) => {
+    const rows = await tx.execute<{ n: number }>(sql`
+      select count(*)::int as n
+        from jobs
+       where tenant_id = ${tenantId}
+         and kind = 'extract'
+         and created_at >= date_trunc('day', now())
+    `);
+    return rows.rows[0]?.n ?? 0;
+  });
+}
+
 /* ── Documents ──────────────────────────────────────────────────────────── */
 
 export type DocumentRow = {

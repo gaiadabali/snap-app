@@ -14,7 +14,7 @@ import { runExtraction } from './extraction/run.js';
 import { runShadowOcr } from './extraction/shadow.js';
 import { OllamaCloudStatementProvider, type StatementChunkProvider } from './extraction/statement-provider.js';
 import { listCapturePages, groundingForCapture, readTenant, saveExtraction, saveExtractionFailure } from './repo.js';
-import { importPdfStatement } from './statements/pdf-statement-import.js';
+import { importPdfStatement, StatementPageCapError } from './statements/pdf-statement-import.js';
 import { rulesFor } from './taxrules/taxrules.repo.js';
 import { get as readObject } from './storage.js';
 
@@ -263,7 +263,29 @@ async function handle(job: Job): Promise<void> {
         continue;
       }
 
-      const result = await importPdfStatement(WORKER_USER, job.tenantId, provider, { captureId, pageTexts });
+      let result: Awaited<ReturnType<typeof importPdfStatement>>;
+      try {
+        result = await importPdfStatement(WORKER_USER, job.tenantId, provider, { captureId, pageTexts });
+      } catch (error) {
+        // The page cap (Task 10, item 20) throws before any model call and
+        // can NEVER succeed on retry — the page count is the PDF's own
+        // property. Retrying would burn the queue's backoff forever on a
+        // refusal that costs nothing, so it is recorded as a completed
+        // failure and the job is done, the same treatment the un-re-readable
+        // PDF case above gets — for the same reason.
+        if (error instanceof StatementPageCapError) {
+          await saveExtractionFailure(
+            WORKER_USER,
+            job.tenantId,
+            captureId,
+            'statement_extraction',
+            error.message,
+            spec.id,
+          );
+          return;
+        }
+        throw error;
+      }
       if (result.ok) {
         console.log(
           `job ${job.id}: statement ${result.statementId} → ${result.balanceCheck} (${result.lineCount} rows)`,

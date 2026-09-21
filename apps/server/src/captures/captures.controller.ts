@@ -6,6 +6,8 @@ import {
   Controller,
   Get,
   Headers,
+  HttpException,
+  HttpStatus,
   NotFoundException,
   Param,
   Post,
@@ -42,6 +44,7 @@ import { ValidBody } from '../common/valid-body.decorator.js';
 import { config } from '../config.js';
 import { demuxPdf } from '../extraction/pdf.js';
 import {
+  countExtractionsToday,
   createCapture,
   enqueueExtraction,
   finalizeCapturePages,
@@ -96,6 +99,40 @@ import { pageKey, putAtKey } from './page-storage.js';
  * follow-up, not something this endpoint can absorb on its own.
  */
 const MAX_CAPTURE_PAGES = 50;
+
+/**
+ * The per-tenant DAILY extraction budget, refused at intake with 429 — the
+ * second half of Task 10's cost caps (the first being
+ * `pdf-statement-import.ts`'s `MAX_STATEMENT_PAGES`, which bounds what ONE
+ * document may cost; this bounds what ONE tenant may spend in a day).
+ *
+ * `MAX_CAPTURE_PAGES` above bounds a single capture's TRANSPORT; it never
+ * bounded volume. Ten thousand one-page receipts in a day was ten thousand
+ * paid model calls, one legal capture at a time — and unlike the page cap,
+ * this one sits at INTAKE because the decision it makes is "not today",
+ * which only the request path can answer.
+ *
+ * The TODO this replaces said "quotaExhausted: left unset. Nothing in this
+ * endpoint currently reads the plan" — the contract field
+ * (`CreateCaptureResponse.quotaExhausted`) always meant a state the client
+ * should be TOLD about, and this is that state, decided by one counter
+ * query (`repo.countExtractionsToday`) against today's `extract` jobs for
+ * the tenant, gated by `config.EXTRACTION_DAILY_BUDGET`.
+ */
+async function refuseWhenExtractionBudgetSpent(usedToday: number): Promise<void> {
+  const budget = config().EXTRACTION_DAILY_BUDGET;
+  if (usedToday >= budget) {
+    throw new HttpException(
+      {
+        error: 'quota_exhausted',
+        message:
+          `This workspace has used all ${budget} of its extractions for today. ` +
+          'Captures already stored are safe — more can be taken tomorrow.',
+      },
+      HttpStatus.TOO_MANY_REQUESTS,
+    );
+  }
+}
 
 export class CapturePageInputDto {
   /** Hex SHA-256 of THIS PAGE's bytes. Advisory: the server recomputes it. */
@@ -216,6 +253,20 @@ export class CapturesController {
       legibilityScore: body.legibilityScore,
     });
 
+    // The daily extraction budget — ONE counter query, after registration
+    // so `duplicate` is known (a duplicate is never refused: its document
+    // already exists and no new extraction would be queued for it anyway).
+    // Fresh work over the budget is refused 429; the row this call already
+    // stored is harmless — re-sending the same bytes re-enters here as a
+    // duplicate and is answered with `quotaExhausted: true` rather than
+    // hung, which is what the response field has always promised the
+    // client ("the capture is still stored; extraction waits").
+    const usedToday = await countExtractionsToday(user.userId, tenantId);
+    const quotaExhausted = usedToday >= config().EXTRACTION_DAILY_BUDGET;
+    if (quotaExhausted && !duplicate) {
+      await refuseWhenExtractionBudgetSpent(usedToday);
+    }
+
     const uploadExpiresAt = new Date(Date.now() + config().UPLOAD_TTL_SECONDS * 1000).toISOString();
     const uploads = plan.map((p) => ({
       pageNumber: p.pageNumber,
@@ -265,8 +316,12 @@ export class CapturesController {
       uploads,
       uploadExpiresAt,
       duplicate,
-      // quotaExhausted: left unset. Nothing in this endpoint currently reads
-      // the plan (see `repo.readPlan`) to decide it — see the lane-B report.
+      // Set whenever today's budget is spent. For a duplicate (the only
+      // response this method produces while exhausted) it tells the client
+      // why nothing new will be extracted — see the counter query above.
+      quotaExhausted: quotaExhausted || undefined,
+      // uploadUrl is a deprecated alias for uploads[0].uploadUrl; keep it in
+      // lockstep with that array, never independently stale.
       uploadUrl: uploads[0]?.uploadUrl ?? '',
     };
   }
@@ -506,6 +561,12 @@ export class CapturesController {
       }
 
       if (!alreadyDemuxed) {
+        // Budget re-checked HERE, not only at registration: a capture whose
+        // pages finish uploading may cross the day's budget while its
+        // registration did not. The bytes are already stored (this PUT just
+        // wrote them), so nothing is lost — the capture waits, and the 429
+        // tells the client extraction did not start today.
+        await refuseWhenExtractionBudgetSpent(await countExtractionsToday(user.userId, claim.tenantId));
         await enqueueExtraction(user.userId, claim.tenantId, claim.captureId);
       }
 
@@ -547,6 +608,10 @@ export class CapturesController {
     if (!alreadyComplete) {
       const after = await listCapturePages(user.userId, claim.tenantId, claim.captureId);
       if (after.length >= claim.pageCount) {
+        // Budget re-checked here for the same reason as the PDF branch
+        // above: the last page of a multi-page capture can cross the day's
+        // budget after its registration was admitted.
+        await refuseWhenExtractionBudgetSpent(await countExtractionsToday(user.userId, claim.tenantId));
         await enqueueExtraction(user.userId, claim.tenantId, claim.captureId);
       }
     }

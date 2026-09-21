@@ -55,6 +55,52 @@ export interface ImportPdfStatementParams {
 }
 
 /**
+ * The ceiling on how many pages ONE statement import will read with the
+ * model — Task 10 of the production-readiness plan (audit item 20).
+ *
+ * `runStatementExtraction` makes one paid model call per page, and before
+ * this constant nothing above it bounded that by what the page actually
+ * costs: the intake cap (`captures.controller.ts`'s `MAX_CAPTURE_PAGES`, 50)
+ * bounds the TRANSPORT, sized for receipts and statements alike, but a
+ * capture under it still fed its whole page count to the model loop. The
+ * figure is the same evidence T7 used — `docs/STATEMENTS.md` §5.6's "a
+ * 40-page annual statement" is the largest statement the product says it
+ * intends to accept — set as the statement EXTRACTION ceiling one notch
+ * under the intake cap, so a capture at the intake edge still gets through
+ * registration but a statement never spends more than 40 calls. The exact
+ * number is a judgement call, stated as one; `MAX_STATEMENT_PAGES` is an
+ * exported constant, not a magic number, so raising it is a one-line
+ * decision with a test (`page-cap.test.ts`) already pointed at it.
+ */
+export const MAX_STATEMENT_PAGES = 40;
+
+/**
+ * Thrown when an import's page count passes `MAX_STATEMENT_PAGES`, before
+ * any model call is made.
+ *
+ * A typed error, not a `{ ok: false }` row in `PdfStatementImportResult`:
+ * this refusal is about the REQUEST's size, not the document's content, and
+ * every existing stage ('truncated', 'parse', 'provider', 'unreadable')
+ * describes what happened to the document once reading had begun. Typed,
+ * too, so `common/errors.filter.ts` can map it to 413 — a client-facing
+ * payload-too-large answer, the same shape of answer the intake path gives
+ * an over-cap PDF — rather than the generic 500 an unmapped throw would
+ * become.
+ */
+export class StatementPageCapError extends Error {
+  constructor(
+    readonly pages: number,
+    readonly cap: number = MAX_STATEMENT_PAGES,
+  ) {
+    super(
+      `That statement has ${pages} pages, more than the ${cap}-page limit for one import. ` +
+        'Split it into monthly statements and import each on its own.',
+    );
+    this.name = 'StatementPageCapError';
+  }
+}
+
+/**
  * Converts one stitched row into ledger convention and a `Money` value, or
  * returns the refusal reason for a row that cannot be trusted as either.
  *
@@ -121,6 +167,15 @@ export async function importPdfStatement(
   provider: StatementChunkProvider,
   params: ImportPdfStatementParams,
 ): Promise<PdfStatementImportResult> {
+  // The cost cap, checked BEFORE anything else — before the tenant read,
+  // before the rule set, before one line of page text reaches a model. A
+  // thousand-page statement was a thousand paid model calls; this is the
+  // line that stops it, and stopping it first means the refusal costs one
+  // comparison, not one round trip to the database.
+  if (params.pageTexts.length > MAX_STATEMENT_PAGES) {
+    throw new StatementPageCapError(params.pageTexts.length);
+  }
+
   const tenant = await readTenant(userId, tenantId);
   if (!tenant) return { ok: false, stage: 'unreadable', reason: 'No such workspace.' };
 

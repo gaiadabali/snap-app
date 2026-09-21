@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 
 import { NotAMemberError } from '../repo.js';
+import { StatementPageCapError } from '../statements/pdf-statement-import.js';
 
 /**
  * One place that turns an exception into a response.
@@ -42,6 +43,20 @@ export class ErrorsFilter implements ExceptionFilter {
       void reply.status(HttpStatus.FORBIDDEN).send({
         error: 'not_a_member',
         message: 'You do not have access to that workspace.',
+      });
+      return;
+    }
+
+    if (error instanceof StatementPageCapError) {
+      // 413, the same answer an over-cap PDF already gets at intake
+      // (`captures.controller.ts`'s post-demux check): the REQUEST is too
+      // large, not the server broken. Thrown by the statement import path
+      // if it is ever reached from a handler; today the worker calls it, so
+      // this mapping is the contract for the day an HTTP path calls it too
+      // — without it the typed error would surface as a misleading 500.
+      void reply.status(HttpStatus.PAYLOAD_TOO_LARGE).send({
+        error: 'statement_page_cap',
+        message: error.message,
       });
       return;
     }
