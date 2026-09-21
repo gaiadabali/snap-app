@@ -1854,6 +1854,23 @@ export async function groundingForLayout(
   });
 }
 
+export async function groundingForCapture(
+  userId: string,
+  tenantId: string,
+  captureId: string,
+): Promise<GroundingRow[]> {
+  return withTenantAs(getDb(), userId, tenantId, async (tx) => {
+    const rows = await tx.execute<GroundingSqlRow>(sql`
+      select id, capture_id, layout_id, field_path, value, grounded, span_ids,
+             box, page, confidence::text as confidence, enforced,
+             to_json(created_at)#>>'{}' as created_at
+        from document_field_grounding
+       where capture_id = ${captureId}
+    `);
+    return rows.rows.map(toGroundingRow);
+  });
+}
+
 /* ── Members ────────────────────────────────────────────────────────────── */
 
 export async function listMembers(

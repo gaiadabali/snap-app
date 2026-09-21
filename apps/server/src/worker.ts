@@ -13,7 +13,7 @@ import { extractionPromptFor } from './extraction/prompt.js';
 import { runExtraction } from './extraction/run.js';
 import { runShadowOcr } from './extraction/shadow.js';
 import { OllamaCloudStatementProvider, type StatementChunkProvider } from './extraction/statement-provider.js';
-import { listCapturePages, readTenant, saveExtraction, saveExtractionFailure } from './repo.js';
+import { listCapturePages, groundingForCapture, readTenant, saveExtraction, saveExtractionFailure } from './repo.js';
 import { importPdfStatement } from './statements/pdf-statement-import.js';
 import { rulesFor } from './taxrules/taxrules.repo.js';
 import { get as readObject } from './storage.js';
@@ -379,12 +379,33 @@ async function handle(job: Job): Promise<void> {
 
   const models = chain('vision');
 
+  // The stored grounding report for this capture, READ — never re-run; the
+  // shadow stage is its only writer. From Task 7 (audit item 1) the accept
+  // decision consumes it: an ungrounded critical field forces needs_review
+  // even when the model's confidence clears the floor, and a capture with no
+  // report at all (legacy rows, or `DOCAI_SIDECAR_URL` unset) is treated as
+  // ungrounded — fail-closed. On a FIRST extraction there is no report yet,
+  // so such a capture goes to review; it is only ever auto-accepted on a
+  // later run once the shadow stage has measured its pages. That is the
+  // honest cost of not trusting a total the page does not say.
+  let storedGrounding = null;
+  try {
+    storedGrounding = await groundingForCapture(WORKER_USER, job.tenantId, captureId);
+  } catch (error) {
+    // Reading evidence must never break the pipeline: a failed read is the
+    // same fail-closed answer as no report — the gate will hold the document.
+    console.warn(
+      `job ${job.id}: grounding report unread, treating as ungrounded — ` +
+        (error instanceof Error ? error.message : String(error)),
+    );
+  }
+
   // Escalation, not retry: a model that returned unparseable output at
   // temperature 0 returns the same thing again. Only a different reader
   // changes the answer.
   let lastError = 'no models tried';
   for (const spec of models) {
-    const outcome = await runExtraction(providerFor(spec.id, taxRules), pages, new Date(), taxRules);
+    const outcome = await runExtraction(providerFor(spec.id, taxRules), pages, new Date(), taxRules, storedGrounding);
 
     if (outcome.ok) {
       const { run } = outcome;

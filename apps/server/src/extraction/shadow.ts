@@ -266,11 +266,20 @@ export async function runShadowOcr(
         });
 
         // Contract §3, steps 1-4. Grounds the extraction the worker just
-        // saved against the DocDOM just stored above, and persists the
-        // result — advisory only, per `packages/docai/src/grounding.ts`'s
-        // header and contract §2: `enforced` stays false, and nothing here
-        // can raise a finding, change `review_status`, or touch
-        // `ato_compliance`.
+        // saved against the DocDOM just stored above, and persists the full
+        // result — every field, grounded or not, nothing dropped.
+        //
+        // The contract's `enforced` flag is now FALSE IN NAME ONLY. Since
+        // Task 7 (audit item 1) the accept decision CONSUMES this report:
+        // `worker.ts` reads the stored rows back (`groundingForCapture`) and
+        // `run.ts`'s `applyGroundingGate` forces needs_review for any
+        // critical field no span on the page supports, whatever confidence
+        // the model claimed — and treats a missing report as ungrounded,
+        // fail-closed. Shadow data is still written exactly as before and
+        // nothing here can fail the job (this try/catch stands), but the
+        // report is no longer advisory: it is evidence the acceptance path
+        // reads. See `packages/docai/src/grounding.ts`'s header and
+        // contract §2 for what each row carries.
         //
         // Its own try/catch, deliberately separate from the one around this
         // whole function: by this point `saveLayout` has already succeeded,
