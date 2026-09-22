@@ -10,6 +10,7 @@ import { PREFLIGHT_ROLE_SQL, evaluatePreflight } from './preflight.js';
 import { ErrorsFilter } from './common/errors.filter.js';
 import { closeDb, getDb } from './db.js';
 import { config, isGoogleSignInSimulatorEnabled } from './config.js';
+import { RateLimiter } from './auth/rate-limit.js';
 import { simulationMode } from './integrations/simulation.js';
 import { sql } from 'drizzle-orm';
 
@@ -189,6 +190,71 @@ export async function bootstrap(): Promise<NestFastifyApplication> {
       }
     },
   );
+
+/**
+ * The GLOBAL rate limiter.
+ *
+ * The per-endpoint limiters in `auth.controller.ts` bound specific expensive
+ * actions; this bounds the whole API per source IP (default 300/min, set in
+ * `config.ts#GLOBAL_RATE_LIMIT`), so an endpoint nobody remembered to
+ * protect is not an unthrottled one. Counters live in Postgres via
+ * `RateLimiter`, so two replicas enforce the same limit instead of
+ * multiplying it — that is remediation Task 17's whole point.
+ *
+ * Skipped for `/v1/ready` and the static/docs paths: a health check that
+ * consumed the caller's allowance would let a load balancer's own probes
+ * rate-limit the service into unavailability.
+ *
+ * FAILS OPEN on a database error, deliberately and uncomfortably. Every
+ * endpoint this limiter protects needs the database to answer anyway, so a
+ * dead Postgres is already an outage; refusing at the limiter would only
+ * change the error message, and a limiter crash taking down requests that
+ * would otherwise have succeeded is worse than an unthrottled window during
+ * an incident. The warning is logged so the failure is not silent.
+ */
+const globalRateLimiter = new RateLimiter(settings.GLOBAL_RATE_LIMIT, 60_000);
+let lastGlobalSweep = 0;
+app.use((request: { ip?: string; url?: string }, response: import('http').ServerResponse, next: () => void) => {
+  const url = request.url ?? '';
+  if (
+    !url.startsWith('/v1/') ||
+    url.startsWith('/v1/ready') ||
+    url.startsWith('/v1/docs') ||
+    url.startsWith('/v1/openapi.json')
+  ) {
+    next();
+    return;
+  }
+  const ip = request.ip ?? 'unknown';
+  const now = Date.now();
+  const dueSweep = now - lastGlobalSweep > 60_000;
+  if (dueSweep) lastGlobalSweep = now;
+  globalRateLimiter
+    .consume(`global:${ip}`)
+    .then((allowed) => {
+      if (allowed) {
+        next();
+        return;
+      }
+      response.statusCode = 429;
+      response.setHeader('content-type', 'application/json');
+      response.end(
+        JSON.stringify({
+          error: 'rate_limited',
+          message: 'Too many requests. Try again in a minute.',
+        }),
+      );
+    })
+    .catch((error) => {
+      // The limiter must not become the single point of failure (see above);
+      // say so rather than throttle in the dark.
+      if (dueSweep) logger.warn(`global rate limiter unavailable, failing open: ${String(error)}`);
+      next();
+    });
+  // The periodic sweep shares the limiter's connection; run it opportunistically
+  // rather than from a timer, so an idle process holds nothing open.
+  if (dueSweep) void globalRateLimiter.sweep().catch(() => undefined);
+});
 
   app.useGlobalPipes(
     new ValidationPipe({

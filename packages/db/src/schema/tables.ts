@@ -1015,3 +1015,19 @@ export const mailDeliveries = pgTable('mail_deliveries', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   lastAttemptAt: timestamp('last_attempt_at', { withTimezone: true }).notNull().defaultNow(),
 });
+
+/**
+ * One rate-limit counter per bucket key, shared by every API process.
+ *
+ * Migration 0035 / remediation Task 17. NOT tenant-scoped: a rate limit is
+ * keyed on the caller (an IP or an unverified email), which exists before
+ * authentication and belongs to no tenant. One row per key holding the
+ * CURRENT fixed window — `window_start` is the floor of now/window, so the
+ * table stays at the size of live traffic, not of all history.
+ */
+export const rateLimits = pgTable('rate_limits', {
+  /** Namespaced by caller: `email:a@b.c`, `ip:10.0.0.1`, `global:10.0.0.1`. */
+  bucketKey: text('bucket_key').primaryKey(),
+  windowStart: timestamp('window_start', { withTimezone: true }).notNull(),
+  count: integer('count').notNull().default(1),
+});

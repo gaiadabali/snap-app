@@ -87,7 +87,8 @@ type IpAwareRequest = { ip?: string };
 
 // Five requests per address, twenty per source IP, both per fifteen minutes —
 // blunts a targeted flood of one inbox and a broad scrape across many
-// addresses without needing a shared store (see RateLimiter's own comment).
+// addresses. Counted in Postgres (see RateLimiter), so two API replicas
+// enforce the SAME limit rather than N x instances.
 const perEmailLimiter = new RateLimiter(5, 15 * 60 * 1000);
 const perIpLimiter = new RateLimiter(20, 15 * 60 * 1000);
 
@@ -201,7 +202,7 @@ export class AuthController {
     const ip = 'register';
     // Registration is a write and a scrypt hash, so it is rate limited on the
     // same limiters the magic link uses rather than left open.
-    if (!perEmailLimiter.consume(`register:${email}`) || !perIpLimiter.consume(`ip:${ip}`)) {
+    if (!(await perEmailLimiter.consume(`register:${email}`)) || !(await perIpLimiter.consume(`ip:${ip}`))) {
       throw new HttpException('Too many attempts. Try again shortly.', HttpStatus.TOO_MANY_REQUESTS);
     }
 
@@ -236,7 +237,7 @@ export class AuthController {
     workspaces: Array<{ id: string; name: string; kind: string; role: string }>;
   }> {
     const email = body.email.trim().toLowerCase();
-    if (!perEmailLimiter.consume(`pwd:${email}`) || !perIpLimiter.consume('ip:password')) {
+    if (!(await perEmailLimiter.consume(`pwd:${email}`)) || !(await perIpLimiter.consume('ip:password'))) {
       throw new HttpException('Too many attempts. Try again shortly.', HttpStatus.TOO_MANY_REQUESTS);
     }
 
@@ -299,7 +300,7 @@ export class AuthController {
     const email = body.email.trim().toLowerCase();
     const ip = request.ip ?? 'unknown';
 
-    if (!perEmailLimiter.consume(`email:${email}`) || !perIpLimiter.consume(`ip:${ip}`)) {
+    if (!(await perEmailLimiter.consume(`email:${email}`)) || !(await perIpLimiter.consume(`ip:${ip}`))) {
       throw new HttpException(
         { error: 'rate_limited', message: 'Too many requests. Try again in a few minutes.' },
         HttpStatus.TOO_MANY_REQUESTS,

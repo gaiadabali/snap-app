@@ -118,6 +118,18 @@ const schema = z.object({
    */
   EXTRACTION_DAILY_BUDGET: z.coerce.number().int().positive().default(200),
 
+  /**
+   * GLOBAL rate limit, requests per minute per source IP, enforced by the
+   * middleware in `main.ts` ahead of every route (remediation Task 17).
+   *
+   * Distinct from the per-endpoint limiters in `auth.controller.ts`, which
+   * bound specific expensive actions (sign-in, registration); this bounds
+   * the whole API per caller so no endpoint is left unthrottled by default.
+   * 300/min/IP is a starting point, not a measured capacity figure —
+   * production should set it deliberately, like EXTRACTION_DAILY_BUDGET.
+   */
+  GLOBAL_RATE_LIMIT: z.coerce.number().int().positive().default(300),
+
   /** Where the provider key lives, when it is not already in the environment. */
   OLLAMA_ENV_FILE: z.string().optional(),
   OLLAMA_API_KEY: z.string().optional(),
