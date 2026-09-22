@@ -4,7 +4,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import { File } from 'expo-file-system';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Icon, type IconName } from '@/components/Icon';
 
 import { readOnDevice, recordReading, type DeviceRead } from '@/lib/device-read';
@@ -18,6 +18,8 @@ import { ActivityIndicator, Alert, Image, Platform, Pressable, ScrollView, Text,
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, type CapturePageUpload, ApiError } from '@/api';
+import { newKey } from '@/api/http';
+import { pendingWrites, queueCapture, type CaptureToQueue } from '@/api/outbox';
 import { QualityGateNotice } from '@/components/QualityGateNotice';
 import { ScanLine } from '@/components/ScanLine';
 import { Body, Button, Card, Figure, Label, Screen, Small } from '@/components/ui';
@@ -113,6 +115,78 @@ async function uploadPageWithRetry(uploadUrl: string, bytes: ArrayBuffer, mimeTy
 }
 
 /**
+ * Reads a tray page's bytes back for the offline queue.
+ *
+ * A web page already holds its bytes; a device page does not (see
+ * `TrayPage.bytes`) and re-reads its file here, exactly as an upload would.
+ * This runs only on the offline path — one capture, once — so the memory the
+ * tray never keeps is held just long enough to write it to storage.
+ */
+async function pageBytes(page: TrayPage): Promise<ArrayBuffer> {
+  if (page.bytes) return page.bytes;
+  return new File(page.uri).arrayBuffer();
+}
+
+/**
+ * The queued-write banner.
+ *
+ * It reads the outbox on a short poll rather than a network event, because
+ * the app deliberately has no NetInfo dependency — it finds out it is online
+ * by being used (see `HttpApi.request`). Poll count is cheap: one AsyncStorage
+ * read every few seconds.
+ *
+ * Wording grows with the count because "1 captures" is the kind of sloppiness
+ * that makes people doubt the rest of the app.
+ */
+function QueuedWritesBanner() {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    let alive = true;
+    const check = () => {
+      pendingWrites()
+        .then((n) => {
+          if (alive) setCount(n);
+        })
+        .catch(() => {
+          // Storage unreadable — showing nothing beats crashing the tab for
+          // a banner.
+        });
+    };
+    check();
+    const timer = setInterval(check, 3000);
+    return () => {
+      alive = false;
+      clearInterval(timer);
+    };
+  }, []);
+
+  if (count === 0) return null;
+  const goes = count === 1 ? 'it goes by itself' : 'they go by themselves';
+  return (
+    <View
+      style={{
+        position: 'absolute',
+        top: 0,
+        left: space.xl,
+        right: space.xl,
+        borderRadius: radius.md,
+        backgroundColor: 'rgba(20,20,20,0.92)',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.25)',
+        paddingHorizontal: space.lg,
+        paddingVertical: space.md,
+      }}
+      accessibilityLiveRegion="polite"
+    >
+      <Small style={{ color: '#eee' }}>
+        {count} {count === 1 ? 'capture' : 'captures'} waiting to send — {goes} when you're back online.
+      </Small>
+    </View>
+  );
+}
+
+/**
  * Capture.
  *
  * The on-device work here is a PRE-FLIGHT CHECK only — is this a document, is
@@ -123,7 +197,7 @@ async function uploadPageWithRetry(uploadUrl: string, bytes: ArrayBuffer, mimeTy
  */
 export default function CaptureScreen() {
   const p = usePalette();
-  const { workspace, workspaces, active } = useWorkspace();
+  const { workspace, workspaces, active, workspaceId } = useWorkspace();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const [permission, requestPermission] = useCameraPermissions();
@@ -476,21 +550,59 @@ export default function CaptureScreen() {
    */
   async function registerAndUpload(allPages: TrayPage[]): Promise<void> {
     // ── Register the capture; the server dedupes before any upload ──
-    const capture = await api().createCapture({
-      // Advisory only: the server recomputes the authoritative hash of every
-      // page from the bytes it actually receives. A client-supplied hash
-      // must never be trusted for what is a legal record.
-      pages: allPages.map((page) => ({
-        sha256: page.sha256,
-        mimeType: page.mimeType,
-        byteSize: page.byteSize,
-      })),
-      capturedAt: new Date().toISOString(),
-      // No on-device legibility measurement exists. Sending a number here
-      // would assert a confidence nobody checked — worse than sending
-      // nothing, which is the same principle the whole extraction pipeline
-      // is built on.
-    });
+    let capture;
+    try {
+      capture = await api().createCapture({
+        // Advisory only: the server recomputes the authoritative hash of every
+        // page from the bytes it actually receives. A client-supplied hash
+        // must never be trusted for what is a legal record.
+        pages: allPages.map((page) => ({
+          sha256: page.sha256,
+          mimeType: page.mimeType,
+          byteSize: page.byteSize,
+        })),
+        capturedAt: new Date().toISOString(),
+        // No on-device legibility measurement exists. Sending a number here
+        // would assert a confidence nobody checked — worse than sending
+        // nothing, which is the same principle the whole extraction pipeline
+        // is built on.
+      });
+    } catch (err) {
+      // No connection: the photo goes into the durable outbox with its bytes,
+      // and sends by itself on the next drain. Anything else is a real
+      // failure and keeps the ordinary error path.
+      if (err instanceof ApiError && err.status === 0) {
+        const request: CaptureToQueue['request'] = {
+          pages: allPages.map((page) => ({
+            sha256: page.sha256,
+            mimeType: page.mimeType,
+            byteSize: page.byteSize,
+          })),
+          capturedAt: new Date().toISOString(),
+        };
+        try {
+          await queueCapture(
+            {
+              id: newKey(),
+              request,
+              pages: await Promise.all(
+                allPages.map(async (page) => ({ mimeType: page.mimeType, bytes: await pageBytes(page) })),
+              ),
+            },
+            workspaceId,
+          );
+          setPhase('framing');
+          setPages([]);
+          setError('No connection. This capture is saved and will send by itself when you are back online.');
+          return;
+        } catch (queueErr) {
+          // Only storage failure lands here; say what it is rather than
+          // swallowing a photo the user believes is kept.
+          throw queueErr instanceof Error ? queueErr : new Error('Could not keep this photo to send later.');
+        }
+      }
+      throw err;
+    }
 
     if (capture.duplicate) {
       // Silently returning home was worse than useless: the user cannot tell
@@ -721,6 +833,9 @@ export default function CaptureScreen() {
 
   return (
     <Screen style={{ backgroundColor: '#000' }}>
+      {/* The photo taken at a truck stop. It sits at the very top so it is
+          the first thing seen, and stays until the queue is empty. */}
+      <QueuedWritesBanner />
       {/* `expo-camera` has no meaningful web implementation of CameraView, so the
           web build shows a framing placeholder and the device shows the real
           viewfinder. */}

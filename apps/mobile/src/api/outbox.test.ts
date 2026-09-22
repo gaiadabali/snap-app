@@ -4,9 +4,12 @@ import {
   clearOutbox,
   enqueue,
   flush,
+  loadCaptureBytes,
   loadOutbox,
   pending,
   pendingCount,
+  pendingWrites,
+  queueCapture,
   type OutboxEntry,
   type SendOutcome,
 } from './outbox';
@@ -173,6 +176,88 @@ describe('the offline outbox', () => {
     // like a new write to the server and defeat the whole point of retrying.
     expect(keys).toEqual(['stable-key', 'stable-key', 'stable-key']);
     expect(pendingCount()).toBe(0);
+  });
+
+  it('keeps a photo taken offline, and flush sends the SAME bytes', async () => {
+    // The round-trip that matters: a capture registered offline must queue
+    // with its image bytes, flush them to the server, and drain.
+    const bytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 7, 13]).buffer;
+    const id = 'cap_offline';
+    await queueCapture(
+      {
+        id,
+        request: {
+          pages: [{ sha256: 'abc123', mimeType: 'image/jpeg', byteSize: 7 }],
+          capturedAt: '2026-09-22T02:00:00.000Z',
+        },
+        pages: [{ mimeType: 'image/jpeg', bytes }],
+      },
+      'ws-business',
+    );
+    expect(pendingCount()).toBe(1);
+    expect(pending()[0]!.kind).toBe('capture');
+    // The bytes are in the durable storage, not just in memory.
+    expect(store.get('snap.outbox.v1.bytes.cap_offline')).toBeTruthy();
+
+    const created: Array<{ pages: unknown; bytes: ArrayBuffer[] }> = [];
+    const result = await flush(async (e) => {
+      const stored = await loadCaptureBytes(e.id);
+      if (!stored) return { kind: 'rejected', message: 'no bytes' };
+      created.push({ pages: e.body, bytes: stored.map((p) => p.bytes) });
+      return { kind: 'sent' };
+    });
+
+    expect(result.sent).toBe(1);
+    expect(pendingCount()).toBe(0);
+    // The server create was called with what was queued...
+    expect(created[0]!.pages).toEqual({
+      pages: [{ sha256: 'abc123', mimeType: 'image/jpeg', byteSize: 7 }],
+      capturedAt: '2026-09-22T02:00:00.000Z',
+    });
+    // ...and the bytes handed over decode to exactly what was taken.
+    expect(new Uint8Array(created[0]!.bytes[0])).toEqual(new Uint8Array(bytes));
+    // Drained means drained: the stored bytes went with it.
+    expect(store.get('snap.outbox.v1.bytes.cap_offline')).toBeUndefined();
+  });
+
+  it('survives a process restart with its bytes', async () => {
+    const bytes = new Uint8Array([1, 2, 3, 4]).buffer;
+    await queueCapture(
+      {
+        id: 'cap_restart',
+        request: {
+          pages: [{ sha256: 'd1', mimeType: 'image/jpeg', byteSize: 4 }],
+          capturedAt: '2026-09-22T03:00:00.000Z',
+        },
+        pages: [{ mimeType: 'image/jpeg', bytes }],
+      },
+      'ws-business',
+    );
+    // A fresh process: storage persists, module state does not.
+    vi.resetModules();
+    const fresh = await import('./outbox');
+    await fresh.loadOutbox();
+    expect(fresh.pendingCount()).toBe(1);
+    const stored = await fresh.loadCaptureBytes('cap_restart');
+    expect(stored).not.toBeNull();
+    expect(stored![0]!.mimeType).toBe('image/jpeg');
+    expect(new Uint8Array(stored![0]!.bytes)).toEqual(new Uint8Array(bytes));
+  });
+
+  it('reports how many writes are waiting, capture or not', async () => {
+    await enqueue(entry('plain'));
+    await queueCapture(
+      {
+        id: 'cap_count',
+        request: {
+          pages: [{ sha256: 's', mimeType: 'image/jpeg', byteSize: 1 }],
+          capturedAt: '2026-09-22T04:00:00.000Z',
+        },
+        pages: [{ mimeType: 'image/jpeg', bytes: new Uint8Array([9]).buffer }],
+      },
+      'ws-business',
+    );
+    expect(await pendingWrites()).toBe(2);
   });
 
   it('keeps each write in the workspace it was made in', async () => {

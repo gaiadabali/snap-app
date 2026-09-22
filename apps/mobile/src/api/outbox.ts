@@ -35,6 +35,33 @@ export type OutboxEntry = {
   attempts: number;
   /** The last thing the server or the network said, for showing the user. */
   lastError: string | null;
+  /**
+   * `'capture'` for a queued photo, absent for a plain JSON write.
+   *
+   * A capture carries the same three-step exchange a live one does — register,
+   * PUT the bytes, wait — so its flush path is different and the drain needs
+   * to know which it is holding. The JSON body is the `createCapture`
+   * request; the bytes live under their own storage key (see
+   * `queueCapture`), because serialising megabytes through the same JSON as
+   * every other entry would make each queue rewrite re-encode every photo
+   * in the queue.
+   */
+  kind?: 'capture';
+};
+
+const BYTES_PREFIX = 'snap.outbox.v1.bytes.';
+
+/** One page's image, as it was taken. */
+export type CapturePageBytes = { mimeType: string; bytes: ArrayBuffer };
+
+/** What `queueCapture` is handed: the request and the bytes behind it. */
+export type CaptureToQueue = {
+  /** The Idempotency-Key for the eventual `createCapture`. Minted once here. */
+  id: string;
+  /** Exactly the body `createCapture` will be replayed with. */
+  request: unknown;
+  /** One entry per page, in the request's page order. */
+  pages: CapturePageBytes[];
 };
 
 let entries: OutboxEntry[] = [];
@@ -74,6 +101,117 @@ export function pendingCount(): number {
   return entries.length;
 }
 
+/**
+ * How many writes — plain or captured — are waiting to send.
+ *
+ * The async shape is deliberate: a screen calling this on mount has not
+ * necessarily seen `loadOutbox` run yet, and answering from unloaded module
+ * state would show "nothing waiting" while last session's queue sits in
+ * storage unread.
+ */
+export async function pendingWrites(): Promise<number> {
+  await loadOutbox();
+  return pendingCount();
+}
+
+/* ── Base64, by hand ─────────────────────────────────────────────────────
+ *
+ * AsyncStorage stores strings, so image bytes go through base64. Neither
+ * `btoa` nor `Buffer` can be assumed across Hermes, a browser and Node's
+ * test runner, so both directions are spelled out here — chunked, because a
+ * one-call `String.fromCharCode(...bytes)` blows the argument limit on a
+ * multi-megabyte photograph. */
+
+function bytesToBase64(bytes: ArrayBuffer): string {
+  const view = new Uint8Array(bytes);
+  let out = '';
+  for (let i = 0; i < view.length; i += 0x8000) {
+    out += String.fromCharCode(...view.subarray(i, i + 0x8000));
+  }
+  return btoa(out);
+}
+
+function base64ToBytes(b64: string): ArrayBuffer {
+  const raw = atob(b64);
+  const out = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+  return out.buffer;
+}
+
+/**
+ * Queues a capture taken offline: the `createCapture` request in the entry's
+ * JSON body, the image bytes under a storage key of their own.
+ *
+ * The bytes key is derived from the entry's id, which is also the
+ * Idempotency-Key — so a replay after the phone died mid-flush re-registers
+ * with the SAME key and the server answers with the capture it already made,
+ * and the bytes are read fresh for the uploads. Nothing is regenerated on
+ * retry, ever.
+ *
+ * Oldest-first sending falls out of `enqueue` appending to the end of the
+ * same array every other queued write uses — there is no second queue, and
+ * a capture must not overtake a trip the user made before photographing
+ * anything (order is the only thing keeping a delete-then-recreate sane).
+ */
+export async function queueCapture(capture: CaptureToQueue, workspaceId: string | null): Promise<void> {
+  const stored = capture.pages.map((page) => ({
+    mimeType: page.mimeType,
+    base64: bytesToBase64(page.bytes),
+  }));
+  try {
+    await AsyncStorage.setItem(BYTES_PREFIX + capture.id, JSON.stringify(stored));
+  } catch {
+    // Storage refused the image. Queueing a capture WITHOUT its bytes would
+    // register a document the server can never show — the exact broken
+    // record the plain-write outbox refuses to make — so the honest outcome
+    // is that this capture is not queued at all and the user is told so by
+    // the normal capture error path.
+    throw new Error('There is not enough room on this device to keep the photo for sending. Free up some space and take it again.');
+  }
+  await enqueue({
+    id: capture.id,
+    method: 'POST',
+    path: '/v1/captures',
+    body: capture.request,
+    workspaceId,
+    kind: 'capture',
+  });
+}
+
+/**
+ * Reads a queued capture's image bytes back. Returns null when there are
+ * none — either nothing was ever queued under this id, or storage has lost
+ * them (see `remove`, which deletes the key when the entry goes).
+ */
+export async function loadCaptureBytes(id: string): Promise<CapturePageBytes[] | null> {
+  try {
+    const raw = await AsyncStorage.getItem(BYTES_PREFIX + id);
+    if (!raw) return null;
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return null;
+    return parsed
+      .filter(
+        (p): p is { mimeType: string; base64: string } =>
+          typeof (p as { mimeType?: unknown })?.mimeType === 'string' &&
+          typeof (p as { base64?: unknown })?.base64 === 'string',
+      )
+      .map((p) => ({ mimeType: p.mimeType, bytes: base64ToBytes(p.base64) }));
+  } catch {
+    // Unreadable is as good as absent: a flush cannot send bytes it cannot
+    // read, and the drain turns that into a rejection the user can see.
+    return null;
+  }
+}
+
+async function removeCaptureBytes(id: string): Promise<void> {
+  try {
+    await AsyncStorage.removeItem(BYTES_PREFIX + id);
+  } catch {
+    // An orphaned bytes key is storage waste, not lost work — the entry that
+    // points at it is already gone. Not worth failing anything over.
+  }
+}
+
 export async function enqueue(
   entry: Omit<OutboxEntry, 'queuedAt' | 'attempts' | 'lastError'>,
 ): Promise<void> {
@@ -82,8 +220,13 @@ export async function enqueue(
 }
 
 async function remove(id: string): Promise<void> {
+  const wasCapture = entries.some((e) => e.id === id && e.kind === 'capture');
   entries = entries.filter((e) => e.id !== id);
   await persist();
+  // A queued photo's bytes must not outlive the entry that points at them:
+  // an entry drained with bytes still in storage is dead weight the next
+  // sign-out would never explain. A plain write has no bytes key at all.
+  if (wasCapture) await removeCaptureBytes(id);
 }
 
 async function markFailed(id: string, message: string): Promise<void> {
@@ -167,4 +310,14 @@ export async function flush(
 export async function clearOutbox(): Promise<void> {
   entries = [];
   await persist();
+  // Whatever bytes are queued go with the queue — a sign-out that left
+  // photographs behind would keep another person's receipts on the device.
+  try {
+    const keys = await AsyncStorage.getAllKeys();
+    await AsyncStorage.multiRemove(keys.filter((k) => k.startsWith(BYTES_PREFIX)));
+  } catch {
+    // Storage that will not list its keys is the same broken storage that
+    // would not accept the queue; the writes it holds cannot be sent by
+    // this session either way.
+  }
 }

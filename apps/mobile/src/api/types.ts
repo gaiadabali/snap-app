@@ -222,7 +222,7 @@ export interface SnapApi {
    * Separate from `createCapture` because the upload goes straight to object
    * storage, not through the API — the server never proxies the image.
    */
-  uploadOriginal(uploadUrl: string, bytes: ArrayBuffer, mimeType: string): Promise<void>;
+  uploadOriginal(uploadUrl: string, bytes: ArrayBuffer, mimeType: string, workspaceId?: string | null): Promise<void>;
   /** Resolves once extraction has produced a document for the capture. */
   awaitExtraction(
     captureId: string,

@@ -8,6 +8,7 @@ import {
   clearOutbox,
   enqueue,
   flush,
+  loadCaptureBytes,
   loadOutbox,
   pendingCount,
   type OutboxEntry,
@@ -128,7 +129,7 @@ type Json = Record<string, unknown>;
 const QUEUEABLE = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
 /** A key for one write, minted once and reused by every retry of it. */
-function newKey(): string {
+export function newKey(): string {
   return `w_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
 }
 
@@ -254,6 +255,55 @@ export class HttpApi implements SnapApi {
     this.draining = true;
     try {
       await flush(async (entry): Promise<SendOutcome> => {
+        // A queued capture replays the whole three-step exchange — register
+        // with its original Idempotency-Key, PUT the stored bytes, done —
+        // rather than going through `request`, whose queue-on-offline
+        // behaviour is for JSON writes and would try to re-queue half of a
+        // capture into the very queue draining it.
+        if (entry.kind === 'capture') {
+          try {
+            const stored = await loadCaptureBytes(entry.id);
+            if (!stored || stored.length === 0) {
+              return {
+                kind: 'rejected',
+                message: 'The queued photo could not be read back. It was not sent — take it again.',
+              };
+            }
+            const capture = await this.request<CreateCaptureResponse>('POST', '/v1/captures', {
+              body: entry.body,
+              // The workspace the photo was taken in, not whichever is
+              // active at flush time — same rule as every other entry.
+              workspaceId: entry.workspaceId,
+              idempotencyKey: entry.id,
+              queue: false,
+            });
+            if (!capture.duplicate) {
+              for (const upload of capture.uploads) {
+                if (upload.alreadyStored) continue;
+                const page = stored[upload.pageNumber - 1];
+                if (!page) {
+                  return { kind: 'rejected', message: 'The queued photo is missing a page. It was not sent.' };
+                }
+                await this.uploadOriginal(upload.uploadUrl, page.bytes, page.mimeType, entry.workspaceId);
+              }
+            }
+            // A `duplicate` is done too: the server already holds these
+            // exact bytes, which is the outcome the capture wanted.
+            return { kind: 'sent' };
+          } catch (error) {
+            if (error instanceof ApiError && error.status === 0) return { kind: 'offline' };
+            // Any other refusal stays queued rather than dropped: unlike a
+            // JSON write, a capture's most likely failure — an upload link
+            // that expired while the phone was offline — fixes itself on the
+            // next drain, because the replayed register step mints a FRESH
+            // presigned URL under the SAME idempotency key. A 'retry' does
+            // not block the writes behind it.
+            return {
+              kind: 'retry',
+              message: error instanceof Error ? error.message : 'The photo could not be sent yet.',
+            };
+          }
+        }
         try {
           await this.request(entry.method, entry.path, {
             body: entry.body === null ? undefined : entry.body,
@@ -621,7 +671,17 @@ export class HttpApi implements SnapApi {
     });
   }
 
-  async uploadOriginal(uploadUrl: string, bytes: ArrayBuffer, mimeType: string): Promise<void> {
+  async uploadOriginal(
+    uploadUrl: string,
+    bytes: ArrayBuffer,
+    mimeType: string,
+    /**
+     * The workspace the capture was made in. Given by the drain, which knows
+     * it from the queued entry; a live upload leaves it undefined and keeps
+     * waiting for the active workspace as before.
+     */
+    workspaceId?: string | null,
+  ): Promise<void> {
     // The URL is relative so the app works behind whatever host or tunnel it
     // reached the server through. The bytes go up raw, not as JSON or form
     // data: the server hashes exactly what it receives and that hash is the
@@ -630,7 +690,7 @@ export class HttpApi implements SnapApi {
     const headers: Record<string, string> = { 'Content-Type': mimeType };
     const token = authToken();
     if (token) headers.Authorization = `Bearer ${token}`;
-    const workspace = await awaitWorkspace();
+    const workspace = workspaceId === undefined ? await awaitWorkspace() : workspaceId;
     if (workspace) headers['X-Workspace-Id'] = workspace;
 
     const response = await fetch(url, { method: 'PUT', headers, body: bytes });
