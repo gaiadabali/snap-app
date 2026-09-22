@@ -21,6 +21,16 @@ const { isAvailable, recognise, deviceInfo } = vi.hoisted(() => ({
 
 vi.mock('../../modules/snap-ocr/src', () => ({ isAvailable, recognise, deviceInfo }));
 
+// `@/api` reaches context.ts, which now imports expo-secure-store — whose JS
+// entry imports react-native and cannot parse in Node. The token store is not
+// what this suite tests, so a quiet stub keeps the graph loadable here; its
+// real behaviour is exercised in src/api/context.test.ts.
+vi.mock('expo-secure-store', () => ({
+  getItemAsync: async () => null,
+  setItemAsync: async () => {},
+  deleteItemAsync: async () => {},
+}));
+
 vi.mock('./quality-gate', async (importOriginal) => {
   const actual = await importOriginal<typeof import('./quality-gate')>();
   // Wraps the REAL implementation by default, so every test except the

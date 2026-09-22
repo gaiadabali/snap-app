@@ -12,8 +12,66 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 
 const TOKEN_KEY = 'snap.auth.token';
+const LEGACY_TOKEN_KEY = 'snap.auth.token'; // Same key: it is the same slot, moved.
+
+/**
+ * The bearer token does not rest in AsyncStorage — a rooted device reads that
+ * plaintext trivially — but in expo-secure-store, which is the keystore on
+ * Android and the Keychain on iOS. AsyncStorage stays only as a fallback for
+ * the web export, where there is no native keystore module, and as the source
+ * for the one-time migration below.
+ *
+ * The seam is a plain key-value interface so tests can inject a fake rather
+ * than load a native module.
+ */
+interface TokenStorage {
+  get(): Promise<string | null>;
+  set(value: string): Promise<void>;
+  remove(): Promise<void>;
+}
+
+const secureStorage: TokenStorage = {
+  async get() {
+    return (await SecureStore.getItemAsync(TOKEN_KEY)) ?? null;
+  },
+  async set(value) {
+    await SecureStore.setItemAsync(TOKEN_KEY, value);
+  },
+  async remove() {
+    await SecureStore.deleteItemAsync(TOKEN_KEY);
+  },
+};
+
+const legacyStorage: TokenStorage = {
+  async get() {
+    return await AsyncStorage.getItem(LEGACY_TOKEN_KEY);
+  },
+  async set(value) {
+    await AsyncStorage.setItem(LEGACY_TOKEN_KEY, value);
+  },
+  async remove() {
+    await AsyncStorage.removeItem(LEGACY_TOKEN_KEY);
+  },
+};
+
+/**
+ * Prefers the keystore; if the native module is unavailable (the web export
+ * has no keystore, so `SecureStore` calls throw there) it degrades to
+ * AsyncStorage. That is a step sideways rather than backwards: an HTTP origin
+ * holding a token was already readable by anything running in that page.
+ */
+async function pickStorage(): Promise<TokenStorage> {
+  try {
+    await SecureStore.getItemAsync(TOKEN_KEY);
+    return secureStorage;
+  } catch {
+    return legacyStorage;
+  }
+}
+
 
 let token: string | null = null;
 let workspaceId: string | null = null;
@@ -29,8 +87,15 @@ export function setAuthToken(next: string | null): void {
   token = next;
   // Written, not awaited: a request must not wait on the disk, and a token
   // that fails to persist costs one extra sign-in rather than a broken app.
-  if (next === null) void AsyncStorage.removeItem(TOKEN_KEY).catch(() => {});
-  else void AsyncStorage.setItem(TOKEN_KEY, next).catch(() => {});
+  void (async () => {
+    try {
+      const storage = await pickStorage();
+      if (next === null) await storage.remove();
+      else await storage.set(next);
+    } catch {
+      // Storage that cannot be written costs one extra sign-in, not a crash.
+    }
+  })();
 }
 
 /**
@@ -43,6 +108,40 @@ export function setAuthToken(next: string | null): void {
  */
 export async function restoreAuthToken(): Promise<void> {
   try {
+    // If the keystore answers at all, the native module is present — its
+    // answer is the truth, and a leftover AsyncStorage copy is stale and left
+    // alone rather than allowed to win.
+    let fromSecure: string | null = null;
+    let secureWorks = true;
+    try {
+      fromSecure = (await SecureStore.getItemAsync(TOKEN_KEY)) ?? null;
+    } catch {
+      secureWorks = false;
+    }
+
+    if (secureWorks) {
+      if (fromSecure !== null) {
+        token = fromSecure;
+        return;
+      }
+      // Migration, once: the token from before this change sits in
+      // AsyncStorage plaintext. Move it into the keystore and delete the
+      // plaintext copy; if the move fails, keep serving the old value and
+      // try again next cold start rather than signing the user out.
+      const legacy = await AsyncStorage.getItem(TOKEN_KEY);
+      if (legacy !== null) {
+        try {
+          await SecureStore.setItemAsync(TOKEN_KEY, legacy);
+          await AsyncStorage.removeItem(TOKEN_KEY);
+        } catch {
+          // Leave the plaintext copy in place; migration retried next launch.
+        }
+      }
+      token = legacy;
+      return;
+    }
+
+    // No keystore on this platform (web export): AsyncStorage is the store.
     token = await AsyncStorage.getItem(TOKEN_KEY);
   } catch {
     token = null;
