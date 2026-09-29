@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Snap Apps — external health check. Run from OUTSIDE the box (a second
 # machine, a free uptime service's script runner, or any cron that is not on
-# delphi): the whole point is that nothing on the box watches itself.
+# helios): the whole point is that nothing on the box watches itself.
 #
 # Checks every snap-apps endpoint; exits non-zero and prints FAILED lines on
 # any miss. Pair with alert.sh, which de-duplicates and notifies.

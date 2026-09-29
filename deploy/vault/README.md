@@ -1,4 +1,4 @@
-# Vault on delphi — initialise, unseal, and what breaks
+# Vault on the host (helios) — initialise, unseal, and what breaks
 
 `docs/INTEGRATIONS.md` Lane K. This is the operator procedure for the `vault`
 service in `deploy/docker-compose.yml`. Every command below was run against
@@ -39,7 +39,7 @@ after any deploy that recreates the `vault` container, somebody unseals it.
 Once, ever. Re-running it against an initialised Vault is refused.
 
 ```bash
-ssh delphi
+ssh helios
 cd /opt/snap-apps
 docker compose up -d vault
 

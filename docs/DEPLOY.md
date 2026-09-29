@@ -259,7 +259,13 @@ refusals, not RLS. `REQUIRE_DB=1` now makes that fatal in CI.
 
 ---
 
-## 9. Deploying to the VPS (delphi)
+## 9. Deploying to the VPS (helios)
+
+**Snap Apps runs on helios** (`ssh helios`, also `server-c`, `187.77.116.133`)
+since 2026-09-29. Until then it ran on delphi (`72.61.142.88`), a shared host
+whose disk was repeatedly filled to 100% by another site's staging deploys —
+taking this stack down with it. helios has the headroom (≈390 GB disk, 31 GB
+RAM). delphi keeps the stopped stack's data as a fallback until it is retired.
 
 Shared hosting cannot run this. It needs two long-lived Node processes (the API
 and the extraction worker), Next.js as a server rather than static files, and a
@@ -362,7 +368,7 @@ the gap is recorded in the readiness plan, not closed.
 
 ---
 
-## 10. Continuous deploy: GitHub → delphi polls → live
+## 10. Continuous deploy: GitHub → helios polls → live
 
 The website and server deploy themselves. A systemd timer on the host asks
 GitHub every five minutes what the deployable commit is and rolls it out if it
@@ -424,7 +430,7 @@ curl -s "https://snap-apps.gaiada.com${css}" | grep -c 'some-class-from-your-cha
 merge to main
    ├─ CI ................... typecheck, 4 suites, RLS assertion, web build
    └─ Publish images ....... ghcr.io/gaiadabali/snap-{server,web}:sha-<short>
-                                          ↓  (delphi polls, ≤5 min)
+                                          ↓  (helios polls, ≤5 min)
                              poll-deploy.sh: both green? → git reset --hard
                                           ↓
                              deploy.sh --pull: migrate, roles, restart
@@ -458,17 +464,27 @@ Until that file exists the poller exits cleanly each tick with
 ships disabled: enabling it first would fill the journal with a failure nobody
 needs repeated every five minutes.
 
-### What is already in place on delphi
+### What is in place on helios
 
-`/opt/snap-apps` (repo + `deploy/.env` with secrets generated on-host, chmod
-600), `/etc/snap-apps/secrets/ollama.env` (extraction key, chmod 600),
-`/opt/snap-apps/data/storage`, and both systemd units installed.
+`/opt/snap-apps` (repo + `deploy/.env`, chmod 600), `/etc/snap-apps/secrets/`
+(`github.env` for the poller, `ollama.env` holding the extraction key —
+`OPENROUTER_API_KEY` since 2026-09-29 — group-readable by gid 1001 so the
+container user can read it), `/opt/snap-apps/data/storage` (the captured
+originals, owned by uid 1001), the `snap-apps_*` docker volumes, and both
+systemd units with the timer enabled. Root's crontab runs `deploy/backup.sh`
+at 03:15 and `deploy/monitor/alert.sh --inbox` every 10 minutes.
 
-`bootstrap.sh` was deliberately **not** run. It does `ufw default deny
-incoming` and `ufw --force enable` permitting only 22/80/443, and this host
-also serves 6081 (Varnish) and 8443 (nginx) publicly — it would have cut live
-services. Docker 29.8 and Node 22 were already installed, so it had nothing to
-offer that was worth that risk.
+`bootstrap.sh` was deliberately **not** run here either: helios is also a
+shared host (nginx on 80/443 for many sites, its own Postgres on 5432, MinIO on
+9000), and bootstrap's `ufw` reset would cut them. Deploy with `SKIP_CADDY=1`
+(the poller does).
+
+**Never run a bare `docker compose up` on the host.** `DOCAI_IMAGE` is not in
+`deploy/.env` — `deploy.sh` derives it at runtime — so a hand-run compose falls
+back to the local image name, cannot find it, and *builds* docai from source:
+2.4 GB plus 2.2 GB of cache. On 2026-09-29 that filled delphi to 100%. Go
+through `deploy.sh`, or pass `DOCAI_IMAGE=ghcr.io/gaiadabali/snap-docai
+IMAGE_TAG=sha-<deployed>` with `--no-deps --pull never --no-build`.
 
 ### Mobile
 
@@ -482,10 +498,9 @@ inlined at build time and cannot be changed afterwards.
 
 ---
 
-## 11. The staging addresses (delphi)
+## 11. The staging addresses (helios)
 
-Two addresses, following the pattern the other projects on this host already
-use (`pilot-fullstack-cms{,-api}.gaiada.com`):
+Three addresses:
 
 | Address | Serves | Consumed by | Loopback port |
 |---|---|---|---|
@@ -508,46 +523,36 @@ network error indistinguishable from being offline. That precise failure has
 already cost this project a day once, when a missing header on the allow-list
 meant the offline outbox could queue writes it could never send.
 
-### How they were made
+### How they are served on helios
 
-This host runs **CloudPanel**, so sites are created with `clpctl`, not by
-hand-writing vhosts — the same way every other site here exists:
+helios's nginx is not managed by CloudPanel for these sites, so the three vhosts
+are plain files: `/etc/nginx/sites-enabled/snap-apps{,-api,-app}.gaiada.com.conf`,
+each proxying to its loopback port above, logging to
+`/var/log/nginx/<domain>.{access,error}.log`, and serving
+`/.well-known/acme-challenge/` from `/var/www/letsencrypt`.
 
-```bash
-clpctl site:add:reverse-proxy --domainName=snap-apps.gaiada.com \
-  --reverseProxyUrl='http://127.0.0.1:3300' --siteUser=snapwebonl --siteUserPassword='...'
-```
-
-Site users `snapwebonl` / `snapapionl`; their passwords are on the host in
-`/etc/snap-apps/secrets/cloudpanel-sites.env` (chmod 600).
-
-**The ports are not the defaults, deliberately.** `127.0.0.1:3000` is already
-referenced by another project's vhost on this box. Nothing is listening on it,
-so a naive check calls it free — and taking it would have made that project's
-domain quietly serve this application to its visitors. 3300/3301 are referenced
-nowhere in nginx and unbound.
-
-### Still required, and neither can be done from here
-
-**1. DNS.** `gaiada.com` is on GoDaddy (`ns37/ns38.domaincontrol.com`). Add
-two A records pointing at `72.61.142.88`:
-
-```
-snap-apps.gaiada.com        A   72.61.142.88
-snap-apps-api.gaiada.com    A   72.61.142.88
-snap-apps-app.gaiada.com    A   72.61.142.88
-```
-
-**2. TLS, once DNS resolves.** Let's Encrypt validates over HTTP, so this must
-come second or it fails:
+**TLS** is Let's Encrypt via certbot's webroot mode (`certonly`, so certbot
+never rewrites the vhosts): certificates in `/etc/letsencrypt/live/<domain>/`,
+renewed by helios's `certbot.timer`, with the host's existing deploy hook
+reloading nginx. To re-issue one by hand:
 
 ```bash
-clpctl lets-encrypt:install:certificate --domainName=snap-apps.gaiada.com
-clpctl lets-encrypt:install:certificate --domainName=snap-apps-api.gaiada.com
+certbot certonly --webroot -w /var/www/letsencrypt -d snap-apps-api.gaiada.com --key-type ecdsa
 ```
 
-**3. The GitHub token** (§10). Once it is in place the poller deploys within
-five minutes and the addresses go live.
+**Ports 3300–3302** were checked free on helios before use (it already has
+listeners on 3000, 5432 and 9000).
 
-Until the containers run, both addresses answer 502 from nginx. That is the
-proxy behaving correctly with nothing behind it, not a misconfiguration.
+**DNS** for `gaiada.com` is at Hostinger (`ns1/ns2.dns-parking.com`), edited in
+hPanel. The three A records point at helios:
+
+```
+snap-apps.gaiada.com        A   187.77.116.133
+snap-apps-api.gaiada.com    A   187.77.116.133
+snap-apps-app.gaiada.com    A   187.77.116.133
+```
+
+On delphi the same three sites were CloudPanel reverse-proxy sites
+(`clpctl site:add:reverse-proxy …`, site users in
+`/etc/snap-apps/secrets/cloudpanel-sites.env`); those vhosts are inert now that
+DNS has moved, and go when delphi's copy is retired.

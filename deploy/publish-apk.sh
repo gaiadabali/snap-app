@@ -41,7 +41,7 @@ if [ -z "$APK" ] || [ ! -f "$APK" ]; then
   exit 2
 fi
 if [ -z "$HOST" ]; then
-  echo "SNAP_DEPLOY_HOST is not set (e.g. SNAP_DEPLOY_HOST=deploy@delphi)" >&2
+  echo "SNAP_DEPLOY_HOST is not set (e.g. SNAP_DEPLOY_HOST=root@helios)" >&2
   exit 2
 fi
 

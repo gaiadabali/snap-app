@@ -5,7 +5,7 @@ a downed container, a sealed Vault, or a backup that silently stopped was
 discoverable only by a human SSHing in (docs/DEPLOY.md §10.1 said as much).
 These two scripts close that, in two halves:
 
-- **`uptime.sh`** — EXTERNAL checks, run from anywhere that is NOT delphi:
+- **`uptime.sh`** — EXTERNAL checks, run from anywhere that is NOT the host (helios):
   the three public endpoints, `/v1/ready` asserting `rlsEnforced:true` (the
   same gate deploy.sh refuses on), and TLS expiry inside 14 days.
 - **`alert.sh`** — runs `uptime.sh`, adds the in-box checks only a host can do
@@ -27,7 +27,7 @@ These two scripts close that, in two halves:
    Store the URL in the cron line's environment or a chmod-600 file you
    source; never commit it.
 
-2. **On delphi (the in-box half):**
+2. **On helios (the in-box half):**
 
    ```cron
    */10 * * * * VAULT_ADDR=http://127.0.0.1:<vault port> /opt/snap-apps/deploy/monitor/alert.sh --inbox >> /var/log/snap-monitor.log 2>&1

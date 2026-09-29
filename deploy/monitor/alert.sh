@@ -8,13 +8,13 @@
 #                       Slack incoming webhook, Discord webhook). No SDK.
 #   ALERT_STATE_DIR     default /var/lib/snap-monitor — where last state lives.
 #
-# In-box checks (run ONLY on delphi; uptime.sh is the external half):
+# In-box checks (run ONLY on the host — helios; uptime.sh is the external half):
 #   - last night's backup log has today's dump
 #   - disk free on / above 90%
 #   - Vault is not sealed
 #
 # Install (external box):   */5 * * * * /path/to/alert.sh
-# Install (delphi cron):    15 3 * * * /opt/snap-apps/deploy/monitor/alert.sh --inbox
+# Install (helios root cron):    15 3 * * * /opt/snap-apps/deploy/monitor/alert.sh --inbox
 set -u
 
 ALERT_STATE_DIR="${ALERT_STATE_DIR:-/var/lib/snap-monitor}"
