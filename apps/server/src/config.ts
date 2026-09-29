@@ -97,8 +97,11 @@ const schema = z.object({
    */
   IMAGE_TTL_SECONDS: z.coerce.number().int().positive().default(900),
 
-  /** Which extraction provider the worker uses. */
-  EXTRACTION_PROVIDER: z.enum(['ollama', 'bedrock']).default('ollama'),
+  /**
+   * Which extraction provider the worker uses. `openrouter` runs the same
+   * registry models (`ai/router.ts`) through the company OpenRouter account.
+   */
+  EXTRACTION_PROVIDER: z.enum(['ollama', 'openrouter', 'bedrock']).default('ollama'),
   EXTRACTION_MODEL: z.string().default('gemma4:31b'),
 
   /**

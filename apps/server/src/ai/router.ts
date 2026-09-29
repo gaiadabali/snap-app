@@ -22,6 +22,13 @@ export type Capability = 'vision' | 'chat';
 
 export type ModelSpec = {
   id: string;
+  /**
+   * The same model's id on OpenRouter, used when EXTRACTION_PROVIDER is
+   * `openrouter`. Same weights, different catalogue name — so the order and
+   * the measurements above still describe what runs. Required, so a model
+   * added here cannot silently be unreachable on one of the two endpoints.
+   */
+  openrouterId: string;
   capabilities: Capability[];
   /** Where it sits in the escalation order. 1 is tried first. */
   tier: 1 | 2 | 3;
@@ -79,6 +86,7 @@ export type ModelSpec = {
 export const MODELS: ModelSpec[] = [
   {
     id: 'minimax-m3',
+    openrouterId: 'minimax/minimax-m3',
     capabilities: ['vision', 'chat'],
     tier: 1,
     benchmarkScore: 8,
@@ -87,6 +95,7 @@ export const MODELS: ModelSpec[] = [
   },
   {
     id: 'gemma4:31b',
+    openrouterId: 'google/gemma-4-31b-it',
     capabilities: ['vision', 'chat'],
     tier: 1,
     benchmarkScore: 8,
@@ -95,6 +104,7 @@ export const MODELS: ModelSpec[] = [
   },
   {
     id: 'kimi-k3',
+    openrouterId: 'moonshotai/kimi-k3',
     capabilities: ['vision', 'chat'],
     tier: 2,
     benchmarkScore: 8,
@@ -103,6 +113,7 @@ export const MODELS: ModelSpec[] = [
   },
   {
     id: 'qwen3.5:397b',
+    openrouterId: 'qwen/qwen3.5-397b-a17b',
     capabilities: ['vision', 'chat'],
     tier: 3,
     benchmarkScore: 8,
@@ -111,6 +122,7 @@ export const MODELS: ModelSpec[] = [
   },
   {
     id: 'glm-5.3',
+    openrouterId: 'z-ai/glm-5.3',
     capabilities: ['chat'],
     tier: 1,
     benchmarkScore: null,
@@ -119,6 +131,7 @@ export const MODELS: ModelSpec[] = [
   },
   {
     id: 'deepseek-v4-flash:0731',
+    openrouterId: 'deepseek/deepseek-v4-flash-0731',
     capabilities: ['chat'],
     tier: 2,
     benchmarkScore: null,
@@ -184,4 +197,16 @@ export function chain(capability: Capability, preferred?: string): ModelSpec[] {
 /** The single best model for a capability, ignoring escalation. */
 export function primary(capability: Capability): ModelSpec {
   return chain(capability)[0]!;
+}
+
+/**
+ * The id to send over the wire for a registry model on OpenRouter.
+ *
+ * Throws for an unknown id rather than passing it through: an Ollama-style
+ * name sent to OpenRouter is a 400 that looks like an outage.
+ */
+export function openRouterModelId(id: string): string {
+  const spec = MODELS.find((m) => m.id === id);
+  if (!spec) throw new Error(`Unknown model: ${id}`);
+  return spec.openrouterId;
 }

@@ -1,5 +1,13 @@
 import { statementChunkPrompt, STATEMENT_PROMPT_VERSION } from './statement-prompt.js';
-import { asField, decimal, readOllamaCloudKey, str, TruncatedOutputError } from './provider.js';
+import {
+  asField,
+  decimal,
+  OPENROUTER_BASE_URL,
+  readOllamaCloudKey,
+  readOpenRouterKey,
+  str,
+  TruncatedOutputError,
+} from './provider.js';
 import { maskCardLast4 } from './types.js';
 import type { StatementChunkExtraction } from './statement-types.js';
 
@@ -114,7 +122,8 @@ export function parseStatementChunk(text: string, pageRange: { from: number; to:
  * merely an optimisation but the entire cost argument for statement intake.
  */
 export class OllamaCloudStatementProvider implements StatementChunkProvider {
-  readonly name = 'ollama-cloud';
+  // Typed as string, not the literal, so `OpenRouterStatementProvider` can rename it.
+  readonly name: string = 'ollama-cloud';
 
   constructor(
     readonly model = 'gemma4:31b',
@@ -204,5 +213,14 @@ export class OllamaCloudStatementProvider implements StatementChunkProvider {
         raw,
       },
     };
+  }
+}
+
+/** The statement reader against OpenRouter — see `OpenRouterProvider` in provider.ts. */
+export class OpenRouterStatementProvider extends OllamaCloudStatementProvider {
+  override readonly name: string = 'openrouter';
+
+  constructor(model: string, apiKey = readOpenRouterKey()) {
+    super(model, apiKey, OPENROUTER_BASE_URL);
   }
 }

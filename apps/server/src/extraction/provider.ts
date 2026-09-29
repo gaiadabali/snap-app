@@ -212,7 +212,8 @@ export function parseExtraction(text: string): Extraction {
  * extracted all eight checked fields correctly in ~3s for ~600 tokens.
  */
 export class OllamaCloudProvider implements ExtractionProvider {
-  readonly name = 'ollama-cloud';
+  // Typed as string, not the literal, so `OpenRouterProvider` can rename it.
+  readonly name: string = 'ollama-cloud';
 
   constructor(
     readonly model = 'gemma4:31b',
@@ -362,6 +363,61 @@ function readKeyFromEnvFile(): string {
   }
   throw new Error(
     'No extraction provider key. Set OLLAMA_API_KEY, or OLLAMA_ENV_FILE to a file containing it.',
+  );
+}
+
+/* ── OpenRouter, the company-account tier ───────────────────────────────── */
+
+export const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
+
+/**
+ * The same OpenAI-compatible call, against OpenRouter.
+ *
+ * Exists because the shared Ollama Cloud key was revoked (2026-09-29) and the
+ * company OpenRouter account serves the same models under different names.
+ * Not the production path either: like Ollama Cloud, inference location is
+ * not guaranteed to be in Australia (APP 8), so it is a staging/demo tier.
+ *
+ * `model` is the OpenRouter id (`google/gemma-4-31b-it`), translated from the
+ * registry id by the caller via `openRouterModelId`, so the run records what
+ * actually ran.
+ */
+export class OpenRouterProvider extends OllamaCloudProvider {
+  override readonly name: string = 'openrouter';
+
+  constructor(model: string, prompt: string = EXTRACTION_PROMPT, apiKey = readOpenRouterKey()) {
+    super(model, apiKey, OPENROUTER_BASE_URL, prompt);
+  }
+}
+
+/**
+ * The OpenRouter key: `OPENROUTER_API_KEY` in the environment, or the line of
+ * that exact name in `OLLAMA_ENV_FILE` — the secret file the worker already
+ * mounts. Matched by name, not by the first `*KEY*` line, so an Ollama key in
+ * the same file is never sent to OpenRouter. Never logged or returned in an
+ * error, for the same reason as `readKeyFromEnvFile`.
+ */
+export function readOpenRouterKey(): string {
+  const fromEnv = process.env.OPENROUTER_API_KEY;
+  if (fromEnv) return fromEnv;
+
+  const path = process.env.OLLAMA_ENV_FILE;
+  if (path) {
+    try {
+      for (const line of readFileSync(path, 'utf8').split(/\r?\n/)) {
+        const trimmed = line.trim();
+        if (!trimmed.startsWith('OPENROUTER_API_KEY=')) continue;
+        return trimmed
+          .slice('OPENROUTER_API_KEY='.length)
+          .trim()
+          .replace(/^["']|["']$/g, '');
+      }
+    } catch {
+      /* fall through to the error below */
+    }
+  }
+  throw new Error(
+    'No OpenRouter key. Set OPENROUTER_API_KEY, or add an OPENROUTER_API_KEY= line to OLLAMA_ENV_FILE.',
   );
 }
 

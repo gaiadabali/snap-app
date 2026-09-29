@@ -2,17 +2,27 @@ import { claimJobs, completeJob, failJob, withTenantAs } from '@snap/db';
 import type { TaxRules } from '@snap/tax-rules';
 import { sql } from 'drizzle-orm';
 
-import { chain } from './ai/router.js';
+import { chain, openRouterModelId } from './ai/router.js';
 import { config } from './config.js';
 import { getDb } from './db.js';
 import { runAgreementCheck } from './extraction/agreement.js';
 import { classifyExtractedText, type Classification } from './extraction/classify.js';
 import { extractPdfText } from './extraction/pdf.js';
-import { BedrockClaudeProvider, OllamaCloudProvider, type ExtractionProvider, type PageImage } from './extraction/provider.js';
+import {
+  BedrockClaudeProvider,
+  OllamaCloudProvider,
+  OpenRouterProvider,
+  type ExtractionProvider,
+  type PageImage,
+} from './extraction/provider.js';
 import { extractionPromptFor } from './extraction/prompt.js';
 import { runExtraction } from './extraction/run.js';
 import { runShadowOcr } from './extraction/shadow.js';
-import { OllamaCloudStatementProvider, type StatementChunkProvider } from './extraction/statement-provider.js';
+import {
+  OllamaCloudStatementProvider,
+  OpenRouterStatementProvider,
+  type StatementChunkProvider,
+} from './extraction/statement-provider.js';
 import { listCapturePages, groundingForCapture, readTenant, saveExtraction, saveExtractionFailure } from './repo.js';
 import { importPdfStatement, StatementPageCapError } from './statements/pdf-statement-import.js';
 import { rulesFor } from './taxrules/taxrules.repo.js';
@@ -96,9 +106,14 @@ function providerFor(model: string, rules: TaxRules | null): ExtractionProvider 
       })
     : undefined;
 
-  return config().EXTRACTION_PROVIDER === 'bedrock'
-    ? new BedrockClaudeProvider(model)
-    : new OllamaCloudProvider(model, undefined, undefined, prompt);
+  switch (config().EXTRACTION_PROVIDER) {
+    case 'bedrock':
+      return new BedrockClaudeProvider(model);
+    case 'openrouter':
+      return new OpenRouterProvider(openRouterModelId(model), prompt);
+    default:
+      return new OllamaCloudProvider(model, undefined, undefined, prompt);
+  }
 }
 
 /**
@@ -119,6 +134,9 @@ function providerFor(model: string, rules: TaxRules | null): ExtractionProvider 
 function statementProviderFor(model: string): StatementChunkProvider {
   if (config().EXTRACTION_PROVIDER === 'bedrock') {
     throw new Error('bedrock-claude is not wired up yet for statement reading either — see provider.ts.');
+  }
+  if (config().EXTRACTION_PROVIDER === 'openrouter') {
+    return new OpenRouterStatementProvider(openRouterModelId(model));
   }
   return new OllamaCloudStatementProvider(model);
 }
