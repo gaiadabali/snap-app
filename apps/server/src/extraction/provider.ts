@@ -179,6 +179,7 @@ export function parseExtraction(text: string): Extraction {
     saysTaxInvoice: asField(raw.saysTaxInvoice, bool),
     documentNumber: asField(raw.documentNumber, str),
     issueDate: asField(raw.issueDate, str),
+    issueDatePrinted: asField(raw.issueDatePrinted, str),
     currency: asField(raw.currency, str),
     supplierName: asField(raw.supplierName, str),
     supplierAbn: asField(raw.supplierAbn, digits),

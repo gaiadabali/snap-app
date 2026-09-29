@@ -4,6 +4,7 @@ import { add, compare, linesGap as decimalLinesGap, ZERO, type TaxRules } from '
 
 import type { GroundingRow } from '../repo.js';
 
+import { reconcileIssueDate } from './printed-date.js';
 import { TruncatedOutputError } from './provider.js';
 import type { ExtractionProvider, PageImage, ProviderResult } from './provider.js';
 import { maskCardLast4, type Extraction, type ValidatedExtraction } from './types.js';
@@ -238,6 +239,13 @@ export async function runExtraction(
       },
     };
   }
+
+  // The country decides a numeric date's day/month order, not the model — see
+  // printed-date.ts. No rule set means Australia, which prints day first.
+  provided = {
+    ...provided,
+    extraction: reconcileIssueDate(provided.extraction, rules?.documentRules.dateOrder ?? 'day_first'),
+  };
 
   const result = applyGroundingGate(validate(provided.extraction, now, rules), grounding);
 

@@ -32,6 +32,7 @@ Shape — every field is {"value": <value or null>, "confidence": <0..1>}:
  "saysTaxInvoice":{"value":true|false,"confidence":n},
  "documentNumber":{"value":string|null,"confidence":n},
  "issueDate":{"value":"YYYY-MM-DD"|null,"confidence":n},
+ "issueDatePrinted":{"value":string|null,"confidence":n},
  "currency":{"value":string|null,"confidence":n},
  "supplierName":{"value":string|null,"confidence":n},
  "supplierAbn":{"value":string|null,"confidence":n},
@@ -55,6 +56,8 @@ RULES
 2. DATES. Australian receipts print DAY/MONTH/YEAR. 03/04/2026 is 3 April 2026,
    never 4 March. A two-digit year is in the 2000s: "26" is 2026, not 1926 or
    2006. If the year is not printed at all, return null — do not infer it.
+   Also copy the issue date EXACTLY as printed, character for character, into
+   "issueDatePrinted" (for example "10-08-19"); null if none is printed.
 
 3. ABN. Eleven digits, no spaces. Return null if none is printed. Do not
    confuse it with an ACN (nine digits), a phone number, or a receipt number.
@@ -93,7 +96,7 @@ RULES
     Put glare, blur, crop and crease problems in "imageIssues".`;
 
 /** Kept with the prompt: a change to either invalidates a stored run. */
-export const PROMPT_VERSION = '2026-09-18.1';
+export const PROMPT_VERSION = '2026-09-29.1';
 
 /**
  * The prompt for a workspace running a non-Australian tax rule set.
@@ -145,7 +148,7 @@ document, in order — not separate receipts.
 
 Return ONLY minified JSON. No prose, no code fences. Same shape as always —
 every field is {"value": <value or null>, "confidence": <0..1>} — plus
-"otherTaxAmount" beside "taxAmount".
+"otherTaxAmount" beside "taxAmount", and "issueDatePrinted" beside "issueDate".
 
 RULES
 
@@ -171,7 +174,8 @@ RULES
   }.
    Month names may be abbreviated as: ${rules.documentRules.monthAbbreviations.join(', ')}.
    A two-digit year is in the 2000s. If the year is not printed, return null —
-   do not infer it.
+   do not infer it. Also copy the issue date EXACTLY as printed, character for
+   character, into "issueDatePrinted"; null if none is printed.
 
 4. ${ct.name}. The effective rate is ${effective}% of the price. Only report
    "taxAmount" if the document states it. Exempt goods carry none — mark those

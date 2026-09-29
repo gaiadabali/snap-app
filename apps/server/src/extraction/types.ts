@@ -55,6 +55,13 @@ export type Extraction = {
   documentNumber: Field<string>;
   /** ISO. The model is told Australian receipts print day/month/year. */
   issueDate: Field<string>;
+  /**
+   * The date exactly as printed (`10-08-19`), so a numeric date's day/month
+   * order is decided in code by the country's rule — see `printed-date.ts` —
+   * rather than trusted from the model's ISO conversion. Optional: a replayed
+   * run from before this field existed has none, and is left as read.
+   */
+  issueDatePrinted?: Field<string>;
   currency: Field<string>;
   supplierName: Field<string>;
   supplierAbn: Field<string>;
