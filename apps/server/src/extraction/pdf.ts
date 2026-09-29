@@ -96,10 +96,34 @@ function pdfjs(): Promise<typeof import('pdfjs-dist/legacy/build/pdf.mjs')> {
  * character widths. Resolved once, from wherever this package actually
  * installed — not a relative path, which would break the moment this file's
  * position in the tree changes.
+ *
+ * A plain filesystem path, NOT a `file://` URL. pdfjs-dist's Node loader
+ * joins this prefix to a filename and hands the string to
+ * `fs.promises.readFile`, which treats a string as a path — so a `file:///`
+ * prefix names a file that does not exist. That failed silently: pdfjs logs
+ * "Unable to load font data" and draws NO text for any font the PDF names but
+ * does not embed (Arial, Helvetica). On Windows the canvas fell back to system
+ * fonts and hid it; the Linux image has none, so every such page reached the
+ * model as a blank sheet with only its logo. pdfjs requires the trailing slash.
  */
-const standardFontDataUrl = pathToFileURL(
-  `${path.join(path.dirname(require.resolve('pdfjs-dist/package.json')), 'standard_fonts')}/`,
-).href;
+const PDFJS_DIR = path.dirname(require.resolve('pdfjs-dist/package.json'));
+// A literal '/', not `path.sep`: pdfjs rejects any prefix that does not end in
+// '/', and Windows accepts it as a separator too.
+const assetDir = (name: string) => `${path.join(PDFJS_DIR, name)}/`;
+const standardFontDataUrl = assetDir('standard_fonts');
+
+/**
+ * The image decoders pdfjs-dist 6 loads as WebAssembly — JBIG2, JPEG 2000,
+ * and CCITT fax, which is how most office scanners compress a black-and-white
+ * page. Without it pdfjs logs "JBig2 failed to initialize" and skips the
+ * image, so a scanned invoice rendered as a pure white page. The CMaps (CJK
+ * fonts a PDF names but does not embed) and ICC profiles are the same kind of
+ * asset, passed for the same reason, so the next one does not fail the same
+ * silent way. All plain paths, like `standardFontDataUrl`.
+ */
+const wasmUrl = assetDir('wasm');
+const cMapUrl = assetDir('cmaps');
+const iccUrl = assetDir('iccs');
 
 /**
  * Demuxes one uploaded PDF into per-page rendered images with a source tag.
@@ -124,6 +148,10 @@ async function openPdf(bytes: Buffer) {
   const loadingTask = lib.getDocument({
     data: new Uint8Array(bytes),
     standardFontDataUrl,
+    wasmUrl,
+    cMapUrl,
+    cMapPacked: true,
+    iccUrl,
     // No network fetch of any kind: this runs headless, once, on a file
     // already fully in memory.
     useWorkerFetch: false,

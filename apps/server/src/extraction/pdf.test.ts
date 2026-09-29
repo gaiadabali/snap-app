@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import { createCanvas, loadImage } from '@napi-rs/canvas';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { demuxPdf, extractPdfText } from './pdf.js';
 
@@ -151,5 +152,112 @@ describe('extractPdfText', () => {
     ]);
     const texts = await extractPdfText(pdf);
     expect(texts).toEqual(['Page A content', 'Page B content', 'Page C content']);
+  });
+});
+
+/* ── The page must actually be DRAWN, not just counted ──────────────────── */
+
+/**
+ * The tests above prove structure — page count, classification — and passed
+ * throughout a production fault where every non-embedded font drew no text and
+ * every CCITT-fax scan drew a white page (2026-09-29: two client invoices
+ * reached the model blank). pdfjs-dist reports those failures only as console
+ * warnings and carries on, so these tests check both: that it did not warn,
+ * and that the rendered page has ink on it.
+ *
+ * The ink check alone is not enough on a developer machine: on Windows the
+ * canvas quietly substitutes a system font when pdfjs fails to load its own,
+ * which is exactly how the font bug stayed invisible locally. The warning
+ * check is what fails there.
+ */
+
+/** Everything pdfjs-dist printed while `fn` ran. It warns via console.log. */
+async function capturePdfjsWarnings<T>(fn: () => Promise<T>): Promise<{ result: T; warnings: string[] }> {
+  const warnings: string[] = [];
+  const record = (...args: unknown[]) => {
+    const line = args.map(String).join(' ');
+    if (/Warning:|Unable to (load|decode)|failed to initialize/i.test(line)) warnings.push(line);
+  };
+  vi.spyOn(console, 'log').mockImplementation(record);
+  vi.spyOn(console, 'warn').mockImplementation(record);
+  const result = await fn();
+  return { result, warnings };
+}
+
+afterEach(() => vi.restoreAllMocks());
+
+/** Fraction of the page's pixels that are dark. */
+async function inkFraction(png: Buffer): Promise<number> {
+  const img = await loadImage(png);
+  const canvas = createCanvas(img.width, img.height);
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(img, 0, 0);
+  const data = ctx.getImageData(0, 0, img.width, img.height).data;
+  let dark = 0;
+  for (let i = 0; i < data.length; i += 4) if (data[i]! < 128) dark++;
+  return dark / (img.width * img.height);
+}
+
+/**
+ * A one-page PDF whose only content is a 64x64 CCITT Group 4 image — the
+ * compression office scanners use for black-and-white pages — with a black
+ * square over the middle quarter, drawn to fill a 64x64pt page. Bytes made
+ * with Pillow (`compression='group4'`, which writes black as 1 — hence
+ * `/BlackIs1`), so the fixture is synthetic, not a
+ * client document.
+ */
+function ccittScanPdf(): Buffer {
+  const ccitt = Buffer.from('JqB4b/////yC43////////////////////+P////8AEAEA==', 'base64');
+  const parts: Buffer[] = [];
+  const offsets: number[] = [];
+  let length = 0;
+  const push = (b: Buffer | string) => {
+    const buf = typeof b === 'string' ? Buffer.from(b, 'latin1') : b;
+    parts.push(buf);
+    length += buf.length;
+  };
+  const obj = (n: number, body: (Buffer | string)[]) => {
+    offsets[n] = length;
+    push(`${n} 0 obj\n`);
+    body.forEach(push);
+    push('\nendobj\n');
+  };
+  const content = 'q 64 0 0 64 0 0 cm /Im1 Do Q';
+  push('%PDF-1.4\n');
+  obj(1, ['<< /Type /Catalog /Pages 2 0 R >>']);
+  obj(2, ['<< /Type /Pages /Kids [3 0 R] /Count 1 >>']);
+  obj(3, ['<< /Type /Page /Parent 2 0 R /MediaBox [0 0 64 64] /Resources << /XObject << /Im1 4 0 R >> >> /Contents 5 0 R >>']);
+  obj(4, [
+    `<< /Type /XObject /Subtype /Image /Width 64 /Height 64 /ColorSpace /DeviceGray /BitsPerComponent 1 ` +
+      `/Filter /CCITTFaxDecode /DecodeParms << /K -1 /Columns 64 /Rows 64 /BlackIs1 true >> /Length ${ccitt.length} >>\nstream\n`,
+    ccitt,
+    '\nendstream',
+  ]);
+  obj(5, [`<< /Length ${content.length} >>\nstream\n${content}\nendstream`]);
+  const xref = length;
+  push(`xref\n0 6\n0000000000 65535 f \n`);
+  for (let n = 1; n <= 5; n++) push(`${String(offsets[n]).padStart(10, '0')} 00000 n \n`);
+  push(`trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`);
+  return Buffer.concat(parts);
+}
+
+describe('demuxPdf draws what is on the page', () => {
+  it('draws text in a font the PDF names but does not embed, without a font-loading warning', async () => {
+    const pdf = onePagePdf('BT /F1 48 Tf 10 120 Td (TOTAL 29.00) Tj ET');
+    const { result: pages, warnings } = await capturePdfjsWarnings(() => demuxPdf(pdf));
+
+    expect(warnings.filter((w) => /font/i.test(w))).toEqual([]);
+    expect(await inkFraction(pages[0]!.bytes)).toBeGreaterThan(0.005);
+  });
+
+  it('draws a CCITT fax-compressed scan instead of a white page', async () => {
+    const { result: pages, warnings } = await capturePdfjsWarnings(() => demuxPdf(ccittScanPdf()));
+
+    expect(warnings).toEqual([]);
+    expect(pages[0]!.source).toBe('pdf_render');
+    // The black square covers a quarter of the image, which fills the page.
+    const ink = await inkFraction(pages[0]!.bytes);
+    expect(ink).toBeGreaterThan(0.2);
+    expect(ink).toBeLessThan(0.3);
   });
 });
