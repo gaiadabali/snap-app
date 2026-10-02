@@ -44,6 +44,23 @@ docker exec "${SNAP_PG_CONTAINER:-snap-postgres}" pg_dump -U postgres --format=c
 gzip -f "$tmp" && mv "${tmp}.gz" "${PG_DIR}/snapapps-${STAMP}.dump.gz"
 echo "    wrote ${PG_DIR}/snapapps-${STAMP}.dump.gz"
 
+# Vault's sealed key material (deploy/vault/README.md "Backups"). Losing this
+# volume is unrecoverable: the ciphertext in Postgres survives and nothing can
+# unwrap it. It is sealed at rest, so the tarball is useless without the
+# unseal shares, which must NOT be stored beside it. Skipped when no Vault
+# container exists (a host that never set it up).
+VAULT_CONTAINER="${SNAP_VAULT_CONTAINER:-snap-apps-vault-1}"
+if docker inspect "${VAULT_CONTAINER}" >/dev/null 2>&1; then
+  echo "==> vault_data snapshot (${STAMP})"
+  VAULT_DIR="${BACKUP_ROOT}/vault"
+  mkdir -p "${VAULT_DIR}"; chmod 700 "${VAULT_DIR}"
+  vtmp="${VAULT_DIR}/vault-${STAMP}.tar.gz.tmp"
+  ( umask 077; docker exec "${VAULT_CONTAINER}" tar -czf - -C /vault file > "$vtmp" )
+  mv "$vtmp" "${VAULT_DIR}/vault-${STAMP}.tar.gz"
+  echo "    wrote ${VAULT_DIR}/vault-${STAMP}.tar.gz"
+  find "${VAULT_DIR}" -name 'vault-*.tar.gz' -mtime +30 -delete
+fi
+
 echo "==> pruning Postgres dumps older than 30 days (operational recovery window only)"
 find "${PG_DIR}" -name '*.dump.gz' -mtime +30 -delete
 

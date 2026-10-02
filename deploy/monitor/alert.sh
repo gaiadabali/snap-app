@@ -54,15 +54,25 @@ if [ "${1:-}" = "--inbox" ]; then
   fi
 
   # 3. Vault sealed state: a sealed Vault is an outage of every provider key.
-  # Skipped with a note when Vault is not configured at all — the note keeps
-  # the gap VISIBLE in every summary without crying wolf. (Staging has no
-  # Vault yet; preflight says so at every boot.)
-  if [ -z "${VAULT_ADDR:-}" ]; then
-    record OK "vault: not configured — known gap, see preflight warning"
-  elif curl -fsS --max-time 5 "$VAULT_ADDR/v1/sys/health" 2>/dev/null | grep -q '"sealed":false'; then
-    record OK "vault: unsealed"
+  # Vault publishes no port, and $VAULT_ADDR (http://vault:8200) only resolves
+  # inside the compose network, so from the host's cron we ask the container.
+  # Skipped with a note when there is no Vault at all — the note keeps the gap
+  # VISIBLE in every summary without crying wolf.
+  vault_ctr="${SNAP_VAULT_CONTAINER:-snap-apps-vault-1}"
+  if docker inspect "$vault_ctr" >/dev/null 2>&1; then
+    if docker exec "$vault_ctr" wget -qO- http://127.0.0.1:8200/v1/sys/health 2>/dev/null | grep -q '"sealed":false'; then
+      record OK "vault: unsealed"
+    else
+      record FAILED "vault: sealed, uninitialised or unreachable — unseal per deploy/vault/README.md"
+    fi
+  elif [ -n "${VAULT_ADDR:-}" ]; then
+    if curl -fsS --max-time 5 "$VAULT_ADDR/v1/sys/health" 2>/dev/null | grep -q '"sealed":false'; then
+      record OK "vault: unsealed"
+    else
+      record FAILED "vault: sealed or unreachable"
+    fi
   else
-    record FAILED "vault: sealed or unreachable"
+    record OK "vault: not configured — known gap, see preflight warning"
   fi
 fi
 

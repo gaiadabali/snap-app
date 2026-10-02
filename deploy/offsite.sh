@@ -17,6 +17,7 @@
 #
 # What gets pushed, and why each of the three:
 #   - backups/postgres      — operational recovery dumps (30-day window)
+#   - backups/vault         — sealed Vault key material (useless without the unseal shares)
 #   - backups/basebackups   — the weekly PITR base + WAL archive companion
 #   - data/storage          — the captured originals: the 5-year ATO legal
 #                             record. The host directory is primary; this is
@@ -54,6 +55,7 @@ echo "==> pushing backups + storage originals off the box"
 restic backup \
   /opt/snap-apps/backups/postgres \
   /opt/snap-apps/backups/basebackups \
+  /opt/snap-apps/backups/vault \
   /opt/snap-apps/data/storage 2>&1 | tail -3
 
 echo "==> applying retention: 7 daily, 12 monthly, prune"

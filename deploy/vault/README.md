@@ -100,19 +100,26 @@ it that and nothing else, so a leaked application token cannot read Vault's
 other secrets, rotate the key, or read the key material.
 
 ```bash
-# A policy that permits the two operations the KmsProvider makes.
+# A policy that permits the two operations the KmsProvider makes, plus
+# renewing its own token (see "Keeping the token alive" below).
 docker compose exec vault sh -c \
   "wget -qO- --header='X-Vault-Token: $VAULT_TOKEN' --post-data='{
      \"policy\": \"path \\\"transit/encrypt/snap-dek\\\" { capabilities = [\\\"update\\\"] }
-                  path \\\"transit/decrypt/snap-dek\\\" { capabilities = [\\\"update\\\"] }\"
+                  path \\\"transit/decrypt/snap-dek\\\" { capabilities = [\\\"update\\\"] }
+                  path \\\"auth/token/renew-self\\\" { capabilities = [\\\"update\\\"] }\"
    }' http://127.0.0.1:8200/v1/sys/policies/acl/snap-app"
 
 # A periodic token: renewable indefinitely, dead within 72h if nothing renews
 # it. Put the returned client_token in deploy/.env as VAULT_TOKEN.
+#
+# create-ORPHAN, not create. A plain `token/create` makes a CHILD of the root
+# token, and Vault revokes every child when its parent is revoked, so the
+# "revoke the root token" step below would silently kill the app's token and
+# every wrap would 403 (this happened on helios, 2026-10-02).
 docker compose exec vault sh -c \
   "wget -qO- --header='X-Vault-Token: $VAULT_TOKEN' \
-   --post-data='{\"policies\":[\"snap-app\"],\"period\":\"72h\"}' \
-   http://127.0.0.1:8200/v1/auth/token/create"
+   --post-data='{\"policies\":[\"snap-app\"],\"period\":\"72h\",\"no_parent\":true}' \
+   http://127.0.0.1:8200/v1/auth/token/create-orphan"
 ```
 
 Then revoke the root token:
@@ -122,6 +129,23 @@ docker compose exec vault sh -c \
   "wget -qO- --header='X-Vault-Token: $VAULT_TOKEN' --post-data='' \
    http://127.0.0.1:8200/v1/auth/token/revoke-self"
 ```
+
+## Keeping the token alive
+
+Nothing in the app renews `VAULT_TOKEN` (`vault-transit.ts`: "No token
+renewal"). Root's crontab on the host renews it every 12h:
+
+```
+0 */12 * * * /usr/local/sbin/snap-vault-renew.sh >> /var/log/snap-vault-renew.log 2>&1
+```
+
+`deploy/vault/renew-token.sh` in this repo is that script: copy it to the path
+above. It reads `VAULT_TOKEN` from `deploy/.env` and POSTs
+`auth/token/renew-self` through the vault container. If the host is down or
+Vault is sealed for more than 72h the token expires and must be re-minted:
+generate a temporary root token from two unseal shares
+(`vault operator generate-root`), run the `create-orphan` call above, update
+`deploy/.env`, and revoke the root again.
 
 ## Rotating the KEK
 
