@@ -189,11 +189,16 @@ function appuser() {
   `);
   console.log('created role snap_app    (NOSUPERUSER, NOBYPASSRLS, member of app_rw)');
   console.log('created role snap_worker (NOSUPERUSER, NOBYPASSRLS, member of app_worker)');
+  // Printed for the dev default only. deploy.sh runs this on every deploy, so a
+  // real password printed here lands in the host's journal in plain text —
+  // which is how helios's snap_app password ended up in `journalctl` until
+  // 2026-10-06.
+  const shown = process.env.APP_DB_PASSWORD ? '********' : password;
   console.log(
-    `DATABASE_URL=postgres://snap_app:${password}@127.0.0.1:${PORT}/${DB}`,
+    `DATABASE_URL=postgres://snap_app:${shown}@127.0.0.1:${PORT}/${DB}`,
   );
   console.log(
-    `WORKER_DATABASE_URL=postgres://snap_worker:${password}@127.0.0.1:${PORT}/${DB}`,
+    `WORKER_DATABASE_URL=postgres://snap_worker:${shown}@127.0.0.1:${PORT}/${DB}`,
   );
 }
 
