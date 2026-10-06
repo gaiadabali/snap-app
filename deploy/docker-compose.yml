@@ -113,7 +113,7 @@ services:
       # "nothing published" while the file sat there in plain sight.
       STORAGE_DIR: /data/storage
     volumes:
-      - storage_data:/data/storage
+      - ${STORAGE_HOST_DIR:?set STORAGE_HOST_DIR in .env — where original captures persist on the host}:/data/storage
     depends_on:
       postgres:
         condition: service_healthy
@@ -182,7 +182,7 @@ services:
       # were actually written.
       STORAGE_DIR: /data/storage
     volumes:
-      - storage_data:/data/storage
+      - ${STORAGE_HOST_DIR:?set STORAGE_HOST_DIR in .env — where original captures persist on the host}:/data/storage
       # NO `:-/dev/null` DEFAULT. It used to read
       #   ${OLLAMA_ENV_FILE_HOST:-/dev/null}:/run/secrets/ollama.env:ro
       # and OLLAMA_ENV_FILE_HOST was EMPTY in deploy/.env, so compose
@@ -417,20 +417,17 @@ volumes:
   # the same backup set as the database, and the unseal keys belong
   # somewhere this volume is not.
   vault_data:
-  # Legal records (originals) live here — 5-year ATO retention, see
-  # docs/DEPLOY.md §9's backup section. A plain NAMED volume is fine for
-  # Postgres (pg_dump is the correct backup method regardless of where its
-  # files physically sit), but storage_data is a named volume BOUND to a host
-  # path (STORAGE_HOST_DIR) instead of Docker-managed storage, so file-level
-  # backup tooling (rsync/restic/tar) can reach the originals directly without
-  # going through the Docker API, and the directory survives `docker compose
-  # down -v` by construction (nothing about that host path is removed by
-  # Docker even when the volume record is).
-  storage_data:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ${STORAGE_HOST_DIR:?set STORAGE_HOST_DIR in .env — where original captures persist on the host}
+  # Legal records (originals) — 5-year ATO retention, see docs/DEPLOY.md §9 —
+  # are NOT a volume here. The api and worker bind STORAGE_HOST_DIR directly,
+  # so file-level backup tooling (rsync/restic/tar) reaches the originals
+  # without the Docker API, and `docker compose down -v` cannot touch them.
+  #
+  # It used to be a named volume with `type: none, o: bind`. That does the
+  # same job but makes Docker mount the directory onto the HOST's mount table
+  # as a second entry of the root disk. On helios, Hostinger's snapshot backup
+  # (qemu-ga fsfreeze) freezes mounts in reverse table order, so that entry
+  # froze the root disk before the loop-mounted image of another tenant, whose
+  # flush then blocked forever: the box hung on the backup three days running
+  # (2026-10-02..04). A service-level bind mounts only inside the container.
   caddy_data:
   caddy_config:
