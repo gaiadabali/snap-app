@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import { Platform, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { NavFrame } from '@/components/BottomNav';
 import { ThemeProvider, usePalette, useTheme } from '@/theme';
 import { SessionGate } from '@/session';
 import { WorkspaceProvider } from '@/workspace';
@@ -49,6 +50,8 @@ function RootChrome() {
         <WorkspaceProvider>
       <View style={{ flex: 1, backgroundColor: p.ground }}>
         <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+        {/* Every screen sits above one bottom bar — see components/BottomNav. */}
+        <NavFrame>
         <Stack
           screenOptions={{
             headerStyle: { backgroundColor: p.ground },
@@ -107,6 +110,7 @@ function RootChrome() {
           />
           <Stack.Screen name="usage" options={{ headerShown: false }} />
           <Stack.Screen name="rewards" options={{ headerShown: false }} />
+          <Stack.Screen name="points" options={{ headerShown: false }} />
           <Stack.Screen name="alerts" options={{ headerShown: false }} />
           <Stack.Screen name="notifications" options={{ headerShown: false }} />
           <Stack.Screen name="privacy" options={{ headerShown: false }} />
@@ -115,6 +119,7 @@ function RootChrome() {
           <Stack.Screen name="export" options={{ headerShown: false }} />
           <Stack.Screen name="goal/[id]" options={{ headerShown: false }} />
         </Stack>
+        </NavFrame>
           </View>
         </WorkspaceProvider>
       </SessionGate>

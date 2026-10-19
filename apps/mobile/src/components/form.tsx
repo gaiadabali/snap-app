@@ -11,7 +11,7 @@ import {
   View,
   type KeyboardTypeOptions,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useDeviceInsets } from '@/components/device-insets';
 import { Icon } from '@/components/Icon';
 
 import { Raised } from '@/components/rich';
@@ -248,7 +248,8 @@ export function Sheet({
   error?: string | null;
 }) {
   const p = usePalette();
-  const insets = useSafeAreaInsets();
+  // Real insets: this is a modal, drawn over the bottom bar too.
+  const insets = useDeviceInsets();
   const [busy, setBusy] = useState(false);
 
   if (!open) return null;

@@ -139,6 +139,7 @@ async function pageBytes(page: TrayPage): Promise<ArrayBuffer> {
  * that makes people doubt the rest of the app.
  */
 function QueuedWritesBanner() {
+  const insets = useSafeAreaInsets();
   const [count, setCount] = useState(0);
 
   useEffect(() => {
@@ -166,10 +167,15 @@ function QueuedWritesBanner() {
   return (
     <View
       style={{
+        // Under the filing card and clear of the status bar. It is rendered
+        // before the viewfinder in the tree, so it is lifted explicitly —
+        // otherwise the camera, a later sibling, paints over it.
         position: 'absolute',
-        top: 0,
+        top: insets.top + 72,
         left: space.xl,
         right: space.xl,
+        zIndex: 10,
+        elevation: 10,
         borderRadius: radius.md,
         backgroundColor: 'rgba(20,20,20,0.92)',
         borderWidth: 1,

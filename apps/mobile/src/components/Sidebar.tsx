@@ -3,7 +3,7 @@ import { useEffect, useRef } from 'react';
 import { Animated, Dimensions, Easing, Modal, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { api, type PersonalSummary, type SalesSummary } from '@/api';
+import { IS_DEMO, api, type PersonalSummary, type SalesSummary } from '@/api';
 import { GradientHero, HeroBody, HeroFigure, HeroLabel } from '@/components/rich';
 import { MenuContent } from '@/components/MenuContent';
 import { Figure, Small } from '@/components/ui';
@@ -168,7 +168,8 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
             <MenuContent onNavigate={onClose} />
 
             <Small style={{ textAlign: 'center' }}>
-              Snap Apps · {isBusiness ? 'business' : 'personal'} · demo data
+              Snap Apps · {isBusiness ? 'business' : 'personal'}
+              {IS_DEMO ? ' · demo data' : ''}
             </Small>
           </ScrollView>
         </Animated.View>
