@@ -371,7 +371,7 @@ the gap is recorded in the readiness plan, not closed.
 ## 10. Continuous deploy: GitHub → helios polls → live
 
 The website and server deploy themselves. A systemd timer on the host asks
-GitHub every five minutes what the deployable commit is and rolls it out if it
+GitHub every minute what the deployable commit is and rolls it out if it
 differs from what is running. Nobody SSHes in to ship.
 
 **Deployable is not "newest commit on main".** It is the newest commit whose
@@ -382,6 +382,42 @@ tests; deploying that is worse than not deploying.
 Pull rather than push, deliberately: a push deploy needs a credential that can
 *change* the server, held by a laptop or a CI runner. Here the server holds one
 **read-only** token and nothing outside needs access to it.
+
+### 10.0 Merge to live, and what it waits on (measured 2026-10-19)
+
+| Stage | Before | Now |
+|---|---|---|
+| CI | one serial job, ~2m40s | three parallel jobs, ~1m45s (the database job is the long pole) |
+| Images | four parallel builds, ~1m30s (mobile's export is the slowest) | unchanged — runs alongside CI |
+| Poller notices | timer every 5 min + up to 45s jitter | every 1 min + up to 10s |
+| Rollout | ~30s, longer when a layer changed (the lockfile invalidates all four) | unchanged |
+
+So a merge is live in **about three minutes**, down from five to eight.
+
+**It had not been deploying at all from about 2026-10-06 to 2026-10-19**, and
+the log blamed the token. Two faults stacked:
+
+1. The poller read the repository-wide list of the last 20 *successful* runs
+   and picked out CI and the images by name. The scheduled uptime monitor runs
+   several times a day, so after a few days without a merge its runs alone
+   filled those 20 and CI vanished from view — `FAILED: could not read CI
+   runs — is GITHUB_TOKEN valid?`, which it was. The poller now asks each
+   workflow for its own runs (`/actions/workflows/<file>/runs`), which nothing
+   else can crowd.
+2. A hand-made drop-in, `/etc/systemd/system/snap-deploy.service.d/workflow.conf`
+   (2026-10-14), set `WORKFLOW=external-uptime-monitor` — presumably to quiet
+   the matching error for the images. That made the poller wait for an uptime
+   run on the new commit instead of for its images. It was removed on
+   2026-10-19 (a copy is kept beside it as `workflow.conf.removed-2026-10-19`);
+   the variable is ignored now and the script logs a note if it is ever set.
+
+`DRY_RUN=1 deploy/poll-deploy.sh` prints what it would deploy and stops — the
+way to test a change to the poller on the host before the timer runs it.
+
+**GitHub minutes are not the constraint.** The repository is public, and
+Actions on standard runners are free for public repositories: every run above
+bills 0 ms. The parallel CI spends more runner time than the serial job did
+(each job repeats ~20s of setup) in exchange for a minute less wall-clock.
 
 ### 10.1 Disk is the thing that stops this, and it did
 
@@ -462,7 +498,7 @@ rotate, and it cannot write.
 Until that file exists the poller exits cleanly each tick with
 `FAILED: /etc/snap-apps/secrets/github.env not found`, which is why the timer
 ships disabled: enabling it first would fill the journal with a failure nobody
-needs repeated every five minutes.
+needs repeated every minute.
 
 ### What is in place on helios
 

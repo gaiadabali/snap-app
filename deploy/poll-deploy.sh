@@ -42,13 +42,30 @@ set -euo pipefail
 REPO_DIR="${REPO_DIR:-/opt/snap-apps}"
 REPO_SLUG="${REPO_SLUG:-gaiadabali/snap-app}"
 BRANCH="${BRANCH:-main}"
-WORKFLOW="${WORKFLOW:-Publish images}"
+# The two workflows that make a commit deployable, by FILE name. Each is asked
+# about on its own (`/actions/workflows/<file>/runs`), never through the
+# repo-wide run list. That list is shared with every other workflow, and the
+# scheduled uptime monitor runs several times a day: from 2026-10-06 its runs
+# alone filled the 20-run window this script used to read, so neither CI nor
+# the images were visible and nothing deployed for two weeks — while the log
+# blamed the token.
+CI_WORKFLOW="${CI_WORKFLOW:-ci.yml}"
+IMAGES_WORKFLOW="${IMAGES_WORKFLOW:-publish-images.yml}"
 STATE_FILE="${STATE_FILE:-/var/lib/snap-apps/deployed-sha}"
 SECRETS="${SECRETS:-/etc/snap-apps/secrets/github.env}"
 LOCK="/var/lock/snap-deploy.lock"
 
 log() { echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] $*"; }
-fail() { log "FAILED: $*"; exit 1; }
+# To stderr, so a failure inside a command substitution still reaches the
+# journal instead of being captured into a variable and lost.
+fail() { log "FAILED: $*" >&2; exit 1; }
+
+# `WORKFLOW` named the images workflow by its display name, and a drop-in on
+# helios once pointed it at the uptime monitor. It is ignored now; say so,
+# rather than let a stale override look as if it still steers anything.
+if [[ -n "${WORKFLOW:-}" ]]; then
+  log "note: WORKFLOW=${WORKFLOW} is ignored — set CI_WORKFLOW / IMAGES_WORKFLOW (workflow file names) instead"
+fi
 
 # One deploy at a time. A slow deploy overlapping the next tick would have two
 # `docker compose up` runs racing over the same containers.
@@ -71,26 +88,37 @@ api() {
     "$@"
 }
 
-# The newest commit on the branch for which BOTH workflows concluded success.
+# The fast path, and what makes a one-minute timer cheap. If the branch head
+# is what is already running there is nothing newer to find, so the steady
+# state costs ONE small API call a tick (~1,440 a day, against 5,000 an hour)
+# and logs nothing. Only a head that differs pays for the run queries below.
+HEAD_SHA="$(api "https://api.github.com/repos/${REPO_SLUG}/git/ref/heads/${BRANCH}" \
+  | python3 -c "import json,sys; print(json.load(sys.stdin)['object']['sha'])" 2>/dev/null || true)"
+if [[ -n "${HEAD_SHA}" && "${HEAD_SHA:0:7}" == "${DEPLOYED}" ]]; then
+  exit 0
+fi
+
+# The newest successful push runs of ONE workflow, newest first.
 # Asking each workflow separately and intersecting is deliberate: a commit can
 # have green images and red tests, and that must not deploy.
-latest_green_sha() {
-  local wf="$1"
-  api "https://api.github.com/repos/${REPO_SLUG}/actions/runs?branch=${BRANCH}&status=success&per_page=20" \
-    | python3 -c "
+green_shas() {
+  local file="$1" body
+  body="$(api "https://api.github.com/repos/${REPO_SLUG}/actions/workflows/${file}/runs?branch=${BRANCH}&event=push&status=success&per_page=15")" \
+    || fail "GitHub refused the ${file} runs query — is GITHUB_TOKEN valid, and can it read the repository?"
+  python3 -c "
 import json,sys
-runs = json.load(sys.stdin).get('workflow_runs', [])
-name = sys.argv[1]
-print('\n'.join(r['head_sha'] for r in runs if r.get('name') == name))
-" "$wf"
+print('\n'.join(r['head_sha'] for r in json.load(sys.stdin).get('workflow_runs', [])))
+" <<<"${body}"
 }
 
-log "Checking ${REPO_SLUG}@${BRANCH} (currently deployed: ${DEPLOYED})"
+log "Checking ${REPO_SLUG}@${BRANCH} (head ${HEAD_SHA:0:7}, currently deployed: ${DEPLOYED})"
 
-CI_SHAS="$(latest_green_sha 'CI' || true)"
-IMG_SHAS="$(latest_green_sha "${WORKFLOW}" || true)"
-[[ -n "${CI_SHAS}" ]]  || fail "could not read CI runs — is GITHUB_TOKEN valid and scoped to contents:read?"
-[[ -n "${IMG_SHAS}" ]] || fail "could not read '${WORKFLOW}' runs"
+CI_SHAS="$(green_shas "${CI_WORKFLOW}")"
+IMG_SHAS="$(green_shas "${IMAGES_WORKFLOW}")"
+# Empty is not an error any more: it means "nothing green yet", which is the
+# normal state for the minute or two after a merge while the runs finish.
+[[ -n "${CI_SHAS}" ]]  || { log "no successful ${CI_WORKFLOW} run on ${BRANCH} yet; nothing to do"; exit 0; }
+[[ -n "${IMG_SHAS}" ]] || { log "no successful ${IMAGES_WORKFLOW} run on ${BRANCH} yet; nothing to do"; exit 0; }
 
 # First SHA that appears in both lists, preserving CI's newest-first order.
 TARGET=""
@@ -104,6 +132,13 @@ done <<<"${CI_SHAS}"
 SHORT="${TARGET:0:7}"
 if [[ "${DEPLOYED}" == "${SHORT}" ]]; then
   log "already at ${SHORT}; nothing to do"
+  exit 0
+fi
+
+# DRY_RUN=1 answers "what would this deploy?" without touching anything —
+# how a change to this script gets tested on the host before a timer runs it.
+if [[ "${DRY_RUN:-}" == "1" ]]; then
+  log "DRY RUN: would deploy ${SHORT} (was ${DEPLOYED})"
   exit 0
 fi
 

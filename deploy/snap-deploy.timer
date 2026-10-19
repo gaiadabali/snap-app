@@ -2,13 +2,18 @@
 Description=Poll GitHub for a deployable Snap Apps commit
 
 [Timer]
-# Five minutes: fast enough that a merge is live before anyone asks, slow
-# enough to stay far inside GitHub's rate limit (this makes 2 API calls a tick,
-# ~576/day against 5000/hour for a token).
-OnBootSec=3min
-OnUnitActiveSec=5min
+# One minute (was five until 2026-10-19). The poller's fast path makes this
+# cheap: when the branch head is already deployed a tick is ONE small API call
+# and logs nothing (~1,440 calls a day against 5,000 an hour for a token). At
+# five minutes the timer, not CI, was the largest share of merge-to-live —
+# up to 5m45s of waiting after the runs were already green.
+OnBootSec=1min
+OnUnitActiveSec=1min
+# systemd's default AccuracySec is a full minute, which would let a 1-minute
+# timer drift to two; 5s keeps the cadence honest.
+AccuracySec=5s
 # Without this, every host with this timer polls on the same second.
-RandomizedDelaySec=45
+RandomizedDelaySec=10
 Persistent=true
 
 [Install]
