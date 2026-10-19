@@ -1,10 +1,11 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Linking, Pressable, ScrollView, Text, View } from 'react-native';
+import { Linking, Pressable, ScrollView, View } from 'react-native';
+import { Text } from '@/theme/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/Icon';
-import { Card, Divider, Row, Screen, ScreenHeader, Small } from '@/components/ui';
+import { Row, Screen, ScreenHeader, Section, Small } from '@/components/ui';
 import { control, space, type, usePalette } from '@/theme';
 
 /**
@@ -13,6 +14,10 @@ import { control, space, type, usePalette } from '@/theme';
  * An accordion rather than a list of links: every answer is three sentences,
  * and sending someone to a web page for three sentences is how a support
  * queue fills up. Nothing here needs the network.
+ *
+ * Rebuilt 2026-10-19 (the instrument pass): questions are hairline-divided
+ * rows on the ground under a mono label, not cards; the accordion behaviour
+ * is unchanged.
  */
 const TOPICS: Array<{ q: string; a: string }> = [
   {
@@ -51,10 +56,10 @@ export default function HelpScreen() {
     <Screen>
       <ScrollView
         contentContainerStyle={{
-          padding: 20,
+          paddingHorizontal: space.lg,
           paddingTop: insets.top + space.md,
           paddingBottom: space.xxl,
-          gap: 14,
+          gap: space.xl,
         }}
       >
         <ScreenHeader title="Help" onBack={() => router.back()} />
@@ -62,51 +67,43 @@ export default function HelpScreen() {
           The answers below cover most of what comes up. Anything else, write to us.
         </Text>
 
-        <View style={{ gap: space.sm }}>
-          <Text style={[type.label, { color: p.inkMuted }]}>Common questions</Text>
-          <Card padded={false}>
-            {TOPICS.map((t, i) => {
-              const on = open === i;
-              return (
-                <View key={t.q} style={{ borderTopWidth: i === 0 ? 0 : 1, borderTopColor: p.rule }}>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityState={{ expanded: on }}
-                    onPress={() => setOpen(on ? null : i)}
-                    style={({ pressed }) => ({
-                      minHeight: control.tap + 14,
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: space.md,
-                      paddingHorizontal: space.lg,
-                      paddingVertical: 14,
-                      backgroundColor: pressed ? p.surfaceAlt : 'transparent',
-                    })}
-                  >
-                    <Text style={[type.bodyStrong, { flex: 1, color: p.ink }]}>{t.q}</Text>
-                    <View style={{ transform: [{ rotate: on ? '180deg' : '0deg' }] }}>
-                      <Icon name="chevronDown" size={18} color={p.inkMuted} />
-                    </View>
-                  </Pressable>
-                  {on ? (
-                    <Text
-                      style={[
-                        type.small,
-                        { color: p.inkMuted, paddingHorizontal: space.lg, paddingBottom: space.lg },
-                      ]}
-                    >
-                      {t.a}
-                    </Text>
-                  ) : null}
-                </View>
-              );
-            })}
-          </Card>
-        </View>
+        <Section label="Common questions">
+          {TOPICS.map((t, i) => {
+            const on = open === i;
+            return (
+              <View key={t.q} style={{ borderTopWidth: i === 0 ? 0 : 1, borderTopColor: p.rule }}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityState={{ expanded: on }}
+                  onPress={() => setOpen(on ? null : i)}
+                  style={({ pressed }) => ({
+                    minHeight: control.tap + 14,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: space.md,
+                    paddingVertical: 14,
+                    backgroundColor: pressed ? p.surface : 'transparent',
+                  })}
+                >
+                  <Text style={[type.bodyStrong, { flex: 1, color: p.ink }]}>{t.q}</Text>
+                  <View style={{ transform: [{ rotate: on ? '180deg' : '0deg' }] }}>
+                    <Icon name="chevronDown" size={16} color={p.inkFaint} />
+                  </View>
+                </Pressable>
+                {on ? (
+                  <Text style={[type.small, { color: p.inkMuted, paddingBottom: space.lg }]}>
+                    {t.a}
+                  </Text>
+                ) : null}
+              </View>
+            );
+          })}
+        </Section>
 
-        <View style={{ gap: space.sm }}>
-          <Text style={[type.label, { color: p.inkMuted }]}>Still stuck</Text>
-          <Card padded={false}>
+        <Section label="Still stuck">
+          {/* Row pads its own 16pt sides; pull it out to the screen edge so its
+              icon lines up with the section label above it. */}
+          <View style={{ marginHorizontal: -space.lg }}>
             <Row
               title="Email support"
               subtitle="hello@snap-apps.com.au · usually same day"
@@ -114,7 +111,6 @@ export default function HelpScreen() {
               iconTone="neutral"
               onPress={() => void Linking.openURL('mailto:hello@snap-apps.com.au')}
             />
-            <Divider />
             <Row
               title="Report a problem"
               subtitle="Send a diagnostic with your last few scans"
@@ -126,8 +122,8 @@ export default function HelpScreen() {
                 )
               }
             />
-          </Card>
-        </View>
+          </View>
+        </Section>
 
         <Small style={{ textAlign: 'center' }}>
           Snap Apps 0.1.0 · your receipts stay in this space while we look into anything you

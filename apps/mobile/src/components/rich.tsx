@@ -1,38 +1,34 @@
-import { LinearGradient } from 'expo-linear-gradient';
-import type { ReactNode } from 'react';
-import {
-  StyleSheet,
-  Text,
-  View,
-  useColorScheme,
-  type StyleProp,
-  type ViewStyle,
-} from 'react-native';
+import { createContext, useContext, type ReactNode } from 'react';
+import { View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { Icon, type IconName } from '@/components/Icon';
-import { heroGradient, hueFor, numeric, radius, space, type, usePalette } from '@/theme';
+import { Settle } from '@/components/motion';
+import { hueFor, numeric, onVoid, radius, space, type, usePalette, useTheme } from '@/theme';
+import { Text } from '@/theme/text';
 
 /**
- * The richer surface of the design system.
+ * The richer surface of the design system — rebuilt in the instrument pass.
  *
- * Added after the first build read as "a flat spreadsheet". The patterns here
- * are the ones this category has converged on: a vibrant gradient card carrying
- * the headline figure, per-category colour so a list is scannable without
- * reading, cards that float rather than sit flat, and asymmetric bento tiles
- * for stats. Colour is doing work — it encodes category and status — rather
- * than decorating.
+ * This file used to hold the prototype's "vibrant" layer: a three-stop blue
+ * gradient hero with two translucent circles floating in it "echoing the
+ * gloss of the teaser's 3D sphere", tinted discs behind every category icon,
+ * and cards lifted on drop shadows. Each was reasonable alone; together they
+ * were the generated-fintech look the owner called slop, and they had spread
+ * to twenty-five screens through the components below.
+ *
+ * What replaced them keeps every export name, so no screen had to change to
+ * pick it up:
+ *   - `GradientHero` is now the VOID PANEL — flat, near-black in both
+ *     schemes, no gradient and nothing floating in it. The headline figure is
+ *     set in Archivo Light on it. It is the one inverted element on a screen.
+ *   - `CategoryIcon` is a small square mark, not a pastel disc.
+ *   - `Raised` is a card with a hairline edge, not a shadow.
  */
 
 /* ── Category colour ───────────────────────────────────────────────────────
-   One hue per category so the eye can sort the list before reading a word.
-   Chosen for even perceived brightness so no single row shouts louder than
-   the rest, and legible on both grounds. */
-/**
- * Business categories, which the prototype does not cover — it is a personal
- * -finance board. The personal hues now come from `hueFor` in the theme so the
- * two clients agree; only these business rows are held locally, on the same
- * palette range so the two workspaces never look like the same data reordered.
- */
+   One hue per category so the eye can sort a list before reading a word.
+   Business categories are held locally on the same hue range, so the two
+   workspaces never look like the same data reordered. */
 const CATEGORY: Record<string, { hue: string; ink: string; icon: IconName }> = {
   Fuel: { hue: '#F2994A', ink: '#9A5A12', icon: 'fuel' },
   'Meals on the road': { hue: '#EF6C7E', ink: '#B8384C', icon: 'fork' },
@@ -64,29 +60,29 @@ export function categoryHue(category: string): string {
 }
 
 /**
- * Tinted disc carrying the category icon.
+ * The category's mark at the head of a row.
  *
- * The glyphs used to be emoji. They rendered at a different weight on every
- * platform — and on Android several of them arrived as a blank box — so they
- * are stroke icons now, tinted with the category's own ink rather than drawn
- * in whatever colours the vendor font ships.
+ * A rounded square with a hairline in the category's own hue and the glyph in
+ * its ink — enough colour to sort a list by, and none of the pastel fill that
+ * made every row look like a sticker. Was a tinted disc, and before that an
+ * emoji, which rendered as a blank box on several Android builds.
  */
-export function CategoryIcon({ category, size = 44 }: { category: string; size?: number }) {
-  const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
+export function CategoryIcon({ category, size = 36 }: { category: string; size?: number }) {
+  const { scheme } = useTheme();
   const business = CATEGORY[category];
   const personal = hueFor(category, scheme);
   const hue = business?.hue ?? personal.hue;
-  const ink = business?.ink ?? personal.ink;
+  const ink = scheme === 'dark' ? personal.ink : business?.ink ?? personal.ink;
   const icon = business?.icon ?? PERSONAL_ICON[category] ?? 'tag';
   return (
     <View
       style={{
         width: size,
         height: size,
-        borderRadius: size / 2,
-        // A tint of the category hue: enough colour to sort by, never enough
-        // to compete with the amount on the right.
-        backgroundColor: `${hue}38`,
+        borderRadius: Math.round(size * 0.28),
+        backgroundColor: `${hue}${scheme === 'dark' ? '1F' : '17'}`,
+        borderWidth: 1,
+        borderColor: `${hue}${scheme === 'dark' ? '55' : '40'}`,
         alignItems: 'center',
         justifyContent: 'center',
       }}
@@ -96,11 +92,27 @@ export function CategoryIcon({ category, size = 44 }: { category: string; size?:
   );
 }
 
-/* ── Gradient hero ───────────────────────────────────────────────────────── */
+/** A category's colour as a small square swatch — for legends and notes. */
+export function CategorySwatch({ category, size = 8 }: { category: string; size?: number }) {
+  return (
+    <View
+      style={{ width: size, height: size, borderRadius: 2, backgroundColor: categoryHue(category) }}
+    />
+  );
+}
+
+/* ── The void panel ─────────────────────────────────────────────────────── */
+
+const PanelTone = createContext<'brand' | 'risk'>('brand');
 
 /**
- * The headline card. Carries the one figure that answers "am I okay?", in the
- * largest type on the screen, on the brand gradient from the launch teaser.
+ * The headline panel. Carries the one figure that answers "am I okay?".
+ *
+ * Exported under its old name, `GradientHero`, so the twenty-five screens
+ * that use it moved in one change; `Instrument` is the name to write in new
+ * code. `tone="risk"` is for money already at risk — an over-budget month, an
+ * overdue invoice — and changes only the label and a hairline at the top
+ * edge, because red means money at risk and nothing else (§3.2).
  */
 export function GradientHero({
   children,
@@ -112,86 +124,81 @@ export function GradientHero({
   tone?: 'brand' | 'risk';
 }) {
   const p = usePalette();
-  /* The brand stops, from the 2026-09-19 prototype. Deeper and flatter than
-     the first build's sky-blue ramp: the redesign runs the gradient *within*
-     the dark half of the brand blue, which is what lets 40pt white figures sit
-     on it without the top-left corner washing them out. */
-  const colors: [string, string, string] =
-    tone === 'risk'
-      ? ['#E0574B', '#C4322A', '#9E2419']
-      : [...heroGradient.colors];
   return (
-    <LinearGradient
-      colors={colors}
-      locations={tone === 'risk' ? undefined : [...heroGradient.locations]}
-      start={heroGradient.start}
-      end={heroGradient.end}
-      style={[
-        {
-          borderRadius: radius.xxl,
-          padding: 22,
-          overflow: 'hidden',
-        },
-        style,
-      ]}
-    >
-      {/* A soft highlight, echoing the gloss of the teaser's 3D sphere. */}
+    <PanelTone.Provider value={tone}>
       <View
-        pointerEvents="none"
-        style={{
-          position: 'absolute',
-          top: -70,
-          right: -40,
-          width: 190,
-          height: 190,
-          borderRadius: 95,
-          backgroundColor: 'rgba(255,255,255,0.13)',
-        }}
-      />
-      <View
-        pointerEvents="none"
-        style={{
-          position: 'absolute',
-          bottom: -90,
-          left: -50,
-          width: 180,
-          height: 180,
-          borderRadius: 90,
-          backgroundColor: 'rgba(255,255,255,0.07)',
-        }}
-      />
-      {children}
-      {/* Keeps the palette referenced so the card follows theme changes. */}
-      <View style={{ height: 0, backgroundColor: p.ground }} />
-    </LinearGradient>
+        style={[
+          {
+            backgroundColor: p.void,
+            borderRadius: radius.xxl,
+            borderWidth: 1,
+            borderColor: tone === 'risk' ? 'rgba(240,137,127,0.35)' : p.voidRule,
+            paddingHorizontal: 20,
+            paddingVertical: 20,
+            overflow: 'hidden',
+          },
+          style,
+        ]}
+      >
+        {tone === 'risk' ? (
+          <View
+            pointerEvents="none"
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 20,
+              right: 20,
+              height: 2,
+              backgroundColor: onVoid.risk,
+            }}
+          />
+        ) : null}
+        {children}
+      </View>
+    </PanelTone.Provider>
   );
 }
+
+/** The new name for the void panel. */
+export const Instrument = GradientHero;
 
 export function HeroLabel({ children }: { children: ReactNode }) {
+  const p = usePalette();
+  const tone = useContext(PanelTone);
   return (
-    <Text style={[type.label, { color: 'rgba(255,255,255,0.82)' }]}>{children}</Text>
-  );
-}
-
-export function HeroFigure({ children, small }: { children: ReactNode; small?: boolean }) {
-  return (
-    <Text
-      style={[
-        small ? type.h1 : { fontSize: 40, lineHeight: 46, fontWeight: '700' },
-        numeric,
-        { color: '#FFFFFF' },
-      ]}
-    >
+    <Text style={[type.label, { color: tone === 'risk' ? onVoid.risk : p.voidMuted }]}>
       {children}
     </Text>
   );
 }
 
-export function HeroBody({ children }: { children: ReactNode }) {
-  return <Text style={[type.body, { color: 'rgba(255,255,255,0.9)' }]}>{children}</Text>;
+export function HeroFigure({
+  children,
+  small,
+  settle,
+}: {
+  children: ReactNode;
+  small?: boolean;
+  /** Animate the figure in, glyph by glyph, whenever it changes. Strings only. */
+  settle?: boolean;
+}) {
+  const p = usePalette();
+  const style = [
+    small
+      ? { ...type.display }
+      : { ...type.hero },
+    numeric,
+    { color: p.voidInk },
+  ];
+  if (settle && typeof children === 'string') return <Settle value={children} style={style} />;
+  return <Text style={style}>{children}</Text>;
 }
 
-/* ── Elevated card ───────────────────────────────────────────────────────── */
+export function HeroBody({ children }: { children: ReactNode }) {
+  return <Text style={[type.body, { color: 'rgba(244,242,238,0.74)' }]}>{children}</Text>;
+}
+
+/* ── Card with an edge ───────────────────────────────────────────────────── */
 
 export function Raised({
   children,
@@ -209,15 +216,10 @@ export function Raised({
       style={[
         {
           backgroundColor: p.surface,
-          borderRadius: 18,
+          borderRadius: radius.xl,
           padding: space.lg,
-          borderWidth: StyleSheet.hairlineWidth,
+          borderWidth: 1,
           borderColor: p.rule,
-          shadowColor: '#0F1E31',
-          shadowOpacity: 0.06,
-          shadowRadius: 12,
-          shadowOffset: { width: 0, height: 4 },
-          elevation: 2,
           overflow: 'hidden',
         },
         style,
@@ -225,7 +227,7 @@ export function Raised({
     >
       {accent ? (
         <View
-          style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, backgroundColor: accent }}
+          style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 2, backgroundColor: accent }}
         />
       ) : null}
       {children}
@@ -233,11 +235,12 @@ export function Raised({
   );
 }
 
-/* ── Bento tile ──────────────────────────────────────────────────────────── */
+/* ── Readout tile ────────────────────────────────────────────────────────── */
 
 /**
- * One data point plus its label. Two hero tiles per section is the practical
- * limit — a third gives the eye no anchor.
+ * One data point plus its label — a readout, not a bento card. It has no
+ * fill: a hairline above it and the mono label are the whole frame, so two of
+ * them side by side read as one instrument with two dials.
  */
 export function Tile({
   label,
@@ -253,23 +256,22 @@ export function Tile({
   wide?: boolean;
 }) {
   const p = usePalette();
-  const fg = tone === 'risk' ? p.risk : tone === 'accent' ? p.accent : p.ink;
-  const bg = tone === 'risk' ? p.riskSoft : tone === 'accent' ? p.accentSoft : p.surface;
+  const fg = tone === 'risk' ? p.risk : tone === 'accent' ? p.accentText : p.ink;
   return (
     <View
       style={{
         flexGrow: 1,
         flexBasis: wide ? '100%' : '46%',
-        backgroundColor: bg,
-        borderRadius: 16,
-        padding: space.lg,
-        gap: 6,
-        borderWidth: StyleSheet.hairlineWidth,
-        borderColor: tone === 'default' ? p.rule : 'transparent',
+        paddingTop: space.md,
+        gap: 4,
+        borderTopWidth: 1,
+        borderTopColor: tone === 'risk' ? p.risk : p.ruleStrong,
       }}
     >
-      <Text style={[type.label, { color: tone === 'default' ? p.inkFaint : fg }]}>{label}</Text>
-      <Text style={[type.h1, numeric, { color: fg }]}>{value}</Text>
+      <Text style={[type.label, { color: tone === 'risk' ? p.risk : p.inkMuted }]}>{label}</Text>
+      <Text style={[type.h1, { fontWeight: '300', letterSpacing: -0.8 }, numeric, { color: fg }]}>
+        {value}
+      </Text>
       {hint ? <Text style={[type.small, { color: p.inkMuted }]}>{hint}</Text> : null}
     </View>
   );
@@ -278,8 +280,8 @@ export function Tile({
 /* ── Category breakdown bar ──────────────────────────────────────────────── */
 
 /**
- * Where the money went, as one bar. A donut would need a drawing library and
- * says no more than this does at a glance.
+ * Where the money went, as one bar: a real total drawn in proportion, and
+ * nothing a reader cannot check against the figures beside it.
  */
 export function CategoryBar({
   parts,
@@ -291,7 +293,7 @@ export function CategoryBar({
   const top = [...parts].sort((a, b) => b.amount - a.amount).slice(0, 5);
   return (
     <View style={{ gap: space.md }}>
-      <View style={{ flexDirection: 'row', height: 10, borderRadius: 5, overflow: 'hidden', gap: 2 }}>
+      <View style={{ flexDirection: 'row', height: 6, borderRadius: 1, overflow: 'hidden', gap: 2 }}>
         {top.map((s) => (
           <View
             key={s.category}
@@ -299,16 +301,14 @@ export function CategoryBar({
           />
         ))}
       </View>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.md }}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', columnGap: space.lg, rowGap: space.sm }}>
         {top.slice(0, 4).map((s) => (
           <View key={s.category} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <View
-              style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: categoryHue(s.category) }}
-            />
+            <CategorySwatch category={s.category} />
             <Text style={[type.small, { color: p.inkMuted }]} numberOfLines={1}>
               {s.category.length > 18 ? `${s.category.slice(0, 17)}…` : s.category}
             </Text>
-            <Text style={[type.small, numeric, { color: p.ink, fontWeight: '600' }]}>
+            <Text style={[type.mono, numeric, { color: p.ink }]}>
               {Math.round((s.amount / total) * 100)}%
             </Text>
           </View>

@@ -1,12 +1,12 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, type NotificationPrefs } from '@/api';
 import { Toggle } from '@/components/form';
-import { Body, Card, Notice, Screen, ScreenHeader, Small } from '@/components/ui';
-import { radius, space, type, usePalette } from '@/theme';
+import { Notice, Screen, ScreenHeader, Section, Small } from '@/components/ui';
+import { space, usePalette } from '@/theme';
 
 /**
  * What the app is allowed to interrupt you for.
@@ -18,6 +18,10 @@ import { radius, space, type, usePalette } from '@/theme';
  * The optimistic update is intentional — the toggle moves at once and rolls
  * back only if the write fails. A switch that waits for a round trip feels
  * broken on a train.
+ *
+ * Rebuilt 2026-10-19 (the instrument pass): the reassurance is a line of plain
+ * text under a label, not a tinted card, and the switches are hairline-divided
+ * rows on the ground.
  */
 const ROWS: Array<{ key: keyof NotificationPrefs; label: string; hint: string }> = [
   {
@@ -84,30 +88,28 @@ export default function NotificationsScreen() {
     <Screen>
       <ScrollView
         contentContainerStyle={{
-          padding: 20,
+          paddingHorizontal: space.lg,
           paddingTop: insets.top + space.md,
           paddingBottom: space.xxl,
-          gap: 14,
+          gap: space.xl,
         }}
       >
         <ScreenHeader title="Notifications" onBack={() => router.back()} />
 
-        <View style={{ backgroundColor: p.accentSoft, borderRadius: radius.lg, padding: space.lg, gap: 6 }}>
-          <Body strong>Facts about your own money, and nothing else</Body>
-          <Text style={[type.small, { color: p.inkStrong }]}>
-            We will never send a marketing push. Every switch below is an event in your own
-            records.
-          </Text>
-        </View>
+        <Section label="What you will hear about" style={{ gap: space.sm }} rule={false}>
+          <Small>
+            Facts about your own money, and nothing else. We will never send a marketing push;
+            every switch below is an event in your own records.
+          </Small>
+        </Section>
 
         {error ? <Notice tone="risk" icon="alert">{error}</Notice> : null}
 
-        <Card padded={false}>
+        <Section label="Alert me when">
           {ROWS.map((r, i) => (
             <View
               key={r.key}
               style={{
-                paddingHorizontal: space.lg,
                 paddingVertical: 14,
                 borderTopWidth: i === 0 ? 0 : 1,
                 borderTopColor: p.rule,
@@ -121,7 +123,7 @@ export default function NotificationsScreen() {
               />
             </View>
           ))}
-        </Card>
+        </Section>
 
         <Small style={{ textAlign: 'center' }}>
           Your phone will ask for permission the first time one of these is due, not before.

@@ -1,14 +1,15 @@
 import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, View } from 'react-native';
+import { Text } from '@/theme/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { abnIsValid, api, resetDemoData, type BusinessSettings, type PlanUsage } from '@/api';
 import { currentDevice, deviceReadAvailable } from '@/lib/device-read';
 import { Avatar, Choice, Field, Loading, Sheet, Toggle } from '@/components/form';
-import { Raised } from '@/components/rich';
-import { Body, Divider, Figure, Label, Screen, Small } from '@/components/ui';
-import { formatAbn, space, usePalette } from '@/theme';
+import { Icon } from '@/components/Icon';
+import { Body, Divider, Screen, Section, Small } from '@/components/ui';
+import { formatAbn, numeric, space, type, usePalette } from '@/theme';
 import { useSession } from '@/session';
 import { WorkspacePicker, useWorkspace } from '@/workspace';
 
@@ -21,6 +22,11 @@ import { WorkspacePicker, useWorkspace } from '@/workspace';
  *
  * A personal workspace never sees the tax section: it has no ABN, no GST
  * registration and no BAS, and offering the fields would imply otherwise.
+ *
+ * Rebuilt 2026-10-19 (the instrument pass): a column of sections on the
+ * ground, each a mono label over hairline-divided rows, instead of a stack of
+ * raised cards. Sign out and Reset are text actions in the risk tone rather
+ * than buttons — destructive, but not the thing this screen is for.
  */
 export default function SettingsScreen() {
   const p = usePalette();
@@ -76,7 +82,7 @@ export default function SettingsScreen() {
         contentContainerStyle={{
           padding: space.lg,
           paddingBottom: insets.bottom + space.xxl,
-          gap: space.lg,
+          gap: space.xl,
         }}
       >
         {settings === null || plan === null ? (
@@ -87,18 +93,27 @@ export default function SettingsScreen() {
                 and because a shared workspace makes "which account am I in"
                 a question people actually need answered. */}
             {session ? (
-              <Raised style={{ gap: space.md }}>
-                <Label>Signed in</Label>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
+              <Section label="Signed in">
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: space.md,
+                    paddingVertical: space.md,
+                  }}
+                >
                   <Avatar initials={session.user.initials} size={44} />
                   <View style={{ flex: 1, gap: 2 }}>
-                    <Figure size="h2">{session.user.displayName}</Figure>
+                    <Text style={[type.h3, { color: p.ink }]} numberOfLines={1}>
+                      {session.user.displayName}
+                    </Text>
                     <Small numberOfLines={1}>{session.user.email}</Small>
                   </View>
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel="Sign out"
                     hitSlop={8}
+                    style={{ minHeight: 44, justifyContent: 'center' }}
                     onPress={() =>
                       Alert.alert('Sign out?', 'Your data stays on this device.', [
                         { text: 'Cancel', style: 'cancel' },
@@ -106,7 +121,7 @@ export default function SettingsScreen() {
                       ])
                     }
                   >
-                    <Text style={{ color: p.risk, fontWeight: '700' }}>Sign out</Text>
+                    <Text style={[type.smallStrong, { color: p.risk }]}>Sign out</Text>
                   </Pressable>
                 </View>
                 <Small>
@@ -114,16 +129,24 @@ export default function SettingsScreen() {
                   {session.workspaceIds.length === 1 ? '' : 's'} · you are{' '}
                   {active.role === 'admin' ? 'a manager' : `an ${active.role}`} here
                 </Small>
-              </Raised>
+              </Section>
             ) : null}
 
             {/* Workspace */}
-            <Raised style={{ gap: space.md }}>
-              <Label>Workspace</Label>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
+            <Section label="Workspace">
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: space.md,
+                  paddingVertical: space.md,
+                }}
+              >
                 <Avatar initials={workspaceName.slice(0, 2).toUpperCase()} size={44} />
                 <View style={{ flex: 1, gap: 2 }}>
-                  <Figure size="h2">{workspaceName}</Figure>
+                  <Text style={[type.h3, { color: p.ink }]} numberOfLines={1}>
+                    {workspaceName}
+                  </Text>
                   <Small>
                     {isBusiness ? 'Business' : 'Personal'} · {active.memberCount}{' '}
                     {active.memberCount === 1 ? 'person' : 'people'} · you are{' '}
@@ -134,36 +157,33 @@ export default function SettingsScreen() {
                   accessibilityRole="button"
                   accessibilityLabel="Switch workspace"
                   hitSlop={8}
+                  style={{ minHeight: 44, justifyContent: 'center' }}
                   onPress={() => setPicking(true)}
                 >
-                  <Text style={{ color: p.accent, fontWeight: '700' }}>Switch</Text>
+                  <Text style={[type.smallStrong, { color: p.accentText }]}>Switch</Text>
                 </Pressable>
               </View>
-              <Divider />
               <Row
                 label="People"
                 value={`${active.memberCount} in this workspace`}
                 href="/members"
               />
-            </Raised>
+            </Section>
 
             {/* Business details */}
             {isBusiness ? (
-              <Raised style={{ gap: space.md }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                  <Label>Business details</Label>
-                  <Pressable
-                    accessibilityRole="button"
-                    hitSlop={8}
-                    onPress={() => {
-                      setDraft({ name: settings.name, abn: settings.abn ?? '' });
-                      setError(null);
-                      setEditing('details');
-                    }}
-                  >
-                    <Text style={{ color: p.accent, fontWeight: '700' }}>Edit</Text>
-                  </Pressable>
-                </View>
+              <Section
+                label="Business details"
+                action={{
+                  label: 'Edit',
+                  onPress: () => {
+                    setDraft({ name: settings.name, abn: settings.abn ?? '' });
+                    setError(null);
+                    setEditing('details');
+                  },
+                }}
+                style={{ gap: space.md }}
+              >
                 <Info label="Trading name" value={settings.name} />
                 <Info
                   label="ABN"
@@ -208,11 +228,11 @@ export default function SettingsScreen() {
                     ? ' Simpler BAS — G1, 1A and 1B only, for turnover under $10M.'
                     : ''}
                 </Small>
-              </Raised>
+              </Section>
             ) : null}
 
             {/* Everything else */}
-            <Raised style={{ padding: 0 }}>
+            <Section label="Manage">
               <Row label="Categories" value="How spending is sorted" href="/categories" first />
               <Row label="Credits and usage" value={`${plan.scansUsed} read this month`} href="/plan" />
               {isBusiness ? (
@@ -221,11 +241,10 @@ export default function SettingsScreen() {
               {isBusiness ? (
                 <Row label="Tax pack" value="Export for your accountant" href="/taxpack" />
               ) : null}
-            </Raised>
+            </Section>
 
             {/* Data and privacy — not a legal footnote, an actual control. */}
-            <Raised style={{ gap: space.sm }}>
-              <Label>Data and privacy</Label>
+            <Section label="Data and privacy" style={{ gap: space.sm }}>
               <Body>
                 Records are kept for {Math.round(plan.retentionMonths / 12)} years, which is what
                 the ATO requires of business records. Originals are stored in Australia.
@@ -235,7 +254,7 @@ export default function SettingsScreen() {
                 access but does not remove what they captured — those records belong to the
                 workspace.
               </Small>
-            </Raised>
+            </Section>
 
             {/* WHAT THIS PHONE CAN DO, stated rather than discovered.
                 ON-DEVICE.md §9: reading on the server is a real outcome, not a
@@ -250,8 +269,7 @@ export default function SettingsScreen() {
             {/* A demo that cannot be put back is a demo you can only give
                 once. Everything the app changes is stored locally, so this
                 returns it to the shipped fixture. */}
-            <Raised style={{ gap: space.sm }}>
-              <Label>Demo data</Label>
+            <Section label="Demo data" style={{ gap: space.sm }}>
               <Body>
                 Every change you make is saved on this device. Reset returns the app to the
                 figures it ships with.
@@ -277,13 +295,11 @@ export default function SettingsScreen() {
                     ],
                   )
                 }
-                style={{ paddingVertical: space.sm }}
+                style={{ minHeight: 44, justifyContent: 'center' }}
               >
-                <Body strong style={{ color: p.risk }}>
-                  Reset demo data
-                </Body>
+                <Text style={[type.smallStrong, { color: p.risk }]}>Reset demo data</Text>
               </Pressable>
-            </Raised>
+            </Section>
 
             <Small style={{ textAlign: 'center' }}>Snap Apps · demo build</Small>
           </>
@@ -332,17 +348,21 @@ function Info({
   hint?: string;
   tone?: 'ink' | 'risk';
 }) {
+  const p = usePalette();
   return (
     <View style={{ gap: 2 }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: space.md }}>
         <Body muted>{label}</Body>
-        <Figure tone={tone}>{value}</Figure>
+        <Text style={[type.amount, numeric, { color: tone === 'risk' ? p.risk : p.ink }]}>
+          {value}
+        </Text>
       </View>
       {hint ? <Small>{hint}</Small> : null}
     </View>
   );
 }
 
+/** A navigation line in a section: title, a note under it, a chevron. */
 function Row({
   label,
   value,
@@ -364,18 +384,18 @@ function Row({
         flexDirection: 'row',
         alignItems: 'center',
         gap: space.md,
-        paddingHorizontal: space.lg,
-        paddingVertical: 13,
+        minHeight: 56,
+        paddingVertical: space.md,
         borderTopWidth: first ? 0 : 1,
         borderTopColor: p.rule,
-        backgroundColor: pressed ? p.surfaceAlt : 'transparent',
+        backgroundColor: pressed ? p.surface : 'transparent',
       })}
     >
       <View style={{ flex: 1, gap: 1 }}>
-        <Body strong>{label}</Body>
+        <Text style={[type.bodyStrong, { color: p.ink }]}>{label}</Text>
         <Small numberOfLines={1}>{value}</Small>
       </View>
-      <Small style={{ fontSize: 18 }}>›</Small>
+      <Icon name="chevronRight" size={16} color={p.inkFaint} />
     </Pressable>
   );
 }
@@ -405,8 +425,7 @@ function DeviceSupport() {
   const enoughMemory = device.totalMemoryMb >= 4096 - 512;
 
   return (
-    <Raised style={{ gap: space.sm }}>
-      <Label>This device</Label>
+    <Section label="This device" style={{ gap: space.sm }}>
       <Body>
         {device.model} · {device.totalMemoryMb} MB · {device.platform} {device.osVersion}
       </Body>
@@ -424,6 +443,6 @@ function DeviceSupport() {
             : ' The on-device reader is offered on phones with 4 GB of memory or more.'}
         </Small>
       )}
-    </Raised>
+    </Section>
   );
 }

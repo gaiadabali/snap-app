@@ -1,8 +1,10 @@
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 
-import { Body, Button, Label, Small } from '@/components/ui';
+import { Icon } from '@/components/Icon';
+import { PressableScale } from '@/components/motion';
 import type { QualityGateWarning } from '@/lib/quality-gate';
-import { radius, space, usePalette } from '@/theme';
+import { onVoid, radius, space, type } from '@/theme';
+import { Text } from '@/theme/text';
 
 /**
  * OD-13's live quality gate, on screen.
@@ -28,6 +30,12 @@ import { radius, space, usePalette } from '@/theme';
  * anything here. `docs/ON-DEVICE.md` §9's rule — the capture is the product
  * and the preview may never cost one — applies to this notice exactly as it
  * applies to the preview it is not.
+ *
+ * It only ever appears over the camera, so it is drawn on the camera's dark
+ * chrome — a dark panel with a 2px `warn` edge, `onVoid` hues, a mono label —
+ * whichever theme is in force. Its two buttons are local for that reason: the
+ * shared `Button` takes its ink from the palette, which is dark text on a
+ * light theme and would vanish here.
  */
 export function QualityGateNotice({
   warning,
@@ -39,36 +47,65 @@ export function QualityGateNotice({
   onRetake: () => void;
   onDismiss: () => void;
 }) {
-  const p = usePalette();
   return (
     <View
       style={{
         width: '100%',
         padding: space.md,
         borderRadius: radius.md,
-        borderWidth: 1,
-        borderColor: p.warn,
-        backgroundColor: p.warnSoft,
+        borderLeftWidth: 2,
+        borderLeftColor: onVoid.warn,
+        backgroundColor: 'rgba(12,12,14,0.86)',
         gap: space.sm,
       }}
     >
-      <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: space.sm }}>
-        <Label style={{ color: p.warn, flex: 1 }}>Might be hard to read</Label>
-        <Pressable
-          accessibilityRole="button"
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
+        <Text style={[type.label, { color: onVoid.warn, flex: 1 }]}>Might be hard to read</Text>
+        <PressableScale
           accessibilityLabel="Dismiss this warning"
-          hitSlop={12}
           onPress={onDismiss}
+          scaleTo={0.9}
+          hitSlop={4}
+          style={{ width: 44, height: 44, marginVertical: -12, marginRight: -10, alignItems: 'center', justifyContent: 'center' }}
         >
-          <Body style={{ color: p.inkMuted }}>×</Body>
-        </Pressable>
+          <Icon name="close" size={16} color="rgba(255,255,255,0.7)" />
+        </PressableScale>
       </View>
 
-      <Small>{warning.copy}</Small>
+      <Text style={[type.small, { color: 'rgba(255,255,255,0.8)' }]}>{warning.copy}</Text>
 
       <View style={{ flexDirection: 'row', gap: space.sm }}>
-        <Button label="Retake" tone="outline" style={{ flex: 1 }} onPress={onRetake} />
-        <Button label="Continue" style={{ flex: 1 }} onPress={onDismiss} />
+        <PressableScale
+          accessibilityLabel="Retake"
+          onPress={onRetake}
+          scaleTo={0.98}
+          containerStyle={{ flex: 1 }}
+          style={{
+            minHeight: 48,
+            borderRadius: radius.md,
+            borderWidth: 1,
+            borderColor: 'rgba(255,255,255,0.3)',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Text style={[type.bodyStrong, { color: '#FFFFFF' }]}>Retake</Text>
+        </PressableScale>
+        <PressableScale
+          accessibilityLabel="Continue"
+          onPress={onDismiss}
+          scaleTo={0.98}
+          containerStyle={{ flex: 1 }}
+          style={{
+            minHeight: 48,
+            borderRadius: radius.md,
+            backgroundColor: '#FFFFFF',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Text style={[type.bodyStrong, { color: '#000000' }]}>Continue</Text>
+        </PressableScale>
       </View>
     </View>
   );

@@ -1,20 +1,22 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
+import { Text } from '@/theme/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, type CreditPurchase, type CreditPurchaseStatus } from '@/api';
-import { Icon } from '@/components/Icon';
-import { GradientHero } from '@/components/rich';
-import { Body, Card, Screen, ScreenHeader, Small } from '@/components/ui';
-import { formatAud, numeric, radius, space, type, usePalette } from '@/theme';
+import { GradientHero, HeroBody, HeroFigure, HeroLabel } from '@/components/rich';
+import { Chip, LedgerRow, Screen, ScreenHeader, Section, Small } from '@/components/ui';
+import { formatAud, space, type, usePalette } from '@/theme';
 
 /**
- * Every top up, newest first, grouped by the day it happened.
+ * Every top up, newest first.
  *
- * Grouped by day rather than listed flat because the question people bring
- * here is "did that one on Tuesday go through", and a date heading answers it
- * without reading a single row.
+ * Was grouped under a heading per day, because the question people bring here
+ * is "did that one on Tuesday go through". The ledger's date gutter answers
+ * the same question down the left edge without a heading per day — a screen
+ * of single-row groups was a label over every row — so the list is one
+ * ledger, still newest first, each row dated.
  */
 export default function OrdersScreen() {
   const p = usePalette();
@@ -37,106 +39,78 @@ export default function OrdersScreen() {
 
   const list = orders ?? [];
   const paid = list.filter((o) => o.status === 'paid');
-  const groups = groupByDay(list);
+  const sorted = [...list].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
   return (
     <Screen>
       <ScrollView
         contentContainerStyle={{
-          padding: 20,
+          paddingHorizontal: space.lg,
           paddingTop: insets.top + space.md,
           paddingBottom: space.xxl,
-          gap: 14,
+          gap: space.xl,
         }}
       >
         <ScreenHeader title="Purchases" onBack={() => router.back()} />
 
-        <GradientHero
-          style={{
-            borderRadius: radius.xl,
-            padding: 18,
-            flexDirection: 'row',
-            alignItems: 'baseline',
-            justifyContent: 'space-between',
-            gap: space.md,
-          }}
-        >
-          <View style={{ gap: 3 }}>
-            <Text style={[type.label, { color: 'rgba(255,255,255,0.95)' }]}>Spent on credits</Text>
-            <Text style={[type.h1, numeric, { fontSize: 24, lineHeight: 30, color: '#FFFFFF' }]}>
-              {formatAud(sumMoney(paid.map((o) => o.priceAud)))}
-            </Text>
+        <GradientHero>
+          <HeroLabel>SPENT ON CREDITS</HeroLabel>
+          <View style={{ marginTop: 14, minHeight: 56 }}>
+            {orders !== null ? (
+              <HeroFigure settle>{formatAud(sumMoney(paid.map((o) => o.priceAud)))}</HeroFigure>
+            ) : null}
           </View>
-          <Text style={[type.small, { color: 'rgba(255,255,255,0.95)', textAlign: 'right' }]}>
-            {paid.length === 1 ? '1 purchase' : `${paid.length} purchases`}
-          </Text>
+          <View style={{ marginTop: 2 }}>
+            <HeroBody>{paid.length === 1 ? '1 purchase' : `${paid.length} purchases`}</HeroBody>
+          </View>
         </GradientHero>
 
         {orders !== null && list.length === 0 ? (
-          <Card style={{ alignItems: 'center', gap: space.sm, paddingVertical: 34, paddingHorizontal: space.xl }}>
-            <Body strong>No purchases yet</Body>
-            <Small style={{ textAlign: 'center' }}>
-              Top ups appear here with their amount, method and status.
-            </Small>
-          </Card>
+          <View style={{ gap: space.xs }}>
+            <Text style={[type.bodyStrong, { color: p.ink }]}>No purchases yet</Text>
+            <Small>Top ups appear here with their amount, method and status.</Small>
+          </View>
         ) : null}
 
-        {groups.map(([day, items]) => (
-          <View key={day} style={{ gap: space.sm }}>
-            <Text style={[type.label, { color: p.inkMuted }]}>{day}</Text>
-            <Card padded={false}>
-              {items.map((o, i) => (
-                <Pressable
-                  key={o.id}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${o.credits} scans, ${formatAud(o.priceAud)}, ${o.status}`}
-                  onPress={() => router.push({ pathname: '/order/[id]', params: { id: o.id } })}
-                  style={({ pressed }) => ({
-                    minHeight: 72,
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 11,
-                    paddingHorizontal: space.lg,
-                    paddingVertical: 13,
-                    borderTopWidth: i === 0 ? 0 : 1,
-                    borderTopColor: p.rule,
-                    backgroundColor: pressed ? p.surfaceAlt : 'transparent',
-                  })}
-                >
-                  <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
-                    <Body strong>{o.credits} scans</Body>
-                    <Small numberOfLines={1}>{providerLabel(o.provider)}</Small>
-                  </View>
-                  <View style={{ alignItems: 'flex-end', gap: 3 }}>
-                    <Text style={[type.bodyStrong, numeric, { color: p.ink }]}>
-                      {formatAud(o.priceAud)}
-                    </Text>
+        {sorted.length > 0 ? (
+          <Section label="Newest first">
+            {sorted.map((o, i) => (
+              <LedgerRow
+                key={o.id}
+                first={i === 0}
+                gutter={shortDay(o.createdAt)}
+                title={`${o.credits} scans`}
+                note={
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <Small numberOfLines={1} style={{ flexShrink: 1 }}>
+                      {providerLabel(o.provider)}
+                    </Small>
                     <StatusPill status={o.status} />
                   </View>
-                  <Icon name="chevronRight" size={17} color={p.inkMuted} />
-                </Pressable>
-              ))}
-            </Card>
-          </View>
-        ))}
+                }
+                figure={formatAud(o.priceAud)}
+                figureTone={o.status === 'paid' || o.status === 'pending' ? 'ink' : 'muted'}
+                onPress={() => router.push({ pathname: '/order/[id]', params: { id: o.id } })}
+                accessibilityLabel={`${o.credits} scans, ${formatAud(o.priceAud)}, ${o.status}`}
+              />
+            ))}
+          </Section>
+        ) : null}
       </ScrollView>
     </Screen>
   );
 }
 
+/** The status as a mono badge. Red only for a failed payment — money that did
+ *  not move — never for a refund, which is money coming back. */
 export function StatusPill({ status }: { status: CreditPurchaseStatus }) {
-  const p = usePalette();
   const tone = {
-    paid: { bg: p.goodSoft, fg: p.good, label: 'Paid' },
-    pending: { bg: p.warnSoft, fg: p.warn, label: 'Pending' },
-    failed: { bg: p.riskSoft, fg: p.risk, label: 'Failed' },
-    refunded: { bg: p.surfaceAlt, fg: p.inkMuted, label: 'Refunded' },
-  }[status];
-  return (
-    <View style={{ backgroundColor: tone.bg, borderRadius: radius.pill, paddingHorizontal: 8, paddingVertical: 2 }}>
-      <Text style={[type.tab, { color: tone.fg }]}>{tone.label}</Text>
-    </View>
-  );
+    paid: { tone: 'good', label: 'Paid' },
+    pending: { tone: 'warn', label: 'Pending' },
+    failed: { tone: 'risk', label: 'Failed' },
+    refunded: { tone: 'neutral', label: 'Refunded' },
+  }[status] as { tone: 'good' | 'warn' | 'risk' | 'neutral'; label: string };
+  return <Chip tone={tone.tone}>{tone.label}</Chip>;
 }
 
 export function providerLabel(provider: string): string {
@@ -145,17 +119,9 @@ export function providerLabel(provider: string): string {
   return provider === 'manual' ? 'Card on file' : provider;
 }
 
-function groupByDay(list: CreditPurchase[]): Array<[string, CreditPurchase[]]> {
-  const byDay = new Map<string, CreditPurchase[]>();
-  for (const o of [...list].sort((a, b) => b.createdAt.localeCompare(a.createdAt))) {
-    const day = new Date(o.createdAt).toLocaleDateString('en-AU', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    });
-    byDay.set(day, [...(byDay.get(day) ?? []), o]);
-  }
-  return [...byDay.entries()];
+/** "16 SEP" for the ledger gutter, in the device's own day. */
+function shortDay(iso: string): string {
+  return new Date(iso).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' }).toUpperCase();
 }
 
 /**

@@ -1,10 +1,12 @@
 import * as Linking from 'expo-linking';
 import { useCallback, useEffect, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 
 import { API_BASE_URL } from '@/api';
+import { PressableScale } from '@/components/motion';
 import { Body, Label, Small } from '@/components/ui';
-import { radius, space, usePalette } from '@/theme';
+import { radius, space, type, usePalette } from '@/theme';
+import { Text } from '@/theme/text';
 
 import {
   checkForUpdate,
@@ -19,7 +21,7 @@ import {
  *
  * WHAT IT DOES NOT DO. It does not install anything, and it does not block.
  * Android cannot silently install a sideloaded APK, and a person holding a
- * receipt over a table does not want a modal about software. So this is a card
+ * receipt over a table does not want a modal about software. So this is a notice
  * near the top of Home that can be waved away, and the download happens in the
  * browser when they choose.
  *
@@ -63,17 +65,18 @@ export function UpdateNotice() {
   return (
     <View
       style={{
-        backgroundColor: p.accentSoft,
+        backgroundColor: p.surface,
         borderRadius: radius.lg,
-        borderWidth: 1,
-        borderColor: p.accent,
-        padding: space.md,
+        borderLeftWidth: 2,
+        borderLeftColor: p.accent,
+        paddingVertical: space.md,
+        paddingHorizontal: 14,
         gap: space.sm,
       }}
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
-        <Label style={{ color: p.accent, flex: 1 }}>Update available</Label>
-        <Small>{describe(state.build)}</Small>
+        <Label style={{ color: p.accentText, flex: 1 }}>Update available</Label>
+        <Text style={[type.mono, { color: p.inkMuted }]}>{describe(state.build)}</Text>
       </View>
 
       <Body>
@@ -86,41 +89,41 @@ export function UpdateNotice() {
       </Small>
 
       <View style={{ flexDirection: 'row', gap: space.sm }}>
-        <Pressable
-          accessibilityRole="button"
+        <PressableScale
           accessibilityLabel="Download and install the update"
           onPress={onUpdate}
-          style={({ pressed }) => ({
-            flex: 1,
+          haptic="light"
+          scaleTo={0.98}
+          containerStyle={{ flex: 1 }}
+          style={{
+            minHeight: 48,
             alignItems: 'center',
-            paddingVertical: 11,
+            justifyContent: 'center',
             borderRadius: radius.md,
             backgroundColor: p.accent,
-            opacity: pressed ? 0.85 : 1,
-          })}
+          }}
+          pressedStyle={{ backgroundColor: p.accentDeep }}
         >
-          <Body strong style={{ color: '#FFFFFF' }}>
-            Update
-          </Body>
-        </Pressable>
+          <Text style={[type.bodyStrong, { color: p.accentInk }]}>Update</Text>
+        </PressableScale>
 
-        <Pressable
-          accessibilityRole="button"
+        <PressableScale
           accessibilityLabel="Not now — hide this until the next build"
           onPress={onDismiss}
-          style={({ pressed }) => ({
+          scaleTo={0.98}
+          style={{
+            minHeight: 48,
             alignItems: 'center',
             justifyContent: 'center',
             paddingHorizontal: space.lg,
-            paddingVertical: 11,
             borderRadius: radius.md,
-            borderWidth: 1.5,
-            borderColor: p.rule,
-            backgroundColor: pressed ? p.surfaceAlt : 'transparent',
-          })}
+            borderWidth: 1,
+            borderColor: p.ruleStrong,
+          }}
+          pressedStyle={{ backgroundColor: p.surfaceAlt }}
         >
-          <Body>Not now</Body>
-        </Pressable>
+          <Text style={[type.bodyStrong, { color: p.ink }]}>Not now</Text>
+        </PressableScale>
       </View>
     </View>
   );

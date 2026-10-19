@@ -6,10 +6,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api, type MemberRole } from '@/api';
 import { useSession } from '@/session';
 import { useWorkspace } from '@/workspace';
-import { Avatar } from '@/components/form';
-import { GradientHero, HeroBody, HeroFigure, HeroLabel, Raised } from '@/components/rich';
-import { Body, Button, Card, Chip, Figure, Label, Screen, Small } from '@/components/ui';
-import { space, usePalette } from '@/theme';
+import { Text } from '@/theme/text';
+import { Body, Button, Card, Label, Screen, Small } from '@/components/ui';
+import { space, type, usePalette } from '@/theme';
 
 /**
  * Accepting an invitation.
@@ -72,42 +71,49 @@ export default function JoinScreen() {
           padding: space.lg,
           paddingTop: insets.top + space.xl,
           paddingBottom: insets.bottom + space.xxl,
-          gap: space.lg,
+          gap: space.xl,
         }}
       >
         {state === 'invalid' ? (
-          <Card tone="risk">
-            <View style={{ gap: space.xs }}>
-              <Label style={{ color: p.risk }}>This link cannot be used</Label>
-              <Body>
-                {problem ??
-                  'It may have expired, been revoked, or already been accepted. Invitations last seven days — ask whoever invited you to send another.'}
-              </Body>
-            </View>
-          </Card>
+          <>
+            <Text style={[type.h1, { color: p.ink }]}>Invitation</Text>
+            <Card tone="risk">
+              <View style={{ gap: space.xs }}>
+                <Label style={{ color: p.risk }}>This link cannot be used</Label>
+                <Body>
+                  {problem ??
+                    'It may have expired, been revoked, or already been accepted. Invitations last seven days — ask whoever invited you to send another.'}
+                </Body>
+              </View>
+            </Card>
+          </>
         ) : state === 'joined' ? (
           <>
-            <GradientHero>
-              <View style={{ gap: space.xs }}>
-                <HeroLabel>You have joined</HeroLabel>
-                <HeroFigure small>{workspaceName}</HeroFigure>
-                <HeroBody>Switch to it any time from the workspace selector.</HeroBody>
-              </View>
-            </GradientHero>
+            <View style={{ gap: space.sm }}>
+              <Label>You have joined</Label>
+              <Text style={[type.display, { color: p.ink }]}>{workspaceName}</Text>
+              <Body muted>Switch to it any time from the workspace selector.</Body>
+            </View>
             <Button label="Open it" onPress={() => router.replace('/')} />
           </>
         ) : (
           <>
-            <View style={{ alignItems: 'center', gap: space.md }}>
-              <Avatar initials={workspaceName.slice(0, 2).toUpperCase()} size={64} />
-              <View style={{ alignItems: 'center', gap: 4 }}>
-                <Small>{inviter ? `${inviter} invited you to` : 'You have been invited to'}</Small>
-                <Figure size="h1">{workspaceName}</Figure>
-                <Chip tone="accent">as {roleLabel}</Chip>
-              </View>
+            <View style={{ gap: space.sm }}>
+              <Label>Invitation</Label>
+              <Text style={[type.h1, { color: p.ink }]}>
+                {inviter ? `${inviter} invited you to join` : 'You have been invited to join'}
+              </Text>
             </View>
 
-            <Raised style={{ gap: space.sm }}>
+            {/* What is on offer as label / value rows: a hairline each, the
+                mono label on the left, the claim on the right. */}
+            <View>
+              <DetailRow label="Workspace" value={workspaceName} first />
+              <DetailRow label="Your role" value={roleLabel} />
+              {inviter ? <DetailRow label="Invited by" value={inviter} /> : null}
+            </View>
+
+            <View style={{ gap: space.sm }}>
               <Label>What joining means</Label>
               <Body>
                 You will see everything in this workspace: every receipt, every amount, and every
@@ -117,16 +123,18 @@ export default function JoinScreen() {
                 Whoever runs the workspace can change your role or remove you later. Anything you
                 capture belongs to the workspace and stays there if you leave.
               </Small>
-            </Raised>
+            </View>
 
-            <Button
-              label="Join this workspace"
-              busy={state === 'joining'}
-              onPress={() => {
-                void accept();
-              }}
-            />
-            <Button label="Not now" tone="outline" onPress={() => router.replace('/')} />
+            <View style={{ gap: space.sm }}>
+              <Button
+                label="Join this workspace"
+                busy={state === 'joining'}
+                onPress={() => {
+                  void accept();
+                }}
+              />
+              <Button label="Not now" tone="outline" onPress={() => router.replace('/')} />
+            </View>
 
             <Small style={{ textAlign: 'center' }}>
               Accepting is recorded against your account and shown to the workspace owner.
@@ -135,5 +143,27 @@ export default function JoinScreen() {
         )}
       </ScrollView>
     </Screen>
+  );
+}
+
+function DetailRow({ label, value, first }: { label: string; value: string; first?: boolean }) {
+  const p = usePalette();
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: space.lg,
+        minHeight: 52,
+        borderTopWidth: first ? 0 : 1,
+        borderTopColor: p.rule,
+      }}
+    >
+      <Label>{label}</Label>
+      <Text style={[type.bodyStrong, { color: p.ink, flex: 1, textAlign: 'right' }]} numberOfLines={2}>
+        {value}
+      </Text>
+    </View>
   );
 }

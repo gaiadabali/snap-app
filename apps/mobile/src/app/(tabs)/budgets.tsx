@@ -1,13 +1,14 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
+import { Text } from '@/theme/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { IS_DEMO, api, type PersonalSummary } from '@/api';
 import { AddButton, Field, Sheet } from '@/components/form';
-import { GradientHero, Raised } from '@/components/rich';
-import { Body, Figure, Label, Screen, ScreenHeader, Small } from '@/components/ui';
-import { formatAud, numeric, space, type, usePalette } from '@/theme';
+import { GradientHero } from '@/components/rich';
+import { ProgressBar, Screen, Section, Small } from '@/components/ui';
+import { formatAud, numeric, onVoid, space, type, usePalette } from '@/theme';
 
 /**
  * Budgets: what each category is allowed per month.
@@ -64,18 +65,26 @@ export default function BudgetsScreen() {
   }, [name, amount]);
 
   const over = summary ? Number(summary.remaining) < 0 : false;
+  const budgetUsed = summary
+    ? Number(summary.spentThisMonth) / Math.max(Number(summary.budgetTotal), 1)
+    : 0;
+  // Where you should be by now if the month were spent evenly — the same tick
+  // Home draws, so the two screens read the same way.
+  const daysInMonth = summary ? summary.daysElapsed + summary.daysLeftInMonth - 1 : 0;
+  const monthElapsed = summary ? summary.daysElapsed / daysInMonth : 0;
 
   return (
     <Screen>
       <ScrollView
         contentContainerStyle={{
-          padding: space.lg,
+          paddingHorizontal: space.lg,
           paddingTop: insets.top + space.md,
           paddingBottom: space.xxl + insets.bottom,
-          gap: space.lg,
         }}
       >
-        <ScreenHeader title="Budgets" />
+        <Text style={[type.display, { color: p.ink }]} accessibilityRole="header">
+          Budgets
+        </Text>
 
         {summary === null ? (
           <View style={{ paddingVertical: space.xxl, alignItems: 'center' }}>
@@ -86,131 +95,152 @@ export default function BudgetsScreen() {
             {/* Four figures, not one. The prototype leads Budgets with the
                 whole picture — spent against budgeted, how far through the
                 month, and what today allows — because "what is my budget" is
-                not a question anyone opens this screen to ask. */}
-            <GradientHero tone={over ? 'risk' : 'brand'}>
-              <View style={{ gap: space.lg }}>
-                <View style={{ flexDirection: 'row', gap: space.lg }}>
-                  <HeroStat
-                    label="spent"
-                    value={formatAud(summary.spentThisMonth, { cents: false })}
-                  />
-                  <HeroStat
-                    label="budgeted"
-                    value={formatAud(summary.budgetTotal, { cents: false })}
-                  />
+                not a question anyone opens this screen to ask. Spent and
+                budgeted are two readouts on the one panel, the meter under
+                them carries the month-elapsed tick, and the days left and the
+                daily allowance sit on the panel's footer rule. */}
+            <GradientHero tone={over ? 'risk' : 'brand'} style={{ marginTop: space.lg }}>
+              <View style={{ flexDirection: 'row' }}>
+                <HeroStat label="Spent" value={formatAud(summary.spentThisMonth, { cents: false })} />
+                <View style={{ width: 1, backgroundColor: p.voidRule, marginRight: space.lg }} />
+                <HeroStat
+                  label="Budgeted"
+                  value={formatAud(summary.budgetTotal, { cents: false })}
+                />
+              </View>
+
+              <View style={{ marginTop: 22, gap: 8 }}>
+                <ProgressBar
+                  value={budgetUsed}
+                  marker={monthElapsed}
+                  height={3}
+                  track={onVoid.track}
+                  tone={over ? onVoid.risk : p.voidInk}
+                  markerColor={onVoid.accent}
+                />
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                  <Text style={[type.label, numeric, { color: over ? onVoid.risk : p.voidMuted }]}>
+                    Spent {Math.round(budgetUsed * 100)}%
+                  </Text>
+                  <Text style={[type.label, numeric, { color: onVoid.accent }]}>
+                    Day {summary.daysElapsed}/{daysInMonth}
+                  </Text>
+                </View>
+              </View>
+
+              <View
+                style={{
+                  marginTop: 18,
+                  marginHorizontal: -20,
+                  marginBottom: -20,
+                  borderTopWidth: 1,
+                  borderTopColor: p.voidRule,
+                  flexDirection: 'row',
+                }}
+              >
+                <View style={{ flex: 1, paddingVertical: 14, paddingLeft: 20, gap: 3 }}>
+                  <Text style={[type.label, { color: p.voidMuted }]}>
+                    Left in {summary.monthLabel.split(' ')[0]}
+                  </Text>
+                  <Text style={[type.amount, numeric, { color: p.voidInk }]}>
+                    {summary.daysLeftInMonth} day{summary.daysLeftInMonth === 1 ? '' : 's'}
+                  </Text>
                 </View>
                 <View
                   style={{
-                    height: 8,
-                    borderRadius: 4,
-                    backgroundColor: 'rgba(255,255,255,0.25)',
-                    overflow: 'hidden',
+                    flex: 1,
+                    paddingVertical: 14,
+                    paddingLeft: 16,
+                    gap: 3,
+                    borderLeftWidth: 1,
+                    borderLeftColor: p.voidRule,
                   }}
                 >
-                  <View
-                    style={{
-                      width: `${Math.min(100, Math.max(2, (Number(summary.spentThisMonth) / Math.max(Number(summary.budgetTotal), 1)) * 100))}%`,
-                      height: '100%',
-                      backgroundColor: '#FFFFFF',
-                      opacity: 0.85,
-                      borderRadius: 4,
-                    }}
-                  />
-                </View>
-                <View style={{ flexDirection: 'row', gap: space.lg }}>
-                  <HeroStat
-                    label={`left in ${summary.monthLabel.split(' ')[0]}`}
-                    value={`${summary.daysLeftInMonth} day${summary.daysLeftInMonth === 1 ? '' : 's'}`}
-                  />
-                  <HeroStat
-                    label="safe to spend a day"
-                    value={formatAud(summary.safeToSpendPerDay)}
-                  />
+                  <Text style={[type.label, { color: p.voidMuted }]}>Safe to spend a day</Text>
+                  <Text style={[type.amount, numeric, { color: p.voidInk }]}>
+                    {formatAud(summary.safeToSpendPerDay)}
+                  </Text>
                 </View>
               </View>
             </GradientHero>
 
-            <View style={{ gap: space.sm }}>
-              <Label>Per category</Label>
-              <Raised style={{ padding: 0 }}>
-                {summary.byCategory.map((c, i) => {
-                  const used = c.used ?? 0;
-                  const isOver = used > 1;
-                  return (
-                    <View
-                      key={c.category}
-                      style={{
-                        paddingHorizontal: space.lg,
-                        paddingVertical: 14,
-                        gap: 10,
-                        borderTopWidth: i === 0 ? 0 : 1,
-                        borderTopColor: p.rule,
-                        opacity: busy === c.category ? 0.5 : 1,
-                      }}
-                    >
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
-                        <View style={{ flex: 1, gap: 2 }}>
-                          <Body strong>{c.category}</Body>
-                          <Small>
-                            {formatAud(c.spent)} spent
-                            {c.budget
-                              ? isOver
-                                ? ` · ${formatAud(String(Number(c.spent) - Number(c.budget)))} over`
-                                : ` · ${formatAud(String(Number(c.budget) - Number(c.spent)))} left`
-                              : ' · no budget set'}
-                          </Small>
-                        </View>
-
-                        <Stepper
-                          onPress={() => void nudge(c.category, c.budget ?? '0', -10)}
-                          glyph="−"
-                        />
-                        <Figure size="h2" style={{ minWidth: 74, textAlign: 'center' }}>
-                          {formatAud(c.budget, { cents: false })}
-                        </Figure>
-                        <Stepper
-                          onPress={() => void nudge(c.category, c.budget ?? '0', 10)}
-                          glyph="+"
-                        />
+            <Section label="Per category" style={{ marginTop: space.xxl }}>
+              {summary.byCategory.map((c) => {
+                const used = c.used ?? 0;
+                const isOver = used > 1;
+                return (
+                  <View
+                    key={c.category}
+                    style={{
+                      paddingVertical: space.md,
+                      gap: 10,
+                      borderBottomWidth: 1,
+                      borderBottomColor: p.rule,
+                      opacity: busy === c.category ? 0.5 : 1,
+                    }}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
+                      <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+                        <Text style={[type.bodyStrong, { color: p.ink }]} numberOfLines={1}>
+                          {c.category}
+                        </Text>
+                        <Text
+                          style={[type.mono, numeric, { color: isOver ? p.risk : p.inkMuted }]}
+                          numberOfLines={2}
+                        >
+                          {formatAud(c.spent)} spent
+                          {c.budget
+                            ? isOver
+                              ? ` · ${formatAud(String(Number(c.spent) - Number(c.budget)))} over`
+                              : ` · ${formatAud(String(Number(c.budget) - Number(c.spent)))} left`
+                            : ' · no budget set'}
+                        </Text>
                       </View>
 
-                      <View
-                        style={{
-                          height: 6,
-                          borderRadius: 3,
-                          backgroundColor: p.surfaceAlt,
-                          overflow: 'hidden',
-                        }}
+                      <Stepper
+                        onPress={() => void nudge(c.category, c.budget ?? '0', -10)}
+                        glyph="−"
+                      />
+                      <Text
+                        style={[
+                          type.amount,
+                          numeric,
+                          { color: p.ink, minWidth: 58, textAlign: 'center' },
+                        ]}
                       >
-                        <View
-                          style={{
-                            width: `${Math.min(100, Math.max(1, used * 100))}%`,
-                            height: '100%',
-                            borderRadius: 3,
-                            backgroundColor: isOver ? p.risk : p.accent,
-                          }}
-                        />
-                      </View>
+                        {formatAud(c.budget, { cents: false })}
+                      </Text>
+                      <Stepper
+                        onPress={() => void nudge(c.category, c.budget ?? '0', 10)}
+                        glyph="+"
+                      />
                     </View>
-                  );
-                })}
-              </Raised>
-            </View>
 
-            <AddButton
-              label="Add a category"
-              onPress={() => {
-                setError(null);
-                setAdding(true);
-              }}
-            />
+                    <ProgressBar
+                      value={Math.max(0.01, used)}
+                      tone={isOver ? p.risk : p.accent}
+                    />
+                  </View>
+                );
+              })}
+            </Section>
+
+            <View style={{ marginTop: space.xl }}>
+              <AddButton
+                label="Add a category"
+                onPress={() => {
+                  setError(null);
+                  setAdding(true);
+                }}
+              />
+            </View>
 
             {/* This used to say budgets would sync "once the server lands" —
                 stale the moment `HttpApi` shipped (`api/http.ts`), since a
                 budget is workspace-scoped there and every member reads the
                 same one already. The demo build has no server underneath
                 it, so it says the true thing for that build instead. */}
-            <Small style={{ textAlign: 'center' }}>
+            <Small style={{ textAlign: 'center', marginTop: space.lg }}>
               {IS_DEMO
                 ? 'Saved on this device only — this is demo data, reset it from Settings.'
                 : 'Everyone in this household sees the same budgets.'}
@@ -218,7 +248,7 @@ export default function BudgetsScreen() {
           </>
         )}
       </ScrollView>
-    
+
       <Sheet
         open={adding}
         title="Add a category"
@@ -243,6 +273,7 @@ export default function BudgetsScreen() {
   );
 }
 
+/** A compact outline key: a budget is nudged, not typed. */
 function Stepper({ glyph, onPress }: { glyph: string; onPress: () => void }) {
   const p = usePalette();
   return (
@@ -252,27 +283,34 @@ function Stepper({ glyph, onPress }: { glyph: string; onPress: () => void }) {
       onPress={onPress}
       hitSlop={6}
       style={({ pressed }) => ({
-        width: 34,
-        height: 34,
-        borderRadius: 17,
-        backgroundColor: pressed ? p.accent : p.accentSoft,
+        width: 36,
+        height: 36,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: p.ruleStrong,
+        backgroundColor: pressed ? p.surfaceAlt : 'transparent',
         alignItems: 'center',
         justifyContent: 'center',
       })}
     >
-      <Text style={{ fontSize: 19, color: p.accent, fontWeight: '700', lineHeight: 22 }}>
-        {glyph}
-      </Text>
+      <Text style={{ fontSize: 19, color: p.inkStrong, lineHeight: 22 }}>{glyph}</Text>
     </Pressable>
   );
 }
 
-/** One figure on the budgets hero. */
+/** One readout on the budgets panel: a mono label over a light figure. */
 function HeroStat({ label, value }: { label: string; value: string }) {
+  const p = usePalette();
   return (
-    <View style={{ flex: 1, gap: 2 }}>
-      <Text style={[type.h2, numeric, { color: '#FFFFFF' }]}>{value}</Text>
-      <Text style={[type.small, { color: 'rgba(255,255,255,0.95)' }]}>{label}</Text>
+    <View style={{ flex: 1, gap: 6 }}>
+      <Text style={[type.label, { color: p.voidMuted }]}>{label}</Text>
+      <Text
+        style={[type.display, numeric, { color: p.voidInk }]}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+      >
+        {value}
+      </Text>
     </View>
   );
 }

@@ -1,10 +1,14 @@
 import { useState } from 'react';
-import { LayoutChangeEvent, Pressable, Text, View } from 'react-native';
+import { LayoutChangeEvent, Pressable, View } from 'react-native';
+import { Text } from '@/theme/text';
 import Svg, { Circle, G, Line, Path, Rect, Text as SvgText } from 'react-native-svg';
 
 import type { CategorySpend, SeriesPoint } from '@/api';
+import { useFill } from '@/components/motion';
 import { categoryHue } from '@/components/rich';
 import { formatAud, numeric, space, type, usePalette } from '@/theme';
+import { face } from '@/theme/text';
+import Animated from 'react-native-reanimated';
 
 /**
  * Charts for the analytics page.
@@ -43,7 +47,7 @@ export function BarSeries({
 
   const onLayout = (e: LayoutChangeEvent) => setWidth(e.nativeEvent.layout.width);
   const step = width / Math.max(points.length, 1);
-  const barW = Math.max(6, Math.min(34, step * 0.56));
+  const barW = Math.max(4, Math.min(22, step * 0.42));
 
   const select = (i: number | null) => {
     setActive(i);
@@ -66,14 +70,14 @@ export function BarSeries({
                 y2={plot - plot * f * 0.88}
                 stroke={p.rule}
                 strokeWidth={1}
-                strokeDasharray="3 4"
+                strokeDasharray="2 4"
               />
               <SvgText
                 x={0}
-                y={plot - plot * f * 0.88 - 4}
+                y={plot - plot * f * 0.88 - 5}
                 fill={p.inkFaint}
-                fontSize={9}
-                fontWeight="600"
+                fontSize={9.5}
+                fontFamily={face('mono', 400)}
               >
                 {formatAud(String(max * f), { cents: false })}
               </SvgText>
@@ -92,12 +96,12 @@ export function BarSeries({
                   y={plot - h}
                   width={barW}
                   height={h}
-                  rx={Math.min(6, barW / 2)}
-                  fill={p.accent}
+                  rx={Math.min(2, barW / 2)}
+                  fill={on ? p.accentText : p.accent}
                   // The bucket in progress is drawn faded inside a dashed
                   // outline: its height is real and worth reading, but it is
                   // not yet comparable to the completed bars beside it.
-                  opacity={on ? 1 : pt.partial ? 0.34 : 0.82}
+                  opacity={on ? 1 : pt.partial ? 0.3 : active === null ? 0.9 : 0.45}
                   stroke={pt.partial ? p.accent : 'none'}
                   strokeWidth={pt.partial ? 1.5 : 0}
                   strokeDasharray={pt.partial ? '3 3' : undefined}
@@ -106,8 +110,8 @@ export function BarSeries({
                   x={i * step + step / 2}
                   y={height - 6}
                   fill={on ? p.ink : p.inkFaint}
-                  fontSize={9}
-                  fontWeight={on ? '700' : '600'}
+                  fontSize={9.5}
+                  fontFamily={face('mono', on ? 500 : 400)}
                   textAnchor="middle"
                 >
                   {pt.label}
@@ -164,7 +168,7 @@ export function CategoryRing({
   centreValue: string;
 }) {
   const p = usePalette();
-  const stroke = 22;
+  const stroke = 10;
   const r = (size - stroke) / 2;
   const c = size / 2;
   const total = parts.reduce((a, x) => a + Number(x.spent), 0);
@@ -206,11 +210,15 @@ export function CategoryRing({
           bottom: 0,
           alignItems: 'center',
           justifyContent: 'center',
-          gap: 2,
+          gap: 4,
         }}
       >
-        <Text style={[type.label, { color: p.inkFaint }]}>{centreLabel}</Text>
-        <Text style={[type.h2, numeric, { color: p.ink }]}>{centreValue}</Text>
+        <Text style={[type.label, { color: p.inkMuted }]}>{centreLabel}</Text>
+        <Text
+          style={[type.h1, { fontWeight: '300', letterSpacing: -0.8 }, numeric, { color: p.ink }]}
+        >
+          {centreValue}
+        </Text>
       </View>
     </View>
   );
@@ -243,40 +251,7 @@ export function CategoryBars({
         const over = s.used !== null && s.used > 1;
         const fill = s.used !== null ? Math.min(s.used, 1) : Number(s.spent) / biggest;
         const hue = over ? p.risk : categoryHue(s.category);
-        return (
-          <View key={s.category} style={{ gap: 6 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: space.sm }}>
-              <Text style={[type.body, { color: p.ink, flex: 1 }]} numberOfLines={1}>
-                {s.category}
-              </Text>
-              <Text style={[type.bodyStrong, numeric, { color: over ? p.risk : p.ink }]}>
-                {formatAud(s.spent)}
-              </Text>
-              {s.budget ? (
-                <Text style={[type.small, numeric, { color: p.inkFaint }]}>
-                  / {formatAud(s.budget, { cents: false })}
-                </Text>
-              ) : null}
-            </View>
-            <View
-              style={{
-                height: 8,
-                borderRadius: 4,
-                backgroundColor: p.surfaceAlt,
-                overflow: 'hidden',
-              }}
-            >
-              <View
-                style={{
-                  width: `${Math.max(2, fill * 100)}%`,
-                  height: '100%',
-                  borderRadius: 4,
-                  backgroundColor: hue,
-                }}
-              />
-            </View>
-          </View>
-        );
+        return <CategoryBarRow key={s.category} s={s} over={over} fill={fill} hue={hue} />;
       })}
     </View>
   );
@@ -293,20 +268,56 @@ export function RingLegend({ parts, limit = 6 }: { parts: CategorySpend[]; limit
         <View key={s.category} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           <View
             style={{
-              width: 9,
-              height: 9,
+              width: 8,
+              height: 8,
               borderRadius: 2,
               backgroundColor: categoryHue(s.category),
             }}
           />
-          <Text style={[type.small, { color: p.inkMuted, flex: 1 }]} numberOfLines={1}>
+          <Text style={[type.small, { color: p.inkStrong, flex: 1 }]} numberOfLines={1}>
             {s.category}
           </Text>
-          <Text style={[type.small, numeric, { color: p.ink, fontWeight: '700' }]}>
+          <Text style={[type.mono, numeric, { color: p.ink }]}>
             {Math.round((Number(s.spent) / total) * 100)}%
           </Text>
         </View>
       ))}
+    </View>
+  );
+}
+
+/** One category's row: name, amount against budget, and a meter that draws in. */
+function CategoryBarRow({
+  s,
+  over,
+  fill,
+  hue,
+}: {
+  s: CategorySpend;
+  over: boolean;
+  fill: number;
+  hue: string;
+}) {
+  const p = usePalette();
+  const width = useFill(Math.max(0.02, fill));
+  return (
+    <View style={{ gap: 7 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: space.sm }}>
+        <Text style={[type.body, { color: p.ink, flex: 1 }]} numberOfLines={1}>
+          {s.category}
+        </Text>
+        <Text style={[type.amount, numeric, { color: over ? p.risk : p.ink }]}>
+          {formatAud(s.spent)}
+        </Text>
+        {s.budget ? (
+          <Text style={[type.mono, numeric, { color: p.inkFaint }]}>
+            / {formatAud(s.budget, { cents: false })}
+          </Text>
+        ) : null}
+      </View>
+      <View style={{ height: 4, borderRadius: 2, backgroundColor: p.surfaceAlt, overflow: 'hidden' }}>
+        <Animated.View style={[{ height: '100%', borderRadius: 2, backgroundColor: hue }, width]} />
+      </View>
     </View>
   );
 }

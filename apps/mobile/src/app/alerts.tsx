@@ -1,28 +1,27 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
+import { Text } from '@/theme/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { api, type AlertItem, type AlertKind } from '@/api';
-import { Icon, type IconName } from '@/components/Icon';
-import { Body, Card, Screen, ScreenHeader, Small } from '@/components/ui';
-import { space, type, usePalette } from '@/theme';
+import { api, type AlertItem } from '@/api';
+import { Icon } from '@/components/Icon';
+import { Body, Screen, ScreenHeader, Section, Small } from '@/components/ui';
+import { formatShortDate, numeric, space, type, usePalette } from '@/theme';
 
 /**
  * The alert feed.
  *
  * Grouped by recency rather than kind, because these are events and "what
- * happened while I was away" is the question. Unread rows carry a dot and a
- * tinted ground; everything is marked read on the way out rather than per row,
- * since scrolling past something is reading it.
+ * happened while I was away" is the question. Unread rows carry a small accent
+ * square (accent, not red — red means money at risk, and a notification is not
+ * that); everything is marked read on the way out rather than per row, since
+ * scrolling past something is reading it.
+ *
+ * Rows are a ledger: the date in a mono gutter, so the list reads down the
+ * left edge for "when". The per-kind icon the prototype drew in a tinted disc
+ * is gone — the title already says what kind of thing it is.
  */
-const ICONS: Record<AlertKind, IconName> = {
-  budget: 'target',
-  review: 'search',
-  credits: 'wallet',
-  recurring: 'repeat',
-  system: 'info',
-};
 
 export default function AlertsScreen() {
   const p = usePalette();
@@ -54,84 +53,74 @@ export default function AlertsScreen() {
     <Screen>
       <ScrollView
         contentContainerStyle={{
-          padding: 20,
+          paddingHorizontal: space.lg,
           paddingTop: insets.top + space.md,
           paddingBottom: space.xxl,
-          gap: 14,
+          gap: space.xl,
         }}
       >
         <ScreenHeader title="Notifications" onBack={() => router.back()} />
 
         {alerts !== null && alerts.length === 0 ? (
-          <Card style={{ alignItems: 'center', gap: space.sm, paddingVertical: 34 }}>
-            <Icon name="bell" size={28} color={p.inkMuted} />
+          <View style={{ gap: space.xs, paddingVertical: space.xl }}>
             <Body strong>Nothing to report</Body>
-            <Small style={{ textAlign: 'center' }}>
-              Budget warnings and receipts needing a look will appear here.
-            </Small>
-          </Card>
+            <Small>Budget warnings and receipts needing a look will appear here.</Small>
+          </View>
         ) : null}
 
         {groups.map(([title, items]) => (
-          <View key={title} style={{ gap: space.sm }}>
-            <Text style={[type.label, { color: p.inkMuted }]}>{title}</Text>
-            <Card padded={false}>
-              {items.map((a, i) => {
-                const unread = a.readAt === null;
-                return (
-                  <Pressable
-                    key={a.id}
-                    accessibilityRole="button"
-                    accessibilityLabel={`${unread ? 'Unread. ' : ''}${a.title}. ${a.body}`}
-                    disabled={!a.href}
-                    onPress={() => a.href && router.push(a.href as never)}
-                    style={({ pressed }) => ({
-                      flexDirection: 'row',
-                      alignItems: 'flex-start',
-                      gap: 13,
-                      paddingHorizontal: space.lg,
-                      paddingVertical: 14,
-                      borderTopWidth: i === 0 ? 0 : 1,
-                      borderTopColor: p.rule,
-                      backgroundColor: pressed ? p.surfaceAlt : 'transparent',
-                    })}
+          <Section key={title} label={title}>
+            {items.map((a, i) => {
+              const unread = a.readAt === null;
+              return (
+                <Pressable
+                  key={a.id}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${unread ? 'Unread. ' : ''}${a.title}. ${a.body}`}
+                  disabled={!a.href}
+                  onPress={() => a.href && router.push(a.href as never)}
+                  style={({ pressed }) => ({
+                    flexDirection: 'row',
+                    alignItems: 'flex-start',
+                    gap: space.md,
+                    paddingVertical: 14,
+                    borderTopWidth: i === 0 ? 0 : 1,
+                    borderTopColor: p.rule,
+                    backgroundColor: pressed ? p.surface : 'transparent',
+                  })}
+                >
+                  <Text
+                    style={[
+                      type.mono,
+                      numeric,
+                      { width: 50, paddingTop: 2, color: p.inkMuted, letterSpacing: 0.4 },
+                    ]}
                   >
-                    <View
-                      style={{
-                        width: 36,
-                        height: 36,
-                        borderRadius: 18,
-                        backgroundColor: unread ? p.accentSoft : p.surfaceAlt,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <Icon
-                        name={ICONS[a.kind]}
-                        size={18}
-                        color={unread ? p.accentText : p.inkMuted}
-                      />
+                    {formatShortDate(a.createdAt.slice(0, 10)).toUpperCase()}
+                  </Text>
+                  <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
+                      <Text style={[type.bodyStrong, { flex: 1, color: p.ink }]} numberOfLines={1}>
+                        {a.title}
+                      </Text>
+                      {unread ? (
+                        <View
+                          style={{ width: 7, height: 7, borderRadius: 2, backgroundColor: p.accent }}
+                        />
+                      ) : null}
                     </View>
-                    <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
-                        <Text style={[type.bodyStrong, { flex: 1, color: p.ink }]} numberOfLines={1}>
-                          {a.title}
-                        </Text>
-                        {unread ? (
-                          <View
-                            style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: p.accent }}
-                          />
-                        ) : null}
-                      </View>
-                      <Small>{a.body}</Small>
-                      <Small style={{ color: p.inkFaint }}>{ago(a.createdAt)}</Small>
+                    <Small>{a.body}</Small>
+                    <Small style={{ color: p.inkFaint }}>{ago(a.createdAt)}</Small>
+                  </View>
+                  {a.href ? (
+                    <View style={{ paddingTop: 3 }}>
+                      <Icon name="chevronRight" size={16} color={p.inkFaint} />
                     </View>
-                    {a.href ? <Icon name="chevronRight" size={17} color={p.inkFaint} /> : null}
-                  </Pressable>
-                );
-              })}
-            </Card>
-          </View>
+                  ) : null}
+                </Pressable>
+              );
+            })}
+          </Section>
         ))}
       </ScrollView>
     </Screen>

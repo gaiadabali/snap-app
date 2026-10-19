@@ -1,21 +1,13 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Linking, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Linking, Pressable, ScrollView, View } from 'react-native';
+import { Text, TextInput } from '@/theme/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, type Reward } from '@/api';
-import { Icon } from '@/components/Icon';
-import { GradientHero } from '@/components/rich';
-import {
-  Body,
-  Button,
-  Card,
-  Notice,
-  Screen,
-  ScreenHeader,
-  Small,
-} from '@/components/ui';
-import { control, numeric, radius, space, type, usePalette } from '@/theme';
+import { GradientHero, HeroFigure, HeroLabel } from '@/components/rich';
+import { Button, Label, Notice, Screen, ScreenHeader, Section, Small } from '@/components/ui';
+import { numeric, radius, space, type, usePalette } from '@/theme';
 
 /**
  * Points, and the vouchers they come back as.
@@ -35,6 +27,11 @@ import { control, numeric, radius, space, type, usePalette } from '@/theme';
  * of that loop — a redeemer in yourtal's authorize/capture protocol. The
  * client only submits a code: a client that could authorise could drain a
  * voucher, so the settlement calls belong on the server.
+ *
+ * Drawn 2026-10-19 (the instrument pass) as a panel with the two balances and
+ * sections of lines under it. The rewards list stays a list of links: each
+ * row's small "Open" outline says where a tap goes, because a "Redeem" button
+ * here would promise a purchase this screen cannot make.
  */
 export default function RewardsScreen() {
   const p = usePalette();
@@ -77,68 +74,48 @@ export default function RewardsScreen() {
     <Screen>
       <ScrollView
         contentContainerStyle={{
-          padding: 20,
+          paddingHorizontal: space.lg,
           paddingTop: insets.top + space.md,
           paddingBottom: space.xxl,
-          gap: 14,
+          gap: space.xl,
         }}
         keyboardShouldPersistTaps="handled"
       >
         <ScreenHeader title="Points and vouchers" onBack={() => router.back()} />
 
-        <GradientHero style={{ borderRadius: radius.xl, padding: 18 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.lg }}>
-            <View style={{ flex: 1, gap: 3 }}>
-              <Text style={[type.label, { color: 'rgba(255,255,255,0.95)' }]}>Points</Text>
-              <Text style={[type.h1, numeric, { fontSize: 28, lineHeight: 34, color: '#FFFFFF' }]}>
-                {points?.toLocaleString('en-AU') ?? '—'}
-              </Text>
+        {/* Two readouts on one panel: what you have earned, what you can scan with. */}
+        <GradientHero>
+          <View style={{ flexDirection: 'row', alignItems: 'stretch', gap: space.lg }}>
+            <View style={{ flex: 1, gap: 10 }}>
+              <HeroLabel>POINTS</HeroLabel>
+              <HeroFigure small settle>
+                {points !== null ? points.toLocaleString('en-AU') : '—'}
+              </HeroFigure>
             </View>
-            <View style={{ width: 1, alignSelf: 'stretch', backgroundColor: 'rgba(255,255,255,0.22)' }} />
-            <View style={{ flex: 1, gap: 3 }}>
-              <Text style={[type.label, { color: 'rgba(255,255,255,0.95)' }]}>Credits</Text>
-              <Text style={[type.h1, numeric, { fontSize: 28, lineHeight: 34, color: '#FFFFFF' }]}>
-                {credits?.toLocaleString('en-AU') ?? '—'}
-              </Text>
+            <View style={{ width: 1, backgroundColor: p.voidRule }} />
+            <View style={{ flex: 1, gap: 10 }}>
+              <HeroLabel>CREDITS</HeroLabel>
+              <HeroFigure small settle>
+                {credits !== null ? credits.toLocaleString('en-AU') : '—'}
+              </HeroFigure>
             </View>
           </View>
         </GradientHero>
 
         {/* How it actually works, in three steps, because the two-app loop is
             not guessable from either app on its own. */}
-        <Card style={{ gap: space.md, padding: 18 }}>
-          <Text style={[type.label, { color: p.inkMuted }]}>How this works</Text>
-          <Step n={1} text="Every receipt you scan earns one point." />
-          <Step n={2} text="Spend points in yourtal. You get a voucher with a code." />
-          <Step n={3} text="Bring the code back here and the credits land on your account." />
-        </Card>
+        <Section label="How this works">
+          <View style={{ gap: space.md, paddingTop: space.md }}>
+            <Step n={1} text="Every receipt you scan earns one point." />
+            <Step n={2} text="Spend points in yourtal. You get a voucher with a code." />
+            <Step n={3} text="Bring the code back here and the credits land on your account." />
+          </View>
+        </Section>
 
         {/* Redeem */}
-        <View style={{ gap: space.sm }}>
-          <Text style={[type.label, { color: p.inkMuted }]}>Redeem a voucher</Text>
-          <Card style={{ gap: 11, padding: 18 }}>
-            <TextInput
-              accessibilityLabel="Voucher code"
-              value={code}
-              onChangeText={(v) => setCode(v.toUpperCase().replace(/\s/g, ''))}
-              placeholder="SNAP10"
-              placeholderTextColor={p.inkFaint}
-              autoCapitalize="characters"
-              autoCorrect={false}
-              maxLength={24}
-              style={{
-                minHeight: control.input,
-                borderWidth: 1.5,
-                borderColor: error ? p.risk : p.rule,
-                borderRadius: radius.md,
-                backgroundColor: p.ground,
-                paddingHorizontal: space.lg,
-                ...type.input,
-                ...numeric,
-                letterSpacing: 1.5,
-                color: p.ink,
-              }}
-            />
+        <Section label="Redeem a voucher">
+          <View style={{ gap: space.md, paddingTop: space.md }}>
+            <CodeField value={code} onChangeText={setCode} bad={!!error} />
             <Button
               label="Redeem"
               busy={busy}
@@ -150,71 +127,132 @@ export default function RewardsScreen() {
             <Small>
               A voucher is single-use. Credits land straight away and never expire.
             </Small>
-          </Card>
-        </View>
+          </View>
+        </Section>
 
-        {/* What points are for. Display only — spending happens in yourtal. */}
-        <View style={{ gap: space.sm }}>
-          <Text style={[type.label, { color: p.inkMuted }]}>What your points can buy</Text>
-          {(rewards ?? []).map((r) => (
+        {/* What points are for. Display only — spending happens in yourtal, so
+            the row opens yourtal and the pill says so; it is not a buy button. */}
+        <Section label="What your points can buy">
+          {(rewards ?? []).map((r, i) => (
             <Pressable
               key={r.id}
               accessibilityRole="link"
               accessibilityLabel={`${r.name}, ${r.cost} points. Opens yourtal.`}
               onPress={() => void Linking.openURL(r.deepLink).catch(() => {})}
-              style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+              style={({ pressed }) => ({
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: space.md,
+                paddingVertical: space.md,
+                borderTopWidth: i === 0 ? 0 : 1,
+                borderTopColor: p.rule,
+                backgroundColor: pressed ? p.surface : 'transparent',
+              })}
             >
-              <Card style={{ flexDirection: 'row', alignItems: 'center', gap: 13, padding: space.lg }}>
+              <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+                <Text style={[type.bodyStrong, { color: p.ink }]}>{r.name}</Text>
+                <Small numberOfLines={2}>{r.description}</Small>
+              </View>
+              <View style={{ alignItems: 'flex-end', gap: 8 }}>
+                <Text style={[type.amount, numeric, { color: p.ink }]}>
+                  {r.cost.toLocaleString('en-AU')} pts
+                </Text>
                 <View
                   style={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: radius.md,
-                    backgroundColor: p.accentSoft,
-                    alignItems: 'center',
+                    minHeight: 28,
+                    paddingHorizontal: 12,
                     justifyContent: 'center',
+                    borderWidth: 1,
+                    borderColor: p.ruleStrong,
+                    borderRadius: radius.sm,
                   }}
                 >
-                  <Icon name="spark" size={22} color={p.accentText} />
+                  <Text style={[type.smallStrong, { color: p.ink }]}>Open</Text>
                 </View>
-                <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
-                  <Body strong>{r.name}</Body>
-                  <Small numberOfLines={2}>{r.description}</Small>
-                  <Text style={[type.smallStrong, numeric, { color: p.accentText, marginTop: 2 }]}>
-                    {r.cost.toLocaleString('en-AU')} points
-                  </Text>
-                </View>
-                <Icon name="link" size={18} color={p.inkMuted} />
-              </Card>
+              </View>
             </Pressable>
           ))}
-          <Small>
-            Tapping one opens yourtal, where the points are actually spent. Nothing on this list
-            can be bought from inside Snap Apps.
-          </Small>
-        </View>
+          <View style={{ paddingTop: space.md }}>
+            <Small>
+              Tapping one opens yourtal, where the points are actually spent. Nothing on this list
+              can be bought from inside Snap Apps.
+            </Small>
+          </View>
+        </Section>
       </ScrollView>
     </Screen>
   );
 }
 
+/** A numbered line: the number is mono in a hairline square, not a tinted disc. */
 function Step({ n, text }: { n: number; text: string }) {
   const p = usePalette();
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 11 }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
       <View
         style={{
-          width: 22,
-          height: 22,
-          borderRadius: 11,
-          backgroundColor: p.accentSoft,
+          width: 24,
+          height: 24,
+          borderRadius: radius.xs,
+          borderWidth: 1,
+          borderColor: p.ruleStrong,
           alignItems: 'center',
           justifyContent: 'center',
         }}
       >
-        <Text style={[type.tab, numeric, { color: p.accentText }]}>{n}</Text>
+        <Text style={[type.mono, numeric, { color: p.inkStrong }]}>{n}</Text>
       </View>
       <Text style={[type.small, { flex: 1, color: p.ink }]}>{text}</Text>
+    </View>
+  );
+}
+
+/**
+ * The voucher box. Drawn like `Field` (mono label, hairline box, 2px accent
+ * edge on focus) but with what `Field` does not pass through: the
+ * accessibility label, `maxLength`, and a risk edge after a refused code. The
+ * code is upper-cased and stripped of spaces as it is typed, so what is shown
+ * is exactly what is sent.
+ */
+function CodeField({
+  value,
+  onChangeText,
+  bad,
+}: {
+  value: string;
+  onChangeText: (v: string) => void;
+  bad: boolean;
+}) {
+  const p = usePalette();
+  const [focused, setFocused] = useState(false);
+  return (
+    <View style={{ gap: 6 }}>
+      <Label>Voucher code</Label>
+      <View
+        style={{
+          minHeight: 50,
+          justifyContent: 'center',
+          borderWidth: focused || bad ? 2 : 1,
+          borderColor: bad ? p.risk : focused ? p.accent : p.ruleStrong,
+          backgroundColor: p.ground,
+          borderRadius: radius.md,
+          paddingHorizontal: focused || bad ? 13 : 14,
+        }}
+      >
+        <TextInput
+          accessibilityLabel="Voucher code"
+          value={value}
+          onChangeText={(v) => onChangeText(v.toUpperCase().replace(/\s/g, ''))}
+          placeholder="SNAP10"
+          placeholderTextColor={p.inkFaint}
+          autoCapitalize="characters"
+          autoCorrect={false}
+          maxLength={24}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          style={[type.amount, { fontSize: 16 }, numeric, { letterSpacing: 1.5, color: p.ink, paddingVertical: 12 }]}
+        />
+      </View>
     </View>
   );
 }

@@ -1,27 +1,19 @@
 import { useCameraPermissions } from 'expo-camera';
 import { useState } from 'react';
-import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
+import { Text, TextInput } from '@/theme/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, type Session } from '@/api';
 import { takePendingCountry } from '@/lib/pending-country';
 import { Icon, type IconName } from '@/components/Icon';
-import { GradientHero } from '@/components/rich';
-import {
-  Body,
-  Button,
-  Card,
-  IconTile,
-  Notice,
-  Screen,
-  Small,
-  Title,
-} from '@/components/ui';
-import { control, numeric, radius, space, type, usePalette } from '@/theme';
+import { Body, Button, Label, Notice, Screen, Small } from '@/components/ui';
+import { numeric, radius, space, type, usePalette } from '@/theme';
 
 /**
- * The first thing a new account sees, rebuilt against the 2026-09-19
- * prototype.
+ * The first thing a new account sees, laid out in the instrument pass's
+ * language: type and hairlines on the plain ground, one primary Button pinned
+ * to the bottom of each step.
  *
  * Four steps, and the order is the prototype's: say what the app does, ask for
  * the camera, set up the first budgets, then hand over. The earlier build
@@ -69,6 +61,9 @@ const READY = [
 type Draft = { name: string; amount: string };
 
 const MAX_CATEGORIES = 5;
+
+/** The step count the progress label and segments are drawn from. */
+const STEPS = 4;
 
 export function Onboarding({
   displayName,
@@ -136,29 +131,37 @@ export function Onboarding({
 
   return (
     <Screen>
-      {/* Progress. Four steps, always — nothing is conditional now. */}
-      <View
-        style={{
-          flexDirection: 'row',
-          gap: 6,
-          paddingTop: insets.top + 14,
-          paddingHorizontal: 20,
-        }}
-      >
-        {[0, 1, 2, 3].map((i) => (
-          <View
-            key={i}
-            style={{ flex: 1, height: 4, borderRadius: 2, backgroundColor: i <= step ? p.accent : p.rule }}
-          />
-        ))}
+      {/* Progress: a mono "STEP n / total" and one hairline segment per step.
+          Four steps, always — nothing is conditional now. */}
+      <View style={{ paddingTop: insets.top + 14, paddingHorizontal: space.lg, gap: space.sm }}>
+        <Label>
+          Step {step + 1} / {STEPS}
+        </Label>
+        <View style={{ flexDirection: 'row', gap: 4 }}>
+          {Array.from({ length: STEPS }, (_, i) => (
+            <View
+              key={i}
+              style={{
+                flex: 1,
+                height: 2,
+                backgroundColor: i < step ? p.ink : i === step ? p.accent : p.rule,
+              }}
+            />
+          ))}
+        </View>
       </View>
 
       <ScrollView
-        contentContainerStyle={{ padding: 20, paddingTop: 24, paddingBottom: space.sm, gap: 18 }}
+        contentContainerStyle={{
+          padding: space.lg,
+          paddingTop: space.xl,
+          paddingBottom: space.lg,
+          gap: space.xl,
+        }}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={{ alignItems: 'center', gap: space.sm, paddingBottom: 2 }}>
-          <Title level="h1" style={{ textAlign: 'center' }}>
+        <View style={{ gap: space.sm }}>
+          <Text style={[type.display, { color: p.ink }]}>
             {
               [
                 `Welcome, ${displayName.split(' ')[0]}`,
@@ -167,8 +170,8 @@ export function Onboarding({
                 'You are set up',
               ][step]
             }
-          </Title>
-          <Text style={[type.body, { color: p.inkMuted, textAlign: 'center', maxWidth: 330 }]}>
+          </Text>
+          <Text style={[type.body, { color: p.inkMuted, maxWidth: 330 }]}>
             {
               [
                 'Photograph a receipt and it becomes a record you can rely on.',
@@ -181,34 +184,38 @@ export function Onboarding({
         </View>
 
         {step === 0 ? (
-          <View style={{ gap: space.md }}>
-            {BULLETS.map((b) => (
-              <Card key={b.title} style={{ flexDirection: 'row', gap: 14, padding: space.lg }}>
-                <IconTile name={b.icon} size={40} />
-                <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
-                  <Body strong>{b.title}</Body>
-                  <Small>{b.body}</Small>
+          <View style={{ gap: space.xl }}>
+            {/* Three statements as ledger rows: a hairline, a quiet outline
+                glyph, the claim in bodyStrong. No tile, no card per item. */}
+            <View>
+              {BULLETS.map((b, i) => (
+                <View
+                  key={b.title}
+                  style={{
+                    flexDirection: 'row',
+                    gap: 14,
+                    paddingVertical: space.lg,
+                    borderTopWidth: 1,
+                    borderTopColor: p.rule,
+                    borderBottomWidth: i === BULLETS.length - 1 ? 1 : 0,
+                    borderBottomColor: p.rule,
+                  }}
+                >
+                  <Icon name={b.icon} size={20} color={p.inkMuted} />
+                  <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
+                    <Text style={[type.bodyStrong, { color: p.ink }]}>{b.title}</Text>
+                    <Small>{b.body}</Small>
+                  </View>
                 </View>
-              </Card>
-            ))}
-            <View style={{ gap: 6, marginTop: space.xs }}>
-              <Text style={[type.label, { color: p.inkMuted }]}>What should we call this?</Text>
-              <TextInput
+              ))}
+            </View>
+            <View style={{ gap: 6 }}>
+              <Label>What should we call this?</Label>
+              <OnbInput
                 accessibilityLabel="Household name"
                 value={household}
                 onChangeText={setHousehold}
                 placeholder="Marsh Household"
-                placeholderTextColor={p.inkFaint}
-                style={{
-                  minHeight: control.input,
-                  borderWidth: 1.5,
-                  borderColor: p.rule,
-                  borderRadius: radius.md,
-                  backgroundColor: p.surface,
-                  paddingHorizontal: space.lg,
-                  ...type.input,
-                  color: p.ink,
-                }}
               />
               <Small>Only the people you invite ever see this.</Small>
             </View>
@@ -216,12 +223,14 @@ export function Onboarding({
         ) : null}
 
         {step === 1 ? (
-          <View style={{ gap: 14 }}>
+          <View style={{ gap: space.lg }}>
+            {/* The one dark panel on this step: a viewfinder drawn as a
+                dashed frame, the picture of what the camera is about to do. */}
             <View
               style={{
                 height: 196,
-                borderRadius: radius.xl,
-                backgroundColor: '#101418',
+                borderRadius: radius.xxl,
+                backgroundColor: p.void,
                 alignItems: 'center',
                 justifyContent: 'center',
                 overflow: 'hidden',
@@ -234,13 +243,13 @@ export function Onboarding({
                   bottom: 26,
                   left: 34,
                   right: 34,
-                  borderWidth: 2,
+                  borderWidth: 1,
                   borderStyle: 'dashed',
-                  borderColor: 'rgba(255,255,255,0.8)',
-                  borderRadius: radius.lg,
+                  borderColor: p.voidMuted,
+                  borderRadius: radius.md,
                 }}
               />
-              <Icon name="camera" size={38} color="rgba(255,255,255,0.62)" />
+              <Icon name="camera" size={34} color={p.voidMuted} />
             </View>
             <Button
               label={permission?.granted ? 'Camera allowed' : 'Allow the camera'}
@@ -255,50 +264,37 @@ export function Onboarding({
         ) : null}
 
         {step === 2 ? (
-          <View style={{ gap: space.md }}>
+          <View style={{ gap: space.lg }}>
             {drafts.map((d, i) => (
-              <Card key={i} style={{ gap: 10, padding: space.lg }}>
-                <TextInput
-                  accessibilityLabel={`Category ${i + 1} name`}
-                  value={d.name}
-                  onChangeText={(v) => setDrafts(patch(drafts, i, { name: v }))}
-                  placeholder="Groceries"
-                  placeholderTextColor={p.inkFaint}
-                  style={{
-                    minHeight: control.input,
-                    borderWidth: 1.5,
-                    borderColor: p.rule,
-                    borderRadius: radius.md,
-                    backgroundColor: p.ground,
-                    paddingHorizontal: space.lg,
-                    ...type.input,
-                    color: p.ink,
-                  }}
-                />
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: space.sm,
-                    minHeight: control.amount,
-                    borderWidth: 1.5,
-                    borderColor: isUsable(d) ? p.rule : p.risk,
-                    borderRadius: radius.md,
-                    backgroundColor: p.ground,
-                    paddingHorizontal: space.lg,
-                  }}
-                >
-                  <Icon name="wallet" size={22} color={p.inkMuted} />
-                  <TextInput
+              <View
+                key={i}
+                style={{
+                  gap: space.md,
+                  paddingTop: i === 0 ? 0 : space.lg,
+                  borderTopWidth: i === 0 ? 0 : 1,
+                  borderTopColor: p.rule,
+                }}
+              >
+                <View style={{ gap: 6 }}>
+                  <Label>Category {i + 1}</Label>
+                  <OnbInput
+                    accessibilityLabel={`Category ${i + 1} name`}
+                    value={d.name}
+                    onChangeText={(v) => setDrafts(patch(drafts, i, { name: v }))}
+                    placeholder="Groceries"
+                  />
+                </View>
+                <View style={{ gap: 6 }}>
+                  <Label>Per month</Label>
+                  <OnbInput
                     accessibilityLabel={`Category ${i + 1} monthly amount`}
                     value={d.amount}
                     onChangeText={(v) => setDrafts(patch(drafts, i, { amount: v.replace(/[^\d.]/g, '') }))}
                     placeholder="900"
-                    placeholderTextColor={p.inkFaint}
                     keyboardType="decimal-pad"
-                    style={{ flex: 1, minWidth: 0, ...type.figure, ...numeric, color: p.ink }}
+                    invalid={!isUsable(d)}
+                    mono
                   />
-                  <Small>per month</Small>
                 </View>
                 {drafts.length > 1 ? (
                   <Button
@@ -307,7 +303,7 @@ export function Onboarding({
                     onPress={() => setDrafts(drafts.filter((_, j) => j !== i))}
                   />
                 ) : null}
-              </Card>
+              </View>
             ))}
 
             {drafts.length < MAX_CATEGORIES ? (
@@ -332,29 +328,28 @@ export function Onboarding({
         ) : null}
 
         {step === 3 ? (
-          <View style={{ gap: 14 }}>
-            <GradientHero>
-              <Text style={[type.label, { color: 'rgba(255,255,255,0.95)' }]}>Included</Text>
-              <Text style={[type.hero, numeric, { color: '#FFFFFF', marginTop: 6 }]}>10 scans</Text>
-              <Text style={[type.body, { color: 'rgba(255,255,255,0.95)', marginTop: 6 }]}>
-                Free, no card. Credits never expire.
-              </Text>
-            </GradientHero>
-            <View style={{ gap: 10 }}>
-              {READY.map((r) => (
-                <View key={r} style={{ flexDirection: 'row', alignItems: 'center', gap: 11 }}>
-                  <View
-                    style={{
-                      width: 22,
-                      height: 22,
-                      borderRadius: 11,
-                      backgroundColor: p.goodSoft,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <Icon name="check" size={14} color={p.good} />
-                  </View>
+          <View style={{ gap: space.xl }}>
+            {/* A readout, not a gradient card: hairline, mono label, the
+                figure set light. */}
+            <View style={{ gap: space.xs, paddingTop: space.md, borderTopWidth: 1, borderTopColor: p.ruleStrong }}>
+              <Label>Included</Label>
+              <Text style={[type.hero, numeric, { color: p.ink }]}>10 scans</Text>
+              <Text style={[type.body, { color: p.inkMuted }]}>Free, no card. Credits never expire.</Text>
+            </View>
+            <View>
+              {READY.map((r, i) => (
+                <View
+                  key={r}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: space.md,
+                    minHeight: 48,
+                    borderTopWidth: i === 0 ? 0 : 1,
+                    borderTopColor: p.rule,
+                  }}
+                >
+                  <Icon name="check" size={16} color={p.ink} />
                   <Body>{r}</Body>
                 </View>
               ))}
@@ -366,30 +361,73 @@ export function Onboarding({
       </ScrollView>
 
       {/* The step controls sit outside the scroll view so they never scroll
-          away from someone who has already decided. */}
+          away from someone who has already decided. One primary Button; Back
+          is a ghost beneath it, so the way forward is the only loud thing. */}
       <View
         style={{
-          flexDirection: 'row',
-          gap: 10,
-          padding: 20,
+          gap: space.sm,
+          padding: space.lg,
           paddingTop: space.md,
-          paddingBottom: insets.bottom + 18,
+          paddingBottom: insets.bottom + space.md,
           borderTopWidth: 1,
           borderTopColor: p.rule,
         }}
       >
-        {step > 0 ? (
-          <Button label="Back" tone="outline" style={{ flex: 1 }} onPress={() => setStep(step - 1)} />
-        ) : null}
         <Button
           label={cta}
-          style={{ flex: 1 }}
           busy={busy}
           disabled={!canAdvance}
           onPress={() => (step === 3 ? void finish() : setStep(step + 1))}
         />
+        {step > 0 ? <Button label="Back" tone="ghost" onPress={() => setStep(step - 1)} /> : null}
       </View>
     </Screen>
+  );
+}
+
+/** A text input in the `Field` look, local because `Field` does not carry an
+ *  accessibilityLabel and the label above it is not the one a screen reader
+ *  announces ("Category 2 monthly amount"). */
+function OnbInput({
+  accessibilityLabel,
+  value,
+  onChangeText,
+  placeholder,
+  keyboardType,
+  invalid,
+  mono,
+}: {
+  accessibilityLabel: string;
+  value: string;
+  onChangeText: (v: string) => void;
+  placeholder?: string;
+  keyboardType?: 'default' | 'decimal-pad';
+  invalid?: boolean;
+  mono?: boolean;
+}) {
+  const p = usePalette();
+  const [focused, setFocused] = useState(false);
+  return (
+    <TextInput
+      accessibilityLabel={accessibilityLabel}
+      value={value}
+      onChangeText={onChangeText}
+      onFocus={() => setFocused(true)}
+      onBlur={() => setFocused(false)}
+      placeholder={placeholder}
+      placeholderTextColor={p.inkFaint}
+      keyboardType={keyboardType}
+      style={{
+        minHeight: 50,
+        borderWidth: focused ? 2 : 1,
+        borderColor: invalid ? p.risk : focused ? p.accent : p.ruleStrong,
+        borderRadius: radius.md,
+        backgroundColor: p.ground,
+        paddingHorizontal: focused ? 13 : 14,
+        ...(mono ? { ...type.amount, fontSize: 16, ...numeric } : type.input),
+        color: p.ink,
+      }}
+    />
   );
 }
 
