@@ -1,6 +1,6 @@
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Alert, ScrollView, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { Text } from '@/theme/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -15,6 +15,7 @@ import {
   ProgressBar,
   Screen,
   ScreenHeader,
+  SectionHeader,
   Small,
 } from '@/components/ui';
 import { formatAud, numeric, radius, space, type, usePalette } from '@/theme';
@@ -97,10 +98,11 @@ export default function GoalDetailScreen() {
     <Screen>
       <ScrollView
         contentContainerStyle={{
-          padding: 20,
+          paddingHorizontal: space.gutter,
           paddingTop: insets.top + space.md,
           paddingBottom: space.xxl,
-          gap: 14,
+          // 24 between blocks, 12 under a heading.
+          gap: space.xl,
         }}
       >
         <ScreenHeader title={goal?.name ?? 'Goal'} onBack={() => router.back()} />
@@ -162,8 +164,8 @@ export default function GoalDetailScreen() {
               </Notice>
             ) : null}
 
-            <View style={{ gap: space.sm }}>
-              <Text style={[type.label, { color: p.inkMuted }]}>Paid in</Text>
+            <View style={{ gap: space.md }}>
+              <SectionHeader title="Paid in" />
               <Card padded={false}>
                 {ledger.map((c, i) => (
                   <View
@@ -175,7 +177,7 @@ export default function GoalDetailScreen() {
                       gap: space.md,
                       paddingHorizontal: space.lg,
                       paddingVertical: space.md,
-                      borderTopWidth: i === 0 ? 0 : 1,
+                      borderTopWidth: i === 0 ? 0 : StyleSheet.hairlineWidth * 2,
                       borderTopColor: p.rule,
                     }}
                   >
@@ -204,7 +206,7 @@ export default function GoalDetailScreen() {
                 ))}
 
                 {ledger.length === 0 ? (
-                  <View style={{ alignItems: 'center', gap: 6, paddingVertical: 28 }}>
+                  <View style={{ alignItems: 'center', gap: 6, paddingVertical: space.xl }}>
                     <Icon name="bank" size={26} color={p.inkMuted} />
                     <Small>Nothing paid in yet.</Small>
                   </View>

@@ -9,7 +9,7 @@ import { api, setActiveWorkspaceId, type MemberRole, type Workspace, type Worksp
 import { Avatar, Choice, Field, Sheet } from '@/components/form';
 import { Body, Button, Chip, Figure, Label, Screen, Small } from '@/components/ui';
 import { BUSINESS_FEATURES_ENABLED } from '@/config';
-import { radius, space, usePalette } from '@/theme';
+import { radius, shadow, space, usePalette, useTheme } from '@/theme';
 
 /**
  * Which workspace the app is in.
@@ -328,6 +328,7 @@ function initials(name: string): string {
 /** The full list, with the option to start another one. */
 export function WorkspacePicker({ open, onClose }: { open: boolean; onClose: () => void }) {
   const p = usePalette();
+  const { scheme } = useTheme();
   // Real insets: this is a modal, drawn over the bottom bar too.
   const insets = useDeviceInsets();
   const { workspaces, active, setActive, refresh } = useWorkspace();
@@ -364,16 +365,30 @@ export function WorkspacePicker({ open, onClose }: { open: boolean; onClose: () 
         <View
           style={{
             backgroundColor: p.ground,
-            borderTopLeftRadius: 24,
-            borderTopRightRadius: 24,
-            padding: space.lg,
+            borderTopLeftRadius: radius.sheet,
+            borderTopRightRadius: radius.sheet,
+            paddingHorizontal: space.gutter,
+            paddingTop: space.sm,
             paddingBottom: insets.bottom + space.lg,
             gap: space.md,
             maxHeight: '80%',
           }}
         >
+          {/* Grab handle: says the sheet is a surface you can dismiss. */}
+          <View
+            style={{
+              alignSelf: 'center',
+              width: 36,
+              height: 4,
+              borderRadius: 2,
+              backgroundColor: p.ruleStrong,
+              marginBottom: space.xs,
+            }}
+          />
           <Figure size="h1">Workspaces</Figure>
-          <ScrollView contentContainerStyle={{ gap: space.sm }}>
+          {/* Vertical padding keeps each card's shadow inside the scroll
+              view's clip. */}
+          <ScrollView contentContainerStyle={{ gap: space.md, paddingVertical: space.sm }}>
             {workspaces.map((w) => {
               const on = w.id === active.id;
               return (
@@ -385,16 +400,22 @@ export function WorkspacePicker({ open, onClose }: { open: boolean; onClose: () 
                     setActive(w.id);
                     onClose();
                   }}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: space.md,
-                    padding: space.md,
-                    borderRadius: radius.md,
-                    borderWidth: 1.5,
-                    borderColor: on ? p.accent : p.rule,
-                    backgroundColor: on ? p.accentSoft : 'transparent',
-                  }}
+                  // A white selectable card: the chosen one takes a 2px accent
+                  // edge and a check, never a tint alone. The border is
+                  // always 2px (transparent when off) so nothing shifts.
+                  style={[
+                    {
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: space.md,
+                      padding: space.lg,
+                      borderRadius: radius.xl,
+                      borderWidth: 2,
+                      borderColor: on ? p.accent : 'transparent',
+                      backgroundColor: p.card,
+                    },
+                    scheme === 'light' ? shadow.card : on ? null : { borderColor: p.cardEdge },
+                  ]}
                 >
                   <Avatar initials={initials(w.name)} size={38} />
                   <View style={{ flex: 1, gap: 1 }}>
@@ -406,7 +427,12 @@ export function WorkspacePicker({ open, onClose }: { open: boolean; onClose: () 
                       {w.memberCount === 1 ? 'person' : 'people'}
                     </Small>
                   </View>
-                  {on ? <Chip tone="accent">Active</Chip> : null}
+                  {on ? (
+                    <>
+                      <Chip tone="accent">Active</Chip>
+                      <Icon name="check" size={20} color={p.accentText} />
+                    </>
+                  ) : null}
                 </Pressable>
               );
             })}

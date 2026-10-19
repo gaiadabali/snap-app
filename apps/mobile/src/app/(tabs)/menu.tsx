@@ -8,7 +8,7 @@ import { space } from '@/theme';
 /**
  * Fallback for the Menu tab.
  *
- * The tab press is intercepted in `_layout.tsx` and opens the sidebar, so this
+ * The bottom bar's Menu button opens the sidebar sheet instead of navigating, so this
  * is normally never rendered. It exists because expo-router needs a file to
  * register the tab, and because a deep link straight to /menu should still show
  * something useful rather than a blank screen.
@@ -19,15 +19,15 @@ export default function MenuScreen() {
     <Screen>
       <ScrollView
         contentContainerStyle={{
-          padding: space.lg,
+          paddingHorizontal: space.gutter,
           paddingTop: insets.top + space.md,
           paddingBottom: space.xxxl,
-          gap: space.lg,
+          gap: space.xl,
         }}
       >
         <View style={{ gap: space.xs }}>
           <Figure size="h1">Menu</Figure>
-          <Small>Tap Menu in the tab bar to open this as a panel.</Small>
+          <Small>The Menu button in the bottom bar opens this as a sheet.</Small>
         </View>
         <MenuContent />
       </ScrollView>

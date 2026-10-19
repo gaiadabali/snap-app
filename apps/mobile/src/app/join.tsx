@@ -69,10 +69,12 @@ export default function JoinScreen() {
     <Screen>
       <ScrollView
         contentContainerStyle={{
-          padding: space.lg,
-          paddingTop: insets.top + space.xl,
+          // 20pt gutter, 24pt between blocks, and room above: an invitation
+          // is a one-card moment, not a form.
+          padding: space.gutter,
+          paddingTop: insets.top + space.xxl,
           paddingBottom: insets.bottom + space.xxl,
-          gap: space.lg,
+          gap: space.xl,
         }}
       >
         {state === 'invalid' ? (
@@ -100,14 +102,14 @@ export default function JoinScreen() {
           <>
             <View style={{ alignItems: 'center', gap: space.md }}>
               <Avatar initials={workspaceName.slice(0, 2).toUpperCase()} size={64} />
-              <View style={{ alignItems: 'center', gap: 4 }}>
+              <View style={{ alignItems: 'center', gap: space.xs }}>
                 <Small>{inviter ? `${inviter} invited you to` : 'You have been invited to'}</Small>
                 <Figure size="h1">{workspaceName}</Figure>
                 <Chip tone="accent">as {roleLabel}</Chip>
               </View>
             </View>
 
-            <Raised style={{ gap: space.sm }}>
+            <Raised style={{ gap: space.sm, padding: space.gutter }}>
               <Label>What joining means</Label>
               <Body>
                 You will see everything in this workspace: every receipt, every amount, and every

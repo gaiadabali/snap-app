@@ -1,13 +1,14 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { Text, TextInput } from '@/theme/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, type WalletProvider } from '@/api';
 import { Icon } from '@/components/Icon';
 import { Body, Button, Notice, Screen, ScreenHeader, Small } from '@/components/ui';
-import { control, numeric, radius, space, type, usePalette } from '@/theme';
+import { control, heroGradient, numeric, radius, shadow, space, type, usePalette, useTheme } from '@/theme';
 
 /**
  * Entering a card, or linking a device wallet.
@@ -24,6 +25,7 @@ import { control, numeric, radius, space, type, usePalette } from '@/theme';
  */
 export default function AddCardScreen() {
   const p = usePalette();
+  const { scheme } = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ provider?: string; label?: string }>();
@@ -71,9 +73,9 @@ export default function AddCardScreen() {
 
   const field = {
     minHeight: control.input,
-    borderWidth: 1.5,
-    borderRadius: radius.md,
-    backgroundColor: p.surface,
+    borderWidth: 1,
+    borderRadius: radius.lg,
+    backgroundColor: p.card,
     paddingHorizontal: space.lg,
     ...type.input,
     color: p.ink,
@@ -83,10 +85,10 @@ export default function AddCardScreen() {
     <Screen>
       <ScrollView
         contentContainerStyle={{
-          padding: 20,
+          padding: space.gutter,
           paddingTop: insets.top + space.md,
           paddingBottom: space.xxl,
-          gap: 14,
+          gap: space.xl,
         }}
         keyboardShouldPersistTaps="handled"
       >
@@ -94,6 +96,7 @@ export default function AddCardScreen() {
 
         {provider === 'card' ? (
           <View style={{ gap: space.md }}>
+            <CardPreview name={name} digits={digits} expiry={expiry} lifted={scheme === 'light'} />
             <Text style={[type.body, { color: p.inkMuted }]}>
               Enter the card you want charged. Nothing is taken until you complete a top up.
             </Text>
@@ -105,10 +108,10 @@ export default function AddCardScreen() {
               placeholder="Name on card"
               placeholderTextColor={p.inkFaint}
               autoCapitalize="words"
-              style={{ ...field, borderColor: p.rule }}
+              style={{ ...field, borderColor: p.ruleStrong }}
             />
 
-            <View style={{ gap: 6 }}>
+            <View style={{ gap: space.xs }}>
               <TextInput
                 accessibilityLabel="Card number"
                 value={number}
@@ -117,7 +120,7 @@ export default function AddCardScreen() {
                 placeholderTextColor={p.inkFaint}
                 keyboardType="number-pad"
                 maxLength={23}
-                style={{ ...field, ...numeric, borderColor: numberBad ? p.risk : p.rule }}
+                style={{ ...field, ...numeric, borderColor: numberBad ? p.risk : p.ruleStrong }}
               />
               {numberBad ? (
                 <Text style={[type.small, { color: p.risk }]}>
@@ -126,8 +129,8 @@ export default function AddCardScreen() {
               ) : null}
             </View>
 
-            <View style={{ flexDirection: 'row', gap: 10 }}>
-              <View style={{ flex: 1, gap: 6 }}>
+            <View style={{ flexDirection: 'row', gap: space.md }}>
+              <View style={{ flex: 1, gap: space.xs }}>
                 <TextInput
                   accessibilityLabel="Expiry"
                   value={expiry}
@@ -136,13 +139,13 @@ export default function AddCardScreen() {
                   placeholderTextColor={p.inkFaint}
                   keyboardType="number-pad"
                   maxLength={5}
-                  style={{ ...field, ...numeric, borderColor: expiryBad ? p.risk : p.rule }}
+                  style={{ ...field, ...numeric, borderColor: expiryBad ? p.risk : p.ruleStrong }}
                 />
                 {expiryBad ? (
                   <Text style={[type.small, { color: p.risk }]}>Past, or not a month.</Text>
                 ) : null}
               </View>
-              <View style={{ flex: 1, gap: 6 }}>
+              <View style={{ flex: 1, gap: space.xs }}>
                 <TextInput
                   accessibilityLabel="Security code"
                   value={cvc}
@@ -151,7 +154,7 @@ export default function AddCardScreen() {
                   placeholderTextColor={p.inkFaint}
                   keyboardType="number-pad"
                   secureTextEntry
-                  style={{ ...field, ...numeric, borderColor: cvcBad ? p.risk : p.rule }}
+                  style={{ ...field, ...numeric, borderColor: cvcBad ? p.risk : p.ruleStrong }}
                 />
                 {cvcBad ? (
                   <Text style={[type.small, { color: p.risk }]}>Three or four digits.</Text>
@@ -168,7 +171,7 @@ export default function AddCardScreen() {
             </Small>
           </View>
         ) : (
-          <View style={{ gap: 14 }}>
+          <View style={{ gap: space.md }}>
             <Text style={[type.body, { color: p.inkMuted }]}>
               Snap Apps will use the card already set up on this device. There is nothing to type.
             </Text>
@@ -176,10 +179,10 @@ export default function AddCardScreen() {
               style={{
                 backgroundColor: p.goodSoft,
                 borderRadius: radius.xl,
-                padding: 18,
+                padding: space.lg,
                 flexDirection: 'row',
                 alignItems: 'center',
-                gap: 13,
+                gap: space.md,
               }}
             >
               <Icon name="shield" size={22} color={p.good} />
@@ -198,6 +201,85 @@ export default function AddCardScreen() {
         )}
       </ScrollView>
     </Screen>
+  );
+}
+
+/**
+ * The card as the owner will see it, drawn on the brand gradient with a soft
+ * lift. It only RENDERS what is already typed into the form: the number is
+ * masked to its last four digits, and nothing here stores or logs anything, so
+ * the rule at the top of this file (the PAN lives nowhere else) still holds.
+ */
+function CardPreview({
+  name,
+  digits,
+  expiry,
+  lifted,
+}: {
+  name: string;
+  digits: string;
+  expiry: string;
+  lifted: boolean;
+}) {
+  const last = digits.slice(-4).padEnd(4, '•');
+  return (
+    <View
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+      style={[
+        { borderRadius: radius.xxl, marginBottom: space.sm },
+        lifted ? shadow.lift : null,
+      ]}
+    >
+      <LinearGradient
+        colors={[...heroGradient.colors]}
+        locations={[...heroGradient.locations]}
+        start={heroGradient.start}
+        end={heroGradient.end}
+        style={{
+          borderRadius: radius.xxl,
+          padding: space.xl,
+          aspectRatio: 1.586,
+          justifyContent: 'space-between',
+          overflow: 'hidden',
+        }}
+      >
+        <LinearGradient
+          pointerEvents="none"
+          colors={['rgba(255,255,255,0.16)', 'rgba(255,255,255,0)']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0.75, y: 0.6 }}
+          style={StyleSheet.absoluteFill}
+        />
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          {/* The chip. */}
+          <View
+            style={{
+              width: 44,
+              height: 32,
+              borderRadius: radius.sm,
+              backgroundColor: 'rgba(255,255,255,0.28)',
+              borderWidth: 1,
+              borderColor: 'rgba(255,255,255,0.4)',
+            }}
+          />
+          <Icon name="card" size={24} color="rgba(255,255,255,0.85)" />
+        </View>
+        <Text style={[type.h3, numeric, { color: '#FFFFFF', letterSpacing: 2 }]}>
+          {'••••  ••••  ••••  '}
+          {last}
+        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: space.md }}>
+          <Text
+            style={[type.bodyStrong, { color: '#FFFFFF', flex: 1 }]}
+            numberOfLines={1}
+          >
+            {name.trim() || 'Name on card'}
+          </Text>
+          <Text style={[type.bodyStrong, numeric, { color: '#FFFFFF' }]}>{expiry || 'MM/YY'}</Text>
+        </View>
+      </LinearGradient>
+    </View>
   );
 }
 

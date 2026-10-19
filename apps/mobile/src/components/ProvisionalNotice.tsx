@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { Icon } from '@/components/Icon';
 
-import { Body, Label, Small } from '@/components/ui';
+import { Body, Card, Small } from '@/components/ui';
 import { radius, space, usePalette } from '@/theme';
 
 import type { Transition } from '@/lib/provisional';
@@ -42,7 +42,7 @@ export function ProvisionalNotice({
     // A small "read twice" tick. Deliberately not a card: agreement is the
     // expected case and does not deserve the same weight as a disagreement.
     return (
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm, marginTop: space.xs }}>
         <Icon name="check" size={14} color={p.scan} />
         <Small>{transition.copy}</Small>
       </View>
@@ -50,54 +50,46 @@ export function ProvisionalNotice({
   }
 
   return (
-    <View
-      style={{
-        marginTop: space.sm,
-        padding: space.md,
-        borderRadius: radius.md,
-        borderWidth: 1,
-        borderColor: p.scan,
-        // A tint rather than a fill: this sits inside a record somebody is
-        // reading, and it is advisory.
-        backgroundColor: p.surfaceAlt,
-        gap: space.sm,
-      }}
-    >
-      <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: space.sm }}>
-        <Label style={{ color: p.scan, flex: 1 }}>
-          {transition.kind === 'differs' ? 'Two reads disagreed' : 'Not confirmed'}
-        </Label>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Dismiss this notice"
-          hitSlop={12}
-          onPress={() => setDismissed(true)}
-        >
-          <Body style={{ color: p.inkFaint }}>×</Body>
-        </Pressable>
+    // A white lifted card, per the premium pass; the `scan` hairline and title
+    // keep the provisional-value colour. Advisory, so no tinted fill.
+    <Card bordered style={{ marginTop: space.sm, borderColor: p.scan }}>
+      <View style={{ gap: space.sm }}>
+        <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: space.sm }}>
+          <Body strong style={{ color: p.scan, flex: 1 }}>
+            {transition.kind === 'differs' ? 'Two reads disagreed' : 'Not confirmed'}
+          </Body>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Dismiss this notice"
+            hitSlop={12}
+            onPress={() => setDismissed(true)}
+          >
+            <Body style={{ color: p.inkFaint }}>×</Body>
+          </Pressable>
+        </View>
+
+        <Small>{transition.copy}</Small>
+
+        {transition.kind === 'suggestion' && onUseSuggestion ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Use the preview value ${transition.suggested}`}
+            onPress={() => onUseSuggestion(transition.suggested)}
+            style={({ pressed }) => ({
+              alignSelf: 'flex-start',
+              paddingHorizontal: space.lg,
+              paddingVertical: space.sm,
+              borderRadius: radius.md,
+              borderWidth: 1.5,
+              borderColor: p.scan,
+              opacity: pressed ? 0.7 : 1,
+            })}
+          >
+            <Body style={{ color: p.scan }}>Use {transition.suggested}</Body>
+          </Pressable>
+        ) : null}
       </View>
-
-      <Small>{transition.copy}</Small>
-
-      {transition.kind === 'suggestion' && onUseSuggestion ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`Use the preview value ${transition.suggested}`}
-          onPress={() => onUseSuggestion(transition.suggested)}
-          style={({ pressed }) => ({
-            alignSelf: 'flex-start',
-            paddingHorizontal: space.md,
-            paddingVertical: 8,
-            borderRadius: radius.md,
-            borderWidth: 1.5,
-            borderColor: p.scan,
-            opacity: pressed ? 0.7 : 1,
-          })}
-        >
-          <Body style={{ color: p.scan }}>Use {transition.suggested}</Body>
-        </Pressable>
-      ) : null}
-    </View>
+    </Card>
   );
 }
 
@@ -115,8 +107,8 @@ export function ProvisionalChip() {
     <View
       style={{
         alignSelf: 'flex-start',
-        paddingHorizontal: 8,
-        paddingVertical: 2,
+        paddingHorizontal: space.sm,
+        paddingVertical: space.xs,
         borderRadius: radius.pill,
         borderWidth: 1,
         borderColor: p.scan,

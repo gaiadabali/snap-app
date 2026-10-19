@@ -5,7 +5,8 @@ import { Text } from '@/theme/text';
 import type { DocumentLine } from '@/api';
 import { AddButton, Choice, Field, Sheet } from '@/components/form';
 import { Raised } from '@/components/rich';
-import { Body, ConfidenceDots, Divider, Figure, Label, Small } from '@/components/ui';
+import { Icon } from '@/components/Icon';
+import { Body, ConfidenceDots, Divider, Figure, SectionHeader, Small } from '@/components/ui';
 import { formatAud, space, usePalette } from '@/theme';
 
 /**
@@ -92,9 +93,9 @@ export function LineItems({
   }
 
   return (
-    <View style={{ gap: space.sm }}>
+    <View style={{ gap: space.md }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Label>What was on it</Label>
+        <SectionHeader title="What was on it" />
         <Small>
           {lines.length} line{lines.length === 1 ? '' : 's'}
         </Small>
@@ -109,7 +110,7 @@ export function LineItems({
         ) : (
           lines.map((l, i) => (
             <View key={`${l.lineNumber}-${l.description}`}>
-              {i > 0 ? <Divider /> : null}
+              {i > 0 ? <Divider style={{ marginHorizontal: space.lg }} /> : null}
               <Pressable
                 accessibilityRole={editable ? 'button' : 'text'}
                 accessibilityLabel={`${l.description}, ${formatAud(l.amount)}`}
@@ -139,7 +140,7 @@ export function LineItems({
                       {l.quantity > 1 ? `${l.quantity} × ${formatAud(l.unitPrice)}` : 'Qty 1'}
                     </Small>
                     {l.gstFree ? (
-                      <Small muted={false} style={{ color: p.accent, fontWeight: '600' }}>
+                      <Small muted={false} style={{ color: p.accentText, fontWeight: '600' }}>
                         GST-free
                       </Small>
                     ) : null}
@@ -147,7 +148,7 @@ export function LineItems({
                   </View>
                 </View>
                 <Figure size="h2">{formatAud(l.amount)}</Figure>
-                {editable ? <Small style={{ fontSize: 16 }}>›</Small> : null}
+                {editable ? <Icon name="chevronRight" size={17} color={p.inkFaint} /> : null}
               </Pressable>
             </View>
           ))

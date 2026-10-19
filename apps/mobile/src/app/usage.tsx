@@ -1,13 +1,13 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Text } from '@/theme/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, type UsageKind, type UsagePeriod } from '@/api';
 import { Icon } from '@/components/Icon';
-import { Card, Notice, Screen, ScreenHeader, Small } from '@/components/ui';
-import { numeric, radius, space, type, usePalette } from '@/theme';
+import { Card, Notice, Screen, ScreenHeader, SectionHeader, Small } from '@/components/ui';
+import { numeric, radius, shadow, space, type, usePalette, useTheme } from '@/theme';
 
 /**
  * Where the credits or the points went, one month at a time.
@@ -23,6 +23,7 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 
 export default function UsageScreen() {
   const p = usePalette();
+  const { scheme } = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ kind?: string }>();
@@ -98,16 +99,18 @@ export default function UsageScreen() {
     <Screen>
       <ScrollView
         contentContainerStyle={{
-          padding: 20,
+          paddingHorizontal: space.gutter,
           paddingTop: insets.top + space.md,
           paddingBottom: space.xxl,
-          gap: 14,
+          // 24 between blocks, 12 under a heading.
+          gap: space.xl,
         }}
       >
         <ScreenHeader title={title} onBack={() => router.back()} />
 
-        {/* Credits / points */}
-        <View style={{ flexDirection: 'row', gap: 6, backgroundColor: p.surface, borderRadius: radius.md, padding: 4 }}>
+        {/* Credits / points: a recessed track with the chosen option a white
+            pill lifted out of it. */}
+        <View style={{ flexDirection: 'row', gap: space.xs, backgroundColor: p.surface, borderRadius: 14, padding: space.xs }}>
           {(['credits', 'points'] as const).map((k) => {
             const on = kind === k;
             return (
@@ -116,14 +119,21 @@ export default function UsageScreen() {
                 accessibilityRole="tab"
                 accessibilityState={{ selected: on }}
                 onPress={() => setKind(k)}
-                style={{
-                  flex: 1,
-                  minHeight: 40,
-                  borderRadius: 9,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  backgroundColor: on ? p.ground : 'transparent',
-                }}
+                style={[
+                  {
+                    flex: 1,
+                    minHeight: 40,
+                    borderRadius: 10,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: on ? p.card : 'transparent',
+                  },
+                  on
+                    ? scheme === 'light'
+                      ? shadow.card
+                      : { borderWidth: StyleSheet.hairlineWidth * 2, borderColor: p.cardEdge }
+                    : null,
+                ]}
               >
                 <Text style={[on ? type.bodyStrong : type.body, { color: on ? p.ink : p.inkMuted }]}>
                   {k === 'credits' ? 'Credits' : 'Points'}
@@ -133,7 +143,9 @@ export default function UsageScreen() {
           })}
         </View>
 
-        <Card style={{ gap: 14, padding: space.lg }}>
+        <View style={{ gap: space.md }}>
+        <SectionHeader title="By month" />
+        <Card style={{ gap: space.lg, padding: space.lg }}>
           {/* Year picker */}
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
             <Pressable
@@ -260,7 +272,7 @@ export default function UsageScreen() {
                     flexDirection: 'row',
                     alignItems: 'center',
                     gap: space.md,
-                    borderTopWidth: i === 0 ? 0 : 1,
+                    borderTopWidth: i === 0 ? 0 : StyleSheet.hairlineWidth * 2,
                     borderTopColor: p.rule,
                   }}
                 >
@@ -281,7 +293,7 @@ export default function UsageScreen() {
               ) : null}
             </>
           ) : (
-            <View style={{ alignItems: 'center', gap: 6, paddingVertical: 22 }}>
+            <View style={{ alignItems: 'center', gap: space.sm, paddingVertical: space.xl }}>
               <View
                 style={{
                   width: 48,
@@ -303,6 +315,7 @@ export default function UsageScreen() {
             </View>
           )}
         </Card>
+        </View>
 
         <Notice tone="info" icon="info">
           {kind === 'credits'

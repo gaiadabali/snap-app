@@ -1,13 +1,12 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ScrollView, View } from 'react-native';
-import { Text } from '@/theme/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, type NotificationPrefs } from '@/api';
 import { Toggle } from '@/components/form';
-import { Body, Card, Notice, Screen, ScreenHeader, Small } from '@/components/ui';
-import { radius, space, type, usePalette } from '@/theme';
+import { Card, Divider, Notice, Screen, ScreenHeader, SectionHeader, Small } from '@/components/ui';
+import { space } from '@/theme';
 
 /**
  * What the app is allowed to interrupt you for.
@@ -49,7 +48,6 @@ const ROWS: Array<{ key: keyof NotificationPrefs; label: string; hint: string }>
 ];
 
 export default function NotificationsScreen() {
-  const p = usePalette();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [prefs, setPrefs] = useState<NotificationPrefs | null>(null);
@@ -85,48 +83,41 @@ export default function NotificationsScreen() {
     <Screen>
       <ScrollView
         contentContainerStyle={{
-          padding: 20,
+          paddingHorizontal: space.gutter,
           paddingTop: insets.top + space.md,
           paddingBottom: space.xxl,
-          gap: 14,
+          gap: space.xl,
         }}
       >
         <ScreenHeader title="Notifications" onBack={() => router.back()} />
 
-        <View style={{ backgroundColor: p.accentSoft, borderRadius: radius.lg, padding: space.lg, gap: 6 }}>
-          <Body strong>Facts about your own money, and nothing else</Body>
-          <Text style={[type.small, { color: p.inkStrong }]}>
-            We will never send a marketing push. Every switch below is an event in your own
-            records.
-          </Text>
-        </View>
-
         {error ? <Notice tone="risk" icon="alert">{error}</Notice> : null}
 
-        <Card padded={false}>
-          {ROWS.map((r, i) => (
-            <View
-              key={r.key}
-              style={{
-                paddingHorizontal: space.lg,
-                paddingVertical: 14,
-                borderTopWidth: i === 0 ? 0 : 1,
-                borderTopColor: p.rule,
-              }}
-            >
-              <Toggle
-                label={r.label}
-                hint={r.hint}
-                value={prefs?.[r.key] ?? false}
-                onChange={(v) => void set(r.key, v)}
-              />
-            </View>
-          ))}
-        </Card>
-
-        <Small style={{ textAlign: 'center' }}>
-          Your phone will ask for permission the first time one of these is due, not before.
-        </Small>
+        <View style={{ gap: space.md }}>
+          <SectionHeader title="Tell me when" />
+          <Card padded={false}>
+            {ROWS.map((r, i) => (
+              <View key={r.key}>
+                {i === 0 ? null : <Divider style={{ marginLeft: space.lg }} />}
+                <View style={{ paddingHorizontal: space.lg, paddingVertical: space.md }}>
+                  <Toggle
+                    label={r.label}
+                    hint={r.hint}
+                    value={prefs?.[r.key] ?? false}
+                    onChange={(v) => void set(r.key, v)}
+                  />
+                </View>
+              </View>
+            ))}
+          </Card>
+          {/* The promise sits under the group as plain copy, not in a tinted
+              box: it explains the switches, it is not a message to act on. */}
+          <Small>
+            Facts about your own money, and nothing else. We will never send a marketing push;
+            every switch above is an event in your own records. Your phone will ask for
+            permission the first time one of these is due, not before.
+          </Small>
+        </View>
       </ScrollView>
     </Screen>
   );

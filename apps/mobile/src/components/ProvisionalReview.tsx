@@ -1,9 +1,9 @@
 import { ActivityIndicator, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Body, Card, Divider, Figure, Label, Screen, Small } from '@/components/ui';
+import { Body, Card, Divider, Figure, Screen, SectionHeader, Small } from '@/components/ui';
 import { CONFIRM_BLOCKED_COPY, displayValue, type Preview } from '@/lib/provisional';
-import { radius, space, usePalette } from '@/theme';
+import { space, usePalette } from '@/theme';
 
 /**
  * What the phone read, on screen before the server has answered.
@@ -65,18 +65,20 @@ export function ProvisionalReview({
     <Screen>
       <ScrollView
         contentContainerStyle={{
-          padding: space.lg,
+          paddingHorizontal: space.gutter,
           paddingTop: insets.top + space.md,
           paddingBottom: insets.bottom + space.xxl,
-          gap: space.lg,
+          gap: space.xl,
         }}
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
           <ActivityIndicator color={p.scan} />
-          <Label style={{ color: p.scan, flex: 1 }}>Provisional · read on this phone</Label>
+          <Body strong style={{ color: p.scan, flex: 1 }}>
+            Provisional · read on this phone
+          </Body>
         </View>
 
-        <View style={{ gap: space.xs }}>
+        <View style={{ gap: space.sm }}>
           <Small>Total</Small>
           {total === null ? (
             <Figure size="h1" style={{ color: p.inkFaint }}>
@@ -107,22 +109,22 @@ export function ProvisionalReview({
           </Card>
         ) : null}
 
-        <View
+        {/* The dashed `scan` edge is the same second signal as the dashed rule
+            under the total: provisional is never colour alone. */}
+        <Card
           style={{
-            padding: space.md,
-            borderRadius: radius.md,
-            borderWidth: 1,
+            borderWidth: 1.5,
             borderStyle: 'dashed',
             borderColor: p.scan,
-            gap: space.xs,
+            gap: space.md,
           }}
         >
-          <Label style={{ color: p.scan }}>Provisional</Label>
+          <SectionHeader title="Provisional" />
           <Small>
             Read on this phone while the receipt uploads. The server is reading it too, and its
             answer is the one that gets kept — anything it disagrees with will be shown to you.
           </Small>
-        </View>
+        </Card>
 
         <Small>{CONFIRM_BLOCKED_COPY}</Small>
 
@@ -142,22 +144,14 @@ export function ProvisionalReview({
           // so telling somebody to wait for it sends them to check a list
           // forever. Production spent three days in exactly this state while
           // the app said "taking longer than usual".
-          <View
-            style={{
-              padding: space.md,
-              borderRadius: radius.md,
-              borderWidth: 1,
-              borderColor: p.risk,
-              gap: space.xs,
-            }}
-          >
-            <Label style={{ color: p.risk }}>Could not be read</Label>
+          <Card tone="risk" bordered style={{ gap: space.md }}>
+            <SectionHeader title="Could not be read" />
             <Small>
               The server could not read this receipt, and it will not appear in your receipts on
               its own. Your photo is still saved. Try scanning it again — better light and all
               four corners in frame usually fixes it.
             </Small>
-          </View>
+          </Card>
         ) : null}
       </ScrollView>
     </Screen>

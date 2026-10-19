@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Pressable, ScrollView, View } from 'react-native';
+import { Fragment, useEffect, useRef, useState } from 'react';
+import { Animated, Easing, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Text, TextInput } from '@/theme/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -92,18 +92,24 @@ export function SignIn({ onSignedIn }: { onSignedIn: (s: Session) => void }) {
   // person typing them and ten to `String.length`.
   const pwOk = [...password].length >= 10;
 
+  // 20pt gutter and a 16pt gap between fields (the premium pass's scale).
+  // The top gets real room: this is the first screen anyone sees, and a form
+  // that starts under the status bar reads as cramped before it is read.
   const pad = {
-    padding: 20,
-    paddingTop: insets.top + space.md,
+    padding: space.gutter,
+    paddingTop: insets.top + space.xl,
     paddingBottom: insets.bottom + space.xxl,
-    gap: 14,
+    gap: space.lg,
   };
 
   /* ── Choose ─────────────────────────────────────────────────────────── */
   if (step === 'choose') {
     return (
       <Screen>
-        <ScrollView contentContainerStyle={{ ...pad, gap: 16 }} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          contentContainerStyle={{ ...pad, paddingTop: insets.top + space.xxl, gap: space.xl }}
+          keyboardShouldPersistTaps="handled"
+        >
           <GradientHero>
             <View style={{ gap: space.sm }}>
               <HeroLabel>Snap Apps</HeroLabel>
@@ -114,7 +120,7 @@ export function SignIn({ onSignedIn }: { onSignedIn: (s: Session) => void }) {
             </View>
           </GradientHero>
 
-          <Card style={{ gap: 11, padding: 18 }}>
+          <Card style={{ gap: space.md, padding: space.gutter }}>
             <AuthInput
               label="Email"
               value={email}
@@ -140,40 +146,54 @@ export function SignIn({ onSignedIn }: { onSignedIn: (s: Session) => void }) {
           {accounts.length > 0 ? (
             <>
               <DividerLabel>or continue as</DividerLabel>
+              {/* One white lifted card, rows divided by an inset hairline that
+                  starts at the text, not the card edge. The inner view clips
+                  so a pressed row follows the card's rounded corners (the Card
+                  itself cannot clip: that would cut its shadow). */}
               <Card padded={false}>
-                {accounts.map((a, i) => (
-                  <Pressable
-                    key={a.userId}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Continue as ${a.displayName}`}
-                    onPress={() => void run(a.email, () => api().signIn(a.email))}
-                    style={({ pressed }) => ({
-                      minHeight: 64,
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 14,
-                      paddingHorizontal: 18,
-                      paddingVertical: space.md,
-                      borderTopWidth: i === 0 ? 0 : 1,
-                      borderTopColor: p.rule,
-                      backgroundColor: pressed ? p.surfaceAlt : 'transparent',
-                      opacity: busy && busy !== a.email ? 0.5 : 1,
-                    })}
-                  >
-                    <Avatar initials={a.initials} size={42} />
-                    <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
-                      <Body strong>{a.displayName}</Body>
-                      <Small numberOfLines={1}>{a.email}</Small>
-                    </View>
-                    {busy === a.email ? (
-                      <Small>Signing in…</Small>
-                    ) : (
-                      <Icon name="chevronRight" size={18} color={p.inkMuted} />
-                    )}
-                  </Pressable>
-                ))}
+                <View style={{ borderRadius: radius.xl, overflow: 'hidden' }}>
+                  {accounts.map((a, i) => (
+                    <Fragment key={a.userId}>
+                      {i === 0 ? null : (
+                        <View
+                          style={{
+                            height: StyleSheet.hairlineWidth * 2,
+                            marginLeft: space.lg + 42 + space.md,
+                            backgroundColor: p.rule,
+                          }}
+                        />
+                      )}
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={`Continue as ${a.displayName}`}
+                        onPress={() => void run(a.email, () => api().signIn(a.email))}
+                        style={({ pressed }) => ({
+                          minHeight: 64,
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          gap: space.md,
+                          paddingHorizontal: space.lg,
+                          paddingVertical: space.md,
+                          backgroundColor: pressed ? p.surface : 'transparent',
+                          opacity: busy && busy !== a.email ? 0.5 : 1,
+                        })}
+                      >
+                        <Avatar initials={a.initials} size={42} />
+                        <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+                          <Body strong>{a.displayName}</Body>
+                          <Small numberOfLines={1}>{a.email}</Small>
+                        </View>
+                        {busy === a.email ? (
+                          <Small>Signing in…</Small>
+                        ) : (
+                          <Icon name="chevronRight" size={18} color={p.inkMuted} />
+                        )}
+                      </Pressable>
+                    </Fragment>
+                  ))}
+                </View>
               </Card>
-              <Small style={{ textAlign: 'center' }}>
+              <Small style={{ textAlign: 'center', paddingHorizontal: space.sm }}>
                 Each one has a different role, so the app behaves differently. Dan is Staff: he
                 can scan and correct, but cannot post anything to the ledger.
               </Small>
@@ -231,7 +251,7 @@ export function SignIn({ onSignedIn }: { onSignedIn: (s: Session) => void }) {
                 borderRadius: 7,
                 borderWidth: 1.5,
                 borderColor: agreed ? p.accent : p.ruleStrong,
-                backgroundColor: agreed ? p.accent : 'transparent',
+                backgroundColor: agreed ? p.accent : p.card,
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
@@ -332,7 +352,7 @@ export function SignIn({ onSignedIn }: { onSignedIn: (s: Session) => void }) {
     return (
       <Screen>
         <BackBar onPress={() => go('login')} />
-        <ScrollView contentContainerStyle={{ ...pad, paddingTop: 4 }} keyboardShouldPersistTaps="handled">
+        <ScrollView contentContainerStyle={{ ...pad, paddingTop: space.xs }} keyboardShouldPersistTaps="handled">
           <AuthHeader title="Reset your password">
             Give us the email on your account. We send a six-digit code to it.
           </AuthHeader>
@@ -377,7 +397,7 @@ export function SignIn({ onSignedIn }: { onSignedIn: (s: Session) => void }) {
     return (
       <Screen>
         <BackBar onPress={() => go('login')} />
-        <ScrollView contentContainerStyle={{ ...pad, paddingTop: 4 }} keyboardShouldPersistTaps="handled">
+        <ScrollView contentContainerStyle={{ ...pad, paddingTop: space.xs }} keyboardShouldPersistTaps="handled">
           <AuthHeader title="Choose a new password">
             That code checked out. Pick something you have not used here before.
           </AuthHeader>
@@ -410,7 +430,7 @@ export function SignIn({ onSignedIn }: { onSignedIn: (s: Session) => void }) {
   return (
     <Screen>
       <BackBar onPress={() => go('forgot')} />
-      <ScrollView contentContainerStyle={{ ...pad, paddingTop: 4, gap: 16 }} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={{ ...pad, paddingTop: space.xs }} keyboardShouldPersistTaps="handled">
         <AuthHeader title="Enter the code">
           {note ?? `We sent six digits to ${address}.`} It is good for ten minutes.
         </AuthHeader>
@@ -458,7 +478,7 @@ export function SignIn({ onSignedIn }: { onSignedIn: (s: Session) => void }) {
 function AuthHeader({ title, children }: { title: string; children: React.ReactNode }) {
   const p = usePalette();
   return (
-    <View style={{ alignItems: 'center', gap: 7, paddingTop: space.md, paddingBottom: space.xs }}>
+    <View style={{ alignItems: 'center', gap: space.sm, paddingTop: space.md, paddingBottom: space.sm }}>
       <View
         style={{
           width: 60,
@@ -467,7 +487,7 @@ function AuthHeader({ title, children }: { title: string; children: React.ReactN
           backgroundColor: p.accentSoft,
           alignItems: 'center',
           justifyContent: 'center',
-          marginBottom: space.xs,
+          marginBottom: space.sm,
         }}
       >
         <Icon name="scan" size={30} color={p.accentText} />
@@ -509,10 +529,13 @@ function AuthInput({
   error?: string;
 }) {
   const p = usePalette();
+  const [focused, setFocused] = useState(false);
   return (
-    <View style={{ gap: 6 }}>
+    <View style={{ gap: space.sm }}>
       <TextInput
         accessibilityLabel={label}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
@@ -521,11 +544,13 @@ function AuthInput({
         autoCapitalize={keyboardType === 'email-address' ? 'none' : 'words'}
         autoComplete={keyboardType === 'email-address' ? 'email' : 'name'}
         style={{
+          // White fill, 1px edge, accent when focused: a field reads as a
+          // field on a white card and on the bare ground alike.
           minHeight: control.input,
-          borderWidth: 1.5,
-          borderColor: invalid ? p.risk : p.rule,
-          borderRadius: radius.md,
-          backgroundColor: p.surface,
+          borderWidth: 1,
+          borderColor: invalid ? p.risk : focused ? p.accent : p.ruleStrong,
+          borderRadius: radius.lg,
+          backgroundColor: p.card,
           paddingHorizontal: space.lg,
           ...type.input,
           color: p.ink,
@@ -554,24 +579,27 @@ function PasswordInput({
   error?: string;
 }) {
   const p = usePalette();
+  const [focused, setFocused] = useState(false);
   return (
-    <View style={{ gap: 6 }}>
+    <View style={{ gap: space.sm }}>
       <View
         style={{
           flexDirection: 'row',
           alignItems: 'center',
           gap: space.sm,
           minHeight: control.input,
-          borderWidth: 1.5,
-          borderColor: error ? p.risk : p.rule,
-          borderRadius: radius.md,
-          backgroundColor: p.surface,
+          borderWidth: 1,
+          borderColor: error ? p.risk : focused ? p.accent : p.ruleStrong,
+          borderRadius: radius.lg,
+          backgroundColor: p.card,
           paddingLeft: space.lg,
-          paddingRight: 6,
+          paddingRight: space.sm,
         }}
       >
         <TextInput
           accessibilityLabel={label}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
@@ -612,7 +640,7 @@ function CountryPicker({
   const p = usePalette();
   const [open, setOpen] = useState(false);
   return (
-    <View style={{ gap: 6, zIndex: 6 }}>
+    <View style={{ gap: space.sm, zIndex: 6 }}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Country"
@@ -623,10 +651,10 @@ function CountryPicker({
           flexDirection: 'row',
           alignItems: 'center',
           gap: space.sm,
-          borderWidth: 1.5,
-          borderColor: p.rule,
-          borderRadius: radius.md,
-          backgroundColor: p.surface,
+          borderWidth: 1,
+          borderColor: open ? p.accent : p.ruleStrong,
+          borderRadius: radius.lg,
+          backgroundColor: p.card,
           paddingHorizontal: space.lg,
         }}
       >
@@ -641,38 +669,56 @@ function CountryPicker({
       </Pressable>
 
       {open ? (
-        <View
-          style={{
-            borderWidth: 1,
-            borderColor: p.ruleStrong,
-            borderRadius: radius.lg,
-            backgroundColor: p.ground,
-            padding: 6,
-          }}
-        >
-          {options.map((o) => (
-            <Pressable
-              key={o.rulesId}
-              accessibilityRole="button"
-              onPress={() => {
-                onChange(o);
-                setOpen(false);
-              }}
-              style={({ pressed }) => ({
-                minHeight: control.tap,
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: space.sm,
-                paddingHorizontal: space.md,
-                borderRadius: 9,
-                backgroundColor: pressed ? p.surfaceAlt : 'transparent',
-              })}
-            >
-              <Text style={[type.body, { flex: 1, color: p.ink }]}>{o.countryName}</Text>
-              <Text style={[type.small, { color: p.inkMuted }]}>{o.currency}</Text>
-            </Pressable>
-          ))}
-        </View>
+        // The options are a white lifted card, rows split by an inset
+        // hairline, a check on the one chosen.
+        <Card padded={false}>
+          <View style={{ borderRadius: radius.xl, overflow: 'hidden' }}>
+            {options.map((o, i) => {
+              const selected = value?.rulesId === o.rulesId;
+              return (
+                <Fragment key={o.rulesId}>
+                  {i === 0 ? null : (
+                    <View
+                      style={{
+                        height: StyleSheet.hairlineWidth * 2,
+                        marginLeft: space.lg,
+                        backgroundColor: p.rule,
+                      }}
+                    />
+                  )}
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => {
+                      onChange(o);
+                      setOpen(false);
+                    }}
+                    style={({ pressed }) => ({
+                      minHeight: control.tap + space.sm,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: space.sm,
+                      paddingHorizontal: space.lg,
+                      backgroundColor: pressed ? p.surface : 'transparent',
+                    })}
+                  >
+                    <Text
+                      style={[
+                        type.body,
+                        { flex: 1, color: p.ink, fontWeight: selected ? '600' : '400' },
+                      ]}
+                    >
+                      {o.countryName}
+                    </Text>
+                    <Text style={[type.small, { color: p.inkMuted }]}>{o.currency}</Text>
+                    <View style={{ width: 20, alignItems: 'center' }}>
+                      {selected ? <Icon name="check" size={18} color={p.accentText} /> : null}
+                    </View>
+                  </Pressable>
+                </Fragment>
+              );
+            })}
+          </View>
+        </Card>
       ) : null}
       <Small>Sets the currency every amount is shown in.</Small>
     </View>
@@ -696,15 +742,15 @@ function SocialRow({ onUnavailable }: { onUnavailable: (msg: string) => void }) 
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
     gap: space.sm,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: p.ruleStrong,
-    borderRadius: radius.md,
-    backgroundColor: p.surface,
+    borderRadius: radius.lg,
+    backgroundColor: p.card,
   };
   return (
     <>
       <DividerLabel>or continue with</DividerLabel>
-      <View style={{ flexDirection: 'row', gap: 10 }}>
+      <View style={{ flexDirection: 'row', gap: space.md }}>
         <Pressable
           accessibilityRole="button"
           style={box}
@@ -773,16 +819,18 @@ function CodeInput({
             key={i}
             style={{
               flex: 1,
-              height: 60,
-              borderWidth: 1.5,
-              borderColor: invalid ? p.risk : value.length === i ? p.accent : p.rule,
+              height: 56,
+              // The active box (the next digit to land) takes a 2px accent
+              // edge; the rest are a 1px rule on white.
+              borderWidth: !invalid && value.length === i ? 2 : 1,
+              borderColor: invalid ? p.risk : value.length === i ? p.accent : p.ruleStrong,
               borderRadius: radius.md,
-              backgroundColor: p.surface,
+              backgroundColor: p.card,
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <Text style={{ fontSize: 24, lineHeight: 30, fontWeight: '700', color: p.ink }}>
+            <Text style={{ fontSize: 28, lineHeight: 34, fontWeight: '700', color: p.ink }}>
               {value[i] ?? ''}
             </Text>
           </View>
@@ -801,7 +849,7 @@ function CodeInput({
           left: 0,
           right: 0,
           top: 0,
-          height: 60,
+          height: 56,
           opacity: 0,
         }}
       />
@@ -884,30 +932,6 @@ export function SessionLoading() {
         overflow: 'hidden',
       }}
     >
-      <View
-        pointerEvents="none"
-        style={{
-          position: 'absolute',
-          top: -100,
-          right: -80,
-          width: 300,
-          height: 300,
-          borderRadius: 150,
-          backgroundColor: 'rgba(255,255,255,0.10)',
-        }}
-      />
-      <View
-        pointerEvents="none"
-        style={{
-          position: 'absolute',
-          bottom: -120,
-          left: -90,
-          width: 280,
-          height: 280,
-          borderRadius: 140,
-          backgroundColor: 'rgba(255,255,255,0.07)',
-        }}
-      />
       <Animated.View style={{ opacity: fade, transform: [{ translateY: rise }], alignItems: 'center' }}>
         <Icon name="scan" size={96} color="#FFFFFF" />
         <Text

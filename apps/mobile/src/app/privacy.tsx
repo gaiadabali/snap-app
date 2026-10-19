@@ -1,20 +1,20 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Alert, ScrollView, View } from 'react-native';
+import { Alert, Pressable, ScrollView, View } from 'react-native';
 import { Text } from '@/theme/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, type PrivacySettings } from '@/api';
-import { Icon } from '@/components/Icon';
 import { Toggle } from '@/components/form';
 import {
-  Button,
+  Body,
   Card,
   Divider,
   Notice,
   Row,
   Screen,
   ScreenHeader,
+  SectionHeader,
   Small,
 } from '@/components/ui';
 import { space, type, usePalette } from '@/theme';
@@ -87,83 +87,108 @@ export default function PrivacyScreen() {
     <Screen>
       <ScrollView
         contentContainerStyle={{
-          padding: 20,
+          paddingHorizontal: space.gutter,
           paddingTop: insets.top + space.md,
           paddingBottom: space.xxl,
-          gap: 14,
+          gap: space.xl,
         }}
       >
         <ScreenHeader title="Privacy and data" onBack={() => router.back()} />
 
-        <Card style={{ gap: 10, padding: 18 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
-            <Icon name="info" size={16} color={p.inkMuted} />
-            <Text style={[type.label, { color: p.inkMuted }]}>How long records are kept</Text>
-          </View>
-          <Text style={[type.body, { color: p.ink, fontSize: 14, lineHeight: 21 }]}>
-            Records are kept for {years} years, which is at or above what the ATO requires.
-            Originals are stored in Australia.
-          </Text>
+        <View style={{ gap: space.md }}>
+          <SectionHeader title="How long records are kept" />
+          <Card>
+            <Body>
+              Records are kept for {years} years, which is at or above what the ATO requires.
+              Originals are stored in Australia.
+            </Body>
+          </Card>
           <Small>
             Everyone in this workspace can see everything in it. Removing someone revokes their
             access but does not remove what they captured, because those records belong to the
             workspace.
           </Small>
-        </Card>
+        </View>
 
         {error ? <Notice tone="risk" icon="alert">{error}</Notice> : null}
 
-        <Card padded={false}>
-          <View style={{ paddingHorizontal: space.lg, paddingVertical: 14 }}>
-            <Toggle
-              label="Anonymous analytics"
-              hint="Which screens get used, never what is on a receipt."
-              value={settings?.analyticsOptIn ?? false}
-              onChange={(v) => void set('analyticsOptIn', v)}
-            />
-          </View>
-          <Divider />
-          <View style={{ paddingHorizontal: space.lg, paddingVertical: 14 }}>
-            <Toggle
-              label="Crash reports"
-              hint="Stack traces when something breaks, so it can be fixed."
-              value={settings?.crashReports ?? false}
-              onChange={(v) => void set('crashReports', v)}
-            />
-          </View>
-          <Divider />
-          <View style={{ paddingHorizontal: space.lg, paddingVertical: 14 }}>
-            <Toggle
-              label="Help improve extraction"
-              hint="Lets corrections you make train the shared reader. Off by default."
-              value={settings?.contributeToModel ?? false}
-              onChange={(v) => void set('contributeToModel', v)}
-            />
-          </View>
-        </Card>
+        <View style={{ gap: space.md }}>
+          <SectionHeader title="Sharing" />
+          <Card padded={false}>
+            <View style={{ paddingHorizontal: space.lg, paddingVertical: space.md }}>
+              <Toggle
+                label="Anonymous analytics"
+                hint="Which screens get used, never what is on a receipt."
+                value={settings?.analyticsOptIn ?? false}
+                onChange={(v) => void set('analyticsOptIn', v)}
+              />
+            </View>
+            <Divider style={{ marginLeft: space.lg }} />
+            <View style={{ paddingHorizontal: space.lg, paddingVertical: space.md }}>
+              <Toggle
+                label="Crash reports"
+                hint="Stack traces when something breaks, so it can be fixed."
+                value={settings?.crashReports ?? false}
+                onChange={(v) => void set('crashReports', v)}
+              />
+            </View>
+            <Divider style={{ marginLeft: space.lg }} />
+            <View style={{ paddingHorizontal: space.lg, paddingVertical: space.md }}>
+              <Toggle
+                label="Help improve extraction"
+                hint="Lets corrections you make train the shared reader. Off by default."
+                value={settings?.contributeToModel ?? false}
+                onChange={(v) => void set('contributeToModel', v)}
+              />
+            </View>
+          </Card>
+        </View>
 
-        <Card padded={false}>
-          <Row
-            title="Sign in with fingerprint"
-            subtitle="Unlock this device without typing a password"
-            icon="lock"
-            iconTone="neutral"
-            onPress={() => router.push('/fingerprint')}
-          />
-          <Divider />
-          <Row
-            title="Export receipts"
-            subtitle="Every photo, with the fields read from it"
-            icon="upload"
-            iconTone="neutral"
-            onPress={() => router.push('/export')}
-          />
-        </Card>
+        <View style={{ gap: space.md }}>
+          <SectionHeader title="Your data" />
+          <Card padded={false}>
+            <Row
+              title="Sign in with fingerprint"
+              subtitle="Unlock this device without typing a password"
+              icon="lock"
+              iconTone="neutral"
+              onPress={() => router.push('/fingerprint')}
+            />
+            <Divider style={{ marginLeft: space.lg + 40 + 14 }} />
+            <Row
+              title="Export receipts"
+              subtitle="Every photo, with the fields read from it"
+              icon="upload"
+              iconTone="neutral"
+              onPress={() => router.push('/export')}
+            />
+          </Card>
+        </View>
 
-        <Button label="Delete all receipts" tone="risk" icon="trash" onPress={confirmWipe} />
-        <Small style={{ textAlign: 'center' }}>
-          This clears every record in this space. Credits and points stay on your account.
-        </Small>
+        {/* The one destructive action, as a plain red text row at the bottom
+            rather than a filled red button: red is money at risk, and a solid
+            block of it invites the tap. The two-step confirmation does the
+            real protecting. */}
+        <View style={{ gap: space.md }}>
+          <Card padded={false}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Delete all receipts"
+              onPress={confirmWipe}
+              style={({ pressed }) => ({
+                minHeight: 52,
+                justifyContent: 'center',
+                paddingHorizontal: space.lg,
+                opacity: pressed ? 0.6 : 1,
+              })}
+            >
+              <Text style={[type.bodyStrong, { color: p.risk }]}>Delete all receipts</Text>
+            </Pressable>
+          </Card>
+          <Small>
+            This clears every record in this space. Credits and points stay on your account.
+          </Small>
+        </View>
       </ScrollView>
     </Screen>
   );

@@ -160,14 +160,15 @@ export function EditFields({
           }}
           style={({ pressed }) => ({
             flex: 2,
-            paddingVertical: 13,
+            minHeight: 48,
+            justifyContent: 'center',
             borderRadius: 12,
             borderWidth: 1.5,
             borderColor: pressed ? p.accent : p.ruleStrong,
             alignItems: 'center',
           })}
         >
-          <Body strong style={{ color: p.accent }}>
+          <Body strong style={{ color: p.accentText }}>
             Correct the details
           </Body>
         </Pressable>
@@ -176,10 +177,11 @@ export function EditFields({
           onPress={reject}
           style={({ pressed }) => ({
             flex: 1,
-            paddingVertical: 13,
+            minHeight: 48,
+            justifyContent: 'center',
             borderRadius: 12,
             borderWidth: 1.5,
-            borderColor: pressed ? p.risk : p.rule,
+            borderColor: pressed ? p.risk : p.ruleStrong,
             alignItems: 'center',
           })}
         >
@@ -242,7 +244,7 @@ export function EditFields({
             gap: 2,
           }}
         >
-          <Small muted={false} style={{ color: p.accent, fontWeight: '700' }}>
+          <Small muted={false} style={{ color: p.accentText, fontWeight: '700' }}>
             GST becomes ${Number(newGst).toFixed(2)}
           </Small>
           <Small>

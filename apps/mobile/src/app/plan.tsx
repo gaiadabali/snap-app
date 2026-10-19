@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api, type CreditBalance, type PlanUsage } from '@/api';
 import { Loading, StatRow } from '@/components/form';
 import { GradientHero, HeroBody, HeroFigure, HeroLabel, Raised } from '@/components/rich';
-import { Body, Button, Card, Chip, Divider, Figure, Label, Screen, Small } from '@/components/ui';
+import { Body, Button, Card, Chip, Divider, Figure, Label, Screen, SectionHeader, Small } from '@/components/ui';
 import { formatShortDate, radius, space, usePalette } from '@/theme';
 
 /**
@@ -47,9 +47,11 @@ export default function PlanScreen() {
     <Screen>
       <ScrollView
         contentContainerStyle={{
-          padding: space.lg,
+          paddingHorizontal: space.gutter,
+          paddingTop: space.md,
           paddingBottom: insets.bottom + space.xxl,
-          gap: space.lg,
+          // 24 between blocks, 12 under a heading.
+          gap: space.xl,
         }}
       >
         {plan === null ? (
@@ -89,8 +91,9 @@ export default function PlanScreen() {
               </Card>
             ) : null}
 
-            <Raised style={{ gap: space.md }}>
-              <Label>This month</Label>
+            <View style={{ gap: space.md }}>
+            <SectionHeader title="This month" />
+            <Raised style={{ gap: space.lg }}>
               {/* A COUNT, not a quota. `scanQuota` was the monthly allowance a
                   plan bought; there is no allowance now, so a meter filling
                   towards a cap would be measuring against a limit that does
@@ -128,6 +131,7 @@ export default function PlanScreen() {
                 ]}
               />
             </Raised>
+            </View>
 
             <Card>
               <View style={{ gap: space.xs }}>
@@ -140,7 +144,7 @@ export default function PlanScreen() {
               </View>
             </Card>
 
-            <View style={{ gap: space.sm }}>
+            <View style={{ gap: space.md }}>
               <Button label="Credits" tone="outline" onPress={() => router.push('/credits')} />
               <Button label="Points" tone="outline" onPress={() => router.push('/points')} />
               <Button
@@ -173,7 +177,7 @@ function Meter({
   const p = usePalette();
   const colour = tone === 'risk' ? p.risk : p.accent;
   return (
-    <View style={{ gap: 6 }}>
+    <View style={{ gap: space.sm }}>
       <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' }}>
         <Body strong>{label}</Body>
         <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 4 }}>

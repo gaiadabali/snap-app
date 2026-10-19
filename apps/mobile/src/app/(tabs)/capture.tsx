@@ -23,7 +23,7 @@ import { newKey } from '@/api/http';
 import { pendingWrites, queueCapture, type CaptureToQueue } from '@/api/outbox';
 import { QualityGateNotice } from '@/components/QualityGateNotice';
 import { ScanLine } from '@/components/ScanLine';
-import { Body, Button, Card, Figure, Label, Screen, Small } from '@/components/ui';
+import { Body, Button, Figure, Screen, Small } from '@/components/ui';
 import { radius, space, usePalette } from '@/theme';
 import { WorkspaceSwitch, useWorkspace } from '@/workspace';
 
@@ -920,7 +920,7 @@ export default function CaptureScreen() {
             shutter: which life this receipt is filed against. Discovering a
             personal grocery run in the BAS three months later is the mistake
             that prevents. */}
-        <Card style={{ paddingVertical: space.sm }}>
+        <View style={[PANEL, { paddingVertical: space.md }]}>
           <View
             style={{
               flexDirection: 'row',
@@ -929,7 +929,7 @@ export default function CaptureScreen() {
               gap: space.md,
             }}
           >
-            <Label>Filing to</Label>
+            <Small style={{ color: 'rgba(255,255,255,0.65)' }}>Filing to</Small>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
               {/* A NAME when there is nothing to switch between.
                   `WorkspaceSwitch` returns null on one workspace, which is
@@ -938,18 +938,18 @@ export default function CaptureScreen() {
                   Which life a receipt is filed against is worth stating even
                   when there is only one answer; it is the decision this panel
                   exists to make before the shutter. */}
-              {workspaces.length > 1 ? <WorkspaceSwitch /> : <Body>{active.name}</Body>}
+              {workspaces.length > 1 ? <WorkspaceSwitch /> : <Body strong style={{ color: '#FFFFFF' }}>{active.name}</Body>}
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Hide this panel"
                 hitSlop={12}
                 onPress={() => setChrome(false)}
               >
-                <Text style={{ color: p.inkFaint, fontSize: 18, lineHeight: 18 }}>×</Text>
+                <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 18, lineHeight: 18 }}>×</Text>
               </Pressable>
             </View>
           </View>
-        </Card>
+        </View>
       </View>
 
       <View
@@ -972,32 +972,34 @@ export default function CaptureScreen() {
         ) : null}
 
         {error ? (
-          <Card tone="risk" style={{ width: '100%' }}>
-            <View style={{ gap: space.xs }}>
+          <View style={[PANEL, { width: '100%' }]}>
+            <View style={{ gap: space.sm }}>
               <View
                 style={{ flexDirection: 'row', alignItems: 'flex-start', gap: space.sm }}
               >
-                <Label style={{ color: p.risk, flex: 1 }}>Capture failed</Label>
+                <Body strong style={{ color: '#FF8A80', flex: 1 }}>
+                  Capture failed
+                </Body>
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="Dismiss this error"
                   hitSlop={12}
                   onPress={() => setError(null)}
                 >
-                  <Text style={{ color: p.risk, fontSize: 18, lineHeight: 18 }}>×</Text>
+                  <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 18, lineHeight: 18 }}>×</Text>
                 </Pressable>
               </View>
-              <Body>{error}</Body>
+              <Body style={{ color: 'rgba(255,255,255,0.85)' }}>{error}</Body>
             </View>
-          </Card>
+          </View>
         ) : null}
 
         {pending ? (
-          <Card style={{ width: '100%' }}>
-            <View style={{ gap: space.sm }}>
+          <View style={[PANEL, { width: '100%' }]}>
+            <View style={{ gap: space.md }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
-                {phase !== 'framing' ? <ActivityIndicator color={p.accent} /> : null}
-                <Body strong>
+                {phase !== 'framing' ? <ActivityIndicator color="#FFFFFF" /> : null}
+                <Body strong style={{ color: '#FFFFFF' }}>
                   {phase === 'extracting'
                     ? phaseCopy.extracting.title
                     : phase === 'uploading'
@@ -1008,16 +1010,18 @@ export default function CaptureScreen() {
 
               {/* One row per page, so "some of this document did not save" is
                   never a mystery — the person can see exactly which page. */}
-              <View style={{ gap: 4 }}>
+              <View style={{ gap: space.xs }}>
                 {pending.uploads.map((u) => (
                   <View
                     key={u.pageNumber}
                     style={{ flexDirection: 'row', justifyContent: 'space-between' }}
                   >
-                    <Small>Page {u.pageNumber}</Small>
+                    <Small style={{ color: 'rgba(255,255,255,0.65)' }}>Page {u.pageNumber}</Small>
                     <Small
                       style={
-                        pageStatus[u.pageNumber] === 'failed' ? { color: p.risk, fontWeight: '700' } : undefined
+                        pageStatus[u.pageNumber] === 'failed'
+                          ? { color: '#FF8A80', fontWeight: '700' }
+                          : { color: 'rgba(255,255,255,0.85)' }
                       }
                     >
                       {pageStatusLabel(pageStatus[u.pageNumber])}
@@ -1027,8 +1031,26 @@ export default function CaptureScreen() {
               </View>
 
               {phase === 'framing' ? (
-                <View style={{ flexDirection: 'row', gap: space.sm, marginTop: space.xs }}>
-                  <Button label="Discard" tone="outline" style={{ flex: 1 }} onPress={discardPending} />
+                <View style={{ flexDirection: 'row', gap: space.sm }}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Discard"
+                    onPress={discardPending}
+                    style={({ pressed }) => ({
+                      flex: 1,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      paddingVertical: space.md,
+                      borderRadius: radius.md,
+                      borderWidth: 1.5,
+                      borderColor: 'rgba(255,255,255,0.5)',
+                      backgroundColor: pressed ? 'rgba(255,255,255,0.16)' : 'transparent',
+                    })}
+                  >
+                    <Body strong style={{ color: '#FFFFFF' }}>
+                      Discard
+                    </Body>
+                  </Pressable>
                   <Button
                     label="Retry"
                     style={{ flex: 1 }}
@@ -1037,17 +1059,19 @@ export default function CaptureScreen() {
                 </View>
               ) : null}
             </View>
-          </Card>
+          </View>
         ) : busy ? (
-          <Card style={{ minWidth: 280 }}>
+          <View style={[PANEL, { minWidth: 280 }]}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
-              <ActivityIndicator color={p.accent} />
-              <View style={{ flex: 1 }}>
-                <Body strong>{phaseCopy[phase as Exclude<Phase, 'framing'>].title}</Body>
-                <Small>{phaseCopy[phase as Exclude<Phase, 'framing'>].detail}</Small>
+              <ActivityIndicator color="#FFFFFF" />
+              <View style={{ flex: 1, gap: space.xs }}>
+                <Body strong style={{ color: '#FFFFFF' }}>{phaseCopy[phase as Exclude<Phase, 'framing'>].title}</Body>
+                <Small style={{ color: 'rgba(255,255,255,0.65)' }}>
+                  {phaseCopy[phase as Exclude<Phase, 'framing'>].detail}
+                </Small>
               </View>
             </View>
-          </Card>
+          </View>
         ) : (
           <View style={{ alignItems: 'center', gap: space.md, width: '100%' }}>
             {/* Pages already held. Visible because a two-page invoice whose
@@ -1060,13 +1084,13 @@ export default function CaptureScreen() {
                 contentContainerStyle={{ gap: space.sm, paddingHorizontal: space.lg }}
               >
                 {pages.map((page, i) => (
-                  <View key={page.uri} style={{ alignItems: 'center', gap: 4 }}>
+                  <View key={page.uri} style={{ alignItems: 'center', gap: space.xs }}>
                     <Image
                       source={{ uri: page.uri }}
                       style={{
                         width: 46,
                         height: 62,
-                        borderRadius: 6,
+                        borderRadius: radius.sm,
                         borderWidth: 2,
                         borderColor: 'rgba(255,255,255,0.85)',
                       }}
@@ -1191,6 +1215,15 @@ export default function CaptureScreen() {
   );
 }
 
+// The dark translucent panel the capture overlays share: over a live camera
+// feed a white card glares and a pale one vanishes, so every overlay is the
+// same calm dark glass with white type.
+const PANEL = {
+  padding: space.lg,
+  borderRadius: 18,
+  backgroundColor: 'rgba(18,20,24,0.88)',
+} as const;
+
 /**
  * One of the two controls flanking the shutter.
  *
@@ -1217,7 +1250,7 @@ function SideControl({
       accessibilityLabel={accessibilityLabel}
       accessibilityState={{ selected: on }}
       onPress={onPress}
-      style={{ alignItems: 'center', gap: 6, width: 76 }}
+      style={{ alignItems: 'center', gap: space.sm, width: 76 }}
     >
       {({ pressed }) => (
         <>

@@ -84,6 +84,7 @@ export function Onboarding({
   const [household, setHousehold] = useState('');
   const [drafts, setDrafts] = useState<Draft[]>([{ name: '', amount: '' }]);
   const [permission, requestPermission] = useCameraPermissions();
+  const [focus, setFocus] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -137,28 +138,39 @@ export function Onboarding({
 
   return (
     <Screen>
-      {/* Progress. Four steps, always — nothing is conditional now. */}
+      {/* Progress. Four steps, always — nothing is conditional now. A
+          segmented bar with a plain "Step n of 4" under it: the bar shows how
+          far, the words say how many, and neither needs decoding. */}
       <View
+        accessible
+        accessibilityLabel={`Step ${step + 1} of 4`}
         style={{
-          flexDirection: 'row',
-          gap: 6,
-          paddingTop: insets.top + 14,
-          paddingHorizontal: 20,
+          gap: space.sm,
+          paddingTop: insets.top + space.lg,
+          paddingHorizontal: space.gutter,
         }}
       >
-        {[0, 1, 2, 3].map((i) => (
-          <View
-            key={i}
-            style={{ flex: 1, height: 4, borderRadius: 2, backgroundColor: i <= step ? p.accent : p.rule }}
-          />
-        ))}
+        <View style={{ flexDirection: 'row', gap: space.sm }}>
+          {[0, 1, 2, 3].map((i) => (
+            <View
+              key={i}
+              style={{ flex: 1, height: 4, borderRadius: 2, backgroundColor: i <= step ? p.accent : p.rule }}
+            />
+          ))}
+        </View>
+        <Small>Step {step + 1} of 4</Small>
       </View>
 
       <ScrollView
-        contentContainerStyle={{ padding: 20, paddingTop: 24, paddingBottom: space.sm, gap: 18 }}
+        contentContainerStyle={{
+          padding: space.gutter,
+          paddingTop: space.xl,
+          paddingBottom: space.lg,
+          gap: space.xl,
+        }}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={{ alignItems: 'center', gap: space.sm, paddingBottom: 2 }}>
+        <View style={{ alignItems: 'center', gap: space.sm }}>
           <Title level="h1" style={{ textAlign: 'center' }}>
             {
               [
@@ -184,28 +196,31 @@ export function Onboarding({
         {step === 0 ? (
           <View style={{ gap: space.md }}>
             {BULLETS.map((b) => (
-              <Card key={b.title} style={{ flexDirection: 'row', gap: 14, padding: space.lg }}>
+              <Card key={b.title} style={{ flexDirection: 'row', gap: space.md, padding: space.lg }}>
                 <IconTile name={b.icon} size={40} />
-                <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
+                <View style={{ flex: 1, minWidth: 0, gap: space.xs }}>
                   <Body strong>{b.title}</Body>
                   <Small>{b.body}</Small>
                 </View>
               </Card>
             ))}
-            <View style={{ gap: 6, marginTop: space.xs }}>
+            <View style={{ gap: space.sm, marginTop: space.sm }}>
               <Text style={[type.label, { color: p.inkMuted }]}>What should we call this?</Text>
               <TextInput
                 accessibilityLabel="Household name"
+                onFocus={() => setFocus('household')}
+                onBlur={() => setFocus(null)}
                 value={household}
                 onChangeText={setHousehold}
                 placeholder="Marsh Household"
                 placeholderTextColor={p.inkFaint}
                 style={{
+                  // White fill, 1px edge, accent when focused.
                   minHeight: control.input,
-                  borderWidth: 1.5,
-                  borderColor: p.rule,
-                  borderRadius: radius.md,
-                  backgroundColor: p.surface,
+                  borderWidth: 1,
+                  borderColor: focus === 'household' ? p.accent : p.ruleStrong,
+                  borderRadius: radius.lg,
+                  backgroundColor: p.card,
                   paddingHorizontal: space.lg,
                   ...type.input,
                   color: p.ink,
@@ -217,7 +232,7 @@ export function Onboarding({
         ) : null}
 
         {step === 1 ? (
-          <View style={{ gap: 14 }}>
+          <View style={{ gap: space.lg }}>
             <View
               style={{
                 height: 196,
@@ -258,19 +273,21 @@ export function Onboarding({
         {step === 2 ? (
           <View style={{ gap: space.md }}>
             {drafts.map((d, i) => (
-              <Card key={i} style={{ gap: 10, padding: space.lg }}>
+              <Card key={i} style={{ gap: space.md, padding: space.lg }}>
                 <TextInput
                   accessibilityLabel={`Category ${i + 1} name`}
+                  onFocus={() => setFocus(`name${i}`)}
+                  onBlur={() => setFocus(null)}
                   value={d.name}
                   onChangeText={(v) => setDrafts(patch(drafts, i, { name: v }))}
                   placeholder="Groceries"
                   placeholderTextColor={p.inkFaint}
                   style={{
                     minHeight: control.input,
-                    borderWidth: 1.5,
-                    borderColor: p.rule,
-                    borderRadius: radius.md,
-                    backgroundColor: p.ground,
+                    borderWidth: 1,
+                    borderColor: focus === `name${i}` ? p.accent : p.ruleStrong,
+                    borderRadius: radius.lg,
+                    backgroundColor: p.card,
                     paddingHorizontal: space.lg,
                     ...type.input,
                     color: p.ink,
@@ -282,16 +299,18 @@ export function Onboarding({
                     alignItems: 'center',
                     gap: space.sm,
                     minHeight: control.amount,
-                    borderWidth: 1.5,
-                    borderColor: isUsable(d) ? p.rule : p.risk,
-                    borderRadius: radius.md,
-                    backgroundColor: p.ground,
+                    borderWidth: 1,
+                    borderColor: !isUsable(d) ? p.risk : focus === `amount${i}` ? p.accent : p.ruleStrong,
+                    borderRadius: radius.lg,
+                    backgroundColor: p.card,
                     paddingHorizontal: space.lg,
                   }}
                 >
                   <Icon name="wallet" size={22} color={p.inkMuted} />
                   <TextInput
                     accessibilityLabel={`Category ${i + 1} monthly amount`}
+                    onFocus={() => setFocus(`amount${i}`)}
+                    onBlur={() => setFocus(null)}
                     value={d.amount}
                     onChangeText={(v) => setDrafts(patch(drafts, i, { amount: v.replace(/[^\d.]/g, '') }))}
                     placeholder="900"
@@ -333,17 +352,17 @@ export function Onboarding({
         ) : null}
 
         {step === 3 ? (
-          <View style={{ gap: 14 }}>
+          <View style={{ gap: space.lg }}>
             <GradientHero>
               <Text style={[type.label, { color: 'rgba(255,255,255,0.95)' }]}>Included</Text>
-              <Text style={[type.hero, numeric, { color: '#FFFFFF', marginTop: 6 }]}>10 scans</Text>
-              <Text style={[type.body, { color: 'rgba(255,255,255,0.95)', marginTop: 6 }]}>
+              <Text style={[type.hero, numeric, { color: '#FFFFFF', marginTop: space.sm }]}>10 scans</Text>
+              <Text style={[type.body, { color: 'rgba(255,255,255,0.95)', marginTop: space.sm }]}>
                 Free, no card. Credits never expire.
               </Text>
             </GradientHero>
-            <View style={{ gap: 10 }}>
+            <View style={{ gap: space.md }}>
               {READY.map((r) => (
-                <View key={r} style={{ flexDirection: 'row', alignItems: 'center', gap: 11 }}>
+                <View key={r} style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
                   <View
                     style={{
                       width: 22,
@@ -367,16 +386,15 @@ export function Onboarding({
       </ScrollView>
 
       {/* The step controls sit outside the scroll view so they never scroll
-          away from someone who has already decided. */}
+          away from someone who has already decided. One primary button, wider
+          than the Back beside it; no divider, the ground carries on. */}
       <View
         style={{
           flexDirection: 'row',
-          gap: 10,
-          padding: 20,
+          gap: space.md,
+          paddingHorizontal: space.gutter,
           paddingTop: space.md,
-          paddingBottom: insets.bottom + 18,
-          borderTopWidth: 1,
-          borderTopColor: p.rule,
+          paddingBottom: insets.bottom + space.lg,
         }}
       >
         {step > 0 ? (
@@ -384,7 +402,7 @@ export function Onboarding({
         ) : null}
         <Button
           label={cta}
-          style={{ flex: 1 }}
+          style={{ flex: 2 }}
           busy={busy}
           disabled={!canAdvance}
           onPress={() => (step === 3 ? void finish() : setStep(step + 1))}

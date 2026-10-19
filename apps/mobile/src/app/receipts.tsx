@@ -4,9 +4,8 @@ import { Pressable, RefreshControl, SectionList, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, type DocumentView } from '@/api';
-import { CategoryBar, CategoryIcon } from '@/components/rich';
-import { Body, Button, Chip, Figure, Label, Screen, ScreenHeader, Small } from '@/components/ui';
-import { Icon } from '@/components/Icon';
+import { CategoryBar, CategoryIcon, Raised } from '@/components/rich';
+import { Body, Button, Chip, Divider, Figure, Screen, ScreenHeader, Small } from '@/components/ui';
 import { Empty } from '@/components/form';
 import {
   PeriodChips,
@@ -114,7 +113,9 @@ export default function ReceiptsScreen() {
     return [...byDay.entries()].map(([iso, data]) => ({
       title: dayLabel(iso),
       total: sumMoney(data.map((x) => x.payableAmount)),
-      data,
+      // One item per day: the whole day is drawn as a single white card, which
+      // a per-row list cannot do (rows cannot share a rounded, lifted frame).
+      data: [data],
     }));
   }, [all, onlyReview]);
 
@@ -122,7 +123,7 @@ export default function ReceiptsScreen() {
     <Screen>
       <SectionList
         sections={sections}
-        keyExtractor={(d) => d.id}
+        keyExtractor={(g) => g[0]!.id}
         stickySectionHeadersEnabled
         // A year of receipts is ~900 rows. Without these the list mounts every
         // one of them up front and the first scroll stutters on a mid-range
@@ -136,7 +137,7 @@ export default function ReceiptsScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={p.accent} />
         }
         ListHeaderComponent={
-          <View style={{ paddingHorizontal: space.lg, paddingTop: space.sm, gap: space.md }}>
+          <View style={{ paddingHorizontal: space.gutter, paddingTop: space.sm, gap: space.md }}>
             <ScreenHeader title="Spending" onBack={() => router.back()} />
             <WorkspaceSwitch />
 
@@ -157,7 +158,7 @@ export default function ReceiptsScreen() {
             <View
               style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' }}
             >
-              <Label>{all.length} receipts</Label>
+              <Small>{all.length === 1 ? '1 receipt' : `${all.length} receipts`}</Small>
               <Figure size="h2">{formatAud(total)}</Figure>
             </View>
 
@@ -176,7 +177,7 @@ export default function ReceiptsScreen() {
           <View
             style={{
               backgroundColor: p.ground,
-              paddingHorizontal: space.lg,
+              paddingHorizontal: space.gutter,
               paddingTop: space.lg,
               paddingBottom: space.sm,
               flexDirection: 'row',
@@ -184,16 +185,13 @@ export default function ReceiptsScreen() {
               alignItems: 'baseline',
             }}
           >
-            <Label>{section.title}</Label>
+            <Small style={{ fontWeight: '600' }}>{section.title}</Small>
             <Small>{formatAud(section.total)}</Small>
           </View>
         )}
-        ItemSeparatorComponent={() => (
-          <View style={{ height: 1, backgroundColor: p.rule, marginLeft: 72 }} />
-        )}
         ListEmptyComponent={
           docs === null ? null : (
-            <View style={{ padding: space.lg, gap: space.md }}>
+            <View style={{ paddingHorizontal: space.gutter, paddingTop: space.lg, gap: space.md }}>
               {query ? (
                 <>
                   <Empty
@@ -226,40 +224,46 @@ export default function ReceiptsScreen() {
             </View>
           )
         }
-        renderItem={({ item }) => (
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => router.push(`/document/${item.id}`)}
-            style={({ pressed }) => ({
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: space.md,
-              paddingHorizontal: space.lg,
-              paddingVertical: 14,
-              backgroundColor: pressed ? p.surface : 'transparent',
-            })}
-          >
-            <CategoryIcon category={item.category} />
+        renderItem={({ item: group }) => (
+          <Raised style={{ padding: 0, marginHorizontal: space.gutter }}>
+            {group.map((item, i) => (
+              <View key={item.id}>
+                {i > 0 ? <Divider style={{ marginLeft: 68 }} /> : null}
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => router.push(`/document/${item.id}`)}
+                  style={({ pressed }) => ({
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: space.md,
+                    paddingHorizontal: space.lg,
+                    paddingVertical: space.md,
+                    backgroundColor: pressed ? p.surfaceAlt : 'transparent',
+                    // The card cannot clip (it would lose its shadow), so the
+                    // pressed fill follows the card's corners itself.
+                    borderTopLeftRadius: i === 0 ? 18 : 0,
+                    borderTopRightRadius: i === 0 ? 18 : 0,
+                    borderBottomLeftRadius: i === group.length - 1 ? 18 : 0,
+                    borderBottomRightRadius: i === group.length - 1 ? 18 : 0,
+                  })}
+                >
+                  <CategoryIcon category={item.category} size={38} />
 
-            <View style={{ flex: 1, gap: 3 }}>
-              <Body strong numberOfLines={1}>
-                {item.supplierName}
-              </Body>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
-                <Small numberOfLines={1} style={{ flexShrink: 1 }}>
-                  {item.category}
-                </Small>
-                {isBusiness && item.reviewStatus === 'needs_review' ? (
-                  <Chip tone="warn">Check</Chip>
-                ) : null}
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <Body strong numberOfLines={1}>
+                      {item.supplierName}
+                    </Body>
+                    <Small numberOfLines={1}>{item.category}</Small>
+                  </View>
+
+                  {isBusiness && item.reviewStatus === 'needs_review' ? (
+                    <Chip tone="warn">Check</Chip>
+                  ) : null}
+                  <Figure size="h2">{formatAud(item.payableAmount)}</Figure>
+                </Pressable>
               </View>
-            </View>
-
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
-              <Figure size="h2">{formatAud(item.payableAmount)}</Figure>
-              <Icon name="chevronRight" size={17} color={p.inkFaint} />
-            </View>
-          </Pressable>
+            ))}
+          </Raised>
         )}
       />
     </Screen>

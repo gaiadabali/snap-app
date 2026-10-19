@@ -6,8 +6,8 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { api, type PointLedgerEntry } from '@/api';
 import { Loading } from '@/components/form';
-import { Raised } from '@/components/rich';
-import { Body, Card, Divider, Figure, Label, Screen, ScreenHeader, Small } from '@/components/ui';
+import { GradientHero, HeroBody, HeroFigure, HeroLabel, Raised } from '@/components/rich';
+import { Body, Card, Divider, Figure, Screen, ScreenHeader, SectionHeader, Small } from '@/components/ui';
 import { formatShortDate, space } from '@/theme';
 
 /** `reason` is a plain string on the wire (`PointLedgerEntry.reason`), not a
@@ -60,10 +60,10 @@ export default function PointsScreen() {
     <Screen>
       <ScrollView
         contentContainerStyle={{
-          padding: space.lg,
+          padding: space.gutter,
           paddingTop: insets.top + space.md,
           paddingBottom: insets.bottom + space.xxl,
-          gap: space.lg,
+          gap: space.xl,
         }}
       >
         <View style={{ gap: space.xs }}>
@@ -76,27 +76,27 @@ export default function PointsScreen() {
         ) : (
           <>
             <Animated.View entering={FadeInDown.duration(260)}>
-              <Raised style={{ gap: 4, alignItems: 'flex-start' }}>
-                <Label>Balance</Label>
-                <Figure size="display" tone="accent">
-                  {balance}
-                </Figure>
-                <Small>{balance === 1 ? 'point' : 'points'}, one per scan</Small>
-              </Raised>
+              <GradientHero>
+                <View style={{ gap: space.xs }}>
+                  <HeroLabel>Balance</HeroLabel>
+                  <HeroFigure>{balance}</HeroFigure>
+                  <HeroBody>{balance === 1 ? 'point' : 'points'}, one per scan</HeroBody>
+                </View>
+              </GradientHero>
             </Animated.View>
 
-            <Card tone="default">
-              <View style={{ gap: space.xs }}>
-                <Label>Redeeming points</Label>
+            <View style={{ gap: space.md }}>
+              <SectionHeader title="Redeeming points" />
+              <Card tone="default">
                 <Body>
                   Points cannot be spent in Snap Apps yet. Redemption arrives with yourtal, the
                   next app in the ecosystem — nothing here implies it ships today.
                 </Body>
-              </View>
-            </Card>
+              </Card>
+            </View>
 
-            <View style={{ gap: space.sm }}>
-              <Label>How you earned them</Label>
+            <View style={{ gap: space.md }}>
+              <SectionHeader title="How you earned them" />
               <Raised style={{ padding: 0 }}>
                 {entries.length === 0 ? (
                   <View style={{ padding: space.lg }}>
@@ -113,10 +113,10 @@ export default function PointsScreen() {
                           alignItems: 'center',
                           gap: space.md,
                           paddingHorizontal: space.lg,
-                          paddingVertical: 13,
+                          paddingVertical: space.md,
                         }}
                       >
-                        <View style={{ flex: 1, gap: 1 }}>
+                        <View style={{ flex: 1, gap: space.xs }}>
                           <Body strong>{reasonLabel(e.reason)}</Body>
                           <Small>{formatShortDate(e.createdAt.slice(0, 10))}</Small>
                         </View>

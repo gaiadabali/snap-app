@@ -5,8 +5,8 @@ import { Text } from '@/theme/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/Icon';
-import { Card, Divider, Row, Screen, ScreenHeader, Small } from '@/components/ui';
-import { control, space, type, usePalette } from '@/theme';
+import { Card, Divider, Row, Screen, ScreenHeader, SectionHeader, Small } from '@/components/ui';
+import { space, type, usePalette } from '@/theme';
 
 /**
  * The questions that actually come in, answered in full.
@@ -52,10 +52,10 @@ export default function HelpScreen() {
     <Screen>
       <ScrollView
         contentContainerStyle={{
-          padding: 20,
+          paddingHorizontal: space.gutter,
           paddingTop: insets.top + space.md,
           paddingBottom: space.xxl,
-          gap: 14,
+          gap: space.xl,
         }}
       >
         <ScreenHeader title="Help" onBack={() => router.back()} />
@@ -63,25 +63,26 @@ export default function HelpScreen() {
           The answers below cover most of what comes up. Anything else, write to us.
         </Text>
 
-        <View style={{ gap: space.sm }}>
-          <Text style={[type.label, { color: p.inkMuted }]}>Common questions</Text>
+        <View style={{ gap: space.md }}>
+          <SectionHeader title="Common questions" />
           <Card padded={false}>
             {TOPICS.map((t, i) => {
               const on = open === i;
               return (
-                <View key={t.q} style={{ borderTopWidth: i === 0 ? 0 : 1, borderTopColor: p.rule }}>
+                <View key={t.q}>
+                  {i === 0 ? null : <Divider style={{ marginLeft: space.lg }} />}
                   <Pressable
                     accessibilityRole="button"
                     accessibilityState={{ expanded: on }}
                     onPress={() => setOpen(on ? null : i)}
                     style={({ pressed }) => ({
-                      minHeight: control.tap + 14,
+                      minHeight: 56,
                       flexDirection: 'row',
                       alignItems: 'center',
                       gap: space.md,
                       paddingHorizontal: space.lg,
-                      paddingVertical: 14,
-                      backgroundColor: pressed ? p.surfaceAlt : 'transparent',
+                      paddingVertical: space.md,
+                      opacity: pressed ? 0.7 : 1,
                     })}
                   >
                     <Text style={[type.bodyStrong, { flex: 1, color: p.ink }]}>{t.q}</Text>
@@ -105,8 +106,8 @@ export default function HelpScreen() {
           </Card>
         </View>
 
-        <View style={{ gap: space.sm }}>
-          <Text style={[type.label, { color: p.inkMuted }]}>Still stuck</Text>
+        <View style={{ gap: space.md }}>
+          <SectionHeader title="Still stuck" />
           <Card padded={false}>
             <Row
               title="Email support"
@@ -115,7 +116,7 @@ export default function HelpScreen() {
               iconTone="neutral"
               onPress={() => void Linking.openURL('mailto:hello@snap-apps.com.au')}
             />
-            <Divider />
+            <Divider style={{ marginLeft: space.lg + 40 + 14 }} />
             <Row
               title="Report a problem"
               subtitle="Send a diagnostic with your last few scans"

@@ -1,13 +1,12 @@
 import { useRouter } from 'expo-router';
 import { useEffect, useRef } from 'react';
 import { Animated, Dimensions, Easing, Modal, Pressable, ScrollView, View } from 'react-native';
-import { Text } from '@/theme/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { IS_DEMO, api, type PersonalSummary, type SalesSummary } from '@/api';
 import { GradientHero, HeroBody, HeroFigure, HeroLabel } from '@/components/rich';
 import { MenuContent } from '@/components/MenuContent';
-import { Figure, Small } from '@/components/ui';
+import { Figure, IconButton, Small } from '@/components/ui';
 import { formatAud, space, usePalette } from '@/theme';
 import { useWorkspace } from '@/workspace';
 import { useCallback, useState } from 'react';
@@ -17,10 +16,10 @@ import { useCallback, useState } from 'react';
  *
  * A drawer rather than a screen: the menu is somewhere you glance and leave,
  * not a destination. Sliding it over the current page keeps that context —
- * Home stays visible behind the scrim — and the tab bar stays put underneath,
+ * Home stays visible behind the scrim — and the bottom bar stays put underneath,
  * so Home and Scan are still one tap away without dismissing anything.
  *
- * Built on Animated rather than a navigation drawer library: the tab bar has to
+ * Built on Animated rather than a navigation drawer library: the bottom bar has to
  * keep working while this is open, which a drawer navigator would take over.
  */
 export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -107,17 +106,23 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
             contentContainerStyle={{
               paddingTop: insets.top + space.lg,
               paddingBottom: insets.bottom + space.xxl,
-              paddingHorizontal: space.lg,
-              gap: space.lg,
+              paddingHorizontal: space.gutter,
+              gap: space.xl,
             }}
           >
+            {/* The close target is a full 44pt IconButton, nudged out so its
+                glyph (not its box) lines up with the gutter. */}
             <View
               style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
             >
               <Figure size="h1">Menu</Figure>
-              <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={onClose} hitSlop={12}>
-                <Text style={{ fontSize: 26, color: p.inkFaint, lineHeight: 28 }}>×</Text>
-              </Pressable>
+              <IconButton
+                name="close"
+                label="Close"
+                onPress={onClose}
+                color={p.inkMuted}
+                style={{ marginRight: -space.md }}
+              />
             </View>
 
             {/* The one thing worth surfacing above a menu. */}

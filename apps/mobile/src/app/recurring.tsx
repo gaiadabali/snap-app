@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api, type Recurring } from '@/api';
 import { Empty, Loading } from '@/components/form';
 import { CategoryIcon, GradientHero, HeroBody, HeroFigure, HeroLabel, Raised } from '@/components/rich';
-import { Body, Chip, Divider, Figure, Label, Screen, Small } from '@/components/ui';
+import { Body, Chip, Divider, Figure, Screen, SectionHeader, Small } from '@/components/ui';
 import { formatAud, formatShortDate, space } from '@/theme';
 
 /**
@@ -41,9 +41,11 @@ export default function RecurringScreen() {
     <Screen>
       <ScrollView
         contentContainerStyle={{
-          padding: space.lg,
+          paddingHorizontal: space.gutter,
+          paddingTop: space.md,
           paddingBottom: insets.bottom + space.xxl,
-          gap: space.lg,
+          // 24 between blocks, 12 under a heading.
+          gap: space.xl,
         }}
       >
         {rows === null ? (
@@ -67,8 +69,8 @@ export default function RecurringScreen() {
                 detail="Once a merchant appears three months running at a steady amount, it shows up here automatically."
               />
             ) : (
-              <View style={{ gap: space.sm }}>
-                <Label>Found in your receipts</Label>
+              <View style={{ gap: space.md }}>
+                <SectionHeader title="Found in your receipts" />
                 <Raised style={{ padding: 0 }}>
                   {all.map((r, i) => (
                     <View key={r.merchant}>
@@ -79,7 +81,7 @@ export default function RecurringScreen() {
                           alignItems: 'center',
                           gap: space.md,
                           paddingHorizontal: space.lg,
-                          paddingVertical: 13,
+                          paddingVertical: space.md,
                         }}
                       >
                         <CategoryIcon category={r.category} size={38} />

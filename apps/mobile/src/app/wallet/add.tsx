@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { WalletProvider } from '@/api';
 import { type IconName } from '@/components/Icon';
-import { Card, Row, Screen, ScreenHeader, Small } from '@/components/ui';
+import { Card, Row, Screen, ScreenHeader, SectionHeader, Small } from '@/components/ui';
 import { space, type, usePalette } from '@/theme';
 
 /**
@@ -41,19 +41,21 @@ export default function AddPaymentMethodScreen() {
     <Screen>
       <ScrollView
         contentContainerStyle={{
-          padding: 20,
+          padding: space.gutter,
           paddingTop: insets.top + space.md,
           paddingBottom: space.xxl,
-          gap: 14,
+          gap: space.xl,
         }}
       >
-        <ScreenHeader title="Payment method" onBack={() => router.back()} />
-        <Text style={[type.body, { color: p.inkMuted }]}>
-          Pick where the charge comes from. You can add more later and switch between them.
-        </Text>
-
         <View style={{ gap: space.sm }}>
-          <Text style={[type.label, { color: p.inkMuted }]}>Bank or wallet</Text>
+          <ScreenHeader title="Payment method" onBack={() => router.back()} />
+          <Text style={[type.body, { color: p.inkMuted }]}>
+            Pick where the charge comes from. You can add more later and switch between them.
+          </Text>
+        </View>
+
+        <View style={{ gap: space.md }}>
+          <SectionHeader title="Bank or wallet" />
           <Card padded={false}>
             {PROVIDERS.map((pv, i) => (
               <View
@@ -64,7 +66,6 @@ export default function AddPaymentMethodScreen() {
                   title={pv.label}
                   subtitle={pv.hint}
                   icon={pv.icon}
-                  iconTone="neutral"
                   onPress={() =>
                     router.push({
                       pathname: '/wallet/card',
