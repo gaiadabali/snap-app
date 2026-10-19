@@ -114,14 +114,11 @@ export function PeriodChips({
   return (
     // One scrolling row rather than a wrapped block: five chips wrapped onto
     // two lines pushed the list a chip-height down the screen for no reason.
-    // It bleeds to the screen edges — every caller sits in the 16pt gutter —
-    // so a chip scrolls off the glass rather than being cut at the margin.
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
-      style={{ marginHorizontal: -space.lg, flexGrow: 0 }}
-      contentContainerStyle={{ gap: space.sm, alignItems: 'center', paddingHorizontal: space.lg }}
+      contentContainerStyle={{ gap: space.sm, alignItems: 'center' }}
     >
       {PERIODS.map((x) => (
         <Chip key={x.key} selected={value === x.key} onPress={() => onChange(x.key)}>

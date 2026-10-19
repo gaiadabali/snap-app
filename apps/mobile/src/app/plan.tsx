@@ -106,11 +106,11 @@ export default function PlanScreen() {
                   label="Seats"
                   value={`${plan.seatsUsed} of ${plan.seatLimit}`}
                   hint={seatPct >= 1 ? 'Every seat is taken' : 'In use'}
-                  tone={seatPct >= 1 ? 'accent' : 'default'}
+                  tone={seatPct >= 1 ? 'risk' : 'default'}
                 />
               </View>
               <View style={{ marginTop: space.md }}>
-                <ProgressBar value={seatPct} tone={seatPct >= 1 ? p.warn : p.accent} />
+                <ProgressBar value={seatPct} tone={seatPct >= 1 ? p.risk : p.accent} />
               </View>
 
               <View style={{ marginTop: space.lg }}>

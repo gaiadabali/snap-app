@@ -121,12 +121,7 @@ export function providerLabel(provider: string): string {
 
 /** "16 SEP" for the ledger gutter, in the device's own day. */
 function shortDay(iso: string): string {
-  // Not `toLocaleDateString`: en-AU spells September "Sept", and "16 SEPT"
-  // wraps in a 50pt gutter. Three letters, every month, like every other
-  // ledger in the app — but still the device's own day, not UTC's.
-  const d = new Date(iso);
-  const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-  return `${d.getDate()} ${months[d.getMonth()]}`;
+  return new Date(iso).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' }).toUpperCase();
 }
 
 /**
