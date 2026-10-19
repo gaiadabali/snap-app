@@ -1,4 +1,4 @@
-import { useFocusEffect, useRouter } from 'expo-router';
+import { Redirect, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Linking, Pressable, ScrollView, View } from 'react-native';
 import { Text, TextInput } from '@/theme/text';
@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api, type Reward } from '@/api';
 import { Icon } from '@/components/Icon';
 import { GradientHero } from '@/components/rich';
+import { EXPERIMENTAL_FEATURES_ENABLED } from '@/config';
 import {
   Body,
   Button,
@@ -53,11 +54,18 @@ export default function RewardsScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      // The screen redirects below; don't call the stub on the way.
+      if (!EXPERIMENTAL_FEATURES_ENABLED) return;
       void api().listRewards().then(setRewards).catch(() => setRewards([]));
       void api().getPointBalance().then((b) => setPoints(b.balance)).catch(() => {});
       void api().getCreditBalance().then((b) => setCredits(b.creditsRemaining)).catch(() => {});
     }, []),
   );
+
+  // A route still navigable by URL is not hidden, only unadvertised. Rewards
+  // and voucher redemption are in-process Maps on the server, so a redeemed
+  // voucher would not survive a restart.
+  if (!EXPERIMENTAL_FEATURES_ENABLED) return <Redirect href="/credits" />;
 
   async function redeem() {
     setBusy(true);

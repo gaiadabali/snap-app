@@ -17,6 +17,7 @@ import {
   SectionHeader,
   Small,
 } from '@/components/ui';
+import { EXPERIMENTAL_FEATURES_ENABLED } from '@/config';
 import { space, type, usePalette } from '@/theme';
 
 /**
@@ -147,14 +148,18 @@ export default function PrivacyScreen() {
         <View style={{ gap: space.md }}>
           <SectionHeader title="Your data" />
           <Card padded={false}>
-            <Row
-              title="Sign in with fingerprint"
-              subtitle="Unlock this device without typing a password"
-              icon="lock"
-              iconTone="neutral"
-              onPress={() => router.push('/fingerprint')}
-            />
-            <Divider style={{ marginLeft: space.lg + 40 + 14 }} />
+            {EXPERIMENTAL_FEATURES_ENABLED ? (
+              <>
+                <Row
+                  title="Sign in with fingerprint"
+                  subtitle="Unlock this device without typing a password"
+                  icon="lock"
+                  iconTone="neutral"
+                  onPress={() => router.push('/fingerprint')}
+                />
+                <Divider style={{ marginLeft: space.lg + 40 + 14 }} />
+              </>
+            ) : null}
             <Row
               title="Export receipts"
               subtitle="Every photo, with the fields read from it"

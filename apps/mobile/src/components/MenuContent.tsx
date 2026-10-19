@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Icon, type IconName } from '@/components/Icon';
 import { Body, Chip, SectionHeader, Small } from '@/components/ui';
 import { Raised } from '@/components/rich';
-import { BUSINESS_FEATURES_ENABLED } from '@/config';
+import { BUSINESS_FEATURES_ENABLED, EXPERIMENTAL_FEATURES_ENABLED } from '@/config';
 import { radius, space, usePalette } from '@/theme';
 import { WorkspaceSwitch, useWorkspace } from '@/workspace';
 
@@ -140,6 +140,23 @@ const PERSONAL_GROUPS: Group[] = [
   },
 ];
 
+/**
+ * Entries behind the experimental flag are stripped from whichever menu is
+ * chosen: Rewards is backed by an in-process Map on the server, so it is not
+ * advertised until that is a table. A group left empty is dropped.
+ */
+const EXPERIMENTAL_HREFS = new Set<string>(['/rewards']);
+
+function stripExperimental(groups: Group[]): Group[] {
+  if (EXPERIMENTAL_FEATURES_ENABLED) return groups;
+  return groups
+    .map((g) => ({
+      ...g,
+      entries: g.entries.filter((e) => !e.href || !EXPERIMENTAL_HREFS.has(String(e.href))),
+    }))
+    .filter((g) => g.entries.length > 0);
+}
+
 export function MenuContent({ onNavigate }: { onNavigate?: () => void }) {
   const p = usePalette();
   const router = useRouter();
@@ -147,7 +164,9 @@ export function MenuContent({ onNavigate }: { onNavigate?: () => void }) {
   // The one place this flag is checked to pick a menu: everywhere else reads
   // `isBusiness`, which the workspace provider already keeps honest — a
   // personal-only build never has a business workspace to be active.
-  const groups = BUSINESS_FEATURES_ENABLED && isBusiness ? BUSINESS_GROUPS : PERSONAL_GROUPS;
+  const groups = stripExperimental(
+    BUSINESS_FEATURES_ENABLED && isBusiness ? BUSINESS_GROUPS : PERSONAL_GROUPS,
+  );
 
   return (
     <View style={{ gap: space.xl }}>

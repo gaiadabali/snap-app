@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import { ScrollView, View } from 'react-native';
 import { Text } from '@/theme/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { WalletProvider } from '@/api';
 import { type IconName } from '@/components/Icon';
 import { Card, Row, Screen, ScreenHeader, SectionHeader, Small } from '@/components/ui';
+import { EXPERIMENTAL_FEATURES_ENABLED } from '@/config';
 import { space, type, usePalette } from '@/theme';
 
 /**
@@ -36,6 +37,11 @@ export default function AddPaymentMethodScreen() {
   const p = usePalette();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+
+  // A route still navigable by URL is not hidden, only unadvertised. The saved
+  // card store is an in-process Map on the server, so a method added here would
+  // not survive a restart.
+  if (!EXPERIMENTAL_FEATURES_ENABLED) return <Redirect href="/credits" />;
 
   return (
     <Screen>

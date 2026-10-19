@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api, type CreditPurchase, type SavedCard } from '@/api';
 import { Icon } from '@/components/Icon';
 import { Button, Card, Divider, Screen, Small } from '@/components/ui';
+import { EXPERIMENTAL_FEATURES_ENABLED } from '@/config';
 import { formatAud, numeric, space, type, usePalette } from '@/theme';
 
 /**
@@ -43,6 +44,8 @@ export default function PayScreen() {
   const charging = useRef(false);
 
   useEffect(() => {
+    // The card is only a label, and the wallet behind it is a server stub.
+    if (!EXPERIMENTAL_FEATURES_ENABLED) return undefined;
     let live = true;
     void api()
       .listSavedCards()
@@ -136,7 +139,9 @@ export default function PayScreen() {
 
         <Card style={{ width: '100%', maxWidth: 380, marginTop: space.xl, gap: space.md }}>
           <SummaryRow label={ok ? 'Paid' : 'Attempted'} value={formatAud(purchase?.priceAud ?? null)} />
-          <SummaryRow label="Method" value={card?.label ?? '—'} />
+          {EXPERIMENTAL_FEATURES_ENABLED ? (
+            <SummaryRow label="Method" value={card?.label ?? '—'} />
+          ) : null}
           {ok ? (
             <>
               <SummaryRow label="Reference" value={(purchase?.id ?? '').slice(-10).toUpperCase()} />

@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { IS_DEMO, api, type DocumentView, type PersonalSummary } from '@/api';
 import { CategoryRing, RingLegend } from '@/components/charts';
 import { Icon } from '@/components/Icon';
+import { EXPERIMENTAL_FEATURES_ENABLED } from '@/config';
 import { GradientHero, HeroBody, HeroLabel, Raised } from '@/components/rich';
 import { Card, Chip, Divider, Figure, Screen, SectionHeader, Small } from '@/components/ui';
 import { UpdateNotice } from '@/components/UpdateNotice';
@@ -64,10 +65,13 @@ export default function PersonalHome() {
        for, and a points outage must not blank the month. */
     void api().getCreditBalance().then((b) => setCredits(b.creditsRemaining)).catch(() => {});
     void api().getPointBalance().then((b) => setPoints(b.balance)).catch(() => {});
-    void api()
-      .listAlerts()
-      .then((a) => setUnread(a.filter((x) => x.readAt === null).length))
-      .catch(() => {});
+    // Only the bell uses this count, and the bell is hidden with the flag.
+    if (EXPERIMENTAL_FEATURES_ENABLED) {
+      void api()
+        .listAlerts()
+        .then((a) => setUnread(a.filter((x) => x.readAt === null).length))
+        .catch(() => {});
+    }
   }, []);
 
   useFocusEffect(
@@ -166,35 +170,39 @@ export default function PersonalHome() {
             <Icon name={scheme === 'dark' ? 'sun' : 'moon'} size={21} color={p.inkStrong} />
           </Pressable>
 
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={unread > 0 ? `Notifications, ${unread} unread` : 'Notifications'}
-            onPress={() => router.push('/alerts')}
-            style={({ pressed }) => ({
-              width: control.tap,
-              height: control.tap,
-              alignItems: 'center',
-              justifyContent: 'center',
-              opacity: pressed ? 0.6 : 1,
-            })}
-          >
-            <Icon name="bell" size={21} color={p.inkStrong} />
-            {unread > 0 ? (
-              <View
-                style={{
-                  position: 'absolute',
-                  top: 9,
-                  right: 9,
-                  width: 9,
-                  height: 9,
-                  borderRadius: 5,
-                  backgroundColor: p.risk,
-                  borderWidth: 1.5,
-                  borderColor: p.ground,
-                }}
-              />
-            ) : null}
-          </Pressable>
+          {/* The alerts feed is stub-backed on the server, so the bell is only
+              mounted when the experimental flag is on. */}
+          {EXPERIMENTAL_FEATURES_ENABLED ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={unread > 0 ? `Notifications, ${unread} unread` : 'Notifications'}
+              onPress={() => router.push('/alerts')}
+              style={({ pressed }) => ({
+                width: control.tap,
+                height: control.tap,
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: pressed ? 0.6 : 1,
+              })}
+            >
+              <Icon name="bell" size={21} color={p.inkStrong} />
+              {unread > 0 ? (
+                <View
+                  style={{
+                    position: 'absolute',
+                    top: 9,
+                    right: 9,
+                    width: 9,
+                    height: 9,
+                    borderRadius: 5,
+                    backgroundColor: p.risk,
+                    borderWidth: 1.5,
+                    borderColor: p.ground,
+                  }}
+                />
+              ) : null}
+            </Pressable>
+          ) : null}
         </View>
 
         {/* The hero is what is LEFT, not what is spent. A tracker that leads
