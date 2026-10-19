@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, ScrollView, Text, View, type StyleProp, type ViewStyle } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useDeviceInsets } from '@/components/device-insets';
 import { Icon } from '@/components/Icon';
 
 import { api, setActiveWorkspaceId, type MemberRole, type Workspace, type WorkspaceSummary } from '@/api';
@@ -327,7 +327,8 @@ function initials(name: string): string {
 /** The full list, with the option to start another one. */
 export function WorkspacePicker({ open, onClose }: { open: boolean; onClose: () => void }) {
   const p = usePalette();
-  const insets = useSafeAreaInsets();
+  // Real insets: this is a modal, drawn over the bottom bar too.
+  const insets = useDeviceInsets();
   const { workspaces, active, setActive, refresh } = useWorkspace();
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState('');

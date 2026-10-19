@@ -1,4 +1,4 @@
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -7,7 +7,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { api, type PointLedgerEntry } from '@/api';
 import { Loading } from '@/components/form';
 import { Raised } from '@/components/rich';
-import { Body, Card, Divider, Figure, Label, Screen, Small } from '@/components/ui';
+import { Body, Card, Divider, Figure, Label, Screen, ScreenHeader, Small } from '@/components/ui';
 import { formatShortDate, space } from '@/theme';
 
 /** `reason` is a plain string on the wire (`PointLedgerEntry.reason`), not a
@@ -38,6 +38,7 @@ function reasonLabel(reason: string): string {
  */
 export default function PointsScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const [balance, setBalance] = useState<number | null>(null);
   const [entries, setEntries] = useState<PointLedgerEntry[] | null>(null);
 
@@ -66,9 +67,8 @@ export default function PointsScreen() {
         }}
       >
         <View style={{ gap: space.xs }}>
-          <Label>Points</Label>
-          <Figure size="h1">Earned by scanning</Figure>
-          <Small>Yours personally — they follow you, not any one workspace.</Small>
+          <ScreenHeader title="Points" onBack={() => router.back()} />
+          <Small>Earned by scanning. Yours personally — they follow you, not any one workspace.</Small>
         </View>
 
         {!loaded ? (

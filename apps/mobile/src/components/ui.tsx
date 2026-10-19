@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 
 import { Icon, type IconName } from '@/components/Icon';
-import { control, numeric, radius, space, type, usePalette } from '@/theme';
+import { control, numeric, radius, space, type, usePalette, useTheme } from '@/theme';
 
 /* Shared primitives, rebuilt against the 2026-09-19 prototype.
 
@@ -262,12 +262,15 @@ export function Button({
   style?: StyleProp<ViewStyle>;
 }) {
   const p = usePalette();
+  const { scheme } = useTheme();
   const bg = { accent: p.accent, outline: 'transparent', ghost: 'transparent', risk: p.risk }[tone];
   const fg = {
     accent: p.accentInk,
     outline: p.ink,
     ghost: p.accentText,
-    risk: '#FFFFFF',
+    // Dark ink on the dark scheme's risk, a light salmon: white on it is
+    // about 2.4:1.
+    risk: scheme === 'dark' ? p.ground : '#FFFFFF',
   }[tone];
   const off = disabled || busy;
   return (

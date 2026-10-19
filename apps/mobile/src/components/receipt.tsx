@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Image, Modal, Pressable, ScrollView, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useDeviceInsets } from '@/components/device-insets';
 import { Icon } from '@/components/Icon';
 
 import type { DocumentView } from '@/api';
@@ -122,7 +122,8 @@ export function OriginalDocument({
   onImageExpired?: (failedUrl: string) => void;
 }) {
   const p = usePalette();
-  const insets = useSafeAreaInsets();
+  // Real insets: this is a modal, drawn over the bottom bar too.
+  const insets = useDeviceInsets();
   const [zoomed, setZoomed] = useState(false);
   const [pageIndex, setPageIndex] = useState(0);
   // URLs that failed to load THIS render generation. Keyed by the URL string

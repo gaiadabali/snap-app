@@ -399,6 +399,16 @@ match mobile** — see §4. Both now carry `ground #F7F9FC` / dark `#121820`.
 One palette, two clients, still the requirement. The thing to preserve is not a
 particular hex but the fact that neither client changes a neutral alone.
 
+**2026-10-19 — the owner's ruling: mobile does NOT take the web's register.**
+A pass that carried this document's type, labels, ledger rows and void band
+onto `apps/mobile` was shipped and then rejected by the owner the same day:
+*"dont make it like the website. that website is still too ugly. Revert and
+upgrade."* It was reverted. Mobile's baseline is its own 2026-09-19 prototype,
+upgraded with native phone-app patterns — first, a floating bottom bar with a
+raised centre Scan button, shown on every screen (`components/BottomNav.tsx`).
+Note the second half of that sentence too: the owner considers the website
+itself still too ugly, so nothing in §12 should be treated as approved taste.
+
 ### 12.6 Mechanism-led copy — open, and the largest remaining job
 
 `/features` and `/how-it-works` describe the pipeline rather than the benefit.
