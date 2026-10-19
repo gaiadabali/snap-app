@@ -801,14 +801,11 @@ export default function CaptureScreen() {
   }
 
   // ── Permission states ──
-  // Dark, like the viewfinder they stand in for. The tab bar goes dark the
-  // moment this tab is chosen, so a light permission screen above it read as
-  // two different screens stacked.
   if (!permission) {
     return (
-      <Screen style={{ backgroundColor: '#07090C' }}>
+      <Screen>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <ActivityIndicator color="rgba(255,255,255,0.6)" />
+          <ActivityIndicator color={p.accent} />
         </View>
       </Screen>
     );
@@ -816,21 +813,10 @@ export default function CaptureScreen() {
 
   if (!permission.granted) {
     return (
-      <Screen style={{ backgroundColor: '#07090C' }}>
-        <View
-          style={{
-            flex: 1,
-            justifyContent: 'center',
-            paddingHorizontal: space.xl,
-            gap: space.lg,
-          }}
-        >
-          <Icon name="camera" size={28} color={onVoid.scan} />
-          <Text style={[type.label, { color: 'rgba(255,255,255,0.55)' }]}>Camera</Text>
-          <Text style={[type.display, { color: '#FFFFFF', marginTop: -space.sm }]}>
-            Camera access
-          </Text>
-          <Body style={{ color: 'rgba(255,255,255,0.72)' }}>
+      <Screen>
+        <View style={{ flex: 1, justifyContent: 'center', padding: space.xl, gap: space.lg }}>
+          <Text style={[type.display, { color: p.ink }]}>Camera access</Text>
+          <Body muted>
             Snap Apps needs the camera to photograph receipts and tax invoices. The original image is
             kept unmodified — the ATO only accepts an electronic copy of a receipt if it is a true
             and clear reproduction.
