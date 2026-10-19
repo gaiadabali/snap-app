@@ -78,6 +78,12 @@ jobs:
       - name: Typecheck every package
         run: pnpm -r typecheck
 
+      # Pure logic only (see apps/mobile/vitest.config.ts), so it needs no
+      # device or browser. It was never run here, which is how a quarter-
+      # boundary failure in the demo fixture sat unnoticed for three weeks.
+      - name: Mobile suite
+        run: pnpm --filter @snap/mobile test
+
       # The whole directory, not one named file. `test/dockerfile-deps.test.ts`
       # was added to catch a workspace dependency missing from an app image —
       # the failure that took production down twice in one day — and naming

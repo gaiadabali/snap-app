@@ -136,8 +136,13 @@ describe('bills, payments and goals', () => {
   });
 });
 
+/**
+ * The quarter the fixture was GENERATED in, not today's. The generator picks
+ * its BAS quarter from its own clock, so reading `new Date()` here made this
+ * suite fail from the first day of every new quarter until someone regenerated.
+ */
 function quarterStart(): string {
-  const now = new Date();
-  const m = Math.floor(now.getMonth() / 3) * 3;
-  return `${now.getFullYear()}-${String(m + 1).padStart(2, '0')}-01`;
+  const at = new Date(DEMO.generatedAt);
+  const m = Math.floor(at.getMonth() / 3) * 3;
+  return `${at.getFullYear()}-${String(m + 1).padStart(2, '0')}-01`;
 }
