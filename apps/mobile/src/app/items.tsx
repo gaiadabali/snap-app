@@ -1,7 +1,6 @@
 import { Redirect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { FlatList, View } from 'react-native';
-import { Text } from '@/theme/text';
+import { FlatList, Text, View } from 'react-native';
 import { Icon } from '@/components/Icon';
 
 import { api, type Item } from '@/api';

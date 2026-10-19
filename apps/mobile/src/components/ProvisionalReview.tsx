@@ -1,10 +1,9 @@
 import { ActivityIndicator, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Figure, Label, Screen, Section, Small } from '@/components/ui';
+import { Body, Card, Divider, Figure, Label, Screen, Small } from '@/components/ui';
 import { CONFIRM_BLOCKED_COPY, displayValue, type Preview } from '@/lib/provisional';
-import { numeric, radius, space, type, usePalette } from '@/theme';
-import { Text } from '@/theme/text';
+import { radius, space, usePalette } from '@/theme';
 
 /**
  * What the phone read, on screen before the server has answered.
@@ -74,18 +73,18 @@ export function ProvisionalReview({
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
           <ActivityIndicator color={p.scan} />
-          <Label style={{ color: p.inkStrong, flex: 1 }}>Provisional · read on this phone</Label>
+          <Label style={{ color: p.scan, flex: 1 }}>Provisional · read on this phone</Label>
         </View>
 
         <View style={{ gap: space.xs }}>
-          <Label>Total</Label>
+          <Small>Total</Small>
           {total === null ? (
-            <Figure size="display" style={{ color: p.inkFaint }}>
+            <Figure size="h1" style={{ color: p.inkFaint }}>
               —
             </Figure>
           ) : (
             <View style={{ alignSelf: 'flex-start' }}>
-              <Figure size="display">{total}</Figure>
+              <Figure size="h1">{total}</Figure>
               {/* The dashed rule. Two signals, not one. */}
               <View style={{ height: 2, borderBottomWidth: 2, borderStyle: 'dashed', borderColor: p.scan }} />
             </View>
@@ -93,41 +92,32 @@ export function ProvisionalReview({
         </View>
 
         {rows.length > 0 ? (
-          <Section label="Fields read">
-            {rows.map((r, i) => (
-              <View
-                key={r.path}
-                style={{
-                  minHeight: 48,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: space.md,
-                  borderTopWidth: i === 0 ? 0 : 1,
-                  borderTopColor: p.rule,
-                }}
-              >
-                <Label>{r.label}</Label>
-                <Text style={[type.amount, numeric, { color: p.ink, flexShrink: 1, textAlign: 'right' }]}>
-                  {r.value}
-                </Text>
-              </View>
-            ))}
-          </Section>
+          <Card>
+            <View style={{ gap: space.sm }}>
+              {rows.map((r, i) => (
+                <View key={r.path}>
+                  {i > 0 ? <Divider style={{ marginBottom: space.sm }} /> : null}
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: space.md }}>
+                    <Small>{r.label}</Small>
+                    <Body>{r.value}</Body>
+                  </View>
+                </View>
+              ))}
+            </View>
+          </Card>
         ) : null}
 
         <View
           style={{
-            paddingVertical: space.md,
-            paddingHorizontal: 14,
-            borderRadius: radius.lg,
-            borderLeftWidth: 2,
-            borderLeftColor: p.scan,
-            backgroundColor: p.surface,
+            padding: space.md,
+            borderRadius: radius.md,
+            borderWidth: 1,
+            borderStyle: 'dashed',
+            borderColor: p.scan,
             gap: space.xs,
           }}
         >
-          <Label style={{ color: p.inkStrong }}>Provisional</Label>
+          <Label style={{ color: p.scan }}>Provisional</Label>
           <Small>
             Read on this phone while the receipt uploads. The server is reading it too, and its
             answer is the one that gets kept — anything it disagrees with will be shown to you.
@@ -154,17 +144,15 @@ export function ProvisionalReview({
           // the app said "taking longer than usual".
           <View
             style={{
-              paddingVertical: space.md,
-              paddingHorizontal: 14,
-              borderRadius: radius.lg,
-              borderLeftWidth: 2,
-              borderLeftColor: p.risk,
-              backgroundColor: p.riskSoft,
+              padding: space.md,
+              borderRadius: radius.md,
+              borderWidth: 1,
+              borderColor: p.risk,
               gap: space.xs,
             }}
           >
             <Label style={{ color: p.risk }}>Could not be read</Label>
-            <Small style={{ color: p.riskInk }}>
+            <Small>
               The server could not read this receipt, and it will not appear in your receipts on
               its own. Your photo is still saved. Try scanning it again — better light and all
               four corners in frame usually fixes it.

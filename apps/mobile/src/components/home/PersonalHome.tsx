@@ -1,20 +1,18 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { IS_DEMO, api, type DocumentView, type PersonalSummary } from '@/api';
+import { CategoryRing, RingLegend } from '@/components/charts';
 import { Icon } from '@/components/Icon';
-import { PressableScale } from '@/components/motion';
-import { CategorySwatch, GradientHero, HeroBody, HeroFigure, HeroLabel, categoryHue } from '@/components/rich';
-import { Chip, LedgerRow, ProgressBar, Section, Small } from '@/components/ui';
+import { GradientHero, HeroBody, HeroLabel, Raised } from '@/components/rich';
+import { Card, Chip, Divider, Figure, Label, Screen, Small } from '@/components/ui';
 import { UpdateNotice } from '@/components/UpdateNotice';
-import { Avatar } from '@/components/form';
 import { useSession } from '@/session';
-import { control, formatAud, numeric, onVoid, space, type, usePalette, useTheme } from '@/theme';
-import { Text } from '@/theme/text';
+import { control, formatAud, numeric, radius, space, type, usePalette, useTheme } from '@/theme';
 
-import { Keypad, LatestReceipts, greeting } from './shared';
+import { Action, LatestReceipts, greeting } from './shared';
 
 /**
  * Personal home: is this month going to hold?
@@ -24,17 +22,19 @@ import { Keypad, LatestReceipts, greeting } from './shared';
  * feel like accounting software. What replaces it is the one number a personal
  * tracker exists to produce: what is safe to spend today.
  *
- * The pace line in the panel is the honest version of that. Comparing a
+ * The pace line under the hero is the honest version of that. Comparing a
  * part-month against a whole previous month is how most trackers flatter or
  * frighten their users; this one compares against the same day last month.
  *
- * Rebuilt again 2026-10-19 (the instrument pass). The order is the same as
- * the prototype's — who you are, what is left, what scanning costs, where to
- * go, where it went, what came in — but no two consecutive blocks share a
- * shape any more: a chrome row, the one dark panel, a two-dial readout, a
- * keypad strip, a split bar over a ledger, a dated ledger. The prototype ran
- * five rounded cards in a column, which is the metronome DESIGN-HANDOFF.md
- * §12.1 names as the tell.
+ * Rebuilt 2026-09-19. Three things the prototype added and why they earn room
+ * above the fold:
+ *   - the chrome row — who you are, the theme, and whether anything is waiting;
+ *   - credits and points, because scanning STOPS when credits run out and
+ *     there was previously nowhere on the main screen that said so;
+ *   - a donut instead of bars for the category split, since the question there
+ *     is "what is the shape of this month", which a ring answers faster.
+ *     The per-category-against-budget bars still exist, on the Budgets tab,
+ *     where the question is "am I over?" instead.
  */
 export default function PersonalHome() {
   const p = usePalette();
@@ -88,25 +88,20 @@ export default function PersonalHome() {
   const monthElapsed = summary
     ? summary.daysElapsed / (summary.daysElapsed + summary.daysLeftInMonth - 1)
     : 0;
-  const daysInMonth = summary ? summary.daysElapsed + summary.daysLeftInMonth - 1 : 0;
-  // A comparison, not arithmetic on money: which side of last month's pace.
-  const aheadOfLastMonth = summary
-    ? Number(summary.spentThisMonth) > Number(summary.lastMonthToDate)
-    : false;
-  const lowCredits = credits !== null && credits <= 5;
 
   return (
-    <View style={{ flex: 1, backgroundColor: p.ground }}>
+    <Screen>
       <ScrollView
         contentContainerStyle={{
-          paddingTop: insets.top + space.sm,
-          paddingBottom: space.xxl,
+          paddingTop: insets.top + space.md,
+          paddingBottom: space.xxl + insets.bottom,
+          gap: 15,
         }}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={p.inkMuted} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={p.accent} />
         }
       >
-        {/* Chrome — who you are, the theme, whether anything is waiting. */}
+        {/* Chrome */}
         <View
           style={{
             paddingHorizontal: space.lg,
@@ -123,14 +118,27 @@ export default function PersonalHome() {
               flex: 1,
               flexDirection: 'row',
               alignItems: 'center',
-              gap: 12,
+              gap: 10,
               minHeight: control.tap,
-              opacity: pressed ? 0.6 : 1,
+              opacity: pressed ? 0.7 : 1,
             })}
           >
-            <Avatar initials={session?.user.initials ?? '—'} size={38} />
-            <View style={{ minWidth: 0, flex: 1, gap: 1 }}>
-              <Text style={[type.small, { color: p.inkMuted }]}>{greeting()}</Text>
+            <View
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                backgroundColor: p.accentSoft,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Text style={[type.smallStrong, { fontWeight: '700', color: p.accentText }]}>
+                {session?.user.initials ?? '—'}
+              </Text>
+            </View>
+            <View style={{ minWidth: 0, flex: 1 }}>
+              <Text style={[type.tiny, { color: p.inkMuted }]}>{greeting()}</Text>
               <Text style={[type.bodyStrong, { color: p.ink }]} numberOfLines={1}>
                 {session?.user.displayName ?? 'Snap Apps'}
               </Text>
@@ -148,10 +156,10 @@ export default function PersonalHome() {
               height: control.tap,
               alignItems: 'center',
               justifyContent: 'center',
-              opacity: pressed ? 0.5 : 1,
+              opacity: pressed ? 0.6 : 1,
             })}
           >
-            <Icon name={scheme === 'dark' ? 'sun' : 'moon'} size={20} color={p.inkStrong} />
+            <Icon name={scheme === 'dark' ? 'sun' : 'moon'} size={21} color={p.inkStrong} />
           </Pressable>
 
           <Pressable
@@ -163,21 +171,20 @@ export default function PersonalHome() {
               height: control.tap,
               alignItems: 'center',
               justifyContent: 'center',
-              marginRight: -10,
-              opacity: pressed ? 0.5 : 1,
+              opacity: pressed ? 0.6 : 1,
             })}
           >
-            <Icon name="bell" size={20} color={p.inkStrong} />
+            <Icon name="bell" size={21} color={p.inkStrong} />
             {unread > 0 ? (
               <View
                 style={{
                   position: 'absolute',
-                  top: 10,
-                  right: 11,
-                  width: 7,
-                  height: 7,
-                  borderRadius: 2,
-                  backgroundColor: p.accent,
+                  top: 9,
+                  right: 9,
+                  width: 9,
+                  height: 9,
+                  borderRadius: 5,
+                  backgroundColor: p.risk,
                   borderWidth: 1.5,
                   borderColor: p.ground,
                 }}
@@ -186,281 +193,204 @@ export default function PersonalHome() {
           </Pressable>
         </View>
 
-        <View style={{ paddingHorizontal: space.lg, marginTop: space.sm }}>
+        <View style={{ paddingHorizontal: space.lg }}>
           {/* Renders nothing unless a newer build is actually published. */}
           <UpdateNotice />
         </View>
 
-        {/* The panel. What is LEFT, not what is spent: a tracker that leads
+        {/* The hero is what is LEFT, not what is spent. A tracker that leads
             with the total spent tells you about the past; this one is about
-            the rest of the month. It is the only dark thing on the screen. */}
-        <View style={{ paddingHorizontal: space.lg, marginTop: space.md }}>
+            the rest of the month. */}
+        <View style={{ paddingHorizontal: space.lg }}>
           <GradientHero tone={over ? 'risk' : 'brand'}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: space.md }}>
+            <View style={{ gap: space.xs }}>
               <HeroLabel>
-                {over ? 'Over budget' : 'Left to spend'} · {summary?.monthLabel ?? '—'}
+                {over ? 'Over budget this month' : `Left to spend in ${summary?.monthLabel ?? 'this month'}`}
               </HeroLabel>
-              {summary ? (
-                <Text style={[type.label, numeric, { color: p.voidMuted }]}>
-                  {summary.daysLeftInMonth} day{summary.daysLeftInMonth === 1 ? '' : 's'} left
-                </Text>
-              ) : null}
-            </View>
-
-            <View style={{ marginTop: 14, minHeight: 56 }}>
-              {summary ? (
-                <HeroFigure settle>
-                  {formatAud(over ? `-${summary.remaining.replace('-', '')}` : summary.remaining)}
-                </HeroFigure>
-              ) : null}
-            </View>
-
-            <View style={{ marginTop: 2 }}>
+              <Text style={[type.hero, numeric, { color: '#FFFFFF' }]}>
+                {formatAud(over ? `-${summary?.remaining.replace('-', '')}` : summary?.remaining)}
+              </Text>
               <HeroBody>
-                {summary
-                  ? over
-                    ? `${formatAud(summary.spentThisMonth)} spent against ${formatAud(summary.budgetTotal, { cents: false })}`
-                    : `${formatAud(summary.safeToSpendPerDay)} a day for the rest of the month`
-                  : ' '}
+                {summary?.daysLeftInMonth ?? 0} day{summary?.daysLeftInMonth === 1 ? '' : 's'} left ·{' '}
+                {formatAud(summary?.safeToSpendPerDay)} a day
               </HeroBody>
-            </View>
 
-            {/* Budget used against month elapsed. The tick is where an even
-                spend would put you today — the gap between the fill and the
-                tick is the whole message. */}
-            <View style={{ marginTop: 22, gap: 8 }}>
-              <ProgressBar
-                value={budgetUsed}
-                marker={monthElapsed}
-                height={3}
-                track={onVoid.track}
-                tone={over ? onVoid.risk : p.voidInk}
-                markerColor={onVoid.accent}
-              />
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <Text style={[type.label, numeric, { color: p.voidMuted }]}>
-                  Spent {Math.round(budgetUsed * 100)}%
-                </Text>
-                <Text style={[type.label, numeric, { color: onVoid.accent }]}>
-                  Day {summary?.daysElapsed ?? '—'}/{daysInMonth || '—'}
-                </Text>
-              </View>
-            </View>
-
-            {/* The pace readout, and the way out to the detail. */}
-            <View
-              style={{
-                marginTop: 18,
-                marginHorizontal: -20,
-                marginBottom: -20,
-                borderTopWidth: 1,
-                borderTopColor: p.voidRule,
-                flexDirection: 'row',
-                alignItems: 'center',
-              }}
-            >
-              <View style={{ flex: 1, paddingVertical: 14, paddingLeft: 20, gap: 3 }}>
-                <Text style={[type.label, { color: p.voidMuted }]}>Last month, by today</Text>
-                <Text style={[type.amount, numeric, { color: p.voidInk }]}>
-                  {summary ? formatAud(summary.lastMonthToDate) : '—'}
-                  {summary ? (
-                    <Text style={{ color: aheadOfLastMonth ? onVoid.warn : onVoid.good }}>
-                      {aheadOfLastMonth ? '  ▲ faster' : '  ▼ slower'}
-                    </Text>
-                  ) : null}
-                </Text>
-              </View>
-              <PressableScale
-                accessibilityLabel="Budgets"
-                onPress={() => router.push('/budgets')}
+              {/* Budget used against month elapsed. The pale marker is where
+                  an even spend would put you today — the gap between the two
+                  is the whole message. */}
+              <View
                 style={{
+                  height: 8,
+                  borderRadius: 4,
+                  backgroundColor: 'rgba(255,255,255,0.25)',
+                  marginTop: space.sm,
+                  overflow: 'hidden',
+                }}
+              >
+                <View
+                  style={{
+                    position: 'absolute',
+                    left: `${Math.min(100, monthElapsed * 100)}%`,
+                    width: 2,
+                    top: 0,
+                    bottom: 0,
+                    backgroundColor: 'rgba(255,255,255,0.95)',
+                  }}
+                />
+                <View
+                  style={{
+                    width: `${Math.min(100, Math.max(2, budgetUsed * 100))}%`,
+                    height: '100%',
+                    backgroundColor: '#FFFFFF',
+                    opacity: 0.85,
+                    borderRadius: 4,
+                  }}
+                />
+              </View>
+
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => router.push('/budgets')}
+                style={({ pressed }) => ({
+                  alignSelf: 'flex-start',
                   flexDirection: 'row',
                   alignItems: 'center',
                   gap: 6,
-                  minHeight: 56,
-                  paddingHorizontal: 20,
-                  borderLeftWidth: 1,
-                  borderLeftColor: p.voidRule,
-                }}
+                  minHeight: control.tap,
+                  opacity: pressed ? 0.7 : 1,
+                })}
               >
-                <Text style={[type.smallStrong, { color: p.voidInk }]}>Budgets</Text>
-                <Icon name="chevronRight" size={15} color={p.voidInk} />
-              </PressableScale>
+                <Text style={[type.bodyStrong, { color: '#FFFFFF' }]}>Details</Text>
+                <Icon name="chevronRight" size={16} color="#FFFFFF" />
+              </Pressable>
             </View>
           </GradientHero>
         </View>
 
-        {/* What scanning costs, and what it earns — two dials, one rule
-            between them. Credits lead because running out is the one thing
-            that stops the app working. */}
-        <View
-          style={{
-            flexDirection: 'row',
-            marginHorizontal: space.lg,
-            marginTop: space.xl,
-          }}
-        >
-          <Readout
-            label="Credits"
-            value={credits === null ? '—' : String(credits)}
-            unit={credits === 1 ? 'scan left' : 'scans left'}
-            tone={lowCredits ? 'warn' : 'ink'}
-            onPress={() => router.push('/credits')}
-          />
-          <View style={{ width: 1, backgroundColor: p.rule, marginVertical: 4 }} />
-          {/* NOT derived from the document count. Points are awarded per
-              capture by the server and the two numbers legitimately disagree
-              — a document imported from a statement earns none. Showing
-              "from N scans" next to a smaller balance reads as a bug in the
-              app rather than a fact about the ledger. */}
-          <Readout
-            label="Points"
-            value={points === null ? '—' : points.toLocaleString('en-AU')}
-            unit="for scan credits"
-            onPress={() => router.push('/points')}
-            inset
-          />
+        {/* What scanning costs, and what it earns. Credits lead because
+            running out is the one thing that stops the app working. */}
+        <View style={{ paddingHorizontal: space.lg }}>
+          <Card padded={false}>
+            <BalanceRow
+              icon="wallet"
+              label="Credits left"
+              value={credits === null ? '—' : `${credits} scan${credits === 1 ? '' : 's'}`}
+              tone={credits !== null && credits <= 5 ? 'warn' : 'accent'}
+              onPress={() => router.push('/credits')}
+            />
+            <Divider />
+            <BalanceRow
+              icon="spark"
+              label="Points earned"
+              value={points === null ? '—' : points.toLocaleString('en-AU')}
+              /* NOT derived from the document count. Points are awarded per
+                 capture by the server and the two numbers legitimately
+                 disagree — a document imported from a statement earns none.
+                 Showing "from N scans" next to a smaller balance reads as a
+                 bug in the app rather than a fact about the ledger. */
+              hint="Trade them for scan credits"
+              onPress={() => router.push('/points')}
+            />
+          </Card>
         </View>
 
-        <View style={{ paddingHorizontal: space.lg, marginTop: space.xl }}>
-          <Keypad
-            keys={[
-              { icon: 'receipt', label: 'Spending', href: '/receipts' },
-              { icon: 'chart', label: 'Analytics', href: '/analytics' },
-              { icon: 'repeat', label: 'Recurring', href: '/recurring' },
-              { icon: 'bank', label: 'Goals', href: '/goals' },
-            ]}
-          />
+        <View style={{ flexDirection: 'row', paddingHorizontal: space.lg, gap: space.sm }}>
+          <Action icon="receipt" label="Spending" href="/receipts" />
+          <Action icon="chart" label="Analytics" href="/analytics" />
+          <Action icon="target" label="Budgets" href="/budgets" />
+          <Action icon="repeat" label="Recurring" href="/recurring" />
         </View>
 
         {/* The shape of the month. Budgets answers "am I over?"; this answers
-            "where did it actually go?" — one bar drawn in proportion, then
-            the same shares as a ledger a reader can check it against. */}
-        <Section
-          label="Where it went"
-          action={{ label: 'Analytics', onPress: () => router.push('/analytics') }}
-          style={{ paddingHorizontal: space.lg, marginTop: space.xxl }}
-          rule={false}
-        >
-          {summary && summary.byCategory.some((c) => Number(c.spent) > 0) ? (
-            <CategorySplit summary={summary} />
-          ) : (
-            <View style={{ paddingVertical: space.lg, borderTopWidth: 1, borderTopColor: p.rule }}>
-              <Small>{summary ? 'Nothing spent yet this month.' : 'Loading…'}</Small>
-            </View>
-          )}
-        </Section>
-
-        <View style={{ marginTop: space.xxl }}>
-          <LatestReceipts docs={docs.slice(0, 4)} />
+            "where did it actually go?", which a ring reads faster than bars. */}
+        <View style={{ paddingHorizontal: space.lg, gap: space.sm }}>
+          <Label>Spending by category</Label>
+          <Raised style={{ gap: space.lg }}>
+            {summary && summary.byCategory.length > 0 ? (
+              <>
+                <CategoryRing
+                  parts={summary.byCategory}
+                  centreLabel={summary.monthLabel}
+                  centreValue={formatAud(summary.spentThisMonth, { cents: false })}
+                />
+                <RingLegend parts={summary.byCategory} limit={6} />
+              </>
+            ) : summary ? (
+              <View style={{ alignItems: 'center', gap: 6, paddingVertical: space.lg }}>
+                <Icon name="chart" size={26} color={p.inkMuted} />
+                <Small>Nothing in this range</Small>
+              </View>
+            ) : (
+              <Small>Loading…</Small>
+            )}
+          </Raised>
         </View>
 
+        <LatestReceipts docs={docs.slice(0, 3)} />
+
         {summary ? (
-          <Text
-            style={[
-              type.label,
-              { color: p.inkFaint, textAlign: 'center', marginTop: space.xl },
-            ]}
-          >
-            {summary.receiptCount} receipt{summary.receiptCount === 1 ? '' : 's'} in {summary.monthLabel}
-          </Text>
+          <Small style={{ textAlign: 'center' }}>
+            {summary.receiptCount} receipts in {summary.monthLabel}
+          </Small>
         ) : null}
       </ScrollView>
-    </View>
+    </Screen>
   );
 }
 
-/** One dial in the balances readout. */
-function Readout({
+function BalanceRow({
+  icon,
   label,
   value,
-  unit,
-  tone = 'ink',
+  hint,
+  tone = 'accent',
   onPress,
-  inset,
 }: {
+  icon: 'wallet' | 'spark';
   label: string;
   value: string;
-  unit: string;
-  tone?: 'ink' | 'warn';
+  hint?: string;
+  tone?: 'accent' | 'warn';
   onPress: () => void;
-  inset?: boolean;
 }) {
   const p = usePalette();
+  const fg = tone === 'warn' ? p.warn : p.accentText;
+  const bg = tone === 'warn' ? p.warnSoft : p.accentSoft;
   return (
-    <PressableScale
-      accessibilityLabel={`${label}: ${value} ${unit}`}
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${label}: ${value}`}
       onPress={onPress}
-      containerStyle={{ flex: 1 }}
-      style={{ paddingLeft: inset ? space.lg : 0, gap: 6 }}
+      style={({ pressed }) => ({
+        minHeight: 62,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 13,
+        paddingHorizontal: space.lg,
+        paddingVertical: 11,
+        opacity: pressed ? 0.7 : 1,
+      })}
     >
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Text style={[type.label, { color: tone === 'warn' ? p.warn : p.inkMuted }]}>{label}</Text>
-        <Icon name="chevronRight" size={14} color={p.inkFaint} />
-      </View>
-      <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6 }}>
-        <Text
-          style={[
-            type.h1,
-            { fontWeight: '300', letterSpacing: -0.8 },
-            numeric,
-            { color: tone === 'warn' ? p.warn : p.ink },
-          ]}
-        >
-          {value}
-        </Text>
-        <Text style={[type.small, { color: p.inkMuted }]} numberOfLines={1}>
-          {unit}
-        </Text>
-      </View>
-    </PressableScale>
-  );
-}
-
-/** The month's categories: a proportional bar, then a ledger of the same shares. */
-function CategorySplit({ summary }: { summary: PersonalSummary }) {
-  const p = usePalette();
-  const parts = summary.byCategory.filter((c) => Number(c.spent) > 0);
-  const total = parts.reduce((a, c) => a + Number(c.spent), 0) || 1;
-  return (
-    <View>
       <View
         style={{
-          flexDirection: 'row',
-          height: 8,
-          gap: 2,
-          borderRadius: 2,
-          overflow: 'hidden',
-          marginBottom: space.sm,
+          width: 36,
+          height: 36,
+          borderRadius: radius.sm + 2,
+          backgroundColor: bg,
+          alignItems: 'center',
+          justifyContent: 'center',
         }}
       >
-        {parts.map((c) => (
-          <View
-            key={c.category}
-            style={{ flex: Math.max(Number(c.spent) / total, 0.015), backgroundColor: categoryHue(c.category) }}
-          />
-        ))}
+        <Icon name={icon} size={19} color={fg} />
       </View>
-      {parts.slice(0, 5).map((c, i) => (
-        <LedgerRow
-          key={c.category}
-          first={i === 0}
-          lead={<CategorySwatch category={c.category} size={10} />}
-          title={c.category}
-          note={
-            c.budget
-              ? `of ${formatAud(c.budget, { cents: false })}${c.used !== null && c.used > 1 ? ' — over' : ''}`
-              : undefined
-          }
-          figure={formatAud(c.spent)}
-          figureTone={c.used !== null && c.used > 1 ? 'risk' : 'ink'}
-          trailing={
-            <Text style={[type.mono, numeric, { color: p.inkFaint, width: 36, textAlign: 'right' }]}>
-              {Math.round((Number(c.spent) / total) * 100)}%
-            </Text>
-          }
-        />
-      ))}
-    </View>
+      <View style={{ flex: 1, minWidth: 0, gap: 1 }}>
+        <Text style={[type.bodyStrong, { color: p.ink }]}>{label}</Text>
+        {hint ? <Small>{hint}</Small> : null}
+      </View>
+      <Figure size="body" tone={tone === 'warn' ? 'risk' : 'ink'} style={{ fontWeight: '700' }}>
+        {value}
+      </Figure>
+      <Icon name="chevronRight" size={17} color={p.inkFaint} />
+    </Pressable>
   );
 }

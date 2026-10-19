@@ -1,14 +1,12 @@
 import { useRouter, type Href } from 'expo-router';
-import { Pressable, View } from 'react-native';
-import Animated, { FadeIn } from 'react-native-reanimated';
-
-import type { DocumentView } from '@/api';
+import { Pressable, Text, View } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Icon, type IconName } from '@/components/Icon';
-import { PressableScale } from '@/components/motion';
-import { CategorySwatch, Raised } from '@/components/rich';
-import { Chip, Figure, LedgerRow, Section, Small } from '@/components/ui';
-import { formatAud, formatShortDate, radius, space, type, usePalette } from '@/theme';
-import { Text } from '@/theme/text';
+
+import { CategoryIcon, Raised, radius } from '@/components/rich';
+import { Body, Chip, Divider, Figure, Label, Small } from '@/components/ui';
+import type { DocumentView } from '@/api';
+import { formatAud, space, usePalette } from '@/theme';
 
 /**
  * The pieces both home screens are built from.
@@ -34,80 +32,33 @@ export function sumMoney(values: string[]): string {
   return `${total / 10_000n}.${(total % 10_000n).toString().padStart(4, '0')}`;
 }
 
-/**
- * A row of shortcuts drawn as one strip of keys.
- *
- * Was four pastel rounded squares floating over captions — the most generic
- * shape a finance app can put under its hero. A single outlined strip divided
- * by hairlines reads as one control with four keys, which is what it is, and
- * takes half the height.
- */
-export function Keypad({ keys }: { keys: Array<{ icon: IconName; label: string; href: Href }> }) {
-  const p = usePalette();
-  const router = useRouter();
-  return (
-    <View
-      style={{
-        flexDirection: 'row',
-        borderWidth: 1,
-        borderColor: p.rule,
-        borderRadius: radius.xl,
-        overflow: 'hidden',
-      }}
-    >
-      {keys.map((k, i) => (
-        <PressableScale
-          key={k.label}
-          accessibilityLabel={k.label}
-          onPress={() => router.push(k.href)}
-          scaleTo={0.96}
-          containerStyle={{
-            flex: 1,
-            borderLeftWidth: i === 0 ? 0 : 1,
-            borderLeftColor: p.rule,
-          }}
-          style={{ paddingVertical: 14, paddingHorizontal: space.md, gap: 10, minHeight: 72 }}
-          pressedStyle={{ backgroundColor: p.surface }}
-        >
-          <Icon name={k.icon} size={20} color={p.inkStrong} />
-          <Text style={[type.smallStrong, { color: p.ink }]} numberOfLines={1}>
-            {k.label}
-          </Text>
-        </PressableScale>
-      ))}
-    </View>
-  );
-}
-
-/**
- * One shortcut on its own, for a screen that lays them out itself. Same key
- * as `Keypad` draws, with its own edge.
- */
+/** One of the round shortcuts under the hero. */
 export function Action({ icon, label, href }: { icon: IconName; label: string; href: Href }) {
   const p = usePalette();
   const router = useRouter();
   return (
-    <PressableScale
+    <Pressable
+      accessibilityRole="button"
       accessibilityLabel={label}
       onPress={() => router.push(href)}
-      scaleTo={0.96}
-      containerStyle={{ flex: 1 }}
-      style={{
-        paddingVertical: 14,
-        paddingHorizontal: space.md,
-        gap: 10,
-        minHeight: 72,
-        borderWidth: 1,
-        borderColor: p.rule,
-        borderRadius: radius.xl,
-      }}
-      pressedStyle={{ backgroundColor: p.surface }}
+      style={({ pressed }) => ({ flex: 1, alignItems: 'center', gap: 7, opacity: pressed ? 0.6 : 1 })}
     >
-      <Icon name={icon} size={20} color={p.inkStrong} />
-      <Text style={[type.smallStrong, { color: p.ink }]} numberOfLines={1}>
+      <View
+        style={{
+          width: 52,
+          height: 52,
+          borderRadius: radius.lg,
+          backgroundColor: p.accentSoft,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Icon name={icon} size={24} color={p.accentText} />
+      </View>
+      <Small muted={false} style={{ fontWeight: '600' }} numberOfLines={1}>
         {label}
-      </Text>
-    </PressableScale>
+      </Small>
+    </Pressable>
   );
 }
 
@@ -147,21 +98,31 @@ export function AttentionRow({
         backgroundColor: pressed ? p.surfaceAlt : 'transparent',
       })}
     >
-      <View style={{ width: 2, alignSelf: 'stretch', backgroundColor: fg, borderRadius: 1 }} />
-      <Icon name={icon} size={18} color={fg} />
+      <View
+        style={{
+          width: 36,
+          height: 36,
+          borderRadius: 18,
+          backgroundColor: tone === 'risk' ? p.riskSoft : p.warnSoft,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Icon name={icon} size={19} color={fg} />
+      </View>
       <View style={{ flex: 1, gap: 1 }}>
-        <Text style={[type.bodyStrong, { color: p.ink }]}>{title}</Text>
+        <Body strong>{title}</Body>
         <Small numberOfLines={1}>{detail}</Small>
       </View>
-      <Figure size="body" style={{ color: fg }}>
+      <Figure size="body" style={{ color: fg, fontWeight: '700' }}>
         {value}
       </Figure>
-      <Icon name="chevronRight" size={16} color={p.inkFaint} />
+      <Small style={{ fontSize: 18 }}>›</Small>
     </Pressable>
   );
 }
 
-/** Half-width summary readout. Tappable, unlike a plain stat tile. */
+/** Half-width summary card. Tappable, unlike a plain stat tile. */
 export function StatCard({
   label,
   value,
@@ -176,73 +137,81 @@ export function StatCard({
   href: Href;
 }) {
   const router = useRouter();
-  const p = usePalette();
   return (
-    <PressableScale
+    <Pressable
+      accessibilityRole="button"
       onPress={() => router.push(href)}
-      containerStyle={{ flex: 1 }}
-      style={{ gap: 4 }}
+      style={({ pressed }) => ({ flex: 1, opacity: pressed ? 0.75 : 1 })}
     >
-      <Raised style={{ gap: 4, padding: space.lg }}>
-        <Text style={[type.label, { color: p.inkMuted }]}>{label}</Text>
+      <Raised style={{ gap: 5, padding: space.lg }}>
+        <Label>{label}</Label>
         <Figure size="h1" tone={tone}>
           {value}
         </Figure>
         <Small numberOfLines={1}>{hint}</Small>
       </Raised>
-    </PressableScale>
+    </Pressable>
   );
 }
 
-/**
- * The last few receipts, as a ledger. Both workspaces end their home screen
- * with this.
- *
- * The date sits in a mono gutter on the left, the way a ledger or a bank
- * statement prints it, so the list can be read down the left edge for "when"
- * and down the right edge for "how much" without reading the middle at all.
- */
+/** The last few receipts. Both workspaces end their home screen with this. */
 export function LatestReceipts({ docs }: { docs: DocumentView[] }) {
   const p = usePalette();
   const router = useRouter();
 
   return (
-    <Section
-      label="Latest"
-      action={{ label: 'See all', onPress: () => router.push('/receipts') }}
-      style={{ paddingHorizontal: space.lg }}
-    >
-      {docs.length === 0 ? (
-        <View style={{ paddingVertical: space.xl, gap: space.xs }}>
-          <Text style={[type.bodyStrong, { color: p.ink }]}>Nothing scanned yet</Text>
-          <Small>Tap Scan to capture your first receipt.</Small>
-        </View>
-      ) : (
-        docs.map((d, i) => (
-          /* The list settling in: a real change (this refresh's data), cheap
-             (opacity only), and off under reduce-motion because Reanimated's
-             entering animations no-op when the OS setting is on. */
-          <Animated.View key={d.id} entering={FadeIn.duration(260).delay(Math.min(i, 6) * 40)}>
-            <LedgerRow
-              first={i === 0}
-              gutter={formatShortDate(d.issueDate).toUpperCase()}
-              title={d.supplierName}
-              note={
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <CategorySwatch category={d.category} size={7} />
-                  <Small numberOfLines={1} style={{ flexShrink: 1 }}>
-                    {d.category}
-                  </Small>
+    <View style={{ paddingHorizontal: space.lg, gap: space.sm }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Label>Latest</Label>
+        <Pressable accessibilityRole="button" onPress={() => router.push('/receipts')} hitSlop={8}>
+          <Small muted={false} style={{ color: p.accent, fontWeight: '600' }}>
+            See all
+          </Small>
+        </Pressable>
+      </View>
+
+      <Raised style={{ padding: 0 }}>
+        {docs.length === 0 ? (
+          <View style={{ padding: space.xl, alignItems: 'center', gap: space.xs }}>
+            <Body strong>Nothing scanned yet</Body>
+            <Small>Tap Scan to capture your first receipt.</Small>
+          </View>
+        ) : (
+          docs.map((d, i) => (
+            <View key={d.id}>
+              {i > 0 ? <Divider style={{ marginLeft: 68 }} /> : null}
+              {/* The list settling in: a real change (this refresh's data),
+                  cheap (opacity + a few px of translateY), and off entirely
+                  under reduce-motion because Reanimated's entering animations
+                  no-op when `AccessibilityInfo.isReduceMotionEnabled()` is on. */}
+              <Animated.View entering={FadeInDown.duration(260).delay(Math.min(i, 6) * 35)}>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => router.push(`/document/${d.id}`)}
+                  style={({ pressed }) => ({
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: space.md,
+                    paddingHorizontal: space.lg,
+                    paddingVertical: 12,
+                    backgroundColor: pressed ? p.surfaceAlt : 'transparent',
+                  })}
+                >
+                  <CategoryIcon category={d.category} size={38} />
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <Body strong numberOfLines={1}>
+                      {d.supplierName}
+                    </Body>
+                    <Small numberOfLines={1}>{d.category}</Small>
+                  </View>
                   {d.reviewStatus === 'needs_review' ? <Chip tone="warn">Check</Chip> : null}
-                </View>
-              }
-              figure={formatAud(d.payableAmount)}
-              onPress={() => router.push(`/document/${d.id}`)}
-              accessibilityLabel={`${d.supplierName}, ${formatAud(d.payableAmount)}, ${formatShortDate(d.issueDate)}`}
-            />
-          </Animated.View>
-        ))
-      )}
-    </Section>
+                  <Figure size="h2">{formatAud(d.payableAmount)}</Figure>
+                </Pressable>
+              </Animated.View>
+            </View>
+          ))
+        )}
+      </Raised>
+    </View>
   );
 }

@@ -14,8 +14,7 @@ import {
   resolvePickedMimeType,
 } from '@/lib/file-intake';
 import type { QualityGateWarning } from '@/lib/quality-gate';
-import { ActivityIndicator, Alert, Image, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { Text } from '@/theme/text';
+import { ActivityIndicator, Alert, Image, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, type CapturePageUpload, ApiError } from '@/api';
@@ -23,9 +22,8 @@ import { newKey } from '@/api/http';
 import { pendingWrites, queueCapture, type CaptureToQueue } from '@/api/outbox';
 import { QualityGateNotice } from '@/components/QualityGateNotice';
 import { ScanLine } from '@/components/ScanLine';
-import { PressableScale } from '@/components/motion';
-import { Body, Button, IconButton, Screen } from '@/components/ui';
-import { onVoid, radius, space, type, usePalette } from '@/theme';
+import { Body, Button, Card, Figure, Label, Screen, Small } from '@/components/ui';
+import { radius, space, usePalette } from '@/theme';
 import { WorkspaceSwitch, useWorkspace } from '@/workspace';
 
 type Phase = 'framing' | 'hashing' | 'uploading' | 'extracting';
@@ -141,7 +139,6 @@ async function pageBytes(page: TrayPage): Promise<ArrayBuffer> {
  * that makes people doubt the rest of the app.
  */
 function QueuedWritesBanner() {
-  const insets = useSafeAreaInsets();
   const [count, setCount] = useState(0);
 
   useEffect(() => {
@@ -169,31 +166,22 @@ function QueuedWritesBanner() {
   return (
     <View
       style={{
-        // Under the filing HUD and clear of the status bar. It is rendered
-        // before the viewfinder in the tree, so it is lifted explicitly —
-        // otherwise the camera, a later sibling, paints over it.
         position: 'absolute',
-        top: insets.top + 76,
-        left: space.lg,
-        right: space.lg,
-        zIndex: 10,
-        elevation: 10,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: space.sm,
+        top: 0,
+        left: space.xl,
+        right: space.xl,
         borderRadius: radius.md,
-        backgroundColor: 'rgba(12,12,14,0.92)',
+        backgroundColor: 'rgba(20,20,20,0.92)',
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.18)',
+        borderColor: 'rgba(255,255,255,0.25)',
         paddingHorizontal: space.lg,
         paddingVertical: space.md,
       }}
       accessibilityLiveRegion="polite"
     >
-      <Icon name="offline" size={16} color={onVoid.warn} />
-      <Text style={[type.small, { flex: 1, color: 'rgba(255,255,255,0.9)' }]}>
+      <Small style={{ color: '#eee' }}>
         {count} {count === 1 ? 'capture' : 'captures'} waiting to send — {goes} when you're back online.
-      </Text>
+      </Small>
     </View>
   );
 }
@@ -254,7 +242,7 @@ export default function CaptureScreen() {
   const [qualityWarning, setQualityWarning] = useState<QualityGateWarning | null>(null);
   const [torch, setTorch] = useState(false);
   /**
-   * Whether the overlay panels are showing.
+   * Whether the overlay cards are showing.
    *
    * They sit on top of the thing being photographed, so they have to be
    * dismissible — a tap anywhere on the viewfinder hides them, and they come
@@ -815,7 +803,7 @@ export default function CaptureScreen() {
     return (
       <Screen>
         <View style={{ flex: 1, justifyContent: 'center', padding: space.xl, gap: space.lg }}>
-          <Text style={[type.display, { color: p.ink }]}>Camera access</Text>
+          <Figure size="h1">Camera access</Figure>
           <Body muted>
             Snap Apps needs the camera to photograph receipts and tax invoices. The original image is
             kept unmodified — the ATO only accepts an electronic copy of a receipt if it is a true
@@ -852,19 +840,8 @@ export default function CaptureScreen() {
           web build shows a framing placeholder and the device shows the real
           viewfinder. */}
       {Platform.OS === 'web' ? (
-        <View
-          style={{
-            flex: 1,
-            backgroundColor: '#0A0A0C',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: space.md,
-            paddingHorizontal: space.xl,
-          }}
-        >
-          <Icon name="upload" size={28} color="rgba(255,255,255,0.7)" />
-          <Text style={[type.label, { color: onVoid.scan }]}>No camera</Text>
-          <Text style={[type.body, { color: 'rgba(255,255,255,0.6)', textAlign: 'center' }]}>
+        <View style={{ flex: 1, backgroundColor: '#111', alignItems: 'center', justifyContent: 'center' }}>
+          <Text style={{ color: '#888', textAlign: 'center', paddingHorizontal: space.xl }}>
             No camera in a browser. The shutter opens a file picker — choose a
             photo or a PDF of the document.
           </Text>
@@ -882,9 +859,6 @@ export default function CaptureScreen() {
         </Pressable>
       )}
 
-      {/* The frame: four corner brackets rather than a closed outline, so the
-          document edge is marked without a box drawn across the thing being
-          photographed. */}
       <View
         pointerEvents="none"
         style={{
@@ -893,17 +867,16 @@ export default function CaptureScreen() {
           left: space.xl,
           right: space.xl,
           bottom: 200,
+          borderWidth: 2,
+          borderColor: 'rgba(255,255,255,0.85)',
+          borderRadius: radius.lg,
+          borderStyle: 'dashed',
+          overflow: 'hidden',
         }}
       >
-        <View style={[StyleSheet.absoluteFill, { overflow: 'hidden' }]}>
-          {/* The signature sweep, and only here: extraction is the one moment
-              this app reads a document, and the cyan line says so. */}
-          <ScanLine active={phase === 'extracting'} />
-        </View>
-        <FrameCorner corner="tl" />
-        <FrameCorner corner="tr" />
-        <FrameCorner corner="bl" />
-        <FrameCorner corner="br" />
+        {/* The signature sweep, and only here: extraction is the one moment
+            this app reads a document, and the cyan line says so. */}
+        <ScanLine active={phase === 'extracting'} />
       </View>
 
       <View
@@ -936,42 +909,36 @@ export default function CaptureScreen() {
             shutter: which life this receipt is filed against. Discovering a
             personal grocery run in the BAS three months later is the mistake
             that prevents. */}
-        <View
-          style={{
-            ...HUD_PANEL,
-            minHeight: 48,
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: space.md,
-            paddingLeft: space.lg,
-          }}
-        >
-          <Text style={[type.label, { color: 'rgba(255,255,255,0.55)' }]}>Filing to</Text>
-          <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end' }}>
-            {/* A NAME when there is nothing to switch between.
-                `WorkspaceSwitch` returns null on one workspace, which is
-                right for a switch and left "Filing to" as a label with
-                nothing after it — the owner saw exactly that on the handset.
-                Which life a receipt is filed against is worth stating even
-                when there is only one answer; it is the decision this panel
-                exists to make before the shutter. */}
-            {workspaces.length > 1 ? (
-              <WorkspaceSwitch onDark />
-            ) : (
-              <Text style={[type.bodyStrong, { color: '#FFFFFF', flexShrink: 1 }]} numberOfLines={1}>
-                {active.name}
-              </Text>
-            )}
-            <IconButton
-              name="close"
-              label="Hide this panel"
-              size={16}
-              color="rgba(255,255,255,0.7)"
-              onPress={() => setChrome(false)}
-            />
+        <Card style={{ paddingVertical: space.sm }}>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: space.md,
+            }}
+          >
+            <Label>Filing to</Label>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
+              {/* A NAME when there is nothing to switch between.
+                  `WorkspaceSwitch` returns null on one workspace, which is
+                  right for a switch and left "Filing to" as a label with
+                  nothing after it — the owner saw exactly that on the handset.
+                  Which life a receipt is filed against is worth stating even
+                  when there is only one answer; it is the decision this panel
+                  exists to make before the shutter. */}
+              {workspaces.length > 1 ? <WorkspaceSwitch /> : <Body>{active.name}</Body>}
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Hide this panel"
+                hitSlop={12}
+                onPress={() => setChrome(false)}
+              >
+                <Text style={{ color: p.inkFaint, fontSize: 18, lineHeight: 18 }}>×</Text>
+              </Pressable>
+            </View>
           </View>
-        </View>
+        </Card>
       </View>
 
       <View
@@ -994,110 +961,82 @@ export default function CaptureScreen() {
         ) : null}
 
         {error ? (
-          <View
-            style={{
-              ...HUD_PANEL,
-              width: '100%',
-              borderLeftWidth: 2,
-              borderLeftColor: onVoid.risk,
-              paddingVertical: space.md,
-              paddingLeft: space.lg,
-              paddingRight: space.xs,
-              gap: space.xs,
-            }}
-          >
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
-              <Text style={[type.label, { color: onVoid.risk, flex: 1 }]}>Capture failed</Text>
-              <IconButton
-                name="close"
-                label="Dismiss this error"
-                size={16}
-                color="rgba(255,255,255,0.7)"
-                onPress={() => setError(null)}
-                style={{ marginVertical: -12 }}
-              />
+          <Card tone="risk" style={{ width: '100%' }}>
+            <View style={{ gap: space.xs }}>
+              <View
+                style={{ flexDirection: 'row', alignItems: 'flex-start', gap: space.sm }}
+              >
+                <Label style={{ color: p.risk, flex: 1 }}>Capture failed</Label>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Dismiss this error"
+                  hitSlop={12}
+                  onPress={() => setError(null)}
+                >
+                  <Text style={{ color: p.risk, fontSize: 18, lineHeight: 18 }}>×</Text>
+                </Pressable>
+              </View>
+              <Body>{error}</Body>
             </View>
-            <Text style={[type.body, { color: 'rgba(255,255,255,0.9)', paddingRight: space.md }]}>{error}</Text>
-          </View>
+          </Card>
         ) : null}
 
         {pending ? (
-          <View style={{ ...HUD_PANEL, width: '100%', padding: space.lg, gap: space.md }}>
-            {phase !== 'framing' ? <StepReadout phase={phase} /> : null}
+          <Card style={{ width: '100%' }}>
+            <View style={{ gap: space.sm }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
+                {phase !== 'framing' ? <ActivityIndicator color={p.accent} /> : null}
+                <Body strong>
+                  {phase === 'extracting'
+                    ? phaseCopy.extracting.title
+                    : phase === 'uploading'
+                      ? phaseCopy.uploading.title
+                      : 'Upload paused'}
+                </Body>
+              </View>
 
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
-              {phase !== 'framing' ? <ActivityIndicator color={onVoid.scan} /> : null}
-              <Text style={[type.bodyStrong, { color: '#FFFFFF' }]}>
-                {phase === 'extracting'
-                  ? phaseCopy.extracting.title
-                  : phase === 'uploading'
-                    ? phaseCopy.uploading.title
-                    : 'Upload paused'}
-              </Text>
-            </View>
-
-            {/* One row per page, so "some of this document did not save" is
-                never a mystery — the person can see exactly which page. */}
-            <View style={{ gap: 6 }}>
-              {pending.uploads.map((u) => {
-                const status = pageStatus[u.pageNumber];
-                return (
+              {/* One row per page, so "some of this document did not save" is
+                  never a mystery — the person can see exactly which page. */}
+              <View style={{ gap: 4 }}>
+                {pending.uploads.map((u) => (
                   <View
                     key={u.pageNumber}
-                    style={{
-                      flexDirection: 'row',
-                      justifyContent: 'space-between',
-                      borderTopWidth: 1,
-                      borderTopColor: 'rgba(255,255,255,0.1)',
-                      paddingTop: 6,
-                    }}
+                    style={{ flexDirection: 'row', justifyContent: 'space-between' }}
                   >
-                    <Text style={[type.label, { color: 'rgba(255,255,255,0.55)' }]}>Page {u.pageNumber}</Text>
-                    <Text
-                      style={[
-                        type.label,
-                        {
-                          color:
-                            status === 'failed'
-                              ? onVoid.risk
-                              : status === 'done' || status === 'skipped'
-                                ? '#FFFFFF'
-                                : status === 'uploading'
-                                  ? onVoid.scan
-                                  : 'rgba(255,255,255,0.45)',
-                        },
-                      ]}
+                    <Small>Page {u.pageNumber}</Small>
+                    <Small
+                      style={
+                        pageStatus[u.pageNumber] === 'failed' ? { color: p.risk, fontWeight: '700' } : undefined
+                      }
                     >
-                      {pageStatusLabel(status)}
-                    </Text>
+                      {pageStatusLabel(pageStatus[u.pageNumber])}
+                    </Small>
                   </View>
-                );
-              })}
-            </View>
-
-            {phase === 'framing' ? (
-              <View style={{ flexDirection: 'row', gap: space.sm, marginTop: space.xs }}>
-                <HudButton label="Discard" onPress={discardPending} />
-                <HudButton
-                  label="Retry"
-                  primary
-                  onPress={() => void uploadAndExtract(pending, { resume: true })}
-                />
+                ))}
               </View>
-            ) : null}
-          </View>
-        ) : busy ? (
-          <View style={{ ...HUD_PANEL, minWidth: 280, padding: space.lg, gap: space.md }}>
-            <StepReadout phase={phase} />
-            <View style={{ gap: 2 }}>
-              <Text style={[type.bodyStrong, { color: '#FFFFFF' }]}>
-                {phaseCopy[phase as Exclude<Phase, 'framing'>].title}
-              </Text>
-              <Text style={[type.small, { color: 'rgba(255,255,255,0.6)' }]}>
-                {phaseCopy[phase as Exclude<Phase, 'framing'>].detail}
-              </Text>
+
+              {phase === 'framing' ? (
+                <View style={{ flexDirection: 'row', gap: space.sm, marginTop: space.xs }}>
+                  <Button label="Discard" tone="outline" style={{ flex: 1 }} onPress={discardPending} />
+                  <Button
+                    label="Retry"
+                    style={{ flex: 1 }}
+                    onPress={() => void uploadAndExtract(pending, { resume: true })}
+                  />
+                </View>
+              ) : null}
             </View>
-          </View>
+          </Card>
+        ) : busy ? (
+          <Card style={{ minWidth: 280 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
+              <ActivityIndicator color={p.accent} />
+              <View style={{ flex: 1 }}>
+                <Body strong>{phaseCopy[phase as Exclude<Phase, 'framing'>].title}</Body>
+                <Small>{phaseCopy[phase as Exclude<Phase, 'framing'>].detail}</Small>
+              </View>
+            </View>
+          </Card>
         ) : (
           <View style={{ alignItems: 'center', gap: space.md, width: '100%' }}>
             {/* Pages already held. Visible because a two-page invoice whose
@@ -1107,7 +1046,7 @@ export default function CaptureScreen() {
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ gap: space.sm, paddingHorizontal: space.lg, alignItems: 'center' }}
+                contentContainerStyle={{ gap: space.sm, paddingHorizontal: space.lg }}
               >
                 {pages.map((page, i) => (
                   <View key={page.uri} style={{ alignItems: 'center', gap: 4 }}>
@@ -1116,14 +1055,14 @@ export default function CaptureScreen() {
                       style={{
                         width: 46,
                         height: 62,
-                        borderRadius: radius.xs,
-                        borderWidth: 1,
-                        borderColor: 'rgba(255,255,255,0.5)',
+                        borderRadius: 6,
+                        borderWidth: 2,
+                        borderColor: 'rgba(255,255,255,0.85)',
                       }}
                       accessibilityLabel={`Page ${i + 1}`}
                     />
-                    <Text style={[type.mono, { color: '#FFFFFF', fontSize: 10, lineHeight: 12 }]}>
-                      {String(i + 1).padStart(2, '0')}
+                    <Text style={{ color: '#FFFFFF', fontSize: 10, fontWeight: '700' }}>
+                      {i + 1}
                     </Text>
                   </View>
                 ))}
@@ -1137,23 +1076,16 @@ export default function CaptureScreen() {
                     deviceReadRef.current = null;
                     setQualityWarning(null);
                   }}
-                  style={({ pressed }) => ({
-                    minWidth: 44,
-                    minHeight: 44,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    paddingHorizontal: space.sm,
-                    opacity: pressed ? 0.5 : 1,
-                  })}
+                  style={{ justifyContent: 'center', paddingHorizontal: space.sm }}
                 >
-                  <Text style={[type.label, { color: 'rgba(255,255,255,0.7)' }]}>Clear</Text>
+                  <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '700' }}>Clear</Text>
                 </Pressable>
               </ScrollView>
             ) : null}
 
             {/* THREE CONTROLS, SYMMETRIC.
-                Add page and Torch are the same 52pt circle either side of the
-                74pt shutter, so the row balances on the shutter instead of being
+                Add page and Torch are the same 56pt circle either side of the
+                shutter, so the row balances on the shutter instead of being
                 padded out by an empty spacer. Everything sits in one band at
                 the bottom, which keeps the viewfinder — the part that actually
                 needs to be seen — clear. */}
@@ -1173,46 +1105,31 @@ export default function CaptureScreen() {
                 onPress={() => void onAddPage()}
               />
 
-              {/* The shutter's own haptic is `none`: `onShutter` already fires
-                  the Medium impact, and two ticks for one press reads as a
-                  stutter. */}
-              <PressableScale
+              <Pressable
+                accessibilityRole="button"
                 accessibilityLabel={
                   pages.length > 0
                     ? `Capture the last page and finish, ${pages.length} already added`
                     : 'Capture receipt'
                 }
                 onPress={() => void onShutter()}
-                haptic="none"
-                scaleTo={0.94}
-                style={{
-                  width: 74,
-                  height: 74,
-                  borderRadius: 37,
-                  borderWidth: 3.5,
-                  borderColor: '#FFFFFF',
+                style={({ pressed }) => ({
+                  width: 76,
+                  height: 76,
+                  borderRadius: 38,
+                  backgroundColor: pressed ? p.accentSoft : '#FFFFFF',
+                  borderWidth: 5,
+                  borderColor: p.accent,
                   alignItems: 'center',
                   justifyContent: 'center',
-                }}
-                pressedStyle={{ opacity: 0.85 }}
+                })}
               >
-                <View
-                  style={{
-                    width: 58,
-                    height: 58,
-                    borderRadius: 29,
-                    backgroundColor: '#FFFFFF',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  {pages.length > 0 ? (
-                    <Text style={[type.figure, { color: '#000000', fontSize: 18, lineHeight: 22 }]}>
-                      {pages.length + 1}
-                    </Text>
-                  ) : null}
-                </View>
-              </PressableScale>
+                {pages.length > 0 ? (
+                  <Text style={{ color: p.accent, fontWeight: '800', fontSize: 13 }}>
+                    {pages.length + 1}
+                  </Text>
+                ) : null}
+              </Pressable>
 
               <SideControl
                 label={torch ? 'Torch on' : 'Torch'}
@@ -1224,10 +1141,10 @@ export default function CaptureScreen() {
             </View>
 
             {pages.length > 0 ? (
-              <Text style={[type.small, { color: 'rgba(255,255,255,0.8)', textAlign: 'center' }]}>
+              <Small style={{ color: '#FFFFFF', textAlign: 'center' }}>
                 {pages.length} page{pages.length === 1 ? '' : 's'} held — the shutter takes the
                 last one and files them as one document.
-              </Text>
+              </Small>
             ) : null}
 
             {/* T6 — the native handset route into three of D-S3's four intake
@@ -1243,18 +1160,15 @@ export default function CaptureScreen() {
                 accessibilityLabel="Upload a PDF, CSV or other file instead of using the camera"
                 hitSlop={8}
                 onPress={() => void onPickFile()}
-                style={({ pressed }) => ({
-                  minHeight: 44,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: space.sm,
-                  paddingHorizontal: space.md,
-                  opacity: pressed ? 0.5 : 1,
-                })}
               >
-                <Icon name="upload" size={16} color="rgba(255,255,255,0.85)" />
-                <Text style={[type.mono, { color: 'rgba(255,255,255,0.85)' }]}>
+                <Text
+                  style={{
+                    color: '#FFFFFF',
+                    fontSize: 13,
+                    fontWeight: '700',
+                    textDecorationLine: 'underline',
+                  }}
+                >
                   Upload a PDF, CSV or file instead
                 </Text>
               </Pressable>
@@ -1266,117 +1180,12 @@ export default function CaptureScreen() {
   );
 }
 
-/** The translucent dark strip every piece of camera chrome sits on. */
-const HUD_PANEL = {
-  backgroundColor: 'rgba(12,12,14,0.78)',
-  borderRadius: radius.lg,
-  borderWidth: 1,
-  borderColor: 'rgba(255,255,255,0.14)',
-} as const;
-
-const FRAME_ARM = 28;
-
-/**
- * One L-shaped corner of the viewfinder frame: a square with only two of its
- * borders drawn, meeting at the corner of the frame.
- */
-function FrameCorner({ corner }: { corner: 'tl' | 'tr' | 'bl' | 'br' }) {
-  const top = corner === 'tl' || corner === 'tr';
-  const left = corner === 'tl' || corner === 'bl';
-  return (
-    <View
-      style={{
-        position: 'absolute',
-        width: FRAME_ARM,
-        height: FRAME_ARM,
-        ...(top ? { top: 0, borderTopWidth: 2 } : { bottom: 0, borderBottomWidth: 2 }),
-        ...(left ? { left: 0, borderLeftWidth: 2 } : { right: 0, borderRightWidth: 2 }),
-        borderColor: 'rgba(255,255,255,0.9)',
-        borderTopLeftRadius: corner === 'tl' ? 3 : 0,
-        borderTopRightRadius: corner === 'tr' ? 3 : 0,
-        borderBottomLeftRadius: corner === 'bl' ? 3 : 0,
-        borderBottomRightRadius: corner === 'br' ? 3 : 0,
-      }}
-    />
-  );
-}
-
-/**
- * The pipeline's three real steps, in the order they happen: hash the original
- * bytes, upload them, have the server read them. The current step is scan
- * cyan, finished steps are white with a tick, pending steps are dim.
- */
-function StepReadout({ phase }: { phase: Phase }) {
-  const steps: Array<{ key: Phase; label: string }> = [
-    { key: 'hashing', label: 'SHA-256' },
-    { key: 'uploading', label: 'Upload' },
-    { key: 'extracting', label: 'Read' },
-  ];
-  const current = steps.findIndex((s) => s.key === phase);
-  return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
-      {steps.map((s, i) => {
-        const done = i < current;
-        const now = i === current;
-        const color = now ? onVoid.scan : done ? '#FFFFFF' : 'rgba(255,255,255,0.35)';
-        return (
-          <View key={s.key} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            {done ? (
-              <Icon name="check" size={12} color={color} />
-            ) : (
-              <View
-                style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: 3,
-                  backgroundColor: now ? color : 'transparent',
-                  borderWidth: 1,
-                  borderColor: color,
-                }}
-              />
-            )}
-            <Text style={[type.label, { color }]}>{s.label}</Text>
-            {i < steps.length - 1 ? (
-              <View style={{ width: 16, height: 1, backgroundColor: 'rgba(255,255,255,0.2)' }} />
-            ) : null}
-          </View>
-        );
-      })}
-    </View>
-  );
-}
-
-/** A button on the camera chrome. The shared `Button` takes its ink from the
- *  palette, which is wrong on a surface that is dark in both themes. */
-function HudButton({ label, onPress, primary }: { label: string; onPress: () => void; primary?: boolean }) {
-  return (
-    <PressableScale
-      accessibilityLabel={label}
-      onPress={onPress}
-      scaleTo={0.98}
-      containerStyle={{ flex: 1 }}
-      style={{
-        minHeight: 48,
-        borderRadius: radius.md,
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: primary ? '#FFFFFF' : 'transparent',
-        borderWidth: primary ? 0 : 1,
-        borderColor: 'rgba(255,255,255,0.3)',
-      }}
-    >
-      <Text style={[type.bodyStrong, { color: primary ? '#000000' : '#FFFFFF' }]}>{label}</Text>
-    </PressableScale>
-  );
-}
-
 /**
  * One of the two controls flanking the shutter.
  *
  * Shared so they cannot drift apart: the row only reads as balanced while both
  * sides are the same size, and two separately-styled Pressables is how that
- * stops being true. Torch "on" inverts — a white disc with a dark glyph — so
- * its state reads at a glance in sunlight, not just by a colour shift.
+ * stops being true.
  */
 function SideControl({
   label,
@@ -1392,28 +1201,36 @@ function SideControl({
   on?: boolean;
 }) {
   return (
-    <PressableScale
+    <Pressable
+      accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       accessibilityState={{ selected: on }}
       onPress={onPress}
-      scaleTo={0.94}
       style={{ alignItems: 'center', gap: 6, width: 76 }}
     >
-      <View
-        style={{
-          width: 52,
-          height: 52,
-          borderRadius: 26,
-          alignItems: 'center',
-          justifyContent: 'center',
-          borderWidth: 1,
-          borderColor: on ? '#FFFFFF' : 'rgba(255,255,255,0.25)',
-          backgroundColor: on ? '#FFFFFF' : 'rgba(0,0,0,0.45)',
-        }}
-      >
-        <Icon name={icon} size={22} color={on ? '#0A0A0C' : '#FFFFFF'} />
-      </View>
-      <Text style={[type.label, { color: '#FFFFFF', fontSize: 10, lineHeight: 12, letterSpacing: 1 }]}>{label}</Text>
-    </PressableScale>
+      {({ pressed }) => (
+        <>
+          <View
+            style={{
+              width: 56,
+              height: 56,
+              borderRadius: 28,
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderWidth: 1.5,
+              borderColor: on ? '#FFFFFF' : 'rgba(255,255,255,0.7)',
+              backgroundColor: on
+                ? 'rgba(255,255,255,0.9)'
+                : pressed
+                  ? 'rgba(255,255,255,0.25)'
+                  : 'rgba(0,0,0,0.25)',
+            }}
+          >
+            <Icon name={icon} size={24} color={on ? '#14181D' : '#FFFFFF'} />
+          </View>
+          <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '700' }}>{label}</Text>
+        </>
+      )}
+    </Pressable>
   );
 }

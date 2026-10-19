@@ -1,12 +1,11 @@
 import { useState } from 'react';
-import { Alert, View } from 'react-native';
-import { Text } from '@/theme/text';
+import { Alert, Pressable, Text, View } from 'react-native';
 
 import { api, type DocumentView } from '@/api';
 import { Choice, Field, Sheet } from '@/components/form';
-import { Button, Small } from '@/components/ui';
+import { Body, Small } from '@/components/ui';
 import { gstFromInclusive } from '@/lib/money';
-import { numeric, radius, space, type, usePalette } from '@/theme';
+import { space, usePalette } from '@/theme';
 
 /**
  * Correcting the fields extraction got wrong.
@@ -21,11 +20,6 @@ import { numeric, radius, space, type, usePalette } from '@/theme';
  * Editing the total re-derives the GST at exactly 1/11 rather than asking for
  * it: a human retyping both invites them to disagree, and the ATO's figure is
  * the arithmetic one.
- *
- * The two actions are an outline pair (the instrument pass): the review
- * screen's single accent button is Confirm, so correcting and rejecting must
- * not compete with it. Reject is not red — it withdraws a reading, it does
- * not cost money — and its confirmation dialog is where the weight lives.
  */
 
 const CATEGORIES_BUSINESS = [
@@ -150,10 +144,8 @@ export function EditFields({
   return (
     <>
       <View style={{ flexDirection: 'row', gap: space.sm }}>
-        <Button
-          label="Correct the details"
-          tone="outline"
-          style={{ flex: 2 }}
+        <Pressable
+          accessibilityRole="button"
           onPress={() => {
             setError(null);
             setDraft({
@@ -165,8 +157,35 @@ export function EditFields({
             });
             setOpen(true);
           }}
-        />
-        <Button label="Reject" tone="outline" style={{ flex: 1 }} onPress={reject} />
+          style={({ pressed }) => ({
+            flex: 2,
+            paddingVertical: 13,
+            borderRadius: 12,
+            borderWidth: 1.5,
+            borderColor: pressed ? p.accent : p.ruleStrong,
+            alignItems: 'center',
+          })}
+        >
+          <Body strong style={{ color: p.accent }}>
+            Correct the details
+          </Body>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          onPress={reject}
+          style={({ pressed }) => ({
+            flex: 1,
+            paddingVertical: 13,
+            borderRadius: 12,
+            borderWidth: 1.5,
+            borderColor: pressed ? p.risk : p.rule,
+            alignItems: 'center',
+          })}
+        >
+          <Body strong style={{ color: p.risk }}>
+            Reject
+          </Body>
+        </Pressable>
       </View>
 
       <Sheet
@@ -217,18 +236,14 @@ export function EditFields({
         <View
           style={{
             backgroundColor: p.accentSoft,
-            borderRadius: radius.lg,
-            borderLeftWidth: 2,
-            borderLeftColor: p.accent,
-            paddingLeft: 14,
-            paddingRight: space.md,
-            paddingVertical: space.md,
+            borderRadius: 12,
+            padding: space.md,
             gap: 2,
           }}
         >
-          <Text style={[type.amount, numeric, { color: p.accentText }]}>
+          <Small muted={false} style={{ color: p.accent, fontWeight: '700' }}>
             GST becomes ${Number(newGst).toFixed(2)}
-          </Text>
+          </Small>
           <Small>
             Recalculated as exactly 1/11 of the taxable part. You never type the GST — the ATO
             figure is the arithmetic one.

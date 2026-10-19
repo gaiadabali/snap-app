@@ -4,10 +4,10 @@ import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, type CreditBalance, type PlanUsage } from '@/api';
-import { Loading } from '@/components/form';
-import { GradientHero, HeroBody, HeroFigure, HeroLabel, Tile } from '@/components/rich';
-import { Body, Button, Card, Chip, Label, LedgerRow, ProgressBar, Screen, Section } from '@/components/ui';
-import { space, usePalette } from '@/theme';
+import { Loading, StatRow } from '@/components/form';
+import { GradientHero, HeroBody, HeroFigure, HeroLabel, Raised } from '@/components/rich';
+import { Body, Button, Card, Chip, Divider, Figure, Label, Screen, Small } from '@/components/ui';
+import { formatShortDate, radius, space, usePalette } from '@/theme';
 
 /**
  * Plan and usage.
@@ -67,7 +67,7 @@ export default function PlanScreen() {
             <GradientHero>
               <View style={{ gap: space.xs }}>
                 <HeroLabel>Credits</HeroLabel>
-                <HeroFigure settle>
+                <HeroFigure small>
                   {credits === null ? '—' : `${credits.creditsRemaining}`}
                 </HeroFigure>
                 <HeroBody>
@@ -89,54 +89,56 @@ export default function PlanScreen() {
               </Card>
             ) : null}
 
-            <Section label="This month" style={{ marginTop: space.lg }}>
+            <Raised style={{ gap: space.md }}>
+              <Label>This month</Label>
               {/* A COUNT, not a quota. `scanQuota` was the monthly allowance a
                   plan bought; there is no allowance now, so a meter filling
                   towards a cap would be measuring against a limit that does
                   not exist. What is still true is how many documents this
-                  workspace has read this month. Seats ARE capped, so they are
-                  the one thing here that gets a meter. */}
-              <View style={{ flexDirection: 'row', gap: space.lg, paddingTop: space.md }}>
-                <Tile
-                  label="Read this month"
-                  value={`${plan.scansUsed}`}
-                  hint="One credit each"
-                />
-                <Tile
-                  label="Seats"
-                  value={`${plan.seatsUsed} of ${plan.seatLimit}`}
-                  hint={seatPct >= 1 ? 'Every seat is taken' : 'In use'}
-                  tone={seatPct >= 1 ? 'risk' : 'default'}
-                />
-              </View>
-              <View style={{ marginTop: space.md }}>
-                <ProgressBar value={seatPct} tone={seatPct >= 1 ? p.risk : p.accent} />
-              </View>
+                  workspace has read this month. */}
+              <StatRow
+                stats={[
+                  {
+                    label: 'Read this month',
+                    value: `${plan.scansUsed}`,
+                    hint: 'One credit each',
+                  },
+                ]}
+              />
+              <Meter
+                label="Seats"
+                used={`${plan.seatsUsed}`}
+                cap={`of ${plan.seatLimit}`}
+                fraction={seatPct}
+                tone={seatPct >= 1 ? 'risk' : 'accent'}
+              />
+              <Divider />
+              <StatRow
+                stats={[
+                  {
+                    label: 'Results',
+                    value: plan.realtime ? 'Real time' : 'Within the hour',
+                    hint: plan.realtime ? 'Extraction runs immediately' : 'Batched, same accuracy',
+                  },
+                  {
+                    label: 'Records kept',
+                    value: `${Math.round(plan.retentionMonths / 12)} years`,
+                    hint: 'What the ATO requires',
+                  },
+                ]}
+              />
+            </Raised>
 
-              <View style={{ marginTop: space.lg }}>
-                <LedgerRow
-                  first
-                  title="Results"
-                  note={plan.realtime ? 'Extraction runs immediately' : 'Batched, same accuracy'}
-                  figure={plan.realtime ? 'Real time' : 'Within the hour'}
-                />
-                <LedgerRow
-                  title="Records kept"
-                  note="What the ATO requires"
-                  figure={`${Math.round(plan.retentionMonths / 12)} years`}
-                />
-              </View>
-            </Section>
-
-            <Section label="If you run out of scans" style={{ marginTop: space.lg }}>
-              <View style={{ paddingTop: space.md }}>
+            <Card>
+              <View style={{ gap: space.xs }}>
+                <Label>If you run out of scans</Label>
                 <Body>
                   The photo is still captured and queued — a receipt you cannot re-photograph is
                   never dropped because of a quota. Extraction resumes when the month rolls over,
                   or immediately if you have credits — a separate, never-expiring balance.
                 </Body>
               </View>
-            </Section>
+            </Card>
 
             <View style={{ gap: space.sm }}>
               <Button label="Credits" tone="outline" onPress={() => router.push('/credits')} />
@@ -152,5 +154,52 @@ export default function PlanScreen() {
         )}
       </ScrollView>
     </Screen>
+  );
+}
+
+function Meter({
+  label,
+  used,
+  cap,
+  fraction,
+  tone,
+}: {
+  label: string;
+  used: string;
+  cap: string;
+  fraction: number;
+  tone: 'accent' | 'risk';
+}) {
+  const p = usePalette();
+  const colour = tone === 'risk' ? p.risk : p.accent;
+  return (
+    <View style={{ gap: 6 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' }}>
+        <Body strong>{label}</Body>
+        <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 4 }}>
+          <Figure size="h2" tone={tone === 'risk' ? 'risk' : 'ink'}>
+            {used}
+          </Figure>
+          <Small>{cap}</Small>
+        </View>
+      </View>
+      <View
+        style={{
+          height: 8,
+          borderRadius: radius.pill,
+          backgroundColor: p.surfaceAlt,
+          overflow: 'hidden',
+        }}
+      >
+        <View
+          style={{
+            width: `${Math.max(2, fraction * 100)}%`,
+            height: '100%',
+            borderRadius: radius.pill,
+            backgroundColor: colour,
+          }}
+        />
+      </View>
+    </View>
   );
 }

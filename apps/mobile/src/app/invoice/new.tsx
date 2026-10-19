@@ -1,8 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { Redirect, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Modal, Pressable, ScrollView, View } from 'react-native';
-import { Text, TextInput } from '@/theme/text';
+import { Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, type Item, type Party } from '@/api';

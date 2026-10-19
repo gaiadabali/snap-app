@@ -6,16 +6,17 @@ import {
   Platform,
   Pressable,
   ScrollView,
+  Text,
+  TextInput,
   View,
   type KeyboardTypeOptions,
 } from 'react-native';
-import { Text, TextInput } from '@/theme/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '@/components/Icon';
 
-import { PressableScale, tick } from '@/components/motion';
-import { Body, Button, Figure, Label, Small, Title } from '@/components/ui';
-import { elevation, numeric, radius, space, type, usePalette } from '@/theme';
+import { Raised } from '@/components/rich';
+import { Body, Button, Figure, Label, Small } from '@/components/ui';
+import { numeric, radius, space, type, usePalette } from '@/theme';
 
 /**
  * Form primitives.
@@ -78,18 +79,15 @@ export function Field({
         style={{
           flexDirection: 'row',
           alignItems: 'center',
-          gap: 6,
-          minHeight: multiline ? undefined : 50,
-          // 1px at rest, 2px focused — the extra pixel comes out of the
-          // padding so the text inside does not shift when focus lands.
-          borderWidth: focused ? 2 : 1,
-          borderColor: focused ? p.accent : p.ruleStrong,
+          gap: 4,
+          borderWidth: 1.5,
+          borderColor: focused ? p.accent : p.rule,
           backgroundColor: p.ground,
           borderRadius: radius.md,
-          paddingHorizontal: focused ? 13 : 14,
+          paddingHorizontal: space.md,
         }}
       >
-        {prefix ? <Text style={[type.amount, numeric, { color: p.inkMuted }]}>{prefix}</Text> : null}
+        {prefix ? <Text style={[type.body, numeric, { color: p.inkMuted }]}>{prefix}</Text> : null}
         <TextInput
           value={value}
           onChangeText={onChangeText}
@@ -107,9 +105,8 @@ export function Field({
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           style={[
-            keyboardType === 'decimal-pad' || keyboardType === 'number-pad'
-              ? [type.amount, { fontSize: 16 }, numeric]
-              : type.input,
+            type.body,
+            keyboardType === 'decimal-pad' || keyboardType === 'number-pad' ? numeric : null,
             {
               flex: 1,
               color: p.ink,
@@ -145,25 +142,27 @@ export function Choice<T extends string>({
         {options.map((o) => {
           const on = o.value === value;
           return (
-            <PressableScale
+            <Pressable
               key={o.value}
               accessibilityRole="radio"
               accessibilityState={{ selected: on }}
               onPress={() => onChange(o.value)}
               style={{
-                minHeight: 38,
-                justifyContent: 'center',
-                paddingHorizontal: 14,
-                borderRadius: radius.sm,
-                borderWidth: 1,
-                borderColor: on ? p.ink : p.ruleStrong,
-                backgroundColor: on ? p.ink : 'transparent',
+                paddingHorizontal: space.md,
+                paddingVertical: 9,
+                borderRadius: radius.pill,
+                backgroundColor: on ? p.accent : p.surfaceAlt,
               }}
             >
-              <Text style={[type.smallStrong, { color: on ? p.ground : p.inkStrong }]}>
+              <Text
+                style={[
+                  type.small,
+                  { color: on ? p.accentInk : p.inkMuted, fontWeight: '700' },
+                ]}
+              >
                 {o.label}
               </Text>
-            </PressableScale>
+            </Pressable>
           );
         })}
       </View>
@@ -187,39 +186,32 @@ export function Toggle({
     <Pressable
       accessibilityRole="switch"
       accessibilityState={{ checked: value }}
-      onPress={() => {
-        tick();
-        onChange(!value);
-      }}
-      style={{ flexDirection: 'row', alignItems: 'center', gap: space.md, minHeight: 44 }}
+      onPress={() => onChange(!value)}
+      style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}
     >
       <View style={{ flex: 1, gap: 1 }}>
         <Body strong>{label}</Body>
         {hint ? <Small>{hint}</Small> : null}
       </View>
-      {/* A squared switch, not a pill — 46x28 on a 7pt radius with a square
-          knob, so it reads as a hardware toggle on this app's instrument
-          register rather than as iOS chrome dropped into an Android build. */}
+      {/* A squircle, not a pill — the redesign's switch is 56x34 with a 12pt
+          radius and a square-ish knob, which is what keeps it from reading as
+          iOS chrome dropped into an Android build. */}
       <View
         style={{
-          width: 46,
-          height: 28,
-          borderRadius: 7,
+          width: 56,
+          height: 34,
+          borderRadius: 12,
           padding: 3,
-          backgroundColor: value ? p.accent : p.surfaceAlt,
-          borderWidth: 1,
-          borderColor: value ? p.accent : p.ruleStrong,
+          backgroundColor: value ? p.accent : p.ruleStrong,
           justifyContent: 'center',
         }}
       >
         <View
           style={{
-            width: 20,
-            height: 20,
-            borderRadius: 5,
-            backgroundColor: value ? '#FFFFFF' : p.ground,
-            borderWidth: value ? 0 : 1,
-            borderColor: p.ruleStrong,
+            width: 28,
+            height: 28,
+            borderRadius: 9,
+            backgroundColor: '#FFFFFF',
             alignSelf: value ? 'flex-end' : 'flex-start',
           }}
         />
@@ -285,13 +277,9 @@ export function Sheet({
         <View
           style={{
             backgroundColor: p.ground,
-            borderTopLeftRadius: radius.sheet,
-            borderTopRightRadius: radius.sheet,
-            borderWidth: 1,
-            borderBottomWidth: 0,
-            borderColor: p.rule,
-            ...elevation.float,
-            paddingTop: 10,
+            borderTopLeftRadius: 24,
+            borderTopRightRadius: 24,
+            paddingTop: space.lg,
             paddingHorizontal: space.lg,
             paddingBottom: insets.bottom + space.lg,
             gap: space.lg,
@@ -301,14 +289,14 @@ export function Sheet({
           <View
             style={{
               alignSelf: 'center',
-              width: 36,
+              width: 40,
               height: 4,
               borderRadius: 2,
               backgroundColor: p.ruleStrong,
             }}
           />
-          <View style={{ gap: 4 }}>
-            <Title level="h2">{title}</Title>
+          <View style={{ gap: 2 }}>
+            <Figure size="h1">{title}</Figure>
             {subtitle ? <Small>{subtitle}</Small> : null}
           </View>
 
@@ -322,8 +310,6 @@ export function Sheet({
                 style={{
                   backgroundColor: p.riskSoft,
                   borderRadius: radius.md,
-                  borderLeftWidth: 2,
-                  borderLeftColor: p.risk,
                   padding: space.md,
                 }}
               >
@@ -354,26 +340,27 @@ export function Sheet({
 export function AddButton({ label, onPress }: { label: string; onPress: () => void }) {
   const p = usePalette();
   return (
-    <PressableScale
+    <Pressable
+      accessibilityRole="button"
       onPress={onPress}
-      scaleTo={0.98}
-      style={{
+      style={({ pressed }) => ({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
         gap: space.sm,
-        minHeight: 48,
+        paddingVertical: 13,
         borderRadius: radius.md,
-        borderWidth: 1,
-        borderColor: p.ruleStrong,
-      }}
-      pressedStyle={{ backgroundColor: p.surface }}
+        borderWidth: 1.5,
+        borderStyle: 'dashed',
+        borderColor: pressed ? p.accent : p.ruleStrong,
+        backgroundColor: pressed ? p.accentSoft : 'transparent',
+      })}
     >
-      <Icon name="plus" size={17} color={p.accentText} />
-      <Body strong style={{ color: p.accentText }}>
+      <Icon name="plus" size={18} color={p.accent} />
+      <Body strong style={{ color: p.accent }}>
         {label}
       </Body>
-    </PressableScale>
+    </Pressable>
   );
 }
 
@@ -382,70 +369,39 @@ export function Loading() {
   const p = usePalette();
   return (
     <View style={{ paddingVertical: space.xxl, alignItems: 'center' }}>
-      <ActivityIndicator color={p.inkMuted} />
+      <ActivityIndicator color={p.accent} />
     </View>
   );
 }
 
-/**
- * An empty list, drawn as the outline of where the list will be: a dashed
- * edge is the honest picture of "nothing here yet", and the copy says what
- * to do about it.
- */
 export function Empty({ title, detail }: { title: string; detail: string }) {
-  const p = usePalette();
   return (
-    <View
-      style={{
-        alignItems: 'center',
-        gap: space.xs,
-        paddingVertical: space.xl,
-        paddingHorizontal: space.lg,
-        borderRadius: radius.xl,
-        borderWidth: 1,
-        borderStyle: 'dashed',
-        borderColor: p.ruleStrong,
-      }}
-    >
+    <Raised style={{ alignItems: 'center', gap: space.xs, paddingVertical: space.xl }}>
       <Body strong>{title}</Body>
       <Small style={{ textAlign: 'center' }}>{detail}</Small>
-    </View>
+    </Raised>
   );
 }
 
 /** Initials disc. The cheapest way to show who did something. */
 export function Avatar({ initials, size = 32 }: { initials: string; size?: number }) {
   const p = usePalette();
-  // Monochrome on purpose. The prototype gave every person a pastel hue from
-  // their initials, so a list of five people was five competing colours that
-  // meant nothing; the initials in mono on a quiet disc say who it is.
+  // Hue from the initials so a person keeps the same colour everywhere,
+  // without needing an avatar service or a stored preference.
+  const hues = ['#1878D8', '#27AE60', '#9B6BF2', '#F2994A', '#EF6C7E', '#1CA8DB'];
+  const hue = hues[(initials.charCodeAt(0) + (initials.charCodeAt(1) || 0)) % hues.length]!;
   return (
     <View
       style={{
         width: size,
         height: size,
         borderRadius: size / 2,
-        backgroundColor: p.surface,
-        borderWidth: 1,
-        borderColor: p.ruleStrong,
+        backgroundColor: `${hue}2E`,
         alignItems: 'center',
         justifyContent: 'center',
       }}
     >
-      <Text
-        style={[
-          type.mono,
-          {
-            fontSize: Math.round(size * 0.34),
-            lineHeight: Math.round(size * 0.42),
-            fontWeight: '500',
-            color: p.inkStrong,
-            letterSpacing: 0.5,
-          },
-        ]}
-      >
-        {initials}
-      </Text>
+      <Text style={{ fontSize: size * 0.38, fontWeight: '700', color: hue }}>{initials}</Text>
     </View>
   );
 }

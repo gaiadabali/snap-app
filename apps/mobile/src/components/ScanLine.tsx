@@ -74,25 +74,22 @@ export function ScanLine({ active, style }: { active: boolean; style?: StyleProp
       onLayout={(e) => setHeight(e.nativeEvent.layout.height)}
     >
       {!reduceMotion ? (
-        <Animated.View style={[{ position: 'absolute', left: 0, right: 0, height: 2 }, lineStyle]}>
-          {/* A crisp 2px line with a flat, faint band either side of it — the
-              sweep reverses at each edge, so the falloff has to trail both
-              ways. Flat fills, not a shadow: a shadow is a glow, and this
-              should read as a reading head. */}
-          <View
-            style={{ position: 'absolute', left: 0, right: 0, top: -10, height: 10, backgroundColor: p.scan, opacity: 0.07 }}
-          />
-          <View
-            style={{ position: 'absolute', left: 0, right: 0, top: -4, height: 4, backgroundColor: p.scan, opacity: 0.12 }}
-          />
-          <View style={{ height: 2, backgroundColor: p.scan }} />
-          <View
-            style={{ position: 'absolute', left: 0, right: 0, top: 2, height: 4, backgroundColor: p.scan, opacity: 0.12 }}
-          />
-          <View
-            style={{ position: 'absolute', left: 0, right: 0, top: 2, height: 10, backgroundColor: p.scan, opacity: 0.07 }}
-          />
-        </Animated.View>
+        <Animated.View
+          style={[
+            {
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              height: 2,
+              backgroundColor: p.scan,
+              shadowColor: p.scan,
+              shadowOpacity: 0.9,
+              shadowRadius: 8,
+              shadowOffset: { width: 0, height: 0 },
+            },
+            lineStyle,
+          ]}
+        />
       ) : null}
     </View>
   );

@@ -1,23 +1,22 @@
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Alert, ScrollView, View } from 'react-native';
-import { Text } from '@/theme/text';
+import { Alert, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, type Goal, type GoalContribution } from '@/api';
 import { Icon } from '@/components/Icon';
-import { GradientHero, HeroBody, HeroFigure, HeroLabel } from '@/components/rich';
+import { GradientHero } from '@/components/rich';
 import {
+  Body,
+  Card,
   IconButton,
-  LedgerRow,
   Notice,
   ProgressBar,
   Screen,
   ScreenHeader,
-  Section,
   Small,
 } from '@/components/ui';
-import { formatAud, numeric, onVoid, space, type, usePalette } from '@/theme';
+import { formatAud, numeric, radius, space, type, usePalette } from '@/theme';
 
 /**
  * One savings goal, and every payment into it.
@@ -28,8 +27,7 @@ import { formatAud, numeric, onVoid, space, type, usePalette } from '@/theme';
  *
  * `saved` is DERIVED on the server — the sum of the contributions below — so
  * the figure in the hero and the rows under it are the same fact twice, not
- * two numbers that might drift. The panel is the only dark thing here; what
- * was paid in is a ledger under it, one hairline-divided row per payment.
+ * two numbers that might drift.
  */
 export default function GoalDetailScreen() {
   const p = usePalette();
@@ -98,10 +96,10 @@ export default function GoalDetailScreen() {
     <Screen>
       <ScrollView
         contentContainerStyle={{
-          padding: space.lg,
+          padding: 20,
           paddingTop: insets.top + space.md,
           paddingBottom: space.xxl,
-          gap: space.lg,
+          gap: 14,
         }}
       >
         <ScreenHeader title={goal?.name ?? 'Goal'} onBack={() => router.back()} />
@@ -110,36 +108,50 @@ export default function GoalDetailScreen() {
 
         {goal ? (
           <>
-            {/* The saved figure leads, the target is the line under it, and
-                the meter carries the same fraction as the percentage so the
-                two cannot disagree. */}
-            <GradientHero>
-              <HeroLabel>Saved</HeroLabel>
-              <View style={{ marginTop: 14, minHeight: 56 }}>
-                <HeroFigure settle>{formatAud(goal.saved, { cents: false })}</HeroFigure>
-              </View>
-              <HeroBody>of {formatAud(goal.target, { cents: false })}</HeroBody>
-
-              <View style={{ marginTop: 22, gap: 8 }}>
-                <ProgressBar
-                  value={pct}
-                  height={3}
-                  track={onVoid.track}
-                  tone={goal.done ? onVoid.good : p.voidInk}
-                />
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: space.md }}>
-                  <Text style={[type.label, numeric, { color: p.voidMuted }]}>
-                    {Math.round(pct * 100)}%
-                    {' · '}
-                    {goal.done ? 'fully funded' : `${formatAud(String(short), { cents: false })} to go`}
+            <GradientHero style={{ borderRadius: radius.xl, gap: space.lg }}>
+              <View style={{ flexDirection: 'row', gap: space.lg }}>
+                <View style={{ flex: 1, gap: 2 }}>
+                  <Text style={[type.h2, numeric, { color: '#FFFFFF' }]}>
+                    {formatAud(goal.saved, { cents: false })}
                   </Text>
-                  {goal.perMonth && !goal.done ? (
-                    <Text style={[type.label, numeric, { color: onVoid.accent }]}>
-                      {formatAud(goal.perMonth, { cents: false })} a month
-                    </Text>
-                  ) : null}
+                  <Text style={[type.small, { color: 'rgba(255,255,255,0.95)' }]}>saved</Text>
+                </View>
+                <View style={{ flex: 1, gap: 2 }}>
+                  <Text style={[type.h2, numeric, { color: '#FFFFFF' }]}>
+                    {formatAud(goal.target, { cents: false })}
+                  </Text>
+                  <Text style={[type.small, { color: 'rgba(255,255,255,0.95)' }]}>target</Text>
                 </View>
               </View>
+
+              <View
+                style={{
+                  height: 8,
+                  borderRadius: 4,
+                  backgroundColor: 'rgba(255,255,255,0.25)',
+                  overflow: 'hidden',
+                }}
+              >
+                <View
+                  style={{
+                    width: `${Math.min(100, Math.max(2, pct * 100))}%`,
+                    height: '100%',
+                    backgroundColor: '#FFFFFF',
+                    opacity: 0.9,
+                    borderRadius: 4,
+                  }}
+                />
+              </View>
+
+              <Text style={[type.body, { color: 'rgba(255,255,255,0.95)' }]}>
+                {Math.round(pct * 100)}% ·{' '}
+                {goal.done
+                  ? 'fully funded'
+                  : `${formatAud(String(short), { cents: false })} to go`}
+                {goal.perMonth && !goal.done
+                  ? ` · ${formatAud(goal.perMonth, { cents: false })} a month`
+                  : ''}
+              </Text>
             </GradientHero>
 
             {goal.done ? (
@@ -149,19 +161,37 @@ export default function GoalDetailScreen() {
               </Notice>
             ) : null}
 
-            <Section label="Paid in" style={{ marginTop: space.lg }} rule={false}>
-              {ledger.map((c, i) => (
-                <LedgerRow
-                  key={c.id}
-                  first={i === 0}
-                  title={sourceLabel(c)}
-                  note={`${new Date(c.occurredOn).toLocaleDateString('en-AU', {
-                    day: 'numeric',
-                    month: 'short',
-                    year: 'numeric',
-                  })}${c.createdByName ? ` · ${c.createdByName}` : ''}`}
-                  figure={formatAud(c.amount)}
-                  trailing={
+            <View style={{ gap: space.sm }}>
+              <Text style={[type.label, { color: p.inkMuted }]}>Paid in</Text>
+              <Card padded={false}>
+                {ledger.map((c, i) => (
+                  <View
+                    key={c.id}
+                    style={{
+                      minHeight: 62,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: space.md,
+                      paddingHorizontal: space.lg,
+                      paddingVertical: space.md,
+                      borderTopWidth: i === 0 ? 0 : 1,
+                      borderTopColor: p.rule,
+                    }}
+                  >
+                    <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+                      <Body strong>{sourceLabel(c)}</Body>
+                      <Small>
+                        {new Date(c.occurredOn).toLocaleDateString('en-AU', {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric',
+                        })}
+                        {c.createdByName ? ` · ${c.createdByName}` : ''}
+                      </Small>
+                    </View>
+                    <Text style={[type.bodyStrong, numeric, { color: p.ink }]}>
+                      {formatAud(c.amount)}
+                    </Text>
                     <IconButton
                       name="close"
                       size={17}
@@ -169,31 +199,25 @@ export default function GoalDetailScreen() {
                       label={`Remove this payment of ${formatAud(c.amount)}`}
                       onPress={() => confirmRemove(c)}
                     />
-                  }
-                />
-              ))}
+                  </View>
+                ))}
 
-              {ledger.length === 0 ? (
-                <View
-                  style={{
-                    alignItems: 'center',
-                    gap: 6,
-                    paddingVertical: 28,
-                    borderTopWidth: 1,
-                    borderTopColor: p.rule,
-                  }}
-                >
-                  <Icon name="bank" size={26} color={p.inkMuted} />
-                  <Small>Nothing paid in yet.</Small>
-                </View>
-              ) : null}
+                {ledger.length === 0 ? (
+                  <View style={{ alignItems: 'center', gap: 6, paddingVertical: 28 }}>
+                    <Icon name="bank" size={26} color={p.inkMuted} />
+                    <Small>Nothing paid in yet.</Small>
+                  </View>
+                ) : null}
+              </Card>
               {ledger.length > 0 ? (
-                <Small style={{ marginTop: space.md }}>
+                <Small>
                   {ledger.length} payment{ledger.length === 1 ? '' : 's'}, adding to{' '}
                   {formatAud(goal.saved)}.
                 </Small>
               ) : null}
-            </Section>
+            </View>
+
+            <ProgressBar value={pct} />
           </>
         ) : null}
       </ScrollView>

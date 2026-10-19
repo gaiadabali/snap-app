@@ -5,9 +5,10 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Text,
+  TextInput,
   View,
 } from 'react-native';
-import { Text, TextInput } from '@/theme/text';
 
 import { deviceInfo, isAvailable, recognise } from '../../modules/snap-ocr/src';
 

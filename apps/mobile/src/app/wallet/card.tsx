@@ -1,13 +1,12 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ScrollView, View, type TextInputProps } from 'react-native';
-import { Text, TextInput } from '@/theme/text';
+import { ScrollView, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, type WalletProvider } from '@/api';
 import { Icon } from '@/components/Icon';
-import { Button, Label, Notice, Screen, ScreenHeader, Small } from '@/components/ui';
-import { numeric, radius, space, type, usePalette } from '@/theme';
+import { Body, Button, Notice, Screen, ScreenHeader, Small } from '@/components/ui';
+import { control, numeric, radius, space, type, usePalette } from '@/theme';
 
 /**
  * Entering a card, or linking a device wallet.
@@ -21,11 +20,6 @@ import { numeric, radius, space, type, usePalette } from '@/theme';
  * Anything stricter is the processor's job, and a client that rejects a valid
  * card because its own BIN table is out of date is worse than one that lets
  * the processor answer.
- *
- * The card drawn above the form is a preview of what is typed, in the void
- * colour like every other physical object in the app. It shows only the last
- * four digits — the same four `SavedCard.last4` keeps — so the preview never
- * puts a full PAN on screen.
  */
 export default function AddCardScreen() {
   const p = usePalette();
@@ -74,250 +68,135 @@ export default function AddCardScreen() {
     }
   }
 
+  const field = {
+    minHeight: control.input,
+    borderWidth: 1.5,
+    borderRadius: radius.md,
+    backgroundColor: p.surface,
+    paddingHorizontal: space.lg,
+    ...type.input,
+    color: p.ink,
+  };
+
   return (
     <Screen>
       <ScrollView
         contentContainerStyle={{
-          paddingHorizontal: space.lg,
+          padding: 20,
           paddingTop: insets.top + space.md,
           paddingBottom: space.xxl,
-          gap: space.xl,
+          gap: 14,
         }}
         keyboardShouldPersistTaps="handled"
       >
         <ScreenHeader title={label} onBack={() => router.back()} />
 
         {provider === 'card' ? (
-          <>
-            <CardObject
-              network={label}
-              last4={digits.length >= 4 ? digits.slice(-4) : null}
-              name={name.trim()}
-              expiry={expiry}
+          <View style={{ gap: space.md }}>
+            <Text style={[type.body, { color: p.inkMuted }]}>
+              Enter the card you want charged. Nothing is taken until you complete a top up.
+            </Text>
+
+            <TextInput
+              accessibilityLabel="Name on card"
+              value={name}
+              onChangeText={setName}
+              placeholder="Name on card"
+              placeholderTextColor={p.inkFaint}
+              autoCapitalize="words"
+              style={{ ...field, borderColor: p.rule }}
             />
 
-            <View style={{ gap: space.lg }}>
-              <Text style={[type.body, { color: p.inkMuted }]}>
-                Enter the card you want charged. Nothing is taken until you complete a top up.
-              </Text>
-
-              <Input
-                label="Name on card"
-                value={name}
-                onChangeText={setName}
-                placeholder="Name on card"
-                autoCapitalize="words"
+            <View style={{ gap: 6 }}>
+              <TextInput
+                accessibilityLabel="Card number"
+                value={number}
+                onChangeText={(v) => setNumber(groupDigits(v))}
+                placeholder="Card number"
+                placeholderTextColor={p.inkFaint}
+                keyboardType="number-pad"
+                maxLength={23}
+                style={{ ...field, ...numeric, borderColor: numberBad ? p.risk : p.rule }}
               />
+              {numberBad ? (
+                <Text style={[type.small, { color: p.risk }]}>
+                  Check that number — it does not look right.
+                </Text>
+              ) : null}
+            </View>
 
-              <View style={{ gap: 6 }}>
-                <Input
-                  label="Card number"
-                  value={number}
-                  onChangeText={(v) => setNumber(groupDigits(v))}
-                  placeholder="Card number"
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <View style={{ flex: 1, gap: 6 }}>
+                <TextInput
+                  accessibilityLabel="Expiry"
+                  value={expiry}
+                  onChangeText={(v) => setExpiry(formatExpiry(v))}
+                  placeholder="MM/YY"
+                  placeholderTextColor={p.inkFaint}
                   keyboardType="number-pad"
-                  maxLength={23}
-                  mono
-                  bad={numberBad}
+                  maxLength={5}
+                  style={{ ...field, ...numeric, borderColor: expiryBad ? p.risk : p.rule }}
                 />
-                {numberBad ? (
-                  <Text style={[type.small, { color: p.risk }]}>
-                    Check that number — it does not look right.
-                  </Text>
+                {expiryBad ? (
+                  <Text style={[type.small, { color: p.risk }]}>Past, or not a month.</Text>
                 ) : null}
               </View>
-
-              <View style={{ flexDirection: 'row', gap: 10 }}>
-                <View style={{ flex: 1, gap: 6 }}>
-                  <Input
-                    label="Expiry"
-                    value={expiry}
-                    onChangeText={(v) => setExpiry(formatExpiry(v))}
-                    placeholder="MM/YY"
-                    keyboardType="number-pad"
-                    maxLength={5}
-                    mono
-                    bad={expiryBad}
-                  />
-                  {expiryBad ? (
-                    <Text style={[type.small, { color: p.risk }]}>Past, or not a month.</Text>
-                  ) : null}
-                </View>
-                <View style={{ flex: 1, gap: 6 }}>
-                  <Input
-                    label="Security code"
-                    shortLabel="CVC"
-                    value={cvc}
-                    onChangeText={(v) => setCvc(v.replace(/\D/g, '').slice(0, 4))}
-                    placeholder="CVC"
-                    keyboardType="number-pad"
-                    secureTextEntry
-                    mono
-                    bad={cvcBad}
-                  />
-                  {cvcBad ? (
-                    <Text style={[type.small, { color: p.risk }]}>Three or four digits.</Text>
-                  ) : null}
-                </View>
+              <View style={{ flex: 1, gap: 6 }}>
+                <TextInput
+                  accessibilityLabel="Security code"
+                  value={cvc}
+                  onChangeText={(v) => setCvc(v.replace(/\D/g, '').slice(0, 4))}
+                  placeholder="CVC"
+                  placeholderTextColor={p.inkFaint}
+                  keyboardType="number-pad"
+                  secureTextEntry
+                  style={{ ...field, ...numeric, borderColor: cvcBad ? p.risk : p.rule }}
+                />
+                {cvcBad ? (
+                  <Text style={[type.small, { color: p.risk }]}>Three or four digits.</Text>
+                ) : null}
               </View>
-
-              {error ? <Notice tone="risk" icon="alert">{error}</Notice> : null}
-
-              <Button label="Save card" busy={busy} disabled={!canSave} onPress={() => void save()} />
-              <Small>
-                Snap Apps keeps the last four digits so you can tell your cards apart. The full
-                number goes to the processor and is not stored here.
-              </Small>
             </View>
-          </>
+
+            {error ? <Notice tone="risk" icon="alert">{error}</Notice> : null}
+
+            <Button label="Save card" busy={busy} disabled={!canSave} onPress={() => void save()} />
+            <Small>
+              Snap Apps keeps the last four digits so you can tell your cards apart. The full
+              number goes to the processor and is not stored here.
+            </Small>
+          </View>
         ) : (
-          <View style={{ gap: space.lg }}>
+          <View style={{ gap: 14 }}>
             <Text style={[type.body, { color: p.inkMuted }]}>
               Snap Apps will use the card already set up on this device. There is nothing to type.
             </Text>
-            <CardObject network={label} last4={null} name="" expiry="" onDevice />
+            <View
+              style={{
+                backgroundColor: p.goodSoft,
+                borderRadius: radius.xl,
+                padding: 18,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 13,
+              }}
+            >
+              <Icon name="shield" size={22} color={p.good} />
+              <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+                <Body strong style={{ color: p.goodInk }}>
+                  {label}
+                </Body>
+                <Text style={[type.small, { color: p.goodInk }]}>
+                  You confirm every charge on the device itself.
+                </Text>
+              </View>
+            </View>
             {error ? <Notice tone="risk" icon="alert">{error}</Notice> : null}
             <Button label={`Link ${label}`} busy={busy} onPress={() => void save()} />
           </View>
         )}
       </ScrollView>
     </Screen>
-  );
-}
-
-/**
- * A card as a physical object: the void colour, a hairline chip, the network
- * top-left in mono, the number and expiry in Plex Mono. Flat — no gradient,
- * no gloss, no shadow; it sits on the page like the void panel does.
- *
- * Takes plain strings only. `last4` is null until four digits exist, and a
- * device wallet passes `onDevice` instead of a number, because there is no
- * number to show and inventing one would be a lie.
- */
-function CardObject({
-  network,
-  last4,
-  name,
-  expiry,
-  onDevice,
-}: {
-  network: string;
-  last4: string | null;
-  name: string;
-  expiry: string;
-  onDevice?: boolean;
-}) {
-  const p = usePalette();
-  return (
-    <View
-      accessible
-      accessibilityLabel={
-        onDevice
-          ? `${network}, confirmed on this device`
-          : `${network} card${last4 ? `, ending ${last4}` : ''}`
-      }
-      style={{
-        minHeight: 176,
-        backgroundColor: p.void,
-        borderRadius: radius.xxl,
-        borderWidth: 1,
-        borderColor: p.voidRule,
-        padding: 20,
-        justifyContent: 'space-between',
-      }}
-    >
-      <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: space.md }}>
-        <Text style={[type.label, { color: p.voidMuted, flex: 1 }]} numberOfLines={1}>
-          {network}
-        </Text>
-        {onDevice ? <Icon name="shield" size={20} color={p.voidMuted} /> : null}
-      </View>
-
-      {/* The chip: an outline with one hairline across it, nothing more. */}
-      <View
-        style={{
-          width: 38,
-          height: 28,
-          borderRadius: 5,
-          borderWidth: 1,
-          borderColor: p.voidMuted,
-          justifyContent: 'center',
-        }}
-      >
-        <View style={{ height: 1, backgroundColor: p.voidRule }} />
-      </View>
-
-      <View style={{ gap: 10 }}>
-        <Text style={[type.figure, numeric, { color: p.voidInk, letterSpacing: 1.5 }]}>
-          {onDevice ? 'ON THIS DEVICE' : `•••• ${last4 ?? '••••'}`}
-        </Text>
-        {onDevice ? (
-          <Text style={[type.mono, { color: p.voidMuted }]}>You confirm every charge on the device itself.</Text>
-        ) : (
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: space.md }}>
-            <Text style={[type.mono, { color: p.voidMuted, flex: 1, textTransform: 'uppercase' }]} numberOfLines={1}>
-              {name || 'Name on card'}
-            </Text>
-            <Text style={[type.mono, numeric, { color: p.voidMuted }]}>{expiry || 'MM/YY'}</Text>
-          </View>
-        )}
-      </View>
-    </View>
-  );
-}
-
-/**
- * A labelled input drawn like `Field` (mono label over a hairline box, 2px
- * accent edge on focus) but passing through what `Field` does not take: the
- * accessibility label, `maxLength`, and a risk edge when the value is bad.
- * Card entry needs all three, and the PAN field must stay a plain controlled
- * input with no logging or mirroring.
- */
-function Input({
-  label,
-  shortLabel,
-  bad,
-  mono,
-  ...rest
-}: TextInputProps & { label: string; shortLabel?: string; bad?: boolean; mono?: boolean }) {
-  const p = usePalette();
-  const [focused, setFocused] = useState(false);
-  return (
-    <View style={{ gap: 6 }}>
-      <Label>{shortLabel ?? label}</Label>
-      <View
-        style={{
-          minHeight: 50,
-          justifyContent: 'center',
-          // 1px at rest, 2px focused; the pixel comes out of the padding so the
-          // text does not shift when focus lands.
-          borderWidth: focused || bad ? 2 : 1,
-          borderColor: bad ? p.risk : focused ? p.accent : p.ruleStrong,
-          backgroundColor: p.ground,
-          borderRadius: radius.md,
-          paddingHorizontal: focused || bad ? 13 : 14,
-        }}
-      >
-        <TextInput
-          accessibilityLabel={label}
-          placeholderTextColor={p.inkFaint}
-          autoCorrect={false}
-          {...rest}
-          onFocus={(e) => {
-            setFocused(true);
-            rest.onFocus?.(e);
-          }}
-          onBlur={(e) => {
-            setFocused(false);
-            rest.onBlur?.(e);
-          }}
-          style={[
-            mono ? [type.amount, { fontSize: 16 }, numeric] : type.input,
-            { color: p.ink, paddingVertical: 12 },
-          ]}
-        />
-      </View>
-    </View>
   );
 }
 

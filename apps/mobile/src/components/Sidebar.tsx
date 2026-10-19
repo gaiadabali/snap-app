@@ -1,14 +1,13 @@
 import { useRouter } from 'expo-router';
 import { useEffect, useRef } from 'react';
-import { Animated, Dimensions, Easing, Modal, Pressable, ScrollView, View } from 'react-native';
-import { Text } from '@/theme/text';
+import { Animated, Dimensions, Easing, Modal, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, type PersonalSummary, type SalesSummary } from '@/api';
 import { GradientHero, HeroBody, HeroFigure, HeroLabel } from '@/components/rich';
 import { MenuContent } from '@/components/MenuContent';
-import { IconButton } from '@/components/ui';
-import { elevation, formatAud, space, type, usePalette } from '@/theme';
+import { Figure, Small } from '@/components/ui';
+import { formatAud, space, usePalette } from '@/theme';
 import { useWorkspace } from '@/workspace';
 import { useCallback, useState } from 'react';
 
@@ -19,9 +18,6 @@ import { useCallback, useState } from 'react';
  * not a destination. Sliding it over the current page keeps that context —
  * Home stays visible behind the scrim — and the tab bar stays put underneath,
  * so Home and Scan are still one tap away without dismissing anything.
- *
- * The panel is the one thing here that floats, so it alone carries a shadow
- * (`elevation.float`); everything inside it sits on the ground behind a hairline.
  *
  * Built on Animated rather than a navigation drawer library: the tab bar has to
  * keep working while this is open, which a drawer navigator would take over.
@@ -99,7 +95,11 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
             transform: [{ translateX: slide }],
             borderLeftWidth: 1,
             borderLeftColor: p.rule,
-            ...elevation.float,
+            shadowColor: '#000',
+            shadowOpacity: 0.25,
+            shadowRadius: 24,
+            shadowOffset: { width: -8, height: 0 },
+            elevation: 16,
           }}
         >
           <ScrollView
@@ -113,8 +113,10 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
             <View
               style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
             >
-              <Text style={[type.display, { color: p.ink }]}>Menu</Text>
-              <IconButton name="close" label="Close" onPress={onClose} style={{ marginRight: -11 }} />
+              <Figure size="h1">Menu</Figure>
+              <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={onClose} hitSlop={12}>
+                <Text style={{ fontSize: 26, color: p.inkFaint, lineHeight: 28 }}>×</Text>
+              </Pressable>
             </View>
 
             {/* The one thing worth surfacing above a menu. */}
@@ -165,9 +167,9 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
 
             <MenuContent onNavigate={onClose} />
 
-            <Text style={[type.label, { color: p.inkFaint, textAlign: 'center' }]}>
+            <Small style={{ textAlign: 'center' }}>
               Snap Apps · {isBusiness ? 'business' : 'personal'} · demo data
-            </Text>
+            </Small>
           </ScrollView>
         </Animated.View>
       </View>

@@ -1,5 +1,4 @@
 import { Stack } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import * as SystemUI from 'expo-system-ui';
 import { useEffect } from 'react';
@@ -7,25 +6,10 @@ import { Platform, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { ThemeProvider, usePalette, useTheme } from '@/theme';
-import { face, useAppFonts } from '@/theme/text';
 import { SessionGate } from '@/session';
 import { WorkspaceProvider } from '@/workspace';
 
-/* Held until the typefaces settle, so the first frame is already set in
-   Archivo rather than flashing the system face and reflowing. The promise is
-   ignored on purpose: on web there is no splash to hold. */
-void SplashScreen.preventAutoHideAsync().catch(() => {});
-
 export default function RootLayout() {
-  const { ready } = useAppFonts();
-
-  useEffect(() => {
-    if (ready) void SplashScreen.hideAsync().catch(() => {});
-  }, [ready]);
-
-  // Bundled faces load in tens of milliseconds; the splash covers it.
-  if (!ready) return null;
-
   return (
     <ThemeProvider>
       <RootChrome />
@@ -69,15 +53,12 @@ function RootChrome() {
           screenOptions={{
             headerStyle: { backgroundColor: p.ground },
             headerTintColor: p.ink,
-            /* The screen title: Archivo 400 at 24, hard left, no centre
-               alignment and no shadow — light rather than bold, which is the
-               instrument pass's whole typographic move. Set once here so every
-               pushed screen that still uses the navigator's header matches the
-               ones that draw their own `<ScreenHeader>`. The face is passed by
-               name because the navigator draws this title itself, outside
-               the app's own Text. */
+            /* The redesign's screen title: 24/30 bold, hard left, no centre
+               alignment and no shadow. Set once here so every pushed screen
+               that still uses the navigator's header matches the ones that
+               draw their own `<ScreenHeader>`. */
             headerTitleAlign: 'left',
-            headerTitleStyle: { fontSize: 22, fontFamily: face('sans', 400), color: p.ink },
+            headerTitleStyle: { fontSize: 24, fontWeight: '700', color: p.ink },
             headerBackTitle: '',
             headerShadowVisible: false,
             headerLeft: undefined,
