@@ -1,22 +1,12 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Alert, ScrollView, Text, View } from 'react-native';
+import { Alert, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, type PrivacySettings } from '@/api';
-import { Icon } from '@/components/Icon';
 import { Toggle } from '@/components/form';
-import {
-  Button,
-  Card,
-  Divider,
-  Notice,
-  Row,
-  Screen,
-  ScreenHeader,
-  Small,
-} from '@/components/ui';
-import { space, type, usePalette } from '@/theme';
+import { Body, Button, Notice, Row, Screen, ScreenHeader, Section, Small } from '@/components/ui';
+import { space, usePalette } from '@/theme';
 
 /**
  * What is kept, for how long, and who can see it.
@@ -28,6 +18,11 @@ import { space, type, usePalette } from '@/theme';
  * "Delete all receipts" is the one destructive action in the app and is
  * confirmed twice — once here, once by the platform dialog — because it cannot
  * be undone and the originals are the record.
+ *
+ * Rebuilt 2026-10-19 (the instrument pass): the retention copy is plain text
+ * under a label rather than a card, and the switches and links are sections of
+ * hairline-divided rows. The delete button is the only filled control, and it
+ * is red because it is the only destructive one.
  */
 export default function PrivacyScreen() {
   const p = usePalette();
@@ -86,34 +81,30 @@ export default function PrivacyScreen() {
     <Screen>
       <ScrollView
         contentContainerStyle={{
-          padding: 20,
+          paddingHorizontal: space.lg,
           paddingTop: insets.top + space.md,
           paddingBottom: space.xxl,
-          gap: 14,
+          gap: space.xl,
         }}
       >
         <ScreenHeader title="Privacy and data" onBack={() => router.back()} />
 
-        <Card style={{ gap: 10, padding: 18 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
-            <Icon name="info" size={16} color={p.inkMuted} />
-            <Text style={[type.label, { color: p.inkMuted }]}>How long records are kept</Text>
-          </View>
-          <Text style={[type.body, { color: p.ink, fontSize: 14, lineHeight: 21 }]}>
+        <Section label="How long records are kept" style={{ gap: space.sm }}>
+          <Body>
             Records are kept for {years} years, which is at or above what the ATO requires.
             Originals are stored in Australia.
-          </Text>
+          </Body>
           <Small>
             Everyone in this workspace can see everything in it. Removing someone revokes their
             access but does not remove what they captured, because those records belong to the
             workspace.
           </Small>
-        </Card>
+        </Section>
 
         {error ? <Notice tone="risk" icon="alert">{error}</Notice> : null}
 
-        <Card padded={false}>
-          <View style={{ paddingHorizontal: space.lg, paddingVertical: 14 }}>
+        <Section label="Sharing">
+          <View style={{ paddingVertical: 14 }}>
             <Toggle
               label="Anonymous analytics"
               hint="Which screens get used, never what is on a receipt."
@@ -121,8 +112,7 @@ export default function PrivacyScreen() {
               onChange={(v) => void set('analyticsOptIn', v)}
             />
           </View>
-          <Divider />
-          <View style={{ paddingHorizontal: space.lg, paddingVertical: 14 }}>
+          <View style={{ paddingVertical: 14, borderTopWidth: 1, borderTopColor: p.rule }}>
             <Toggle
               label="Crash reports"
               hint="Stack traces when something breaks, so it can be fixed."
@@ -130,8 +120,7 @@ export default function PrivacyScreen() {
               onChange={(v) => void set('crashReports', v)}
             />
           </View>
-          <Divider />
-          <View style={{ paddingHorizontal: space.lg, paddingVertical: 14 }}>
+          <View style={{ paddingVertical: 14, borderTopWidth: 1, borderTopColor: p.rule }}>
             <Toggle
               label="Help improve extraction"
               hint="Lets corrections you make train the shared reader. Off by default."
@@ -139,30 +128,35 @@ export default function PrivacyScreen() {
               onChange={(v) => void set('contributeToModel', v)}
             />
           </View>
-        </Card>
+        </Section>
 
-        <Card padded={false}>
-          <Row
-            title="Sign in with fingerprint"
-            subtitle="Unlock this device without typing a password"
-            icon="lock"
-            iconTone="neutral"
-            onPress={() => router.push('/fingerprint')}
-          />
-          <Divider />
-          <Row
-            title="Export receipts"
-            subtitle="Every photo, with the fields read from it"
-            icon="upload"
-            iconTone="neutral"
-            onPress={() => router.push('/export')}
-          />
-        </Card>
+        <Section label="Your data">
+          {/* Row pads its own 16pt sides; pull it out to the screen edge so its
+              icon lines up with the section label above it. */}
+          <View style={{ marginHorizontal: -space.lg }}>
+            <Row
+              title="Sign in with fingerprint"
+              subtitle="Unlock this device without typing a password"
+              icon="lock"
+              iconTone="neutral"
+              onPress={() => router.push('/fingerprint')}
+            />
+            <Row
+              title="Export receipts"
+              subtitle="Every photo, with the fields read from it"
+              icon="upload"
+              iconTone="neutral"
+              onPress={() => router.push('/export')}
+            />
+          </View>
+        </Section>
 
-        <Button label="Delete all receipts" tone="risk" icon="trash" onPress={confirmWipe} />
-        <Small style={{ textAlign: 'center' }}>
-          This clears every record in this space. Credits and points stay on your account.
-        </Small>
+        <View style={{ gap: space.md }}>
+          <Button label="Delete all receipts" tone="risk" icon="trash" onPress={confirmWipe} />
+          <Small style={{ textAlign: 'center' }}>
+            This clears every record in this space. Credits and points stay on your account.
+          </Small>
+        </View>
       </ScrollView>
     </Screen>
   );

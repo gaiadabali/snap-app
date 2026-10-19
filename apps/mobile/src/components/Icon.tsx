@@ -13,7 +13,7 @@ import { usePalette } from '@/theme';
  * geometry is expressed as vectors instead. The path data is copied verbatim;
  * only the delivery changed.
  *
- * Everything is drawn on a 24×24 box with a 1.75 stroke, round caps and round
+ * Everything is drawn on a 24×24 box with a 1.5 stroke, round caps and round
  * joins, so icons stay optically consistent when they sit next to each other
  * in a row. A few glyphs override the weight where the prototype does.
  */
@@ -172,7 +172,9 @@ export function Icon({
   const p = usePalette();
   const spec = PATHS[name];
   const paths = Array.isArray(spec) ? spec : spec.d;
-  const strokeWidth = Array.isArray(spec) ? 1.75 : spec.width;
+  // 1.5, down from the prototype's 1.75: a finer line sits with Archivo's light
+  // weights instead of out-shouting them. The heavier glyphs keep their ratio.
+  const strokeWidth = Array.isArray(spec) ? 1.5 : spec.width * 0.86;
 
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...rest}>

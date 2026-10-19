@@ -1,11 +1,13 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
+import { Text } from '@/theme/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, type UsageKind, type UsagePeriod } from '@/api';
 import { Icon } from '@/components/Icon';
-import { Card, Notice, Screen, ScreenHeader, Small } from '@/components/ui';
+import { Empty } from '@/components/form';
+import { Chip, Figure, LedgerRow, Notice, Screen, ScreenHeader, Segmented, Small } from '@/components/ui';
 import { numeric, radius, space, type, usePalette } from '@/theme';
 
 /**
@@ -97,211 +99,150 @@ export default function UsageScreen() {
     <Screen>
       <ScrollView
         contentContainerStyle={{
-          padding: 20,
+          padding: space.lg,
           paddingTop: insets.top + space.md,
           paddingBottom: space.xxl,
-          gap: 14,
+          gap: space.lg,
         }}
       >
         <ScreenHeader title={title} onBack={() => router.back()} />
 
         {/* Credits / points */}
-        <View style={{ flexDirection: 'row', gap: 6, backgroundColor: p.surface, borderRadius: radius.md, padding: 4 }}>
-          {(['credits', 'points'] as const).map((k) => {
-            const on = kind === k;
-            return (
-              <Pressable
-                key={k}
-                accessibilityRole="tab"
-                accessibilityState={{ selected: on }}
-                onPress={() => setKind(k)}
-                style={{
-                  flex: 1,
-                  minHeight: 40,
-                  borderRadius: 9,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  backgroundColor: on ? p.ground : 'transparent',
+        <Segmented
+          options={[
+            { value: 'credits', label: 'Credits' },
+            { value: 'points', label: 'Points' },
+          ]}
+          value={kind}
+          onChange={setKind}
+        />
+
+        {/* Year picker */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Choose a year"
+            onPress={() => setOpen((v) => !v)}
+            style={{
+              minHeight: 36,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 7,
+              paddingHorizontal: 14,
+              borderWidth: 1,
+              borderColor: p.ruleStrong,
+              borderRadius: radius.md,
+            }}
+          >
+            <Icon name="calendar" size={14} color={p.inkMuted} />
+            <Text style={[type.smallStrong, numeric, { color: p.ink }]}>{year}</Text>
+            <Icon name="chevronDown" size={14} color={p.inkMuted} />
+          </Pressable>
+        </View>
+
+        {open ? (
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+            {years.map((y) => (
+              <Chip
+                key={y}
+                selected={y === year}
+                onPress={() => {
+                  setYear(y);
+                  setOpen(false);
                 }}
               >
-                <Text style={[on ? type.bodyStrong : type.body, { color: on ? p.ink : p.inkMuted }]}>
-                  {k === 'credits' ? 'Credits' : 'Points'}
-                </Text>
+                {String(y)}
+              </Chip>
+            ))}
+          </View>
+        ) : null}
+
+        {/* Chart. Twelve bars, drawn straight on the ground; the chosen month
+            is the one in the accent. */}
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'flex-end',
+            gap: 5,
+            height: 152,
+            borderBottomWidth: 1,
+            borderBottomColor: p.rule,
+          }}
+        >
+          {MONTHS.map((label, i) => {
+            const key = `${year}-${String(i + 1).padStart(2, '0')}`;
+            const total = byMonth[key] ?? 0;
+            const has = months.includes(key);
+            const on = month === key;
+            return (
+              <Pressable
+                key={key}
+                accessibilityRole="button"
+                accessibilityLabel={`${label} ${year}: ${total} ${unit}`}
+                disabled={!has}
+                onPress={() => setMonth(key)}
+                style={{
+                  flex: 1,
+                  minWidth: 0,
+                  height: '100%',
+                  alignItems: 'center',
+                  justifyContent: 'flex-end',
+                  gap: 7,
+                  opacity: has ? 1 : 0.4,
+                }}
+              >
+                <View
+                  style={{
+                    width: 16,
+                    maxWidth: '100%',
+                    // A month with usage always shows at least a nub, so
+                    // "one credit" and "none" do not look identical.
+                    height: total > 0 ? Math.max(8, (total / peak) * 118) : 4,
+                    borderRadius: 2,
+                    backgroundColor: on ? p.accent : total > 0 ? p.ruleStrong : p.rule,
+                  }}
+                />
+                <Text style={[type.tab, { color: on ? p.ink : p.inkMuted }]}>{label}</Text>
               </Pressable>
             );
           })}
         </View>
 
-        <Card style={{ gap: 14, padding: space.lg }}>
-          {/* Year picker */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Choose a year"
-              onPress={() => setOpen((v) => !v)}
-              style={{
-                minHeight: 36,
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 7,
-                paddingHorizontal: 14,
-                borderWidth: 1,
-                borderColor: p.ruleStrong,
-                borderRadius: radius.md,
-                backgroundColor: p.ground,
-              }}
-            >
-              <Icon name="calendar" size={14} color={p.inkMuted} />
-              <Text style={[type.smallStrong, numeric, { color: p.ink }]}>{year}</Text>
-              <Icon name="chevronDown" size={14} color={p.inkMuted} />
-            </Pressable>
-          </View>
-
-          {open ? (
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-              {years.map((y) => (
-                <Pressable
-                  key={y}
-                  accessibilityRole="button"
-                  onPress={() => {
-                    setYear(y);
-                    setOpen(false);
-                  }}
-                  style={{
-                    minHeight: 36,
-                    paddingHorizontal: 14,
-                    justifyContent: 'center',
-                    borderRadius: 9,
-                    backgroundColor: y === year ? p.accent : p.surfaceAlt,
-                  }}
-                >
-                  <Text style={[type.smallStrong, numeric, { color: y === year ? '#FFF' : p.ink }]}>
-                    {y}
-                  </Text>
-                </Pressable>
-              ))}
+        {/* The chosen month */}
+        {period ? (
+          <View>
+            <View style={{ gap: 4 }}>
+              <Text style={[type.label, { color: p.inkMuted }]}>{pretty(period.month)}</Text>
+              <Figure size="display">{period.total.toLocaleString('en-AU')}</Figure>
+              <Text style={[type.mono, { color: p.inkMuted }]}>
+                {period.items.length === 1 ? '1 entry' : `${period.items.length} entries`} · {unit}
+              </Text>
             </View>
-          ) : null}
 
-          {/* Chart */}
-          <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 5, height: 152 }}>
-            {MONTHS.map((label, i) => {
-              const key = `${year}-${String(i + 1).padStart(2, '0')}`;
-              const total = byMonth[key] ?? 0;
-              const has = months.includes(key);
-              const on = month === key;
-              return (
-                <Pressable
-                  key={key}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${label} ${year}: ${total} ${unit}`}
-                  disabled={!has}
-                  onPress={() => setMonth(key)}
-                  style={{
-                    flex: 1,
-                    minWidth: 0,
-                    height: '100%',
-                    alignItems: 'center',
-                    justifyContent: 'flex-end',
-                    gap: 7,
-                    opacity: has ? 1 : 0.4,
-                  }}
-                >
-                  <View
-                    style={{
-                      width: 16,
-                      maxWidth: '100%',
-                      // A month with usage always shows at least a nub, so
-                      // "one credit" and "none" do not look identical.
-                      height: total > 0 ? Math.max(8, (total / peak) * 118) : 4,
-                      borderRadius: 8,
-                      backgroundColor: on ? p.accent : total > 0 ? p.surfaceAlt : p.rule,
-                    }}
-                  />
-                  <Text style={[type.tab, { color: on ? p.ink : p.inkMuted, fontWeight: on ? '700' : '600' }]}>
-                    {label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-
-          {/* The chosen month */}
-          {period ? (
-            <>
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'baseline',
-                  justifyContent: 'space-between',
-                  gap: space.md,
-                  borderTopWidth: 1,
-                  borderTopColor: p.rule,
-                  paddingTop: space.lg,
-                }}
-              >
-                <View style={{ gap: 3 }}>
-                  <Text style={[type.label, { color: p.inkMuted }]}>{pretty(period.month)}</Text>
-                  <Small>
-                    {period.items.length === 1 ? '1 entry' : `${period.items.length} entries`}
-                  </Small>
-                </View>
-                <Text style={[type.h2, numeric, { color: p.ink }]}>
-                  {period.total.toLocaleString('en-AU')}
-                </Text>
-              </View>
-
+            <View style={{ marginTop: space.lg }}>
               {period.items.map((it, i) => (
-                <View
+                <LedgerRow
                   key={it.id}
-                  style={{
-                    minHeight: 62,
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: space.md,
-                    borderTopWidth: i === 0 ? 0 : 1,
-                    borderTopColor: p.rule,
-                  }}
-                >
-                  <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
-                    <Text style={[type.body, { color: p.ink }]} numberOfLines={1}>
-                      {it.label}
-                    </Text>
-                    <Small>{day(it.occurredAt)}</Small>
-                  </View>
-                  <Text style={[type.bodyStrong, numeric, { color: p.ink }]}>
-                    {it.amount.toLocaleString('en-AU')}
-                  </Text>
-                </View>
+                  first={i === 0}
+                  title={it.label}
+                  note={day(it.occurredAt)}
+                  figure={it.amount.toLocaleString('en-AU')}
+                />
               ))}
-
-              {period.items.length === 0 ? (
-                <Small>Nothing used in this month.</Small>
-              ) : null}
-            </>
-          ) : (
-            <View style={{ alignItems: 'center', gap: 6, paddingVertical: 22 }}>
-              <View
-                style={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: 24,
-                  backgroundColor: p.surfaceAlt,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Icon name="calendar" size={22} color={p.inkMuted} />
-              </View>
-              <Text style={[type.bodyStrong, { color: p.ink, marginTop: 6 }]}>Nothing here yet</Text>
-              <Small style={{ textAlign: 'center' }}>
-                {kind === 'credits'
-                  ? 'Credits show up here as you scan.'
-                  : 'Points show up here once you start spending them.'}
-              </Small>
             </View>
-          )}
-        </Card>
+
+            {period.items.length === 0 ? <Small>Nothing used in this month.</Small> : null}
+          </View>
+        ) : (
+          <Empty
+            title="Nothing here yet"
+            detail={
+              kind === 'credits'
+                ? 'Credits show up here as you scan.'
+                : 'Points show up here once you start spending them.'
+            }
+          />
+        )}
 
         <Notice tone="info" icon="info">
           {kind === 'credits'

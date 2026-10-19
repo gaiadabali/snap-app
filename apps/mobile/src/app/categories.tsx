@@ -5,9 +5,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, type CategorySetting } from '@/api';
 import { AddButton, Empty, Field, Loading, Sheet } from '@/components/form';
-import { CategoryIcon, Raised } from '@/components/rich';
-import { Body, Chip, Divider, Figure, Label, Screen, Small } from '@/components/ui';
-import { formatAud, space, usePalette } from '@/theme';
+import { CategoryIcon } from '@/components/rich';
+import { Chip, Figure, Screen, Section, Small } from '@/components/ui';
+import { formatAud, numeric, space, type, usePalette } from '@/theme';
+import { Text } from '@/theme/text';
 import { WorkspaceSwitch, useWorkspace } from '@/workspace';
 
 /**
@@ -109,26 +110,23 @@ export default function CategoriesScreen() {
             {active.length === 0 ? (
               <Empty title="No categories yet" detail="Add one to start sorting your spending." />
             ) : (
-              <Raised style={{ padding: 0 }}>
+              <View>
                 {active.map((c, i) => (
                   <CategoryRow key={c.name} row={c} first={i === 0} onToggle={setRows} />
                 ))}
-              </Raised>
+              </View>
             )}
 
             {off.length > 0 ? (
-              <View style={{ gap: space.sm }}>
-                <Label>Switched off</Label>
-                <Raised style={{ padding: 0 }}>
-                  {off.map((c, i) => (
-                    <CategoryRow key={c.name} row={c} first={i === 0} onToggle={setRows} />
-                  ))}
-                </Raised>
-                <Small>
+              <Section label="Switched off" style={{ marginTop: space.lg }} rule={false}>
+                {off.map((c, i) => (
+                  <CategoryRow key={c.name} row={c} first={i === 0} onToggle={setRows} />
+                ))}
+                <Small style={{ marginTop: space.md }}>
                   These are no longer offered for new receipts. Everything already filed against
                   them keeps its category.
                 </Small>
-              </View>
+              </Section>
             ) : null}
           </>
         )}
@@ -170,6 +168,11 @@ export default function CategoriesScreen() {
   );
 }
 
+/**
+ * One ledger row, with its two actions on a line of their own beneath. The
+ * row is drawn like `LedgerRow` (same hairline, same lead/figure columns) but
+ * is local because the actions are text keys, not a tap target for the row.
+ */
 function CategoryRow({
   row,
   first,
@@ -187,34 +190,40 @@ function CategoryRow({
       style={{
         borderTopWidth: first ? 0 : 1,
         borderTopColor: p.rule,
-        paddingHorizontal: space.lg,
-        paddingVertical: 13,
+        paddingVertical: space.md,
         gap: space.sm,
         opacity: row.active ? 1 : 0.6,
       }}
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
         <CategoryIcon category={row.name} size={36} />
-        <View style={{ flex: 1, gap: 2 }}>
-          <Body strong numberOfLines={1}>
+        <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+          <Text style={[type.bodyStrong, { color: p.ink }]} numberOfLines={1}>
             {row.name}
-          </Body>
+          </Text>
           <View style={{ flexDirection: 'row', gap: space.sm, alignItems: 'center' }}>
             <Small>
               {row.documentCount} receipt{row.documentCount === 1 ? '' : 's'}
             </Small>
             {row.taxLabel ? <Chip>{row.taxLabel}</Chip> : null}
-            {row.monthlyBudget ? <Small>{formatAud(row.monthlyBudget, { cents: false })}/mo</Small> : null}
+            {row.monthlyBudget ? (
+              <Text style={[type.mono, numeric, { color: p.inkMuted }]}>
+                {formatAud(row.monthlyBudget, { cents: false })}/mo
+              </Text>
+            ) : null}
           </View>
         </View>
-        <Figure size="h2">{formatAud(row.totalSpend, { cents: false })}</Figure>
+        <Text style={[type.amount, numeric, { color: p.ink }]}>
+          {formatAud(row.totalSpend, { cents: false })}
+        </Text>
       </View>
 
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.lg }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.xl, paddingLeft: 48 }}>
         <Pressable
           accessibilityRole="switch"
           accessibilityState={{ checked: row.active }}
           disabled={busy}
+          hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }}
           onPress={() => {
             setBusy(true);
             void api()
@@ -223,15 +232,16 @@ function CategoryRow({
               .finally(() => setBusy(false));
           }}
         >
-          <Small muted={false} style={{ color: p.accent, fontWeight: '600' }}>
+          <Text style={[type.smallStrong, { color: p.accentText }]}>
             {row.active ? 'Switch off' : 'Switch back on'}
-          </Small>
+          </Text>
         </Pressable>
 
         {row.deletable ? (
           <Pressable
             accessibilityRole="button"
             disabled={busy}
+            hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }}
             onPress={() => {
               Alert.alert(
                 `Delete ${row.name}?`,
@@ -259,9 +269,7 @@ function CategoryRow({
               );
             }}
           >
-            <Small muted={false} style={{ color: p.risk, fontWeight: '600' }}>
-              Delete
-            </Small>
+            <Text style={[type.smallStrong, { color: p.inkStrong }]}>Delete</Text>
           </Pressable>
         ) : null}
       </View>

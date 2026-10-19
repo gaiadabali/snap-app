@@ -1,13 +1,14 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, View } from 'react-native';
+import { Text } from '@/theme/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, type Goal } from '@/api';
 import { AddButton, Empty, Field, Loading, Sheet } from '@/components/form';
-import { GradientHero, HeroBody, HeroFigure, HeroLabel, Raised } from '@/components/rich';
-import { Button, Chip, Figure, Screen, Small } from '@/components/ui';
-import { formatAud, formatShortDate, radius, space, usePalette } from '@/theme';
+import { GradientHero, HeroBody, HeroFigure, HeroLabel } from '@/components/rich';
+import { Button, Chip, ProgressBar, Screen, Section, Small } from '@/components/ui';
+import { formatAud, formatShortDate, numeric, space, type, usePalette } from '@/theme';
 
 /**
  * Savings goals.
@@ -101,7 +102,7 @@ export default function GoalsScreen() {
             <GradientHero>
               <View style={{ gap: space.xs }}>
                 <HeroLabel>Saved so far</HeroLabel>
-                <HeroFigure>{formatAud(saved.toFixed(4), { cents: false })}</HeroFigure>
+                <HeroFigure settle>{formatAud(saved.toFixed(4), { cents: false })}</HeroFigure>
                 <HeroBody>
                   of {formatAud(targets.toFixed(4), { cents: false })} across {all.length}{' '}
                   {all.length === 1 ? 'goal' : 'goals'}
@@ -126,91 +127,91 @@ export default function GoalsScreen() {
                 detail="Put a name and a date on something you are saving for."
               />
             ) : (
-              all.map((g) => {
-                const fraction = Math.min(1, Number(g.saved) / Math.max(Number(g.target), 1));
-                return (
-                  <Raised key={g.id} style={{ gap: space.md }} accent={g.done ? p.accent : undefined}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
-                      <View style={{ flex: 1, gap: 2 }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
-                          <Figure size="h2">{g.name}</Figure>
-                          {g.done ? <Chip tone="accent">Funded</Chip> : null}
-                        </View>
-                        <Small>
-                          {formatAud(g.saved)} of {formatAud(g.target)}
-                          {g.targetDate ? ` · by ${formatShortDate(g.targetDate)}` : ' · no deadline'}
-                        </Small>
-                      </View>
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityLabel={`Delete ${g.name}`}
-                        hitSlop={8}
-                        onPress={() => remove(g)}
-                      >
-                        <Text style={{ color: p.inkFaint, fontSize: 18 }}>×</Text>
-                      </Pressable>
-                    </View>
-
+              <Section label="Your goals" rule={false}>
+                {all.map((g, i) => {
+                  const fraction = Math.min(1, Number(g.saved) / Math.max(Number(g.target), 1));
+                  return (
                     <View
+                      key={g.id}
                       style={{
-                        height: 10,
-                        borderRadius: radius.pill,
-                        backgroundColor: p.surfaceAlt,
-                        overflow: 'hidden',
+                        paddingVertical: space.lg,
+                        gap: space.sm,
+                        borderTopWidth: i === 0 ? 0 : 1,
+                        borderTopColor: p.rule,
                       }}
                     >
-                      <View
-                        style={{
-                          width: `${Math.max(2, fraction * 100)}%`,
-                          height: '100%',
-                          borderRadius: radius.pill,
-                          backgroundColor: g.done ? p.accent : p.scan,
-                        }}
-                      />
-                    </View>
-
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
-                      <View style={{ flex: 1 }}>
-                        {g.done ? (
-                          <Small>Reached. Nothing more needed.</Small>
-                        ) : g.perMonth ? (
-                          <Small>
-                            <Small muted={false} style={{ fontWeight: '700', color: p.ink }}>
-                              {formatAud(g.perMonth)}
-                            </Small>
-                            {' a month to make the date'}
-                          </Small>
-                        ) : (
-                          <Small>{formatAud((Number(g.target) - Number(g.saved)).toFixed(4))} to go</Small>
-                        )}
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
+                        <View
+                          style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: space.sm }}
+                        >
+                          <Text
+                            style={[type.bodyStrong, { color: p.ink, flexShrink: 1 }]}
+                            numberOfLines={1}
+                          >
+                            {g.name}
+                          </Text>
+                          {g.done ? <Chip tone="accent">Funded</Chip> : null}
+                        </View>
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel={`Delete ${g.name}`}
+                          hitSlop={8}
+                          onPress={() => remove(g)}
+                        >
+                          <Text style={{ color: p.inkFaint, fontSize: 18 }}>×</Text>
+                        </Pressable>
                       </View>
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityLabel={`See contributions to ${g.name}`}
-                        hitSlop={8}
-                        onPress={() => router.push({ pathname: '/goal/[id]', params: { id: g.id } })}
-                        style={{ paddingVertical: 9, paddingHorizontal: space.sm }}
-                      >
-                        <Small muted={false} style={{ color: p.inkMuted, fontWeight: '700' }}>
-                          History
-                        </Small>
-                      </Pressable>
-                      {!g.done ? (
-                        <Button
-                          label="Add"
-                          tone="outline"
-                          onPress={() => {
-                            setContributing(g);
-                            setAmount('');
-                            setError(null);
-                          }}
-                          style={{ paddingVertical: 9, paddingHorizontal: space.lg }}
-                        />
-                      ) : null}
+
+                      <ProgressBar value={fraction} tone={g.done ? p.accent : p.scan} />
+
+                      <Text style={[type.mono, numeric, { color: p.inkMuted }]}>
+                        {Math.round(fraction * 100)}% · {formatAud(g.saved)} of {formatAud(g.target)}
+                        {g.targetDate ? ` · by ${formatShortDate(g.targetDate)}` : ' · no deadline'}
+                      </Text>
+
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
+                        <View style={{ flex: 1 }}>
+                          {g.done ? (
+                            <Small>Reached. Nothing more needed.</Small>
+                          ) : g.perMonth ? (
+                            <Small>
+                              <Small muted={false} style={[type.smallStrong, numeric, { color: p.ink }]}>
+                                {formatAud(g.perMonth)}
+                              </Small>
+                              {' a month to make the date'}
+                            </Small>
+                          ) : (
+                            <Small>
+                              {formatAud((Number(g.target) - Number(g.saved)).toFixed(4))} to go
+                            </Small>
+                          )}
+                        </View>
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel={`See contributions to ${g.name}`}
+                          hitSlop={8}
+                          onPress={() => router.push({ pathname: '/goal/[id]', params: { id: g.id } })}
+                          style={{ paddingVertical: 9, paddingHorizontal: space.sm }}
+                        >
+                          <Text style={[type.smallStrong, { color: p.inkMuted }]}>History</Text>
+                        </Pressable>
+                        {!g.done ? (
+                          <Button
+                            label="Add"
+                            tone="outline"
+                            onPress={() => {
+                              setContributing(g);
+                              setAmount('');
+                              setError(null);
+                            }}
+                            style={{ paddingVertical: 9, paddingHorizontal: space.lg }}
+                          />
+                        ) : null}
+                      </View>
                     </View>
-                  </Raised>
-                );
-              })
+                  );
+                })}
+              </Section>
             )}
           </>
         )}

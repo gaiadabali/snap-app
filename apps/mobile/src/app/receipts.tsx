@@ -1,12 +1,11 @@
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { Pressable, RefreshControl, SectionList, View } from 'react-native';
+import { RefreshControl, SectionList, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, type DocumentView } from '@/api';
-import { CategoryBar, CategoryIcon } from '@/components/rich';
-import { Body, Button, Chip, Figure, Label, Screen, ScreenHeader, Small } from '@/components/ui';
-import { Icon } from '@/components/Icon';
+import { CategoryBar, CategorySwatch } from '@/components/rich';
+import { Button, Chip, Figure, Label, LedgerRow, Screen, ScreenHeader, Small } from '@/components/ui';
 import { Empty } from '@/components/form';
 import {
   PeriodChips,
@@ -16,7 +15,8 @@ import {
   type Period,
 } from '@/components/SearchBar';
 import { exportDocumentsCsv, exportLinesCsv } from '@/lib/share';
-import { formatAud, space, usePalette } from '@/theme';
+import { formatAud, formatShortDate, numeric, space, type, usePalette } from '@/theme';
+import { Text } from '@/theme/text';
 import { WorkspaceSwitch, useWorkspace } from '@/workspace';
 
 /**
@@ -29,6 +29,10 @@ import { WorkspaceSwitch, useWorkspace } from '@/workspace';
  *
  * `?filter=review` deep-links straight to the ones needing a check, which is
  * how home's attention card gets here.
+ *
+ * Drawn as a ledger (the instrument pass, 2026-10-19): rows sit on the ground
+ * divided by hairlines under a mono day label, with the date in a gutter and
+ * the amount locked right, instead of a card-like row per receipt.
  */
 
 function dayLabel(iso: string): string {
@@ -155,10 +159,17 @@ export default function ReceiptsScreen() {
             ) : null}
 
             <View
-              style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' }}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'baseline',
+                justifyContent: 'space-between',
+                paddingTop: space.sm,
+                borderTopWidth: 1,
+                borderTopColor: p.rule,
+              }}
             >
               <Label>{all.length} receipts</Label>
-              <Figure size="h2">{formatAud(total)}</Figure>
+              <Figure size="h1">{formatAud(total)}</Figure>
             </View>
 
             {byCategory.length > 1 ? <CategoryBar parts={byCategory} /> : null}
@@ -179,17 +190,26 @@ export default function ReceiptsScreen() {
               paddingHorizontal: space.lg,
               paddingTop: space.lg,
               paddingBottom: space.sm,
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              alignItems: 'baseline',
             }}
           >
-            <Label>{section.title}</Label>
-            <Small>{formatAud(section.total)}</Small>
+            {/* The hairline under the label is the group's edge; the first
+                row under it therefore draws no top rule of its own. */}
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'baseline',
+                paddingBottom: space.sm,
+                borderBottomWidth: 1,
+                borderBottomColor: p.rule,
+              }}
+            >
+              <Label>{section.title}</Label>
+              <Text style={[type.mono, numeric, { color: p.inkMuted }]}>
+                {formatAud(section.total)}
+              </Text>
+            </View>
           </View>
-        )}
-        ItemSeparatorComponent={() => (
-          <View style={{ height: 1, backgroundColor: p.rule, marginLeft: 72 }} />
         )}
         ListEmptyComponent={
           docs === null ? null : (
@@ -226,40 +246,28 @@ export default function ReceiptsScreen() {
             </View>
           )
         }
-        renderItem={({ item }) => (
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => router.push(`/document/${item.id}`)}
-            style={({ pressed }) => ({
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: space.md,
-              paddingHorizontal: space.lg,
-              paddingVertical: 14,
-              backgroundColor: pressed ? p.surface : 'transparent',
-            })}
-          >
-            <CategoryIcon category={item.category} />
-
-            <View style={{ flex: 1, gap: 3 }}>
-              <Body strong numberOfLines={1}>
-                {item.supplierName}
-              </Body>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
-                <Small numberOfLines={1} style={{ flexShrink: 1 }}>
-                  {item.category}
-                </Small>
-                {isBusiness && item.reviewStatus === 'needs_review' ? (
-                  <Chip tone="warn">Check</Chip>
-                ) : null}
-              </View>
-            </View>
-
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
-              <Figure size="h2">{formatAud(item.payableAmount)}</Figure>
-              <Icon name="chevronRight" size={17} color={p.inkFaint} />
-            </View>
-          </Pressable>
+        renderItem={({ item, index }) => (
+          <View style={{ paddingHorizontal: space.lg }}>
+            <LedgerRow
+              first={index === 0}
+              gutter={formatShortDate(item.issueDate).toUpperCase()}
+              title={item.supplierName}
+              note={
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <CategorySwatch category={item.category} size={7} />
+                  <Small numberOfLines={1} style={{ flexShrink: 1 }}>
+                    {item.category}
+                  </Small>
+                  {isBusiness && item.reviewStatus === 'needs_review' ? (
+                    <Chip tone="warn">Check</Chip>
+                  ) : null}
+                </View>
+              }
+              figure={formatAud(item.payableAmount)}
+              onPress={() => router.push(`/document/${item.id}`)}
+              accessibilityLabel={`${item.supplierName}, ${formatAud(item.payableAmount)}, ${formatShortDate(item.issueDate)}`}
+            />
+          </View>
         )}
       />
     </Screen>

@@ -1,13 +1,14 @@
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { useCallback, useState, type ReactNode } from 'react';
+import { ScrollView, View } from 'react-native';
+import { Text } from '@/theme/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, type CreditPurchase } from '@/api';
 import { StatusPill, providerLabel } from '@/app/orders';
-import { GradientHero } from '@/components/rich';
-import { Button, Card, Screen, ScreenHeader, Small } from '@/components/ui';
-import { formatAud, numeric, radius, space, type, usePalette } from '@/theme';
+import { GradientHero, HeroFigure, HeroLabel } from '@/components/rich';
+import { Button, Screen, ScreenHeader, Section, Small } from '@/components/ui';
+import { formatAud, numeric, space, type, usePalette } from '@/theme';
 
 /**
  * One purchase, in enough detail to answer a bank statement query.
@@ -15,6 +16,10 @@ import { formatAud, numeric, radius, space, type, usePalette } from '@/theme';
  * Read from the list rather than a dedicated endpoint: there is no
  * `GET /v1/credits/purchases/:id`, and inventing a client-side fetch for one
  * would mean guessing a route the server does not serve.
+ *
+ * Laid out as a receipt: the amount on the void panel, then label and value
+ * pairs divided by hairlines, the status first because it is the question the
+ * screen is opened to answer.
  */
 export default function OrderScreen() {
   const p = usePalette();
@@ -51,10 +56,10 @@ export default function OrderScreen() {
     <Screen>
       <ScrollView
         contentContainerStyle={{
-          padding: 20,
+          paddingHorizontal: space.lg,
           paddingTop: insets.top + space.md,
           paddingBottom: space.xxl,
-          gap: 14,
+          gap: space.xl,
         }}
       >
         <ScreenHeader title="Purchase" onBack={() => router.back()} />
@@ -64,53 +69,33 @@ export default function OrderScreen() {
 
         {order ? (
           <>
-            <GradientHero style={{ borderRadius: radius.xl, padding: 20 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: space.md }}>
-                <View style={{ flex: 1, minWidth: 0, gap: 10 }}>
-                  <Text style={[type.label, { color: 'rgba(255,255,255,0.95)' }]}>
-                    {order.credits} scans
-                  </Text>
-                  <Text style={{ fontSize: 34, lineHeight: 40, fontWeight: '700', color: '#FFFFFF', ...numeric }}>
-                    {formatAud(order.priceAud)}
-                  </Text>
-                </View>
-                <StatusPill status={order.status} />
+            <GradientHero>
+              <HeroLabel>{`${order.credits} scans`}</HeroLabel>
+              <View style={{ marginTop: 14, minHeight: 56 }}>
+                <HeroFigure settle>{formatAud(order.priceAud)}</HeroFigure>
               </View>
             </GradientHero>
 
-            <Card padded={false}>
-              {rows.map(([label, value], i) => (
-                <View
-                  key={label}
-                  style={{
-                    minHeight: 52,
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: 14,
-                    paddingHorizontal: space.lg,
-                    paddingVertical: space.md,
-                    borderTopWidth: i === 0 ? 0 : 1,
-                    borderTopColor: p.rule,
-                  }}
-                >
-                  <Text style={[type.body, { color: p.inkMuted, fontSize: 14 }]}>{label}</Text>
-                  <Text
-                    style={[type.bodyStrong, numeric, { color: p.ink, fontSize: 14, textAlign: 'right' }]}
-                  >
-                    {value}
-                  </Text>
-                </View>
-              ))}
-            </Card>
+            <View style={{ gap: space.md }}>
+              <Section label="Receipt">
+                <ReceiptRow label="Status" first>
+                  <StatusPill status={order.status} />
+                </ReceiptRow>
+                {rows.map(([label, value]) => (
+                  <ReceiptRow key={label} label={label}>
+                    <Text style={[type.amount, numeric, { color: p.ink, textAlign: 'right' }]}>{value}</Text>
+                  </ReceiptRow>
+                ))}
+              </Section>
 
-            <Small>
-              {order.status === 'paid'
-                ? 'These credits are already on your balance and never expire.'
-                : order.status === 'pending'
-                  ? 'Nothing has been charged and no credits have been granted yet.'
-                  : 'Nothing was charged for this order.'}
-            </Small>
+              <Small>
+                {order.status === 'paid'
+                  ? 'These credits are already on your balance and never expire.'
+                  : order.status === 'pending'
+                    ? 'Nothing has been charged and no credits have been granted yet.'
+                    : 'Nothing was charged for this order.'}
+              </Small>
+            </View>
 
             <Button
               label="Top up again"
@@ -122,6 +107,36 @@ export default function OrderScreen() {
         ) : null}
       </ScrollView>
     </Screen>
+  );
+}
+
+/** One label and its value, on a hairline. The value is whatever is passed —
+ *  mono text, or the status badge. */
+function ReceiptRow({
+  label,
+  first,
+  children,
+}: {
+  label: string;
+  first?: boolean;
+  children: ReactNode;
+}) {
+  const p = usePalette();
+  return (
+    <View
+      style={{
+        minHeight: 52,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 14,
+        borderTopWidth: first ? 0 : 1,
+        borderTopColor: p.rule,
+      }}
+    >
+      <Text style={[type.label, { color: p.inkMuted }]}>{label}</Text>
+      {children}
+    </View>
   );
 }
 

@@ -2,9 +2,9 @@ import { View } from 'react-native';
 import { Icon, type IconName } from '@/components/Icon';
 
 import type { ExtractionFinding } from '@/api';
-import { Raised } from '@/components/rich';
 import { Body, Label, Small } from '@/components/ui';
-import { radius, space, usePalette } from '@/theme';
+import { radius, space, type, usePalette } from '@/theme';
+import { Text } from '@/theme/text';
 
 /**
  * What the checks found, in the order a person should read it.
@@ -16,6 +16,11 @@ import { radius, space, usePalette } from '@/theme';
  *
  * "GST reads $26.69, but 1/11 of the taxable amount is $24.26" is actionable.
  * "94% confident" is not.
+ *
+ * Each finding is a Notice-style item: a 2px edge in its severity's tone and a
+ * wash behind it, stacked with a small gap rather than boxed together. The
+ * edge is the only carrier of severity that does not depend on reading the
+ * words, which is why it is the one thing that is always there.
  */
 
 const ORDER: Record<ExtractionFinding['severity'], number> = { error: 0, warning: 1, note: 2 };
@@ -44,56 +49,59 @@ export function Findings({ findings }: { findings: ExtractionFinding[] }) {
     <View style={{ gap: space.sm }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <Label>Checks</Label>
-        <Small>
+        <Text style={[type.mono, { color: p.inkMuted }]}>
           {blocking > 0
             ? `${blocking} to resolve`
             : needsCheck > 0
               ? `${needsCheck} to confirm`
               : 'nothing to do'}
-        </Small>
+        </Text>
       </View>
 
-      <Raised style={{ padding: 0 }}>
+      <View style={{ gap: space.sm }}>
         {sorted.map((finding, i) => (
           <View
             key={`${finding.code}-${finding.field}-${i}`}
             style={{
               flexDirection: 'row',
+              alignItems: 'flex-start',
               gap: space.md,
-              paddingHorizontal: space.lg,
-              paddingVertical: 13,
-              borderTopWidth: i === 0 ? 0 : 1,
-              borderTopColor: p.rule,
+              backgroundColor: wash(finding.severity),
+              borderRadius: radius.lg,
+              borderLeftWidth: 2,
+              borderLeftColor: tone(finding.severity),
+              paddingLeft: 14,
+              paddingRight: space.lg,
+              paddingVertical: space.md,
             }}
           >
-            <View
-              style={{
-                width: 26,
-                height: 26,
-                borderRadius: 13,
-                backgroundColor: wash(finding.severity),
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Icon name={GLYPH[finding.severity]} size={15} color={tone(finding.severity)} />
+            <View style={{ paddingTop: 2 }}>
+              <Icon name={GLYPH[finding.severity]} size={16} color={tone(finding.severity)} />
             </View>
 
             <View style={{ flex: 1, gap: 3 }}>
               <Body>{finding.message}</Body>
               {finding.fix ? (
-                <Small muted={false} style={{ color: tone(finding.severity), fontWeight: '600' }}>
+                <Text style={[type.smallStrong, { color: tone(finding.severity) }]}>
                   {finding.fix}
-                </Small>
+                </Text>
               ) : null}
             </View>
           </View>
         ))}
-      </Raised>
+      </View>
 
       {blocking > 0 ? (
         <View
-          style={{ backgroundColor: p.riskSoft, borderRadius: radius.md, padding: space.md }}
+          style={{
+            backgroundColor: p.riskSoft,
+            borderRadius: radius.lg,
+            borderLeftWidth: 2,
+            borderLeftColor: p.risk,
+            paddingLeft: 14,
+            paddingRight: space.md,
+            paddingVertical: space.md,
+          }}
         >
           <Small muted={false} style={{ color: p.risk }}>
             This document cannot be posted until the items above are resolved. The photo is kept

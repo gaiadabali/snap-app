@@ -1,12 +1,13 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, ScrollView, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, ScrollView, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Text } from '@/theme/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '@/components/Icon';
 
 import { api, setActiveWorkspaceId, type MemberRole, type Workspace, type WorkspaceSummary } from '@/api';
 import { Avatar, Choice, Field, Sheet } from '@/components/form';
-import { Body, Button, Chip, Figure, Label, Screen, Small } from '@/components/ui';
+import { Body, Button, Figure, Label, Screen, Small } from '@/components/ui';
 import { BUSINESS_FEATURES_ENABLED } from '@/config';
 import { radius, space, usePalette } from '@/theme';
 
@@ -237,10 +238,26 @@ function PersonalOnlyGate({
  * a tap beats a menu. More than two get a button that opens the full list —
  * a segmented control with five segments is unreadable on a phone.
  */
-export function WorkspaceSwitch({ style }: { style?: StyleProp<ViewStyle> }) {
+export function WorkspaceSwitch({
+  style,
+  onDark = false,
+}: {
+  style?: StyleProp<ViewStyle>;
+  /** Drawn over the camera, where the palette's ink would be dark on dark. */
+  onDark?: boolean;
+}) {
   const p = usePalette();
   const { workspaces, active, setActive } = useWorkspace();
   const [picking, setPicking] = useState(false);
+  const c = onDark
+    ? {
+        edge: 'rgba(255,255,255,0.28)',
+        selBg: '#FFFFFF',
+        selFg: '#0B0D10',
+        fg: 'rgba(255,255,255,0.62)',
+        name: '#FFFFFF',
+      }
+    : { edge: p.ruleStrong, selBg: p.ink, selFg: p.ground, fg: p.inkMuted, name: p.ink };
 
   if (workspaces.length <= 1) return null;
 
@@ -250,9 +267,10 @@ export function WorkspaceSwitch({ style }: { style?: StyleProp<ViewStyle> }) {
         style={[
           {
             flexDirection: 'row',
-            backgroundColor: p.surfaceAlt,
-            borderRadius: radius.pill,
-            padding: 3,
+            borderWidth: 1,
+            borderColor: c.edge,
+            borderRadius: radius.md,
+            padding: 2,
           },
           style,
         ]}
@@ -270,15 +288,15 @@ export function WorkspaceSwitch({ style }: { style?: StyleProp<ViewStyle> }) {
                 flex: 1,
                 paddingVertical: 7,
                 paddingHorizontal: space.md,
-                borderRadius: radius.pill,
-                backgroundColor: on ? p.accent : 'transparent',
+                borderRadius: radius.sm,
+                backgroundColor: on ? c.selBg : 'transparent',
                 alignItems: 'center',
               }}
             >
               <Small
                 muted={false}
                 numberOfLines={1}
-                style={{ color: on ? p.accentInk : p.inkMuted, fontWeight: '700' }}
+                style={{ color: on ? c.selFg : c.fg, fontWeight: '500' }}
               >
                 {w.kind === 'business' ? 'Business' : 'Personal'}
               </Small>
@@ -300,19 +318,20 @@ export function WorkspaceSwitch({ style }: { style?: StyleProp<ViewStyle> }) {
             flexDirection: 'row',
             alignItems: 'center',
             gap: space.sm,
-            backgroundColor: p.surfaceAlt,
-            borderRadius: radius.pill,
-            paddingVertical: 8,
+            borderWidth: 1,
+            borderColor: c.edge,
+            borderRadius: radius.md,
+            paddingVertical: 7,
             paddingHorizontal: space.md,
           },
           style,
         ]}
       >
         <Avatar initials={initials(active.name)} size={26} />
-        <Body strong style={{ flex: 1 }} numberOfLines={1}>
+        <Body strong style={{ flex: 1, color: c.name }} numberOfLines={1}>
           {active.name}
         </Body>
-        <Icon name="chevronDown" size={16} color={p.inkMuted} />
+        <Icon name="chevronDown" size={16} color={c.fg} />
       </Pressable>
       <WorkspacePicker open={picking} onClose={() => setPicking(false)} />
     </>
@@ -362,8 +381,11 @@ export function WorkspacePicker({ open, onClose }: { open: boolean; onClose: () 
         <View
           style={{
             backgroundColor: p.ground,
-            borderTopLeftRadius: 24,
-            borderTopRightRadius: 24,
+            borderTopLeftRadius: radius.sheet,
+            borderTopRightRadius: radius.sheet,
+            borderWidth: 1,
+            borderBottomWidth: 0,
+            borderColor: p.rule,
             padding: space.lg,
             paddingBottom: insets.bottom + space.lg,
             gap: space.md,
@@ -371,8 +393,8 @@ export function WorkspacePicker({ open, onClose }: { open: boolean; onClose: () 
           }}
         >
           <Figure size="h1">Workspaces</Figure>
-          <ScrollView contentContainerStyle={{ gap: space.sm }}>
-            {workspaces.map((w) => {
+          <ScrollView contentContainerStyle={{ gap: 0 }}>
+            {workspaces.map((w, i) => {
               const on = w.id === active.id;
               return (
                 <Pressable
@@ -387,11 +409,10 @@ export function WorkspacePicker({ open, onClose }: { open: boolean; onClose: () 
                     flexDirection: 'row',
                     alignItems: 'center',
                     gap: space.md,
-                    padding: space.md,
-                    borderRadius: radius.md,
-                    borderWidth: 1.5,
-                    borderColor: on ? p.accent : p.rule,
-                    backgroundColor: on ? p.accentSoft : 'transparent',
+                    minHeight: 60,
+                    paddingVertical: space.md,
+                    borderTopWidth: i === 0 ? 0 : 1,
+                    borderTopColor: p.rule,
                   }}
                 >
                   <Avatar initials={initials(w.name)} size={38} />
@@ -404,7 +425,7 @@ export function WorkspacePicker({ open, onClose }: { open: boolean; onClose: () 
                       {w.memberCount === 1 ? 'person' : 'people'}
                     </Small>
                   </View>
-                  {on ? <Chip tone="accent">Active</Chip> : null}
+                  {on ? <Icon name="check" size={18} color={p.ink} /> : null}
                 </Pressable>
               );
             })}

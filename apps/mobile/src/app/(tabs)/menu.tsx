@@ -2,8 +2,9 @@ import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { MenuContent } from '@/components/MenuContent';
-import { Figure, Screen, Small } from '@/components/ui';
-import { space } from '@/theme';
+import { Screen, Small } from '@/components/ui';
+import { Text } from '@/theme/text';
+import { space, type, usePalette } from '@/theme';
 
 /**
  * Fallback for the Menu tab.
@@ -15,6 +16,7 @@ import { space } from '@/theme';
  */
 export default function MenuScreen() {
   const insets = useSafeAreaInsets();
+  const p = usePalette();
   return (
     <Screen>
       <ScrollView
@@ -26,7 +28,7 @@ export default function MenuScreen() {
         }}
       >
         <View style={{ gap: space.xs }}>
-          <Figure size="h1">Menu</Figure>
+          <Text style={[type.display, { color: p.ink }]}>Menu</Text>
           <Small>Tap Menu in the tab bar to open this as a panel.</Small>
         </View>
         <MenuContent />
