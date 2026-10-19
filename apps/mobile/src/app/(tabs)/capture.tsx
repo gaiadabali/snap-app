@@ -795,11 +795,13 @@ export default function CaptureScreen() {
   }
 
   // ── Permission states ──
+  // Dark, like the viewfinder they stand in for: the bottom bar goes dark on
+  // this tab, and a white page above a black bar read as two screens.
   if (!permission) {
     return (
-      <Screen>
+      <Screen style={{ backgroundColor: '#000' }}>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <ActivityIndicator color={p.accent} />
+          <ActivityIndicator color="#FFFFFF" />
         </View>
       </Screen>
     );
@@ -807,10 +809,12 @@ export default function CaptureScreen() {
 
   if (!permission.granted) {
     return (
-      <Screen>
+      <Screen style={{ backgroundColor: '#000' }}>
         <View style={{ flex: 1, justifyContent: 'center', padding: space.xl, gap: space.lg }}>
-          <Figure size="h1">Camera access</Figure>
-          <Body muted>
+          <Figure size="h1" style={{ color: '#FFFFFF' }}>
+            Camera access
+          </Figure>
+          <Body style={{ color: 'rgba(255,255,255,0.75)' }}>
             Snap Apps needs the camera to photograph receipts and tax invoices. The original image is
             kept unmodified — the ATO only accepts an electronic copy of a receipt if it is a true
             and clear reproduction.
