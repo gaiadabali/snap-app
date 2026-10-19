@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Pressable, ScrollView, View } from 'react-native';
 import { Text } from '@/theme/text';
@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/Icon';
 import { Button, Notice, Screen, ScreenHeader, Small } from '@/components/ui';
+import { EXPERIMENTAL_FEATURES_ENABLED } from '@/config';
 import { shadow, space, type, usePalette, useTheme } from '@/theme';
 
 /**
@@ -40,6 +41,11 @@ export default function FingerprintScreen() {
     });
     return () => progress.removeListener(id);
   }, [progress]);
+
+  // A route still navigable by URL is not hidden, only unadvertised. This
+  // screen records a preference that locks nothing, so it must not be reachable
+  // by accident once its privacy row is hidden.
+  if (!EXPERIMENTAL_FEATURES_ENABLED) return <Redirect href="/privacy" />;
 
   function down() {
     setHolding(true);

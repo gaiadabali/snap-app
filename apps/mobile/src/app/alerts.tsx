@@ -1,4 +1,4 @@
-import { useFocusEffect, useRouter } from 'expo-router';
+import { Redirect, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { Text } from '@/theme/text';
@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api, type AlertItem, type AlertKind } from '@/api';
 import { Icon, type IconName } from '@/components/Icon';
 import { Body, Card, Divider, Screen, ScreenHeader, SectionHeader, Small } from '@/components/ui';
+import { EXPERIMENTAL_FEATURES_ENABLED } from '@/config';
 import { radius, space, type, usePalette } from '@/theme';
 
 /**
@@ -33,6 +34,8 @@ export default function AlertsScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      // The screen redirects below; don't read or mark the stub on the way.
+      if (!EXPERIMENTAL_FEATURES_ENABLED) return undefined;
       let live = true;
       void api()
         .listAlerts()
@@ -48,6 +51,11 @@ export default function AlertsScreen() {
       };
     }, []),
   );
+
+  // A route still navigable by URL is not hidden, only unadvertised. The alert
+  // feed is an in-process Map on the server, so alerts read here would come
+  // back after a restart.
+  if (!EXPERIMENTAL_FEATURES_ENABLED) return <Redirect href="/" />;
 
   const groups = groupByAge(alerts ?? []);
 

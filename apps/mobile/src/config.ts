@@ -20,3 +20,34 @@
  * constant rather than being deleted or commented out.
  */
 export const BUSINESS_FEATURES_ENABLED = false;
+
+/**
+ * Whether experimental surfaces are shown at all.
+ *
+ * OFF by default, and nothing sets `EXPO_PUBLIC_EXPERIMENTAL_FEATURES_ENABLED`
+ * in any build. Unlike `BUSINESS_FEATURES_ENABLED`, these screens are ones the
+ * SERVER CANNOT HONOUR yet, not merely ones the release does not target:
+ * `app/fingerprint.tsx` records a preference that locks nothing, and the
+ * wallet, alerts and rewards screens read `v1/wallet/cards`, `v1/alerts`,
+ * `v1/rewards` and `v1/vouchers`, which the server serves from in-process
+ * Maps (`apps/server/src/redesign/redesign.controller.ts`). A card saved or a
+ * voucher redeemed there is gone at the next restart, and every merge to main
+ * restarts the server. A screen that looks like it keeps your card is worse
+ * than no screen.
+ *
+ * Each surface is hidden twice: its entry point is removed (the home bell,
+ * the menu's Rewards entry, the privacy "fingerprint" row) and the screen
+ * redirects away, because a route still navigable by URL is only unadvertised.
+ * The credits screen also stops asking for a payment method while this is
+ * off: the card was only ever a label, so a pack alone is enough to pay.
+ *
+ * Expo inlines `EXPO_PUBLIC_*` at build time, so turning this on is a rebuild.
+ * Only the exact string `'true'` enables it.
+ */
+export function experimentalFeaturesEnabled(value: string | undefined): boolean {
+  return value === 'true';
+}
+
+export const EXPERIMENTAL_FEATURES_ENABLED = experimentalFeaturesEnabled(
+  process.env.EXPO_PUBLIC_EXPERIMENTAL_FEATURES_ENABLED,
+);

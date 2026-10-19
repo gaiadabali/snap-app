@@ -47,6 +47,12 @@ import { CurrentUser, SessionGuard, type AuthUser } from '../common/auth.guard.j
  *      never a PAN;
  *   3. delete this file's `Map`s and point the controllers at repos.
  *
+ * Until those tables exist the mobile client hides the wallet, alerts, rewards
+ * and fingerprint surfaces behind `EXPERIMENTAL_FEATURES_ENABLED`
+ * (`apps/mobile/src/config.ts`), off by default. Notification and privacy
+ * preferences are NOT hidden: they are still shown, and they still reset to
+ * their defaults on a restart.
+ *
  * `GET /v1/usage` and the rewards pair are the exceptions worth reading
  * closely — see their own comments.
  */

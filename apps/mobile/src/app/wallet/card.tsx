@@ -1,4 +1,4 @@
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api, type WalletProvider } from '@/api';
 import { Icon } from '@/components/Icon';
 import { Body, Button, Notice, Screen, ScreenHeader, Small } from '@/components/ui';
+import { EXPERIMENTAL_FEATURES_ENABLED } from '@/config';
 import { control, heroGradient, numeric, radius, shadow, space, type, usePalette, useTheme } from '@/theme';
 
 /**
@@ -38,6 +39,11 @@ export default function AddCardScreen() {
   const [cvc, setCvc] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // A route still navigable by URL is not hidden, only unadvertised. The saved
+  // card store is an in-process Map on the server, so a card (number and CVC
+  // included) typed here would be lost on a restart.
+  if (!EXPERIMENTAL_FEATURES_ENABLED) return <Redirect href="/credits" />;
 
   const digits = number.replace(/\D/g, '');
   const numberBad = digits.length >= 12 && !luhn(digits);
