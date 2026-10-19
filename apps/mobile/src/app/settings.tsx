@@ -4,7 +4,7 @@ import { Alert, Pressable, ScrollView, View } from 'react-native';
 import { Text } from '@/theme/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { abnIsValid, api, resetDemoData, type BusinessSettings, type PlanUsage } from '@/api';
+import { IS_DEMO, abnIsValid, api, resetDemoData, type BusinessSettings, type PlanUsage } from '@/api';
 import { currentDevice, deviceReadAvailable } from '@/lib/device-read';
 import { Avatar, Choice, Field, Loading, Sheet, Toggle } from '@/components/form';
 import { Icon } from '@/components/Icon';
@@ -268,7 +268,10 @@ export default function SettingsScreen() {
 
             {/* A demo that cannot be put back is a demo you can only give
                 once. Everything the app changes is stored locally, so this
-                returns it to the shipped fixture. */}
+                returns it to the shipped fixture. Only on fixtures: against
+                the real API the copy below is untrue and the reset touches
+                nothing. */}
+            {IS_DEMO ? (
             <Section label="Demo data" style={{ gap: space.sm }}>
               <Body>
                 Every change you make is saved on this device. Reset returns the app to the
@@ -300,8 +303,9 @@ export default function SettingsScreen() {
                 <Text style={[type.smallStrong, { color: p.risk }]}>Reset demo data</Text>
               </Pressable>
             </Section>
+            ) : null}
 
-            <Small style={{ textAlign: 'center' }}>Snap Apps · demo build</Small>
+            {IS_DEMO ? <Small style={{ textAlign: 'center' }}>Snap Apps · demo build</Small> : null}
           </>
         )}
       </ScrollView>
