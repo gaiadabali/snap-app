@@ -1,4 +1,5 @@
 import { Stack } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import * as SystemUI from 'expo-system-ui';
 import { useEffect } from 'react';
@@ -7,10 +8,24 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { NavFrame } from '@/components/BottomNav';
 import { ThemeProvider, usePalette, useTheme } from '@/theme';
+import { face, useAppFonts } from '@/theme/text';
 import { SessionGate } from '@/session';
 import { WorkspaceProvider } from '@/workspace';
 
+/* Held until Geist settles, so the first frame is already set in it rather
+   than flashing the system font and reflowing. Ignored on web: no splash. */
+void SplashScreen.preventAutoHideAsync().catch(() => {});
+
 export default function RootLayout() {
+  const { ready } = useAppFonts();
+
+  useEffect(() => {
+    if (ready) void SplashScreen.hideAsync().catch(() => {});
+  }, [ready]);
+
+  // Bundled faces load in tens of milliseconds; the splash covers it.
+  if (!ready) return null;
+
   return (
     <ThemeProvider>
       <RootChrome />
@@ -61,7 +76,9 @@ function RootChrome() {
                that still uses the navigator's header matches the ones that
                draw their own `<ScreenHeader>`. */
             headerTitleAlign: 'left',
-            headerTitleStyle: { fontSize: 24, fontWeight: '700', color: p.ink },
+            // The face by name: the navigator draws this title itself,
+            // outside the app's own Text.
+            headerTitleStyle: { fontSize: 24, fontFamily: face(700), color: p.ink },
             headerBackTitle: '',
             headerShadowVisible: false,
             headerLeft: undefined,

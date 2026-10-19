@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Image, Modal, Pressable, ScrollView, Text, View } from 'react-native';
+import { Image, Modal, Pressable, ScrollView, View } from 'react-native';
+import { Text } from '@/theme/text';
 import { useDeviceInsets } from '@/components/device-insets';
 import { Icon } from '@/components/Icon';
 

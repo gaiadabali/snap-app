@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { useEffect, useRef } from 'react';
-import { Animated, Dimensions, Easing, Modal, Pressable, ScrollView, Text, View } from 'react-native';
+import { Animated, Dimensions, Easing, Modal, Pressable, ScrollView, View } from 'react-native';
+import { Text } from '@/theme/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { IS_DEMO, api, type PersonalSummary, type SalesSummary } from '@/api';

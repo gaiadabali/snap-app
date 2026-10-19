@@ -1,13 +1,14 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
+import { Text } from '@/theme/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { IS_DEMO, api, type DocumentView, type PersonalSummary } from '@/api';
 import { CategoryRing, RingLegend } from '@/components/charts';
 import { Icon } from '@/components/Icon';
 import { GradientHero, HeroBody, HeroLabel, Raised } from '@/components/rich';
-import { Card, Chip, Divider, Figure, Label, Screen, Small } from '@/components/ui';
+import { Card, Chip, Divider, Figure, Screen, SectionHeader, Small } from '@/components/ui';
 import { UpdateNotice } from '@/components/UpdateNotice';
 import { useSession } from '@/session';
 import { control, formatAud, numeric, radius, space, type, usePalette, useTheme } from '@/theme';
@@ -95,7 +96,10 @@ export default function PersonalHome() {
         contentContainerStyle={{
           paddingTop: insets.top + space.md,
           paddingBottom: space.xxl + insets.bottom,
-          gap: 15,
+          // 24 between blocks, against 8–12 inside them: the gap between
+          // groups has to beat the gap within one, or the page reads as a
+          // single list. The prototype ran 15 everywhere.
+          gap: space.xl,
         }}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={p.accent} />
@@ -104,7 +108,7 @@ export default function PersonalHome() {
         {/* Chrome */}
         <View
           style={{
-            paddingHorizontal: space.lg,
+            paddingHorizontal: space.gutter,
             flexDirection: 'row',
             alignItems: 'center',
             gap: 2,
@@ -193,15 +197,13 @@ export default function PersonalHome() {
           </Pressable>
         </View>
 
-        <View style={{ paddingHorizontal: space.lg }}>
-          {/* Renders nothing unless a newer build is actually published. */}
-          <UpdateNotice />
-        </View>
-
         {/* The hero is what is LEFT, not what is spent. A tracker that leads
             with the total spent tells you about the past; this one is about
-            the rest of the month. */}
-        <View style={{ paddingHorizontal: space.lg }}>
+            the rest of the month. The update notice shares its block so that,
+            when it renders nothing (almost always), it costs no gap either. */}
+        <View style={{ paddingHorizontal: space.gutter, gap: space.md }}>
+          {/* Renders nothing unless a newer build is actually published. */}
+          <UpdateNotice />
           <GradientHero tone={over ? 'risk' : 'brand'}>
             <View style={{ gap: space.xs }}>
               <HeroLabel>
@@ -269,7 +271,7 @@ export default function PersonalHome() {
 
         {/* What scanning costs, and what it earns. Credits lead because
             running out is the one thing that stops the app working. */}
-        <View style={{ paddingHorizontal: space.lg }}>
+        <View style={{ paddingHorizontal: space.gutter }}>
           <Card padded={false}>
             <BalanceRow
               icon="wallet"
@@ -294,7 +296,7 @@ export default function PersonalHome() {
           </Card>
         </View>
 
-        <View style={{ flexDirection: 'row', paddingHorizontal: space.lg, gap: space.sm }}>
+        <View style={{ flexDirection: 'row', paddingHorizontal: space.gutter, gap: space.md }}>
           <Action icon="receipt" label="Spending" href="/receipts" />
           <Action icon="chart" label="Analytics" href="/analytics" />
           <Action icon="target" label="Budgets" href="/budgets" />
@@ -303,8 +305,11 @@ export default function PersonalHome() {
 
         {/* The shape of the month. Budgets answers "am I over?"; this answers
             "where did it actually go?", which a ring reads faster than bars. */}
-        <View style={{ paddingHorizontal: space.lg, gap: space.sm }}>
-          <Label>Spending by category</Label>
+        <View style={{ paddingHorizontal: space.gutter, gap: space.md }}>
+          <SectionHeader
+            title="Spending by category"
+            action={{ label: 'Analytics', onPress: () => router.push('/analytics') }}
+          />
           <Raised style={{ gap: space.lg }}>
             {summary && summary.byCategory.length > 0 ? (
               <>
@@ -366,7 +371,7 @@ function BalanceRow({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 13,
-        paddingHorizontal: space.lg,
+        paddingHorizontal: space.gutter,
         paddingVertical: 11,
         opacity: pressed ? 0.7 : 1,
       })}

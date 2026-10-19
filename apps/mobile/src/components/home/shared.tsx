@@ -1,12 +1,13 @@
 import { useRouter, type Href } from 'expo-router';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, View } from 'react-native';
+import { Text } from '@/theme/text';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Icon, type IconName } from '@/components/Icon';
 
 import { CategoryIcon, Raised, radius } from '@/components/rich';
-import { Body, Chip, Divider, Figure, Label, Small } from '@/components/ui';
+import { Body, Chip, Divider, Figure, Label, SectionHeader, Small } from '@/components/ui';
 import type { DocumentView } from '@/api';
-import { formatAud, space, usePalette } from '@/theme';
+import { formatAud, shadow, space, usePalette, useTheme } from '@/theme';
 
 /**
  * The pieces both home screens are built from.
@@ -35,23 +36,37 @@ export function sumMoney(values: string[]): string {
 /** One of the round shortcuts under the hero. */
 export function Action({ icon, label, href }: { icon: IconName; label: string; href: Href }) {
   const p = usePalette();
+  const { scheme } = useTheme();
   const router = useRouter();
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
       onPress={() => router.push(href)}
-      style={({ pressed }) => ({ flex: 1, alignItems: 'center', gap: 7, opacity: pressed ? 0.6 : 1 })}
+      style={({ pressed }) => ({
+        flex: 1,
+        alignItems: 'center',
+        gap: 8,
+        transform: [{ scale: pressed ? 0.95 : 1 }],
+      })}
     >
+      {/* A raised key, not a pastel square: white on the light ground with a
+          soft shadow, the icon in the brand colour. It reads as something to
+          press, which a tinted tile on a tinted page did not. */}
       <View
-        style={{
-          width: 52,
-          height: 52,
-          borderRadius: radius.lg,
-          backgroundColor: p.accentSoft,
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
+        style={[
+          {
+            width: 58,
+            height: 58,
+            borderRadius: 20,
+            backgroundColor: p.card,
+            alignItems: 'center',
+            justifyContent: 'center',
+          },
+          scheme === 'light'
+            ? shadow.card
+            : { borderWidth: 1, borderColor: p.cardEdge },
+        ]}
       >
         <Icon name={icon} size={24} color={p.accentText} />
       </View>
@@ -160,15 +175,8 @@ export function LatestReceipts({ docs }: { docs: DocumentView[] }) {
   const router = useRouter();
 
   return (
-    <View style={{ paddingHorizontal: space.lg, gap: space.sm }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Label>Latest</Label>
-        <Pressable accessibilityRole="button" onPress={() => router.push('/receipts')} hitSlop={8}>
-          <Small muted={false} style={{ color: p.accent, fontWeight: '600' }}>
-            See all
-          </Small>
-        </Pressable>
-      </View>
+    <View style={{ paddingHorizontal: space.gutter, gap: space.md }}>
+      <SectionHeader title="Latest" action={{ label: 'See all', onPress: () => router.push('/receipts') }} />
 
       <Raised style={{ padding: 0 }}>
         {docs.length === 0 ? (

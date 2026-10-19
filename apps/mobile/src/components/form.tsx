@@ -6,11 +6,10 @@ import {
   Platform,
   Pressable,
   ScrollView,
-  Text,
-  TextInput,
   View,
   type KeyboardTypeOptions,
 } from 'react-native';
+import { Text, TextInput } from '@/theme/text';
 import { useDeviceInsets } from '@/components/device-insets';
 import { Icon } from '@/components/Icon';
 

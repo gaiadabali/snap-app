@@ -66,6 +66,16 @@ export interface Palette {
   overlay: string;
   /** The phone's own status bar in the prototype frame. */
   chrome: string;
+  /**
+   * A card's own fill — white on the light ground, a lifted grey on the dark.
+   * Added in the premium pass (2026-10-19): the prototype filled cards with
+   * `surface`, a pale blue only ~3% off the ground, so in grayscale the cards
+   * all but vanished and a screen read as one flat sheet. A white card with a
+   * soft shadow is the phone-app convention, and it matches the floating bar.
+   */
+  card: string;
+  /** The hairline a card carries where a shadow cannot be seen (dark mode). */
+  cardEdge: string;
 }
 
 const light: Palette = {
@@ -97,6 +107,8 @@ const light: Palette = {
   ruleStrong: '#C2CEDF',
   overlay: 'rgba(20,24,29,0.55)',
   chrome: '#FAF9F7',
+  card: '#FFFFFF',
+  cardEdge: 'rgba(15,30,49,0.05)',
 };
 
 const dark: Palette = {
@@ -128,6 +140,8 @@ const dark: Palette = {
   ruleStrong: '#3A4452',
   overlay: 'rgba(6,8,9,0.72)',
   chrome: '#14181D',
+  card: '#1B222C',
+  cardEdge: 'rgba(255,255,255,0.06)',
 };
 
 export const palettes: Record<Scheme, Palette> = { light, dark };
@@ -196,6 +210,9 @@ export function hueFor(category: string, scheme: Scheme = 'light'): { hue: strin
 
 /** 4pt base scale. */
 export const space = {
+  /** The screen's side margin. 20, not 16: the premium pass's first rule was
+   *  more room, and the edge is where a cramped screen shows it first. */
+  gutter: 20,
   xs: 4,
   sm: 8,
   md: 12,
@@ -237,25 +254,34 @@ export const control = {
 } as const;
 
 /**
- * System fonts on purpose. A custom face is one more thing that can fail to
- * load on a client's device five minutes before a demo, and it buys little here
- * — what this app actually needs from type is aligned digits, which
- * `fontVariant: tabular-nums` gives on both platforms.
+ * Geist, since the premium pass (2026-10-19) — see `theme/text.tsx`, which
+ * resolves each weight to its face. The type tokens below name no family:
+ * anything without one is set in Geist.
+ *
+ * The old rule here was "system fonts on purpose: a custom face can fail to
+ * load five minutes before a demo". The faces are bundled with the app and
+ * loaded before the first frame, and if loading ever does fail the resolver
+ * falls back to the system font — so that failure is now cosmetic, not fatal.
  */
 export const font = {
-  body: Platform.select({ ios: 'System', android: 'sans-serif', default: 'system-ui' }),
+  body: 'Geist',
   mono: Platform.select({ ios: 'Menlo', android: 'monospace', default: 'monospace' }),
 } as const;
 
 export const type = {
   /** Splash only. */
-  splash: { fontSize: 34, lineHeight: 40, fontWeight: '700', letterSpacing: -0.7 },
-  /** The number a screen exists to show — a balance, a total. */
-  hero: { fontSize: 40, lineHeight: 46, fontWeight: '700' },
-  display: { fontSize: 32, lineHeight: 38, fontWeight: '700', letterSpacing: -0.4 },
-  h1: { fontSize: 26, lineHeight: 32, fontWeight: '700', letterSpacing: -0.3 },
-  h2: { fontSize: 22, lineHeight: 28, fontWeight: '700' },
-  h3: { fontSize: 18, lineHeight: 24, fontWeight: '600' },
+  splash: { fontSize: 34, lineHeight: 40, fontWeight: '700', letterSpacing: -1 },
+  /** The number a screen exists to show — a balance, a total. Geist runs
+   *  wide at display sizes, so the big steps carry negative tracking. */
+  hero: { fontSize: 40, lineHeight: 46, fontWeight: '700', letterSpacing: -1.2 },
+  display: { fontSize: 32, lineHeight: 38, fontWeight: '700', letterSpacing: -0.9 },
+  h1: { fontSize: 26, lineHeight: 32, fontWeight: '700', letterSpacing: -0.6 },
+  h2: { fontSize: 22, lineHeight: 28, fontWeight: '700', letterSpacing: -0.4 },
+  h3: { fontSize: 18, lineHeight: 24, fontWeight: '600', letterSpacing: -0.2 },
+  /** A section's heading on the page — "Latest", "Per category". Bigger and
+   *  darker than the 12pt grey eyebrow the prototype used, which made every
+   *  section start with the same whisper. */
+  section: { fontSize: 17, lineHeight: 22, fontWeight: '600', letterSpacing: -0.2 },
   /** Figures inside a card — an amount field, a per-row total. */
   figure: { fontSize: 20, lineHeight: 26, fontWeight: '700' },
   /** Text typed into an input. 16px or iOS zooms the field on focus. */
@@ -277,3 +303,28 @@ export const type = {
 export const numeric: { fontVariant: TextStyle['fontVariant'] } = {
   fontVariant: ['tabular-nums'],
 };
+
+/**
+ * Elevation. Two layers each — a tight shadow for a crisp edge and a wide
+ * soft one for lift — because a single blurred shadow reads as a smudge.
+ * Light mode only: on a dark ground a shadow is invisible, so dark cards
+ * separate by their lighter fill and a hairline instead.
+ */
+export const shadow = {
+  /** Cards and list groups sitting on the page. */
+  card: {
+    shadowColor: '#0F1E31',
+    shadowOpacity: 0.07,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
+  },
+  /** The hero and anything that should feel lifted off the page. */
+  lift: {
+    shadowColor: '#0A4A96',
+    shadowOpacity: 0.28,
+    shadowRadius: 22,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 8,
+  },
+} as const;
