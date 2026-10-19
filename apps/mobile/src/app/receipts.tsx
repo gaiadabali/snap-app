@@ -231,6 +231,11 @@ export default function ReceiptsScreen() {
                 {i > 0 ? <Divider style={{ marginLeft: 68 }} /> : null}
                 <Pressable
                   accessibilityRole="button"
+                  // What the row shows, in the order it shows it — a bare
+                  // "button" told a screen reader nothing.
+                  accessibilityLabel={`${item.supplierName}, ${formatAud(item.payableAmount)}, ${item.category}${
+                    isBusiness && item.reviewStatus === 'needs_review' ? ', needs checking' : ''
+                  }`}
                   onPress={() => router.push(`/document/${item.id}`)}
                   style={({ pressed }) => ({
                     flexDirection: 'row',

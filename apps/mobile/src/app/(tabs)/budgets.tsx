@@ -152,16 +152,10 @@ export default function BudgetsScreen() {
                       }}
                     >
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
-                        <View style={{ flex: 1, gap: 2 }}>
-                          <Body strong>{c.category}</Body>
-                          <Small>
-                            {formatAud(c.spent)} spent
-                            {c.budget
-                              ? isOver
-                                ? ` · ${formatAud(String(Number(c.spent) - Number(c.budget)))} over`
-                                : ` · ${formatAud(String(Number(c.budget) - Number(c.spent)))} left`
-                              : ' · no budget set'}
-                          </Small>
+                        <View style={{ flex: 1 }}>
+                          <Body strong numberOfLines={1}>
+                            {c.category}
+                          </Body>
                         </View>
 
                         <Stepper
@@ -193,6 +187,29 @@ export default function BudgetsScreen() {
                             backgroundColor: isOver ? p.risk : p.accent,
                           }}
                         />
+                      </View>
+
+                      {/* Under the bar, at the card's full width: beside the
+                          stepper this line had ~140pt and wrapped onto two. */}
+                      <View
+                        style={{
+                          flexDirection: 'row',
+                          justifyContent: 'space-between',
+                          gap: space.sm,
+                          marginTop: -space.xs,
+                        }}
+                      >
+                        <Small numberOfLines={1}>{formatAud(c.spent)} spent</Small>
+                        <Small
+                          numberOfLines={1}
+                          style={isOver ? { color: p.risk, fontWeight: '600' } : undefined}
+                        >
+                          {c.budget
+                            ? isOver
+                              ? `${formatAud(String(Number(c.spent) - Number(c.budget)))} over`
+                              : `${formatAud(String(Number(c.budget) - Number(c.spent)))} left`
+                            : 'No budget set'}
+                        </Small>
                       </View>
                     </View>
                   );

@@ -411,12 +411,22 @@ export function Avatar({ initials, size = 32 }: { initials: string; size?: numbe
 
 /** A labelled figure in a row of them. */
 export function StatRow({ stats }: { stats: Array<{ label: string; value: string; hint?: string }> }) {
+  // A figure is set large. A phrase is not a figure: "Within the hour" at the
+  // same 22pt bold broke over two lines in a half-width column. When any value
+  // in the row is words, the whole row steps down one size, so the pair stays
+  // matched instead of one large number beside one smaller phrase.
+  const wordy = stats.some((s) => /^[^\d$]/.test(s.value) && /[A-Za-z]{3,}/.test(s.value));
   return (
     <View style={{ flexDirection: 'row', gap: space.lg }}>
       {stats.map((s) => (
         <View key={s.label} style={{ flex: 1, gap: 2 }}>
           <Label>{s.label}</Label>
-          <Figure size="h2">{s.value}</Figure>
+          <Figure
+            size={wordy ? 'figure' : 'h2'}
+            style={wordy ? { fontSize: 18, lineHeight: 24 } : undefined}
+          >
+            {s.value}
+          </Figure>
           {s.hint ? <Small numberOfLines={1}>{s.hint}</Small> : null}
         </View>
       ))}

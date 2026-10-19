@@ -195,6 +195,11 @@ export function LatestReceipts({ docs }: { docs: DocumentView[] }) {
               <Animated.View entering={FadeInDown.duration(260).delay(Math.min(i, 6) * 35)}>
                 <Pressable
                   accessibilityRole="button"
+                  // What the row shows, in the order it shows it — a bare
+                  // "button" told a screen reader nothing.
+                  accessibilityLabel={`${d.supplierName}, ${formatAud(d.payableAmount)}, ${d.category}${
+                    d.reviewStatus === 'needs_review' ? ', needs checking' : ''
+                  }`}
                   onPress={() => router.push(`/document/${d.id}`)}
                   style={({ pressed }) => ({
                     flexDirection: 'row',
