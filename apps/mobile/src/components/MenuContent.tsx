@@ -1,5 +1,6 @@
 import { useRouter, type Href } from 'expo-router';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, View } from 'react-native';
+import { Text } from '@/theme/text';
 
 import { Icon, type IconName } from '@/components/Icon';
 import { Body, Chip, Label, Small } from '@/components/ui';

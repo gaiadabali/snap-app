@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, ScrollView, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, ScrollView, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Text } from '@/theme/text';
 import { useDeviceInsets } from '@/components/device-insets';
 import { Icon } from '@/components/Icon';
 

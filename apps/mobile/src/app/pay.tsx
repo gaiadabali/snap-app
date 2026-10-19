@@ -1,6 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, ScrollView, View } from 'react-native';
+import { Text } from '@/theme/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, type CreditPurchase, type SavedCard } from '@/api';

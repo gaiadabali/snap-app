@@ -1,4 +1,5 @@
-import { Pressable, Text, TextInput, View } from 'react-native';
+import { Pressable, View } from 'react-native';
+import { Text, TextInput } from '@/theme/text';
 import { Icon } from '@/components/Icon';
 
 import { Chip } from '@/components/ui';

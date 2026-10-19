@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Animated, Easing, Pressable, ScrollView, View } from 'react-native';
+import { Text, TextInput } from '@/theme/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, type AuthUser, type AvailableTaxRules, type Session } from '@/api';

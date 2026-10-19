@@ -1,6 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ScrollView, Text, TextInput, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
+import { Text, TextInput } from '@/theme/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, type WalletProvider } from '@/api';

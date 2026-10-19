@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { LayoutChangeEvent, Pressable, Text, View } from 'react-native';
+import { LayoutChangeEvent, Pressable, View } from 'react-native';
+import { Text } from '@/theme/text';
 import Svg, { Circle, G, Line, Path, Rect, Text as SvgText } from 'react-native-svg';
 
 import type { CategorySpend, SeriesPoint } from '@/api';

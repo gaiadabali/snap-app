@@ -2,7 +2,8 @@ import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { usePathname, useRouter, type Href } from 'expo-router';
 import { useEffect, useState, type ReactNode } from 'react';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Text } from '@/theme/text';
 import Animated, {
   ReduceMotion,
   useAnimatedStyle,

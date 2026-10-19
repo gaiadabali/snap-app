@@ -1,6 +1,7 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Linking, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Linking, Pressable, ScrollView, View } from 'react-native';
+import { Text, TextInput } from '@/theme/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, type Reward } from '@/api';

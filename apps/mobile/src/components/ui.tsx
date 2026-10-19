@@ -3,15 +3,15 @@ import {
   ActivityIndicator,
   Pressable,
   StyleSheet,
-  Text,
   View,
   type StyleProp,
   type TextStyle,
   type ViewStyle,
 } from 'react-native';
+import { Text } from '@/theme/text';
 
 import { Icon, type IconName } from '@/components/Icon';
-import { control, numeric, radius, space, type, usePalette, useTheme } from '@/theme';
+import { control, numeric, radius, shadow, space, type, usePalette, useTheme } from '@/theme';
 
 /* Shared primitives, rebuilt against the 2026-09-19 prototype.
 
@@ -135,14 +135,20 @@ export function Card({
   padded?: boolean;
 }) {
   const p = usePalette();
+  const { scheme } = useTheme();
+  // The default card is WHITE with a soft shadow on the light ground (the
+  // premium pass): the prototype's pale-blue fill sat ~3% off the ground, so
+  // cards dissolved into the page. Tinted tones stay fills — their colour is
+  // the message.
   const bg = {
-    default: p.surface,
+    default: p.card,
     ground: p.ground,
     accent: p.accentSoft,
     risk: p.riskSoft,
     warn: p.warnSoft,
     good: p.goodSoft,
   }[tone];
+  const lifted = tone === 'default' && scheme === 'light';
   const border = {
     default: p.rule,
     ground: p.rule,
@@ -159,6 +165,10 @@ export function Card({
           borderRadius: radius.xl,
           padding: padded ? space.lg : 0,
         },
+        lifted ? shadow.card : null,
+        tone === 'default' && scheme === 'dark'
+          ? { borderColor: p.cardEdge, borderWidth: StyleSheet.hairlineWidth * 2 }
+          : null,
         bordered && { borderColor: border, borderWidth: StyleSheet.hairlineWidth * 2 },
         style,
       ]}
@@ -293,6 +303,17 @@ export function Button({
           flexDirection: 'row',
           gap: 9,
         },
+        // The one filled action on a screen sits slightly above it, in its
+        // own colour — a primary button that looks pressable before it is.
+        tone === 'accent' && !off && scheme === 'light'
+          ? {
+              shadowColor: p.accent,
+              shadowOpacity: 0.28,
+              shadowRadius: 10,
+              shadowOffset: { width: 0, height: 4 },
+              elevation: 3,
+            }
+          : null,
         style,
       ]}
     >
@@ -475,7 +496,7 @@ export function ScreenHeader({
       {onBack ? (
         <IconButton name="back" label="Back" onPress={onBack} style={{ marginLeft: -10 }} />
       ) : null}
-      <Text style={[type.h1, { flex: 1, fontSize: 24, lineHeight: 30, color: p.ink }]} numberOfLines={1}>
+      <Text style={[type.h1, { flex: 1, fontSize: 28, lineHeight: 34, color: p.ink }]} numberOfLines={1}>
         {title}
       </Text>
       {trailing}
@@ -610,6 +631,44 @@ export function RangeBar({
           }}
         />
       </View>
+    </View>
+  );
+}
+
+/**
+ * A section's heading on the page, with an optional action at the far end —
+ * "Latest · See all". Replaces the 12pt grey `Label` the prototype put over
+ * every block, which made each section open with the same whisper: this one
+ * is the section's NAME, so it is set at 17 in ink.
+ */
+export function SectionHeader({
+  title,
+  action,
+  style,
+}: {
+  title: string;
+  action?: { label: string; onPress: () => void };
+  style?: StyleProp<ViewStyle>;
+}) {
+  const p = usePalette();
+  return (
+    <View
+      style={[
+        { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 28 },
+        style,
+      ]}
+    >
+      <Text style={[type.section, { color: p.ink }]}>{title}</Text>
+      {action ? (
+        <Pressable
+          accessibilityRole="button"
+          onPress={action.onPress}
+          hitSlop={10}
+          style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
+        >
+          <Text style={[type.smallStrong, { color: p.accentText }]}>{action.label}</Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }

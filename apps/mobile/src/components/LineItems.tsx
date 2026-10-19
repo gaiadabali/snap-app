@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, View } from 'react-native';
+import { Text } from '@/theme/text';
 
 import type { DocumentLine } from '@/api';
 import { AddButton, Choice, Field, Sheet } from '@/components/form';

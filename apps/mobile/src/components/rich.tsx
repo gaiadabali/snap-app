@@ -2,15 +2,15 @@ import { LinearGradient } from 'expo-linear-gradient';
 import type { ReactNode } from 'react';
 import {
   StyleSheet,
-  Text,
   View,
   useColorScheme,
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
+import { Text } from '@/theme/text';
 
 import { Icon, type IconName } from '@/components/Icon';
-import { heroGradient, hueFor, numeric, radius, space, type, usePalette } from '@/theme';
+import { heroGradient, hueFor, numeric, radius, shadow, space, type, usePalette, useTheme } from '@/theme';
 
 /**
  * The richer surface of the design system.
@@ -111,7 +111,7 @@ export function GradientHero({
   style?: StyleProp<ViewStyle>;
   tone?: 'brand' | 'risk';
 }) {
-  const p = usePalette();
+  const { scheme } = useTheme();
   /* The brand stops, from the 2026-09-19 prototype. Deeper and flatter than
      the first build's sky-blue ramp: the redesign runs the gradient *within*
      the dark half of the brand blue, which is what lets 40pt white figures sit
@@ -120,50 +120,48 @@ export function GradientHero({
     tone === 'risk'
       ? ['#E0574B', '#C4322A', '#9E2419']
       : [...heroGradient.colors];
+  /* Two changes in the premium pass (2026-10-19), and why:
+       - The two translucent circles floating in the card are gone. They are
+         the stock "fintech card" ornament, and nothing on a balance should be
+         decoration. In their place, one diagonal sheen across the top — the
+         way light falls on a real card — and a 1px lit top edge.
+       - The card is LIFTED: a soft shadow in its own blue, so the headline
+         figure sits above the page instead of being painted on it. The
+         shadow needs an unclipped wrapper; the gradient itself still clips
+         its corners. */
   return (
-    <LinearGradient
-      colors={colors}
-      locations={tone === 'risk' ? undefined : [...heroGradient.locations]}
-      start={heroGradient.start}
-      end={heroGradient.end}
+    <View
       style={[
-        {
-          borderRadius: radius.xxl,
-          padding: 22,
-          overflow: 'hidden',
-        },
+        { borderRadius: radius.xxl },
+        scheme === 'light'
+          ? { ...shadow.lift, shadowColor: tone === 'risk' ? '#9E2419' : shadow.lift.shadowColor }
+          : null,
         style,
       ]}
     >
-      {/* A soft highlight, echoing the gloss of the teaser's 3D sphere. */}
-      <View
-        pointerEvents="none"
+      <LinearGradient
+        colors={colors}
+        locations={tone === 'risk' ? undefined : [...heroGradient.locations]}
+        start={heroGradient.start}
+        end={heroGradient.end}
         style={{
-          position: 'absolute',
-          top: -70,
-          right: -40,
-          width: 190,
-          height: 190,
-          borderRadius: 95,
-          backgroundColor: 'rgba(255,255,255,0.13)',
+          borderRadius: radius.xxl,
+          padding: 22,
+          overflow: 'hidden',
+          borderWidth: StyleSheet.hairlineWidth * 2,
+          borderColor: 'rgba(255,255,255,0.14)',
         }}
-      />
-      <View
-        pointerEvents="none"
-        style={{
-          position: 'absolute',
-          bottom: -90,
-          left: -50,
-          width: 180,
-          height: 180,
-          borderRadius: 90,
-          backgroundColor: 'rgba(255,255,255,0.07)',
-        }}
-      />
-      {children}
-      {/* Keeps the palette referenced so the card follows theme changes. */}
-      <View style={{ height: 0, backgroundColor: p.ground }} />
-    </LinearGradient>
+      >
+        <LinearGradient
+          pointerEvents="none"
+          colors={['rgba(255,255,255,0.16)', 'rgba(255,255,255,0)']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0.75, y: 0.6 }}
+          style={StyleSheet.absoluteFill}
+        />
+        {children}
+      </LinearGradient>
+    </View>
   );
 }
 
@@ -204,28 +202,37 @@ export function Raised({
   accent?: string;
 }) {
   const p = usePalette();
+  const { scheme } = useTheme();
   return (
     <View
       style={[
         {
-          backgroundColor: p.surface,
+          backgroundColor: p.card,
           borderRadius: 18,
           padding: space.lg,
-          borderWidth: StyleSheet.hairlineWidth,
-          borderColor: p.rule,
-          shadowColor: '#0F1E31',
-          shadowOpacity: 0.06,
-          shadowRadius: 12,
-          shadowOffset: { width: 0, height: 4 },
-          elevation: 2,
-          overflow: 'hidden',
         },
+        // White on the light ground with a two-layer shadow; on the dark
+        // ground a shadow cannot be seen, so a lifted fill and a hairline.
+        scheme === 'light'
+          ? shadow.card
+          : { borderWidth: StyleSheet.hairlineWidth * 2, borderColor: p.cardEdge },
         style,
       ]}
     >
       {accent ? (
         <View
-          style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, backgroundColor: accent }}
+          // Rounded with the card: the card no longer clips (a clipped view
+          // cannot cast its shadow), so the stripe follows the corner itself.
+          style={{
+            position: 'absolute',
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: 4,
+            backgroundColor: accent,
+            borderTopLeftRadius: 18,
+            borderBottomLeftRadius: 18,
+          }}
         />
       ) : null}
       {children}
@@ -254,7 +261,7 @@ export function Tile({
 }) {
   const p = usePalette();
   const fg = tone === 'risk' ? p.risk : tone === 'accent' ? p.accent : p.ink;
-  const bg = tone === 'risk' ? p.riskSoft : tone === 'accent' ? p.accentSoft : p.surface;
+  const bg = tone === 'risk' ? p.riskSoft : tone === 'accent' ? p.accentSoft : p.card;
   return (
     <View
       style={{

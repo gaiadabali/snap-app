@@ -1,7 +1,8 @@
 import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Image, Modal, TextInput, View } from 'react-native';
+import { Alert, Image, Modal, View } from 'react-native';
+import { TextInput } from '@/theme/text';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 
 import {
