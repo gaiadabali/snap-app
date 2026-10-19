@@ -113,7 +113,8 @@ export default function PlanScreen() {
                 used={`${plan.seatsUsed}`}
                 cap={`of ${plan.seatLimit}`}
                 fraction={seatPct}
-                tone={seatPct >= 1 ? 'risk' : 'accent'}
+                // Full seats is a limit reached, not money at risk: amber.
+                tone={seatPct >= 1 ? 'warn' : 'accent'}
               />
               <Divider />
               <StatRow
@@ -172,16 +173,16 @@ function Meter({
   used: string;
   cap: string;
   fraction: number;
-  tone: 'accent' | 'risk';
+  tone: 'accent' | 'warn';
 }) {
   const p = usePalette();
-  const colour = tone === 'risk' ? p.risk : p.accent;
+  const colour = tone === 'warn' ? p.warn : p.accent;
   return (
     <View style={{ gap: space.sm }}>
       <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' }}>
         <Body strong>{label}</Body>
         <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 4 }}>
-          <Figure size="h2" tone={tone === 'risk' ? 'risk' : 'ink'}>
+          <Figure size="h2" style={{ color: tone === 'warn' ? p.warn : p.ink }}>
             {used}
           </Figure>
           <Small>{cap}</Small>

@@ -129,14 +129,20 @@ export function GradientHero({
          figure sits above the page instead of being painted on it. The
          shadow needs an unclipped wrapper; the gradient itself still clips
          its corners. */
+  /* `style` was always the CARD's style — screens use it for the card's own
+     layout (`flexDirection: 'row'` on Purchases, `gap` on a goal) as well as
+     for where it sits. Now that a wrapper carries the shadow, the two are
+     split: placement goes to the wrapper, everything else to the card, so a
+     row-laid card does not collapse to its content's width. */
+  const { outer, inner } = splitPlacement(style);
   return (
     <View
       style={[
-        { borderRadius: radius.xxl },
+        { borderRadius: (inner.borderRadius as number | undefined) ?? radius.xxl },
         scheme === 'light'
           ? { ...shadow.lift, shadowColor: tone === 'risk' ? '#9E2419' : shadow.lift.shadowColor }
           : null,
-        style,
+        outer,
       ]}
     >
       <LinearGradient
@@ -144,13 +150,16 @@ export function GradientHero({
         locations={tone === 'risk' ? undefined : [...heroGradient.locations]}
         start={heroGradient.start}
         end={heroGradient.end}
-        style={{
-          borderRadius: radius.xxl,
-          padding: 22,
-          overflow: 'hidden',
-          borderWidth: StyleSheet.hairlineWidth * 2,
-          borderColor: 'rgba(255,255,255,0.14)',
-        }}
+        style={[
+          {
+            borderRadius: radius.xxl,
+            padding: 22,
+            overflow: 'hidden',
+            borderWidth: StyleSheet.hairlineWidth * 2,
+            borderColor: 'rgba(255,255,255,0.14)',
+          },
+          inner,
+        ]}
       >
         <LinearGradient
           pointerEvents="none"
@@ -326,3 +335,39 @@ export function CategoryBar({
 }
 
 export { radius };
+
+/** Style keys that place a box in its parent, rather than lay out its own
+ *  content. They belong on the hero's shadow wrapper; the rest on the card. */
+const PLACEMENT = new Set([
+  'margin',
+  'marginTop',
+  'marginBottom',
+  'marginLeft',
+  'marginRight',
+  'marginHorizontal',
+  'marginVertical',
+  'marginStart',
+  'marginEnd',
+  'flex',
+  'flexGrow',
+  'flexShrink',
+  'flexBasis',
+  'alignSelf',
+  'width',
+  'minWidth',
+  'maxWidth',
+  'position',
+  'top',
+  'bottom',
+  'left',
+  'right',
+  'zIndex',
+]);
+
+function splitPlacement(style: StyleProp<ViewStyle>): { outer: ViewStyle; inner: ViewStyle } {
+  const flat = (StyleSheet.flatten(style) ?? {}) as Record<string, unknown>;
+  const outer: Record<string, unknown> = {};
+  const inner: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(flat)) (PLACEMENT.has(k) ? outer : inner)[k] = v;
+  return { outer: outer as ViewStyle, inner: inner as ViewStyle };
+}
