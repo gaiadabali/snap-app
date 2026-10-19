@@ -46,10 +46,19 @@ env:
   # the one being tested. CI matching a developer machine is the point.
 
 jobs:
-  verify:
-    name: typecheck, tests, build
+  # THREE JOBS, NOT ONE (2026-10-19). Everything used to run in a single job,
+  # one step after another: 2m40s, of which the server suite was 58s and the
+  # web build 41s — work that shares nothing but the checkout. As parallel
+  # jobs the run takes as long as its slowest job (the database one, ~1m45s),
+  # and this run is the critical path from a merge to a deploy: poll-deploy.sh
+  # will not ship a commit until it is green. Every check that ran before still
+  # runs; the repeated setup (checkout, pnpm, install — ~20s each) is the price,
+  # and on a public repository the extra runner minutes are not billed.
+
+  static:
+    name: typecheck and repo-wide checks
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 15
 
     steps:
       - uses: actions/checkout@v4
@@ -68,6 +77,57 @@ jobs:
 
       - name: Typecheck every package
         run: pnpm -r typecheck
+
+      # The whole directory, not one named file. `test/dockerfile-deps.test.ts`
+      # was added to catch a workspace dependency missing from an app image —
+      # the failure that took production down twice in one day — and naming
+      # boundaries.test.ts explicitly meant it would never have run here. A
+      # check CI does not execute is not a check.
+      - name: Repo-wide suites (boundaries, image dependencies)
+        run: pnpm vitest run test/
+
+      # The bench is Python and the rest of CI is not, so this is the only
+      # Python step — no setup-python needed, ubuntu-latest ships 3.12.
+      #
+      # It is here because a control that never runs in CI is a control we are
+      # trusting rather than enforcing, which is the exact failure this repo
+      # keeps rediscovering: three SNAP_ALLOW_PLACEHOLDER_PROOF overrides meant
+      # the testimonial guard could not fire in any automated path.
+      #
+      # These tests need no database, no sidecar and no model — they assert
+      # that the corpus declares what it is evidence FOR, and that the headline
+      # metric REFUSES below tier R (docs/CORPUS.md §4).
+      # The factory tests are here for a sharper reason than the others: every
+      # accuracy figure the engine ever reports is scored against what the
+      # factory emits, so an arithmetic slip there does not fail — it grades the
+      # engine against the wrong answer and the engine looks wrong when it was
+      # right. They need no browser (rendering is not exercised here, only the
+      # truth), so they cost seconds.
+      - name: Corpus provenance control and factory truth
+        working-directory: apps/server/bench
+        run: |
+          python3 -m unittest test_provenance test_devices factory.test_documents tierp.test_tierp -v
+          python3 provenance.py
+
+  database:
+    name: database and server suites
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.3.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
 
       # ── Database ──────────────────────────────────────────────────────────
       - name: Start Postgres 17
@@ -100,37 +160,6 @@ jobs:
           fi
 
       # ── Suites ────────────────────────────────────────────────────────────
-      # The whole directory, not one named file. `test/dockerfile-deps.test.ts`
-      # was added to catch a workspace dependency missing from an app image —
-      # the failure that took production down twice in one day — and naming
-      # boundaries.test.ts explicitly meant it would never have run here. A
-      # check CI does not execute is not a check.
-      - name: Repo-wide suites (boundaries, image dependencies)
-        run: pnpm vitest run test/
-
-      # The bench is Python and the rest of CI is not, so this is the only
-      # Python step — no setup-python needed, ubuntu-latest ships 3.12.
-      #
-      # It is here because a control that never runs in CI is a control we are
-      # trusting rather than enforcing, which is the exact failure this repo
-      # keeps rediscovering: three SNAP_ALLOW_PLACEHOLDER_PROOF overrides meant
-      # the testimonial guard could not fire in any automated path.
-      #
-      # These tests need no database, no sidecar and no model — they assert
-      # that the corpus declares what it is evidence FOR, and that the headline
-      # metric REFUSES below tier R (docs/CORPUS.md §4).
-      # The factory tests are here for a sharper reason than the others: every
-      # accuracy figure the engine ever reports is scored against what the
-      # factory emits, so an arithmetic slip there does not fail — it grades the
-      # engine against the wrong answer and the engine looks wrong when it was
-      # right. They need no browser (rendering is not exercised here, only the
-      # truth), so they cost seconds.
-      - name: Corpus provenance control and factory truth
-        working-directory: apps/server/bench
-        run: |
-          python3 -m unittest test_provenance test_devices factory.test_documents tierp.test_tierp -v
-          python3 provenance.py
-
       - name: Database suite
         env:
           REQUIRE_DB: '1'
@@ -161,6 +190,30 @@ jobs:
           DATABASE_OWNER_URL: postgres://postgres:verify@127.0.0.1:55499/snapapps
         run: pnpm --filter @snap/server test
 
+      - name: Stop Postgres
+        if: always()
+        run: node packages/db/scripts/db.mjs down || true
+
+  web:
+    name: web suite and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.3.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
       - name: Web suite
         run: pnpm --filter @snap/web test
 
@@ -171,7 +224,3 @@ jobs:
         # override set would mean CI could not tell us if someone added one
         # back. See docs/WEB.md §4.5.
         run: pnpm --filter @snap/web build
-
-      - name: Stop Postgres
-        if: always()
-        run: node packages/db/scripts/db.mjs down || true
