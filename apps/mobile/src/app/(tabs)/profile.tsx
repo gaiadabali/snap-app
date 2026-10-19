@@ -1,18 +1,16 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ScrollView, View } from 'react-native';
-import { Text } from '@/theme/text';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api } from '@/api';
+import { LinearGradient } from 'expo-linear-gradient';
 
-import { Avatar } from '@/components/form';
-import { Icon } from '@/components/Icon';
-import { PressableScale } from '@/components/motion';
-import { Body, Button, Row, Screen, Section, Small } from '@/components/ui';
+import { Icon, type IconName } from '@/components/Icon';
+import { Body, Card, Divider, Screen, Small } from '@/components/ui';
 import { useSession } from '@/session';
 import { WorkspacePicker, useWorkspace } from '@/workspace';
-import { numeric, space, type, usePalette } from '@/theme';
+import { heroGradient, numeric, radius, space, type, usePalette } from '@/theme';
 
 /**
  * Profile — new in the 2026-09-19 redesign, and now a tab rather than a row
@@ -20,14 +18,9 @@ import { numeric, space, type, usePalette } from '@/theme';
  *
  * The screen answers three questions in the order people ask them: who am I
  * signed in as, what have I got left, and whose books am I looking at. The two
- * balances are a two-dial readout on the ground (the same instrument Home
- * uses) because they are the only numbers here, and both are tappable: a
- * balance nobody can explain is a support ticket, so each one leads to the
- * ledger that produced it.
- *
- * Rebuilt 2026-10-19 (the instrument pass): the gradient strip and the
- * pastel avatar are gone; the identity block, the readout and the rows all sit
- * on the ground and are divided by hairlines rather than boxed.
+ * balances sit on the brand gradient because they are the only numbers here,
+ * and both are tappable: a balance nobody can explain is a support ticket, so
+ * each one leads to the ledger that produced it.
  */
 export default function ProfileScreen() {
   const p = usePalette();
@@ -43,7 +36,7 @@ export default function ProfileScreen() {
     useCallback(() => {
       let live = true;
       // Settled independently: a points outage should not blank the credits
-      // dial, which is the one that governs whether scanning still works.
+      // tile, which is the one that governs whether scanning still works.
       void api()
         .getCreditBalance()
         .then((b) => live && setCredits(b.creditsRemaining))
@@ -65,89 +58,147 @@ export default function ProfileScreen() {
     <Screen>
       <ScrollView
         contentContainerStyle={{
-          paddingHorizontal: space.lg,
+          padding: 20,
           paddingTop: insets.top + space.md,
           paddingBottom: space.xxl,
-          gap: space.xl,
+          gap: 15,
         }}
       >
         {/* Identity */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
-          <Avatar initials={user?.initials ?? '—'} size={56} />
-          <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
-            <Text style={[type.h1, { color: p.ink }]} numberOfLines={1}>
-              {user?.displayName ?? 'Signed out'}
-            </Text>
-            <Small numberOfLines={1}>{user?.email ?? ''}</Small>
-          </View>
-          <Button label="Edit" tone="outline" size="sm" onPress={() => router.push('/settings')} />
-        </View>
-
-        {/* Balances: two dials, one rule between them. Tapping either leads to
-            the ledger that produced it. */}
-        <View>
-          <View style={{ flexDirection: 'row' }}>
-            <Readout
-              label="Credits"
-              value={credits === null ? '—' : String(credits)}
-              unit={credits === 1 ? 'scan left' : 'scans left'}
-              onPress={() => router.push({ pathname: '/usage', params: { kind: 'credits' } })}
-            />
-            <View style={{ width: 1, backgroundColor: p.rule, marginVertical: 4 }} />
-            <Readout
-              label="Points"
-              value={points === null ? '—' : points.toLocaleString('en-AU')}
-              unit="for scan credits"
-              onPress={() => router.push({ pathname: '/usage', params: { kind: 'points' } })}
-              inset
-            />
-          </View>
-          <Small style={{ marginTop: space.md }}>
-            Tap a balance to see how it was used: credits spent on scanning, points spent in yourtal.
-          </Small>
-        </View>
-
-        {/* Active space */}
-        <Section label="Workspace">
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 15 }}>
           <View
             style={{
-              minHeight: 60,
-              flexDirection: 'row',
+              width: 68,
+              height: 68,
+              borderRadius: 34,
+              backgroundColor: p.accentSoft,
               alignItems: 'center',
-              gap: space.md,
-              paddingVertical: space.md,
+              justifyContent: 'center',
             }}
           >
-            <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
-              <Body strong numberOfLines={1}>
-                {active.name}
-              </Body>
-              <Small numberOfLines={1}>
-                {active.kind === 'business' ? 'Business' : 'Personal'} · {active.memberCount}{' '}
-                {memberWord} · {active.role}
-              </Small>
-            </View>
-            {workspaces.length > 1 ? (
-              <Button label="Switch" tone="outline" size="sm" onPress={() => setSwitching(true)} />
-            ) : null}
+            <Text style={{ fontSize: 23, lineHeight: 29, fontWeight: '700', color: p.accentText }}>
+              {user?.initials ?? '—'}
+            </Text>
           </View>
-        </Section>
+          <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
+            <Text style={{ fontSize: 21, lineHeight: 27, fontWeight: '700', color: p.ink }} numberOfLines={1}>
+              {user?.displayName ?? 'Signed out'}
+            </Text>
+            <Text style={[type.small, { color: p.inkMuted, fontSize: 14, lineHeight: 20 }]} numberOfLines={1}>
+              {user?.email ?? ''}
+            </Text>
+          </View>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push('/settings')}
+            style={({ pressed }) => ({
+              minHeight: 40,
+              paddingHorizontal: space.lg,
+              borderWidth: 1.5,
+              borderColor: p.ruleStrong,
+              borderRadius: radius.md,
+              alignItems: 'center',
+              justifyContent: 'center',
+              opacity: pressed ? 0.6 : 1,
+            })}
+          >
+            <Text style={[type.smallStrong, { color: p.accentText, fontSize: 14, lineHeight: 20 }]}>
+              Edit
+            </Text>
+          </Pressable>
+        </View>
+
+        {/* Balances. A PLAIN gradient — unlike the hero cards this strip has
+            no decorative circles, because at 90pt tall their edges cut visibly
+            across the tiles instead of reading as soft light.
+            Everything on it reads in white: the prototype notes that muted
+            tints failed contrast here, so none are used. */}
+        <LinearGradient
+          colors={[...heroGradient.colors]}
+          locations={[...heroGradient.locations]}
+          start={heroGradient.start}
+          end={heroGradient.end}
+          style={{ borderRadius: 16, overflow: 'hidden' }}
+        >
+          <View style={{ flexDirection: 'row' }}>
+            <BalanceTile
+              icon="wallet"
+              label="Credits"
+              value={credits === null ? '—' : String(credits)}
+              onPress={() => router.push({ pathname: '/usage', params: { kind: 'credits' } })}
+            />
+            <View style={{ width: 1, backgroundColor: 'rgba(255,255,255,0.22)' }} />
+            <BalanceTile
+              icon="spark"
+              label="Points"
+              value={points === null ? '—' : points.toLocaleString('en-AU')}
+              onPress={() => router.push({ pathname: '/usage', params: { kind: 'points' } })}
+            />
+          </View>
+        </LinearGradient>
+        <Small>
+          Tap a tile to see how it was used: credits spent on scanning, points spent in yourtal.
+        </Small>
+
+        {/* Active space */}
+        <Card style={{ flexDirection: 'row', alignItems: 'center', gap: 13, padding: 15 }}>
+          <View
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 11,
+              backgroundColor: p.surfaceAlt,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Icon name="users" size={20} color={p.inkStrong} />
+          </View>
+          <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+            <Body strong numberOfLines={1}>
+              {active.name}
+            </Body>
+            <Small numberOfLines={1}>
+              {active.kind === 'business' ? 'Business' : 'Personal'} · {active.memberCount}{' '}
+              {memberWord} · {active.role}
+            </Small>
+          </View>
+          {workspaces.length > 1 ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => setSwitching(true)}
+              style={({ pressed }) => ({
+                minHeight: 44,
+                paddingHorizontal: 14,
+                borderWidth: 1.5,
+                borderColor: p.ruleStrong,
+                borderRadius: radius.md,
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: pressed ? 0.6 : 1,
+              })}
+            >
+              <Text style={[type.smallStrong, { color: p.ink }]}>Switch</Text>
+            </Pressable>
+          ) : null}
+        </Card>
 
         {/* Preferences */}
-        <Section label="Preferences">
-          {/* Row pads its own 16pt sides; pull it out to the screen edge so its
-              icon lines up with the section label above it. */}
-          <View style={{ marginHorizontal: -space.lg }}>
-            <Row icon="chart" title="Analytics" onPress={() => router.push('/analytics')} />
-            <Row
+        <View style={{ gap: 9 }}>
+          <Text style={[type.label, { color: p.inkMuted, marginTop: 2 }]}>Preferences</Text>
+          <Card padded={false}>
+            <PrefRow icon="chart" label="Analytics" onPress={() => router.push('/analytics')} />
+            <Divider />
+            <PrefRow
               icon="users"
-              title="People"
-              trailing={<Small>{`${active.memberCount} ${memberWord}`}</Small>}
+              label="People"
+              value={`${active.memberCount} ${memberWord}`}
               onPress={() => router.push('/members')}
             />
-            <Row icon="cog" title="Settings" onPress={() => router.push('/settings')} />
-          </View>
-        </Section>
+            <Divider />
+            <PrefRow icon="cog" label="Settings" onPress={() => router.push('/settings')} />
+          </Card>
+        </View>
       </ScrollView>
 
       <WorkspacePicker open={switching} onClose={() => setSwitching(false)} />
@@ -155,40 +206,94 @@ export default function ProfileScreen() {
   );
 }
 
-/** One dial in the balances readout — the same one Home draws. */
-function Readout({
+function BalanceTile({
+  icon,
   label,
   value,
-  unit,
   onPress,
-  inset,
 }: {
+  icon: IconName;
   label: string;
   value: string;
-  unit: string;
   onPress: () => void;
-  inset?: boolean;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${label}: ${value}. Show how they were used.`}
+      onPress={onPress}
+      style={({ pressed }) => ({
+        flex: 1,
+        minWidth: 0,
+        alignItems: 'center',
+        gap: 5,
+        paddingVertical: 15,
+        paddingHorizontal: space.sm,
+        opacity: pressed ? 0.75 : 1,
+      })}
+    >
+      <View
+        style={{
+          width: 30,
+          height: 30,
+          borderRadius: 9,
+          backgroundColor: 'rgba(255,255,255,0.18)',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Icon name={icon} size={16} color="#FFFFFF" />
+      </View>
+      <Text style={[type.figure, numeric, { color: '#FFFFFF' }]}>{value}</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+        <Text style={[type.tab, { color: 'rgba(255,255,255,0.95)' }]}>{label}</Text>
+        <Icon name="chevronRight" size={12} color="rgba(255,255,255,0.95)" />
+      </View>
+    </Pressable>
+  );
+}
+
+function PrefRow({
+  icon,
+  label,
+  value,
+  onPress,
+}: {
+  icon: IconName;
+  label: string;
+  value?: string;
+  onPress: () => void;
 }) {
   const p = usePalette();
   return (
-    <PressableScale
-      accessibilityLabel={`${label}: ${value}. Show how they were used.`}
+    <Pressable
+      accessibilityRole="button"
       onPress={onPress}
-      containerStyle={{ flex: 1 }}
-      style={{ paddingLeft: inset ? space.lg : 0, gap: 6 }}
+      style={({ pressed }) => ({
+        minHeight: 58,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 13,
+        paddingVertical: 10,
+        paddingHorizontal: space.lg,
+        opacity: pressed ? 0.7 : 1,
+      })}
     >
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Text style={[type.label, { color: p.inkMuted }]}>{label}</Text>
-        <Icon name="chevronRight" size={14} color={p.inkFaint} />
+      <View
+        style={{
+          width: 36,
+          height: 36,
+          borderRadius: 11,
+          backgroundColor: p.surfaceAlt,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Icon name={icon} size={18} color={p.inkStrong} />
       </View>
-      <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6 }}>
-        <Text style={[type.h1, { fontWeight: '300', letterSpacing: -0.8 }, numeric, { color: p.ink }]}>
-          {value}
-        </Text>
-        <Text style={[type.small, { color: p.inkMuted }]} numberOfLines={1}>
-          {unit}
-        </Text>
-      </View>
-    </PressableScale>
+      <Text style={[type.bodyStrong, { flex: 1, color: p.ink }]}>{label}</Text>
+      {value ? <Text style={[type.small, { color: p.inkMuted }]}>{value}</Text> : null}
+      <Icon name="chevronRight" size={18} color={p.inkMuted} />
+    </Pressable>
   );
 }

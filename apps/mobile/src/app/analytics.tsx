@@ -5,10 +5,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, type AnalyticsRange, type AnalyticsSummary } from '@/api';
 import { BarSeries, CategoryBars, CategoryRing, RingLegend } from '@/components/charts';
-import { Tile } from '@/components/rich';
-import { Figure, LedgerRow, Screen, Section, Segmented, Small } from '@/components/ui';
-import { formatAud, formatShortDate, numeric, space, type, usePalette } from '@/theme';
-import { Text } from '@/theme/text';
+import { Raised, Tile } from '@/components/rich';
+import { Body, Chip, Divider, Figure, Label, Screen, Small } from '@/components/ui';
+import { formatAud, formatShortDate, space, usePalette } from '@/theme';
 import { WorkspaceSwitch, useWorkspace } from '@/workspace';
 
 /**
@@ -22,11 +21,6 @@ import { WorkspaceSwitch, useWorkspace } from '@/workspace';
  *
  * Every figure comes from `getAnalytics`, which the server will compute in
  * production. Nothing here aggregates.
- *
- * The page is a reading, not a stack of cards: the period total is one large
- * light figure with its change beside it in mono, the chart sits directly on
- * the ground, and the lists are ledger rows. Spending going up is a `warn`,
- * not red — red is for money already at risk, and a busier month is not that.
  */
 
 const RANGES: Array<{ key: AnalyticsRange; label: string }> = [
@@ -70,11 +64,13 @@ export default function AnalyticsScreen() {
       >
         <WorkspaceSwitch />
 
-        <Segmented
-          options={RANGES.map((r) => ({ value: r.key, label: r.label }))}
-          value={range}
-          onChange={setRange}
-        />
+        <View style={{ flexDirection: 'row', gap: space.sm }}>
+          {RANGES.map((r) => (
+            <Chip key={r.key} selected={range === r.key} onPress={() => setRange(r.key)}>
+              {r.label}
+            </Chip>
+          ))}
+        </View>
 
         {data === null ? (
           <View style={{ paddingVertical: space.xxl, alignItems: 'center' }}>
@@ -83,90 +79,115 @@ export default function AnalyticsScreen() {
         ) : (
           <>
             {/* Headline: the total, and whether it is unusual. */}
-            <View style={{ gap: 4, paddingTop: space.sm }}>
-              <Text style={[type.label, { color: p.inkMuted }]}>
-                {point ? point.label : data.rangeLabel}
-              </Text>
-              <Figure size="display">{formatAud(point ? point.value : data.total)}</Figure>
-              {point ? (
-                <Text style={[type.mono, { color: p.inkMuted }]}>
-                  {point.partial ? 'Still in progress · ' : ''}Tap the bar again to clear
-                </Text>
-              ) : change === null ? (
-                <Text style={[type.mono, { color: p.inkMuted }]}>
-                  {data.receiptCount} receipts · no earlier period to compare
-                </Text>
-              ) : (
-                <Text style={[type.mono, numeric, { color: p.inkMuted }]}>
-                  <Text style={[type.mono, numeric, { color: up ? p.warn : p.good }]}>
-                    {up ? '▲' : '▼'} {Math.abs(Math.round(change * 100))}%
-                  </Text>
-                  {`  vs ${formatAud(data.previousTotal, { cents: false })} the period before`}
-                </Text>
-              )}
-            </View>
+            <Raised style={{ gap: space.md }}>
+              <View style={{ gap: 2 }}>
+                <Label>{point ? point.label : data.rangeLabel}</Label>
+                <Figure size="display">{formatAud(point ? point.value : data.total)}</Figure>
+                {point ? (
+                  <Small>
+                    {point.partial ? 'Still in progress · ' : ''}Tap the bar again to clear
+                  </Small>
+                ) : change === null ? (
+                  <Small>{data.receiptCount} receipts · no earlier period to compare</Small>
+                ) : (
+                  <Small>
+                    <Small muted={false} style={{ color: up ? p.risk : p.accent, fontWeight: '700' }}>
+                      {up ? '▲' : '▼'} {Math.abs(Math.round(change * 100))}%
+                    </Small>
+                    {`  vs ${formatAud(data.previousTotal, { cents: false })} the period before`}
+                  </Small>
+                )}
+              </View>
 
-            <BarSeries points={data.series} onSelect={setSelected} />
+              <BarSeries points={data.series} onSelect={setSelected} />
 
-            <View style={{ flexDirection: 'row', gap: space.lg }}>
-              <Tile
-                label="Average"
-                value={formatAud(data.average, { cents: false })}
-                hint={`per ${range === 'month' ? 'week' : 'month'}`}
-              />
-              <Tile
-                label="Receipts"
-                value={String(data.receiptCount)}
-                hint="captured in range"
-              />
-            </View>
+              <Divider />
 
-            {/* Where it went. The ring answers "how is it split"; the bars
-                under it are the only place a budget shows up. */}
-            <Section label="By category" style={{ marginTop: space.lg }}>
-              <View style={{ gap: space.xl, paddingTop: space.lg }}>
+              <View style={{ flexDirection: 'row', gap: space.lg }}>
+                <View style={{ flex: 1, gap: 2 }}>
+                  <Label>Average</Label>
+                  <Figure size="h2">{formatAud(data.average, { cents: false })}</Figure>
+                  <Small>per {range === 'month' ? 'week' : 'month'}</Small>
+                </View>
+                <View style={{ flex: 1, gap: 2 }}>
+                  <Label>Receipts</Label>
+                  <Figure size="h2">{String(data.receiptCount)}</Figure>
+                  <Small>captured in range</Small>
+                </View>
+              </View>
+            </Raised>
+
+            {/* Where it went. */}
+            <View style={{ gap: space.sm }}>
+              <Label>By category</Label>
+              <Raised style={{ gap: space.lg }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.lg }}>
                   <CategoryRing
                     parts={data.byCategory}
-                    size={148}
                     centreLabel="Total"
                     centreValue={formatAud(data.total, { cents: false })}
                   />
                   <RingLegend parts={data.byCategory} />
                 </View>
+                <Divider />
                 <CategoryBars parts={data.byCategory} />
-              </View>
-            </Section>
+              </Raised>
+            </View>
 
             {/* Who it went to. */}
-            <Section label="Top merchants" style={{ marginTop: space.lg }} rule={false}>
-              {data.topMerchants.map((m, i) => (
-                <LedgerRow
-                  key={m.name}
-                  first={i === 0}
-                  gutter={String(i + 1).padStart(2, '0')}
-                  title={m.name}
-                  note={`${m.count} visit${m.count === 1 ? '' : 's'}`}
-                  figure={formatAud(m.total)}
-                />
-              ))}
-            </Section>
+            <View style={{ gap: space.sm }}>
+              <Label>Top merchants</Label>
+              <Raised style={{ padding: 0 }}>
+                {data.topMerchants.map((m, i) => (
+                  <View key={m.name}>
+                    {i > 0 ? <Divider style={{ marginLeft: space.lg }} /> : null}
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: space.md,
+                        paddingHorizontal: space.lg,
+                        paddingVertical: 12,
+                      }}
+                    >
+                      <Figure size="small" tone="muted" style={{ width: 18 }}>
+                        {String(i + 1)}
+                      </Figure>
+                      <View style={{ flex: 1, gap: 1 }}>
+                        <Body strong numberOfLines={1}>
+                          {m.name}
+                        </Body>
+                        <Small>
+                          {m.count} visit{m.count === 1 ? '' : 's'}
+                        </Small>
+                      </View>
+                      <Figure size="h2">{formatAud(m.total)}</Figure>
+                    </View>
+                  </View>
+                ))}
+              </Raised>
+            </View>
 
             {data.largest ? (
-              <Section label="Largest single receipt" style={{ marginTop: space.lg }} rule={false}>
-                <LedgerRow
-                  first
-                  gutter={formatShortDate(data.largest.date)}
-                  title={data.largest.name}
-                  figure={formatAud(data.largest.amount)}
-                />
-              </Section>
+              <Raised style={{ gap: 4 }}>
+                <Label>Largest single receipt</Label>
+                <View
+                  style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' }}
+                >
+                  <Body strong numberOfLines={1} style={{ flex: 1 }}>
+                    {data.largest.name}
+                  </Body>
+                  <Figure size="h1">{formatAud(data.largest.amount)}</Figure>
+                </View>
+                <Small>{formatShortDate(data.largest.date)}</Small>
+              </Raised>
             ) : null}
 
             {/* Business only. Personal spending has no GST position at all. */}
             {isBusiness && data.gstClaimable !== null ? (
-              <Section label="GST in this period" style={{ marginTop: space.lg }}>
-                <View style={{ flexDirection: 'row', gap: space.lg }}>
+              <View style={{ gap: space.sm }}>
+                <Label>GST in this period</Label>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
                   <Tile
                     label="Claimable"
                     value={formatAud(data.gstClaimable)}
@@ -180,7 +201,7 @@ export default function AnalyticsScreen() {
                     tone={Number(data.gstAtRisk) > 0 ? 'risk' : 'default'}
                   />
                 </View>
-              </Section>
+              </View>
             ) : null}
 
             <Small style={{ textAlign: 'center' }}>

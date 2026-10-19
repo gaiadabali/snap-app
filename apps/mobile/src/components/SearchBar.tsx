@@ -1,9 +1,8 @@
-import { Pressable, ScrollView, View } from 'react-native';
-import { Text, TextInput } from '@/theme/text';
+import { Pressable, Text, TextInput, View } from 'react-native';
 import { Icon } from '@/components/Icon';
 
 import { Chip } from '@/components/ui';
-import { control, radius, space, type, usePalette } from '@/theme';
+import { radius, space, usePalette } from '@/theme';
 
 /**
  * Search and period, over a list that is now nearly a thousand rows long.
@@ -61,20 +60,14 @@ export function SearchBar({
   placeholder?: string;
 }) {
   const p = usePalette();
-  /* A hairline-outlined field on the ground, not a filled pill: the grey pill
-     was the prototype's one search idiom and read as stock chrome. Same
-     border and radius as `Field`, so a search box and a form input agree. */
   return (
     <View
       style={{
         flexDirection: 'row',
         alignItems: 'center',
         gap: space.sm,
-        minHeight: control.tap + 4,
-        borderWidth: 1,
-        borderColor: p.ruleStrong,
-        borderRadius: radius.md,
-        backgroundColor: p.ground,
+        backgroundColor: p.surfaceAlt,
+        borderRadius: radius.pill,
         paddingHorizontal: space.md,
       }}
     >
@@ -87,7 +80,7 @@ export function SearchBar({
         autoCapitalize="none"
         autoCorrect={false}
         returnKeyType="search"
-        style={[type.input, { flex: 1, paddingVertical: 10, color: p.ink }]}
+        style={{ flex: 1, paddingVertical: 10, color: p.ink, fontSize: 15 }}
         accessibilityLabel="Search"
       />
       {value.length > 0 ? (
@@ -112,20 +105,13 @@ export function PeriodChips({
   onChange: (p: Period) => void;
 }) {
   return (
-    // One scrolling row rather than a wrapped block: five chips wrapped onto
-    // two lines pushed the list a chip-height down the screen for no reason.
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      keyboardShouldPersistTaps="handled"
-      contentContainerStyle={{ gap: space.sm, alignItems: 'center' }}
-    >
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
       {PERIODS.map((x) => (
         <Chip key={x.key} selected={value === x.key} onPress={() => onChange(x.key)}>
           {x.label}
         </Chip>
       ))}
-    </ScrollView>
+    </View>
   );
 }
 

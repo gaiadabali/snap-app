@@ -1,7 +1,6 @@
 import { Redirect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { FlatList, View } from 'react-native';
-import { Text } from '@/theme/text';
+import { FlatList, Text, View } from 'react-native';
 
 import { api, type Party } from '@/api';
 import { AddButton, Field, Sheet } from '@/components/form';

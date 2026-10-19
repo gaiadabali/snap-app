@@ -1,11 +1,9 @@
 import { useState } from 'react';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { Icon } from '@/components/Icon';
 
-import { PressableScale } from '@/components/motion';
-import { IconButton, Label, Small } from '@/components/ui';
-import { radius, space, type, usePalette } from '@/theme';
-import { Text } from '@/theme/text';
+import { Body, Label, Small } from '@/components/ui';
+import { radius, space, usePalette } from '@/theme';
 
 import type { Transition } from '@/lib/provisional';
 
@@ -55,51 +53,49 @@ export function ProvisionalNotice({
     <View
       style={{
         marginTop: space.sm,
-        paddingVertical: space.md,
-        paddingLeft: 14,
-        paddingRight: 4,
-        borderRadius: radius.lg,
-        // The 2px tone edge, as on `Notice`. A tint rather than a fill: this
-        // sits inside a record somebody is reading, and it is advisory.
-        borderLeftWidth: 2,
-        borderLeftColor: p.scan,
-        backgroundColor: p.surface,
+        padding: space.md,
+        borderRadius: radius.md,
+        borderWidth: 1,
+        borderColor: p.scan,
+        // A tint rather than a fill: this sits inside a record somebody is
+        // reading, and it is advisory.
+        backgroundColor: p.surfaceAlt,
         gap: space.sm,
       }}
     >
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
-        <Label style={{ color: p.inkStrong, flex: 1 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: space.sm }}>
+        <Label style={{ color: p.scan, flex: 1 }}>
           {transition.kind === 'differs' ? 'Two reads disagreed' : 'Not confirmed'}
         </Label>
-        <IconButton
-          name="close"
-          label="Dismiss this notice"
-          size={16}
-          color={p.inkFaint}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Dismiss this notice"
+          hitSlop={12}
           onPress={() => setDismissed(true)}
-          style={{ marginVertical: -14 }}
-        />
+        >
+          <Body style={{ color: p.inkFaint }}>×</Body>
+        </Pressable>
       </View>
 
-      <Small style={{ paddingRight: 10 }}>{transition.copy}</Small>
+      <Small>{transition.copy}</Small>
 
       {transition.kind === 'suggestion' && onUseSuggestion ? (
-        <PressableScale
+        <Pressable
+          accessibilityRole="button"
           accessibilityLabel={`Use the preview value ${transition.suggested}`}
           onPress={() => onUseSuggestion(transition.suggested)}
-          scaleTo={0.98}
-          containerStyle={{ alignSelf: 'flex-start' }}
-          style={{
-            minHeight: 44,
-            justifyContent: 'center',
-            paddingHorizontal: space.lg,
+          style={({ pressed }) => ({
+            alignSelf: 'flex-start',
+            paddingHorizontal: space.md,
+            paddingVertical: 8,
             borderRadius: radius.md,
-            borderWidth: 1,
-            borderColor: p.ruleStrong,
-          }}
+            borderWidth: 1.5,
+            borderColor: p.scan,
+            opacity: pressed ? 0.7 : 1,
+          })}
         >
-          <Text style={[type.amount, { color: p.ink }]}>Use {transition.suggested}</Text>
-        </PressableScale>
+          <Body style={{ color: p.scan }}>Use {transition.suggested}</Body>
+        </Pressable>
       ) : null}
     </View>
   );
@@ -120,16 +116,14 @@ export function ProvisionalChip() {
       style={{
         alignSelf: 'flex-start',
         paddingHorizontal: 8,
-        paddingVertical: 3,
-        borderRadius: radius.xs,
+        paddingVertical: 2,
+        borderRadius: radius.pill,
         borderWidth: 1,
         borderColor: p.scan,
         borderStyle: 'dashed',
       }}
     >
-      <Text style={[type.label, { color: p.inkStrong, fontSize: 10, lineHeight: 12, letterSpacing: 1 }]}>
-        Provisional
-      </Text>
+      <Small style={{ color: p.scan, fontSize: 11 }}>Provisional</Small>
     </View>
   );
 }

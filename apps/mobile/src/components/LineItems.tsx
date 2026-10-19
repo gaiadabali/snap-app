@@ -1,12 +1,11 @@
 import { useState } from 'react';
-import { Pressable, View } from 'react-native';
-import { Text } from '@/theme/text';
+import { Pressable, Text, View } from 'react-native';
 
 import type { DocumentLine } from '@/api';
 import { AddButton, Choice, Field, Sheet } from '@/components/form';
-import { Icon } from '@/components/Icon';
-import { Body, Button, Chip, ConfidenceDots, Label, Small } from '@/components/ui';
-import { formatAud, numeric, space, type, usePalette } from '@/theme';
+import { Raised } from '@/components/rich';
+import { Body, ConfidenceDots, Divider, Figure, Label, Small } from '@/components/ui';
+import { formatAud, space, usePalette } from '@/theme';
 
 /**
  * The lines off the receipt, correctable by hand.
@@ -19,10 +18,6 @@ import { formatAud, numeric, space, type, usePalette } from '@/theme';
  * Edits are held locally and saved as a set, because the lines only mean
  * anything measured against the total. Saving them one at a time would let
  * the document sit in states where it does not add up.
- *
- * Drawn as a ledger (the instrument pass, 2026-10-19): a line is a row on the
- * ground divided by hairlines — description, quantity × unit in mono under it,
- * the amount locked right — not a card with a divider inside it.
  */
 
 type Draft = {
@@ -97,71 +92,66 @@ export function LineItems({
 
   return (
     <View style={{ gap: space.sm }}>
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          paddingBottom: space.sm,
-          borderBottomWidth: 1,
-          borderBottomColor: p.rule,
-        }}
-      >
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <Label>What was on it</Label>
-        <Text style={[type.mono, numeric, { color: p.inkMuted }]}>
+        <Small>
           {lines.length} line{lines.length === 1 ? '' : 's'}
-        </Text>
+        </Small>
       </View>
 
-      <View>
+      <Raised style={{ padding: 0 }}>
         {lines.length === 0 ? (
-          <View style={{ paddingVertical: space.md, gap: 4 }}>
+          <View style={{ padding: space.lg, gap: 4 }}>
             <Body strong>No lines read</Body>
             <Small>Add them by hand if the receipt itemises the purchase.</Small>
           </View>
         ) : (
           lines.map((l, i) => (
-            <Pressable
-              key={`${l.lineNumber}-${l.description}`}
-              accessibilityRole={editable ? 'button' : 'text'}
-              accessibilityLabel={`${l.description}, ${formatAud(l.amount)}`}
-              onPress={
-                editable
-                  ? () => {
-                      setDraft(toDraft(l));
-                      setEditingIndex(i);
-                    }
-                  : undefined
-              }
-              style={({ pressed }) => ({
-                minHeight: 56,
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: space.md,
-                paddingVertical: space.md,
-                borderTopWidth: i === 0 ? 0 : 1,
-                borderTopColor: p.rule,
-                backgroundColor: pressed && editable ? p.surface : 'transparent',
-              })}
-            >
-              <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
-                <Text style={[type.bodyStrong, { color: p.ink }]} numberOfLines={1}>
-                  {l.description}
-                </Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
-                  <Text style={[type.mono, numeric, { color: p.inkMuted }]}>
-                    {l.quantity > 1 ? `${l.quantity} × ${formatAud(l.unitPrice)}` : 'Qty 1'}
-                  </Text>
-                  {l.gstFree ? <Chip tone="accent">GST-free</Chip> : null}
-                  <ConfidenceDots value={l.confidence} />
+            <View key={`${l.lineNumber}-${l.description}`}>
+              {i > 0 ? <Divider /> : null}
+              <Pressable
+                accessibilityRole={editable ? 'button' : 'text'}
+                accessibilityLabel={`${l.description}, ${formatAud(l.amount)}`}
+                onPress={
+                  editable
+                    ? () => {
+                        setDraft(toDraft(l));
+                        setEditingIndex(i);
+                      }
+                    : undefined
+                }
+                style={({ pressed }) => ({
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: space.md,
+                  paddingHorizontal: space.lg,
+                  paddingVertical: 12,
+                  backgroundColor: pressed && editable ? p.surfaceAlt : 'transparent',
+                })}
+              >
+                <View style={{ flex: 1, gap: 2 }}>
+                  <Body strong numberOfLines={1}>
+                    {l.description}
+                  </Body>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
+                    <Small>
+                      {l.quantity > 1 ? `${l.quantity} × ${formatAud(l.unitPrice)}` : 'Qty 1'}
+                    </Small>
+                    {l.gstFree ? (
+                      <Small muted={false} style={{ color: p.accent, fontWeight: '600' }}>
+                        GST-free
+                      </Small>
+                    ) : null}
+                    <ConfidenceDots value={l.confidence} />
+                  </View>
                 </View>
-              </View>
-              <Text style={[type.amount, numeric, { color: p.ink }]}>{formatAud(l.amount)}</Text>
-              {editable ? <Icon name="chevronRight" size={16} color={p.inkFaint} /> : null}
-            </Pressable>
+                <Figure size="h2">{formatAud(l.amount)}</Figure>
+                {editable ? <Small style={{ fontSize: 16 }}>›</Small> : null}
+              </Pressable>
+            </View>
           ))
         )}
-      </View>
+      </Raised>
 
       {editable ? (
         <AddButton
@@ -196,14 +186,18 @@ export function LineItems({
         }}
       >
         <LineFields draft={draft} setDraft={setDraft} />
-        <Button
-          label="Remove this line"
-          tone="outline"
+        <Pressable
+          accessibilityRole="button"
           onPress={() => {
             if (editingIndex === null) return;
             void commit(lines.filter((_, i) => i !== editingIndex));
           }}
-        />
+          style={{ paddingVertical: space.sm }}
+        >
+          <Text style={{ color: p.risk, fontWeight: '700', textAlign: 'center' }}>
+            Remove this line
+          </Text>
+        </Pressable>
       </Sheet>
 
       {/* Add */}

@@ -1,24 +1,11 @@
 import { useState } from 'react';
-import { Image, Modal, Pressable, ScrollView, View } from 'react-native';
-import { Text } from '@/theme/text';
+import { Image, Modal, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '@/components/Icon';
 
 import type { DocumentView } from '@/api';
-import { Chip, Label, Small } from '@/components/ui';
-import {
-  control,
-  font,
-  formatAbn,
-  formatAud,
-  formatShortDate,
-  numeric,
-  radius,
-  space,
-  type,
-  usePalette,
-  useTheme,
-} from '@/theme';
+import { Body, Chip, Label, Small } from '@/components/ui';
+import { formatAbn, formatAud, formatShortDate, numeric, radius, space, type, usePalette } from '@/theme';
 
 /**
  * The original document, as proof.
@@ -34,35 +21,20 @@ import {
  * point of the screen is to check the reading against the paper, and a
  * reconstruction at least shows the shape of what was read. It is never
  * presented as the photograph.
- *
- * The instrument pass (2026-10-19) sets the facsimile in Plex Mono — a docket
- * really is printed in mono — on a paper fill taken from the palette (the
- * ground in light, the surface in dark, so it never glares against a dark
- * page), and the full-screen viewer takes its dark ground from the palette's
- * void entries rather than literals.
  */
-
-/** The docket's paper. Palette only: the ground in light, a step up in dark. */
-function usePaper(): string {
-  const p = usePalette();
-  const { scheme } = useTheme();
-  return scheme === 'dark' ? p.surface : p.ground;
-}
 
 function Paper({ doc }: { doc: DocumentView }) {
   const p = usePalette();
-  const paper = usePaper();
   const mono = {
-    fontFamily: font.mono,
+    fontFamily: 'monospace' as const,
     fontSize: 11,
     lineHeight: 17,
-    color: p.ink,
+    color: '#1B2430',
   };
-  const bold = { fontWeight: '500' as const };
 
   return (
-    <View style={{ backgroundColor: paper, padding: 18, gap: 2 }}>
-      <Text style={[mono, bold, { fontSize: 13, textAlign: 'center' }]}>
+    <View style={{ backgroundColor: '#FBF8F2', padding: 18, gap: 2 }}>
+      <Text style={[mono, { fontWeight: '700', fontSize: 13, textAlign: 'center' }]}>
         {doc.supplierName.toUpperCase()}
       </Text>
       {doc.supplierAbn ? (
@@ -70,10 +42,12 @@ function Paper({ doc }: { doc: DocumentView }) {
       ) : null}
       <Text style={[mono, { textAlign: 'center' }]}>{formatShortDate(doc.issueDate)}</Text>
       {doc.isTaxInvoice ? (
-        <Text style={[mono, bold, { textAlign: 'center', marginTop: 6 }]}>*** TAX INVOICE ***</Text>
+        <Text style={[mono, { textAlign: 'center', fontWeight: '700', marginTop: 6 }]}>
+          *** TAX INVOICE ***
+        </Text>
       ) : null}
 
-      <Text style={[mono, { marginTop: 8, color: p.inkFaint }]}>{'-'.repeat(34)}</Text>
+      <Text style={[mono, { marginTop: 8 }]}>{'-'.repeat(34)}</Text>
       {doc.lines.map((l) => (
         <View key={l.lineNumber} style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
           <Text style={[mono, { flex: 1 }]} numberOfLines={1}>
@@ -81,32 +55,39 @@ function Paper({ doc }: { doc: DocumentView }) {
             {l.description}
             {l.gstFree ? ' *' : ''}
           </Text>
-          <Text style={[mono, numeric]}>{formatAud(l.amount)}</Text>
+          <Text style={mono}>{formatAud(l.amount)}</Text>
         </View>
       ))}
-      <Text style={[mono, { color: p.inkFaint }]}>{'-'.repeat(34)}</Text>
+      <Text style={mono}>{'-'.repeat(34)}</Text>
 
       <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-        <Text style={[mono, bold]}>TOTAL</Text>
-        <Text style={[mono, bold, numeric]}>{formatAud(doc.payableAmount)}</Text>
+        <Text style={[mono, { fontWeight: '700' }]}>TOTAL</Text>
+        <Text style={[mono, { fontWeight: '700' }]}>{formatAud(doc.payableAmount)}</Text>
       </View>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
         <Text style={mono}>GST included</Text>
-        <Text style={[mono, numeric]}>{formatAud(doc.taxAmount)}</Text>
+        <Text style={mono}>{formatAud(doc.taxAmount)}</Text>
       </View>
       {doc.lines.some((l) => l.gstFree) ? (
         <Text style={[mono, { marginTop: 6 }]}>* GST-free item</Text>
       ) : null}
 
-      {/* The perforation, so a facsimile never reads as a screenshot of a
-          form: a tear line of dashes across the foot of the docket. Drawn as
-          alternating ruled and empty segments rather than a dashed border,
-          which Android renders unreliably on a single edge. */}
-      <View style={{ flexDirection: 'row', marginTop: 12, marginHorizontal: -18, height: 1 }}>
-        {Array.from({ length: 48 }).map((_, i) => (
-          <View key={i} style={{ flex: 1, backgroundColor: i % 2 ? 'transparent' : p.ruleStrong }} />
+      {/* The torn edge, so a facsimile never reads as a screenshot of a form. */}
+      <View style={{ flexDirection: 'row', marginTop: 10, marginHorizontal: -18 }}>
+        {Array.from({ length: 26 }).map((_, i) => (
+          <View
+            key={i}
+            style={{
+              flex: 1,
+              height: 8,
+              backgroundColor: '#FBF8F2',
+              borderBottomLeftRadius: i % 2 ? 8 : 0,
+              borderBottomRightRadius: i % 2 ? 0 : 8,
+            }}
+          />
         ))}
       </View>
+      <View style={{ height: 0, backgroundColor: p.ground }} />
     </View>
   );
 }
@@ -141,7 +122,6 @@ export function OriginalDocument({
   onImageExpired?: (failedUrl: string) => void;
 }) {
   const p = usePalette();
-  const paper = usePaper();
   const insets = useSafeAreaInsets();
   const [zoomed, setZoomed] = useState(false);
   const [pageIndex, setPageIndex] = useState(0);
@@ -198,11 +178,11 @@ export function OriginalDocument({
         }
         onPress={() => setZoomed(true)}
         style={{
-          borderRadius: radius.md,
+          borderRadius: radius.lg,
           overflow: 'hidden',
           borderWidth: 1,
-          borderColor: p.ruleStrong,
-          backgroundColor: paper,
+          borderColor: p.rule,
+          backgroundColor: '#FBF8F2',
           maxHeight: 260,
         }}
       >
@@ -244,7 +224,7 @@ export function OriginalDocument({
               accessibilityLabel={`Show page ${i + 1} of ${pageCount}`}
               onPress={() => goTo(i)}
               style={{
-                borderRadius: radius.sm,
+                borderRadius: 6,
                 overflow: 'hidden',
                 borderWidth: 2,
                 borderColor: i === pageIndex ? p.accent : p.rule,
@@ -264,16 +244,12 @@ export function OriginalDocument({
                   style={{
                     width: 42,
                     height: 56,
-                    backgroundColor: paper,
+                    backgroundColor: '#FBF8F2',
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}
                 >
-                  <Text
-                    style={[type.label, { fontSize: 7, lineHeight: 9, letterSpacing: 0.4, color: p.inkMuted }]}
-                  >
-                    FACSIMILE
-                  </Text>
+                  <Text style={{ fontSize: 7, color: '#8A7F6E', fontWeight: '600' }}>FACSIMILE</Text>
                 </View>
               )}
             </Pressable>
@@ -288,7 +264,7 @@ export function OriginalDocument({
       </Small>
 
       <Modal visible={zoomed} animationType="fade" onRequestClose={() => setZoomed(false)}>
-        <View style={{ flex: 1, backgroundColor: p.void }}>
+        <View style={{ flex: 1, backgroundColor: '#0A0F16' }}>
           <ScrollView
             contentContainerStyle={{
               flexGrow: 1,
@@ -317,9 +293,7 @@ export function OriginalDocument({
             style={{
               padding: space.lg,
               paddingBottom: insets.bottom + space.lg,
-              backgroundColor: p.void,
-              borderTopWidth: 1,
-              borderTopColor: p.voidRule,
+              backgroundColor: '#0A0F16',
               gap: space.sm,
             }}
           >
@@ -342,23 +316,22 @@ export function OriginalDocument({
                 />
               </View>
             ) : null}
-            {/* Light-on-dark from the void entries rather than the themed
-                outline button: the viewer paints the void ground in both
-                themes, so an ink label disappears against it in light mode. */}
+            {/* Explicit light-on-dark rather than the themed outline button:
+                the viewer paints its own near-black ground in both themes, so
+                a palette-coloured label disappears against it in light mode. */}
             <Pressable
               accessibilityRole="button"
               onPress={() => setZoomed(false)}
               style={({ pressed }) => ({
-                minHeight: control.button,
-                justifyContent: 'center',
+                paddingVertical: 14,
                 borderRadius: radius.md,
-                borderWidth: 1,
-                borderColor: p.voidMuted,
-                backgroundColor: pressed ? p.voidRule : 'transparent',
+                borderWidth: 1.5,
+                borderColor: 'rgba(255,255,255,0.5)',
+                backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'transparent',
                 alignItems: 'center',
               })}
             >
-              <Text style={[type.bodyStrong, { color: p.voidInk }]}>Close</Text>
+              <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 15 }}>Close</Text>
             </Pressable>
           </View>
         </View>
@@ -377,7 +350,6 @@ function ModalButton({
   onPress: () => void;
   disabled?: boolean;
 }) {
-  const p = usePalette();
   return (
     <Pressable
       accessibilityRole="button"
@@ -385,16 +357,23 @@ function ModalButton({
       onPress={disabled ? undefined : onPress}
       style={({ pressed }) => ({
         flex: 1,
-        minHeight: control.tap,
-        justifyContent: 'center',
+        paddingVertical: 10,
         borderRadius: radius.md,
-        borderWidth: 1,
-        borderColor: disabled ? p.voidRule : p.voidMuted,
-        backgroundColor: pressed && !disabled ? p.voidRule : 'transparent',
+        borderWidth: 1.5,
+        borderColor: disabled ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.5)',
+        backgroundColor: pressed && !disabled ? 'rgba(255,255,255,0.12)' : 'transparent',
         alignItems: 'center',
       })}
     >
-      <Text style={[type.smallStrong, { color: disabled ? p.voidMuted : p.voidInk }]}>{label}</Text>
+      <Text
+        style={{
+          color: disabled ? 'rgba(255,255,255,0.35)' : '#FFFFFF',
+          fontWeight: '700',
+          fontSize: 13,
+        }}
+      >
+        {label}
+      </Text>
     </Pressable>
   );
 }
@@ -405,35 +384,30 @@ export function BalanceNote({ doc }: { doc: DocumentView }) {
   const sum = doc.lines.reduce((a, l) => a + Number(l.amount), 0);
   const difference = Number(doc.payableAmount) - sum;
   const balanced = Math.abs(difference) < 0.005;
-  const fg = balanced ? p.good : p.warn;
 
-  /* A Notice-style line with a tone edge: green when the lines agree with the
-     total, amber when they do not. Never red — a mismatch is a thing to check,
-     not money lost. */
   return (
     <View
       style={{
         flexDirection: 'row',
         alignItems: 'center',
         gap: space.sm,
-        backgroundColor: balanced ? p.goodSoft : p.warnSoft,
-        borderRadius: radius.lg,
-        borderLeftWidth: 2,
-        borderLeftColor: fg,
-        paddingLeft: 14,
-        paddingRight: space.md,
-        paddingVertical: space.md,
+        backgroundColor: balanced ? p.accentSoft : p.warnSoft,
+        borderRadius: radius.md,
+        paddingHorizontal: space.md,
+        paddingVertical: 10,
       }}
     >
-      <Icon name={balanced ? 'check' : 'alert'} size={16} color={fg} />
-      <Text style={[type.small, { flex: 1, color: balanced ? p.goodInk : p.warnInk }]}>
+      <Icon name={balanced ? 'check' : 'alert'} size={16} color={balanced ? p.good : p.warn} />
+      <Body style={{ flex: 1, color: balanced ? p.accent : p.warn }}>
         {balanced
           ? `${doc.lines.length} line${doc.lines.length === 1 ? '' : 's'} adding to ${formatAud(doc.payableAmount)}`
           : `Lines are ${formatAud(Math.abs(difference).toFixed(4))} ${
               difference > 0 ? 'short of' : 'over'
             } the ${formatAud(doc.payableAmount)} total`}
+      </Body>
+      <Text style={[type.small, numeric, { color: balanced ? p.accent : p.warn, fontWeight: '700' }]}>
+        {formatAud(sum.toFixed(4))}
       </Text>
-      <Text style={[type.mono, numeric, { color: fg }]}>{formatAud(sum.toFixed(4))}</Text>
     </View>
   );
 }

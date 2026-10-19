@@ -1,8 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Image, Modal, View } from 'react-native';
-import type { ReactNode } from 'react';
+import { Alert, Image, Modal, TextInput, View } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 
 import {
@@ -24,26 +23,13 @@ import {
   Card,
   Chip,
   ConfidenceDots,
+  Divider,
   Figure,
   Label,
-  LedgerRow,
   Screen,
-  Section,
   Small,
-  Title,
 } from '@/components/ui';
-import {
-  elevation,
-  formatAbn,
-  formatAud,
-  formatShortDate,
-  numeric,
-  radius,
-  space,
-  type,
-  usePalette,
-} from '@/theme';
-import { Text, TextInput } from '@/theme/text';
+import { formatAbn, formatAud, formatShortDate, radius, space, usePalette } from '@/theme';
 
 /** Plain-English explanation of each ATO failure, plus the fix. */
 const FAILURE_COPY: Record<string, { title: string; detail: string; fix: string }> = {
@@ -71,17 +57,6 @@ import { ProvisionalNotice } from '@/components/ProvisionalNotice';
 import { ProvisionalReview } from '@/components/ProvisionalReview';
 import { transitionsFor, type Preview } from '@/lib/provisional';
 
-/**
- * The review screen is the trust screen, and it is built as one docket read
- * top to bottom: who and when, the original, the lines, the amounts as a
- * ledger, then the verdicts. The instrument pass (2026-10-19) turned its
- * stack of cards into sections of hairline rows; a card survives only where
- * money is at risk (GST credit).
- *
- * Exactly one accent button sits at the foot — Confirm and post. Everything
- * secondary (correct, reject, share) is an outline. Red is reserved for the
- * GST credit at risk, which is the only thing here that costs money.
- */
 export default function DocumentScreen() {
   const p = usePalette();
   const router = useRouter();
@@ -307,7 +282,7 @@ export default function DocumentScreen() {
         // Reopening the same document later carries no `localPages` and gets
         // no entrance at all — nothing to animate, because nothing changed.
         entering={localPages ? FadeInUp.duration(320) : undefined}
-        contentContainerStyle={{ padding: space.lg, gap: space.xl, paddingBottom: space.xxxl }}
+        contentContainerStyle={{ padding: space.lg, gap: space.lg, paddingBottom: space.xxxl }}
       >
         {/* ── Header ── */}
         <View style={{ gap: space.xs }}>
@@ -336,11 +311,16 @@ export default function DocumentScreen() {
         <OriginalDocument doc={doc} localPages={localPageUris} onImageExpired={handleImageExpired} />
 
         {doc.demoExtraction ? (
-          <Edged tone="warn" label="Demo extraction">
-            Your photo was captured, hashed and would be uploaded as the original. The FIELDS
-            below are sample data — the extraction service is not built yet, so they do not
-            describe this particular receipt.
-          </Edged>
+          <Card tone="risk">
+            <View style={{ gap: space.xs }}>
+              <Label style={{ color: p.risk }}>Demo extraction</Label>
+              <Body>
+                Your photo was captured, hashed and would be uploaded as the original. The FIELDS
+                below are sample data — the extraction service is not built yet, so they do not
+                describe this particular receipt.
+              </Body>
+            </View>
+          </Card>
         ) : null}
 
         <BalanceNote doc={doc} />
@@ -356,66 +336,57 @@ export default function DocumentScreen() {
         />
 
         {/* ── Amounts ── */}
-        <Section label="Amounts">
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              alignItems: 'baseline',
-              paddingVertical: space.md,
-            }}
-          >
-            <Label>Total incl GST</Label>
-            <Figure size="h1">{formatAud(doc.payableAmount)}</Figure>
-            {/* The most expensive number on the screen, and the one §6.3
-                calls the most expensive to get wrong. */}
-          </View>
-          <Field label="Excluding GST" value={formatAud(doc.taxExclusiveAmount)} />
-          {transitions ? (
-            <ProvisionalNotice transition={transitions['header.payable_amount']} />
-          ) : null}
-          <Field label="GST" value={formatAud(doc.taxAmount)} hint="Exactly 1/11 of the taxable amount" />
-          {transitions ? (
-            <ProvisionalNotice transition={transitions['header.tax_amount']} />
-          ) : null}
-          {doc.taxSubtotals.length > 1 ? (
-            /* ── The split, and the reason this product exists ──
-               One docket, two tax treatments. Hubdoc, Dext, myDeductions and
-               Ozly all read a header total, so none of them can say which
-               half is claimable (docs/MONETISATION.md §2). Shown as its own
-               block rather than a footnote because it IS the feature: a
-               ledger with the tax code (S taxable, Z GST-free) in the gutter.
+        <Card>
+          <View style={{ gap: space.md }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
+              <Label>Total incl GST</Label>
+              <Figure size="h1">{formatAud(doc.payableAmount)}</Figure>
+              {/* The most expensive number on the screen, and the one §6.3
+                  calls the most expensive to get wrong. */}
+            </View>
+            <Divider />
+            <Field label="Excluding GST" value={formatAud(doc.taxExclusiveAmount)} />
+            {transitions ? (
+              <ProvisionalNotice transition={transitions['header.payable_amount']} />
+            ) : null}
+            <Field label="GST" value={formatAud(doc.taxAmount)} hint="Exactly 1/11 of the taxable amount" />
+            {transitions ? (
+              <ProvisionalNotice transition={transitions['header.tax_amount']} />
+            ) : null}
+            {doc.taxSubtotals.length > 1 ? (
+              /* ── The split, and the reason this product exists ──
+                 One docket, two tax treatments. Hubdoc, Dext, myDeductions and
+                 Ozly all read a header total, so none of them can say which
+                 half is claimable (docs/MONETISATION.md §2). Shown as its own
+                 block rather than a footnote because it IS the feature.
 
-               Every figure here is sent by the server. The screen adds
-               nothing — docs/DESIGN-HANDOFF.md §3. */
-            <View style={{ marginTop: space.lg }}>
-              <Section label="Split by tax treatment">
-                {doc.taxSubtotals.map((s, i) => (
-                  <LedgerRow
+                 Every figure here is sent by the server. The screen adds
+                 nothing — docs/DESIGN-HANDOFF.md §3. */
+              <>
+                <Divider />
+                <Label>Split by tax treatment</Label>
+                {doc.taxSubtotals.map((s) => (
+                  <Field
                     key={s.categoryCode}
-                    first={i === 0}
-                    gutter={s.categoryCode}
-                    title={s.categoryCode === 'Z' ? 'GST-free' : 'Taxable'}
-                    note={
-                      <Small>
-                        {s.categoryCode === 'Z'
-                          ? 'Fresh food and other GST-free items. No GST to claim on this portion.'
-                          : `Carries ${formatAud(s.taxAmount)} of GST`}
-                      </Small>
+                    label={s.categoryCode === 'Z' ? 'GST-free' : 'Taxable'}
+                    value={formatAud(s.inclusiveAmount)}
+                    hint={
+                      s.categoryCode === 'Z'
+                        ? 'Fresh food and other GST-free items. No GST to claim on this portion.'
+                        : `Carries ${formatAud(s.taxAmount)} of GST`
                     }
-                    figure={formatAud(s.inclusiveAmount)}
                   />
                 ))}
-              </Section>
-            </View>
-          ) : doc.gstFreeAmount ? (
-            <Field
-              label="GST-free portion"
-              value={formatAud(doc.gstFreeAmount)}
-              hint="Fresh food and other GST-free items, separated from the taxable total"
-            />
-          ) : null}
-        </Section>
+              </>
+            ) : doc.gstFreeAmount ? (
+              <Field
+                label="GST-free portion"
+                value={formatAud(doc.gstFreeAmount)}
+                hint="Fresh food and other GST-free items, separated from the taxable total"
+              />
+            ) : null}
+          </View>
+        </Card>
 
         {/* The deterministic checks, before the compliance verdict they
             produced — a reader wants the reason before the conclusion. */}
@@ -444,7 +415,7 @@ export default function DocumentScreen() {
                   <View key={f} style={{ gap: 4 }}>
                     <Body strong>{copy.title}</Body>
                     <Small muted={false}>{copy.detail}</Small>
-                    <Text style={[type.smallStrong, { color: p.risk }]}>{copy.fix}</Text>
+                    <Small style={{ color: p.risk, fontWeight: '600' }}>{copy.fix}</Small>
                   </View>
                 );
               })}
@@ -461,10 +432,15 @@ export default function DocumentScreen() {
             </View>
           </Card>
         ) : (
-          <Edged tone="good" label="Valid tax invoice">
-            Meets the ATO requirements, so the {formatAud(doc.taxAmount)} GST credit is claimable
-            at label 1B.
-          </Edged>
+          <Card tone="accent">
+            <View style={{ gap: space.xs }}>
+              <Label style={{ color: p.accent }}>Valid tax invoice</Label>
+              <Body>
+                Meets the ATO requirements, so the {formatAud(doc.taxAmount)} GST credit is
+                claimable at label 1B.
+              </Body>
+            </View>
+          </Card>
         )}
 
         {/* Correcting a field is the point of this screen, so the control sits
@@ -474,43 +450,48 @@ export default function DocumentScreen() {
         ) : null}
 
         {/* ── Extracted fields ── */}
-        <Section label="Extracted fields">
-          <Field
-            first
-            label="Supplier ABN"
-            value={formatAbn(doc.supplierAbn)}
-            tone={doc.supplierAbnValid ? 'ink' : 'risk'}
-            hint={
-              doc.supplierAbnValid
-                ? 'Passes the ATO modulus-89 checksum'
-                : 'Missing or fails the checksum'
-            }
-          />
-          <Field label="Document type" value={doc.isTaxInvoice ? 'Tax invoice' : 'Receipt'} />
-          <Field label="Issue date" value={doc.issueDate} />
-          {transitions ? (
-            <ProvisionalNotice transition={transitions['header.issue_date']} />
-          ) : null}
-          <Field label="Currency" value={doc.currency} />
-          <Field
-            label="Deduction row"
-            value={doc.engineRowId}
-            hint="Where this lands on the tax worksheet for this occupation"
-          />
-        </Section>
+        <Card>
+          <View style={{ gap: space.md }}>
+            <Label>Extracted fields</Label>
+            <Divider />
+            <Field
+              label="Supplier ABN"
+              value={formatAbn(doc.supplierAbn)}
+              tone={doc.supplierAbnValid ? 'ink' : 'risk'}
+              hint={
+                doc.supplierAbnValid
+                  ? 'Passes the ATO modulus-89 checksum'
+                  : 'Missing or fails the checksum'
+              }
+            />
+            <Field label="Document type" value={doc.isTaxInvoice ? 'Tax invoice' : 'Receipt'} />
+            <Field label="Issue date" value={doc.issueDate} />
+            {transitions ? (
+              <ProvisionalNotice transition={transitions['header.issue_date']} />
+            ) : null}
+            <Field label="Currency" value={doc.currency} />
+            <Field
+              label="Deduction row"
+              value={doc.engineRowId}
+              hint="Where this lands on the tax worksheet for this occupation"
+            />
+          </View>
+        </Card>
 
         {doc.note ? (
-          <Section label="Note">
-            <View style={{ paddingTop: space.md }}>
+          <Card>
+            <View style={{ gap: space.xs }}>
+              <Label>Note</Label>
               <Body muted>{doc.note}</Body>
             </View>
-          </Section>
+          </Card>
         ) : null}
 
         {/* ── Privacy, in the personal workspace only ── */}
         {doc.workspace === 'personal' ? (
-          <Section label="Visible to">
-            <View style={{ gap: space.md, paddingTop: space.md }}>
+          <Card>
+            <View style={{ gap: space.sm }}>
+              <Label>Visible to</Label>
               <Body>
                 {doc.visibility === 'private'
                   ? 'Only you. It still counts toward the household total, but the merchant and category are hidden from everyone else.'
@@ -523,16 +504,21 @@ export default function DocumentScreen() {
                 disabled={busy}
               />
             </View>
-          </Section>
+          </Card>
         ) : null}
 
         {/* ── Confirm ── */}
         <View style={{ gap: space.md }}>
           {doc.reviewStatus === 'rejected' ? (
-            <Edged tone="warn" label="Rejected">
-              Withdrawn from your lists and excluded from the BAS. The original image is still
-              held as the record.
-            </Edged>
+            <Card tone="risk">
+              <View style={{ gap: space.xs }}>
+                <Label style={{ color: p.risk }}>Rejected</Label>
+                <Body>
+                  Withdrawn from your lists and excluded from the BAS. The original image is still
+                  held as the record.
+                </Body>
+              </View>
+            </Card>
           ) : doc.reviewStatus === 'reviewed' ? (
             <Chip tone="accent">Confirmed — posted to the ledger</Chip>
           ) : canConfirm ? (
@@ -549,10 +535,15 @@ export default function DocumentScreen() {
               </Small>
             </>
           ) : (
-            <Edged tone="info" label="Waiting on an owner">
-              You can capture and correct in this workspace, but posting to the ledger is an owner
-              or manager action. Your corrections are saved and visible to them.
-            </Edged>
+            <Card>
+              <View style={{ gap: space.xs }}>
+                <Label>Waiting on an owner</Label>
+                <Body>
+                  You can capture and correct in this workspace, but posting to the ledger is an
+                  owner or manager action. Your corrections are saved and visible to them.
+                </Body>
+              </View>
+            </Card>
           )}
         </View>
       </Animated.ScrollView>
@@ -565,15 +556,11 @@ export default function DocumentScreen() {
               backgroundColor: p.ground,
               padding: space.xl,
               gap: space.lg,
-              borderTopLeftRadius: radius.sheet,
-              borderTopRightRadius: radius.sheet,
-              borderWidth: 1,
-              borderBottomWidth: 0,
-              borderColor: p.rule,
-              ...elevation.float,
+              borderTopLeftRadius: radius.lg,
+              borderTopRightRadius: radius.lg,
             }}
           >
-            <Title level="h2">Supplier ABN</Title>
+            <Figure size="h2">Supplier ABN</Figure>
             <Small>
               11 digits, as printed on the receipt. It is checked against the ATO’s modulus-89
               algorithm before saving — the same check the database enforces.
@@ -586,19 +573,15 @@ export default function DocumentScreen() {
               autoFocus
               placeholder="51 824 753 556"
               placeholderTextColor={p.inkFaint}
-              style={[
-                type.figure,
-                numeric,
-                {
-                  borderWidth: abnIsValid(draft) ? 2 : 1,
-                  borderColor: abnIsValid(draft) ? p.accent : p.ruleStrong,
-                  borderRadius: radius.md,
-                  paddingVertical: space.md,
-                  paddingHorizontal: abnIsValid(draft) ? 13 : 14,
-                  color: p.ink,
-                  backgroundColor: p.ground,
-                },
-              ]}
+              style={{
+                borderWidth: 2,
+                borderColor: abnIsValid(draft) ? p.accent : p.rule,
+                borderRadius: radius.md,
+                padding: space.md,
+                fontSize: 20,
+                color: p.ink,
+                backgroundColor: p.surface,
+              }}
             />
             <View style={{ flexDirection: 'row', gap: space.md }}>
               <Button
@@ -627,34 +610,19 @@ function initialsOf(name: string): string {
   return ((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '')).toUpperCase() || '?';
 }
 
-/**
- * One label/value line of the docket: the mono label on the left, the value
- * in mono on the right, a hairline above. `first` drops that hairline for the
- * row that sits directly under a Section's own rule.
- */
 function Field({
   label,
   value,
   hint,
   tone = 'ink',
-  first,
 }: {
   label: string;
   value: string;
   hint?: string;
   tone?: 'ink' | 'risk' | 'accent';
-  first?: boolean;
 }) {
-  const p = usePalette();
   return (
-    <View
-      style={{
-        gap: 2,
-        paddingVertical: space.md,
-        borderTopWidth: first ? 0 : 1,
-        borderTopColor: p.rule,
-      }}
-    >
+    <View style={{ gap: 2 }}>
       <View
         style={{
           flexDirection: 'row',
@@ -663,45 +631,12 @@ function Field({
           gap: space.md,
         }}
       >
-        <Label style={{ flexShrink: 1 }}>{label}</Label>
+        <Body muted style={{ flexShrink: 1 }}>
+          {label}
+        </Body>
         <Figure tone={tone}>{value}</Figure>
       </View>
       {hint ? <Small>{hint}</Small> : null}
-    </View>
-  );
-}
-
-/** A verdict with a tone edge — the Notice idiom, with a mono label above its body. */
-function Edged({
-  tone,
-  label,
-  children,
-}: {
-  tone: 'info' | 'good' | 'warn';
-  label: string;
-  children: ReactNode;
-}) {
-  const p = usePalette();
-  const map = {
-    info: { bg: p.infoSoft, fg: p.accentText, ink: p.info },
-    good: { bg: p.goodSoft, fg: p.good, ink: p.goodInk },
-    warn: { bg: p.warnSoft, fg: p.warn, ink: p.warnInk },
-  }[tone];
-  return (
-    <View
-      style={{
-        gap: space.xs,
-        backgroundColor: map.bg,
-        borderRadius: radius.lg,
-        borderLeftWidth: 2,
-        borderLeftColor: map.fg,
-        paddingLeft: 14,
-        paddingRight: space.lg,
-        paddingVertical: space.md,
-      }}
-    >
-      <Label style={{ color: map.fg }}>{label}</Label>
-      <Text style={[type.body, { color: map.ink }]}>{children}</Text>
     </View>
   );
 }

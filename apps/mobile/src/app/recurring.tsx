@@ -5,8 +5,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, type Recurring } from '@/api';
 import { Empty, Loading } from '@/components/form';
-import { GradientHero, HeroBody, HeroFigure, HeroLabel } from '@/components/rich';
-import { LedgerRow, Screen, Section, Small } from '@/components/ui';
+import { CategoryIcon, GradientHero, HeroBody, HeroFigure, HeroLabel, Raised } from '@/components/rich';
+import { Body, Chip, Divider, Figure, Label, Screen, Small } from '@/components/ui';
 import { formatAud, formatShortDate, space } from '@/theme';
 
 /**
@@ -17,9 +17,7 @@ import { formatAud, formatShortDate, space } from '@/theme';
  * that appears in three or more of the last six months at a stable amount.
  *
  * The figure that changes behaviour is the ANNUAL one. A $17 monthly charge
- * reads as nothing; $204 a year reads as a decision. The panel leads with it,
- * and each row ends on it for the same reason; the monthly amount and the next
- * expected date are the row's note and gutter.
+ * reads as nothing; $204 a year reads as a decision.
  */
 export default function RecurringScreen() {
   const insets = useSafeAreaInsets();
@@ -55,7 +53,7 @@ export default function RecurringScreen() {
             <GradientHero>
               <View style={{ gap: space.xs }}>
                 <HeroLabel>Committed each year</HeroLabel>
-                <HeroFigure settle>{formatAud(annual.toFixed(4), { cents: false })}</HeroFigure>
+                <HeroFigure>{formatAud(annual.toFixed(4), { cents: false })}</HeroFigure>
                 <HeroBody>
                   {formatAud(monthly.toFixed(4))} a month across {all.length} recurring{' '}
                   {all.length === 1 ? 'cost' : 'costs'}
@@ -69,18 +67,46 @@ export default function RecurringScreen() {
                 detail="Once a merchant appears three months running at a steady amount, it shows up here automatically."
               />
             ) : (
-              <Section label="Found in your receipts" rule={false}>
-                {all.map((r, i) => (
-                  <LedgerRow
-                    key={r.merchant}
-                    first={i === 0}
-                    gutter={formatShortDate(r.nextExpected).toUpperCase()}
-                    title={r.merchant}
-                    note={`${formatAud(r.typicalAmount)}/mo · ${r.monthsSeen} months seen`}
-                    figure={`${formatAud(r.annualCost, { cents: false })}/yr`}
-                  />
-                ))}
-              </Section>
+              <View style={{ gap: space.sm }}>
+                <Label>Found in your receipts</Label>
+                <Raised style={{ padding: 0 }}>
+                  {all.map((r, i) => (
+                    <View key={r.merchant}>
+                      {i > 0 ? <Divider style={{ marginLeft: 68 }} /> : null}
+                      <View
+                        style={{
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          gap: space.md,
+                          paddingHorizontal: space.lg,
+                          paddingVertical: 13,
+                        }}
+                      >
+                        <CategoryIcon category={r.category} size={38} />
+                        <View style={{ flex: 1, gap: 2 }}>
+                          <Body strong numberOfLines={1}>
+                            {r.merchant}
+                          </Body>
+                          <View
+                            style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}
+                          >
+                            <Small numberOfLines={1}>
+                              {formatAud(r.typicalAmount)}/mo · next {formatShortDate(r.nextExpected)}
+                            </Small>
+                            <Chip>{r.monthsSeen} months</Chip>
+                          </View>
+                        </View>
+                        <View style={{ alignItems: 'flex-end' }}>
+                          <Figure size="h2">
+                            {formatAud(r.annualCost, { cents: false })}
+                          </Figure>
+                          <Small>a year</Small>
+                        </View>
+                      </View>
+                    </View>
+                  ))}
+                </Raised>
+              </View>
             )}
 
             <Small style={{ textAlign: 'center' }}>

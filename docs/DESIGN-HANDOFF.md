@@ -399,12 +399,6 @@ match mobile** — see §4. Both now carry `ground #F7F9FC` / dark `#121820`.
 One palette, two clients, still the requirement. The thing to preserve is not a
 particular hex but the fact that neither client changes a neutral alone.
 
-**2026-10-19 — mobile caught up with the register.** On the owner's brief for "a
-major UI update, no AI slop, premium", `apps/mobile` took web's type (Archivo +
-IBM Plex Mono), the `void` panel, hairline ledger structure and reporting
-motion. No colour moved. The tokens, components and layouts are Claude's
-proposal, built but not yet reviewed by the owner — see `docs/MOBILE-UI.md`.
-
 ### 12.6 Mechanism-led copy — open, and the largest remaining job
 
 `/features` and `/how-it-works` describe the pipeline rather than the benefit.

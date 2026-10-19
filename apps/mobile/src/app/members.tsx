@@ -1,13 +1,13 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Alert, Pressable, ScrollView, View } from 'react-native';
-import { Text } from '@/theme/text';
+import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, type MemberList, type MemberRole, type Permissions } from '@/api';
 import { AddButton, Avatar, Choice, Empty, Field, Loading, Sheet } from '@/components/form';
-import { Body, Chip, Screen, Section, Small } from '@/components/ui';
-import { formatShortDate, radius, space, type, usePalette } from '@/theme';
+import { Raised } from '@/components/rich';
+import { Body, Chip, Divider, Figure, Label, Screen, Small } from '@/components/ui';
+import { formatShortDate, radius, space, usePalette } from '@/theme';
 import { useWorkspace } from '@/workspace';
 
 /**
@@ -18,10 +18,6 @@ import { useWorkspace } from '@/workspace';
  * the words change — a business has managers and staff, a household has
  * partners and family — so the role labels are chosen per workspace kind and
  * the permissions behind them are identical.
- *
- * Rebuilt 2026-10-19 (the instrument pass): people are ledger rows on the
- * ground — avatar, name, a mono role badge — divided by hairlines rather than
- * boxed in a card, and the role key is plain text under a label.
  */
 
 const BUSINESS_ROLES: Array<{ value: MemberRole; label: string; detail: string }> = [
@@ -121,7 +117,7 @@ export default function MembersScreen() {
         contentContainerStyle={{
           padding: space.lg,
           paddingBottom: insets.bottom + space.xxl,
-          gap: space.xl,
+          gap: space.lg,
         }}
       >
         {data === null ? (
@@ -129,7 +125,7 @@ export default function MembersScreen() {
         ) : (
           <>
             <View style={{ gap: 2 }}>
-              <Text style={[type.h1, { color: p.ink }]}>{workspaceName}</Text>
+              <Figure size="h1">{workspaceName}</Figure>
               <Small>
                 {data.members.length} {data.members.length === 1 ? 'person' : 'people'} ·{' '}
                 {seatsLeft > 0
@@ -138,85 +134,86 @@ export default function MembersScreen() {
               </Small>
             </View>
 
-            <Section label="People">
+            <Raised style={{ padding: 0 }}>
               {data.members.map((m, i) => (
-                <Pressable
-                  key={m.userId}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${m.displayName}, ${roleLabel(m.role)}`}
-                  onPress={canInvite ? () => setEditing(m.userId) : undefined}
-                  style={({ pressed }) => ({
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: space.md,
-                    minHeight: 60,
-                    paddingVertical: space.md,
-                    borderTopWidth: i === 0 ? 0 : 1,
-                    borderTopColor: p.rule,
-                    backgroundColor: pressed && canInvite ? p.surface : 'transparent',
-                  })}
-                >
-                  <Avatar initials={m.initials} size={40} />
-                  <View style={{ flex: 1, gap: 2 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
-                      <Text
-                        style={[type.bodyStrong, { flexShrink: 1, color: p.ink }]}
-                        numberOfLines={1}
-                      >
-                        {m.displayName}
-                      </Text>
-                      {m.isYou ? <Chip tone="accent">You</Chip> : null}
-                    </View>
-                    <Small numberOfLines={1}>
-                      {m.captureCount} capture{m.captureCount === 1 ? '' : 's'}
-                      {m.lastActiveAt ? ` · active ${formatShortDate(m.lastActiveAt)}` : ''}
-                    </Small>
-                  </View>
-                  <Chip tone={m.role === 'owner' ? 'accent' : 'neutral'}>{roleLabel(m.role)}</Chip>
-                </Pressable>
-              ))}
-            </Section>
-
-            {data.invitations.length > 0 ? (
-              <Section label="Invited, not yet joined">
-                {data.invitations.map((inv, i) => (
-                  <View
-                    key={inv.id}
-                    style={{
+                <View key={m.userId}>
+                  {i > 0 ? <Divider style={{ marginLeft: 64 }} /> : null}
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`${m.displayName}, ${roleLabel(m.role)}`}
+                    onPress={canInvite ? () => setEditing(m.userId) : undefined}
+                    style={({ pressed }) => ({
                       flexDirection: 'row',
                       alignItems: 'center',
                       gap: space.md,
-                      minHeight: 60,
-                      paddingVertical: space.md,
-                      borderTopWidth: i === 0 ? 0 : 1,
-                      borderTopColor: p.rule,
-                    }}
+                      paddingHorizontal: space.lg,
+                      paddingVertical: 13,
+                      backgroundColor: pressed && canInvite ? p.surfaceAlt : 'transparent',
+                    })}
                   >
+                    <Avatar initials={m.initials} size={40} />
                     <View style={{ flex: 1, gap: 2 }}>
-                      <Text style={[type.bodyStrong, { color: p.ink }]} numberOfLines={1}>
-                        {inv.email}
-                      </Text>
-                      <Small>
-                        {roleLabel(inv.role)} · invited by {inv.invitedByName} · expires{' '}
-                        {formatShortDate(inv.expiresAt)}
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
+                        <Body strong numberOfLines={1}>
+                          {m.displayName}
+                        </Body>
+                        {m.isYou ? <Chip tone="accent">You</Chip> : null}
+                      </View>
+                      <Small numberOfLines={1}>
+                        {m.captureCount} capture{m.captureCount === 1 ? '' : 's'}
+                        {m.lastActiveAt ? ` · active ${formatShortDate(m.lastActiveAt)}` : ''}
                       </Small>
                     </View>
-                    {canInvite ? (
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityLabel={`Revoke the invitation to ${inv.email}`}
-                        hitSlop={8}
-                        style={{ minHeight: 44, justifyContent: 'center' }}
-                        onPress={() => {
-                          void api().revokeInvitation(workspaceId, inv.id).then(setData);
+                    <Chip tone={m.role === 'owner' ? 'accent' : 'neutral'}>
+                      {roleLabel(m.role)}
+                    </Chip>
+                  </Pressable>
+                </View>
+              ))}
+            </Raised>
+
+            {data.invitations.length > 0 ? (
+              <View style={{ gap: space.sm }}>
+                <Label>Invited, not yet joined</Label>
+                <Raised style={{ padding: 0 }}>
+                  {data.invitations.map((inv, i) => (
+                    <View key={inv.id}>
+                      {i > 0 ? <Divider /> : null}
+                      <View
+                        style={{
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          gap: space.md,
+                          paddingHorizontal: space.lg,
+                          paddingVertical: 13,
                         }}
                       >
-                        <Text style={[type.smallStrong, { color: p.risk }]}>Revoke</Text>
-                      </Pressable>
-                    ) : null}
-                  </View>
-                ))}
-              </Section>
+                        <View style={{ flex: 1, gap: 2 }}>
+                          <Body strong numberOfLines={1}>
+                            {inv.email}
+                          </Body>
+                          <Small>
+                            {roleLabel(inv.role)} · invited by {inv.invitedByName} · expires{' '}
+                            {formatShortDate(inv.expiresAt)}
+                          </Small>
+                        </View>
+                        {canInvite ? (
+                          <Pressable
+                            accessibilityRole="button"
+                            accessibilityLabel={`Revoke the invitation to ${inv.email}`}
+                            hitSlop={8}
+                            onPress={() => {
+                              void api().revokeInvitation(workspaceId, inv.id).then(setData);
+                            }}
+                          >
+                            <Text style={{ color: p.risk, fontWeight: '700' }}>Revoke</Text>
+                          </Pressable>
+                        ) : null}
+                      </View>
+                    </View>
+                  ))}
+                </Raised>
+              </View>
             ) : null}
 
             {canInvite ? (
@@ -234,7 +231,8 @@ export default function MembersScreen() {
               />
             )}
 
-            <Section label="What each role can do" style={{ gap: space.sm }}>
+            <Raised style={{ gap: space.sm }}>
+              <Label>What each role can do</Label>
               {roles.map((r) => (
                 <View key={r.value} style={{ flexDirection: 'row', gap: space.sm }}>
                   <Body strong style={{ width: 78 }}>
@@ -243,7 +241,7 @@ export default function MembersScreen() {
                   <Small style={{ flex: 1 }}>{r.detail}</Small>
                 </View>
               ))}
-            </Section>
+            </Raised>
 
             <Small style={{ textAlign: 'center' }}>
               Inviting someone discloses this workspace&rsquo;s financial records to them. They see
@@ -312,7 +310,7 @@ export default function MembersScreen() {
                 onPress={() => confirmRemove(member.userId, member.displayName)}
                 style={{ paddingVertical: space.sm }}
               >
-                <Text style={[type.smallStrong, { color: p.risk, textAlign: 'center' }]}>
+                <Text style={{ color: p.risk, fontWeight: '700', textAlign: 'center' }}>
                   Remove from this workspace
                 </Text>
               </Pressable>

@@ -1,12 +1,11 @@
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Pressable, ScrollView, View } from 'react-native';
-import { Text } from '@/theme/text';
+import { Animated, Easing, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/Icon';
 import { Button, Notice, Screen, ScreenHeader, Small } from '@/components/ui';
-import { radius, space, type, usePalette } from '@/theme';
+import { space, type, usePalette } from '@/theme';
 
 /**
  * Registering a fingerprint.
@@ -22,10 +21,6 @@ import { radius, space, type, usePalette } from '@/theme';
  * decorative until `expo-local-authentication` is wired in. That is stated
  * on the screen itself rather than only in this comment, so nobody demoing it
  * claims a security property the build does not have.
- *
- * The reader pad is drawn as an instrument window — a hairline frame on the
- * surface tone — rather than a heavy rounded button; the ring colour still
- * carries the state (idle, holding, done).
  */
 const HOLD_MS = 1600;
 
@@ -75,10 +70,10 @@ export default function FingerprintScreen() {
     <Screen>
       <ScrollView
         contentContainerStyle={{
-          paddingHorizontal: space.lg,
+          padding: 20,
           paddingTop: insets.top + space.md,
           paddingBottom: space.xxl,
-          gap: space.lg,
+          gap: 16,
         }}
       >
         <ScreenHeader title="Set up fingerprint" onBack={() => router.back()} />
@@ -97,8 +92,8 @@ export default function FingerprintScreen() {
             style={{
               width: 148,
               height: 172,
-              borderRadius: radius.xxl,
-              borderWidth: 1,
+              borderRadius: 30,
+              borderWidth: 2,
               borderColor: done ? p.good : holding ? p.accent : p.ruleStrong,
               backgroundColor: p.surface,
               alignItems: 'center',
