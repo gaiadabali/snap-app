@@ -6,8 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, type MemberList, type MemberRole, type Permissions } from '@/api';
 import { AddButton, Avatar, Choice, Empty, Field, Loading, Sheet } from '@/components/form';
-import { Raised } from '@/components/rich';
-import { Body, Chip, Divider, Figure, Label, Screen, Small } from '@/components/ui';
+import { Body, Card, Chip, Divider, Figure, Screen, SectionHeader, Small } from '@/components/ui';
 import { formatShortDate, radius, space, usePalette } from '@/theme';
 import { useWorkspace } from '@/workspace';
 
@@ -116,9 +115,10 @@ export default function MembersScreen() {
     <Screen>
       <ScrollView
         contentContainerStyle={{
-          padding: space.lg,
+          paddingHorizontal: space.gutter,
+          paddingTop: space.md,
           paddingBottom: insets.bottom + space.xxl,
-          gap: space.lg,
+          gap: space.xl,
         }}
       >
         {data === null ? (
@@ -135,10 +135,13 @@ export default function MembersScreen() {
               </Small>
             </View>
 
-            <Raised style={{ padding: 0 }}>
+            {/* One white lifted card; the hairline is inset past the avatar so
+                it divides the text, not the whole row. Pressed dips opacity
+                rather than filling, since the card does not clip. */}
+            <Card padded={false}>
               {data.members.map((m, i) => (
                 <View key={m.userId}>
-                  {i > 0 ? <Divider style={{ marginLeft: 64 }} /> : null}
+                  {i > 0 ? <Divider style={{ marginLeft: space.lg + 40 + space.md }} /> : null}
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel={`${m.displayName}, ${roleLabel(m.role)}`}
@@ -148,8 +151,9 @@ export default function MembersScreen() {
                       alignItems: 'center',
                       gap: space.md,
                       paddingHorizontal: space.lg,
-                      paddingVertical: 13,
-                      backgroundColor: pressed && canInvite ? p.surfaceAlt : 'transparent',
+                      paddingVertical: space.md,
+                      minHeight: 64,
+                      opacity: pressed && canInvite ? 0.7 : 1,
                     })}
                   >
                     <Avatar initials={m.initials} size={40} />
@@ -171,22 +175,23 @@ export default function MembersScreen() {
                   </Pressable>
                 </View>
               ))}
-            </Raised>
+            </Card>
 
             {data.invitations.length > 0 ? (
-              <View style={{ gap: space.sm }}>
-                <Label>Invited, not yet joined</Label>
-                <Raised style={{ padding: 0 }}>
+              <View style={{ gap: space.md }}>
+                <SectionHeader title="Invited, not yet joined" />
+                <Card padded={false}>
                   {data.invitations.map((inv, i) => (
                     <View key={inv.id}>
-                      {i > 0 ? <Divider /> : null}
+                      {i > 0 ? <Divider style={{ marginLeft: space.lg }} /> : null}
                       <View
                         style={{
                           flexDirection: 'row',
                           alignItems: 'center',
                           gap: space.md,
                           paddingHorizontal: space.lg,
-                          paddingVertical: 13,
+                          paddingVertical: space.md,
+                          minHeight: 64,
                         }}
                       >
                         <View style={{ flex: 1, gap: 2 }}>
@@ -213,7 +218,7 @@ export default function MembersScreen() {
                       </View>
                     </View>
                   ))}
-                </Raised>
+                </Card>
               </View>
             ) : null}
 
@@ -232,17 +237,19 @@ export default function MembersScreen() {
               />
             )}
 
-            <Raised style={{ gap: space.sm }}>
-              <Label>What each role can do</Label>
-              {roles.map((r) => (
-                <View key={r.value} style={{ flexDirection: 'row', gap: space.sm }}>
-                  <Body strong style={{ width: 78 }}>
-                    {r.label}
-                  </Body>
-                  <Small style={{ flex: 1 }}>{r.detail}</Small>
-                </View>
-              ))}
-            </Raised>
+            <View style={{ gap: space.md }}>
+              <SectionHeader title="What each role can do" />
+              <Card style={{ gap: space.md }}>
+                {roles.map((r) => (
+                  <View key={r.value} style={{ flexDirection: 'row', gap: space.sm }}>
+                    <Body strong style={{ width: 80 }}>
+                      {r.label}
+                    </Body>
+                    <Small style={{ flex: 1 }}>{r.detail}</Small>
+                  </View>
+                ))}
+              </Card>
+            </View>
 
             <Small style={{ textAlign: 'center' }}>
               Inviting someone discloses this workspace&rsquo;s financial records to them. They see

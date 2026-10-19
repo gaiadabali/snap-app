@@ -1,13 +1,14 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, ScrollView, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Text } from '@/theme/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, type AnalyticsRange, type AnalyticsSummary } from '@/api';
 import { BarSeries, CategoryBars, CategoryRing, RingLegend } from '@/components/charts';
 import { Raised, Tile } from '@/components/rich';
-import { Body, Chip, Divider, Figure, Label, Screen, Small } from '@/components/ui';
-import { formatAud, formatShortDate, space, usePalette } from '@/theme';
+import { Body, Divider, Figure, Label, Screen, SectionHeader, Small } from '@/components/ui';
+import { formatAud, formatShortDate, shadow, space, type, usePalette, useTheme } from '@/theme';
 import { WorkspaceSwitch, useWorkspace } from '@/workspace';
 
 /**
@@ -57,20 +58,16 @@ export default function AnalyticsScreen() {
     <Screen>
       <ScrollView
         contentContainerStyle={{
-          padding: space.lg,
+          paddingHorizontal: space.gutter,
+          paddingTop: space.md,
           paddingBottom: space.xxl + insets.bottom,
-          gap: space.lg,
+          // 24 between blocks, 12 under a heading.
+          gap: space.xl,
         }}
       >
         <WorkspaceSwitch />
 
-        <View style={{ flexDirection: 'row', gap: space.sm }}>
-          {RANGES.map((r) => (
-            <Chip key={r.key} selected={range === r.key} onPress={() => setRange(r.key)}>
-              {r.label}
-            </Chip>
-          ))}
-        </View>
+        <Segmented value={range} onChange={setRange} />
 
         {data === null ? (
           <View style={{ paddingVertical: space.xxl, alignItems: 'center' }}>
@@ -118,8 +115,8 @@ export default function AnalyticsScreen() {
             </Raised>
 
             {/* Where it went. */}
-            <View style={{ gap: space.sm }}>
-              <Label>By category</Label>
+            <View style={{ gap: space.md }}>
+              <SectionHeader title="By category" />
               <Raised style={{ gap: space.lg }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.lg }}>
                   <CategoryRing
@@ -135,8 +132,8 @@ export default function AnalyticsScreen() {
             </View>
 
             {/* Who it went to. */}
-            <View style={{ gap: space.sm }}>
-              <Label>Top merchants</Label>
+            <View style={{ gap: space.md }}>
+              <SectionHeader title="Top merchants" />
               <Raised style={{ padding: 0 }}>
                 {data.topMerchants.map((m, i) => (
                   <View key={m.name}>
@@ -185,8 +182,8 @@ export default function AnalyticsScreen() {
 
             {/* Business only. Personal spending has no GST position at all. */}
             {isBusiness && data.gstClaimable !== null ? (
-              <View style={{ gap: space.sm }}>
-                <Label>GST in this period</Label>
+              <View style={{ gap: space.md }}>
+                <SectionHeader title="GST in this period" />
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
                   <Tile
                     label="Claimable"
@@ -211,5 +208,62 @@ export default function AnalyticsScreen() {
         )}
       </ScrollView>
     </Screen>
+  );
+}
+
+/**
+ * The range choice. A recessed track with the selected option a white pill
+ * lifted out of it: one control that reads as "pick one", where three loose
+ * chips read as three unrelated filters.
+ */
+function Segmented({
+  value,
+  onChange,
+}: {
+  value: AnalyticsRange;
+  onChange: (r: AnalyticsRange) => void;
+}) {
+  const p = usePalette();
+  const { scheme } = useTheme();
+  return (
+    <View
+      accessibilityRole="tablist"
+      style={{
+        flexDirection: 'row',
+        backgroundColor: p.surface,
+        borderRadius: 14,
+        padding: space.xs,
+        gap: space.xs,
+      }}
+    >
+      {RANGES.map((r) => {
+        const on = value === r.key;
+        return (
+          <Pressable
+            key={r.key}
+            accessibilityRole="button"
+            accessibilityState={{ selected: on }}
+            onPress={() => onChange(r.key)}
+            style={[
+              {
+                flex: 1,
+                minHeight: 36,
+                borderRadius: 10,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: on ? p.card : 'transparent',
+              },
+              on
+                ? scheme === 'light'
+                  ? shadow.card
+                  : { borderWidth: StyleSheet.hairlineWidth * 2, borderColor: p.cardEdge }
+                : null,
+            ]}
+          >
+            <Text style={[type.smallStrong, { color: on ? p.ink : p.inkMuted }]}>{r.label}</Text>
+          </Pressable>
+        );
+      })}
+    </View>
   );
 }

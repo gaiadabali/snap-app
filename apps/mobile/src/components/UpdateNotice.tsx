@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { API_BASE_URL } from '@/api';
-import { Body, Label, Small } from '@/components/ui';
+import { Body, Card, SectionHeader, Small } from '@/components/ui';
 import { radius, space, usePalette } from '@/theme';
 
 import {
@@ -61,29 +61,23 @@ export function UpdateNotice() {
   const size = formatSize(state.build.byteSize);
 
   return (
-    <View
-      style={{
-        backgroundColor: p.accentSoft,
-        borderRadius: radius.lg,
-        borderWidth: 1,
-        borderColor: p.accent,
-        padding: space.md,
-        gap: space.sm,
-      }}
-    >
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
-        <Label style={{ color: p.accent, flex: 1 }}>Update available</Label>
+    // A white lifted card; the accent button inside carries the call to action.
+    <Card style={{ gap: space.md }}>
+      <View style={{ gap: space.xs }}>
+        <SectionHeader title="Update available" />
         <Small>{describe(state.build)}</Small>
       </View>
 
-      <Body>
-        A newer build is ready{size ? ` (${size})` : ''}. Your receipts and anything waiting to
-        send are kept — installing over the top does not sign you out.
-      </Body>
-      <Small>
-        Downloads in your browser. Android will ask once for permission to install apps from
-        there.
-      </Small>
+      <View style={{ gap: space.sm }}>
+        <Body>
+          A newer build is ready{size ? ` (${size})` : ''}. Your receipts and anything waiting to
+          send are kept — installing over the top does not sign you out.
+        </Body>
+        <Small>
+          Downloads in your browser. Android will ask once for permission to install apps from
+          there.
+        </Small>
+      </View>
 
       <View style={{ flexDirection: 'row', gap: space.sm }}>
         <Pressable
@@ -93,7 +87,7 @@ export function UpdateNotice() {
           style={({ pressed }) => ({
             flex: 1,
             alignItems: 'center',
-            paddingVertical: 11,
+            paddingVertical: space.md,
             borderRadius: radius.md,
             backgroundColor: p.accent,
             opacity: pressed ? 0.85 : 1,
@@ -112,7 +106,7 @@ export function UpdateNotice() {
             alignItems: 'center',
             justifyContent: 'center',
             paddingHorizontal: space.lg,
-            paddingVertical: 11,
+            paddingVertical: space.md,
             borderRadius: radius.md,
             borderWidth: 1.5,
             borderColor: p.rule,
@@ -122,6 +116,6 @@ export function UpdateNotice() {
           <Body>Not now</Body>
         </Pressable>
       </View>
-    </View>
+    </Card>
   );
 }

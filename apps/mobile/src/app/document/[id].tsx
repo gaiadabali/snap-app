@@ -2,7 +2,7 @@ import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Image, Modal, View } from 'react-native';
-import { TextInput } from '@/theme/text';
+import { Text, TextInput } from '@/theme/text';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 
 import {
@@ -27,7 +27,9 @@ import {
   Divider,
   Figure,
   Label,
+  Notice,
   Screen,
+  SectionHeader,
   Small,
 } from '@/components/ui';
 import { formatAbn, formatAud, formatShortDate, radius, space, usePalette } from '@/theme';
@@ -283,7 +285,11 @@ export default function DocumentScreen() {
         // Reopening the same document later carries no `localPages` and gets
         // no entrance at all — nothing to animate, because nothing changed.
         entering={localPages ? FadeInUp.duration(320) : undefined}
-        contentContainerStyle={{ padding: space.lg, gap: space.lg, paddingBottom: space.xxxl }}
+        contentContainerStyle={{
+          padding: space.gutter,
+          gap: space.xl,
+          paddingBottom: space.xxxl,
+        }}
       >
         {/* ── Header ── */}
         <View style={{ gap: space.xs }}>
@@ -312,16 +318,13 @@ export default function DocumentScreen() {
         <OriginalDocument doc={doc} localPages={localPageUris} onImageExpired={handleImageExpired} />
 
         {doc.demoExtraction ? (
-          <Card tone="risk">
-            <View style={{ gap: space.xs }}>
-              <Label style={{ color: p.risk }}>Demo extraction</Label>
-              <Body>
-                Your photo was captured, hashed and would be uploaded as the original. The FIELDS
-                below are sample data — the extraction service is not built yet, so they do not
-                describe this particular receipt.
-              </Body>
-            </View>
-          </Card>
+          // Sample data is a caution, not money at risk, so amber rather than red.
+          <Notice tone="warn" icon="alert">
+            <Text style={{ fontWeight: '700' }}>Demo extraction{'\n'}</Text>
+            Your photo was captured, hashed and would be uploaded as the original. The FIELDS
+            below are sample data — the extraction service is not built yet, so they do not
+            describe this particular receipt.
+          </Notice>
         ) : null}
 
         <BalanceNote doc={doc} />
@@ -337,7 +340,9 @@ export default function DocumentScreen() {
         />
 
         {/* ── Amounts ── */}
-        <Card>
+        <View style={{ gap: space.md }}>
+          <SectionHeader title="Amounts" />
+          <Card>
           <View style={{ gap: space.md }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
               <Label>Total incl GST</Label>
@@ -387,7 +392,8 @@ export default function DocumentScreen() {
               />
             ) : null}
           </View>
-        </Card>
+          </Card>
+        </View>
 
         {/* The deterministic checks, before the compliance verdict they
             produced — a reader wants the reason before the conclusion. */}
@@ -423,7 +429,7 @@ export default function DocumentScreen() {
               {failures.some((f) => f === 'supplier_abn_missing') ? (
                 <Button
                   label="Add supplier ABN"
-                  tone="risk"
+                  tone="outline"
                   onPress={() => {
                     setDraft(doc.supplierAbn ?? '');
                     setEditing('abn');
@@ -433,15 +439,11 @@ export default function DocumentScreen() {
             </View>
           </Card>
         ) : (
-          <Card tone="accent">
-            <View style={{ gap: space.xs }}>
-              <Label style={{ color: p.accent }}>Valid tax invoice</Label>
-              <Body>
-                Meets the ATO requirements, so the {formatAud(doc.taxAmount)} GST credit is
-                claimable at label 1B.
-              </Body>
-            </View>
-          </Card>
+          <Notice tone="good" icon="check">
+            <Text style={{ fontWeight: '700' }}>Valid tax invoice{'\n'}</Text>
+            Meets the ATO requirements, so the {formatAud(doc.taxAmount)} GST credit is claimable at
+            label 1B.
+          </Notice>
         )}
 
         {/* Correcting a field is the point of this screen, so the control sits
@@ -451,10 +453,10 @@ export default function DocumentScreen() {
         ) : null}
 
         {/* ── Extracted fields ── */}
-        <Card>
+        <View style={{ gap: space.md }}>
+          <SectionHeader title="Extracted fields" />
+          <Card>
           <View style={{ gap: space.md }}>
-            <Label>Extracted fields</Label>
-            <Divider />
             <Field
               label="Supplier ABN"
               value={formatAbn(doc.supplierAbn)}
@@ -477,7 +479,8 @@ export default function DocumentScreen() {
               hint="Where this lands on the tax worksheet for this occupation"
             />
           </View>
-        </Card>
+          </Card>
+        </View>
 
         {doc.note ? (
           <Card>
@@ -511,15 +514,11 @@ export default function DocumentScreen() {
         {/* ── Confirm ── */}
         <View style={{ gap: space.md }}>
           {doc.reviewStatus === 'rejected' ? (
-            <Card tone="risk">
-              <View style={{ gap: space.xs }}>
-                <Label style={{ color: p.risk }}>Rejected</Label>
-                <Body>
-                  Withdrawn from your lists and excluded from the BAS. The original image is still
-                  held as the record.
-                </Body>
-              </View>
-            </Card>
+            <Notice tone="warn" icon="alert">
+              <Text style={{ fontWeight: '700' }}>Rejected{'\n'}</Text>
+              Withdrawn from your lists and excluded from the BAS. The original image is still
+              held as the record.
+            </Notice>
           ) : doc.reviewStatus === 'reviewed' ? (
             <Chip tone="accent">Confirmed — posted to the ledger</Chip>
           ) : canConfirm ? (
@@ -557,8 +556,8 @@ export default function DocumentScreen() {
               backgroundColor: p.ground,
               padding: space.xl,
               gap: space.lg,
-              borderTopLeftRadius: radius.lg,
-              borderTopRightRadius: radius.lg,
+              borderTopLeftRadius: radius.sheet,
+              borderTopRightRadius: radius.sheet,
             }}
           >
             <Figure size="h2">Supplier ABN</Figure>

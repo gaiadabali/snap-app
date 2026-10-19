@@ -79,11 +79,14 @@ export function Field({
           flexDirection: 'row',
           alignItems: 'center',
           gap: 4,
+          // White with a firm edge, like the cards it sits in; the focused
+          // edge is the brand colour.
           borderWidth: 1.5,
-          borderColor: focused ? p.accent : p.rule,
-          backgroundColor: p.ground,
-          borderRadius: radius.md,
-          paddingHorizontal: space.md,
+          borderColor: focused ? p.accent : p.ruleStrong,
+          backgroundColor: p.card,
+          borderRadius: radius.lg,
+          paddingHorizontal: 14,
+          minHeight: multiline ? undefined : 52,
         }}
       >
         {prefix ? <Text style={[type.body, numeric, { color: p.inkMuted }]}>{prefix}</Text> : null}

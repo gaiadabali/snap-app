@@ -1,14 +1,14 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Text } from '@/theme/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { IS_DEMO, api, type PersonalSummary } from '@/api';
 import { AddButton, Field, Sheet } from '@/components/form';
 import { GradientHero, Raised } from '@/components/rich';
-import { Body, Figure, Label, Screen, ScreenHeader, Small } from '@/components/ui';
-import { formatAud, numeric, space, type, usePalette } from '@/theme';
+import { Body, Figure, Screen, ScreenHeader, SectionHeader, Small } from '@/components/ui';
+import { formatAud, numeric, space, type, usePalette, useTheme } from '@/theme';
 
 /**
  * Budgets: what each category is allowed per month.
@@ -70,10 +70,12 @@ export default function BudgetsScreen() {
     <Screen>
       <ScrollView
         contentContainerStyle={{
-          padding: space.lg,
+          paddingHorizontal: space.gutter,
           paddingTop: insets.top + space.md,
           paddingBottom: space.xxl + insets.bottom,
-          gap: space.lg,
+          // 24 between blocks, 12 under a heading: between-group spacing has
+          // to beat the spacing within a group.
+          gap: space.xl,
         }}
       >
         <ScreenHeader title="Budgets" />
@@ -131,8 +133,8 @@ export default function BudgetsScreen() {
               </View>
             </GradientHero>
 
-            <View style={{ gap: space.sm }}>
-              <Label>Per category</Label>
+            <View style={{ gap: space.md }}>
+              <SectionHeader title="Per category" />
               <Raised style={{ padding: 0 }}>
                 {summary.byCategory.map((c, i) => {
                   const used = c.used ?? 0;
@@ -142,9 +144,9 @@ export default function BudgetsScreen() {
                       key={c.category}
                       style={{
                         paddingHorizontal: space.lg,
-                        paddingVertical: 14,
-                        gap: 10,
-                        borderTopWidth: i === 0 ? 0 : 1,
+                        paddingVertical: space.md,
+                        gap: space.md,
+                        borderTopWidth: i === 0 ? 0 : StyleSheet.hairlineWidth * 2,
                         borderTopColor: p.rule,
                         opacity: busy === c.category ? 0.5 : 1,
                       }}
@@ -246,6 +248,9 @@ export default function BudgetsScreen() {
 
 function Stepper({ glyph, onPress }: { glyph: string; onPress: () => void }) {
   const p = usePalette();
+  const { scheme } = useTheme();
+  // A small round key: white with a hairline and an accent glyph, so it reads
+  // as a control to press rather than a pastel dot among the figures.
   return (
     <Pressable
       accessibilityRole="button"
@@ -256,12 +261,14 @@ function Stepper({ glyph, onPress }: { glyph: string; onPress: () => void }) {
         width: 34,
         height: 34,
         borderRadius: 17,
-        backgroundColor: pressed ? p.accent : p.accentSoft,
+        backgroundColor: pressed ? p.accentSoft : p.card,
+        borderWidth: StyleSheet.hairlineWidth * 2,
+        borderColor: scheme === 'light' ? p.rule : p.cardEdge,
         alignItems: 'center',
         justifyContent: 'center',
       })}
     >
-      <Text style={{ fontSize: 19, color: p.accent, fontWeight: '700', lineHeight: 22 }}>
+      <Text style={{ fontSize: 19, color: p.accentText, fontWeight: '700', lineHeight: 22 }}>
         {glyph}
       </Text>
     </Pressable>

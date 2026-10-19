@@ -1,6 +1,6 @@
 import { Pressable, View } from 'react-native';
 
-import { Body, Button, Label, Small } from '@/components/ui';
+import { Body, Button, Small } from '@/components/ui';
 import type { QualityGateWarning } from '@/lib/quality-gate';
 import { radius, space, usePalette } from '@/theme';
 
@@ -41,33 +41,54 @@ export function QualityGateNotice({
 }) {
   const p = usePalette();
   return (
+    // A dark translucent panel, the same family as the capture overlays: this
+    // rides over the viewfinder, where a light card would glare against the
+    // camera. The amber title keeps the `warn` meaning described above.
     <View
       style={{
         width: '100%',
-        padding: space.md,
-        borderRadius: radius.md,
-        borderWidth: 1,
-        borderColor: p.warn,
-        backgroundColor: p.warnSoft,
-        gap: space.sm,
+        padding: space.lg,
+        borderRadius: 18,
+        backgroundColor: 'rgba(18,20,24,0.88)',
+        gap: space.md,
       }}
     >
       <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: space.sm }}>
-        <Label style={{ color: p.warn, flex: 1 }}>Might be hard to read</Label>
+        <Body strong style={{ color: p.warn, flex: 1 }}>
+          Might be hard to read
+        </Body>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Dismiss this warning"
           hitSlop={12}
           onPress={onDismiss}
         >
-          <Body style={{ color: p.inkMuted }}>×</Body>
+          <Body style={{ color: 'rgba(255,255,255,0.6)' }}>×</Body>
         </Pressable>
       </View>
 
-      <Small>{warning.copy}</Small>
+      <Small style={{ color: 'rgba(255,255,255,0.8)' }}>{warning.copy}</Small>
 
       <View style={{ flexDirection: 'row', gap: space.sm }}>
-        <Button label="Retake" tone="outline" style={{ flex: 1 }} onPress={onRetake} />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Retake"
+          onPress={onRetake}
+          style={({ pressed }) => ({
+            flex: 1,
+            alignItems: 'center',
+            justifyContent: 'center',
+            paddingVertical: space.md,
+            borderRadius: radius.md,
+            borderWidth: 1.5,
+            borderColor: 'rgba(255,255,255,0.5)',
+            backgroundColor: pressed ? 'rgba(255,255,255,0.16)' : 'transparent',
+          })}
+        >
+          <Body strong style={{ color: '#FFFFFF' }}>
+            Retake
+          </Body>
+        </Pressable>
         <Button label="Continue" style={{ flex: 1 }} onPress={onDismiss} />
       </View>
     </View>

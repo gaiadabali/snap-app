@@ -1,12 +1,12 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 import { Text } from '@/theme/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, type DocumentView } from '@/api';
 import { Icon } from '@/components/Icon';
-import { PeriodChips, periodRange, type Period } from '@/components/SearchBar';
+import { PERIODS, periodRange, type Period } from '@/components/SearchBar';
 import {
   Body,
   Button,
@@ -14,10 +14,11 @@ import {
   Notice,
   Screen,
   ScreenHeader,
+  SectionHeader,
   Small,
 } from '@/components/ui';
 import { exportDocumentsCsv, exportLinesCsv } from '@/lib/share';
-import { formatAud, numeric, space, type, usePalette } from '@/theme';
+import { formatAud, numeric, shadow, space, type, usePalette, useTheme } from '@/theme';
 
 /**
  * Getting everything out, for a period you choose.
@@ -88,10 +89,10 @@ export default function ExportScreen() {
     <Screen>
       <ScrollView
         contentContainerStyle={{
-          padding: 20,
+          padding: space.gutter,
           paddingTop: insets.top + space.md,
           paddingBottom: space.xxl,
-          gap: 14,
+          gap: space.xl,
         }}
       >
         <ScreenHeader title="Export receipts" onBack={() => router.back()} />
@@ -99,12 +100,12 @@ export default function ExportScreen() {
           Every receipt in the period you choose, with the fields read from it.
         </Text>
 
-        <View style={{ gap: space.sm }}>
-          <Text style={[type.label, { color: p.inkMuted }]}>Period</Text>
-          <PeriodChips value={period} onChange={setPeriod} />
+        <View style={{ gap: space.md }}>
+          <SectionHeader title="Period" />
+          <PeriodCards value={period} onChange={setPeriod} />
         </View>
 
-        <Card style={{ gap: 10, padding: 18 }}>
+        <Card style={{ gap: space.md }}>
           <Text style={[type.label, { color: p.inkMuted }]}>In this export</Text>
           <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' }}>
             <Body strong>
@@ -130,20 +131,22 @@ export default function ExportScreen() {
         {done ? <Notice tone="good" icon="check">{done}</Notice> : null}
         {error ? <Notice tone="risk" icon="alert">{error}</Notice> : null}
 
-        <Button
-          label="Export receipts"
-          icon="upload"
-          busy={busy === 'documents'}
-          disabled={selected.length === 0}
-          onPress={() => void run('documents')}
-        />
-        <Button
-          label="Export line items"
-          tone="outline"
-          busy={busy === 'lines'}
-          disabled={selected.length === 0}
-          onPress={() => void run('lines')}
-        />
+        <View style={{ gap: space.md }}>
+          <Button
+            label="Export receipts"
+            icon="upload"
+            busy={busy === 'documents'}
+            disabled={selected.length === 0}
+            onPress={() => void run('documents')}
+          />
+          <Button
+            label="Export line items"
+            tone="outline"
+            busy={busy === 'lines'}
+            disabled={selected.length === 0}
+            onPress={() => void run('lines')}
+          />
+        </View>
 
         <View style={{ flexDirection: 'row', gap: space.sm, alignItems: 'flex-start' }}>
           <Icon name="shield" size={16} color={p.inkMuted} />
@@ -154,6 +157,53 @@ export default function ExportScreen() {
         </View>
       </ScrollView>
     </Screen>
+  );
+}
+
+/**
+ * The period as selectable cards, two to a row. Selected is a 2px accent border
+ * and a check; every card carries a 2px transparent border otherwise, so choosing
+ * one never nudges its neighbours. The choice is what the export is about to
+ * contain, which earns more weight than a filter chip.
+ */
+function PeriodCards({ value, onChange }: { value: Period; onChange: (v: Period) => void }) {
+  const p = usePalette();
+  const { scheme } = useTheme();
+  return (
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.md }}>
+      {PERIODS.map((x) => {
+        const on = value === x.key;
+        return (
+          <Pressable
+            key={x.key}
+            accessibilityRole="button"
+            accessibilityState={{ selected: on }}
+            onPress={() => onChange(x.key)}
+            style={({ pressed }) => [
+              {
+                width: '47.5%',
+                flexGrow: 1,
+                minHeight: 52,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingHorizontal: space.lg,
+                borderRadius: 14,
+                borderWidth: 2,
+                borderColor: on ? p.accent : 'transparent',
+                backgroundColor: p.card,
+                opacity: pressed ? 0.85 : 1,
+              },
+              scheme === 'light' ? shadow.card : null,
+              scheme === 'dark' && !on ? { borderColor: p.cardEdge } : null,
+            ]}
+          >
+            <Text style={[type.bodyStrong, { color: on ? p.accentText : p.ink }]}>{x.label}</Text>
+            {on ? <Icon name="check" size={18} color={p.accentText} /> : null}
+          </Pressable>
+        );
+      })}
+    </View>
   );
 }
 

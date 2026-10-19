@@ -1,6 +1,6 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Text } from '@/theme/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -8,10 +8,10 @@ import { api } from '@/api';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { Icon, type IconName } from '@/components/Icon';
-import { Body, Card, Divider, Screen, Small } from '@/components/ui';
+import { Body, Card, Divider, Screen, SectionHeader, Small } from '@/components/ui';
 import { useSession } from '@/session';
 import { WorkspacePicker, useWorkspace } from '@/workspace';
-import { heroGradient, numeric, radius, space, type, usePalette } from '@/theme';
+import { heroGradient, numeric, radius, shadow, space, type, usePalette, useTheme } from '@/theme';
 
 /**
  * Profile — new in the 2026-09-19 redesign, and now a tab rather than a row
@@ -25,6 +25,7 @@ import { heroGradient, numeric, radius, space, type, usePalette } from '@/theme'
  */
 export default function ProfileScreen() {
   const p = usePalette();
+  const { scheme } = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { session } = useSession();
@@ -59,144 +60,172 @@ export default function ProfileScreen() {
     <Screen>
       <ScrollView
         contentContainerStyle={{
-          padding: 20,
+          paddingHorizontal: space.gutter,
           paddingTop: insets.top + space.md,
           paddingBottom: space.xxl,
-          gap: 15,
+          gap: space.xl,
         }}
       >
         {/* Identity */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 15 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.lg }}>
           <View
             style={{
-              width: 68,
-              height: 68,
-              borderRadius: 34,
+              width: 64,
+              height: 64,
+              borderRadius: 32,
               backgroundColor: p.accentSoft,
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <Text style={{ fontSize: 23, lineHeight: 29, fontWeight: '700', color: p.accentText }}>
-              {user?.initials ?? '—'}
-            </Text>
+            <Text style={[type.h2, { color: p.accentText }]}>{user?.initials ?? '—'}</Text>
           </View>
-          <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
-            <Text style={{ fontSize: 21, lineHeight: 27, fontWeight: '700', color: p.ink }} numberOfLines={1}>
+          <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+            <Text style={[type.h2, { color: p.ink }]} numberOfLines={1}>
               {user?.displayName ?? 'Signed out'}
             </Text>
-            <Text style={[type.small, { color: p.inkMuted, fontSize: 14, lineHeight: 20 }]} numberOfLines={1}>
+            <Text style={[type.body, { color: p.inkMuted }]} numberOfLines={1}>
               {user?.email ?? ''}
             </Text>
           </View>
           <Pressable
             accessibilityRole="button"
             onPress={() => router.push('/settings')}
+            hitSlop={8}
             style={({ pressed }) => ({
-              minHeight: 40,
+              minHeight: 36,
               paddingHorizontal: space.lg,
               borderWidth: 1.5,
               borderColor: p.ruleStrong,
-              borderRadius: radius.md,
+              borderRadius: radius.pill,
               alignItems: 'center',
               justifyContent: 'center',
               opacity: pressed ? 0.6 : 1,
             })}
           >
-            <Text style={[type.smallStrong, { color: p.accentText, fontSize: 14, lineHeight: 20 }]}>
-              Edit
-            </Text>
+            <Text style={[type.smallStrong, { color: p.accentText }]}>Edit</Text>
           </Pressable>
         </View>
 
-        {/* Balances. A PLAIN gradient — unlike the hero cards this strip has
-            no decorative circles, because at 90pt tall their edges cut visibly
-            across the tiles instead of reading as soft light.
+        {/* Balances: one lifted gradient card with two halves, each a left
+            aligned figure. Built here rather than with GradientHero, whose
+            22pt padding would put a gutter round the halves; each half pads
+            itself so its whole area is the tap target. The halves are told
+            apart by a short, faint inset rule, not a full-height divider.
+            A PLAIN gradient — no decorative circles, whose edges cut across
+            the halves instead of reading as soft light.
             Everything on it reads in white: the prototype notes that muted
             tints failed contrast here, so none are used. */}
-        <LinearGradient
-          colors={[...heroGradient.colors]}
-          locations={[...heroGradient.locations]}
-          start={heroGradient.start}
-          end={heroGradient.end}
-          style={{ borderRadius: 16, overflow: 'hidden' }}
-        >
-          <View style={{ flexDirection: 'row' }}>
-            <BalanceTile
-              icon="wallet"
-              label="Credits"
-              value={credits === null ? '—' : String(credits)}
-              onPress={() => router.push({ pathname: '/usage', params: { kind: 'credits' } })}
-            />
-            <View style={{ width: 1, backgroundColor: 'rgba(255,255,255,0.22)' }} />
-            <BalanceTile
-              icon="spark"
-              label="Points"
-              value={points === null ? '—' : points.toLocaleString('en-AU')}
-              onPress={() => router.push({ pathname: '/usage', params: { kind: 'points' } })}
-            />
+        <View style={{ gap: space.md }}>
+          <View style={[{ borderRadius: radius.xxl }, scheme === 'light' ? shadow.lift : null]}>
+            <LinearGradient
+              colors={[...heroGradient.colors]}
+              locations={[...heroGradient.locations]}
+              start={heroGradient.start}
+              end={heroGradient.end}
+              style={{
+                borderRadius: radius.xxl,
+                overflow: 'hidden',
+                borderWidth: StyleSheet.hairlineWidth * 2,
+                borderColor: 'rgba(255,255,255,0.14)',
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'stretch' }}>
+                <BalanceTile
+                  icon="wallet"
+                  label="Credits"
+                  value={credits === null ? '—' : String(credits)}
+                  onPress={() => router.push({ pathname: '/usage', params: { kind: 'credits' } })}
+                />
+                <View style={{ justifyContent: 'center' }}>
+                  <View style={{ width: 1, height: 48, backgroundColor: 'rgba(255,255,255,0.18)' }} />
+                </View>
+                <BalanceTile
+                  icon="spark"
+                  label="Points"
+                  value={points === null ? '—' : points.toLocaleString('en-AU')}
+                  onPress={() => router.push({ pathname: '/usage', params: { kind: 'points' } })}
+                />
+              </View>
+            </LinearGradient>
           </View>
-        </LinearGradient>
-        <Small>
-          Tap a tile to see how it was used: credits spent on scanning, points spent in yourtal.
-        </Small>
+          <Small>
+            Tap a tile to see how it was used: credits spent on scanning, points spent in yourtal.
+          </Small>
+        </View>
 
         {/* Active space */}
-        <Card style={{ flexDirection: 'row', alignItems: 'center', gap: 13, padding: 15 }}>
-          <View
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: 11,
-              backgroundColor: p.surfaceAlt,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Icon name="users" size={20} color={p.inkStrong} />
-          </View>
-          <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
-            <Body strong numberOfLines={1}>
-              {active.name}
-            </Body>
-            <Small numberOfLines={1}>
-              {active.kind === 'business' ? 'Business' : 'Personal'} · {active.memberCount}{' '}
-              {memberWord} · {active.role}
-            </Small>
-          </View>
-          {workspaces.length > 1 ? (
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => setSwitching(true)}
-              style={({ pressed }) => ({
-                minHeight: 44,
-                paddingHorizontal: 14,
-                borderWidth: 1.5,
-                borderColor: p.ruleStrong,
-                borderRadius: radius.md,
+        <View style={{ gap: space.md }}>
+          <SectionHeader title="Workspace" />
+          <Card padded={false}>
+            <View
+              style={{
+                minHeight: 64,
+                flexDirection: 'row',
                 alignItems: 'center',
-                justifyContent: 'center',
-                opacity: pressed ? 0.6 : 1,
-              })}
+                gap: space.md,
+                paddingHorizontal: space.lg,
+                paddingVertical: space.md,
+              }}
             >
-              <Text style={[type.smallStrong, { color: p.ink }]}>Switch</Text>
-            </Pressable>
-          ) : null}
-        </Card>
+              <View
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: radius.md,
+                  backgroundColor: p.surfaceAlt,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Icon name="users" size={22} color={p.inkStrong} />
+              </View>
+              <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+                <Body strong numberOfLines={1}>
+                  {active.name}
+                </Body>
+                <Small numberOfLines={1}>
+                  {active.kind === 'business' ? 'Business' : 'Personal'} · {active.memberCount}{' '}
+                  {memberWord} · {active.role}
+                </Small>
+              </View>
+              {workspaces.length > 1 ? (
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => setSwitching(true)}
+                  hitSlop={8}
+                  style={({ pressed }) => ({
+                    minHeight: 36,
+                    paddingHorizontal: space.lg,
+                    borderWidth: 1.5,
+                    borderColor: p.ruleStrong,
+                    borderRadius: radius.pill,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    opacity: pressed ? 0.6 : 1,
+                  })}
+                >
+                  <Text style={[type.smallStrong, { color: p.ink }]}>Switch</Text>
+                </Pressable>
+              ) : null}
+            </View>
+          </Card>
+        </View>
 
-        {/* Preferences */}
-        <View style={{ gap: 9 }}>
-          <Text style={[type.label, { color: p.inkMuted, marginTop: 2 }]}>Preferences</Text>
+        {/* Preferences: one white lifted card, hairlines inset past the icon
+            tile so they divide the labels rather than the whole row. */}
+        <View style={{ gap: space.md }}>
+          <SectionHeader title="Preferences" />
           <Card padded={false}>
             <PrefRow icon="chart" label="Analytics" onPress={() => router.push('/analytics')} />
-            <Divider />
+            <Divider style={{ marginLeft: space.lg + 40 + space.md }} />
             <PrefRow
               icon="users"
               label="People"
               value={`${active.memberCount} ${memberWord}`}
               onPress={() => router.push('/members')}
             />
-            <Divider />
+            <Divider style={{ marginLeft: space.lg + 40 + space.md }} />
             <PrefRow icon="cog" label="Settings" onPress={() => router.push('/settings')} />
           </Card>
         </View>
@@ -226,29 +255,29 @@ function BalanceTile({
       style={({ pressed }) => ({
         flex: 1,
         minWidth: 0,
-        alignItems: 'center',
-        gap: 5,
-        paddingVertical: 15,
-        paddingHorizontal: space.sm,
+        gap: space.sm,
+        padding: space.lg,
         opacity: pressed ? 0.75 : 1,
       })}
     >
       <View
         style={{
-          width: 30,
-          height: 30,
-          borderRadius: 9,
+          width: 32,
+          height: 32,
+          borderRadius: radius.sm + 2,
           backgroundColor: 'rgba(255,255,255,0.18)',
           alignItems: 'center',
           justifyContent: 'center',
         }}
       >
-        <Icon name={icon} size={16} color="#FFFFFF" />
+        <Icon name={icon} size={18} color="#FFFFFF" />
       </View>
-      <Text style={[type.figure, numeric, { color: '#FFFFFF' }]}>{value}</Text>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
-        <Text style={[type.tab, { color: 'rgba(255,255,255,0.95)' }]}>{label}</Text>
-        <Icon name="chevronRight" size={12} color="rgba(255,255,255,0.95)" />
+      <Text style={[type.h1, numeric, { color: '#FFFFFF' }]} numberOfLines={1}>
+        {value}
+      </Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.xs }}>
+        <Text style={[type.smallStrong, { color: 'rgba(255,255,255,0.95)' }]}>{label}</Text>
+        <Icon name="chevronRight" size={14} color="rgba(255,255,255,0.95)" />
       </View>
     </Pressable>
   );
@@ -271,30 +300,30 @@ function PrefRow({
       accessibilityRole="button"
       onPress={onPress}
       style={({ pressed }) => ({
-        minHeight: 58,
+        minHeight: 64,
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 13,
-        paddingVertical: 10,
+        gap: space.md,
+        paddingVertical: space.md,
         paddingHorizontal: space.lg,
         opacity: pressed ? 0.7 : 1,
       })}
     >
       <View
         style={{
-          width: 36,
-          height: 36,
-          borderRadius: 11,
+          width: 40,
+          height: 40,
+          borderRadius: radius.md,
           backgroundColor: p.surfaceAlt,
           alignItems: 'center',
           justifyContent: 'center',
         }}
       >
-        <Icon name={icon} size={18} color={p.inkStrong} />
+        <Icon name={icon} size={22} color={p.inkStrong} />
       </View>
       <Text style={[type.bodyStrong, { flex: 1, color: p.ink }]}>{label}</Text>
       {value ? <Text style={[type.small, { color: p.inkMuted }]}>{value}</Text> : null}
-      <Icon name="chevronRight" size={18} color={p.inkMuted} />
+      <Icon name="chevronRight" size={18} color={p.inkFaint} />
     </Pressable>
   );
 }

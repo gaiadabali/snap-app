@@ -8,7 +8,7 @@ import { api, type CreditPurchase } from '@/api';
 import { StatusPill, providerLabel } from '@/app/orders';
 import { GradientHero } from '@/components/rich';
 import { Button, Card, Screen, ScreenHeader, Small } from '@/components/ui';
-import { formatAud, numeric, radius, space, type, usePalette } from '@/theme';
+import { formatAud, numeric, space, type, usePalette } from '@/theme';
 
 /**
  * One purchase, in enough detail to answer a bank statement query.
@@ -52,10 +52,10 @@ export default function OrderScreen() {
     <Screen>
       <ScrollView
         contentContainerStyle={{
-          padding: 20,
+          padding: space.gutter,
           paddingTop: insets.top + space.md,
           paddingBottom: space.xxl,
-          gap: 14,
+          gap: space.xl,
         }}
       >
         <ScreenHeader title="Purchase" onBack={() => router.back()} />
@@ -65,9 +65,9 @@ export default function OrderScreen() {
 
         {order ? (
           <>
-            <GradientHero style={{ borderRadius: radius.xl, padding: 20 }}>
+            <GradientHero>
               <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: space.md }}>
-                <View style={{ flex: 1, minWidth: 0, gap: 10 }}>
+                <View style={{ flex: 1, minWidth: 0, gap: space.sm }}>
                   <Text style={[type.label, { color: 'rgba(255,255,255,0.95)' }]}>
                     {order.credits} scans
                   </Text>
@@ -88,16 +88,16 @@ export default function OrderScreen() {
                     flexDirection: 'row',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    gap: 14,
+                    gap: space.lg,
                     paddingHorizontal: space.lg,
                     paddingVertical: space.md,
                     borderTopWidth: i === 0 ? 0 : 1,
                     borderTopColor: p.rule,
                   }}
                 >
-                  <Text style={[type.body, { color: p.inkMuted, fontSize: 14 }]}>{label}</Text>
+                  <Text style={[type.body, { color: p.inkMuted }]}>{label}</Text>
                   <Text
-                    style={[type.bodyStrong, numeric, { color: p.ink, fontSize: 14, textAlign: 'right' }]}
+                    style={[type.bodyStrong, numeric, { color: p.ink, textAlign: 'right' }]}
                   >
                     {value}
                   </Text>

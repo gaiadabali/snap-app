@@ -5,7 +5,8 @@ import { useDeviceInsets } from '@/components/device-insets';
 import { Icon } from '@/components/Icon';
 
 import type { DocumentView } from '@/api';
-import { Body, Chip, Label, Small } from '@/components/ui';
+import { Raised } from '@/components/rich';
+import { Body, Chip, SectionHeader, Small } from '@/components/ui';
 import { formatAbn, formatAud, formatShortDate, numeric, radius, space, type, usePalette } from '@/theme';
 
 /**
@@ -162,15 +163,18 @@ export function OriginalDocument({
   }
 
   return (
-    <View style={{ gap: space.sm }}>
+    <View style={{ gap: space.md }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Label>Original document</Label>
+        <SectionHeader title="Original document" />
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.xs }}>
           {pageCount > 1 ? <Chip>{`Page ${pageIndex + 1} of ${pageCount}`}</Chip> : null}
           <Chip tone={photo ? 'accent' : 'neutral'}>{photo ? 'Photographed' : 'Facsimile'}</Chip>
         </View>
       </View>
 
+      {/* The paper sits in a white lifted card like every other block, with a
+          small mat around it so the photo reads as an object on the card. */}
+      <Raised style={{ padding: space.sm }}>
       <Pressable
         accessibilityRole="imagebutton"
         accessibilityLabel={
@@ -180,10 +184,8 @@ export function OriginalDocument({
         }
         onPress={() => setZoomed(true)}
         style={{
-          borderRadius: radius.lg,
+          borderRadius: radius.md,
           overflow: 'hidden',
-          borderWidth: 1,
-          borderColor: p.rule,
           backgroundColor: '#FBF8F2',
           maxHeight: 260,
         }}
@@ -207,6 +209,7 @@ export function OriginalDocument({
           </View>
         )}
       </Pressable>
+      </Raised>
 
       {/* A strip of every page, so paging through this document does not
           require a full-screen modal just to see there IS a page 2. */}
@@ -393,21 +396,21 @@ export function BalanceNote({ doc }: { doc: DocumentView }) {
         flexDirection: 'row',
         alignItems: 'center',
         gap: space.sm,
-        backgroundColor: balanced ? p.accentSoft : p.warnSoft,
-        borderRadius: radius.md,
-        paddingHorizontal: space.md,
-        paddingVertical: 10,
+        backgroundColor: balanced ? p.goodSoft : p.warnSoft,
+        borderRadius: radius.lg,
+        paddingHorizontal: space.lg,
+        paddingVertical: space.md,
       }}
     >
       <Icon name={balanced ? 'check' : 'alert'} size={16} color={balanced ? p.good : p.warn} />
-      <Body style={{ flex: 1, color: balanced ? p.accent : p.warn }}>
+      <Body style={{ flex: 1, color: balanced ? p.goodInk : p.warnInk }}>
         {balanced
           ? `${doc.lines.length} line${doc.lines.length === 1 ? '' : 's'} adding to ${formatAud(doc.payableAmount)}`
           : `Lines are ${formatAud(Math.abs(difference).toFixed(4))} ${
               difference > 0 ? 'short of' : 'over'
             } the ${formatAud(doc.payableAmount)} total`}
       </Body>
-      <Text style={[type.small, numeric, { color: balanced ? p.accent : p.warn, fontWeight: '700' }]}>
+      <Text style={[type.small, numeric, { color: balanced ? p.goodInk : p.warnInk, fontWeight: '700' }]}>
         {formatAud(sum.toFixed(4))}
       </Text>
     </View>

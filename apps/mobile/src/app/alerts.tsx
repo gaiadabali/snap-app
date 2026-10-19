@@ -6,8 +6,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, type AlertItem, type AlertKind } from '@/api';
 import { Icon, type IconName } from '@/components/Icon';
-import { Body, Card, Screen, ScreenHeader, Small } from '@/components/ui';
-import { space, type, usePalette } from '@/theme';
+import { Body, Card, Divider, Screen, ScreenHeader, SectionHeader, Small } from '@/components/ui';
+import { radius, space, type, usePalette } from '@/theme';
 
 /**
  * The alert feed.
@@ -55,16 +55,16 @@ export default function AlertsScreen() {
     <Screen>
       <ScrollView
         contentContainerStyle={{
-          padding: 20,
+          paddingHorizontal: space.gutter,
           paddingTop: insets.top + space.md,
           paddingBottom: space.xxl,
-          gap: 14,
+          gap: space.xl,
         }}
       >
         <ScreenHeader title="Notifications" onBack={() => router.back()} />
 
         {alerts !== null && alerts.length === 0 ? (
-          <Card style={{ alignItems: 'center', gap: space.sm, paddingVertical: 34 }}>
+          <Card style={{ alignItems: 'center', gap: space.sm, paddingVertical: space.xxl }}>
             <Icon name="bell" size={28} color={p.inkMuted} />
             <Body strong>Nothing to report</Body>
             <Small style={{ textAlign: 'center' }}>
@@ -74,14 +74,15 @@ export default function AlertsScreen() {
         ) : null}
 
         {groups.map(([title, items]) => (
-          <View key={title} style={{ gap: space.sm }}>
-            <Text style={[type.label, { color: p.inkMuted }]}>{title}</Text>
+          <View key={title} style={{ gap: space.md }}>
+            <SectionHeader title={title} />
             <Card padded={false}>
               {items.map((a, i) => {
                 const unread = a.readAt === null;
                 return (
+                  <View key={a.id}>
+                    {i === 0 ? null : <Divider style={{ marginLeft: space.lg + 40 + space.md }} />}
                   <Pressable
-                    key={a.id}
                     accessibilityRole="button"
                     accessibilityLabel={`${unread ? 'Unread. ' : ''}${a.title}. ${a.body}`}
                     disabled={!a.href}
@@ -89,19 +90,17 @@ export default function AlertsScreen() {
                     style={({ pressed }) => ({
                       flexDirection: 'row',
                       alignItems: 'flex-start',
-                      gap: 13,
+                      gap: space.md,
                       paddingHorizontal: space.lg,
-                      paddingVertical: 14,
-                      borderTopWidth: i === 0 ? 0 : 1,
-                      borderTopColor: p.rule,
-                      backgroundColor: pressed ? p.surfaceAlt : 'transparent',
+                      paddingVertical: space.md,
+                      opacity: pressed ? 0.7 : 1,
                     })}
                   >
                     <View
                       style={{
-                        width: 36,
-                        height: 36,
-                        borderRadius: 18,
+                        width: 40,
+                        height: 40,
+                        borderRadius: radius.md,
                         backgroundColor: unread ? p.accentSoft : p.surfaceAlt,
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -109,7 +108,7 @@ export default function AlertsScreen() {
                     >
                       <Icon
                         name={ICONS[a.kind]}
-                        size={18}
+                        size={22}
                         color={unread ? p.accentText : p.inkMuted}
                       />
                     </View>
@@ -129,6 +128,7 @@ export default function AlertsScreen() {
                     </View>
                     {a.href ? <Icon name="chevronRight" size={17} color={p.inkFaint} /> : null}
                   </Pressable>
+                  </View>
                 );
               })}
             </Card>

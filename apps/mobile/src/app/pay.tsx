@@ -1,13 +1,13 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { ActivityIndicator, ScrollView, View } from 'react-native';
 import { Text } from '@/theme/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, type CreditPurchase, type SavedCard } from '@/api';
 import { Icon } from '@/components/Icon';
-import { Button, Divider, Screen, Small } from '@/components/ui';
-import { formatAud, numeric, radius, space, type, usePalette } from '@/theme';
+import { Button, Card, Divider, Screen, Small } from '@/components/ui';
+import { formatAud, numeric, space, type, usePalette } from '@/theme';
 
 /**
  * Taking the payment, and what happened.
@@ -88,7 +88,7 @@ export default function PayScreen() {
 
   const body = {
     flex: 1,
-    padding: 20,
+    padding: space.gutter,
     paddingTop: insets.top + space.xl,
     paddingBottom: insets.bottom + space.xl,
     alignItems: 'center' as const,
@@ -99,14 +99,16 @@ export default function PayScreen() {
     return (
       <Screen>
         <View style={body}>
-          <ActivityIndicator size="large" color={p.accentText} />
-          <Text style={[type.h2, { color: p.ink, marginTop: 24 }]}>Taking payment</Text>
+          <StatusCircle bg={p.accentSoft}>
+            <ActivityIndicator size="large" color={p.accentText} />
+          </StatusCircle>
+          <Text style={[type.h2, { color: p.ink, marginTop: space.xl }]}>Taking payment</Text>
           <Text
             style={[type.body, { color: p.inkMuted, marginTop: space.sm, textAlign: 'center', maxWidth: 300 }]}
           >
             {card ? `Authorising with ${card.label}.` : 'Authorising with your bank.'}
           </Text>
-          <Small style={{ marginTop: 18 }}>Do not close the app.</Small>
+          <Small style={{ marginTop: space.lg }}>Do not close the app.</Small>
         </View>
       </Screen>
     );
@@ -117,20 +119,11 @@ export default function PayScreen() {
   return (
     <Screen>
       <ScrollView contentContainerStyle={body}>
-        <View
-          style={{
-            width: 72,
-            height: 72,
-            borderRadius: 36,
-            backgroundColor: ok ? p.goodSoft : p.riskSoft,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <Icon name={ok ? 'check' : 'close'} size={34} color={ok ? p.good : p.risk} />
-        </View>
+        <StatusCircle bg={ok ? p.goodSoft : p.riskSoft}>
+          <Icon name={ok ? 'check' : 'close'} size={40} color={ok ? p.good : p.risk} />
+        </StatusCircle>
 
-        <Text style={[type.h1, { fontSize: 24, lineHeight: 30, color: p.ink, marginTop: 22 }]}>
+        <Text style={[type.h1, { color: p.ink, marginTop: space.xl }]}>
           {ok ? 'Payment complete' : 'Payment declined'}
         </Text>
         <Text
@@ -141,17 +134,7 @@ export default function PayScreen() {
             : reason ?? 'The bank did not accept that card.'}
         </Text>
 
-        <View
-          style={{
-            width: '100%',
-            maxWidth: 380,
-            backgroundColor: p.surface,
-            borderRadius: radius.xl,
-            padding: space.lg,
-            marginTop: 22,
-            gap: 11,
-          }}
-        >
+        <Card style={{ width: '100%', maxWidth: 380, marginTop: space.xl, gap: space.md }}>
           <SummaryRow label={ok ? 'Paid' : 'Attempted'} value={formatAud(purchase?.priceAud ?? null)} />
           <SummaryRow label="Method" value={card?.label ?? '—'} />
           {ok ? (
@@ -163,9 +146,9 @@ export default function PayScreen() {
           ) : (
             <SummaryRow label="Nothing charged" value="Confirmed" good />
           )}
-        </View>
+        </Card>
 
-        <View style={{ width: '100%', maxWidth: 380, gap: 9, marginTop: 14 }}>
+        <View style={{ width: '100%', maxWidth: 380, gap: space.sm, marginTop: space.lg }}>
           {ok ? (
             <>
               <Button label="Start scanning" onPress={() => router.replace('/capture')} />
@@ -184,6 +167,24 @@ export default function PayScreen() {
         </View>
       </ScrollView>
     </Screen>
+  );
+}
+
+/** The large status mark: an icon in a soft tinted circle, centred and calm. */
+function StatusCircle({ bg, children }: { bg: string; children: ReactNode }) {
+  return (
+    <View
+      style={{
+        width: 88,
+        height: 88,
+        borderRadius: 44,
+        backgroundColor: bg,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      {children}
+    </View>
   );
 }
 

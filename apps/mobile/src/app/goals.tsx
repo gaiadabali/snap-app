@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api, type Goal } from '@/api';
 import { AddButton, Empty, Field, Loading, Sheet } from '@/components/form';
 import { GradientHero, HeroBody, HeroFigure, HeroLabel, Raised } from '@/components/rich';
-import { Button, Chip, Figure, Screen, Small } from '@/components/ui';
+import { Button, Chip, Figure, Screen, SectionHeader, Small } from '@/components/ui';
 import { formatAud, formatShortDate, radius, space, usePalette } from '@/theme';
 
 /**
@@ -90,9 +90,11 @@ export default function GoalsScreen() {
     <Screen>
       <ScrollView
         contentContainerStyle={{
-          padding: space.lg,
+          paddingHorizontal: space.gutter,
+          paddingTop: space.md,
           paddingBottom: insets.bottom + space.xxl,
-          gap: space.lg,
+          // 24 between blocks, 12 under a heading.
+          gap: space.xl,
         }}
       >
         {goals === null ? (
@@ -127,7 +129,9 @@ export default function GoalsScreen() {
                 detail="Put a name and a date on something you are saving for."
               />
             ) : (
-              all.map((g) => {
+              <View style={{ gap: space.md }}>
+              <SectionHeader title="Your goals" />
+              {all.map((g) => {
                 const fraction = Math.min(1, Number(g.saved) / Math.max(Number(g.target), 1));
                 return (
                   <Raised key={g.id} style={{ gap: space.md }} accent={g.done ? p.accent : undefined}>
@@ -190,7 +194,7 @@ export default function GoalsScreen() {
                         accessibilityLabel={`See contributions to ${g.name}`}
                         hitSlop={8}
                         onPress={() => router.push({ pathname: '/goal/[id]', params: { id: g.id } })}
-                        style={{ paddingVertical: 9, paddingHorizontal: space.sm }}
+                        style={{ paddingVertical: space.sm, paddingHorizontal: space.sm }}
                       >
                         <Small muted={false} style={{ color: p.inkMuted, fontWeight: '700' }}>
                           History
@@ -205,13 +209,14 @@ export default function GoalsScreen() {
                             setAmount('');
                             setError(null);
                           }}
-                          style={{ paddingVertical: 9, paddingHorizontal: space.lg }}
+                          style={{ paddingVertical: space.sm, paddingHorizontal: space.lg }}
                         />
                       ) : null}
                     </View>
                   </Raised>
                 );
-              })
+              })}
+              </View>
             )}
           </>
         )}

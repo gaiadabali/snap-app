@@ -1,10 +1,10 @@
 import { View } from 'react-native';
-import { Icon, type IconName } from '@/components/Icon';
+import { Text } from '@/theme/text';
+import type { IconName } from '@/components/Icon';
 
 import type { ExtractionFinding } from '@/api';
-import { Raised } from '@/components/rich';
-import { Body, Label, Small } from '@/components/ui';
-import { radius, space, usePalette } from '@/theme';
+import { Notice, SectionHeader, Small } from '@/components/ui';
+import { space } from '@/theme';
 
 /**
  * What the checks found, in the order a person should read it.
@@ -16,6 +16,10 @@ import { radius, space, usePalette } from '@/theme';
  *
  * "GST reads $26.69, but 1/11 of the taxable amount is $24.26" is actionable.
  * "94% confident" is not.
+ *
+ * Each finding is a tone Notice, so severity reads as colour before it is
+ * read as text. Red is for an error only — something that blocks posting; a
+ * warning is amber and a note is neutral blue.
  */
 
 const ORDER: Record<ExtractionFinding['severity'], number> = { error: 0, warning: 1, note: 2 };
@@ -27,13 +31,10 @@ const GLYPH: Record<ExtractionFinding['severity'], IconName> = {
 };
 
 export function Findings({ findings }: { findings: ExtractionFinding[] }) {
-  const p = usePalette();
   if (findings.length === 0) return null;
 
-  const tone = (severity: ExtractionFinding['severity']) =>
-    severity === 'error' ? p.risk : severity === 'warning' ? p.warn : p.inkMuted;
-  const wash = (severity: ExtractionFinding['severity']) =>
-    severity === 'error' ? p.riskSoft : severity === 'warning' ? p.warnSoft : p.surfaceAlt;
+  const tone = (severity: ExtractionFinding['severity']): 'risk' | 'warn' | 'info' =>
+    severity === 'error' ? 'risk' : severity === 'warning' ? 'warn' : 'info';
 
   // Errors first: an unreadable document is not worth arguing about GST over.
   const sorted = [...findings].sort((a, b) => ORDER[a.severity] - ORDER[b.severity]);
@@ -41,9 +42,9 @@ export function Findings({ findings }: { findings: ExtractionFinding[] }) {
   const needsCheck = sorted.filter((x) => x.severity === 'warning').length;
 
   return (
-    <View style={{ gap: space.sm }}>
+    <View style={{ gap: space.md }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Label>Checks</Label>
+        <SectionHeader title="Checks" />
         <Small>
           {blocking > 0
             ? `${blocking} to resolve`
@@ -53,53 +54,24 @@ export function Findings({ findings }: { findings: ExtractionFinding[] }) {
         </Small>
       </View>
 
-      <Raised style={{ padding: 0 }}>
+      <View style={{ gap: space.sm }}>
         {sorted.map((finding, i) => (
-          <View
+          <Notice
             key={`${finding.code}-${finding.field}-${i}`}
-            style={{
-              flexDirection: 'row',
-              gap: space.md,
-              paddingHorizontal: space.lg,
-              paddingVertical: 13,
-              borderTopWidth: i === 0 ? 0 : 1,
-              borderTopColor: p.rule,
-            }}
+            tone={tone(finding.severity)}
+            icon={GLYPH[finding.severity]}
           >
-            <View
-              style={{
-                width: 26,
-                height: 26,
-                borderRadius: 13,
-                backgroundColor: wash(finding.severity),
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Icon name={GLYPH[finding.severity]} size={15} color={tone(finding.severity)} />
-            </View>
-
-            <View style={{ flex: 1, gap: 3 }}>
-              <Body>{finding.message}</Body>
-              {finding.fix ? (
-                <Small muted={false} style={{ color: tone(finding.severity), fontWeight: '600' }}>
-                  {finding.fix}
-                </Small>
-              ) : null}
-            </View>
-          </View>
+            {finding.message}
+            {finding.fix ? <Text style={{ fontWeight: '600' }}>{`\n${finding.fix}`}</Text> : null}
+          </Notice>
         ))}
-      </Raised>
+      </View>
 
       {blocking > 0 ? (
-        <View
-          style={{ backgroundColor: p.riskSoft, borderRadius: radius.md, padding: space.md }}
-        >
-          <Small muted={false} style={{ color: p.risk }}>
-            This document cannot be posted until the items above are resolved. The photo is kept
-            either way — it is the record.
-          </Small>
-        </View>
+        <Small>
+          This document cannot be posted until the items above are resolved. The photo is kept
+          either way — it is the record.
+        </Small>
       ) : null}
     </View>
   );

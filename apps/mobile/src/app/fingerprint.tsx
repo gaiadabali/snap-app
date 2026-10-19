@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/Icon';
 import { Button, Notice, Screen, ScreenHeader, Small } from '@/components/ui';
-import { space, type, usePalette } from '@/theme';
+import { shadow, space, type, usePalette, useTheme } from '@/theme';
 
 /**
  * Registering a fingerprint.
@@ -27,6 +27,7 @@ const HOLD_MS = 1600;
 
 export default function FingerprintScreen() {
   const p = usePalette();
+  const { scheme } = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const progress = useRef(new Animated.Value(0)).current;
@@ -71,10 +72,10 @@ export default function FingerprintScreen() {
     <Screen>
       <ScrollView
         contentContainerStyle={{
-          padding: 20,
+          paddingHorizontal: space.gutter,
           paddingTop: insets.top + space.md,
           paddingBottom: space.xxl,
-          gap: 16,
+          gap: space.xl,
         }}
       >
         <ScreenHeader title="Set up fingerprint" onBack={() => router.back()} />
@@ -84,23 +85,29 @@ export default function FingerprintScreen() {
           stores whether it matched.
         </Text>
 
-        <View style={{ alignItems: 'center', gap: 14, paddingTop: 18, paddingBottom: 6 }}>
+        <View style={{ alignItems: 'center', gap: space.lg, paddingTop: space.lg }}>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Fingerprint reader. Press and hold."
             onPressIn={down}
             onPressOut={up}
-            style={{
-              width: 148,
-              height: 172,
-              borderRadius: 30,
-              borderWidth: 2,
-              borderColor: done ? p.good : holding ? p.accent : p.ruleStrong,
-              backgroundColor: p.surface,
-              alignItems: 'center',
-              justifyContent: 'center',
-              overflow: 'hidden',
-            }}
+            // A white pad like every other card; the ring colour is the state
+            // (idle, holding, done). It clips for the rising fill, so on
+            // Android the shadow may not render; the ring carries it anyway.
+            style={[
+              {
+                width: 148,
+                height: 172,
+                borderRadius: 32,
+                borderWidth: 2,
+                borderColor: done ? p.good : holding ? p.accent : p.ruleStrong,
+                backgroundColor: p.card,
+                alignItems: 'center',
+                justifyContent: 'center',
+                overflow: 'hidden',
+              },
+              scheme === 'light' ? shadow.card : null,
+            ]}
           >
             {/* Unfilled print */}
             <Icon name="lock" size={84} color={p.ruleStrong} />

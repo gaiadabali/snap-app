@@ -1,9 +1,8 @@
-import { Pressable, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Text, TextInput } from '@/theme/text';
 import { Icon } from '@/components/Icon';
 
-import { Chip } from '@/components/ui';
-import { radius, space, usePalette } from '@/theme';
+import { space, type, usePalette } from '@/theme';
 
 /**
  * Search and period, over a list that is now nearly a thousand rows long.
@@ -61,18 +60,21 @@ export function SearchBar({
   placeholder?: string;
 }) {
   const p = usePalette();
+  // A recessed field (`surface`, not a card): the edge-less fill says "type
+  // here" the way the phone's own search fields do.
   return (
     <View
       style={{
         flexDirection: 'row',
         alignItems: 'center',
         gap: space.sm,
-        backgroundColor: p.surfaceAlt,
-        borderRadius: radius.pill,
+        height: 46,
+        backgroundColor: p.surface,
+        borderRadius: 14,
         paddingHorizontal: space.md,
       }}
     >
-      <Icon name="search" size={18} color={p.inkFaint} />
+      <Icon name="search" size={19} color={p.inkFaint} />
       <TextInput
         value={value}
         onChangeText={onChangeText}
@@ -81,7 +83,7 @@ export function SearchBar({
         autoCapitalize="none"
         autoCorrect={false}
         returnKeyType="search"
-        style={{ flex: 1, paddingVertical: 10, color: p.ink, fontSize: 15 }}
+        style={{ flex: 1, paddingVertical: space.sm, color: p.ink, fontSize: 16 }}
         accessibilityLabel="Search"
       />
       {value.length > 0 ? (
@@ -91,13 +93,18 @@ export function SearchBar({
           hitSlop={10}
           onPress={() => onChangeText('')}
         >
-          <Text style={{ fontSize: 17, color: p.inkFaint }}>×</Text>
+          <Text style={{ fontSize: 19, color: p.inkFaint }}>×</Text>
         </Pressable>
       ) : null}
     </View>
   );
 }
 
+/**
+ * One scrolling row that runs to the screen edges. The caller's side padding is
+ * `space.gutter`; the negative margin cancels it so chips slide under the
+ * bezel, and the content padding puts the first chip back on the gutter.
+ */
 export function PeriodChips({
   value,
   onChange,
@@ -105,14 +112,40 @@ export function PeriodChips({
   value: Period;
   onChange: (p: Period) => void;
 }) {
+  const p = usePalette();
   return (
-    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
-      {PERIODS.map((x) => (
-        <Chip key={x.key} selected={value === x.key} onPress={() => onChange(x.key)}>
-          {x.label}
-        </Chip>
-      ))}
-    </View>
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      style={{ marginHorizontal: -space.gutter, flexGrow: 0 }}
+      contentContainerStyle={{ paddingHorizontal: space.gutter, gap: space.sm }}
+    >
+      {PERIODS.map((x) => {
+        const on = value === x.key;
+        return (
+          <Pressable
+            key={x.key}
+            accessibilityRole="button"
+            accessibilityState={{ selected: on }}
+            hitSlop={6}
+            onPress={() => onChange(x.key)}
+            style={{
+              height: 36,
+              paddingHorizontal: space.md,
+              borderRadius: 18,
+              justifyContent: 'center',
+              backgroundColor: on ? p.accent : p.card,
+              borderWidth: on ? 0 : StyleSheet.hairlineWidth * 2,
+              borderColor: p.ruleStrong,
+            }}
+          >
+            <Text style={[type.smallStrong, { color: on ? p.accentInk : p.inkStrong }]}>
+              {x.label}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </ScrollView>
   );
 }
 

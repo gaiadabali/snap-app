@@ -1,12 +1,12 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Alert, Pressable, ScrollView, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, type CategorySetting } from '@/api';
 import { AddButton, Empty, Field, Loading, Sheet } from '@/components/form';
 import { CategoryIcon, Raised } from '@/components/rich';
-import { Body, Chip, Divider, Figure, Label, Screen, Small } from '@/components/ui';
+import { Body, Chip, Divider, Figure, Screen, SectionHeader, Small } from '@/components/ui';
 import { formatAud, space, usePalette } from '@/theme';
 import { WorkspaceSwitch, useWorkspace } from '@/workspace';
 
@@ -73,9 +73,11 @@ export default function CategoriesScreen() {
     <Screen>
       <ScrollView
         contentContainerStyle={{
-          padding: space.lg,
+          paddingHorizontal: space.gutter,
+          paddingTop: space.md,
           paddingBottom: insets.bottom + space.xxl,
-          gap: space.lg,
+          // 24 between blocks, 12 under a heading.
+          gap: space.xl,
         }}
       >
         <WorkspaceSwitch />
@@ -84,7 +86,7 @@ export default function CategoriesScreen() {
           <Loading />
         ) : (
           <>
-            <View style={{ gap: 2 }}>
+            <View style={{ gap: space.xs }}>
               <Figure size="h1">{all.length} categories</Figure>
               <Small>
                 {isBusiness
@@ -109,16 +111,19 @@ export default function CategoriesScreen() {
             {active.length === 0 ? (
               <Empty title="No categories yet" detail="Add one to start sorting your spending." />
             ) : (
-              <Raised style={{ padding: 0 }}>
-                {active.map((c, i) => (
-                  <CategoryRow key={c.name} row={c} first={i === 0} onToggle={setRows} />
-                ))}
-              </Raised>
+              <View style={{ gap: space.md }}>
+                <SectionHeader title="Active" />
+                <Raised style={{ padding: 0 }}>
+                  {active.map((c, i) => (
+                    <CategoryRow key={c.name} row={c} first={i === 0} onToggle={setRows} />
+                  ))}
+                </Raised>
+              </View>
             )}
 
             {off.length > 0 ? (
-              <View style={{ gap: space.sm }}>
-                <Label>Switched off</Label>
+              <View style={{ gap: space.md }}>
+                <SectionHeader title="Switched off" />
                 <Raised style={{ padding: 0 }}>
                   {off.map((c, i) => (
                     <CategoryRow key={c.name} row={c} first={i === 0} onToggle={setRows} />
@@ -185,10 +190,10 @@ function CategoryRow({
   return (
     <View
       style={{
-        borderTopWidth: first ? 0 : 1,
+        borderTopWidth: first ? 0 : StyleSheet.hairlineWidth * 2,
         borderTopColor: p.rule,
         paddingHorizontal: space.lg,
-        paddingVertical: 13,
+        paddingVertical: space.md,
         gap: space.sm,
         opacity: row.active ? 1 : 0.6,
       }}
@@ -223,7 +228,7 @@ function CategoryRow({
               .finally(() => setBusy(false));
           }}
         >
-          <Small muted={false} style={{ color: p.accent, fontWeight: '600' }}>
+          <Small muted={false} style={{ color: p.accentText, fontWeight: '600' }}>
             {row.active ? 'Switch off' : 'Switch back on'}
           </Small>
         </Pressable>

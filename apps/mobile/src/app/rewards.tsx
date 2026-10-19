@@ -14,6 +14,7 @@ import {
   Notice,
   Screen,
   ScreenHeader,
+  SectionHeader,
   Small,
 } from '@/components/ui';
 import { control, numeric, radius, space, type, usePalette } from '@/theme';
@@ -78,25 +79,25 @@ export default function RewardsScreen() {
     <Screen>
       <ScrollView
         contentContainerStyle={{
-          padding: 20,
+          padding: space.gutter,
           paddingTop: insets.top + space.md,
           paddingBottom: space.xxl,
-          gap: 14,
+          gap: space.xl,
         }}
         keyboardShouldPersistTaps="handled"
       >
         <ScreenHeader title="Points and vouchers" onBack={() => router.back()} />
 
-        <GradientHero style={{ borderRadius: radius.xl, padding: 18 }}>
+        <GradientHero>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.lg }}>
-            <View style={{ flex: 1, gap: 3 }}>
+            <View style={{ flex: 1, gap: space.xs }}>
               <Text style={[type.label, { color: 'rgba(255,255,255,0.95)' }]}>Points</Text>
               <Text style={[type.h1, numeric, { fontSize: 28, lineHeight: 34, color: '#FFFFFF' }]}>
                 {points?.toLocaleString('en-AU') ?? '—'}
               </Text>
             </View>
             <View style={{ width: 1, alignSelf: 'stretch', backgroundColor: 'rgba(255,255,255,0.22)' }} />
-            <View style={{ flex: 1, gap: 3 }}>
+            <View style={{ flex: 1, gap: space.xs }}>
               <Text style={[type.label, { color: 'rgba(255,255,255,0.95)' }]}>Credits</Text>
               <Text style={[type.h1, numeric, { fontSize: 28, lineHeight: 34, color: '#FFFFFF' }]}>
                 {credits?.toLocaleString('en-AU') ?? '—'}
@@ -107,17 +108,19 @@ export default function RewardsScreen() {
 
         {/* How it actually works, in three steps, because the two-app loop is
             not guessable from either app on its own. */}
-        <Card style={{ gap: space.md, padding: 18 }}>
-          <Text style={[type.label, { color: p.inkMuted }]}>How this works</Text>
-          <Step n={1} text="Every receipt you scan earns one point." />
-          <Step n={2} text="Spend points in yourtal. You get a voucher with a code." />
-          <Step n={3} text="Bring the code back here and the credits land on your account." />
-        </Card>
+        <View style={{ gap: space.md }}>
+          <SectionHeader title="How this works" />
+          <Card style={{ gap: space.md }}>
+            <Step n={1} text="Every receipt you scan earns one point." />
+            <Step n={2} text="Spend points in yourtal. You get a voucher with a code." />
+            <Step n={3} text="Bring the code back here and the credits land on your account." />
+          </Card>
+        </View>
 
         {/* Redeem */}
-        <View style={{ gap: space.sm }}>
-          <Text style={[type.label, { color: p.inkMuted }]}>Redeem a voucher</Text>
-          <Card style={{ gap: 11, padding: 18 }}>
+        <View style={{ gap: space.md }}>
+          <SectionHeader title="Redeem a voucher" />
+          <Card style={{ gap: space.md }}>
             <TextInput
               accessibilityLabel="Voucher code"
               value={code}
@@ -129,10 +132,10 @@ export default function RewardsScreen() {
               maxLength={24}
               style={{
                 minHeight: control.input,
-                borderWidth: 1.5,
-                borderColor: error ? p.risk : p.rule,
-                borderRadius: radius.md,
-                backgroundColor: p.ground,
+                borderWidth: 1,
+                borderColor: error ? p.risk : p.ruleStrong,
+                borderRadius: radius.lg,
+                backgroundColor: p.card,
                 paddingHorizontal: space.lg,
                 ...type.input,
                 ...numeric,
@@ -155,8 +158,8 @@ export default function RewardsScreen() {
         </View>
 
         {/* What points are for. Display only — spending happens in yourtal. */}
-        <View style={{ gap: space.sm }}>
-          <Text style={[type.label, { color: p.inkMuted }]}>What your points can buy</Text>
+        <View style={{ gap: space.md }}>
+          <SectionHeader title="What your points can buy" />
           {(rewards ?? []).map((r) => (
             <Pressable
               key={r.id}
@@ -165,7 +168,7 @@ export default function RewardsScreen() {
               onPress={() => void Linking.openURL(r.deepLink).catch(() => {})}
               style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
             >
-              <Card style={{ flexDirection: 'row', alignItems: 'center', gap: 13, padding: space.lg }}>
+              <Card style={{ flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.lg }}>
                 <View
                   style={{
                     width: 44,
@@ -181,7 +184,7 @@ export default function RewardsScreen() {
                 <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
                   <Body strong>{r.name}</Body>
                   <Small numberOfLines={2}>{r.description}</Small>
-                  <Text style={[type.smallStrong, numeric, { color: p.accentText, marginTop: 2 }]}>
+                  <Text style={[type.smallStrong, numeric, { color: p.accentText, marginTop: space.xs }]}>
                     {r.cost.toLocaleString('en-AU')} points
                   </Text>
                 </View>
@@ -202,7 +205,7 @@ export default function RewardsScreen() {
 function Step({ n, text }: { n: number; text: string }) {
   const p = usePalette();
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 11 }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
       <View
         style={{
           width: 22,

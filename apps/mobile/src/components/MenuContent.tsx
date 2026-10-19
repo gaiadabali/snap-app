@@ -1,9 +1,8 @@
 import { useRouter, type Href } from 'expo-router';
-import { Pressable, View } from 'react-native';
-import { Text } from '@/theme/text';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Icon, type IconName } from '@/components/Icon';
-import { Body, Chip, Label, Small } from '@/components/ui';
+import { Body, Chip, SectionHeader, Small } from '@/components/ui';
 import { Raised } from '@/components/rich';
 import { BUSINESS_FEATURES_ENABLED } from '@/config';
 import { radius, space, usePalette } from '@/theme';
@@ -151,53 +150,69 @@ export function MenuContent({ onNavigate }: { onNavigate?: () => void }) {
   const groups = BUSINESS_FEATURES_ENABLED && isBusiness ? BUSINESS_GROUPS : PERSONAL_GROUPS;
 
   return (
-    <View style={{ gap: space.lg }}>
+    <View style={{ gap: space.xl }}>
       <WorkspaceSwitch />
 
       {groups.map((group) => (
-        <View key={group.title} style={{ gap: space.sm }}>
-          <Label>{group.title}</Label>
+        <View key={group.title} style={{ gap: space.md }}>
+          <SectionHeader title={group.title} />
+          {/* One white lifted card per group, rows divided by a hairline inset
+              to the text (past the icon tile). Pressed state is an opacity
+              dip, not a fill: the card does not clip, so a filled row would
+              square off its rounded corners. */}
           <Raised style={{ padding: 0 }}>
             {group.entries.map((e, i) => (
-              <Pressable
-                key={e.label}
-                accessibilityRole="button"
-                accessibilityState={{ disabled: !!e.soon }}
-                onPress={() => {
-                  if (!e.href) return;
-                  onNavigate?.();
-                  router.push(e.href);
-                }}
-                style={({ pressed }) => ({
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: space.md,
-                  paddingHorizontal: space.lg,
-                  paddingVertical: 13,
-                  borderTopWidth: i === 0 ? 0 : 1,
-                  borderTopColor: p.rule,
-                  backgroundColor: pressed && !e.soon ? p.surfaceAlt : 'transparent',
-                  opacity: e.soon ? 0.55 : 1,
-                })}
-              >
-                <View
-                  style={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: radius.md,
-                    backgroundColor: `${e.hue}30`,
-                    alignItems: 'center',
-                    justifyContent: 'center',
+              <View key={e.label}>
+                {i === 0 ? null : (
+                  <View
+                    style={{
+                      height: StyleSheet.hairlineWidth * 2,
+                      backgroundColor: p.rule,
+                      marginLeft: space.lg + 40 + space.md,
+                    }}
+                  />
+                )}
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityState={{ disabled: !!e.soon }}
+                  onPress={() => {
+                    if (!e.href) return;
+                    onNavigate?.();
+                    router.push(e.href);
                   }}
+                  style={({ pressed }) => ({
+                    minHeight: 64,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: space.md,
+                    paddingHorizontal: space.lg,
+                    paddingVertical: space.md,
+                    opacity: e.soon ? 0.55 : pressed ? 0.7 : 1,
+                  })}
                 >
-                  <Icon name={e.icon} size={19} color={e.hue} />
-                </View>
-                <View style={{ flex: 1, gap: 1 }}>
-                  <Body strong>{e.label}</Body>
-                  <Small numberOfLines={1}>{e.hint}</Small>
-                </View>
-                {e.soon ? <Chip>Soon</Chip> : <Icon name="chevronRight" size={18} color={p.inkFaint} />}
-              </Pressable>
+                  {/* The hue is the entry's identity; a soft tint of it keeps
+                      the tiles calm and the same weight in light and dark. */}
+                  <View
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: radius.md,
+                      backgroundColor: `${e.hue}1F`,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Icon name={e.icon} size={22} color={e.hue} />
+                  </View>
+                  <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+                    <Body strong numberOfLines={1}>
+                      {e.label}
+                    </Body>
+                    <Small numberOfLines={1}>{e.hint}</Small>
+                  </View>
+                  {e.soon ? <Chip>Soon</Chip> : <Icon name="chevronRight" size={18} color={p.inkFaint} />}
+                </Pressable>
+              </View>
             ))}
           </Raised>
         </View>
