@@ -1,4 +1,4 @@
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -40,6 +40,7 @@ function reasonLabel(reason: string): string {
  * honest state today is "earned, not yet spendable", not "coming soon".
  */
 export default function PointsScreen() {
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const [balance, setBalance] = useState<number | null>(null);
   const [entries, setEntries] = useState<PointLedgerEntry[] | null>(null);
@@ -69,7 +70,7 @@ export default function PointsScreen() {
         }}
       >
         <View style={{ gap: space.xs }}>
-          <ScreenHeader title="Points" />
+          <ScreenHeader title="Points" onBack={() => router.back()} />
           <Small>Yours personally — they follow you, not any one workspace.</Small>
         </View>
 

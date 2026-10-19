@@ -199,6 +199,7 @@ export default function GoalsScreen() {
                           <Button
                             label="Add"
                             tone="outline"
+                            size="sm"
                             onPress={() => {
                               setContributing(g);
                               setAmount('');

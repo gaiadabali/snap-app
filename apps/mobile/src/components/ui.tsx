@@ -11,7 +11,7 @@ import Animated from 'react-native-reanimated';
 
 import { Icon, type IconName } from '@/components/Icon';
 import { PressableScale, useFill } from '@/components/motion';
-import { control, font, numeric, radius, space, type, usePalette } from '@/theme';
+import { control, font, numeric, radius, space, type, usePalette, useTheme } from '@/theme';
 import { Text } from '@/theme/text';
 
 /* Shared primitives — the instrument pass, 2026-10-19.
@@ -402,6 +402,7 @@ export function Button({
   size?: 'md' | 'sm';
 }) {
   const sm = size === 'sm';
+  const { scheme } = useTheme();
   const p = usePalette();
   const bg = { accent: p.accent, outline: 'transparent', ghost: 'transparent', risk: p.risk }[tone];
   const pressedBg = {
@@ -414,7 +415,9 @@ export function Button({
     accent: p.accentInk,
     outline: p.ink,
     ghost: p.accentText,
-    risk: '#FFFFFF',
+    // Dark ink on the dark scheme's risk, which is a light salmon: white on it
+    // measured well under 3:1.
+    risk: scheme === 'dark' ? p.ground : '#FFFFFF',
   }[tone];
   const off = disabled || busy;
   return (
