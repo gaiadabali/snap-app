@@ -60,9 +60,19 @@ ALTER TYPE mail_purpose ADD VALUE IF NOT EXISTS 'security_notice';
 -- NULL means "nobody has proven this address". Set by: a verification link,
 -- a password reset (the reset link went to the inbox), a magic-link sign-in,
 -- a Google sign-in (Google asserts `email_verified`, google-verify.ts refuses
--- otherwise). Not backfilled: an existing account proves its address the
--- next time it signs in by any of those routes.
+-- otherwise).
 ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified_at timestamptz;
+
+-- BACKFILL, ONCE: every account that exists when this runs counts as proven.
+-- Founder decision 2026-10-20 (option b of the 1.2 review): today's accounts
+-- are internal testers and seeded demo people, so invitations on staging keep
+-- working; only accounts created after this migration must verify.
+--
+-- Consequence for `identity_email_proven` below: a backfilled account is
+-- already proven, so a later magic link or Google sign-in leaves its password
+-- and sessions alone. That is the founder's trust in these accounts, applied
+-- as stated; the pre-hijacking guard covers every account created from here.
+UPDATE users SET email_verified_at = now() WHERE email_verified_at IS NULL;
 
 COMMENT ON COLUMN users.email_verified_at IS
   'When the owner of this address first proved they receive mail at it. NULL = unproven: the account may sign in, but may not do anything that acts on the address towards other people (invitations, linked accounts).';

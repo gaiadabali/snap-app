@@ -55,6 +55,13 @@ mail scanner cannot do it), a password reset, a magic link, or Google.
 `POST /v1/auth/email/verification/resend` (signed in) and
 `POST /v1/auth/email/verification/confirm {token}`.
 
+**Existing accounts are backfilled as verified, once.** 0036 marks every
+account that exists when it runs as proven (founder decision 2026-10-20: they
+are internal testers and seeded demo people, and staging invites must keep
+working). Only accounts created after the deploy have to verify. A backfilled
+account counts as already proven, so the pre-hijacking rule below never clears
+its password or sessions.
+
 **An unverified account** signs in and uses its own workspaces fully. It may
 **not** invite anyone, accept an invitation (matched by email address) or link
 accounting software: `VerifiedEmailGuard`, `403 email_unverified`.

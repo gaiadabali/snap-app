@@ -604,6 +604,36 @@ describeIfDb('sign-in safety — real HTTP, real database', () => {
       expect((await session(victim.json().token)).statusCode).toBe(200);
     });
 
+    it('an account BACKFILLED as verified by 0036 keeps its password and sessions through a magic link', async () => {
+      // Founder decision 2026-10-20: every account existing at deploy is
+      // marked proven, once. Such an account has a password but never proved
+      // its inbox — exactly the shape the pre-hijacking guard acts on — and
+      // must NOT lose that password the first time its owner uses a link.
+      const email = freshEmail('backfilled');
+      const tester = await register(email, 'testers-own-password');
+      // The same statement 0036 runs, scoped to this one account.
+      await admin.query(
+        'UPDATE users SET email_verified_at = now() WHERE id = $1 AND email_verified_at IS NULL',
+        [tester.user.userId],
+      );
+      expect((await session(tester.token)).json().user.emailVerified).toBe(true);
+
+      const { issueMagicLinkToken } = await import('../tokens.js');
+      const link = await post('/v1/auth/magic-link/consume', { token: issueMagicLinkToken(email).token });
+      expect(link.statusCode).toBe(200);
+
+      // Password kept, earlier session kept, nothing revoked.
+      expect((await post('/v1/auth/password/sign-in', { email, password: 'testers-own-password' })).statusCode).toBe(200);
+      expect((await session(tester.token)).statusCode).toBe(200);
+      const { rows } = await admin.query<{ has_password: boolean; revoked: number }>(
+        `SELECT u.password_hash IS NOT NULL AS has_password,
+                (SELECT count(*)::int FROM user_sessions s WHERE s.user_id = u.id AND s.revoked_at IS NOT NULL) AS revoked
+           FROM users u WHERE u.id = $1`,
+        [tester.user.userId],
+      );
+      expect(rows[0]).toEqual({ has_password: true, revoked: 0 });
+    });
+
     it('a magic link on an ALREADY verified account leaves its password alone', async () => {
       const email = freshEmail('proven-keep');
       await register(email, 'my-own-password');
