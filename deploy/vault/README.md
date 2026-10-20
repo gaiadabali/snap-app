@@ -74,6 +74,9 @@ use `init-fresh.sh` below, which does steps 1 and 2 for you).
 ```bash
 # 1. The shares file: root-owned, mode 600, one base64 share per line, TWO lines.
 #    Create it so the shares never appear in a command line or in shell history:
+#    (On helios the directory already exists as 711 on purpose; `install -d -m`
+#    would tighten it and lock the app containers out of their key file, so
+#    there skip this line.)
 install -d -m 700 -o root -g root /etc/snap-apps/secrets
 umask 077
 cat > /etc/snap-apps/secrets/vault-unseal     # paste share, Enter, paste share, Enter, Ctrl-D
@@ -123,7 +126,9 @@ deploy/vault/init-fresh.sh
 
 It initialises with 3 shares / threshold 2, writes shares 1 and 2 to
 `/etc/snap-apps/secrets/vault-unseal` (600) and share 3 to
-`/etc/snap-apps/secrets/vault-share-3-TAKE-OFF-BOX` (600), unseals, creates the
+`/etc/snap-apps/secrets/vault-share-3-TAKE-OFF-BOX` (600) (it creates the
+directory mode 700 only if it is missing; an existing one keeps its mode, since
+helios's is 711 on purpose for the app containers' key file), unseals, creates the
 `transit` mount, the `snap-dek` key, the `snap-app` policy and an app token,
 writes that token into `deploy/.env`, and revokes the initial root token. It
 prints step names only. **Then the owner copies share 3 off the box and runs

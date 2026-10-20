@@ -53,7 +53,13 @@ echo "step: check vault is uninitialised ... OK"
 for f in "$SHARES_FILE" "$SHARE3_FILE"; do
   [[ ! -e "$f" ]] || { echo "step: check ${f} is absent ... REFUSED (exists; move it aside by hand first)" >&2; exit 1; }
 done
-mkdir -p "$SECRETS_DIR"; chmod 700 "$SECRETS_DIR"
+# Tighten the directory to 700 only if we CREATE it. An existing one keeps its
+# mode: on helios it is 711 on purpose, because the app containers' API-key
+# file in it (root:ftp-user 640) must stay reachable, and an unconditional
+# chmod 700 here locked them out once (the lead had to restore it by hand).
+if [[ ! -d "$SECRETS_DIR" ]]; then
+  mkdir -p "$SECRETS_DIR"; chmod 700 "$SECRETS_DIR"
+fi
 
 RESP_FILE="$(mktemp)"
 printf '{"secret_shares":3,"secret_threshold":2}' | vault_post_stdin sys/init > "$RESP_FILE" 2>/dev/null \
