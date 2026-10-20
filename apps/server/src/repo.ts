@@ -11,6 +11,7 @@ import type {
 import type { ConsumptionTaxSpec, TaxRules } from '@snap/tax-rules';
 import { sql } from 'drizzle-orm';
 
+import { readPaidScan, spendScanCredit } from './credits/spend.js';
 import { getDb } from './db.js';
 import type { ReceiptContent, ReceiptOriginal } from './yourtal/external-ref.js';
 import { queueReceiptReport } from './yourtal/outbox.repo.js';
@@ -576,13 +577,23 @@ export async function markCaptureStored(
   });
 }
 
-/** Queues extraction. A job, not an inline call: a model takes seconds. */
+/**
+ * Queues extraction. A job, not an inline call: a model takes seconds.
+ *
+ * The scan spends one credit HERE, in the same transaction as the job insert
+ * (group plan 7.1.a, founder decision 0.11): a capture is queued if and only
+ * if its spend is recorded. Free credits go first, then bought ones; with no
+ * credit left the spend is recorded without one and the scan still goes
+ * ahead (refusing it is 7.1.b). Calling this twice for a capture never spends
+ * twice. See `credits/spend.ts`.
+ */
 export async function enqueueExtraction(
   userId: string,
   tenantId: string,
   captureId: string,
 ): Promise<void> {
   await withTenantAs(getDb(), userId, tenantId, async (tx) => {
+    await spendScanCredit(tx, { tenantId, userId, captureId });
     await tx.execute(sql`
       insert into jobs (id, tenant_id, kind, payload)
       values (${randomUUID()}, ${tenantId}, 'extract', ${JSON.stringify({ captureId })}::jsonb)
@@ -1331,7 +1342,7 @@ export async function saveExtraction(
       }
     : AU_CONSUMPTION_TAX;
 
-  const { documentId, uploadedBy, receiptOriginal, sameReceiptCaptureIds, receiptContent } = await withTenantAs(getDb(), workerUserId, tenantId, async (tx) => {
+  const { documentId, uploadedBy, receiptOriginal, sameReceiptCaptureIds, receiptContent, paidScan } = await withTenantAs(getDb(), workerUserId, tenantId, async (tx) => {
     const e = result.extraction;
 
     // S1 (docs/STATEMENTS.md §12 Lane S): `documents.card_last4` / `card_brand`
@@ -1367,6 +1378,13 @@ export async function saveExtraction(
     // receipt (`yourtal/external-ref.ts`): the stored original and the hashes
     // of the photographed pages, which are tenant rows and so must be read
     // here, inside the tenant transaction, not later under `asUser`.
+    //
+    // FOR UPDATE: the capture row is locked for the rest of this transaction.
+    // `refundScanCredit` (credits/spend.ts) takes the same lock before it
+    // looks for a document, so a refund and an extraction of the same capture
+    // never interleave: a refund that waits here sees this document and gives
+    // nothing back, and a refund that committed first is read below as "not
+    // paid", so the receipt earns nothing either.
     const captureRow = await tx.execute<{
       uploaded_by: string | null;
       original_mime_type: string;
@@ -1381,7 +1399,13 @@ export async function saveExtraction(
                 from capture_pages p
                where p.capture_id = c.id and p.source = 'capture') as page_hashes
         from captures c where c.id = ${captureId} limit 1
+         for update of c
     `);
+    // Whether this scan may earn YourTal points (group plan 2.5.f, founder
+    // decision 0.10.b): only when it was paid with a BOUGHT credit that was
+    // not given back. Read after the lock above, so a refund cannot slip in
+    // between this read and the document write.
+    const paidScan = await readPaidScan(tx, captureId);
     const uploadedBy = captureRow.rows[0]?.uploaded_by ?? null;
     const capture = captureRow.rows[0];
     const receiptOriginal: ReceiptOriginal | null = capture
@@ -1487,6 +1511,7 @@ export async function saveExtraction(
         receiptOriginal,
         sameReceiptCaptureIds: [] as string[],
         receiptContent: await readReceiptContent(tx, before.id),
+        paidScan,
       };
     }
 
@@ -1682,7 +1707,7 @@ export async function saveExtraction(
     }
 
     await tx.execute(sql`update captures set status = 'extracted' where id = ${captureId}`);
-    return { documentId, uploadedBy, receiptOriginal, sameReceiptCaptureIds, receiptContent };
+    return { documentId, uploadedBy, receiptOriginal, sameReceiptCaptureIds, receiptContent, paidScan };
   });
 
   // No Snap Apps point is written here any more (docs/ECOSYSTEM.md D33: local
@@ -1698,6 +1723,8 @@ export async function saveExtraction(
   // commit above and this line is covered by the job itself: it is completed
   // only after `handle()` returns, so the retry re-runs this path, and the
   // outbox's one-row-per-capture rule makes the second call a no-op.
+  // A scan that was not paid with a bought credit (`paidScan`, read above) is
+  // recorded as `skipped_free` and never sent (group plan 2.5.f).
   if (uploadedBy && receiptOriginal) {
     await queueReceiptReport({
       userId: uploadedBy,
@@ -1705,6 +1732,7 @@ export async function saveExtraction(
       original: receiptOriginal,
       sameReceiptCaptureIds,
       content: receiptContent,
+      paidScan,
     }).catch((error) => {
       console.error(`queueReceiptReport failed for capture ${captureId}:`, error instanceof Error ? error.message : error);
     });

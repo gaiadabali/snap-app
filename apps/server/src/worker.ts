@@ -4,6 +4,7 @@ import { sql } from 'drizzle-orm';
 
 import { chain, openRouterModelId } from './ai/router.js';
 import { config } from './config.js';
+import { refundScanCredit, type RefundReason } from './credits/spend.js';
 import { getDb } from './db.js';
 import { runAgreementCheck } from './extraction/agreement.js';
 import { classifyExtractedText, type Classification } from './extraction/classify.js';
@@ -142,7 +143,15 @@ function statementProviderFor(model: string): StatementChunkProvider {
   return new OllamaCloudStatementProvider(model);
 }
 
-type Job = { id: string; tenantId: string | null; payload: unknown };
+type Job = { id: string; tenantId: string | null; payload: unknown; attempts?: number; maxAttempts?: number };
+
+/**
+ * How `handle` ended when it did not throw. `not_extracted`: the job is
+ * finished and will never produce a document for its capture (a statement
+ * whose original cannot be re-read, or one over the page cap), so the scan's
+ * credit is given back.
+ */
+type HandleOutcome = 'not_extracted' | void;
 
 /**
  * T1 (`docs/STATEMENTS.md` §12 Lane T): classifies a capture as a statement or
@@ -228,7 +237,7 @@ async function readOriginalPdfText(tenantId: string, captureId: string): Promise
   return extractPdfText(bytes);
 }
 
-async function handle(job: Job): Promise<void> {
+async function handle(job: Job): Promise<HandleOutcome> {
   const payload = job.payload as { captureId?: string } | null;
   const captureId = payload?.captureId;
   if (!captureId || !job.tenantId) {
@@ -264,7 +273,7 @@ async function handle(job: Job): Promise<void> {
       // failure recorded is honest rather than optimistic.
       const message = error instanceof Error ? error.message : String(error);
       await saveExtractionFailure(WORKER_USER, job.tenantId, captureId, 'statement_extraction', message, 'pdf-text');
-      return;
+      return 'not_extracted';
     }
 
     // 'chat', not 'vision': the whole cost argument (`docs/STATEMENTS.md`
@@ -306,7 +315,7 @@ async function handle(job: Job): Promise<void> {
             error.message,
             spec.id,
           );
-          return;
+          return 'not_extracted';
         }
         throw error;
       }
@@ -527,11 +536,33 @@ async function handle(job: Job): Promise<void> {
   throw new Error(lastError);
 }
 
+/**
+ * Gives the scan's credit back when its capture ended for good with no
+ * document (group plan 7.1.c, founder decision 0.11.c). `refundScanCredit`
+ * itself refuses a capture that has a document, and gives a credit back at
+ * most once, so this is safe to reach twice. It must never fail the job loop:
+ * a missed refund is a support ticket, a stuck queue is an outage.
+ */
+async function refundUnread(job: Job, reason: RefundReason): Promise<void> {
+  const captureId = (job.payload as { captureId?: string } | null)?.captureId;
+  if (!captureId || !job.tenantId) return;
+  try {
+    const result = await refundScanCredit(WORKER_USER, job.tenantId, captureId, reason);
+    if (result.refunded) console.log(`job ${job.id}: capture ${captureId} unread (${reason}) — scan credit given back`);
+  } catch (error) {
+    console.error(
+      `job ${job.id}: could not give back the scan credit for capture ${captureId}:`,
+      error instanceof Error ? error.message : error,
+    );
+  }
+}
+
 export async function runOnce(limit = 1): Promise<number> {
   const jobs = await claimJobs(getDb(), 'extract', `worker-${process.pid}`, limit);
   for (const job of jobs) {
     try {
-      await handle(job);
+      const outcome = await handle(job);
+      if (outcome === 'not_extracted') await refundUnread(job, 'not_extracted');
       // Claiming is not completing. A job left claimed is a job that either
       // never runs again or runs twice, depending on the lock timeout.
       await completeJob(getDb(), job.id);
@@ -539,6 +570,13 @@ export async function runOnce(limit = 1): Promise<number> {
       // Released with backoff rather than swallowed: a provider outage should
       // delay a capture, never lose it. The image is already stored.
       const message = error instanceof Error ? error.message : String(error);
+      // The LAST attempt failed: no model could read this capture, and the
+      // queue will not try again. The credit goes back BEFORE the job is
+      // released, so a crash in between leaves the refund done and the job
+      // still exhausted (never claimed again), rather than the reverse.
+      if (job.attempts !== undefined && job.maxAttempts !== undefined && job.attempts >= job.maxAttempts) {
+        await refundUnread(job, 'unreadable');
+      }
       await failJob(getDb(), job.id, message);
       // Recorded, then the batch CONTINUES. Rethrowing here abandoned every
       // other job already claimed in the same batch — they stayed locked with

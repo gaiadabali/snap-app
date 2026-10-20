@@ -15,7 +15,7 @@ const STATUS: YourtalLinkStatus = {
   region: null,
   linkedAt: null,
   brokenReason: null,
-  receipts: { pending: 0, rewarded: 0, refused: 0, skippedDuplicate: 0 },
+  receipts: { pending: 0, rewarded: 0, refused: 0, skippedDuplicate: 0, skippedFree: 0 },
   pointsReported: 0,
 };
 
@@ -75,7 +75,7 @@ describe('YourtalLinkPanel: linked', () => {
     state: 'linked',
     region: 'AU',
     linkedAt: '2026-10-20T03:00:00.000Z',
-    receipts: { pending: 2, rewarded: 12, refused: 0, skippedDuplicate: 3 },
+    receipts: { pending: 2, rewarded: 12, refused: 0, skippedDuplicate: 3, skippedFree: 4 },
     pointsReported: 120,
   };
 
@@ -86,6 +86,8 @@ describe('YourtalLinkPanel: linked', () => {
     expect(t).toMatch(/Receipts rewarded 12/);
     expect(t).toMatch(/Waiting for YourTal 2/);
     expect(t).toMatch(/Skipped as duplicates 3/);
+    expect(t).toMatch(/Scanned on free credits 4/);
+    expect(t).toContain("Scans on free credits don't earn YourTal points.");
     expect(t).toMatch(/Points reported 120/);
     expect(t).toContain('Your balance is in your YourTal wallet');
   });

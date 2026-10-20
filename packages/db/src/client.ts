@@ -214,8 +214,14 @@ export async function claimJobs(
   workerId: string,
   limit = 1,
   lockTimeoutSeconds = 600,
-): Promise<Array<{ id: string; tenantId: string | null; payload: unknown }>> {
-  const rows = await db.execute<{ id: string; tenant_id: string | null; payload: unknown }>(sql`
+): Promise<Array<{ id: string; tenantId: string | null; payload: unknown; attempts: number; maxAttempts: number }>> {
+  const rows = await db.execute<{
+    id: string;
+    tenant_id: string | null;
+    payload: unknown;
+    attempts: number;
+    max_attempts: number;
+  }>(sql`
     with claimed as (
       select id
       from jobs
@@ -240,7 +246,15 @@ export async function claimJobs(
            attempts  = j.attempts + 1
       from claimed c
      where j.id = c.id
-    returning j.id, j.tenant_id, j.payload
+    returning j.id, j.tenant_id, j.payload, j.attempts, j.max_attempts
   `);
-  return rows.rows.map((r) => ({ id: r.id, tenantId: r.tenant_id, payload: r.payload }));
+  // `attempts` counts THIS claim, so `attempts >= maxAttempts` means this is
+  // the job's last try: if it fails, `claimJobs` never returns it again.
+  return rows.rows.map((r) => ({
+    id: r.id,
+    tenantId: r.tenant_id,
+    payload: r.payload,
+    attempts: r.attempts,
+    maxAttempts: r.max_attempts,
+  }));
 }
