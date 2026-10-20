@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { DOCDOM_VERSION, type Block, type Document, type Line, type Span } from './docdom.js';
-import { groundExtraction, groundValue } from './grounding.js';
+import { groundExtraction, groundValue, normaliseMoney } from './grounding.js';
 
 /**
  * Grounding is the enforcement of D16, so these tests are mostly about the
@@ -170,5 +170,45 @@ describe('grounding a whole extraction', () => {
 
   it('is 1 when there was nothing to ground at all', () => {
     expect(groundExtraction(d, []).rate).toBe(1);
+  });
+});
+
+describe("normaliseMoney's trailing-zero trim", () => {
+  it.each([
+    ['12.50', '12.5'],
+    ['12.00', '12'],
+    ['120', '120'], // no dot: the zeros are significant
+    ['-0.10', '-0.1'],
+    ['$ 1,042.60', '1042.6'],
+    ['.000', ''],
+    ['1.2.30', '1.2.30'], // not a single decimal number: left as it was
+    ['5.', '5'],
+  ])('%s -> %s', (raw, want) => {
+    expect(normaliseMoney(raw)).toBe(want);
+  });
+
+  it('gives the same answer as the regexes it replaced', () => {
+    const old = (raw: string) =>
+      raw
+        .replace(/[^0-9.\-]/g, '')
+        .replace(/^(-?\d+)\.0+$/, '$1')
+        .replace(/^(-?\d*\.\d*?)0+$/, '$1')
+        .replace(/\.$/, '');
+    const alphabet = ['0', '0', '1', '5', '.', '.', '-', ' ', '$'];
+    let seed = 1;
+    const next = () => (seed = (seed * 1103515245 + 12345) % 2147483648);
+    for (let i = 0; i < 5000; i++) {
+      const len = next() % 9;
+      let raw = '';
+      for (let j = 0; j < len; j++) raw += alphabet[next() % alphabet.length];
+      expect(normaliseMoney(raw), JSON.stringify(raw)).toBe(old(raw));
+    }
+  });
+
+  it('does not backtrack on a long run of zeros', () => {
+    const t0 = performance.now();
+    normaliseMoney('.' + '0'.repeat(50000) + 'x');
+    normaliseMoney('1.' + '0'.repeat(50000) + '.5');
+    expect(performance.now() - t0).toBeLessThan(500);
   });
 });

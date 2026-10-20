@@ -35,6 +35,11 @@ on:
         type: choice
         options: [demo, preview, production]
 
+# Read-only token: the build authenticates to Expo with EXPO_TOKEN, and nothing
+# here writes to the repo, releases or PRs.
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest

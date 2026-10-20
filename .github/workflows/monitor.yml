@@ -50,19 +50,24 @@ jobs:
         if: steps.check.outputs.outcome == 'failed'
         env:
           ALERT_WEBHOOK_URL: ${{ secrets.ALERT_WEBHOOK_URL }}
+          # Via env, not interpolated into the script: the summary is command
+          # output and must never be parsed as shell.
+          SUMMARY: ${{ steps.check.outputs.summary }}
         run: |
           if [ -z "$ALERT_WEBHOOK_URL" ]; then
             echo "ALERT_WEBHOOK_URL not configured — relying on the failed run itself to notify"
             exit 0
           fi
           python3 -c 'import json,sys; print(json.dumps({"text": "snap-apps ALERT\n" + sys.stdin.read()}))' \
-            < <(echo "${{ steps.check.outputs.summary }}") > /tmp/payload.json
+            < <(echo "$SUMMARY") > /tmp/payload.json
           curl -fsS -X POST -H 'Content-Type: application/json' -d @/tmp/payload.json \
             "$ALERT_WEBHOOK_URL" || echo "warning: could not post alert webhook"
 
       - name: Fail the run so the Actions tab / watchers see it
         if: steps.check.outputs.outcome == 'failed'
+        env:
+          SUMMARY: ${{ steps.check.outputs.summary }}
         run: |
           echo "snap-apps endpoints unhealthy:"
-          echo "${{ steps.check.outputs.summary }}"
+          echo "$SUMMARY"
           exit 1

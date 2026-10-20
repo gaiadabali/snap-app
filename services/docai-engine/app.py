@@ -15,6 +15,7 @@ Run it: see README.md for the venv + `uvicorn app:app` invocation.
 from __future__ import annotations
 
 import json
+import logging
 import time
 from contextlib import asynccontextmanager
 from typing import Any, Optional
@@ -33,6 +34,8 @@ from ocr_engine import (
     OcrEngine,
 )
 
+logger = logging.getLogger("docai-engine")
+
 _engine: Optional[OcrEngine] = None
 _load_error: Optional[str] = None
 _load_ms: Optional[float] = None
@@ -44,8 +47,11 @@ async def lifespan(_app: FastAPI):
     t0 = time.perf_counter()
     try:
         _engine = OcrEngine()
-    except Exception as exc:  # noqa: BLE001 - reported via /health, not swallowed
-        _load_error = f"{type(exc).__name__}: {exc}"
+    except Exception:  # noqa: BLE001 - reported via /health, not swallowed
+        # The detail goes to the server log only: /health is unauthenticated and
+        # an exception message can carry paths or environment detail.
+        logger.exception("OCR engine failed to load")
+        _load_error = "engine failed to load"
     _load_ms = round((time.perf_counter() - t0) * 1000, 2)
     yield
 
@@ -79,7 +85,7 @@ def health() -> dict[str, Any]:
 @app.post("/read")
 async def read(image: UploadFile = File(...), params: str = Form(...)) -> JSONResponse:
     if _engine is None:
-        raise HTTPException(status_code=503, detail=f"OCR engine not loaded: {_load_error}")
+        raise HTTPException(status_code=503, detail="OCR engine not loaded")
 
     try:
         meta = json.loads(params)
@@ -95,6 +101,9 @@ async def read(image: UploadFile = File(...), params: str = Form(...)) -> JSONRe
     try:
         result = _engine.read(image_bytes, page_number=page_number, region=region)
     except Exception as exc:  # noqa: BLE001 - surfaced to the caller, not swallowed
-        raise HTTPException(status_code=500, detail=f"OCR read failed: {type(exc).__name__}: {exc}") from exc
+        # Generic to the caller (the TypeScript adapter only reads the status
+        # code); the real cause is in the log.
+        logger.exception("OCR read failed")
+        raise HTTPException(status_code=500, detail="OCR read failed") from exc
 
     return JSONResponse(result)

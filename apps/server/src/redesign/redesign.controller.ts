@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   NotImplementedException,
@@ -93,6 +94,36 @@ function rewards(): Reward[] {
     { id: 'yt-scan-25', name: '25 free scans', description: 'A Snap Apps voucher for a month of shopping.', cost: 450, imageUrl: null, deepLink: `${store}/yt-scan-25`, available: true },
   ];
 }
+
+/**
+ * Copies the known keys of a PATCH body, and nothing else, onto a fresh object.
+ *
+ * Spreading the raw body stored whatever a client sent — unknown keys, and a
+ * known key with the wrong type (`"false"` is truthy). A known key with the
+ * wrong type is a 400; an unknown key is ignored. The global ValidationPipe
+ * cannot do this here: the body is typed as an interface, not a DTO class.
+ */
+function pickPrefs<T extends object>(
+  body: unknown,
+  keys: readonly (keyof T & string)[],
+  check: (key: keyof T & string, value: unknown) => string | null,
+): Partial<T> {
+  if (body === null || typeof body !== 'object' || Array.isArray(body)) {
+    throw new BadRequestException('Expected a JSON object.');
+  }
+  const out: Record<string, unknown> = {};
+  for (const key of keys) {
+    if (!Object.hasOwn(body, key)) continue;
+    const value = (body as Record<string, unknown>)[key];
+    const problem = check(key, value);
+    if (problem) throw new BadRequestException(`${key}: ${problem}`);
+    out[key] = value;
+  }
+  return out as Partial<T>;
+}
+
+const NOTIFICATION_KEYS = Object.keys(DEFAULT_NOTIFICATIONS) as (keyof NotificationPrefs & string)[];
+const PRIVACY_KEYS = Object.keys(DEFAULT_PRIVACY) as (keyof PrivacySettings & string)[];
 
 function brandOf(digits: string): SavedCard['brand'] {
   if (/^4/.test(digits)) return 'visa';
@@ -299,8 +330,11 @@ export class MePreferencesController {
   @ApiOperation({ summary: 'Change a notification switch (STUB)' })
   setNotifications(
     @CurrentUser() user: AuthUser,
-    @Body() patch: Partial<NotificationPrefs>,
+    @Body() body: unknown,
   ): NotificationPrefs {
+    const patch = pickPrefs<NotificationPrefs>(body, NOTIFICATION_KEYS, (_k, v) =>
+      typeof v === 'boolean' ? null : 'must be true or false',
+    );
     const next = { ...(notificationPrefs.get(user.userId) ?? DEFAULT_NOTIFICATIONS), ...patch };
     notificationPrefs.set(user.userId, next);
     return next;
@@ -316,8 +350,14 @@ export class MePreferencesController {
   @ApiOperation({ summary: 'Change a privacy choice (STUB)' })
   setPrivacy(
     @CurrentUser() user: AuthUser,
-    @Body() patch: Partial<PrivacySettings>,
+    @Body() body: unknown,
   ): PrivacySettings {
+    const patch = pickPrefs<PrivacySettings>(body, PRIVACY_KEYS, (k, v) => {
+      if (k === 'retentionMonths') {
+        return typeof v === 'number' && Number.isInteger(v) ? null : 'must be a whole number';
+      }
+      return typeof v === 'boolean' ? null : 'must be true or false';
+    });
     const next = { ...(privacySettings.get(user.userId) ?? DEFAULT_PRIVACY), ...patch };
     // The ATO substantiation floor is five years and is not the client's to
     // lower. Clamped here as well as in the UI: a server that trusts a client
