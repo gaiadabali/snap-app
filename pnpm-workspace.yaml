@@ -39,3 +39,10 @@ minimumReleaseAgeExclude:
   - expo-splash-screen@57.0.9
   - expo-symbols@57.0.3
   - expo-system-ui@57.0.4
+  - '@nestjs/platform-fastify@12.2.0'
+  - fastify@5.12.7
+  - postcss@8.5.31
+
+# next pins postcss@8.4.31 exactly (GHSA alerts on < 8.5.x); force the patched copy.
+overrides:
+  'next>postcss': ^8.5.31

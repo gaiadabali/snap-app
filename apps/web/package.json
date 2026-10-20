@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@snap/api-contract": "workspace:*",
-    "next": "^15.5.4",
+    "next": "^15.5.28",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "server-only": "^0.0.1",
