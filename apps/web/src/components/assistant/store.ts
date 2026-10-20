@@ -44,13 +44,21 @@ const TEASER = 'snap-assistant:teaser';
 const SHOWN = 'snap-assistant:tz';
 const CAP = 40;
 
-const uuid = (): string =>
-  typeof crypto !== 'undefined' && crypto.randomUUID
-    ? crypto.randomUUID()
-    : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-        const r = (Math.random() * 16) | 0;
-        return (c === 'x' ? r : (r & 3) | 8).toString(16);
-      });
+/**
+ * A v4 UUID for the chat session. `randomUUID` needs a secure context (it is
+ * missing on plain http and in older browsers); `getRandomValues` is there in
+ * every browser, so the fallback is still cryptographically random rather
+ * than `Math.random()` (CodeQL js/insecure-randomness).
+ */
+const uuid = (): string => {
+  const c = globalThis.crypto;
+  if (typeof c.randomUUID === 'function') return c.randomUUID();
+  const b = c.getRandomValues(new Uint8Array(16));
+  b[6] = ((b[6] ?? 0) & 0x0f) | 0x40;
+  b[8] = ((b[8] ?? 0) & 0x3f) | 0x80;
+  const h = Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('');
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+};
 
 const blank = (): State => ({ sid: uuid(), open: false, opened: false, msgs: [] });
 
