@@ -7,6 +7,16 @@
  */
 
 /**
+ * YourTal's public web origin, used only to build the demo store links in the
+ * offline mock (`api/mock.ts`). Against a real server the links come from the
+ * server's `GET /v1/rewards`, built from its own `YOURTAL_WEB_URL`. Same
+ * staging default as the server's setting; inlined at build time.
+ */
+export const YOURTAL_WEB_URL = (
+  process.env.EXPO_PUBLIC_YOURTAL_WEB_URL || 'https://yourtal.gaiada.com'
+).replace(/\/+$/, '');
+
+/**
  * Whether business-workspace surfaces are shown at all.
  *
  * OFF for the personal-only release (`docs/ECOSYSTEM.md` D24–D27): the

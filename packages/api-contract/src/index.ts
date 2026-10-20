@@ -1502,7 +1502,7 @@ export interface AdminAuditLogQuery {
  *                (a credit buys a scan, and a scan happens inside a
  *                workspace) and never reset.
  *   POINTS     — earned by scanning, redeemed in a different ecosystem app
- *                (yourtal, unbuilt). USER-scoped: earned by a person, not a
+ *                (YourTal; linking it to Snap Apps is not built yet). USER-scoped: earned by a person, not a
  *                workspace, and redeemed somewhere a workspace means nothing.
  *
  * Conflating any two of these is exactly how a customer ends up billed for

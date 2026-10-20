@@ -7,7 +7,7 @@ import { getPointBalance, listPointLedger } from './points.repo.js';
 
 /**
  * Points — earned by scanning, spent in a different ecosystem app entirely
- * (yourtal, unbuilt). USER-scoped, not tenant-scoped — `docs/ECOSYSTEM.md`
+ * (YourTal; linking it to Snap Apps is not built yet). USER-scoped, not tenant-scoped — `docs/ECOSYSTEM.md`
  * D27 — so this controller uses `SessionGuard` alone. No `MembershipGuard`
  * and no `@WorkspaceId()`: a point belongs to the person, not to whichever
  * workspace happens to be active, and gating it on workspace membership
@@ -32,7 +32,7 @@ export class PointsController {
   @Get('ledger')
   @ApiOperation({
     summary: 'How your points were earned',
-    description: 'Most recent first, capped at 200 rows. Redemption is not built here — it arrives with yourtal.',
+    description: 'Most recent first, capped at 200 rows. Points are spent in YourTal; linking it to Snap Apps is coming soon.',
   })
   async ledger(
     @CurrentUser() user: AuthUser,

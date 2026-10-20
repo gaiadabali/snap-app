@@ -6,6 +6,7 @@ import type {
   UpdateDocumentRequest,
 } from '@snap/api-contract';
 
+import { YOURTAL_WEB_URL } from '@/config';
 import { DEMO } from '@/fixtures/demo';
 import { gstFromInclusive } from '@/lib/money';
 
@@ -697,10 +698,10 @@ const usageByMonth: Record<UsageKind, Record<string, UsageItem[]>> = {
 
 /** yourtal listings. Spending happens there; only the voucher comes back. */
 const REWARDS: Reward[] = [
-  { id: 'yt-scan-10', name: '10 free scans', description: 'A Snap Apps voucher for ten receipts.', cost: 200, imageUrl: null, deepLink: 'https://yourtal.com.au/store/yt-scan-10', available: true },
-  { id: 'yt-scan-25', name: '25 free scans', description: 'A Snap Apps voucher for a month of shopping.', cost: 450, imageUrl: null, deepLink: 'https://yourtal.com.au/store/yt-scan-25', available: true },
-  { id: 'yt-cafe', name: 'Cafe Giro, $10', description: 'Coffee on the way to the next job.', cost: 300, imageUrl: null, deepLink: 'https://yourtal.com.au/store/yt-cafe', available: true },
-  { id: 'yt-fuel', name: 'Ampol, $25 fuel', description: 'Redeemed at the pump, not here.', cost: 900, imageUrl: null, deepLink: 'https://yourtal.com.au/store/yt-fuel', available: true },
+  { id: 'yt-scan-10', name: '10 free scans', description: 'A Snap Apps voucher for ten receipts.', cost: 200, imageUrl: null, deepLink: `${YOURTAL_WEB_URL}/store/yt-scan-10`, available: true },
+  { id: 'yt-scan-25', name: '25 free scans', description: 'A Snap Apps voucher for a month of shopping.', cost: 450, imageUrl: null, deepLink: `${YOURTAL_WEB_URL}/store/yt-scan-25`, available: true },
+  { id: 'yt-cafe', name: 'Cafe Giro, $10', description: 'Coffee on the way to the next job.', cost: 300, imageUrl: null, deepLink: `${YOURTAL_WEB_URL}/store/yt-cafe`, available: true },
+  { id: 'yt-fuel', name: 'Ampol, $25 fuel', description: 'Redeemed at the pump, not here.', cost: 900, imageUrl: null, deepLink: `${YOURTAL_WEB_URL}/store/yt-fuel`, available: true },
 ];
 
 /** Vouchers a demo user is holding, as if minted in yourtal. */

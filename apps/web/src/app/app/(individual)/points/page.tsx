@@ -20,9 +20,9 @@ const REASON_LABEL: Record<string, string> = {
  * come from `/v1/points` and `/v1/points/ledger`, neither of which is asked
  * for a workspace id.
  *
- * There is no redemption control on this page, on purpose: redemption
- * happens in yourtal, which does not exist yet. Saying so plainly is the
- * honest version of this screen, not a "coming soon" placeholder.
+ * There is no redemption control on this page, on purpose: points are spent
+ * in YourTal's store, and Snap Apps is not linked to YourTal yet. Saying so
+ * plainly is the honest version of this screen.
  */
 export default async function PointsPage() {
   const { workspace } = await loadWorkspace('personal');
@@ -43,9 +43,10 @@ export default async function PointsPage() {
       </Card>
 
       <div className="rounded-[var(--radius-md)] border border-dashed border-[var(--color-rule-strong)] p-4 text-[13px] text-[var(--color-ink-muted)]">
-        Points are spent in <span className="font-medium text-[var(--color-ink)]">yourtal</span>, a
-        separate app in the ecosystem that has not been built yet. There is nothing to redeem here —
-        this page only tracks what you have earned.
+        Points from receipts will land in your{' '}
+        <span className="font-medium text-[var(--color-ink)]">YourTal</span> wallet once you link
+        your YourTal account. Linking is coming soon, so nothing is paid there yet. There is nothing
+        to redeem here; this page only tracks what you have earned.
       </div>
 
       <div>

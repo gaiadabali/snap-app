@@ -32,7 +32,8 @@ import { control, numeric, radius, space, type, usePalette } from '@/theme';
  * So there is nothing to buy on this screen. An earlier build had a
  * points-for-credits store here, which contradicted the ledger's own rule
  * that points are only ever spent in yourtal; it was removed once the yourtal
- * side was read rather than guessed at.
+ * side was read rather than guessed at. (YourTal does have a store and a
+ * voucher service; what is missing is the account link on our side.)
  *
  * What IS here is the redeem box, because Snap Apps is the merchant at the end
  * of that loop — a redeemer in yourtal's authorize/capture protocol. The

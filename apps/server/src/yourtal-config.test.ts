@@ -1,0 +1,112 @@
+import { mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+/**
+ * The YourTal settings (tickets 1.4.b and 2.3.a). `config()` caches its
+ * environment once per module instance, so every test resets the module graph
+ * and imports a fresh copy after stubbing the environment.
+ */
+async function load() {
+  vi.resetModules();
+  return import('./config.js');
+}
+
+beforeEach(() => {
+  vi.stubEnv('DATABASE_URL', 'postgres://test:test@localhost:5432/test');
+  vi.stubEnv('TOKEN_SECRET', 'test-only-secret-at-least-32-characters-long');
+  for (const name of [
+    'YOURTAL_WEB_URL',
+    'YOURTAL_API_URL',
+    'YOURTAL_PARTNER_ID',
+    'YOURTAL_PARTNER_SECRET',
+    'OLLAMA_ENV_FILE',
+  ]) {
+    vi.stubEnv(name, '');
+    delete process.env[name];
+  }
+});
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
+
+describe('YourTal settings', () => {
+  it('boots with none of them set, using the staging origins and no partner link', async () => {
+    const c = await load();
+    const cfg = c.config();
+    expect(cfg.YOURTAL_WEB_URL).toBe('https://yourtal.gaiada.com');
+    expect(cfg.YOURTAL_API_URL).toBe('https://yourtal.gaiada.com');
+    expect(cfg.YOURTAL_PARTNER_ID).toBeUndefined();
+    expect(c.yourtalPartnerSecret()).toBeUndefined();
+    expect(c.isYourtalPartnerConfigured()).toBe(false);
+  });
+
+  it('strips a trailing slash so callers can append a path', async () => {
+    vi.stubEnv('YOURTAL_WEB_URL', 'https://yourtal.example/');
+    vi.stubEnv('YOURTAL_API_URL', 'https://api.yourtal.example//');
+    const c = await load();
+    expect(c.yourtalWebUrl()).toBe('https://yourtal.example');
+    expect(c.yourtalApiUrl()).toBe('https://api.yourtal.example');
+  });
+
+  it('rejects a web URL that is not a URL', async () => {
+    vi.stubEnv('YOURTAL_WEB_URL', 'yourtal');
+    const c = await load();
+    expect(() => c.config()).toThrow(/YOURTAL_WEB_URL/);
+  });
+
+  it('reads the partner secret from the host secrets file, matched by name', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'yt-secret-'));
+    const file = join(dir, 'ollama.env');
+    writeFileSync(
+      file,
+      'OPENROUTER_API_KEY=sk-or-other\nYOURTAL_PARTNER_SECRET="partner-secret-from-file"\n',
+    );
+    vi.stubEnv('OLLAMA_ENV_FILE', file);
+    vi.stubEnv('YOURTAL_PARTNER_ID', 'snap-app');
+    const c = await load();
+    expect(c.yourtalPartnerSecret()).toBe('partner-secret-from-file');
+    expect(c.isYourtalPartnerConfigured()).toBe(true);
+  });
+
+  it('prefers the environment, and stays off with an id but no secret', async () => {
+    vi.stubEnv('YOURTAL_PARTNER_ID', 'snap-app');
+    let c = await load();
+    expect(c.isYourtalPartnerConfigured()).toBe(false);
+
+    vi.stubEnv('YOURTAL_PARTNER_SECRET', 'partner-secret-from-env');
+    c = await load();
+    expect(c.yourtalPartnerSecret()).toBe('partner-secret-from-env');
+    expect(c.isYourtalPartnerConfigured()).toBe(true);
+  });
+
+  it('treats an unreadable secrets file as not configured, not as a crash', async () => {
+    vi.stubEnv('OLLAMA_ENV_FILE', join(tmpdir(), 'does-not-exist-yt.env'));
+    const c = await load();
+    expect(c.yourtalPartnerSecret()).toBeUndefined();
+  });
+});
+
+describe('RewardsController deep links', () => {
+  it('builds absolute links from YOURTAL_WEB_URL', async () => {
+    vi.stubEnv('YOURTAL_WEB_URL', 'https://yourtal.example/');
+    vi.resetModules();
+    const { RewardsController } = await import('./redesign/redesign.controller.js');
+    const list = new RewardsController().list();
+    expect(list.length).toBeGreaterThan(0);
+    for (const r of list) {
+      expect(r.deepLink).toBe(`https://yourtal.example/store/${r.id}`);
+    }
+  });
+
+  it('defaults to the staging origin and never the old yourtal.com.au', async () => {
+    vi.resetModules();
+    const { RewardsController } = await import('./redesign/redesign.controller.js');
+    for (const r of new RewardsController().list()) {
+      expect(r.deepLink).toMatch(/^https:\/\/yourtal\.gaiada\.com\/store\//);
+      expect(r.deepLink).not.toContain('yourtal.com.au');
+    }
+  });
+});
