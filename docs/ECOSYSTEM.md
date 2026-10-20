@@ -227,9 +227,12 @@ checkout exists.
 
 **Decided 2026-10-20 (founder):** the points are **YourTal points**. YourTal
 points are the one global economy, and the only points with money value. Snap
-Apps reports each confirmed receipt to YourTal, and YourTal pays the points from
-its own marketing budget: 10 per receipt in Australia (100 in Indonesia, which
-stays a demo), once per receipt, adults only. So redemption lives in YourTal,
+Apps reports each confirmed receipt to YourTal, and YourTal pays 1 point per
+receipt in Australia (10 in Indonesia, which stays a demo), once per receipt,
+adults only. Snap Apps buys those points from YourTal at cost (B = 3c a point)
+as a point package, alerted at 50%, 80% and 100% and stopping when spent
+(founder, 2026-10-20; YourTal F119-F121). Scans on the free signup credits earn
+nothing, and there is no per-person cap. So redemption lives in YourTal,
 not here. Credits stay Snap Apps' own and never leave Snap Apps.
 `point_ledger` stops being a balance people spend. (Settled in group plan 2.6:
 it is retired, see below.)
@@ -303,7 +306,7 @@ its own.
   Snap Apps does not fake YourTal's store: it points people to their YourTal
   wallet. The phone's usage screen lost its Points tab.
 - **The house ad** that said "Spending them in yourtal is coming" now says what
-  is true (link your YourTal account, 10 points a receipt in Australia, adults
+  is true (link your YourTal account, 1 point a receipt in Australia, adults
   only) and shows only when the link is available.
 
 **Not decided:** which on-device model.

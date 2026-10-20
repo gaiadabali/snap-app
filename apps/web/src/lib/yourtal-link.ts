@@ -104,7 +104,7 @@ export function receiptCount(n: number): string {
 export const LINK_COPY = {
   title: 'YourTal points',
   intro:
-    'Link your YourTal account and receipts you scan from now on can earn YourTal points: 10 for each receipt in Australia. Only adult accounts can earn.',
+    'Link your YourTal account and receipts you scan from now on can earn YourTal points: 1 point for each receipt in Australia. Only adult accounts can earn.',
   getCode: 'Get a code in YourTal',
   getCodeHint: 'In YourTal, open Me → Linked apps to get a one-time code, then paste it here.',
   codeLabel: 'Link code',

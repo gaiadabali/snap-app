@@ -74,7 +74,7 @@ describe('selectHouseAd', () => {
     // Retired claims: a Snap Apps point per scan, and spending "coming soon".
     expect(copy).not.toMatch(/coming|one point per|building quietly|already earning/);
     expect(copy).toMatch(/link your yourtal account/);
-    expect(copy).toMatch(/10 points/);
+    expect(copy).toMatch(/1 YourTal point/);
     expect(copy).toMatch(/adult/);
     expect(yourtal.href).toBe('/app/points');
   });

@@ -54,7 +54,7 @@ describe('YourtalLinkPanel: unlinked', () => {
   it('explains the link, points to YourTal for a code, and offers a code field and a Link button', () => {
     const t = text(html());
     expect(t).toContain('Link your YourTal account');
-    expect(t).toContain('10 for each receipt in Australia');
+    expect(t).toContain('1 point for each receipt in Australia');
     expect(t).toContain('Get a code in YourTal');
     expect(t).toContain('Me → Linked apps');
     expect(t).toContain('Link code');

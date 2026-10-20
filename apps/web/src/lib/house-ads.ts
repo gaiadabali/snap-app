@@ -131,7 +131,7 @@ export const HOUSE_ADS: readonly HouseAdEntry[] = [
     id: 'yourtal-points-2026-09',
     placements: ['individual-goals', 'individual-mileage', 'individual-documents'],
     headline: 'Your receipts can earn YourTal points',
-    body: 'Link your YourTal account and each receipt you scan earns 10 points in Australia, paid into your YourTal wallet. Only adult accounts can earn.',
+    body: 'Link your YourTal account and each receipt you scan earns 1 YourTal point in Australia, paid into your YourTal wallet. Only adult accounts can earn.',
     href: '/app/points',
     ctaLabel: 'Link YourTal',
     // Fails closed: with the link off, /app/points is a 404, and a CTA to it is a dead link.
