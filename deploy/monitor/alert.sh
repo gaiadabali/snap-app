@@ -21,7 +21,7 @@
 # OFFSITE_STAMP, VAULT_RENEW_LOG, SNAP_VAULT_CONTAINER.
 #
 # Install (external box):   */5 * * * * /path/to/alert.sh
-# Install (helios root cron):    15 3 * * * /opt/snap-apps/deploy/monitor/alert.sh --inbox
+# Install (helios root cron):    */10 * * * * bash /opt/snap-apps/deploy/monitor/alert.sh --inbox >> /var/log/snap-monitor.log 2>&1
 set -u
 
 ALERT_STATE_DIR="${ALERT_STATE_DIR:-/var/lib/snap-monitor}"
