@@ -1616,6 +1616,57 @@ export interface PointBalance {
 }
 
 /**
+ * `GET /v1/yourtal/link`, and the answer to linking or unlinking — the
+ * YourTal points link (group plan 2.4). USER-scoped, like points.
+ *
+ * YourTal pays its own points for each receipt Snap Apps reports (10 in AU,
+ * 100 in ID, once per receipt, adults only). Snap Apps never holds a YourTal
+ * balance: `pointsReported` is only what YourTal said it granted for the
+ * receipts reported from this account, and the user's balance lives in
+ * YourTal.
+ *
+ * Errors from `POST` / `DELETE` carry `{ error, message }`, where `error` is
+ * one of: `invalid_link_code` (400), `teen_consent_not_allowed` (403),
+ * `email_unverified` (403), `already_linked` (409),
+ * `linked_to_another_account` (409), `rate_limited` (429),
+ * `yourtal_not_configured` (503), `yourtal_unavailable` (503),
+ * `yourtal_rejected` (502).
+ */
+export interface YourtalLinkStatus {
+  /** False when this server has no YourTal partner credentials: hide the feature. */
+  available: boolean;
+  /**
+   * `linked` — reports are being sent. `broken` — YourTal ended the link (the
+   * user unlinked or deleted their account there): offer to link again.
+   * `unlinked` — never linked, or unlinked here.
+   */
+  state: 'unlinked' | 'linked' | 'broken';
+  region: 'AU' | 'ID' | null;
+  linkedAt: IsoDateTime | null;
+  brokenReason: 'link_revoked' | 'unknown_link' | null;
+  receipts: {
+    /** Queued and not yet answered by YourTal. */
+    pending: number;
+    /** YourTal granted points for them. */
+    rewarded: number;
+    /** YourTal's ledger refused them (the daily limit, or funding). */
+    refused: number;
+    /**
+     * Not reported: each looked like another photo of a receipt already
+     * reported from this account (same supplier, date and amount in the
+     * workspace), so it would not earn again.
+     */
+    skippedDuplicate: number;
+  };
+  pointsReported: number;
+}
+
+/** `POST /v1/yourtal/link`. The code from YourTal's Me → Linked apps. */
+export interface LinkYourtalRequest {
+  code: string;
+}
+
+/**
  * One row of `GET /v1/points/ledger` — append-only history, most recent
  * first. There is no redemption type here: redemption happens in yourtal,
  * not in this product, and nothing in this contract should be read as

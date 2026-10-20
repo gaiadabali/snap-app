@@ -131,11 +131,39 @@ services:
       # show a blocking "update required". 0 = no minimum. Served in the
       # manifest at /v1/downloads/android/manifest (docs/BUILD.md).
       ANDROID_MIN_VERSION_CODE: ${ANDROID_MIN_VERSION_CODE:-0}
+      # The YourTal partner secret (group plan 2.4): the api exchanges link
+      # codes and revokes links. Read from the file mounted below; see the
+      # note on that mount. The partner id comes from .env (YOURTAL_PARTNER_ID).
+      YOURTAL_ENV_FILE: /run/secrets/yourtal.env
     volumes:
       - ${STORAGE_HOST_DIR:?set STORAGE_HOST_DIR in .env — where original captures persist on the host}:/data/storage
       # Same file, same mount, same uid-1001 readability rule as the worker's
       # (see the long note on the worker's volume below).
       - ${OLLAMA_ENV_FILE_HOST:?set it in deploy/.env to the host path of the ollama key file, readable by uid 1001}:/run/secrets/ollama.env:ro
+      # ── The YourTal partner secret, OPTIONAL ──────────────────────────────
+      # Host: /etc/snap-apps/secrets/yourtal.env, one YOURTAL_PARTNER_SECRET=
+      # line, mode 0600, readable by uid 1001 (same rule as ollama.env).
+      #
+      # Unlike ollama.env this one MAY be absent — no secret means the points
+      # link is off, and everything else must still run — so it is the one
+      # place a `:-/dev/null` default is right (the worker's ollama.env note below says
+      # why it is wrong THERE: the worker cannot do its job without that key).
+      #   - YOURTAL_ENV_FILE_HOST unset: /dev/null is mounted, the app reads
+      #     an empty file, finds no secret, and the link is off.
+      #   - Set, file present: the secret is read; the link is on once
+      #     YOURTAL_PARTNER_ID is set too.
+      #   - Set, file NOT present: the short `a:b:ro` syntax would make Docker
+      #     CREATE a root-owned directory at the host path, which then blocks
+      #     the real file from ever being copied there. The long syntax with
+      #     `create_host_path: false` refuses to start instead, and deploy.sh
+      #     checks first and falls back to /dev/null with a warning, so a
+      #     normal deploy never reaches that refusal.
+      - type: bind
+        source: ${YOURTAL_ENV_FILE_HOST:-/dev/null}
+        target: /run/secrets/yourtal.env
+        read_only: true
+        bind:
+          create_host_path: false
     depends_on:
       postgres:
         condition: service_healthy
@@ -203,6 +231,9 @@ services:
       # reads the originals it was told about, and it must look where they
       # were actually written.
       STORAGE_DIR: /data/storage
+      # The YourTal partner secret (group plan 2.5): the worker drains the
+      # receipt-report outbox to YourTal. Same file and mount as the api's.
+      YOURTAL_ENV_FILE: /run/secrets/yourtal.env
     volumes:
       - ${STORAGE_HOST_DIR:?set STORAGE_HOST_DIR in .env — where original captures persist on the host}:/data/storage
       # NO `:-/dev/null` DEFAULT. It used to read
@@ -221,6 +252,15 @@ services:
       # a bind mount carries host ownership straight through, and 0600
       # root-owned fails with the same message again.
       - ${OLLAMA_ENV_FILE_HOST:?set it in deploy/.env to the host path of the ollama key file, readable by uid 1001}:/run/secrets/ollama.env:ro
+      # The YourTal partner secret: optional, see the long note on the api's
+      # identical mount for why this default is safe here and how a missing
+      # file is handled.
+      - type: bind
+        source: ${YOURTAL_ENV_FILE_HOST:-/dev/null}
+        target: /run/secrets/yourtal.env
+        read_only: true
+        bind:
+          create_host_path: false
     depends_on:
       postgres:
         condition: service_healthy

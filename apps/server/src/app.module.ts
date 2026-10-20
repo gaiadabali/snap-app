@@ -36,6 +36,7 @@ import { StatementsController } from './statements/statements.controller.js';
 import { SummariesController } from './summaries/summaries.controller.js';
 import { TransactionsController } from './transactions/transactions.controller.js';
 import { WorkspacesController } from './workspaces/workspaces.controller.js';
+import { YourtalLinkController } from './yourtal/yourtal.controller.js';
 import { getDb } from './db.js';
 import { MODELS } from './ai/router.js';
 import { sql } from 'drizzle-orm';
@@ -120,6 +121,7 @@ export class HealthController {
     TaxRulesCatalogueController,
     CreditsController,
     PointsController,
+    YourtalLinkController,
     StripeWebhookController,
     AssistantController,
 

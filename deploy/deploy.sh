@@ -115,6 +115,19 @@ CALLER_IMAGE_TAG="${IMAGE_TAG:-}"
 # shellcheck disable=SC1090
 set -a; source "${ENV_FILE}"; set +a
 
+# The YourTal partner secret (group plan 2.4/2.5) is OPTIONAL: without it the
+# points link is simply off. So a YOURTAL_ENV_FILE_HOST that names a file which
+# is not there yet must not stop a deploy of everything else — and must not
+# reach compose either, where a missing bind source is refused (the compose
+# file sets create_host_path: false so Docker cannot plant a root-owned
+# DIRECTORY at that path, which would then block the real file). Fall back to
+# /dev/null for this run: an empty file, no secret, link off, said out loud.
+if [[ -n "${YOURTAL_ENV_FILE_HOST:-}" && ! -f "${YOURTAL_ENV_FILE_HOST}" ]]; then
+  log "WARNING: YOURTAL_ENV_FILE_HOST=${YOURTAL_ENV_FILE_HOST} is not a file on this host;"
+  log "         the YourTal points link stays OFF for this deploy (mounting /dev/null instead)."
+  export YOURTAL_ENV_FILE_HOST=/dev/null
+fi
+
 if [[ -n "${CALLER_IMAGE_TAG}" ]]; then
   IMAGE_TAG="${CALLER_IMAGE_TAG}"
   export IMAGE_TAG
