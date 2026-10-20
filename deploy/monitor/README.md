@@ -10,9 +10,61 @@ These two scripts close that, in two halves:
   same gate deploy.sh refuses on), and TLS expiry inside 14 days.
 - **`alert.sh`** — runs `uptime.sh`, adds the in-box checks only a host can do
   (fresh nightly dump, fresh offsite run, fresh weekly base backup, disk under
-  90%, Vault unsealed, Vault token renewed), and posts ONE
-  webhook message on a transition from OK to failing, so a 6-hour outage
-  sends one alert, not one every 5 minutes.
+  90%, Vault unsealed, Vault token renewed), and sends ONE email (and one
+  webhook message, if configured) on a transition from OK to failing, plus one
+  email when it flips back to OK, so a 6-hour outage sends one alert, not one
+  every 10 minutes.
+
+## Alert email (the channel that is on)
+
+`alert.sh` sends through the same Resend SMTP account the API uses for magic
+links. Nothing new is stored: it reads `SMTP_URL` and `MAIL_FROM` from
+`/opt/snap-apps/deploy/.env` and the recipients from one small host file.
+
+- **`/etc/snap-apps/secrets/alert.env`** (chmod 600, root) holds one line:
+  `ALERT_EMAIL_TO=hansel@gaiada.com,web@gaiada.com` (comma-separated).
+- **The two keys** `SMTP_URL` (`smtp://resend:<key>@smtp.resend.com:587`,
+  STARTTLS required) and `MAIL_FROM` come from the environment if set, else
+  from `deploy/.env`. Both files are read as text, key by key; they are never
+  `source`d. `ALERT_ENV_FILE` and `SNAP_DEPLOY_ENV` move the two paths (for tests).
+- **The login never touches argv.** curl gets it as a config on stdin
+  (`curl -K -`), so it is not in `ps`, the log or the message.
+- **What is sent:** one `[snap-apps ALERT] <first failing check>` email on the
+  flip from OK to failing (body: the failing lines, the OK lines, the host, a
+  UTC time); nothing while it stays failing; one `[snap-apps RECOVERED] all
+  checks OK` email on the flip back. The first run ever counts as OK.
+- **A failed send** logs one `warning: alert email not sent ...` line to
+  `/var/log/snap-monitor.log` and changes nothing else: the checks, the state
+  and the exit code are as before. No recipients configured means no email.
+- **The webhook still works:** if `ALERT_WEBHOOK_URL` is set it is posted to on
+  the flip to failing, as before. Email and webhook can both be on.
+- **Prove delivery:** `sudo bash /opt/snap-apps/deploy/monitor/alert.sh --test-alert`
+  sends one email labelled `[snap-apps TEST]`, prints `test alert email sent`
+  (exit 0) or an error (exit 1), and neither runs the checks nor touches the state.
+
+### A fully down host
+
+`alert.sh` runs on the host, so it cannot tell anyone when the host itself is
+down or wedged. That case is covered off-box: `.github/workflows/monitor.yml`
+runs `uptime.sh` from GitHub every 15 minutes, and a failing run is emailed by
+GitHub to the account that owns the scheduled workflow. No secret is needed.
+Check that account's notification settings (GitHub, Settings, Notifications,
+Actions: email on failed workflows) so the email arrives where it is read.
+
+### Operator steps on helios
+
+1. Create the recipients file:
+   `install -m 600 /dev/null /etc/snap-apps/secrets/alert.env` then
+   `echo 'ALERT_EMAIL_TO=hansel@gaiada.com,web@gaiada.com' > /etc/snap-apps/secrets/alert.env`.
+2. Pull the merged code into `/opt/snap-apps` (the deploy poller does this).
+3. Run `sudo bash /opt/snap-apps/deploy/monitor/alert.sh --test-alert` and
+   confirm the email arrives at both addresses (check spam once).
+4. Optional dry run of a real alert: point `ALERT_STATE_DIR` at a scratch
+   directory and break one input, e.g.
+   `ALERT_STATE_DIR=$(mktemp -d) BACKUP_DUMP_DIR=/nonexistent bash /opt/snap-apps/deploy/monitor/alert.sh --inbox`
+   sends one ALERT; run it again and it sends nothing. (Never delete the real
+   state file in `/var/lib/snap-monitor` to test: that re-arms the real alert.)
+5. The cron line stays as it is; it needs no change.
 
 ## Install
 
@@ -22,7 +74,7 @@ These two scripts close that, in two halves:
    */5 * * * * ALERT_WEBHOOK_URL=<webhook url> /path/to/alert.sh >> /var/log/snap-monitor.log 2>&1
    ```
 
-   The webhook is a plain HTTPS POST with `{"text": ...}` — it works with
+   (Email needs no env here; the webhook below is optional.) The webhook is a plain HTTPS POST with `{"text": ...}` — it works with
    Telegram (`https://api.telegram.org/bot<token>/sendMessage` needs a small
    `chat_id` wrapper — use a Slack/Discord incoming webhook for zero work).
    Store the URL in the cron line's environment or a chmod-600 file you
