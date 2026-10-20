@@ -22,6 +22,7 @@ import type {
   UsagePeriod,
 } from '@snap/api-contract';
 
+import { yourtalWebUrl } from '../config.js';
 import { CurrentUser, SessionGuard, type AuthUser } from '../common/auth.guard.js';
 
 /**
@@ -80,11 +81,18 @@ const DEFAULT_PRIVACY: PrivacySettings = {
   retentionMonths: 60,
 };
 
-/** yourtal listings, shown so points have a visible purpose. Display only. */
-const REWARDS: Reward[] = [
-  { id: 'yt-scan-10', name: '10 free scans', description: 'A Snap Apps voucher for ten receipts.', cost: 200, imageUrl: null, deepLink: 'https://yourtal.com.au/store/yt-scan-10', available: true },
-  { id: 'yt-scan-25', name: '25 free scans', description: 'A Snap Apps voucher for a month of shopping.', cost: 450, imageUrl: null, deepLink: 'https://yourtal.com.au/store/yt-scan-25', available: true },
-];
+/**
+ * YourTal store listings, shown so points have a visible purpose. Display
+ * only. Built per request so the absolute deep links follow `YOURTAL_WEB_URL`.
+ * (Still a hard-coded list; ticket 2.6.b replaces it with YourTal's own.)
+ */
+function rewards(): Reward[] {
+  const store = `${yourtalWebUrl()}/store`;
+  return [
+    { id: 'yt-scan-10', name: '10 free scans', description: 'A Snap Apps voucher for ten receipts.', cost: 200, imageUrl: null, deepLink: `${store}/yt-scan-10`, available: true },
+    { id: 'yt-scan-25', name: '25 free scans', description: 'A Snap Apps voucher for a month of shopping.', cost: 450, imageUrl: null, deepLink: `${store}/yt-scan-25`, available: true },
+  ];
+}
 
 function brandOf(digits: string): SavedCard['brand'] {
   if (/^4/.test(digits)) return 'visa';
@@ -197,7 +205,7 @@ export class RewardsController {
   @Get()
   @ApiOperation({ summary: 'Points-for-credits catalogue (STUB)' })
   list(): Reward[] {
-    return REWARDS;
+    return rewards();
   }
 
 }
@@ -217,9 +225,10 @@ export class RewardsController {
  * holding value it has already given away.
  *
  * Blocked on three things, none of them ours alone:
- *   1. yourtal's voucher service does not exist yet — the schema and the
- *      protocol are written (`packages/contracts/src/voucher/voucher.ts`),
- *      the endpoints are not.
+ *   1. the partner link to YourTal is not built here yet. YourTal has a store,
+ *      a wallet and a voucher service (`/v1/vouchers/*`), but Snap Apps has no
+ *      linked-account flow, partner credentials or settlement client to call
+ *      them with (tickets 2.3.a and later).
  *   2. a voucher is denominated in `faceValueIdr` and yourtal's own IDR minor
  *      unit is still open (their YT-0506). Credit packs here are priced in
  *      AUD. Nothing converts between them.
@@ -227,6 +236,9 @@ export class RewardsController {
  *      packs, so only single-use fits today — that needs agreeing, not
  *      assuming, because a user who silently loses the remainder of a voucher
  *      is a user who stops trusting the store.
+ *
+ * Points from receipts will land in the user's YourTal wallet once they link
+ * their YourTal account. That link is coming soon and is not built yet.
  *
  * Earning is unaffected and already works: a scan writes a positive
  * `point_ledger` row. Only the way back is missing.
@@ -239,7 +251,7 @@ export class VouchersController {
   @ApiOperation({ summary: 'Redeem a yourtal voucher (NOT IMPLEMENTED — refuses)' })
   redeem(): never {
     throw new NotImplementedException(
-      'Voucher redemption is not available yet: yourtal has no voucher service to settle against.',
+      'Voucher redemption is not available yet: Snap Apps is not linked to YourTal.',
     );
   }
 }

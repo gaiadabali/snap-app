@@ -318,6 +318,10 @@ services:
     build:
       context: ..
       dockerfile: apps/web/Dockerfile
+      # Build time only (Next inlines it). Matters for a build on the box;
+      # a pulled image already carries the value CI passed.
+      args:
+        NEXT_PUBLIC_FREE_TAX_RETURNS_URL: ${NEXT_PUBLIC_FREE_TAX_RETURNS_URL:-https://freetaxreturns.com.au}
     image: ${WEB_IMAGE:-snap-web}:${IMAGE_TAG:-local}
     # No `command:` override. The image's own CMD runs the Next standalone
     # server directly (`node apps/web/server.js`). It used to be ['start'],

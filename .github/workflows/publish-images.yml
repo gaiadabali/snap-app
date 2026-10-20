@@ -47,6 +47,11 @@ jobs:
             dockerfile: apps/server/Dockerfile
           - name: snap-web
             dockerfile: apps/web/Dockerfile
+            # Inlined into the client bundle at `next build`, so it has to be
+            # a build arg. It switches on the free-tax-returns house ad, which
+            # renders only while this is set (apps/web/src/lib/house-ads.ts).
+            build_args: |
+              NEXT_PUBLIC_FREE_TAX_RETURNS_URL=https://freetaxreturns.com.au
           - name: snap-docai
             # The ONLY image whose context is not the repo root. Nothing in
             # services/docai-engine needs the pnpm workspace — that is the

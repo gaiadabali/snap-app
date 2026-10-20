@@ -89,8 +89,9 @@ export default function PointsScreen() {
               <SectionHeader title="Redeeming points" />
               <Card tone="default">
                 <Body>
-                  Points cannot be spent in Snap Apps yet. Redemption arrives with yourtal, the
-                  next app in the ecosystem — nothing here implies it ships today.
+                  Points from receipts will land in your YourTal wallet once you link your YourTal
+                  account. Linking is coming soon, so nothing is paid there yet. Points cannot be
+                  spent inside Snap Apps.
                 </Body>
               </Card>
             </View>
