@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 
 import { safeReturnPath } from '@/lib/auth/safe-redirect';
+import { isYourtalWebSignInAvailable } from '@/lib/auth/yourtal';
 
 import { AuthMethods } from '../_components/AuthMethods';
 
@@ -20,6 +21,7 @@ export default async function RegisterPage({
   // magic-link request, which DO carry it forward as the eventual
   // post-onboarding destination.
   const returnTo = safeReturnPath(params.returnTo, '/app');
+  const yourtalEnabled = await isYourtalWebSignInAvailable();
 
   return (
     <div className="flex flex-col gap-6">
@@ -28,6 +30,7 @@ export default async function RegisterPage({
         returnTo={returnTo}
         error={params.error}
         sent={params.sent === '1'}
+        yourtalEnabled={yourtalEnabled}
       />
       <p className="auth-switch">
         Already have an account?{' '}

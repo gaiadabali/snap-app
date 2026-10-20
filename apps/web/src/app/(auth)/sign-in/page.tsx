@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 
 import { safeReturnPath } from '@/lib/auth/safe-redirect';
+import { isYourtalWebSignInAvailable } from '@/lib/auth/yourtal';
 
 import { AuthMethods } from '../_components/AuthMethods';
 
@@ -14,6 +15,7 @@ export default async function SignInPage({
 }) {
   const params = await searchParams;
   const returnTo = safeReturnPath(params.returnTo, '/app');
+  const yourtalEnabled = await isYourtalWebSignInAvailable();
 
   return (
     <div className="flex flex-col gap-6">
@@ -22,6 +24,7 @@ export default async function SignInPage({
         returnTo={returnTo}
         error={params.error}
         sent={params.sent === '1'}
+        yourtalEnabled={yourtalEnabled}
       />
       <p className="auth-switch">
         New here?{' '}
