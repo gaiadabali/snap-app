@@ -171,9 +171,9 @@ const schema = z.object({
   /**
    * YourTal's public web origin (staging: https://yourtal.gaiada.com).
    *
-   * Used to build the absolute deep links the API hands out for YourTal's
-   * store (`RewardsController`). Origin only, no trailing path; a trailing
-   * slash is tolerated and stripped by `yourtalWebUrl()`. Not a secret.
+   * Used for the links the app and website show to YourTal's wallet and its
+   * Me > Linked apps page. Origin only, no trailing path; a trailing slash is
+   * tolerated and stripped by `yourtalWebUrl()`. Not a secret.
    */
   YOURTAL_WEB_URL: z.string().url().default('https://yourtal.gaiada.com'),
 

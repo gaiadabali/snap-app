@@ -88,25 +88,3 @@ describe('YourTal settings', () => {
     expect(c.yourtalPartnerSecret()).toBeUndefined();
   });
 });
-
-describe('RewardsController deep links', () => {
-  it('builds absolute links from YOURTAL_WEB_URL', async () => {
-    vi.stubEnv('YOURTAL_WEB_URL', 'https://yourtal.example/');
-    vi.resetModules();
-    const { RewardsController } = await import('./redesign/redesign.controller.js');
-    const list = new RewardsController().list();
-    expect(list.length).toBeGreaterThan(0);
-    for (const r of list) {
-      expect(r.deepLink).toBe(`https://yourtal.example/store/${r.id}`);
-    }
-  });
-
-  it('defaults to the staging origin and never the old yourtal.com.au', async () => {
-    vi.resetModules();
-    const { RewardsController } = await import('./redesign/redesign.controller.js');
-    for (const r of new RewardsController().list()) {
-      expect(r.deepLink).toMatch(/^https:\/\/yourtal\.gaiada\.com\/store\//);
-      expect(r.deepLink).not.toContain('yourtal.com.au');
-    }
-  });
-});

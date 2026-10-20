@@ -47,19 +47,15 @@ import type {
   PatchCaptureDocumentRequest,
   PersonalSummary,
   PlanUsage,
-  PointBalance,
-  PointLedgerEntry,
   AvailableTaxRules,
   SavedCard,
   AddSavedCardRequest,
   UsageKind,
   UsagePeriod,
-  Reward,
-  RedeemVoucherRequest,
-  VoucherRedemption,
   NotificationPrefs,
   AlertItem,
   PrivacySettings,
+  YourtalLinkStatus,
   Recurring,
   SalesSummary,
   Session,
@@ -1129,18 +1125,28 @@ export class HttpApi implements SnapApi {
     });
   }
 
-  getPointBalance(): Promise<PointBalance> {
-    return this.get<PointBalance>('/v1/points', null);
+  getYourtalLink(): Promise<YourtalLinkStatus> {
+    return this.get<YourtalLinkStatus>('/v1/yourtal/link', null);
   }
 
-  listPointLedger(limit?: number): Promise<PointLedgerEntry[]> {
-    return this.get<PointLedgerEntry[]>(
-      `/v1/points/ledger${limit ? `?limit=${limit}` : ''}`,
-      null,
-    );
+  linkYourtal(code: string): Promise<YourtalLinkStatus> {
+    /* Never queued for offline replay: the code is single-use and lasts ten
+       minutes, so a copy replayed later is a dead code and a wrong message. */
+    return this.request<YourtalLinkStatus>('POST', '/v1/yourtal/link', {
+      body: { code },
+      workspaceId: null,
+      queue: false,
+    });
   }
 
-  /* ── Wallet, usage, rewards & preferences (2026-09-19 redesign) ──────────
+  unlinkYourtal(): Promise<YourtalLinkStatus> {
+    return this.request<YourtalLinkStatus>('DELETE', '/v1/yourtal/link', {
+      workspaceId: null,
+      queue: false,
+    });
+  }
+
+  /* ── Wallet, usage & preferences (2026-09-19 redesign) ──────────
      All USER-scoped: `workspaceId: null` so the client does not attach the
      active workspace header. A person in two households has one wallet, one
      set of notification switches and one privacy choice. */
@@ -1183,22 +1189,6 @@ export class HttpApi implements SnapApi {
 
   listUsageMonths(kind: UsageKind): Promise<string[]> {
     return this.get<string[]>(`/v1/usage/months?kind=${kind}`, null);
-  }
-
-  listRewards(): Promise<Reward[]> {
-    return this.get<Reward[]>('/v1/rewards', null);
-  }
-
-  redeemVoucher(input: RedeemVoucherRequest): Promise<VoucherRedemption> {
-    return this.request<VoucherRedemption>('POST', '/v1/vouchers/redeem', {
-      body: input,
-      workspaceId: null,
-      // Never replayed from the outbox. A queued redemption that fires twice
-      // captures the voucher twice; yourtal's protocol makes every call carry
-      // an idempotency key precisely because retries are certain, and this
-      // client has no way to reuse one across a process restart.
-      queue: false,
-    });
   }
 
   listAlerts(): Promise<AlertItem[]> {

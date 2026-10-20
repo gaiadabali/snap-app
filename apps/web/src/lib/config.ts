@@ -43,6 +43,13 @@ export const config = {
   isProduction: process.env.NODE_ENV === 'production',
 
   /**
+   * YourTal's public web origin (staging: https://yourtal.gaiada.com), for the
+   * points page's links to YourTal's Me page and wallet. The same variable the
+   * API reads, from the same `.env`; not a secret. A trailing slash is fine.
+   */
+  yourtalWebUrl: (process.env.YOURTAL_WEB_URL || 'https://yourtal.gaiada.com').replace(/\/+$/, ''),
+
+  /**
    * Whether a magic link can actually be DELIVERED.
    *
    * `apps/server/src/auth/mailer.ts` falls back to a NoopMailer in production:

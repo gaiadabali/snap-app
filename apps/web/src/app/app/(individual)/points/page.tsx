@@ -1,81 +1,62 @@
-import { Card, Empty, SectionTitle, Stat, Table, Td, Th, Thead, Tr } from '@/design/primitives';
-import { getPointBalance, listPointLedger } from '@/lib/panels/data';
+import { notFound } from 'next/navigation';
+import type { YourtalLinkStatus } from '@snap/api-contract';
+
+import { Empty, SectionTitle } from '@/design/primitives';
+import { getYourtalLink } from '@/lib/panels/data';
+import { linkYourtal, unlinkYourtal } from '@/lib/panels/yourtal-actions';
 import { loadWorkspace } from '@/lib/panels/workspace';
+import { config } from '@/lib/config';
+import { LINK_COPY, yourtalLinks } from '@/lib/yourtal-link';
+import { YourtalLinkClient } from './YourtalLinkClient';
+import type { LinkLoad } from './YourtalLinkView';
 
-export const metadata = { title: 'Points' };
+export const metadata = { title: 'YourTal points' };
 
-const REASON_LABEL: Record<string, string> = {
-  scan: 'Scan',
-  signup: 'Welcome bonus',
-  referral: 'Referral',
-  redemption: 'Redeemed',
-  adjustment: 'Adjustment',
-};
+const PATH = '/app/points';
 
 /**
- * Points: earned by scanning, USER-scoped rather than tied to any one
- * workspace — `docs/ECOSYSTEM.md` D27. Still rendered inside the personal
- * panel shell (`loadWorkspace` below is only here for the shell's own
- * "do you have a workspace at all" gate); the balance and ledger themselves
- * come from `/v1/points` and `/v1/points/ledger`, neither of which is asked
- * for a workspace id.
+ * Points: YourTal's, paid in YourTal (`docs/ECOSYSTEM.md` D33).
  *
- * There is no redemption control on this page, on purpose: points are spent
- * in YourTal's store, and Snap Apps is not linked to YourTal yet. Saying so
- * plainly is the honest version of this screen.
+ * Snap Apps used to keep its own point per scan. The founder retired that
+ * (2026-10-20): YourTal points are the only points with value, so this page is
+ * the link to a YourTal account and what YourTal said it paid, not a Snap Apps
+ * balance. The balance itself lives in the person's YourTal wallet.
+ *
+ * The status comes from `GET /v1/yourtal/link`, which is USER-scoped:
+ * `loadWorkspace` below is only here for the shell's own "do you have a
+ * workspace at all" gate. When the server has no YourTal credentials
+ * (`available: false`) the page answers 404 and the nav entry is gone
+ * (`lib/panels/individual-nav.ts`): a link that cannot work is not offered.
+ * A failed read is shown as an error with a retry, not as "not linked".
  */
 export default async function PointsPage() {
   const { workspace } = await loadWorkspace('personal');
   if (!workspace) return <Empty title="No personal workspace yet" />;
 
-  const [{ balance }, ledger] = await Promise.all([getPointBalance(), listPointLedger(100)]);
+  let status: YourtalLinkStatus | null = null;
+  try {
+    status = await getYourtalLink();
+  } catch {
+    // Shown as an error with a retry below, never as "not linked".
+  }
+  if (status && !status.available) notFound();
+  const initial: LinkLoad = status ? { kind: 'ready', status } : { kind: 'error' };
 
   return (
     <div className="flex flex-col gap-6">
       <SectionTitle
         as="h1"
-        title="Points"
-        lede="One point for every scan you complete — yours, wherever you sign in across the ecosystem, not tied to this workspace."
+        title={LINK_COPY.title}
+        lede="Receipts you scan earn points in YourTal. They are paid there, and your balance is in your YourTal wallet."
       />
-
-      <Card tone="accent" className="max-w-[320px]">
-        <Stat label="Balance" value={balance} hint="Never expires." />
-      </Card>
-
-      <div className="rounded-[var(--radius-md)] border border-dashed border-[var(--color-rule-strong)] p-4 text-[13px] text-[var(--color-ink-muted)]">
-        Points from receipts will land in your{' '}
-        <span className="font-medium text-[var(--color-ink)]">YourTal</span> wallet once you link
-        your YourTal account. Linking is coming soon, so nothing is paid there yet. There is nothing
-        to redeem here; this page only tracks what you have earned.
-      </div>
-
-      <div>
-        <h2 className="mb-3 text-[15px] font-semibold text-[var(--color-ink)]">How you earned them</h2>
-        {ledger.length === 0 ? (
-          <Empty title="No points yet" body="Confirm a scan and your first point will show up here." />
-        ) : (
-          <div className="overflow-x-auto rounded-[var(--radius-lg)] border border-[var(--color-rule)]">
-            <Table>
-              <Thead>
-                <Th>Date</Th>
-                <Th>Reason</Th>
-                <Th align="right">Points</Th>
-              </Thead>
-              <tbody>
-                {ledger.map((entry) => (
-                  <Tr key={entry.id}>
-                    <Td>{entry.createdAt.slice(0, 10)}</Td>
-                    <Td>{REASON_LABEL[entry.reason] ?? entry.reason}</Td>
-                    <Td align="right" className={entry.delta < 0 ? 'text-[var(--color-risk)]' : undefined}>
-                      {entry.delta > 0 ? `+${entry.delta}` : entry.delta}
-                    </Td>
-                  </Tr>
-                ))}
-              </tbody>
-            </Table>
-          </div>
-        )}
-      </div>
+      <YourtalLinkClient
+        initial={initial}
+        links={yourtalLinks(config.yourtalWebUrl)}
+        retryHref={PATH}
+        verifyEmailHref="/verify-email"
+        onLink={linkYourtal.bind(null, PATH)}
+        onUnlink={unlinkYourtal.bind(null, PATH)}
+      />
     </div>
   );
 }

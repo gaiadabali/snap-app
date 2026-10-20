@@ -35,6 +35,7 @@ import { Badge, cx } from '@/design/primitives';
 import { selectHouseAd, type AdPlacement, type HouseAdContext, type HouseAdEntry } from '@/lib/house-ads';
 
 import { persistDismissal, readDismissedIds } from './dismissal';
+import { usePanelAdContext } from './HouseAdProvider';
 
 export function HouseAd({
   placement,
@@ -50,7 +51,9 @@ export function HouseAd({
   const [leaving, setLeaving] = useState(false);
   // Read as a primitive so the effect keys off actual content, not the
   // literal `{}` a caller writes inline creating a new object every render.
-  const contextKey = JSON.stringify(context ?? {});
+  // What the panel supplies (`HouseAdProvider`), overridden by this slot's own.
+  const panelContext = usePanelAdContext();
+  const contextKey = JSON.stringify({ ...panelContext, ...context });
 
   useEffect(() => {
     setAd(selectHouseAd(placement, JSON.parse(contextKey), readDismissedIds()));

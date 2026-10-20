@@ -131,7 +131,6 @@ function RootChrome() {
             options={{ headerShown: false, gestureEnabled: false, animation: 'fade' }}
           />
           <Stack.Screen name="usage" options={{ headerShown: false }} />
-          <Stack.Screen name="rewards" options={{ headerShown: false }} />
           <Stack.Screen name="points" options={{ headerShown: false }} />
           <Stack.Screen name="alerts" options={{ headerShown: false }} />
           <Stack.Screen name="notifications" options={{ headerShown: false }} />

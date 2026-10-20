@@ -4,7 +4,8 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Icon, type IconName } from '@/components/Icon';
 import { Body, Chip, SectionHeader, Small } from '@/components/ui';
 import { Raised } from '@/components/rich';
-import { BUSINESS_FEATURES_ENABLED, EXPERIMENTAL_FEATURES_ENABLED } from '@/config';
+import { useYourtalStatus } from '@/components/useYourtalStatus';
+import { BUSINESS_FEATURES_ENABLED } from '@/config';
 import { radius, space, usePalette } from '@/theme';
 import { WorkspaceSwitch, useWorkspace } from '@/workspace';
 
@@ -77,7 +78,7 @@ const BUSINESS_GROUPS: Group[] = [
       { label: 'Business', hint: 'ABN, GST basis, occupation', icon: 'building', hue: '#55677E', href: '/settings' },
       { label: 'Categories', hint: 'How spending is sorted', icon: 'tag', hue: '#EF6C7E', href: '/categories' },
       { label: 'Credits', hint: 'Scans this workspace has bought or been given', icon: 'card', hue: '#1878D8', href: '/credits' },
-      { label: 'Points', hint: 'Yours, earned by scanning', icon: 'spark', hue: '#9B6BF2', href: '/points' },
+      { label: 'YourTal points', hint: 'Earned in YourTal from your receipts', icon: 'spark', hue: '#9B6BF2', href: '/points' },
       // NOT 'Credits'. `/credits` above is the balance, the packs and the
       // purchase history; this screen is THIS MONTH'S USAGE — scans used, and
       // what happens if you run out. Both were labelled 'Credits' after the
@@ -109,8 +110,7 @@ const PERSONAL_GROUPS: Group[] = [
     title: 'Your account',
     entries: [
       { label: 'Credits', hint: 'Scans you have bought or been given', icon: 'card', hue: '#1878D8', href: '/credits' },
-      { label: 'Points', hint: 'Earned by scanning', icon: 'spark', hue: '#9B6BF2', href: '/points' },
-      { label: 'Rewards', hint: 'Trade points for scan credits', icon: 'star', hue: '#F2994A', href: '/rewards' },
+      { label: 'YourTal points', hint: 'Earned in YourTal from your receipts', icon: 'spark', hue: '#9B6BF2', href: '/points' },
       { label: 'Purchases', hint: 'Every top up and its status', icon: 'doc', hue: '#2D9CDB', href: '/orders' },
       // NOT 'Credits'. `/credits` above is the balance, the packs and the
       // purchase history; this screen is THIS MONTH'S USAGE — scans used, and
@@ -140,19 +140,15 @@ const PERSONAL_GROUPS: Group[] = [
   },
 ];
 
-/**
- * Entries behind the experimental flag are stripped from whichever menu is
- * chosen: Rewards is backed by an in-process Map on the server, so it is not
- * advertised until that is a table. A group left empty is dropped.
- */
-const EXPERIMENTAL_HREFS = new Set<string>(['/rewards']);
+/** The points entry goes to `/points`, and shows only while the server has the YourTal link on. */
+const POINTS_HREF = '/points';
 
-function stripExperimental(groups: Group[]): Group[] {
-  if (EXPERIMENTAL_FEATURES_ENABLED) return groups;
+function withoutUnavailable(groups: Group[], yourtalAvailable: boolean): Group[] {
+  if (yourtalAvailable) return groups;
   return groups
     .map((g) => ({
       ...g,
-      entries: g.entries.filter((e) => !e.href || !EXPERIMENTAL_HREFS.has(String(e.href))),
+      entries: g.entries.filter((e) => String(e.href ?? '') !== POINTS_HREF),
     }))
     .filter((g) => g.entries.length > 0);
 }
@@ -164,8 +160,10 @@ export function MenuContent({ onNavigate }: { onNavigate?: () => void }) {
   // The one place this flag is checked to pick a menu: everywhere else reads
   // `isBusiness`, which the workspace provider already keeps honest — a
   // personal-only build never has a business workspace to be active.
-  const groups = stripExperimental(
+  const yourtal = useYourtalStatus();
+  const groups = withoutUnavailable(
     BUSINESS_FEATURES_ENABLED && isBusiness ? BUSINESS_GROUPS : PERSONAL_GROUPS,
+    yourtal?.available === true,
   );
 
   return (

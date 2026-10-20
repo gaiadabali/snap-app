@@ -6,24 +6,27 @@ import { CurrentUser, SessionGuard, type AuthUser } from '../common/auth.guard.j
 import { getPointBalance, listPointLedger } from './points.repo.js';
 
 /**
- * Points — earned by scanning, spent in a different ecosystem app entirely
- * (YourTal; the link is `yourtal/`, migration 0037). USER-scoped, not tenant-scoped — `docs/ECOSYSTEM.md`
- * D27 — so this controller uses `SessionGuard` alone. No `MembershipGuard`
- * and no `@WorkspaceId()`: a point belongs to the person, not to whichever
- * workspace happens to be active, and gating it on workspace membership
- * would be scoping it by the wrong axis entirely.
+ * The RETIRED Snap Apps points, read only — `docs/ECOSYSTEM.md` D33.
  *
- * There is no redemption endpoint here, deliberately: redemption happens in
- * yourtal, and `point_ledger` is append-only (`app_rw` has no UPDATE or
- * DELETE grant — migration 0024), so nothing in this product writes a
- * negative entry.
+ * Snap Apps no longer writes `point_ledger`: YourTal points are the only
+ * points with value, and what YourTal paid for the receipts reported from this
+ * account is `pointsReported` on `GET /v1/yourtal/link`. These two reads stay
+ * so an app version that still asks for them keeps loading, and so the history
+ * stays readable. Nothing in the current apps or website calls them. They
+ * return what was earned before the retirement and never change.
+ *
+ * USER-scoped, not tenant-scoped, so `SessionGuard` alone: no
+ * `MembershipGuard` and no `@WorkspaceId()`.
  */
 @ApiTags('points')
 @Controller('v1/points')
 @UseGuards(SessionGuard)
 export class PointsController {
   @Get()
-  @ApiOperation({ summary: 'Your points balance' })
+  @ApiOperation({
+    summary: 'DEPRECATED: your retired Snap Apps points balance',
+    description: 'Frozen: Snap Apps stopped awarding points on 2026-10-20. YourTal points are shown from GET /v1/yourtal/link.',
+  })
   async balance(@CurrentUser() user: AuthUser): Promise<PointBalance> {
     const balance = await getPointBalance(user.userId);
     return { balance };
@@ -31,8 +34,8 @@ export class PointsController {
 
   @Get('ledger')
   @ApiOperation({
-    summary: 'How your points were earned',
-    description: 'Most recent first, capped at 200 rows. These are the Snap Apps scan points. YourTal pays its own points for each receipt once the account is linked (GET /v1/yourtal/link).',
+    summary: 'DEPRECATED: how your retired Snap Apps points were earned',
+    description: 'History only, most recent first, capped at 200 rows. Snap Apps stopped awarding points on 2026-10-20. YourTal pays its own points for each receipt once the account is linked (GET /v1/yourtal/link).',
   })
   async ledger(
     @CurrentUser() user: AuthUser,

@@ -63,6 +63,12 @@ export type AdPlacement =
 export interface HouseAdContext {
   /** `PlanUsage.planCode` (see `@snap/api-contract`), e.g. `"free"`. */
   planCode?: string;
+  /**
+   * `YourtalLinkStatus.available`: the server has the YourTal link on. The
+   * individual panel's layout supplies it to every slot (`HouseAdProvider`).
+   * Entries that send people to the link fail closed on it.
+   */
+  yourtalAvailable?: boolean;
 }
 
 export interface HouseAdEntry {
@@ -124,10 +130,12 @@ export const HOUSE_ADS: readonly HouseAdEntry[] = [
   {
     id: 'yourtal-points-2026-09',
     placements: ['individual-goals', 'individual-mileage', 'individual-documents'],
-    headline: 'Every scan is already earning',
-    body: 'One point per receipt, building quietly. Spending them in yourtal is coming — we will say so the day it lands, not before.',
+    headline: 'Your receipts can earn YourTal points',
+    body: 'Link your YourTal account and each receipt you scan earns 10 points in Australia, paid into your YourTal wallet. Only adult accounts can earn.',
     href: '/app/points',
-    ctaLabel: 'See your points',
+    ctaLabel: 'Link YourTal',
+    // Fails closed: with the link off, /app/points is a 404, and a CTA to it is a dead link.
+    eligible: (context) => context.yourtalAvailable === true,
   },
   {
     id: 'upgrade-sole-trader-2026-09',

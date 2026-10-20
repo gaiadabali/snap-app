@@ -17,13 +17,11 @@ import type {
   AlertItem,
   NotificationPrefs,
   PrivacySettings,
-  Reward,
   SavedCard,
   UsageKind,
   UsagePeriod,
 } from '@snap/api-contract';
 
-import { yourtalWebUrl } from '../config.js';
 import { CurrentUser, SessionGuard, type AuthUser } from '../common/auth.guard.js';
 
 /**
@@ -49,14 +47,13 @@ import { CurrentUser, SessionGuard, type AuthUser } from '../common/auth.guard.j
  *      never a PAN;
  *   3. delete this file's `Map`s and point the controllers at repos.
  *
- * Until those tables exist the mobile client hides the wallet, alerts, rewards
+ * Until those tables exist the mobile client hides the wallet, alerts
  * and fingerprint surfaces behind `EXPERIMENTAL_FEATURES_ENABLED`
  * (`apps/mobile/src/config.ts`), off by default. Notification and privacy
  * preferences are NOT hidden: they are still shown, and they still reset to
  * their defaults on a restart.
  *
- * `GET /v1/usage` and the rewards pair are the exceptions worth reading
- * closely — see their own comments.
+ * `GET /v1/usage` is the exception worth reading closely — see its comment.
  */
 
 /* ── In-process state, keyed by user ──────────────────────────────────────── */
@@ -81,19 +78,6 @@ const DEFAULT_PRIVACY: PrivacySettings = {
   contributeToModel: false,
   retentionMonths: 60,
 };
-
-/**
- * YourTal store listings, shown so points have a visible purpose. Display
- * only. Built per request so the absolute deep links follow `YOURTAL_WEB_URL`.
- * (Still a hard-coded list; ticket 2.6.b replaces it with YourTal's own.)
- */
-function rewards(): Reward[] {
-  const store = `${yourtalWebUrl()}/store`;
-  return [
-    { id: 'yt-scan-10', name: '10 free scans', description: 'A Snap Apps voucher for ten receipts.', cost: 200, imageUrl: null, deepLink: `${store}/yt-scan-10`, available: true },
-    { id: 'yt-scan-25', name: '25 free scans', description: 'A Snap Apps voucher for a month of shopping.', cost: 450, imageUrl: null, deepLink: `${store}/yt-scan-25`, available: true },
-  ];
-}
 
 /**
  * Copies the known keys of a PATCH body, and nothing else, onto a fresh object.
@@ -209,8 +193,9 @@ export class UsageController {
    * ⚠ Returns an EMPTY period, always.
    *
    * This is deliberate and is the honest answer until the projection exists.
-   * A real implementation reads `usage_grants` consumption for credits and
-   * `point_ledger` for points, grouped by month. Inventing rows here would
+   * A real implementation reads `usage_grants` consumption for credits,
+   * grouped by month. There is no points half: Snap Apps points are retired
+   * (D33) and YourTal's points are shown from `GET /v1/yourtal/link`. Inventing rows here would
    * put fabricated spend in front of someone reconciling a balance, which is
    * worse than an empty month.
    */
@@ -224,66 +209,6 @@ export class UsageController {
   @ApiOperation({ summary: 'Months with usage to show (STUB — returns none)' })
   months(): string[] {
     return [];
-  }
-}
-
-/* ── Rewards ──────────────────────────────────────────────────────────────── */
-
-@ApiTags('rewards')
-@Controller('v1/rewards')
-@UseGuards(SessionGuard)
-export class RewardsController {
-  @Get()
-  @ApiOperation({ summary: 'Points-for-credits catalogue (STUB)' })
-  list(): Reward[] {
-    return rewards();
-  }
-
-}
-
-/* ── Voucher redemption — Snap Apps as a yourtal merchant ─────────────────── */
-
-/**
- * ⚠ NOT IMPLEMENTED, and refuses rather than pretending.
- *
- * Snap Apps is a REDEEMER in yourtal's settlement protocol (their docs/09
- * §8): `POST /v1/vouchers/authorize` for the pack amount, then `capture` on
- * success, `void` if we fail after authorising. Every call carries a mandatory
- * idempotency key, and capture can never exceed authorise.
- *
- * It cannot be stubbed. A stub that grants credits for any code is a free
- * credit faucet, and one that grants them without capturing leaves yourtal
- * holding value it has already given away.
- *
- * Blocked on three things, none of them ours alone:
- *   1. the partner link to YourTal is not built here yet. YourTal has a store,
- *      a wallet and a voucher service (`/v1/vouchers/*`), but Snap Apps has no
- *      linked-account flow, partner credentials or settlement client to call
- *      them with (tickets 2.3.a and later).
- *   2. a voucher is denominated in `faceValueIdr` and yourtal's own IDR minor
- *      unit is still open (their YT-0506). Credit packs here are priced in
- *      AUD. Nothing converts between them.
- *   3. partial redemption is a per-batch policy over there. Snap grants whole
- *      packs, so only single-use fits today — that needs agreeing, not
- *      assuming, because a user who silently loses the remainder of a voucher
- *      is a user who stops trusting the store.
- *
- * Points from receipts will land in the user's YourTal wallet once they link
- * their YourTal account. That link is coming soon and is not built yet.
- *
- * Earning is unaffected and already works: a scan writes a positive
- * `point_ledger` row. Only the way back is missing.
- */
-@ApiTags('vouchers')
-@Controller('v1/vouchers')
-@UseGuards(SessionGuard)
-export class VouchersController {
-  @Post('redeem')
-  @ApiOperation({ summary: 'Redeem a yourtal voucher (NOT IMPLEMENTED — refuses)' })
-  redeem(): never {
-    throw new NotImplementedException(
-      'Voucher redemption is not available yet: Snap Apps is not linked to YourTal.',
-    );
   }
 }
 

@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, type CreditBalance, type PlanUsage } from '@/api';
 import { Loading, StatRow } from '@/components/form';
+import { useYourtalStatus } from '@/components/useYourtalStatus';
 import { GradientHero, HeroBody, HeroFigure, HeroLabel, Raised } from '@/components/rich';
 import { Body, Button, Card, Chip, Divider, Figure, Label, Screen, SectionHeader, Small } from '@/components/ui';
 import { formatShortDate, radius, space, usePalette } from '@/theme';
@@ -21,6 +22,7 @@ export default function PlanScreen() {
   const p = usePalette();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const yourtal = useYourtalStatus();
   const [plan, setPlan] = useState<PlanUsage | null>(null);
   const [credits, setCredits] = useState<CreditBalance | null>(null);
 
@@ -147,7 +149,9 @@ export default function PlanScreen() {
 
             <View style={{ gap: space.md }}>
               <Button label="Credits" tone="outline" onPress={() => router.push('/credits')} />
-              <Button label="Points" tone="outline" onPress={() => router.push('/points')} />
+              {yourtal?.available ? (
+                <Button label="YourTal points" tone="outline" onPress={() => router.push('/points')} />
+              ) : null}
               <Button
                 label="Manage people and seats"
                 tone="outline"

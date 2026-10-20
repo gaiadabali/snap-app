@@ -68,10 +68,23 @@ describe('selectHouseAd', () => {
     expect(selectHouseAd(categoriesPlacement, { planCode: 'sole_trader' }, new Set())?.id).not.toBe(upgrade.id);
   });
 
-  it('the yourtal ad is honest that redemption has not shipped', () => {
+  it('the yourtal ad says only what is true now: link, then earn in YourTal', () => {
     const yourtal = HOUSE_ADS.find((a) => a.id === 'yourtal-points-2026-09')!;
-    expect(yourtal.body.toLowerCase()).toMatch(/coming/);
-    expect(yourtal.body.toLowerCase()).not.toMatch(/redeem now|spend (them |your points )?today/);
+    const copy = `${yourtal.headline} ${yourtal.body}`.toLowerCase();
+    // Retired claims: a Snap Apps point per scan, and spending "coming soon".
+    expect(copy).not.toMatch(/coming|one point per|building quietly|already earning/);
+    expect(copy).toMatch(/link your yourtal account/);
+    expect(copy).toMatch(/10 points/);
+    expect(copy).toMatch(/adult/);
+    expect(yourtal.href).toBe('/app/points');
+  });
+
+  it('the yourtal ad fails closed: never shown when the server has the link off or the page does not say', () => {
+    const yourtal = HOUSE_ADS.find((a) => a.id === 'yourtal-points-2026-09')!;
+    const placement: AdPlacement = 'individual-goals';
+    expect(selectHouseAd(placement, {}, new Set())?.id).not.toBe(yourtal.id);
+    expect(selectHouseAd(placement, { yourtalAvailable: false }, new Set())?.id).not.toBe(yourtal.id);
+    expect(selectHouseAd(placement, { yourtalAvailable: true }, new Set())?.id).toBe(yourtal.id);
   });
 });
 

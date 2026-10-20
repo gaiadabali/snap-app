@@ -96,7 +96,7 @@ settings, summaries, transactions, workspaces. Sixty-one routes.
 | Extraction worker, validators, replay | **Built** |
 | Double-entry ledger | **Built** — `POST /v1/documents/:id/transaction`, `POST /v1/transactions/:id/post`, `GET /v1/transactions` |
 | BAS report | **Built** — `GET /v1/reports/bas`, with tests including the no-valid-tax-invoice case |
-| Credits and points | **Built** — controllers, repos, scan-point pipeline |
+| Credits, and YourTal points | **Built** — credits controllers and repos; local points retired (D33) and replaced by the YourTal link screens (phone and web) |
 | Identity, RLS, workspaces, roles | **Built**, with negative-case tests |
 | Offline outbox + idempotency | **Built** (mobile), verified genuinely offline |
 | Mobile app | **Built** — 51 screens, personal-only behind D34 |

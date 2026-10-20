@@ -12,7 +12,6 @@ import type { ConsumptionTaxSpec, TaxRules } from '@snap/tax-rules';
 import { sql } from 'drizzle-orm';
 
 import { getDb } from './db.js';
-import { awardScanPoint } from './credits/points.repo.js';
 import type { ReceiptOriginal } from './yourtal/external-ref.js';
 import { queueReceiptReport } from './yourtal/outbox.repo.js';
 import { maskCardLast4, type ValidatedExtraction } from './extraction/types.js';
@@ -1641,23 +1640,16 @@ export async function saveExtraction(
     return { documentId, uploadedBy, receiptOriginal, sameReceiptCaptureIds };
   });
 
-  // One point for one genuinely completed scan — see the header on
-  // `awardScanPoint` for why THIS is the point in the pipeline that counts,
-  // and why the unique index (not a pre-check) is what makes a retried or
-  // re-run capture safe to call this again. Never allowed to fail the
-  // extraction that was just durably saved above: a missed point is a
-  // support ticket, a lost extraction is a compliance problem.
-  if (uploadedBy) {
-    await awardScanPoint(uploadedBy, captureId).catch((error) => {
-      console.error(`awardScanPoint failed for capture ${captureId}:`, error);
-    });
-  }
+  // No Snap Apps point is written here any more (docs/ECOSYSTEM.md D33: local
+  // points are retired; YourTal points are the only ones with value, and the
+  // report queued below is what earns them). `point_ledger` keeps its history.
 
   // Queue the receipt for YourTal (group plan 2.5), when the person who
   // captured it holds a live link. This writes one outbox row and makes NO
   // network call: the worker drains the outbox, so YourTal being slow or down
   // can never hold up or fail a scan. Never allowed to fail the extraction
-  // either, for the same reason as the point above. A crash between the
+  // either: a missed report is a support ticket, a lost extraction is a
+  // compliance problem. A crash between the
   // commit above and this line is covered by the job itself: it is completed
   // only after `handle()` returns, so the retry re-runs this path, and the
   // outbox's (user, action, external_ref) key makes the second call a no-op.

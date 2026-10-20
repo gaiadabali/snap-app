@@ -1610,7 +1610,11 @@ export interface CheckoutSession {
   message?: string;
 }
 
-/** `GET /v1/points` — USER-scoped; see the header above. */
+/**
+ * `GET /v1/points` — DEPRECATED. The retired Snap Apps points, frozen at what
+ * they were on 2026-10-20 (`docs/ECOSYSTEM.md` D33). YourTal points are shown
+ * from `YourtalLinkStatus`. Kept so older installed apps keep loading.
+ */
 export interface PointBalance {
   balance: number;
 }
@@ -1667,16 +1671,9 @@ export interface LinkYourtalRequest {
 }
 
 /**
- * One row of `GET /v1/points/ledger` — append-only history, most recent
- * first. There is no redemption type here: redemption happens in yourtal,
- * not in this product, and nothing in this contract should be read as
- * assuming otherwise.
- *
- * This held, was briefly contradicted on 2026-09-19 by a points-for-credits
- * trade added here, and holds again — the trade was removed once the yourtal
- * side was checked. Points leave the balance in yourtal; what comes back to
- * Snap Apps is a VOUCHER, redeemed through `RedeemVoucherRequest`. So every
- * `delta` written by this product is still positive.
+ * One row of `GET /v1/points/ledger` — DEPRECATED history of the retired Snap
+ * Apps points, most recent first. Nothing writes these rows any more
+ * (`docs/ECOSYSTEM.md` D33); every `delta` is positive and none will be added.
  */
 export interface PointLedgerEntry {
   id: string;
@@ -1877,7 +1874,7 @@ export interface TransactionRow {
   }>;
 }
 
-/* ── Wallet, usage, rewards & device preferences ──────────────────────────────
+/* ── Wallet, usage & device preferences ──────────────────────────────
  * Added 2026-09-19 for the mobile redesign ("Snap Apps Prototype.dc.html").
  *
  * Everything here is CONSUMER-side and USER-scoped unless a member says
@@ -1944,13 +1941,12 @@ export type UsageKind = 'credits' | 'points';
 /** One line of "where did they go?" for a month. */
 export interface UsageItem {
   id: string;
-  /** Merchant, pack or reward — whatever consumed or produced the units. */
+  /** Merchant or pack — whatever consumed or produced the units. */
   label: string;
   occurredAt: IsoDate;
   /**
    * Units moved, always POSITIVE. The sign is implied by `UsagePeriod.kind`
-   * plus the endpoint: this is a spend report, not a ledger. The signed,
-   * append-only truth for points lives in `PointLedgerEntry`.
+   * plus the endpoint: this is a spend report, not a ledger.
    */
   amount: number;
 }
@@ -1969,70 +1965,6 @@ export interface UsagePeriod {
   total: number;
   items: UsageItem[];
 }
-
-/**
- * A yourtal listing that Snap Apps users are likely to want, shown here so the
- * points they earn have a visible purpose.
- *
- * READ-ONLY, and deliberately so. Points are EARNED in Snap Apps and SPENT in
- * yourtal — `PointLedgerEntry` above says exactly that and it is correct. An
- * earlier pass of this file added a points-for-credits trade inside Snap Apps
- * and flagged the contradiction; the trade was wrong and has been removed.
- *
- * The real loop (yourtal docs/09 sections 7 and 8):
- *
- *     scan a receipt          earn 1 point
- *     spend points in yourtal a voucher is minted, with a code
- *     bring the code here     Snap Apps honours it and grants credits
- *
- * So Snap Apps is a REDEEMER in yourtal's settlement protocol, never a store.
- * `deepLink` hands the user to yourtal to do the spending.
- */
-export interface Reward {
-  id: string;
-  name: string;
-  description: string;
-  /** Points yourtal charges for it. Display only — nothing here can buy it. */
-  cost: number;
-  /** Absolute URL, or `null` while the catalogue has no artwork. */
-  imageUrl: string | null;
-  /** Opens yourtal at this listing. */
-  deepLink: string;
-  available: boolean;
-}
-
-/**
- * `POST /v1/vouchers/redeem` — a yourtal voucher presented at Snap Apps.
- *
- * Snap Apps is the merchant here. The server authorises and captures against
- * yourtal's voucher service (`authorize` -> `capture`, docs/09 section 8.1,
- * idempotency key mandatory) and grants the credits the voucher paid for.
- * The client only ever submits a code; it must never talk to yourtal directly,
- * because a client that can authorise is a client that can drain a voucher.
- *
- * Two things are NOT settled and must be before this ships:
- *   - yourtal denominates a voucher in `faceValueIdr`, and its own minor unit
- *     is still open (their YT-0506). Snap's credit packs are priced in AUD.
- *     Nothing here converts between them yet.
- *   - partial redemption is a per-batch policy in yourtal (balance-carrying,
- *     single-use, minimum spend). Snap grants whole credit packs, so only
- *     single-use makes sense today; the others need a decision.
- */
-export interface RedeemVoucherRequest {
-  /** As printed in yourtal: 6–24 characters. Compared case-insensitively. */
-  code: string;
-}
-
-export interface VoucherRedemption {
-  code: string;
-  /** What the voucher was for, in yourtal's words — e.g. "10 free scans". */
-  title: string;
-  creditsGranted: number;
-  /** The credits balance AFTER the grant, so no second fetch is needed. */
-  creditsBalance: number;
-  redeemedAt: IsoDateTime;
-}
-
 
 /**
  * What the user wants to be told about. USER-scoped, not workspace-scoped: a
