@@ -29,6 +29,11 @@ on:
   pull_request:
   workflow_dispatch:
 
+# Read-only token: no job here writes to the repo, PRs or releases. Artifacts and
+# caches use the runner's own service, not GITHUB_TOKEN scopes.
+permissions:
+  contents: read
+
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true

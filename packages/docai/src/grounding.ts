@@ -51,6 +51,26 @@ export type GroundedField = {
 /* ── Normalisation ───────────────────────────────────────────────────────── */
 
 /**
+ * Money, normalised: digits, a decimal point and a sign only, with trailing
+ * zeros dropped after a decimal point (`12.50` -> `12.5`, `12.00` -> `12`).
+ *
+ * Linear on purpose. The regexes this replaced (`^(-?\d*\.\d*?)0+$`) backtrack
+ * quadratically on a long run of zeros that does not end the string, and the
+ * input is OCR text. Results are identical for every input: zeros are only
+ * trimmed when the string is `-?digits.digits` (a second dot or a mid-string
+ * sign leaves it untouched, as before), and a trailing dot is always dropped.
+ */
+export const normaliseMoney = (raw: string): string => {
+  let s = raw.replace(/[^0-9.\-]/g, '');
+  if (/^-?\d*\.\d*$/.test(s)) {
+    let end = s.length;
+    while (end > 0 && s.charCodeAt(end - 1) === 48) end--; // 48 = "0"
+    s = s.slice(0, end);
+  }
+  return s.endsWith('.') ? s.slice(0, -1) : s;
+};
+
+/**
  * A page says `$ 1 , 042.60` across four boxes; the model says `1042.60`.
  *
  * Both are the same number, and a comparison that says otherwise is measuring
@@ -63,11 +83,7 @@ const normalise = (kind: FieldKind, raw: string): string => {
       // Keep digits, a decimal point and a leading sign. Trailing `.00` is
       // dropped so `110` and `110.00` agree — the same rule `validators.ts`
       // applies when it compares amounts.
-      return raw
-        .replace(/[^0-9.\-]/g, '')
-        .replace(/^(-?\d+)\.0+$/, '$1')
-        .replace(/^(-?\d*\.\d*?)0+$/, '$1')
-        .replace(/\.$/, '');
+      return normaliseMoney(raw);
     case 'abn':
       return raw.replace(/\D/g, '');
     case 'date':
