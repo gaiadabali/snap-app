@@ -1,0 +1,185 @@
+import * as oidc from 'openid-client';
+
+import { refusal } from './claims.js';
+import {
+  YOURTAL_SCOPES,
+  webClientKey,
+  yourtalClient,
+  type YourTalClientKind,
+  type YourTalClientSettings,
+} from './settings.js';
+
+/**
+ * The protocol half of Sign in with YourTal, all in openid-client 6.x
+ * (OpenID Certified). Nothing here is hand-written protocol: discovery, the
+ * authorization URL, PKCE, the `iss` response parameter (RFC 9207), the code
+ * redemption with `private_key_jwt` or as a public client, and the ID token
+ * checks (signature from the JWKS by `kid`, `iss`, `aud`, `azp`, `nonce`,
+ * `exp`, `iat`) are the library's. docs/26 §1.7.
+ *
+ * YourTal's tokens never leave this module except as the verified claims:
+ * nothing is stored, logged or sent to the browser or the phone (§1.9, §1.10).
+ */
+
+/** Discovery is cacheable for an hour (docs/26 §1.8). The JWKS cache lives inside openid-client. */
+const DISCOVERY_TTL_MS = 60 * 60 * 1000;
+/** No request to YourTal waits longer than this. */
+const HTTP_TIMEOUT_SECONDS = 10;
+
+type Cached = { at: number; issuer: string; clientId: string; config: Promise<oidc.Configuration> };
+const configurations = new Map<YourTalClientKind, Cached>();
+
+async function configurationFor(issuer: URL, client: YourTalClientSettings): Promise<oidc.Configuration> {
+  const cached = configurations.get(client.kind);
+  if (
+    cached &&
+    cached.issuer === issuer.href &&
+    cached.clientId === client.clientId &&
+    Date.now() - cached.at < DISCOVERY_TTL_MS
+  ) {
+    return cached.config;
+  }
+
+  const make = async (): Promise<oidc.Configuration> => {
+    const auth =
+      client.kind === 'web'
+        ? oidc.PrivateKeyJwt(await webClientKey().then(({ key, kid }) => ({ key, kid })))
+        : oidc.None();
+    // Plain http only ever reaches here outside production (config.ts refuses
+    // it there): a developer's machine, or the tests' stand-in provider.
+    const insecure = issuer.protocol === 'http:';
+    return oidc.discovery(
+      issuer,
+      client.clientId,
+      {
+        redirect_uris: [client.redirectUri],
+        response_types: ['code'],
+        // docs/26 §1.7: RS256 for ID tokens. Anything else is refused.
+        id_token_signed_response_alg: 'RS256',
+      },
+      auth,
+      { timeout: HTTP_TIMEOUT_SECONDS, execute: insecure ? [oidc.allowInsecureRequests] : [] },
+    );
+  };
+
+  const config = make();
+  configurations.set(client.kind, { at: Date.now(), issuer: issuer.href, clientId: client.clientId, config });
+  // A failed discovery is not cached: the next sign-in asks again.
+  config.catch(() => {
+    if (configurations.get(client.kind)?.config === config) configurations.delete(client.kind);
+  });
+  return config;
+}
+
+/** Tests only. */
+export function resetYourTalDiscoveryCache(): void {
+  configurations.clear();
+}
+
+function clientOrRefuse(kind: YourTalClientKind) {
+  const found = yourtalClient(kind);
+  if (!found) throw refusal('not_configured');
+  return found;
+}
+
+/** Whether a client is configured, for `GET /v1/auth/yourtal`. */
+export function isClientConfigured(kind: YourTalClientKind): boolean {
+  return yourtalClient(kind) !== null;
+}
+
+export type StartedAuthorization = {
+  url: string;
+  state: string;
+  nonce: string;
+  codeVerifier: string;
+};
+
+/**
+ * The authorization URL for a new sign-in, and the secrets the finish must
+ * match. `state`, `nonce` and the PKCE verifier are 32 random bytes each
+ * (openid-client's generators); only the S256 challenge goes in the URL.
+ */
+export async function startAuthorization(
+  kind: YourTalClientKind,
+  options: { signUp: boolean; locale: string },
+): Promise<StartedAuthorization> {
+  const { issuer, client } = clientOrRefuse(kind);
+  let config: oidc.Configuration;
+  try {
+    config = await configurationFor(issuer, client);
+  } catch {
+    throw refusal('yourtal_unavailable');
+  }
+
+  const state = oidc.randomState();
+  const nonce = oidc.randomNonce();
+  const codeVerifier = oidc.randomPKCECodeVerifier();
+  const parameters: Record<string, string> = {
+    redirect_uri: client.redirectUri,
+    scope: YOURTAL_SCOPES,
+    response_type: 'code',
+    code_challenge: await oidc.calculatePKCECodeChallenge(codeVerifier),
+    code_challenge_method: 'S256',
+    state,
+    nonce,
+    ui_locales: options.locale,
+  };
+  // OpenID Connect "Initiating User Registration": YourTal opens its sign-up
+  // form instead of sign-in (docs/26 §1.7).
+  if (options.signUp) parameters.prompt = 'create';
+
+  return { url: oidc.buildAuthorizationUrl(config, parameters).href, state, nonce, codeVerifier };
+}
+
+/**
+ * Redeem the code and return the ID token's claims, verified.
+ *
+ * `state` and `iss` have already been compared by the caller (constant time,
+ * against the stored flow and the configured issuer); openid-client checks
+ * them again here, together with PKCE, the client authentication and every
+ * ID token check. Any failure is one refusal: the person starts again.
+ */
+export async function redeemCode(
+  kind: YourTalClientKind,
+  response: { code: string; state: string; iss: string },
+  expected: { state: string; nonce: string; codeVerifier: string },
+): Promise<Record<string, unknown>> {
+  const { issuer, client } = clientOrRefuse(kind);
+  let config: oidc.Configuration;
+  try {
+    config = await configurationFor(issuer, client);
+  } catch {
+    throw refusal('yourtal_unavailable');
+  }
+
+  // The authorization response exactly as YourTal sent it to the redirect URI.
+  const currentUrl = new URL(client.redirectUri);
+  currentUrl.searchParams.set('code', response.code);
+  currentUrl.searchParams.set('state', response.state);
+  currentUrl.searchParams.set('iss', response.iss);
+
+  let tokens: Awaited<ReturnType<typeof oidc.authorizationCodeGrant>>;
+  try {
+    // openid-client sends `redirect_uri` as this URL without its query: the
+    // registered redirect URI, character for character.
+    tokens = await oidc.authorizationCodeGrant(config, currentUrl, {
+      pkceCodeVerifier: expected.codeVerifier,
+      expectedState: expected.state,
+      expectedNonce: expected.nonce,
+      idTokenExpected: true,
+    });
+  } catch (error) {
+    // A network failure is YourTal being down; anything else (a used code, a
+    // bad signature, a wrong nonce) is a refused sign-in. Neither carries the
+    // library's message out: it can quote the response.
+    if (error instanceof TypeError || (error as { name?: string })?.name === 'TimeoutError') {
+      throw refusal('yourtal_unavailable');
+    }
+    throw refusal('yourtal_failed');
+  }
+
+  const claims = tokens.claims();
+  if (!claims) throw refusal('yourtal_failed');
+  // The access token and the ID token go out of scope here and are never kept.
+  return { ...claims } as Record<string, unknown>;
+}

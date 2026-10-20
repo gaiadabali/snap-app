@@ -128,6 +128,15 @@ if [[ -n "${YOURTAL_ENV_FILE_HOST:-}" && ! -f "${YOURTAL_ENV_FILE_HOST}" ]]; the
   export YOURTAL_ENV_FILE_HOST=/dev/null
 fi
 
+# Sign in with YourTal's website key (group task 3.3) follows the same rule:
+# optional, and a missing file means the YourTal button stays off for this
+# deploy rather than a refused compose bind.
+if [[ -n "${YOURTAL_OIDC_KEY_FILE_HOST:-}" && ! -f "${YOURTAL_OIDC_KEY_FILE_HOST}" ]]; then
+  log "WARNING: YOURTAL_OIDC_KEY_FILE_HOST=${YOURTAL_OIDC_KEY_FILE_HOST} is not a file on this host;"
+  log "         Sign in with YourTal on the website stays OFF for this deploy (mounting /dev/null instead)."
+  export YOURTAL_OIDC_KEY_FILE_HOST=/dev/null
+fi
+
 if [[ -n "${CALLER_IMAGE_TAG}" ]]; then
   IMAGE_TAG="${CALLER_IMAGE_TAG}"
   export IMAGE_TAG

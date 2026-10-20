@@ -1,5 +1,7 @@
 import { boolean, integer, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 
+import { citext } from '../types';
+
 /**
  * The YourTal points link (migration 0037).
  *
@@ -56,4 +58,46 @@ export const yourtalOutbox = pgTable('yourtal_outbox', {
   points: integer('points'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   finishedAt: timestamp('finished_at', { withTimezone: true }),
+});
+
+/**
+ * A started "Sign in with YourTal" (migration 0039): the `state`, `nonce` and
+ * PKCE verifier the finish must match, for ten minutes, once. Reached only
+ * through `identity_yourtal_flow_*` (SECURITY DEFINER, owned by app_identity);
+ * the application role has no grant and no policy here.
+ */
+export const yourtalSignInFlows = pgTable('yourtal_sign_in_flows', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  /** 'web' | 'mobile'. */
+  client: text('client').notNull(),
+  state: text('state').notNull(),
+  nonce: text('nonce').notNull(),
+  codeVerifier: text('code_verifier').notNull(),
+  returnTo: text('return_to'),
+  signUp: boolean('sign_up').notNull().default(false),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  consumedAt: timestamp('consumed_at', { withTimezone: true }),
+});
+
+/**
+ * The manual review list for Sign in with YourTal (0039, group task 3.6.c):
+ * a second YourTal `sub` for a linked email, an email copy that would collide,
+ * or an account whose subject is not a format this code links. Written only by
+ * `identity_yourtal_sign_in`; one open row per (kind, sub).
+ */
+export const yourtalSignInReviews = pgTable('yourtal_sign_in_reviews', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  /** 'second_sub' | 'email_collision' | 'unlinkable_account'. */
+  kind: text('kind').notNull(),
+  yourtalSub: text('yourtal_sub').notNull(),
+  email: citext('email'),
+  userId: uuid('user_id'),
+  otherUserId: uuid('other_user_id'),
+  firstSeenAt: timestamp('first_seen_at', { withTimezone: true }).notNull().defaultNow(),
+  lastSeenAt: timestamp('last_seen_at', { withTimezone: true }).notNull().defaultNow(),
+  attempts: integer('attempts').notNull().default(1),
+  resolvedAt: timestamp('resolved_at', { withTimezone: true }),
+  resolvedBy: uuid('resolved_by'),
+  resolution: text('resolution'),
 });

@@ -294,6 +294,10 @@ app.use((request: { ip?: string; url?: string }, response: import('http').Server
     void import('./auth/sessions.js')
       .then(({ authHousekeeping }) => authHousekeeping())
       .catch((error) => logger.warn(`auth housekeeping failed: ${String(error)}`));
+    // Sign in with YourTal flows, a day after they expired (0039).
+    void import('./auth/yourtal-signin/repo.js')
+      .then(({ flowHousekeeping }) => flowHousekeeping())
+      .catch((error) => logger.warn(`yourtal flow housekeeping failed: ${String(error)}`));
   }
 });
 

@@ -212,6 +212,56 @@ const schema = z.object({
    */
   YOURTAL_ENV_FILE: z.string().optional(),
 
+  /**
+   * "Sign in with YourTal" (group task 3.3, yourtal/docs/26-sign-in-with-yourtal.md):
+   * SnapApp as an OpenID Connect client of YourTal. OFF unless configured, so
+   * a deployment without these settings boots and behaves exactly as before.
+   *
+   *   YOURTAL_OIDC_ISSUER              e.g. https://yourtal.gaiada.com/oidc. The
+   *                                    exact issuer; discovery is fetched from
+   *                                    <issuer>/.well-known/openid-configuration
+   *                                    and must name this issuer. https only in
+   *                                    production.
+   *   YOURTAL_OIDC_WEB_CLIENT_ID       snapapp-staging-web (private_key_jwt)
+   *   YOURTAL_OIDC_MOBILE_CLIENT_ID    snapapp-staging-mobile (public, PKCE)
+   *   YOURTAL_OIDC_WEB_REDIRECT_URI    default <WEB_PUBLIC_URL>/auth/yourtal/callback
+   *   YOURTAL_OIDC_MOBILE_REDIRECT_URI default au.com.snapapps.app:/oauth/yourtal
+   *   YOURTAL_OIDC_KEY_FILE            in-container path of the web client's
+   *                                    PRIVATE key (host:
+   *                                    /etc/snap-apps/secrets/yourtal-oidc-web.jwk,
+   *                                    mounted read-only). The key is never in
+   *                                    the environment; see auth/yourtal-signin/settings.ts.
+   *
+   * Blank reads as unset (compose passes an unset `${VAR:-}` as ''), so a blank
+   * line turns the feature off rather than stopping the API from booting.
+   */
+  YOURTAL_OIDC_ISSUER: z
+    .string()
+    .optional()
+    .transform((v) => (v ?? '').trim() || undefined)
+    .pipe(z.string().url('YOURTAL_OIDC_ISSUER must be a URL').optional()),
+  YOURTAL_OIDC_WEB_CLIENT_ID: z
+    .string()
+    .optional()
+    .transform((v) => (v ?? '').trim() || undefined),
+  YOURTAL_OIDC_MOBILE_CLIENT_ID: z
+    .string()
+    .optional()
+    .transform((v) => (v ?? '').trim() || undefined),
+  YOURTAL_OIDC_WEB_REDIRECT_URI: z
+    .string()
+    .optional()
+    .transform((v) => (v ?? '').trim() || undefined)
+    .pipe(z.string().url('YOURTAL_OIDC_WEB_REDIRECT_URI must be a URL').optional()),
+  YOURTAL_OIDC_MOBILE_REDIRECT_URI: z
+    .string()
+    .optional()
+    .transform((v) => (v ?? '').trim() || undefined),
+  YOURTAL_OIDC_KEY_FILE: z
+    .string()
+    .optional()
+    .transform((v) => (v ?? '').trim() || undefined),
+
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
 
   /**
@@ -324,6 +374,17 @@ const schema = z.object({
   ASSISTANT_DAILY_LIMIT: z.string().optional(),
   ASSISTANT_PROXY_SECRET: z.string().optional(),
   ASSISTANT_LOG_TRANSCRIPTS: z.string().optional(),
+}).superRefine((settings, ctx) => {
+  // Sign in with YourTal over plain http is for a developer's machine and the
+  // test suite's stand-in provider only. docs/26 §1.7: no staging or
+  // production client has an http address.
+  if (settings.NODE_ENV !== 'production') return;
+  if (settings.YOURTAL_OIDC_ISSUER && !settings.YOURTAL_OIDC_ISSUER.startsWith('https://')) {
+    ctx.addIssue({ code: 'custom', path: ['YOURTAL_OIDC_ISSUER'], message: 'must be https in production' });
+  }
+  if (settings.YOURTAL_OIDC_WEB_REDIRECT_URI && !settings.YOURTAL_OIDC_WEB_REDIRECT_URI.startsWith('https://')) {
+    ctx.addIssue({ code: 'custom', path: ['YOURTAL_OIDC_WEB_REDIRECT_URI'], message: 'must be https in production' });
+  }
 });
 
 export type Config = z.infer<typeof schema>;

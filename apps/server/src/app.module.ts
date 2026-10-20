@@ -5,6 +5,7 @@ import { AdminModule } from './admin/admin.module.js';
 import { AssistantController } from './assistant/assistant.controller.js';
 import { AccountController } from './auth/account.controller.js';
 import { AuthController } from './auth/auth.controller.js';
+import { YourTalSignInController } from './auth/yourtal-signin/yourtal-signin.controller.js';
 import { CapturesController } from './captures/captures.controller.js';
 import { BusinessController } from './business/business.controller.js';
 import { CreditsController } from './credits/credits.controller.js';
@@ -99,6 +100,7 @@ export class HealthController {
   controllers: [
     HealthController,
     AuthController,
+    YourTalSignInController,
     AccountController,
     WorkspacesController,
     CapturesController,

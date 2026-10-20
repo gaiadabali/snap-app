@@ -35,6 +35,9 @@ vi.mock('../db.js', () => ({ getDb: () => ({ __fakeDb: true }) }));
 // deliberately does without. What is under test here is the GATE, and that
 // the simulator answers through the same `signedIn` as every real route.
 vi.mock('./sessions.js', () => ({ issueSession: async () => 'simulated-session-token' }));
+// Not linked to YourTal: SnapApp's own sign-in methods still open these accounts
+// (signed-in.ts's door rule; yourtal-signin.db.test.ts covers the refusal).
+vi.mock('./yourtal-signin/repo.js', () => ({ isLinkedToYourTal: async () => false }));
 
 const DEMO_IDENTITY = {
   userId: '33333333-3333-4333-8333-333333333331',

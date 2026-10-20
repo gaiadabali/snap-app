@@ -135,6 +135,10 @@ services:
       # codes and revokes links. Read from the file mounted below; see the
       # note on that mount. The partner id comes from .env (YOURTAL_PARTNER_ID).
       YOURTAL_ENV_FILE: /run/secrets/yourtal.env
+      # Sign in with YourTal (group task 3.3): the website client's PRIVATE
+      # key for private_key_jwt, read from the file mounted below. The other
+      # YOURTAL_OIDC_* settings come from .env; unset, the feature is off.
+      YOURTAL_OIDC_KEY_FILE: /run/secrets/yourtal-oidc-web.jwk
     volumes:
       - ${STORAGE_HOST_DIR:?set STORAGE_HOST_DIR in .env — where original captures persist on the host}:/data/storage
       # Same file, same mount, same uid-1001 readability rule as the worker's
@@ -161,6 +165,19 @@ services:
       - type: bind
         source: ${YOURTAL_ENV_FILE_HOST:-/dev/null}
         target: /run/secrets/yourtal.env
+        read_only: true
+        bind:
+          create_host_path: false
+      # ── Sign in with YourTal: the website client's key, OPTIONAL ─────────
+      # Host: /etc/snap-apps/secrets/yourtal-oidc-web.jwk (a private JWK made by
+      # `pnpm --filter @snap/server yourtal:oidc-key new`), mode 0600, readable
+      # by uid 1001. Same rules as yourtal.env above: unset mounts /dev/null
+      # and the website's YourTal button stays off; deploy.sh falls back to
+      # /dev/null when the named file is missing. The api only: the worker
+      # never signs anyone in.
+      - type: bind
+        source: ${YOURTAL_OIDC_KEY_FILE_HOST:-/dev/null}
+        target: /run/secrets/yourtal-oidc-web.jwk
         read_only: true
         bind:
           create_host_path: false

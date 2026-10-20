@@ -100,3 +100,68 @@ send is recorded in `mail_deliveries` (purposes `password_reset`,
 `email_verification`, `security_notice`). Reset and verification links are
 never queued for retry, for the magic link's reason: a queue would store a live
 token at rest.
+
+## Sign in with YourTal (group task 3.3, migration `0039_yourtal_sign_in.sql`)
+
+SnapApp is an OpenID Connect client of YourTal. The contract is YourTal's
+`docs/26-sign-in-with-yourtal.md`; this is how SnapApp implements its side.
+Off unless `YOURTAL_OIDC_ISSUER` and a client id are set (`deploy/.env.example`).
+
+**Flow.** `POST /v1/auth/yourtal/start {client: web|mobile, returnTo?, signUp?, locale?}`
+→ `{url, flowId, expiresAt}`. The server makes `state`, `nonce` and a PKCE
+verifier (S256) and keeps them in a 10-minute, single-use row
+(`yourtal_sign_in_flows`); scopes `openid email profile account`,
+`ui_locales`, and `prompt=create` for sign-up. YourTal returns `code`, `state`,
+`iss` to the redirect URI; `POST /v1/auth/yourtal/finish {flowId, code, state, iss}`
+takes the flow (a wrong `state` still spends it), checks `state` and `iss`,
+redeems the code with openid-client (website: `private_key_jwt`; phone app:
+public client), verifies the ID token (signature by `kid`, `iss`, `aud`,
+`nonce`, expiry), re-checks the claims (region AU or ID; `age_band` adult — a
+teen gets `teen_invite_required` until invites exist, 3.10) and opens an
+ordinary SnapApp session. `GET /v1/auth/yourtal` says which clients are on.
+No YourTal token is stored, logged or returned.
+
+**Which account (`identity_yourtal_sign_in`, SECURITY DEFINER).** The key is
+`users.subject = 'yourtal|<sub>'`.
+1. A known `sub`: that account. Its email and name copies follow YourTal; an
+   email another account holds is not taken (the copy stays, and an
+   `email_collision` row goes to `yourtal_sign_in_reviews`).
+2. A new `sub` whose verified email belongs to an account that was never
+   linked and whose subject is a legacy format — `dev|<email>` (magic link,
+   Google, demo and development sign-in, seeded people) or `pwd|<email>`
+   (password registration) — is linked to it, once. If that account's address
+   was never proven, its password is cleared and its sessions end (the
+   pre-hijacking rule). Outstanding reset links stop working.
+3. A new `sub` whose email belongs to an account already linked to another
+   `sub` is never linked: `second_sub` in the review list, and the person gets
+   `account_review`. Any other subject format: `unlinkable_account`, same.
+4. Otherwise a new account.
+A linked person is never looked up by email again.
+
+**Staff** (`platform_staff`, not revoked) must arrive with `amr` containing
+`hwk` or `mfa`, or get `staff_strong_auth_required` before anything is written.
+
+**SnapApp's own doors close for a linked account.** `signedIn(userId, method)`
+refuses `method = 'snapapp'` for a linked account with 403 `use_yourtal`, so
+password, magic link, Google, the demo routes and a password reset cannot open
+a session for it; a reset request for it sends no mail. Accounts not yet linked
+keep every method until 3.3.d retires them.
+
+**Website.** `/auth/yourtal` starts (`?signUp=1` for "Create account with
+YourTal") and keeps the flow id in a 10-minute `snap_yt_flow` cookie
+(httpOnly, Secure, SameSite=Lax, path `/auth/yourtal`);
+`/auth/yourtal/callback` finishes, sets the session cookie and goes to the
+stored `returnTo` (or onboarding). YourTal's own refusals
+(`error=access_denied` with `account_on_hold`, `region_not_supported`,
+`teen_*`, `user_cancelled`) map to messages in `lib/auth/yourtal-errors.ts`.
+
+**The website key.** `pnpm --filter @snap/server yourtal:oidc-key new <file>`
+makes an RS256 key, writes the private JWK (mode 0600) and prints the public
+JWK YourTal registers for the website client; `… public <file>` prints it again.
+On the host: `/etc/snap-apps/secrets/yourtal-oidc-web.jwk`, named by
+`YOURTAL_OIDC_KEY_FILE_HOST`.
+
+**Tests.** `auth/yourtal-signin/yourtal-signin.db.test.ts` runs a real
+`oidc-provider` 9.x as the stand-in YourTal (`test-support/fake-yourtal-oidc.ts`:
+PKCE required, pairwise subjects, `iss` parameter, the claims and `amr`)
+against a real Postgres.
