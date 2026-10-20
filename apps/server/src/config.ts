@@ -267,6 +267,30 @@ const schema = z.object({
     .optional()
     .default('false')
     .transform((v) => v === 'true'),
+
+  /**
+   * Snapper, the website assistant — docs/ASSISTANT.md §4, §8. All optional
+   * and all plain strings ON PURPOSE: compose passes an unset `${VAR:-}` as
+   * an empty string, and a coerced number or a `min(1)` would turn a blank
+   * line in deploy/.env into an API that refuses to boot. They are parsed,
+   * with defaults, by `assistant/config.ts#assistantConfigFrom`. A missing
+   * value turns the ASSISTANT off (status ok:false), never the API.
+   *
+   *   ASSISTANT_MODEL            OpenRouter model id; default z-ai/glm-5.3-flash
+   *   ASSISTANT_FALLBACK_MODEL   used only for the one retry before the first token
+   *   ASSISTANT_DAILY_LIMIT      answers per UTC day before "busy"; default 3000
+   *   ASSISTANT_PROXY_SECRET     the web proxy's shared secret. REQUIRED in
+   *                              production, where unset = assistant disabled
+   *   ASSISTANT_LOG_TRANSCRIPTS  '1' puts question and answer text in the log line
+   *
+   * The model key is NOT here: it is read by `extraction/provider.ts#
+   * readOpenRouterKey` (OPENROUTER_API_KEY, or the OLLAMA_ENV_FILE secret file).
+   */
+  ASSISTANT_MODEL: z.string().optional(),
+  ASSISTANT_FALLBACK_MODEL: z.string().optional(),
+  ASSISTANT_DAILY_LIMIT: z.string().optional(),
+  ASSISTANT_PROXY_SECRET: z.string().optional(),
+  ASSISTANT_LOG_TRANSCRIPTS: z.string().optional(),
 });
 
 export type Config = z.infer<typeof schema>;

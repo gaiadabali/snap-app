@@ -112,8 +112,26 @@ services:
       # Found by publishing an APK into the volume and watching the API answer
       # "nothing published" while the file sat there in plain sight.
       STORAGE_DIR: /data/storage
+      # ── Snapper, the website assistant (docs/ASSISTANT.md §8) ──────────
+      #
+      # The model key is the SAME secret file the worker reads: the
+      # OPENROUTER_API_KEY= line of OLLAMA_ENV_FILE, matched by name
+      # (apps/server/src/extraction/provider.ts#readOpenRouterKey), mounted
+      # read-only below exactly as on the worker. Never an env var here.
+      OLLAMA_ENV_FILE: /run/secrets/ollama.env
+      ASSISTANT_MODEL: ${ASSISTANT_MODEL:-z-ai/glm-5.3-flash}
+      ASSISTANT_FALLBACK_MODEL: ${ASSISTANT_FALLBACK_MODEL:-}
+      ASSISTANT_DAILY_LIMIT: ${ASSISTANT_DAILY_LIMIT:-3000}
+      # Shared with the web service below. Unset in production = the
+      # assistant is OFF (status ok:false, chat 404) — fail closed, and the
+      # API still boots.
+      ASSISTANT_PROXY_SECRET: ${ASSISTANT_PROXY_SECRET:-}
+      ASSISTANT_LOG_TRANSCRIPTS: ${ASSISTANT_LOG_TRANSCRIPTS:-0}
     volumes:
       - ${STORAGE_HOST_DIR:?set STORAGE_HOST_DIR in .env — where original captures persist on the host}:/data/storage
+      # Same file, same mount, same uid-1001 readability rule as the worker's
+      # (see the long note on the worker's volume below).
+      - ${OLLAMA_ENV_FILE_HOST:?set it in deploy/.env to the host path of the ollama key file, readable by uid 1001}:/run/secrets/ollama.env:ro
     depends_on:
       postgres:
         condition: service_healthy
@@ -336,6 +354,9 @@ services:
       # (apps/web/src/lib/config.ts). This is the compose-internal hostname,
       # not PUBLIC_URL.
       SNAP_API_URL: http://api:4000
+      # Snapper's same-origin proxy (apps/web/src/app/api/assistant) sends
+      # this to the api as X-Assistant-Proxy. Must equal the api's value.
+      ASSISTANT_PROXY_SECRET: ${ASSISTANT_PROXY_SECRET:-}
     depends_on:
       api:
         condition: service_healthy

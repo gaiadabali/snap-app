@@ -2,6 +2,7 @@ import { Controller, Get, Module } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { AdminModule } from './admin/admin.module.js';
+import { AssistantController } from './assistant/assistant.controller.js';
 import { AuthController } from './auth/auth.controller.js';
 import { CapturesController } from './captures/captures.controller.js';
 import { BusinessController } from './business/business.controller.js';
@@ -118,6 +119,7 @@ export class HealthController {
     CreditsController,
     PointsController,
     StripeWebhookController,
+    AssistantController,
 
     /* The 2026-09-19 mobile redesign. Read the file header before relying on
        any of these — they are in-process stubs, and the three auth-code
