@@ -21,7 +21,7 @@ beforeEach(() => {
     'YOURTAL_API_URL',
     'YOURTAL_PARTNER_ID',
     'YOURTAL_PARTNER_SECRET',
-    'OLLAMA_ENV_FILE',
+    'YOURTAL_ENV_FILE',
   ]) {
     vi.stubEnv(name, '');
     delete process.env[name];
@@ -59,12 +59,12 @@ describe('YourTal settings', () => {
 
   it('reads the partner secret from the host secrets file, matched by name', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'yt-secret-'));
-    const file = join(dir, 'ollama.env');
+    const file = join(dir, 'yourtal.env');
     writeFileSync(
       file,
       'OPENROUTER_API_KEY=sk-or-other\nYOURTAL_PARTNER_SECRET="partner-secret-from-file"\n',
     );
-    vi.stubEnv('OLLAMA_ENV_FILE', file);
+    vi.stubEnv('YOURTAL_ENV_FILE', file);
     vi.stubEnv('YOURTAL_PARTNER_ID', 'snap-app');
     const c = await load();
     expect(c.yourtalPartnerSecret()).toBe('partner-secret-from-file');
@@ -83,7 +83,7 @@ describe('YourTal settings', () => {
   });
 
   it('treats an unreadable secrets file as not configured, not as a crash', async () => {
-    vi.stubEnv('OLLAMA_ENV_FILE', join(tmpdir(), 'does-not-exist-yt.env'));
+    vi.stubEnv('YOURTAL_ENV_FILE', join(tmpdir(), 'does-not-exist-yt.env'));
     const c = await load();
     expect(c.yourtalPartnerSecret()).toBeUndefined();
   });

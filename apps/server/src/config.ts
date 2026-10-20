@@ -196,6 +196,14 @@ const schema = z.object({
    */
   YOURTAL_PARTNER_ID: z.string().min(1).optional(),
 
+  /**
+   * In-container path of the file holding `YOURTAL_PARTNER_SECRET=...`
+   * (host: `/etc/snap-apps/secrets/yourtal.env`, mode 0600, mounted
+   * read-only). Its own file, not the OpenRouter key's, so each secret can be
+   * rotated or revoked without touching the other.
+   */
+  YOURTAL_ENV_FILE: z.string().optional(),
+
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
 
   /**
@@ -290,7 +298,7 @@ export function yourtalApiUrl(): string {
 
 /**
  * The partner secret YourTal issued: `YOURTAL_PARTNER_SECRET` in the
- * environment, or the line of that exact name in `OLLAMA_ENV_FILE`, the
+ * environment, or the line of that exact name in `YOURTAL_ENV_FILE`, the
  * secret file kept on the host in `/etc/snap-apps/secrets/` and mounted
  * read-only. Same shape as `readOpenRouterKey` in `extraction/provider.ts`.
  * Returns `undefined` when absent, which means the partner link is off; never
@@ -299,7 +307,7 @@ export function yourtalApiUrl(): string {
 export function yourtalPartnerSecret(): string | undefined {
   const fromEnv = process.env.YOURTAL_PARTNER_SECRET?.trim();
   if (fromEnv) return fromEnv;
-  const path = config().OLLAMA_ENV_FILE;
+  const path = config().YOURTAL_ENV_FILE;
   if (!path) return undefined;
   try {
     for (const line of readFileSync(path, 'utf8').split(/\r?\n/)) {
