@@ -126,9 +126,11 @@ export const LINK_COPY = {
   rowRewarded: 'Receipts rewarded',
   rowPending: 'Waiting for YourTal',
   rowDuplicate: 'Skipped as duplicates',
+  rowFree: 'Scanned on free credits',
   rowRefused: 'Not paid by YourTal',
   rowPoints: 'Points reported',
   duplicateHint: 'A second photo of a receipt already reported earns nothing.',
+  freeHint: "Scans on free credits don't earn YourTal points.",
   refusedHint: "YourTal's daily limit or funding stopped these.",
 } as const;
 

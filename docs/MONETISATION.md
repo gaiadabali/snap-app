@@ -142,6 +142,19 @@ These override the per-scan figures elsewhere in this file where they disagree
   leaves **about 4.8c (53%)**. A scan bought through Google Play Billing keeps
   about 2.9c after Google's fee.
 
+**Built (group plan 7.1.a, 7.1.c and 2.5.f; migration 0039):**
+
+- A scan spends one credit when its capture is queued for reading, in the same
+  transaction as the job. Free credits go first (the signup bonus first), then
+  bought ones, oldest first. Each spend is a `credit_spends` row.
+- A scan no model can read gives its credit back, once, when its last attempt
+  fails. A scan that produced a document never does.
+- Only a scan paid with a **bought** credit earns YourTal points. Scans on the
+  signup bonus, on a support or staff credit, or with no credit at all are
+  recorded as `skipped_free` and never reported.
+- Running out does not block scanning yet. The scan is still read, and earns
+  nothing. Refusing it is 7.1.b.
+
 ### Practice (the primary line)
 
 Sold to accounting and bookkeeping firms. Billed to the **firm**, not the client.

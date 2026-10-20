@@ -21,7 +21,7 @@ import { liveLink } from './links.repo.js';
 
 export type QueueResult =
   | { queued: true; outboxId: string; externalRef: string }
-  | { queued: false; reason: 'not_linked' | 'captured_before_link' | 'already_queued' }
+  | { queued: false; reason: 'not_linked' | 'captured_before_link' | 'already_queued' | 'free_scan' }
   | { queued: false; reason: 'likely_duplicate'; duplicateOfCaptureId: string };
 
 /**
@@ -64,7 +64,15 @@ function contentRefKey(): string | null {
  * paper receipt is new bytes, so under the image ref YourTal would pay it
  * again; under the content ref it is the same receipt.
  *
- * What is NOT reported, each recorded as a `skipped_duplicate` row (never
+ * A scan that was not paid with a BOUGHT credit (`paidScan` false: the signup
+ * bonus, a staff, referral or support grant, or no credit at all) is not
+ * reported (founder decision 0.10.b, group plan 2.5.f). It is recorded as a
+ * `skipped_free` row, code `free_scan`, never sent and counted in the status.
+ * That check comes after the link checks and the one-report-per-capture
+ * check, and before the duplicate checks: a free scan earns nothing whether
+ * or not it repeats an earlier receipt.
+ *
+ * What else is NOT reported, each recorded as a `skipped_duplicate` row (never
  * sent, counted in the status so the person can see why it earned nothing):
  *
  *   - A re-photo with the same content ref as an earlier report of this
@@ -93,6 +101,12 @@ export async function queueReceiptReport(
     sameReceiptCaptureIds?: string[];
     /** What the stored document says; without it, or without a document number, the image ref is used. */
     content?: ReceiptContent | null;
+    /**
+     * The scan was paid with a bought credit that was not given back
+     * (`credit_spends`, read by `saveExtraction`). Required: forgetting it
+     * must not decide whether points are paid.
+     */
+    paidScan: boolean;
   },
   deps: { db?: Db; read?: (key: string) => Buffer } = {},
 ): Promise<QueueResult> {
@@ -126,12 +140,16 @@ export async function queueReceiptReport(
     // never sent, and the content ref belongs to the row that WAS reported:
     // `(user_id, action, external_ref)` is unique, so a skipped row holding it
     // would collide with the reported one.
-    const skip = async (duplicateOf: string | null, code: string): Promise<void> => {
+    const skip = async (
+      status: 'skipped_duplicate' | 'skipped_free',
+      duplicateOf: string | null,
+      code: string,
+    ): Promise<void> => {
       await tx.execute(sql`
         insert into yourtal_outbox (user_id, link_row_id, capture_id, action, external_ref, idempotency_key, body,
                                     status, finished_at, last_code, duplicate_of_capture_id)
         values (current_user_id(), ${link.id}, ${input.captureId}, 'receipt_scanned', ${imageRef},
-                ${randomUUID()}, ${bodyFor(imageRef)}, 'skipped_duplicate', now(), ${code}, ${duplicateOf})
+                ${randomUUID()}, ${bodyFor(imageRef)}, ${status}, now(), ${code}, ${duplicateOf})
         on conflict do nothing
       `);
     };
@@ -146,6 +164,14 @@ export async function queueReceiptReport(
     `);
     if (own.rows[0]) return { queued: false, reason: 'already_queued' };
 
+    // Scans on free credits (or none) earn no YourTal points (founder
+    // decision 0.10.b). Before the duplicate checks: whether it repeats an
+    // earlier receipt does not matter, it earns nothing either way.
+    if (!input.paidScan) {
+      await skip('skipped_free', null, 'free_scan');
+      return { queued: false, reason: 'free_scan' };
+    }
+
     // The same receipt as one this user already reported, from another capture
     // (a re-photo, in this workspace or another). Only the content ref names
     // that; an identical image ref falls through to the insert's conflict.
@@ -157,7 +183,7 @@ export async function queueReceiptReport(
       `);
       if (same.rows[0]) {
         const duplicateOf = same.rows[0].capture_id;
-        await skip(duplicateOf, 'likely_duplicate');
+        await skip('skipped_duplicate', duplicateOf, 'likely_duplicate');
         return duplicateOf
           ? { queued: false, reason: 'likely_duplicate', duplicateOfCaptureId: duplicateOf }
           : { queued: false, reason: 'already_queued' };
@@ -175,7 +201,7 @@ export async function queueReceiptReport(
       `);
       const duplicateOf = earlier.rows[0]?.capture_id;
       if (duplicateOf) {
-        await skip(duplicateOf, 'likely_duplicate');
+        await skip('skipped_duplicate', duplicateOf, 'likely_duplicate');
         return { queued: false, reason: 'likely_duplicate', duplicateOfCaptureId: duplicateOf };
       }
     }

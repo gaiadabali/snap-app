@@ -340,7 +340,7 @@ const seedYourtalLink = (): YourtalLinkStatus => ({
   region: null,
   linkedAt: null,
   brokenReason: null,
-  receipts: { pending: 0, rewarded: 0, refused: 0, skippedDuplicate: 0 },
+  receipts: { pending: 0, rewarded: 0, refused: 0, skippedDuplicate: 0, skippedFree: 0 },
   pointsReported: 0,
 });
 let yourtalLink: YourtalLinkStatus = seedYourtalLink();

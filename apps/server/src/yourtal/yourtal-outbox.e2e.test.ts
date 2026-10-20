@@ -11,7 +11,8 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vites
 
 import { closeDb, getDb } from '../db.js';
 import type { ValidatedExtraction } from '../extraction/types.js';
-import { saveExtraction } from '../repo.js';
+import { fulfilCreditPurchase, grantSignupBonusIfFirst, startCreditPurchase } from '../credits/credits.repo.js';
+import { enqueueExtraction, saveExtraction } from '../repo.js';
 import { startFakeYourtal, type FakeYourtal } from '../test-support/fake-yourtal.js';
 import { provisionTenant, wipeTenant } from '../test-support/tenant.js';
 import { YourtalPartnerClient } from './client.js';
@@ -37,6 +38,11 @@ const EVE = 'b7a20000-0000-4000-8000-0000000000a3';
 const TENANT2 = 'b7a20000-0000-4000-8000-000000000002';
 const FRAN = 'b7a20000-0000-4000-8000-0000000000a4';
 const REF_KEY = `e2e-receipt-ref-key-${'k'.repeat(32)}`;
+// Group plan 2.5.f: GIA signs up into TENANT3 (the ten free signup credits)
+// and also belongs to TENANT4, a workspace with no credits at all.
+const TENANT3 = 'b7a20000-0000-4000-8000-000000000003';
+const TENANT4 = 'b7a20000-0000-4000-8000-000000000004';
+const GIA = 'b7a20000-0000-4000-8000-0000000000a5';
 
 const f = <T>(value: T | null, confidence = 0.99) => ({ value, confidence });
 interface ReadingOptions {
@@ -107,7 +113,17 @@ describeIfDb('the YourTal outbox (2.5)', () => {
                 'image/jpeg', 2048, decode(${pageSha}, 'hex'), 'capture')
       `);
     });
+    // Queued the way the upload handler queues it, which spends a credit
+    // (7.1.a). These workspaces hold bought credits (see beforeAll), so the
+    // scan may earn points; the free-credit cases are in their own describe.
+    await enqueueExtraction(uploader, tenant, captureId);
     return { captureId, pageSha };
+  }
+
+  /** Buys and fulfils a pack, so scans in `tenant` are paid with bought credits. */
+  async function buyCredits(buyer: string, tenant: string, pack = 'credits_1000'): Promise<void> {
+    const purchase = await startCreditPurchase(buyer, tenant, pack);
+    await fulfilCreditPurchase(buyer, tenant, purchase!.id);
   }
 
   // Every receipt gets its own amount unless a test says otherwise: the
@@ -162,6 +178,11 @@ describeIfDb('the YourTal outbox (2.5)', () => {
     for (const user of [WORKER, DANI]) {
       await admin.query(`insert into memberships (tenant_id, user_id, role) values ($1, $2, 'member')`, [TENANT2, user]);
     }
+
+    // Scans earn YourTal points only when paid with a BOUGHT credit (2.5.f),
+    // so both workspaces start with one.
+    await buyCredits(DANI, TENANT);
+    await buyCredits(FRAN, TENANT2);
 
     // The worker's own role: the only one that reads the queue across users.
     const workerUrl =
@@ -476,6 +497,7 @@ describeIfDb('the YourTal outbox (2.5)', () => {
         values (${randomUUID()}, ${TENANT}, ${captureId}, 1, 'x', 'image/png', 10, decode(${renderSha}, 'hex'), 'pdf_render')
       `);
     });
+    await enqueueExtraction(DANI, TENANT, captureId);
     await scan(captureId);
     expect((await outboxFor(captureId))[0].external_ref).toBe(`sha256:${sha(pdf)}`);
   });
@@ -625,5 +647,123 @@ describeIfDb('the YourTal outbox (2.5)', () => {
     expect((await outboxFor(captureId))[0]).toMatchObject({ status: 'link_broken', last_code: 'unknown_link' });
     const rows = await admin.query(`select broken_reason from yourtal_links where user_id = $1`, [EVE]);
     expect(rows.rows[0].broken_reason).toBe('unknown_link');
+  });
+
+  describe('scans on free credits earn nothing (2.5.f)', () => {
+    const gia = { userId: GIA, email: 'gia@yourtal-outbox.test', displayName: 'Gia', initials: 'GI', emailVerified: true };
+
+    async function spendOf(captureId: string) {
+      const rows = await admin.query(
+        `select grant_id is not null as has_grant, grant_source, paid, refunded_at from credit_spends where capture_id = $1`,
+        [captureId],
+      );
+      return rows.rows;
+    }
+
+    async function giaStatus() {
+      const controller = new YourtalLinkController();
+      controller.clientFor = () => client;
+      return controller.status(gia);
+    }
+
+    const scanFor = (tenant: string, captureId: string) =>
+      scanIn(tenant, captureId, `${(amounts += 1)}.75`, { supplier: 'Free Scan Cafe' });
+
+    beforeAll(async () => {
+      const adminThree = await provisionTenant({
+        tenantId: TENANT3,
+        name: 'YourTal free scans co',
+        users: [{ id: GIA, role: 'owner', subject: 'test|yto-gia', email: 'gia@yourtal-outbox.test' }],
+      });
+      await adminThree.end();
+      await admin.query(`insert into memberships (tenant_id, user_id, role) values ($1, $2, 'member')`, [TENANT3, WORKER]);
+      // A second workspace with no credits at all.
+      await wipeTenant(admin, TENANT4);
+      await admin.query(`insert into tenants (id, name, abn) values ($1, 'YourTal no credits co', '51824753556')`, [TENANT4]);
+      await admin.query(`insert into memberships (tenant_id, user_id, role) values ($1, $2, 'owner'), ($1, $3, 'member')`, [
+        TENANT4,
+        GIA,
+        WORKER,
+      ]);
+
+      // The ten free credits a new account gets, granted the way onboarding grants them.
+      expect(await grantSignupBonusIfFirst(GIA, TENANT3)).toEqual({ granted: true });
+
+      const controller = new YourtalLinkController();
+      controller.clientFor = () => client;
+      await controller.link(gia, { sessionId: 'test', tokenHash: Buffer.alloc(32) }, {
+        code: fake.issueCode({ id: 'yt-gia', region: 'AU' }),
+      });
+      await admin.query(`update yourtal_links set linked_at = now() - interval '1 minute' where user_id = $1`, [GIA]);
+    });
+
+    afterAll(async () => {
+      await wipeTenant(admin, TENANT4);
+      await wipeTenant(admin, TENANT3, [GIA]);
+    });
+
+    it('a scan on the signup credits is skipped_free, never sent, and the status counts it', async () => {
+      const { captureId, pageSha } = await photographedCapture(GIA, undefined, TENANT3);
+      expect(await spendOf(captureId)).toEqual([{ has_grant: true, grant_source: 'signup_bonus', paid: false, refunded_at: null }]);
+
+      await scanFor(TENANT3, captureId);
+      const rows = await admin.query(
+        `select status, finished_at is not null as finished, last_code, external_ref from yourtal_outbox where capture_id = $1`,
+        [captureId],
+      );
+      expect(rows.rows).toEqual([
+        { status: 'skipped_free', finished: true, last_code: 'free_scan', external_ref: `sha256:${pageSha}` },
+      ]);
+
+      const before = fake.requests.length;
+      expect(await drain()).toMatchObject({ claimed: 0 });
+      expect(fake.requests.length).toBe(before);
+
+      // Re-extracting it changes nothing.
+      await scanFor(TENANT3, captureId);
+      expect(await outboxFor(captureId)).toHaveLength(1);
+
+      const status = await giaStatus();
+      expect(status.receipts).toMatchObject({ skippedFree: 1, skippedDuplicate: 0, pending: 0, rewarded: 0 });
+    });
+
+    it('once the free credits are used up, a scan on a bought credit is reported and paid', async () => {
+      // Bought BEFORE the free credits run out: the free ones still go first.
+      await buyCredits(GIA, TENANT3, 'credits_50');
+      for (let i = 0; i < 9; i += 1) {
+        const { captureId } = await photographedCapture(GIA, undefined, TENANT3);
+        expect(await spendOf(captureId)).toMatchObject([{ grant_source: 'signup_bonus', paid: false }]);
+      }
+
+      const { captureId } = await photographedCapture(GIA, undefined, TENANT3);
+      expect(await spendOf(captureId)).toEqual([{ has_grant: true, grant_source: 'topup_pack', paid: true, refunded_at: null }]);
+
+      await scanFor(TENANT3, captureId);
+      expect((await outboxFor(captureId))[0]).toMatchObject({ status: 'pending' });
+      const before = fake.requests.length;
+      expect(await drain()).toMatchObject({ claimed: 1, sent: 1 });
+      expect(JSON.parse(fake.requests.slice(before)[0]!.raw).evidence).toEqual({ captureId });
+      // The fake pays YourTal's AU rate for a new receipt.
+      expect((await outboxFor(captureId))[0]).toMatchObject({ status: 'sent', granted: true, points: 10 });
+
+      const status = await giaStatus();
+      expect(status.receipts).toMatchObject({ skippedFree: 1, rewarded: 1 });
+      expect(status.pointsReported).toBe(10);
+    });
+
+    it('a scan with no credit left is skipped_free too, and still extracted', async () => {
+      const { captureId } = await photographedCapture(GIA, undefined, TENANT4);
+      expect(await spendOf(captureId)).toEqual([{ has_grant: false, grant_source: null, paid: false, refunded_at: null }]);
+      // 7.1.b is not built: the scan is still queued for extraction.
+      const jobs = await admin.query(`select count(*)::int as n from jobs where kind = 'extract' and payload->>'captureId' = $1`, [
+        captureId,
+      ]);
+      expect(jobs.rows[0].n).toBe(1);
+
+      await scanFor(TENANT4, captureId);
+      expect((await outboxFor(captureId))[0]).toMatchObject({ status: 'skipped_free', last_code: 'free_scan' });
+      const status = await giaStatus();
+      expect(status.receipts).toMatchObject({ skippedFree: 2, rewarded: 1 });
+    });
   });
 });
