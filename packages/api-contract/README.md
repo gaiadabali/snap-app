@@ -27,7 +27,7 @@ Format only: the export job and the importer are later tickets (group 4).
   "financialYear": "2025-26",               // 1 Jul 2025 to 30 Jun 2026; YYYY-YY, second part = first + 1 mod 100, 2000-01 to 2099-00
   "generatedAt": "2026-07-14T03:21:09Z",    // UTC, Z suffix, optional .sss
   "source": { "app": "snapapp", "appVersion": "1.4.0" },
-  "occupation": "teacher",                  // optional; one of FTR's 19 profile ids (OCCUPATION_IDS)
+  "occupation": "teacher",                  // optional; one of FTR's profile ids except sole (OCCUPATION_IDS, 18)
   "workKilometres": 1200,                   // optional; whole business km for FTR's cents-per-km method
   "lines": [                                // 0 to 500
     {

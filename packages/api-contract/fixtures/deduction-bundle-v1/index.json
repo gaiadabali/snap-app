@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "specSha256": "cafc6f1b19842b378e9bfc22e0e0831f518f5199e28ca69bbdfb9293f65112bf",
+  "specSha256": "925a361e8f04b609f317a78c68feac00c5cebe2c1674a1df9f59f4d0602ec594",
   "cases": [
     {
       "file": "valid-employee.json",
@@ -99,6 +99,14 @@
         "occupation"
       ],
       "sha256": "7480ee8b5598090a5d61c491c099adbd41f40164349215caafeac2b84a6f42ba"
+    },
+    {
+      "file": "invalid-occupation-sole.json",
+      "valid": false,
+      "errorPaths": [
+        "occupation"
+      ],
+      "sha256": "ef0b9f9c4a7fb4661bd20d486632a9946a5ffcfaadec72d05bafe1e347059c0f"
     },
     {
       "file": "invalid-schema-version.json",

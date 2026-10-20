@@ -68,7 +68,7 @@ export interface DeductionBundle {
   /** UTC instant, `YYYY-MM-DDTHH:mm:ss[.sss]Z`. */
   generatedAt: string;
   source: { app: 'snapapp'; appVersion: string };
-  /** One of FTR's 19 worksheet profile ids. */
+  /** One of FTR's worksheet profile ids except 'sole' (OCCUPATION_IDS). */
   occupation?: OccupationId;
   /** Business kilometres for the cents-per-km method (FTR caps the claim). Whole km. */
   workKilometres?: number;
@@ -188,7 +188,7 @@ export function validateDeductionBundle(value: unknown): BundleResult {
   }
 
   if (has(value, 'occupation') && !(OCCUPATION_IDS as readonly unknown[]).includes(value.occupation)) {
-    add('occupation', 'not one of the 19 FTR occupation ids', true);
+    add('occupation', 'not an accepted FTR occupation id (the 19 profiles minus sole)', true);
   }
   if (has(value, 'workKilometres')) {
     const p = intProblem(value.workKilometres, 0, MAX_WORK_KILOMETRES);

@@ -20,11 +20,11 @@ export const BUNDLE_SCHEMA_VERSION = 1;
 export const ATO_LABELS = ['D1', 'D2', 'D3', 'D4', 'D5', 'D9', 'D10', 'D12', 'D14', 'RENTAL'] as const;
 export type AtoLabel = (typeof ATO_LABELS)[number];
 
-/** FTR's 19 worksheet profile ids (`PROFILES` keys in `src/engine/profiles/index.ts`). */
+/** FTR's worksheet profile ids (PROFILES keys in src/engine/profiles/index.ts) minus 'sole': FTR is scoped to employee deductions and rentals only (founder decision 0.5), so v1 refuses the sole-trader profile. */
 export const OCCUPATION_IDS = [
   'truckie_long', 'truckie_local', 'tradie', 'miner', 'factory', 'forklift', 'equipop', 'carer',
-  'award', 'whitecollar', 'sole', 'rental', 'tither', 'nurse', 'teacher', 'salesrep', 'retail',
-  'tech', 'apprentice',
+  'award', 'whitecollar', 'rental', 'tither', 'nurse', 'teacher', 'salesrep', 'retail', 'tech',
+  'apprentice',
 ] as const;
 export type OccupationId = (typeof OCCUPATION_IDS)[number];
 

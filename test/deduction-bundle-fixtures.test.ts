@@ -32,7 +32,7 @@ interface Manifest {
 }
 
 /** Pinned in BOTH repos' tests. Changing a shared fixture means changing this in both. */
-const MANIFEST_SHA256 = '3728dd12a7c1fdc817a2f03ee51534489efeaf625350fe1a9c09a1eadd6e38ed';
+const MANIFEST_SHA256 = 'c44756144c6d6327250d6c6b6396e4bb17d88420edc9489a0b161c3126f7ad5f';
 
 const manifest = JSON.parse(read('index.json').toString('utf8')) as Manifest;
 
@@ -98,9 +98,11 @@ describe('catalogue matches the tax-engine copy', () => {
   };
   const sorted = (xs: Iterable<string>) => [...xs].sort();
 
-  it('occupations are the 19 PROFILES keys', () => {
-    expect(OCCUPATION_IDS).toHaveLength(19);
-    expect(sorted(OCCUPATION_IDS)).toEqual(sorted(Object.keys(PROFILES)));
+  // Scope: FTR handles employee deductions and rentals only (founder decision 0.5), so v1 refuses 'sole'.
+  it('occupations are the 19 PROFILES keys minus sole', () => {
+    expect(OCCUPATION_IDS).toHaveLength(18);
+    expect(OCCUPATION_IDS).not.toContain('sole');
+    expect(sorted(OCCUPATION_IDS)).toEqual(sorted(Object.keys(PROFILES).filter((k) => k !== 'sole')));
   });
 
   it('labels are the ATO labels the engine computes', () => {
