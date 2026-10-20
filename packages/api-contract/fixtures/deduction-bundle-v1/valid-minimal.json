@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "financialYear": "2025-26",
+  "generatedAt": "2026-07-14T03:21:09Z",
+  "source": {
+    "app": "snapapp",
+    "appVersion": "1.4.0"
+  },
+  "lines": [
+    {
+      "label": "D5",
+      "itemId": "otherequip",
+      "description": "Safety glasses",
+      "amount": "24.90",
+      "gstInclusive": true,
+      "receiptCount": 0,
+      "receiptRefs": []
+    }
+  ]
+}

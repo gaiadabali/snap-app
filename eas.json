@@ -1,7 +1,7 @@
 {
   "cli": {
     "version": ">= 16.0.0",
-    "appVersionSource": "remote"
+    "appVersionSource": "local"
   },
   "build": {
     "demo": {
@@ -41,7 +41,6 @@
     "production": {
       "distribution": "store",
       "channel": "production",
-      "autoIncrement": true,
       "env": {
         "EXPO_PUBLIC_API_URL": "https://api.REPLACE-WITH-PRODUCTION-DOMAIN"
       }

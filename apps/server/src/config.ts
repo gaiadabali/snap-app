@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { z } from 'zod';
 
 /**
@@ -167,6 +168,42 @@ const schema = z.object({
    */
   DOCAI_SHADOW_TIMEOUT_MS: z.coerce.number().int().positive().default(120000),
 
+  /**
+   * YourTal's public web origin (staging: https://yourtal.gaiada.com).
+   *
+   * Used to build the absolute deep links the API hands out for YourTal's
+   * store (`RewardsController`). Origin only, no trailing path; a trailing
+   * slash is tolerated and stripped by `yourtalWebUrl()`. Not a secret.
+   */
+  YOURTAL_WEB_URL: z.string().url().default('https://yourtal.gaiada.com'),
+
+  /**
+   * YourTal's API origin (staging: https://yourtal.gaiada.com).
+   *
+   * Same host as the web app: YourTal's nginx sends `/api/*` to its API
+   * (partner calls are `POST /api/partners/actions`) and `/v1/vouchers/*` to
+   * its voucher service, so this is the ORIGIN, with no `/api` suffix; callers
+   * append the full path they need.
+   */
+  YOURTAL_API_URL: z.string().url().default('https://yourtal.gaiada.com'),
+
+  /**
+   * How this server identifies itself to YourTal as a partner. Optional: until
+   * the partner link is built and credentials are issued, both stay unset and
+   * the link is simply off (`isYourtalPartnerConfigured()` is false). The
+   * server boots either way. The secret itself is NOT in this schema; see
+   * `yourtalPartnerSecret()`.
+   */
+  YOURTAL_PARTNER_ID: z.string().min(1).optional(),
+
+  /**
+   * In-container path of the file holding `YOURTAL_PARTNER_SECRET=...`
+   * (host: `/etc/snap-apps/secrets/yourtal.env`, mode 0600, mounted
+   * read-only). Its own file, not the OpenRouter key's, so each secret can be
+   * rotated or revoked without touching the other.
+   */
+  YOURTAL_ENV_FILE: z.string().optional(),
+
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
 
   /**
@@ -230,6 +267,55 @@ const schema = z.object({
     .optional()
     .default('false')
     .transform((v) => v === 'true'),
+
+  /**
+   * The lowest Android build (`versionCode`) still allowed to run. An app
+   * below it is blocked by a full-screen "update required" until it installs
+   * the published build; see `releases/releases.controller.ts` and the mobile
+   * `UpdateGate`. 0 (the default) means no minimum.
+   *
+   * A string at the edge ON PURPOSE: compose passes an unset `${VAR:-0}` or a
+   * blank line in deploy/.env as text, so blank is read as 0. A value that is
+   * not a whole number refuses to boot rather than quietly meaning "no
+   * minimum", because a typo here would otherwise switch the safety net off
+   * without anyone noticing.
+   */
+  ANDROID_MIN_VERSION_CODE: z
+    .string()
+    .optional()
+    .transform((v, ctx) => {
+      const t = (v ?? '').trim();
+      if (t === '') return 0;
+      if (!/^\d+$/.test(t) || !Number.isSafeInteger(Number(t))) {
+        ctx.addIssue({ code: 'custom', message: 'must be a whole number (0 = no minimum)' });
+        return z.NEVER;
+      }
+      return Number(t);
+    }),
+
+  /**
+   * Snapper, the website assistant — docs/ASSISTANT.md §4, §8. All optional
+   * and all plain strings ON PURPOSE: compose passes an unset `${VAR:-}` as
+   * an empty string, and a coerced number or a `min(1)` would turn a blank
+   * line in deploy/.env into an API that refuses to boot. They are parsed,
+   * with defaults, by `assistant/config.ts#assistantConfigFrom`. A missing
+   * value turns the ASSISTANT off (status ok:false), never the API.
+   *
+   *   ASSISTANT_MODEL            OpenRouter model id; default z-ai/glm-5.3-flash
+   *   ASSISTANT_FALLBACK_MODEL   used only for the one retry before the first token
+   *   ASSISTANT_DAILY_LIMIT      answers per UTC day before "busy"; default 3000
+   *   ASSISTANT_PROXY_SECRET     the web proxy's shared secret. REQUIRED in
+   *                              production, where unset = assistant disabled
+   *   ASSISTANT_LOG_TRANSCRIPTS  '1' puts question and answer text in the log line
+   *
+   * The model key is NOT here: it is read by `extraction/provider.ts#
+   * readOpenRouterKey` (OPENROUTER_API_KEY, or the OLLAMA_ENV_FILE secret file).
+   */
+  ASSISTANT_MODEL: z.string().optional(),
+  ASSISTANT_FALLBACK_MODEL: z.string().optional(),
+  ASSISTANT_DAILY_LIMIT: z.string().optional(),
+  ASSISTANT_PROXY_SECRET: z.string().optional(),
+  ASSISTANT_LOG_TRANSCRIPTS: z.string().optional(),
 });
 
 export type Config = z.infer<typeof schema>;
@@ -247,6 +333,50 @@ export function config(): Config {
   }
   cached = parsed.data;
   return cached;
+}
+
+/** YourTal's web origin without a trailing slash, ready to append a path to. */
+export function yourtalWebUrl(): string {
+  return config().YOURTAL_WEB_URL.replace(/\/+$/, '');
+}
+
+/** YourTal's API origin without a trailing slash, ready to append a path to. */
+export function yourtalApiUrl(): string {
+  return config().YOURTAL_API_URL.replace(/\/+$/, '');
+}
+
+/**
+ * The partner secret YourTal issued: `YOURTAL_PARTNER_SECRET` in the
+ * environment, or the line of that exact name in `YOURTAL_ENV_FILE`, the
+ * secret file kept on the host in `/etc/snap-apps/secrets/` and mounted
+ * read-only. Same shape as `readOpenRouterKey` in `extraction/provider.ts`.
+ * Returns `undefined` when absent, which means the partner link is off; never
+ * throws, never logs the value.
+ */
+export function yourtalPartnerSecret(): string | undefined {
+  const fromEnv = process.env.YOURTAL_PARTNER_SECRET?.trim();
+  if (fromEnv) return fromEnv;
+  const path = config().YOURTAL_ENV_FILE;
+  if (!path) return undefined;
+  try {
+    for (const line of readFileSync(path, 'utf8').split(/\r?\n/)) {
+      const trimmed = line.trim();
+      if (!trimmed.startsWith('YOURTAL_PARTNER_SECRET=')) continue;
+      const value = trimmed
+        .slice('YOURTAL_PARTNER_SECRET='.length)
+        .trim()
+        .replace(/^["']|["']$/g, '');
+      return value || undefined;
+    }
+  } catch {
+    /* unreadable file: treat as not configured */
+  }
+  return undefined;
+}
+
+/** True only when both the partner id and the partner secret are present. */
+export function isYourtalPartnerConfigured(): boolean {
+  return Boolean(config().YOURTAL_PARTNER_ID) && Boolean(yourtalPartnerSecret());
 }
 
 /** True in production, where several behaviours must be stricter. */

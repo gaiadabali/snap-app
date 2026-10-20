@@ -2,7 +2,7 @@
   "$schema": "https://raw.githubusercontent.com/expo/eas-cli/main/packages/eas-json/schema/eas.schema.json",
   "cli": {
     "version": ">= 16.0.0",
-    "appVersionSource": "remote"
+    "appVersionSource": "local"
   },
   "build": {
     "//": [
@@ -62,7 +62,6 @@
         "baked into a release build is not safer than a staging one, it is just",
         "harder to diagnose. Change this the day a production host exists."
       ],
-      "autoIncrement": true,
       "env": { "EXPO_PUBLIC_API_URL": "https://snap-apps-api.gaiada.com" }
     }
   },

@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { IS_DEMO, api, type DocumentView, type Overview, type SalesSummary } from '@/api';
 import { GradientHero, HeroBody, HeroFigure, HeroLabel, Raised } from '@/components/rich';
 import { Chip, Figure, Label, Screen, Small } from '@/components/ui';
+import { UpdateNotice } from '@/components/UpdateNotice';
 import { formatAud, space, usePalette } from '@/theme';
 import { WorkspaceSwitch } from '@/workspace';
 
@@ -92,7 +93,11 @@ export default function BusinessHome() {
           <WorkspaceSwitch />
         </View>
 
-        <View style={{ paddingHorizontal: space.lg }}>
+        <View style={{ paddingHorizontal: space.lg, gap: space.md }}>
+          {/* The same card as Personal home. Renders nothing unless a newer
+              build is published, so it shares the hero's block and costs no
+              gap when absent. */}
+          <UpdateNotice />
           <GradientHero>
             <View style={{ gap: space.xs }}>
               <HeroLabel>Captured this quarter</HeroLabel>

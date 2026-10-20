@@ -2,7 +2,7 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 /**
  * Serving the Android build.
@@ -23,6 +23,7 @@ beforeAll(async () => {
   mkdirSync(androidDir, { recursive: true });
 
   process.env.STORAGE_DIR = root;
+  delete process.env.ANDROID_MIN_VERSION_CODE;
   process.env.TOKEN_SECRET ??= 'test-only-secret-at-least-32-characters-long';
   process.env.DATABASE_URL ??= 'postgres://test:test@localhost:5432/test';
 
@@ -36,6 +37,7 @@ afterAll(() => {
 
 const MANIFEST = {
   version: '0.1.0',
+  versionCode: 218,
   buildNumber: 'abc1234',
   commit: 'abc1234',
   sha256: '0c1399ae10b7c681d7e7c1aa50951627f6a3710d38e2e8d8a579d589f2a49f09',
@@ -53,7 +55,7 @@ describe('nothing published yet', () => {
   it('reports unavailable rather than failing', () => {
     remove('manifest.json');
     remove('snap-apps-android.apk');
-    expect(controller.manifest()).toEqual({ available: false, build: null });
+    expect(controller.manifest()).toEqual({ available: false, build: null, minVersionCode: 0 });
   });
 
   it('refuses the download with 404, not a stream of nothing', () => {
@@ -78,7 +80,7 @@ describe('a corrupt manifest', () => {
   it('degrades to "no build" rather than throwing a 500', () => {
     writeFileSync(join(androidDir, 'manifest.json'), '{ this is not json', 'utf8');
     writeApk();
-    expect(controller.manifest()).toEqual({ available: false, build: null });
+    expect(controller.manifest()).toEqual({ available: false, build: null, minVersionCode: 0 });
   });
 });
 
@@ -93,6 +95,22 @@ describe('a published build', () => {
       commit: 'abc1234',
       sha256: MANIFEST.sha256,
     });
+  });
+
+  it('passes versionCode and the legacy fields through untouched', () => {
+    writeManifest(MANIFEST);
+    writeApk();
+    expect(controller.manifest().build).toEqual(MANIFEST);
+  });
+
+  it('passes a manifest from before versionCodes existed through without one', () => {
+    const { versionCode: _omit, ...legacy } = MANIFEST;
+    writeManifest(legacy);
+    writeApk();
+    const result = controller.manifest();
+    expect(result.available).toBe(true);
+    expect(result.build?.versionCode).toBeUndefined();
+    expect(result.build?.buildNumber).toBe('abc1234');
   });
 
   it('carries the API the bundle was built against', () => {
@@ -128,5 +146,52 @@ describe('a published build', () => {
       stream.on('error', reject);
     });
     expect(body).toBe('not-a-real-apk');
+  });
+});
+
+/**
+ * The minimum supported build rides the manifest because the app enforces it.
+ * `config()` is cached per module graph, so each case loads a fresh one.
+ */
+describe('minVersionCode', () => {
+  const withMin = async (value: string | undefined) => {
+    vi.resetModules();
+    if (value === undefined) delete process.env.ANDROID_MIN_VERSION_CODE;
+    else process.env.ANDROID_MIN_VERSION_CODE = value;
+    const mod = await import('./releases.controller.js');
+    return new mod.ReleasesController();
+  };
+
+  it('is 0 (no minimum) by default and when blank', async () => {
+    writeManifest(MANIFEST);
+    writeApk();
+    expect((await withMin(undefined)).manifest().minVersionCode).toBe(0);
+    expect((await withMin('')).manifest().minVersionCode).toBe(0);
+  });
+
+  it('reports the configured minimum beside the build', async () => {
+    writeManifest(MANIFEST);
+    writeApk();
+    const result = (await withMin('200')).manifest();
+    expect(result.minVersionCode).toBe(200);
+    expect(result.available).toBe(true);
+    expect(result.build?.versionCode).toBe(218);
+  });
+
+  it('is reported even when nothing is published', async () => {
+    remove('manifest.json');
+    remove('snap-apps-android.apk');
+    expect((await withMin('200')).manifest()).toEqual({
+      available: false,
+      build: null,
+      minVersionCode: 200,
+    });
+  });
+
+  it('refuses to boot on a value that is not a whole number', async () => {
+    for (const bad of ['abc', '-1', '1.5']) {
+      await expect(withMin(bad).then((c) => c.manifest())).rejects.toThrow(/ANDROID_MIN_VERSION_CODE/);
+    }
+    delete process.env.ANDROID_MIN_VERSION_CODE;
   });
 });

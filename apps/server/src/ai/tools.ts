@@ -153,6 +153,27 @@ export const TOOLS = {
     };
   },
 
+  /**
+   * When a business has to register for GST.
+   *
+   * Added 2026-10-20 for the website assistant: "do I need to register for
+   * GST?" is one of the commonest questions a sole trader asks, and until
+   * this existed the only tool that matched the word "registration" was
+   * `current_rates` — which answers with cents per kilometre. The thresholds
+   * are fixed in the GST Act and have not moved since 2007; the ride-sourcing
+   * rule is the one people do not expect.
+   */
+  gst_registration(): ToolResult {
+    return {
+      answer:
+        'You must register for GST once your GST turnover is $75,000 or more a year ' +
+        '($150,000 or more for a non-profit organisation). Below that, registering is optional. ' +
+        'Anyone who provides taxi or ride-sourcing services must register for GST regardless of turnover.',
+      data: { businessThreshold: '75000', nonProfitThreshold: '150000', rideSourcingRegardless: true },
+      source: 'A New Tax System (Goods and Services Tax) Act 1999, s 23-15 and s 144-5; ATO: Registering for GST.',
+    };
+  },
+
   /** How long records must be kept. Asked constantly; got wrong often. */
   retention_period(): ToolResult {
     return {
@@ -243,6 +264,14 @@ export const TOOL_SCHEMAS = [
       name: 'current_rates',
       description:
         'Call this for any per-kilometre rate, meal allowance, car cost limit, or which financial year applies. Rates change annually and yours are out of date.',
+      parameters: { type: 'object', properties: {} },
+    },
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'gst_registration',
+      description: 'Call this for whether or when a business must register for GST, and the turnover thresholds.',
       parameters: { type: 'object', properties: {} },
     },
   },

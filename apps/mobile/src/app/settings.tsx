@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { IS_DEMO, abnIsValid, api, resetDemoData, type BusinessSettings, type PlanUsage } from '@/api';
 import { currentDevice, deviceReadAvailable } from '@/lib/device-read';
+import { BUILD } from '@/lib/updates';
 import { Icon } from '@/components/Icon';
 import { Avatar, Choice, Field, Loading, Sheet, Toggle } from '@/components/form';
 import { Body, Button, Card, Divider, Figure, Notice, Screen, SectionHeader, Small } from '@/components/ui';
@@ -267,6 +268,7 @@ export default function SettingsScreen() {
                 preview while it waits, and somebody who never sees that
                 preview deserves to know it exists rather than assume the app
                 is slow. */}
+            <AppVersion />
             <DeviceSupport />
 
             {/* A demo that cannot be put back is a demo you can only give
@@ -556,6 +558,34 @@ function DeviceSupport() {
             {enoughMemory
               ? ' The on-device reader needs Google Play services, which this device does not appear to have.'
               : ' The on-device reader is offered on phones with 4 GB of memory or more.'}
+          </Small>
+        )}
+      </Card>
+    </View>
+  );
+}
+
+/**
+ * Which build this is, so a tester can say "I am on 0.1.218" and a bug report
+ * can be matched to a commit. Dev builds and Expo Go carry none of it, and say
+ * so rather than showing blank rows that look like a bug.
+ */
+function AppVersion() {
+  const known = BUILD.version || BUILD.versionCode !== null || BUILD.commit;
+  return (
+    <View style={{ gap: space.md }}>
+      <SectionHeader title="App version" />
+      <Card style={{ gap: space.sm }}>
+        {known ? (
+          <>
+            <Body>Version {BUILD.version || 'unknown'}</Body>
+            <Small>
+              Build {BUILD.versionCode ?? 'unknown'} · commit {BUILD.commit.slice(0, 7) || 'unknown'}
+            </Small>
+          </>
+        ) : (
+          <Small>
+            This is a development build, so it has no version, build number or commit to show.
           </Small>
         )}
       </Card>

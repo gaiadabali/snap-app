@@ -231,8 +231,16 @@ let lastGlobalSweep = 0;
 let lastAuthHousekeeping = 0;
 app.use((request: { ip?: string; url?: string }, response: import('http').ServerResponse, next: () => void) => {
   const url = request.url ?? '';
+  // `/v1/assistant/` is skipped because every request reaches it through the
+  // web container's proxy, so `request.ip` here is that container for every
+  // visitor at once: counting it would make one busy chat throttle the panels'
+  // own server-side API calls from the same container. The assistant limits
+  // per real visitor itself (assistant/ratelimit.ts, keyed on the forwarded
+  // client IP it trusts only with the proxy secret), and without the secret
+  // its routes are a 404 before any work.
   if (
     !url.startsWith('/v1/') ||
+    url.startsWith('/v1/assistant/') ||
     url.startsWith('/v1/ready') ||
     url.startsWith('/v1/docs') ||
     url.startsWith('/v1/openapi.json')

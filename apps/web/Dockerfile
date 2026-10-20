@@ -7,9 +7,12 @@
 #
 # No secrets are needed at build time: apps/web/src/lib/config.ts reads
 # GOOGLE_CLIENT_ID/SECRET and SNAP_API_URL lazily via process.env at request
-# time, not at build time, and nothing in this repo bakes NEXT_PUBLIC_* values
-# in (there are none) — so the same image is deployed unchanged across
+# time, not at build time — so the same image is deployed unchanged across
 # environments and configured only via the container's environment.
+#
+# The one exception is NEXT_PUBLIC_FREE_TAX_RETURNS_URL (see the build stage):
+# Next inlines NEXT_PUBLIC_* into the client bundle at `next build`, so it is a
+# build ARG, not a runtime variable. It is a public URL, not a secret.
 
 # Node 22, not 20 — see apps/server/Dockerfile: pnpm@11.3.0 requires >=22.13,
 # which the root package.json's engines field does not reflect.
@@ -44,6 +47,13 @@ WORKDIR /repo/apps/web
 # exist now (the marketing app screenshots live in public/screens), but this
 # stays so a checkout without it still builds.
 RUN mkdir -p public
+
+# Where the free-tax-returns house ad sends people (apps/web/src/lib/house-ads.ts).
+# Inlined into the client bundle by `next build` and unchangeable afterwards.
+# Empty (the default for a plain `docker build`) means the ad is not eligible
+# and renders nothing. CI passes the real value; see publish-images.yml.
+ARG NEXT_PUBLIC_FREE_TAX_RETURNS_URL=""
+ENV NEXT_PUBLIC_FREE_TAX_RETURNS_URL=${NEXT_PUBLIC_FREE_TAX_RETURNS_URL}
 
 RUN pnpm build
 

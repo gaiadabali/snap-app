@@ -1,0 +1,1471 @@
+/*
+ * Snapper, the Snap Apps assistant: the launcher, the teaser and the panel.
+ *
+ * ONE file, imported by Assistant.tsx. Every class starts `sa-` (the kit's
+ * `chip`, `btn`, `card` and Tailwind's `h-*` are never reused here). Colour comes
+ * only from the site's `--s-*` tokens, so both themes work without a second
+ * set of rules; the white on the blue gradient (user bubbles, the send button)
+ * is the one constant, as it is on the site's own primary button.
+ *
+ * Component rules sit in `@layer components`, below Tailwind utilities, as the
+ * kit does. Nothing here hides page content: the widget is built by script, so
+ * without JavaScript it is simply not there, and `.sa-root[data-wait]` keeps it
+ * out of sight until the status check says the service is up.
+ *
+ * Motion: nothing loops for longer than five seconds without a reason (the
+ * typing caret and the "thinking" dots only run while an answer is coming).
+ */
+
+@layer components {
+  /* ── The root, the launcher ───────────────────────────────────────────── */
+
+  .sa-root {
+    --sa-orb: 64px;
+    --sa-edge: 20px;
+    --sa-gap: 12px;
+    --sa-tab: 10px;
+    /* Set from the mascot's own frame by dock.ts; these are the values the seed and posters are drawn for. */
+    --sa-k: 0.62;
+    --sa-fy: 0.519;
+    --sa-top: 0.157;
+    --sa-d: 160px;
+    --sa-mk: calc(var(--sa-d) * var(--sa-k));
+    position: fixed;
+    z-index: 9000;
+    right: max(var(--sa-edge), env(safe-area-inset-right));
+    bottom: calc(max(var(--sa-edge), env(safe-area-inset-bottom)) + var(--sa-up, 0px));
+    font-family: var(--font-sans);
+    color: var(--s-ink);
+    -webkit-font-smoothing: antialiased;
+    transition: bottom 0.55s var(--s-spring);
+  }
+  .sa-root *,
+  .sa-root *::before,
+  .sa-root *::after {
+    box-sizing: border-box;
+  }
+  .sa-root [hidden] {
+    display: none !important;
+  }
+  /* Shown only once /api/assistant/status answers: no service, no widget. */
+  .sa-root[data-wait] {
+    display: none !important;
+  }
+  /* The site's full-screen mobile menu owns the screen while it is open. */
+  body:has(#mobile-nav) .sa-root {
+    visibility: hidden;
+  }
+  /* The footer is up or a page field has focus: the CLOSED launcher steps aside. */
+  html.sa-yield .sa-root:has(.sa-launcher[aria-expanded='false']) :is(.sa-launcher, .sa-teaser, .sa-dock.is-home) {
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+  }
+  /* The launcher's footprint, for page CSS that keeps content out from under it. */
+  html[data-sa-ready] {
+    --sa-reserve: calc(64px + 20px + 12px + env(safe-area-inset-bottom, 0px));
+  }
+  @media (max-width: 639px) {
+    .sa-root {
+      --sa-orb: 58px;
+      --sa-edge: 14px;
+    }
+  }
+
+  /* A clear spot (index.ts): with no room on the right edge, the closed orb tucks into a blue tab in the gutter. Hover or focus brings it out. */
+  .sa-root.sa-tuck .sa-launcher {
+    transform: translateX(calc(var(--sa-orb) + var(--sa-edge) - var(--sa-tab)));
+  }
+  .sa-root.sa-tuck :is(.sa-orb, .sa-anchor, .sa-pill, .sa-dot, .sa-teaser) {
+    opacity: 0;
+    visibility: hidden;
+  }
+  .sa-root.sa-tuck .sa-dock.is-home {
+    opacity: 0;
+    visibility: hidden;
+  }
+  .sa-root.sa-tuck .sa-launcher::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    width: calc(var(--sa-tab) + 8px);
+    height: 52px;
+    margin-top: -26px;
+    border-radius: 12px 0 0 12px;
+    background: var(--s-grad-bright);
+    box-shadow: 0 8px 18px -8px rgb(24 120 216 / 0.7);
+  }
+  .sa-root.sa-tuck .sa-launcher:is(:hover, :focus-visible) {
+    transform: none;
+  }
+  .sa-root.sa-tuck .sa-launcher:is(:hover, :focus-visible)::after {
+    opacity: 0;
+  }
+  .sa-root.sa-tuck .sa-launcher:is(:hover, :focus-visible) :is(.sa-orb, .sa-anchor) {
+    opacity: 1;
+    visibility: visible;
+  }
+  .sa-root.sa-tuck:has(.sa-launcher:is(:hover, :focus-visible)) .sa-dock.is-home {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .sa-launcher {
+    position: relative;
+    display: block;
+    width: var(--sa-orb);
+    height: var(--sa-orb);
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: none;
+    color: var(--s-ink);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 0.34s var(--s-spring);
+  }
+  /* A white orb with a soft blue ring and shadow. */
+  .sa-orb {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: radial-gradient(90% 90% at 32% 18%, var(--s-card), var(--s-blue-soft) 130%);
+    box-shadow:
+      0 0 0 1px var(--s-edge-2),
+      0 0 0 5px var(--s-blue-tint),
+      var(--s-shadow-2);
+    transition: box-shadow 0.34s var(--s-ease);
+  }
+  .sa-launcher:is(:hover, :focus-visible) {
+    transform: translateY(-3px);
+  }
+  .sa-launcher:is(:hover, :focus-visible) .sa-orb {
+    box-shadow:
+      0 0 0 1px var(--s-edge-2),
+      0 0 0 8px rgb(24 120 216 / 0.16),
+      var(--s-shadow-2);
+  }
+  .sa-launcher:active {
+    transform: scale(0.94, 0.9);
+    transition-duration: 0.08s;
+  }
+  .sa-launcher:focus-visible {
+    outline: 2px solid var(--s-blue);
+    outline-offset: 5px;
+  }
+
+  /* On hover an ink pill slides out. */
+  .sa-pill {
+    position: absolute;
+    right: calc(100% - 12px);
+    top: 50%;
+    height: 40px;
+    margin-top: -20px;
+    display: flex;
+    align-items: center;
+    padding: 0 20px 0 18px;
+    border-radius: 999px;
+    background: var(--s-ink);
+    color: var(--s-bg);
+    font: 600 0.875rem/1 var(--font-sans);
+    letter-spacing: -0.005em;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateX(32px) scale(0.82);
+    transform-origin: 100% 50%;
+    transition:
+      opacity 0.2s,
+      transform 0.5s var(--s-spring);
+    box-shadow: 0 8px 20px -6px rgb(11 17 26 / 0.45);
+  }
+  .sa-launcher:is(:hover, :focus-visible) .sa-pill {
+    opacity: 1;
+    transform: none;
+  }
+  .sa-open .sa-pill,
+  .sa-open .sa-dot {
+    display: none;
+  }
+  /* With the panel open, Snapper has flown to its header: an empty orb left
+     behind read as a broken button. The panel's own close takes over. */
+  .sa-open .sa-launcher {
+    visibility: hidden;
+  }
+  @media (hover: none) {
+    .sa-pill {
+      display: none;
+    }
+  }
+
+  /* "Something to tell you": a blue dot with two pings. */
+  .sa-dot {
+    position: absolute;
+    top: 1px;
+    right: 1px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--s-blue);
+    box-shadow: 0 0 0 3px var(--s-card);
+    animation: sa-ping 2.4s var(--s-ease) 2;
+  }
+  @keyframes sa-ping {
+    0% {
+      box-shadow:
+        0 0 0 3px var(--s-card),
+        0 0 0 3px rgb(24 120 216 / 0.6);
+    }
+    100% {
+      box-shadow:
+        0 0 0 3px var(--s-card),
+        0 0 0 14px rgb(24 120 216 / 0);
+    }
+  }
+
+  /* ── Snapper's seat on the orb, and the art that fills it until the dock takes over ── */
+
+  .sa-anchor {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: var(--sa-mk);
+    height: var(--sa-mk);
+    margin: calc(var(--sa-mk) / -2) 0 0 calc(var(--sa-mk) / -2);
+    transform: translateY(calc(var(--sa-mk) * (0.5 - var(--sa-fy))));
+    pointer-events: none;
+  }
+  .sa-art {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: var(--sa-d);
+    height: var(--sa-d);
+    transform-origin: 0 0;
+    transform: scale(var(--sa-k));
+    pointer-events: none;
+  }
+  .sa-poster {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    transition: opacity 0.3s;
+    -webkit-user-drag: none;
+  }
+  .sa-ok .sa-poster {
+    opacity: 1;
+  }
+  .sa-ok .sa-seed {
+    opacity: 0;
+  }
+
+  .sa-dock {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: var(--sa-d);
+    height: var(--sa-d);
+    z-index: 3;
+    pointer-events: none;
+    will-change: transform;
+    transition:
+      translate 0.34s var(--s-spring),
+      scale 0.1s;
+  }
+  .sa-dock .sa-art {
+    inset: 0;
+    transform: none;
+  }
+  .sa-root:has(.sa-launcher:is(:hover, :focus-visible)) .sa-dock.is-home {
+    translate: 0 -3px;
+  }
+  .sa-root:has(.sa-launcher:active) .sa-dock.is-home {
+    scale: 0.94 0.9;
+  }
+  .sa-bob {
+    position: absolute;
+    inset: 0;
+  }
+  /* The poster's own life (the 3D mascot has its own): one gentle float, then still. */
+  .sa-dock:not(.has-3d) .sa-bob {
+    animation: sa-float 4s ease-in-out 1;
+  }
+  .sa-canvas {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.4s;
+  }
+  .sa-canvas.is-ready {
+    opacity: 1;
+  }
+  .sa-art.is-gone {
+    opacity: 0;
+    transition: opacity 0.4s;
+  }
+  @keyframes sa-float {
+    50% {
+      transform: translateY(-2.4%);
+    }
+  }
+  .sa-dock:not(.has-3d).is-hop .sa-bob {
+    animation: sa-hop 0.7s var(--s-spring);
+  }
+  .sa-dock:not(.has-3d).is-wave .sa-bob {
+    animation: sa-wave 1.1s ease-in-out;
+  }
+  .sa-dock:not(.has-3d).is-snap .sa-bob {
+    animation: sa-hop 0.5s var(--s-spring);
+  }
+  .sa-dock:not(.has-3d).is-dizzy .sa-bob {
+    animation: sa-dizzy 1.2s ease-in-out;
+  }
+  .sa-dock:not(.has-3d)[data-mood='thinking'] .sa-bob {
+    animation: sa-sway 1.6s ease-in-out infinite;
+  }
+  /* The shutter's white flash, with or without the canvas. */
+  .sa-dock::after {
+    content: '';
+    position: absolute;
+    left: 22%;
+    top: 28%;
+    width: 56%;
+    height: 56%;
+    border-radius: 50%;
+    background: radial-gradient(closest-side, #fff, rgb(255 255 255 / 0));
+    opacity: 0;
+    pointer-events: none;
+  }
+  .sa-dock.is-snap::after {
+    animation: sa-flash 0.5s ease-out;
+  }
+  @keyframes sa-hop {
+    30% {
+      transform: translateY(-9%) scale(0.97, 1.04);
+    }
+    60% {
+      transform: translateY(0) scale(1.04, 0.95);
+    }
+  }
+  @keyframes sa-wave {
+    20% {
+      transform: rotate(-7deg);
+    }
+    45% {
+      transform: rotate(6deg);
+    }
+    70% {
+      transform: rotate(-4deg);
+    }
+  }
+  @keyframes sa-sway {
+    50% {
+      transform: rotate(3deg) translateY(-2%);
+    }
+  }
+  @keyframes sa-dizzy {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  @keyframes sa-flash {
+    15% {
+      opacity: 0.95;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+
+  /* The seed: Snapper drawn in gradients (a blue cushion, a paper face, four brackets) at the mascot's own frame, so the orb is never empty. */
+  .sa-seed {
+    position: absolute;
+    inset: 0;
+    transition: opacity 0.3s;
+  }
+  .sa-seed::before {
+    content: '';
+    position: absolute;
+    left: 24%;
+    right: 24%;
+    top: 85%;
+    height: 7%;
+    border-radius: 50%;
+    background: radial-gradient(closest-side, rgb(11 17 26 / 0.28), transparent);
+  }
+  .sa-seed::after {
+    content: '';
+    position: absolute;
+    left: 20.7%;
+    width: 58.6%;
+    top: 22.2%;
+    height: 59.4%;
+    border-radius: 24%;
+    background:
+      radial-gradient(ellipse 60% 26% at 34% 12%, rgb(255 255 255 / 0.55), transparent 70%),
+      linear-gradient(180deg, #1e9de0 0%, #1878d8 45%, #0f5bb5 80%, #0a4a96 100%);
+    box-shadow: inset 0 -6px 14px rgb(10 74 150 / 0.5);
+  }
+  .sa-seed i {
+    position: absolute;
+    left: 13.8%;
+    top: 15.7%;
+    width: 72.4%;
+    height: 72.4%;
+    border: 6px solid #dff1ff;
+    border-radius: 18%;
+    filter: drop-shadow(0 1px 2px rgb(10 74 150 / 0.45));
+    -webkit-mask:
+      linear-gradient(#000, #000) 0 0 / 28% 28% no-repeat,
+      linear-gradient(#000, #000) 100% 0 / 28% 28% no-repeat,
+      linear-gradient(#000, #000) 100% 100% / 28% 28% no-repeat,
+      linear-gradient(#000, #000) 0 100% / 28% 28% no-repeat;
+    mask:
+      linear-gradient(#000, #000) 0 0 / 28% 28% no-repeat,
+      linear-gradient(#000, #000) 100% 0 / 28% 28% no-repeat,
+      linear-gradient(#000, #000) 100% 100% / 28% 28% no-repeat,
+      linear-gradient(#000, #000) 0 100% / 28% 28% no-repeat;
+  }
+  .sa-seed b {
+    position: absolute;
+    z-index: 1;
+    left: 30.5%;
+    width: 39%;
+    top: 31%;
+    height: 33%;
+    border-radius: 8px 8px 3px 3px;
+    background:
+      radial-gradient(circle at 29% 38%, #0b111a 0 9%, transparent 10%),
+      radial-gradient(circle at 71% 38%, #0b111a 0 9%, transparent 10%),
+      #fffdf8;
+  }
+  .sa-seed b::after {
+    content: '';
+    position: absolute;
+    left: 36%;
+    width: 28%;
+    bottom: 18%;
+    height: 14%;
+    border-bottom: 3px solid #0b111a;
+    border-radius: 0 0 99px 99px;
+  }
+
+  /* ── The teaser ───────────────────────────────────────────────────────── */
+
+  .sa-teaser {
+    position: absolute;
+    right: 0;
+    bottom: calc(100% + 14px);
+    width: min(300px, calc(100vw - var(--sa-edge) * 2));
+    padding: 16px;
+    background: var(--s-card);
+    border: 1px solid var(--s-edge);
+    border-radius: 20px;
+    box-shadow: var(--s-shadow-2);
+    opacity: 0;
+    transform: translateY(16px) scale(0.94);
+    transform-origin: 100% 100%;
+    transition:
+      opacity 0.3s var(--s-ease),
+      transform 0.55s var(--s-spring);
+  }
+  .sa-teaser.is-in {
+    opacity: 1;
+    transform: none;
+  }
+  .sa-tz-t {
+    margin: 0 24px 12px 0;
+    font: 600 0.9375rem/1.4 var(--font-sans);
+    letter-spacing: -0.01em;
+    color: var(--s-ink);
+  }
+  .sa-tz-c {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 7px;
+  }
+  .sa-tz-x {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 32px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: none;
+    color: var(--s-ink-3);
+    cursor: pointer;
+    transition:
+      color 0.2s,
+      background-color 0.2s;
+  }
+  .sa-tz-x::before {
+    content: '';
+    position: absolute;
+    inset: -6px;
+  }
+  .sa-tz-x:hover {
+    color: var(--s-ink);
+    background: var(--s-mist);
+  }
+  .sa-tz-x svg {
+    width: 16px;
+    height: 16px;
+    fill: none;
+    stroke: currentcolor;
+    stroke-width: 2;
+    stroke-linecap: round;
+  }
+
+  /* A chip-style pill (the kit's `chip`, restated here so the widget stands alone). */
+  .sa-chip {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 34px;
+    padding: 6px 14px;
+    border: 1px solid var(--s-edge-2);
+    border-radius: 999px;
+    background: var(--s-card);
+    box-shadow: var(--s-shadow-1);
+    color: var(--s-ink-2);
+    font: 550 0.8125rem/1.3 var(--font-sans);
+    letter-spacing: -0.005em;
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+    transition:
+      background-color 0.2s,
+      border-color 0.2s,
+      color 0.2s,
+      transform 0.3s var(--s-spring);
+  }
+  .sa-chip::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+  }
+  .sa-chip:hover {
+    background: var(--s-blue-soft);
+    border-color: transparent;
+    color: var(--s-blue-text);
+    transform: translateY(-1px);
+  }
+
+  /* ── The panel ────────────────────────────────────────────────────────── */
+
+  .sa-panel {
+    --sa-w: 400px;
+    --sa-h: min(640px, calc(100dvh - 120px));
+    --sa-r: 26px;
+    --sa-head-lg: 208px;
+    --sa-head-sm: 68px;
+    --sa-head: var(--sa-head-lg);
+    --sa-sa: 160px;
+    --sa-sat: 0px;
+    --sa-ib: 36px;
+    --sa-pad: 16px;
+    position: fixed;
+    z-index: 2;
+    right: max(var(--sa-edge), env(safe-area-inset-right));
+    bottom: calc(max(var(--sa-edge), env(safe-area-inset-bottom)) + var(--sa-orb) + var(--sa-gap));
+    width: min(var(--sa-w), calc(100vw - var(--sa-edge) * 2));
+    height: var(--sa-h);
+    display: flex;
+    flex-direction: column;
+    border-radius: var(--sa-r);
+    background: var(--s-card);
+    color: var(--s-ink);
+    overflow: hidden;
+    overscroll-behavior: contain;
+    outline: none;
+    font: 400 0.9375rem/1.5 var(--font-sans);
+    box-shadow:
+      0 0 0 1px var(--s-edge-2),
+      var(--s-shadow-3);
+  }
+  .sa-panel[data-phase='chat'] {
+    --sa-head: var(--sa-head-sm);
+    --sa-sa: 68px;
+  }
+  /* :where keeps these resets at zero specificity, so `.sa-send { color: #fff }` and friends win. */
+  .sa-panel :where(button, input, textarea) {
+    font: inherit;
+    color: inherit;
+  }
+  .sa-panel :is(a, button, textarea, [tabindex]):focus-visible {
+    outline: 2px solid var(--s-blue);
+    outline-offset: 2px;
+  }
+  .sa-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  /* Entrance: children rise in one after another. The keyframe starts hidden but ENDS visible. */
+  .sa-panel.is-in [data-st] {
+    animation: sa-rise 0.56s var(--s-ease) both;
+    animation-delay: calc(var(--i, 0) * 55ms + 140ms);
+  }
+  .sa-panel.is-in .sa-head > :is(.sa-id, .sa-tools) {
+    animation: sa-rise 0.5s var(--s-ease) 0.1s both;
+  }
+  @keyframes sa-rise {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+  }
+
+  /* Header: Snapper's stage */
+  .sa-head {
+    position: relative;
+    flex: none;
+    height: calc(var(--sa-head) + var(--sa-sat));
+    padding-top: var(--sa-sat);
+    background:
+      radial-gradient(75% 100% at 50% 0%, var(--s-blue-soft), transparent 72%),
+      var(--s-card);
+    overflow: hidden;
+    transition:
+      height 0.62s var(--s-ease),
+      border-color 0.3s;
+    border-bottom: 1px solid transparent;
+  }
+  .sa-panel[data-phase='chat'] .sa-head {
+    border-bottom-color: var(--s-edge);
+  }
+  /* --sa-top (from the mascot's frame) puts the highest point of Snapper a fixed distance below the header's top. */
+  .sa-stage {
+    position: absolute;
+    z-index: 0;
+    left: 50%;
+    top: calc(var(--sa-sat) + 14px - var(--sa-top, 0.157) * var(--sa-sa));
+    width: var(--sa-sa);
+    height: var(--sa-sa);
+    margin-left: calc(var(--sa-sa) / -2);
+    cursor: pointer;
+    transition:
+      left 0.62s var(--s-ease),
+      top 0.62s var(--s-ease),
+      width 0.62s var(--s-ease),
+      height 0.62s var(--s-ease),
+      margin 0.62s var(--s-ease);
+  }
+  .sa-stage::before {
+    content: '';
+    position: absolute;
+    left: -30%;
+    right: -30%;
+    top: 16%;
+    bottom: -8%;
+    background: radial-gradient(closest-side, rgb(24 120 216 / 0.2), transparent);
+    pointer-events: none;
+  }
+  .sa-panel[data-phase='chat'] .sa-stage {
+    left: 12px;
+    margin-left: 0;
+    top: calc(var(--sa-sat) + 9px - var(--sa-top, 0.157) * var(--sa-sa));
+  }
+  .sa-id {
+    position: absolute;
+    z-index: 1;
+    left: 20px;
+    right: 20px;
+    top: calc(var(--sa-sat) + 140px);
+    text-align: center;
+    transition:
+      left 0.62s var(--s-ease),
+      right 0.62s var(--s-ease),
+      top 0.62s var(--s-ease);
+  }
+  .sa-panel[data-phase='chat'] .sa-id {
+    left: 84px;
+    right: 88px;
+    top: calc(var(--sa-sat) + 10px);
+    text-align: left;
+  }
+  .sa-title {
+    margin: 0;
+    font: 650 1.125rem/1.2 var(--font-sans);
+    letter-spacing: -0.025em;
+    color: var(--s-ink);
+  }
+  .sa-sub {
+    margin: 4px 0 0;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 7px;
+    font-size: 0.75rem;
+    line-height: 1.4;
+    color: var(--s-ink-3);
+  }
+  .sa-panel[data-phase='chat'] .sa-sub {
+    justify-content: flex-start;
+  }
+  .sa-subt {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+  }
+  .sa-live {
+    position: relative;
+    flex: none;
+    width: 7px;
+    height: 7px;
+    margin-top: 5px;
+    border-radius: 50%;
+    background: var(--s-green-2);
+  }
+  .sa-live::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: inherit;
+    animation: sa-live 2.4s var(--s-ease) 2;
+  }
+  @keyframes sa-live {
+    to {
+      transform: scale(3.2);
+      opacity: 0;
+    }
+  }
+  .sa-tools {
+    position: absolute;
+    z-index: 2;
+    top: calc(var(--sa-sat) + 10px);
+    right: 10px;
+    display: flex;
+    gap: 2px;
+  }
+  .sa-ib {
+    display: grid;
+    place-items: center;
+    width: var(--sa-ib);
+    height: var(--sa-ib);
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: none;
+    color: var(--s-ink-3);
+    cursor: pointer;
+    transition:
+      background-color 0.2s,
+      color 0.2s;
+  }
+  .sa-ib:hover,
+  .sa-ib[aria-expanded='true'] {
+    background: var(--s-mist-2);
+    color: var(--s-ink);
+  }
+  @media (pointer: coarse) {
+    .sa-panel {
+      --sa-ib: 44px;
+    }
+  }
+  .sa-i {
+    flex: none;
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: currentcolor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .sa-i-s {
+    width: 16px;
+    height: 16px;
+  }
+  .sa-i-dots {
+    stroke-width: 3.2;
+  }
+
+  /* The menu */
+  .sa-menu {
+    position: absolute;
+    z-index: 4;
+    top: calc(var(--sa-sat) + 52px);
+    right: 10px;
+    min-width: 200px;
+    padding: 4px;
+    border: 1px solid var(--s-edge);
+    border-radius: 16px;
+    background: var(--s-card);
+    color: var(--s-ink);
+    box-shadow: var(--s-shadow-2);
+    opacity: 0;
+    transform: translateY(-8px) scale(0.94);
+    transform-origin: 100% 0;
+    transition:
+      opacity 0.18s,
+      transform 0.36s var(--s-spring);
+  }
+  .sa-menu.is-in {
+    opacity: 1;
+    transform: none;
+  }
+  .sa-mi {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 44px;
+    padding: 0 14px 0 12px;
+    border: 0;
+    border-radius: 12px;
+    background: none;
+    font-weight: 560;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color 0.15s;
+  }
+  .sa-mi:hover,
+  .sa-mi:focus-visible {
+    background: var(--s-blue-soft);
+  }
+  .sa-mi:focus-visible {
+    outline-offset: -2px;
+  }
+
+  /* Body */
+  .sa-body {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+  }
+  .sa-log,
+  .sa-welcome {
+    position: absolute;
+    inset: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: var(--s-edge-2) transparent;
+  }
+  .sa-log {
+    -webkit-mask-image: linear-gradient(to bottom, transparent, #000 12px, #000 calc(100% - 12px), transparent);
+    mask-image: linear-gradient(to bottom, transparent, #000 12px, #000 calc(100% - 12px), transparent);
+  }
+  .sa-panel[data-phase='welcome'] .sa-log {
+    visibility: hidden;
+  }
+  .sa-log:focus-visible {
+    outline-offset: -2px;
+  }
+  .sa-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: var(--sa-pad) var(--sa-pad) 20px;
+  }
+
+  /* Welcome */
+  .sa-welcome {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 6px 20px var(--sa-pad);
+    transition:
+      opacity 0.22s,
+      transform 0.28s var(--s-ease);
+  }
+  .sa-welcome.is-gone {
+    opacity: 0;
+    transform: translateY(-8px);
+    pointer-events: none;
+  }
+  .sa-greet {
+    margin: 0;
+    font: 650 1.3rem/1.15 var(--font-sans);
+    letter-spacing: -0.03em;
+    color: var(--s-ink);
+  }
+  .sa-intro {
+    margin: 0 0 6px;
+    color: var(--s-ink-3);
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+  .sa-starters {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .sa-st {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 48px;
+    padding: 8px 14px 8px 10px;
+    border: 1px solid var(--s-edge);
+    border-radius: 16px;
+    background: var(--s-card);
+    box-shadow: var(--s-shadow-1);
+    text-align: left;
+    cursor: pointer;
+    transition:
+      background-color 0.2s,
+      border-color 0.2s,
+      transform 0.3s var(--s-spring);
+  }
+  .sa-st:hover {
+    background: var(--s-blue-soft);
+    border-color: transparent;
+    transform: translateY(-1px);
+  }
+  .sa-sti {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    background: var(--s-blue-soft);
+    color: var(--s-blue-text);
+  }
+  .sa-st:hover .sa-sti {
+    background: var(--s-card);
+  }
+  .sa-stl {
+    font-size: 0.9rem;
+    font-weight: 540;
+    letter-spacing: -0.01em;
+    color: var(--s-ink);
+  }
+
+  /* "New message" pill */
+  .sa-new {
+    position: absolute;
+    left: 50%;
+    bottom: 10px;
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 32px;
+    padding: 0 14px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--s-ink);
+    color: var(--s-bg);
+    font: 600 0.8125rem/1 var(--font-sans);
+    box-shadow: var(--s-shadow-2);
+    cursor: pointer;
+    transform: translateX(-50%);
+  }
+
+  /* Messages */
+  .sa-m {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: 92%;
+    min-width: 0;
+  }
+  .sa-m.is-new {
+    animation: sa-pop 0.4s var(--s-ease) both;
+  }
+  @keyframes sa-pop {
+    from {
+      opacity: 0;
+      transform: translateY(8px) scale(0.98);
+    }
+  }
+  .sa-u {
+    align-self: flex-end;
+    align-items: flex-end;
+    max-width: 85%;
+  }
+  .sa-a {
+    align-self: flex-start;
+  }
+  .sa-wide {
+    align-self: stretch;
+    max-width: 100%;
+  }
+  .sa-b {
+    overflow-wrap: anywhere;
+  }
+  .sa-u .sa-b {
+    padding: 10px 14px;
+    border-radius: 20px 20px 6px 20px;
+    background: var(--s-grad-bright);
+    color: #fff;
+    box-shadow: 0 10px 22px -12px rgb(24 120 216 / 0.7);
+  }
+  .sa-a .sa-b {
+    padding: 2px 2px 0;
+    color: var(--s-ink);
+  }
+  .sa-b.sa-err {
+    padding: 10px 14px;
+    border: 1px solid var(--s-edge);
+    border-left: 3px solid var(--s-amber);
+    border-radius: 14px;
+    background: var(--s-mist);
+    color: var(--s-ink-2);
+  }
+  .sa-ep {
+    margin: 0;
+  }
+  .sa-md > * + * {
+    margin-top: 8px;
+  }
+  .sa-md p {
+    margin: 0;
+  }
+  .sa-md ul,
+  .sa-md ol {
+    margin: 0;
+    padding-left: 20px;
+  }
+  .sa-md ul {
+    list-style: disc;
+  }
+  .sa-md ol {
+    list-style: decimal;
+  }
+  .sa-md li + li {
+    margin-top: 3px;
+  }
+  .sa-md li::marker {
+    color: var(--s-blue);
+  }
+  .sa-md ol > li::marker {
+    font-weight: 600;
+  }
+  .sa-md strong {
+    font-weight: 620;
+  }
+  .sa-md .sa-h {
+    margin-top: 4px;
+  }
+  .sa-md .sa-lnk {
+    color: var(--s-blue-text);
+    font-weight: 560;
+    text-decoration: underline;
+    text-decoration-color: rgb(24 120 216 / 0.4);
+    text-decoration-thickness: 1.5px;
+    text-underline-offset: 3px;
+    transition: text-decoration-color 0.2s;
+  }
+  .sa-md .sa-lnk:hover {
+    text-decoration-color: currentcolor;
+  }
+  /* The per-character fade: a streamed character is born transparent and ends opaque. */
+  .sa-f {
+    animation: sa-fade 0.24s var(--s-ease) both;
+  }
+  @keyframes sa-fade {
+    from {
+      opacity: 0;
+      filter: blur(3px);
+    }
+  }
+  .sa-caret {
+    display: inline-block;
+    width: 2px;
+    height: 1.05em;
+    margin-left: 2px;
+    vertical-align: -0.18em;
+    border-radius: 2px;
+    background: var(--s-blue);
+    animation: sa-caret 1s ease-in-out infinite;
+  }
+  @keyframes sa-caret {
+    50% {
+      opacity: 0.2;
+    }
+  }
+  .sa-stopped {
+    font-size: 0.75rem;
+    color: var(--s-ink-3);
+  }
+
+  /* "Looking at <page>" with three dots */
+  .sa-think {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--s-ink-3);
+  }
+  .sa-tl strong {
+    color: var(--s-ink);
+    font-weight: 560;
+  }
+  .sa-dots {
+    display: inline-flex;
+    gap: 4px;
+  }
+  .sa-dots i {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--s-blue);
+    animation: sa-dot 1.1s ease-in-out infinite;
+  }
+  .sa-dots i:nth-child(2) {
+    background: var(--s-cyan);
+    animation-delay: 0.15s;
+  }
+  .sa-dots i:nth-child(3) {
+    background: var(--s-blue-2);
+    animation-delay: 0.3s;
+  }
+  @keyframes sa-dot {
+    0%,
+    80%,
+    100% {
+      transform: translateY(0);
+      opacity: 0.45;
+    }
+    40% {
+      transform: translateY(-4px);
+      opacity: 1;
+    }
+  }
+
+  /* Sources */
+  .sa-src {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding-left: 2px;
+  }
+  .sa-s {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    max-width: 100%;
+    height: 28px;
+    padding: 0 12px 0 9px;
+    border: 1px solid var(--s-edge);
+    border-radius: 999px;
+    background: var(--s-mist);
+    color: var(--s-ink-3);
+    font-size: 0.75rem;
+    font-weight: 550;
+    text-decoration: none;
+    transition:
+      background-color 0.2s,
+      color 0.2s;
+  }
+  .sa-s:hover {
+    background: var(--s-blue-soft);
+    color: var(--s-blue-text);
+  }
+  .sa-sx {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Follow-up chips */
+  .sa-fu {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .sa-fc {
+    animation: sa-rise 0.45s var(--s-ease) both;
+    animation-delay: calc(var(--i, 0) * 70ms);
+  }
+
+  /* Call-to-action cards */
+  .sa-cta {
+    padding: 16px;
+    border: 1px solid var(--s-edge);
+    border-radius: 20px;
+    background: var(--s-mist);
+  }
+  .sa-ct {
+    margin: 0 0 4px;
+    font: 620 0.95rem/1.3 var(--font-sans);
+    letter-spacing: -0.015em;
+    color: var(--s-ink);
+  }
+  .sa-cp {
+    margin: 0 0 12px;
+    color: var(--s-ink-3);
+    font-size: 0.875rem;
+    line-height: 1.45;
+  }
+  .sa-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 42px;
+    padding: 0 18px 0 20px;
+    border-radius: 999px;
+    background: var(--s-grad-bright);
+    color: #fff;
+    font: 600 0.9rem/1 var(--font-sans);
+    letter-spacing: -0.005em;
+    text-decoration: none;
+    box-shadow: var(--s-shadow-blue);
+    transition: transform 0.3s var(--s-spring);
+  }
+  .sa-btn:hover {
+    transform: translateY(-1px);
+  }
+  .sa-btn:active {
+    transform: scale(0.97);
+  }
+
+  /* Composer */
+  .sa-comp {
+    flex: none;
+    padding: 10px 14px 12px;
+    border-top: 1px solid var(--s-edge);
+    background: var(--s-card);
+  }
+  .sa-field {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    padding: 5px 5px 5px 16px;
+    border: 1px solid var(--s-edge);
+    border-radius: 24px;
+    background: var(--s-mist);
+    transition:
+      border-color 0.2s,
+      box-shadow 0.2s,
+      background-color 0.2s;
+  }
+  .sa-field:focus-within {
+    border-color: var(--s-blue);
+    background: var(--s-card);
+    box-shadow: 0 0 0 4px var(--s-blue-tint);
+  }
+  .sa-ta {
+    flex: 1;
+    min-width: 0;
+    min-height: 38px;
+    max-height: 120px;
+    padding: 8px 0;
+    border: 0;
+    outline: 0;
+    resize: none;
+    background: transparent;
+    color: var(--s-ink);
+    font-size: 0.9375rem;
+    line-height: 22px;
+  }
+  .sa-panel .sa-ta:focus-visible {
+    outline: 0;
+  }
+  .sa-ta::placeholder {
+    color: var(--s-ink-4);
+  }
+  .sa-send {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: var(--s-grad-bright);
+    color: #fff;
+    box-shadow: var(--s-shadow-blue);
+    cursor: pointer;
+    transition:
+      transform 0.3s var(--s-spring),
+      background-color 0.2s;
+  }
+  .sa-send:hover:not(:disabled) {
+    transform: scale(1.06);
+  }
+  .sa-send:active:not(:disabled) {
+    transform: scale(0.94);
+  }
+  .sa-send:disabled {
+    background: var(--s-mist-2);
+    color: var(--s-ink-4);
+    box-shadow: none;
+    cursor: default;
+  }
+  .sa-i-go {
+    stroke-width: 2.2;
+  }
+  .sa-i-stop {
+    display: none;
+    fill: currentcolor;
+    stroke: none;
+  }
+  .sa-comp.is-busy .sa-i-go {
+    display: none;
+  }
+  .sa-comp.is-busy .sa-i-stop {
+    display: block;
+  }
+  .sa-nr {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 6px;
+    padding: 0 6px;
+  }
+  .sa-note {
+    margin: 0;
+    font-size: 0.6875rem;
+    line-height: 1.4;
+    color: var(--s-ink-3);
+  }
+  .sa-count {
+    flex: none;
+    font-size: 0.6875rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--s-ink-3);
+  }
+  .sa-count.is-max {
+    color: var(--s-amber);
+    font-weight: 600;
+  }
+
+  /* ── Phones: a full-height sheet that follows the on-screen keyboard ──── */
+
+  .sa-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    background: rgb(11 17 26 / 0.42);
+  }
+  @media (max-width: 639px) {
+    .sa-panel {
+      --sa-head-lg: 188px;
+      --sa-head-sm: 64px;
+      --sa-sa: 126px;
+      --sa-sat: env(safe-area-inset-top, 0px);
+      --sa-ib: 44px;
+      left: 0;
+      right: 0;
+      bottom: auto;
+      top: var(--sa-vvt, 0px);
+      width: auto;
+      height: var(--sa-vvh, 100dvh);
+      border-radius: var(--sa-r) var(--sa-r) 0 0;
+      box-shadow: 0 -8px 40px rgb(11 17 26 / 0.3);
+      font-size: 1rem;
+    }
+    .sa-panel[data-phase='chat'] {
+      --sa-sa: 64px;
+    }
+    .sa-open .sa-launcher {
+      visibility: hidden;
+    }
+    .sa-id {
+      top: calc(var(--sa-sat) + 124px);
+    }
+    .sa-panel[data-phase='chat'] .sa-id {
+      left: 76px;
+      right: 92px;
+      top: calc(var(--sa-sat) + 9px);
+    }
+    .sa-panel[data-phase='chat'] .sa-stage {
+      left: 10px;
+    }
+    .sa-tools {
+      top: calc(var(--sa-sat) + 8px);
+      right: 6px;
+    }
+    .sa-menu {
+      top: calc(var(--sa-sat) + 54px);
+    }
+    .sa-m {
+      max-width: 90%;
+    }
+    .sa-ta {
+      font-size: 16px;
+    }
+    .sa-comp {
+      padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    }
+    .sa-panel.is-kb .sa-comp {
+      padding-bottom: 12px;
+    }
+    .sa-welcome {
+      padding-inline: var(--sa-pad);
+    }
+  }
+  @media (max-height: 700px) and (min-width: 640px) {
+    .sa-panel {
+      --sa-head-lg: 184px;
+      --sa-sa: 126px;
+    }
+    .sa-id {
+      top: calc(var(--sa-sat) + 118px);
+    }
+  }
+  html.sa-lock {
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+  html.sa-fix body {
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: calc(var(--sa-sy, 0px) * -1);
+    width: 100%;
+  }
+
+  @media print {
+    .sa-root {
+      display: none !important;
+    }
+  }
+
+  /* ── Reduced motion: fades only, no travel, no loops ──────────────────── */
+
+  @media (prefers-reduced-motion: reduce) {
+    .sa-root,
+    .sa-root *,
+    .sa-root *::before,
+    .sa-root *::after {
+      animation: none !important;
+      transition-property: opacity, background-color, border-color, box-shadow, color !important;
+      transition-duration: 0.15s !important;
+    }
+    .sa-root {
+      transition: none !important;
+    }
+    .sa-teaser {
+      transform: none;
+    }
+    .sa-pill {
+      transform: none;
+    }
+    .sa-dots i {
+      opacity: 0.8;
+    }
+  }
+}
+
+/* OUTSIDE the components layer on purpose. The composer's field draws its own
+   ring on :focus-within, and a second outline on the textarea inside it read
+   as a double border. That outline comes from globals.css's unlayered
+   `:where(…):focus-visible` rule, and unlayered CSS beats any layer whatever
+   the specificity, so this override has to be unlayered too. */
+.sa-panel .sa-field textarea:focus-visible {
+  outline: none;
+}

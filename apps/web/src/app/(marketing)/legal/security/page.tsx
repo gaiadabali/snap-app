@@ -42,7 +42,14 @@ export default function DataHandlingSecurityPage() {
       <section>
         <h2>Encryption</h2>
         <ul>
-          <li>Data is encrypted in transit and at rest in storage.</li>
+          {/* Corrected 2026-10-20: the host's disk is plain ext4 (checked with
+              lsblk that day), so "at rest in storage" was not true of the
+              running system. Encryption at rest came with the planned AWS
+              storage (docs/PLAN.md D12), not with this server. */}
+          <li>
+            Data is encrypted in transit (HTTPS). The server&apos;s disk is not yet encrypted at
+            rest; that is planned with the move to Australian hosting.
+          </li>
           <li>
             Particularly sensitive fields — bank account details appearing on a document, and the
             access tokens issued when you connect Xero — receive an additional layer of

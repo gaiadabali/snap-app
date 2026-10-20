@@ -82,7 +82,26 @@ echo "verified: the bundle contains $EXPO_PUBLIC_API_URL"
 
 SHA=$(sha256sum "$APK" | cut -d' ' -f1)
 SIZE=$(stat -c%s "$APK")
-VERSION=$(node -p "require('./apps/mobile/app.json').expo.version" 2>/dev/null || echo 0.0.0)
+# THE VERSION AND BUILD NUMBER ARE READ FROM THE APK, not from the working tree
+# or app.json. The APK embeds the config it was built with (`assets/app.config`,
+# written by expo-constants from apps/mobile/app.config.js), so this records
+# what the artefact IS rather than what the checkout says now. A build with no
+# versionCode cannot take part in "offer only a newer build", so it is refused.
+APK_CONFIG=$(unzip -p "$APK" assets/app.config 2>/dev/null || true)
+read_cfg() { printf '%s' "$APK_CONFIG" | node -e "
+let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{try{const c=JSON.parse(s);console.log($1)}catch{console.log('')}})"; }
+VERSION_CODE=$(read_cfg "c.android&&c.android.versionCode||c.extra&&c.extra.versionCode||''")
+VERSION=$(read_cfg "c.version||''")
+case "$VERSION_CODE" in
+  ''|*[!0-9]*|0)
+    echo "This APK carries no usable versionCode (got '$VERSION_CODE') - refusing to publish." >&2
+    echo "Build it with deploy/build-apk.sh (apps/mobile/app.config.js sets it)." >&2
+    exit 1 ;;
+esac
+if [ -z "$VERSION" ]; then
+  echo "This APK carries no version - refusing to publish." >&2
+  exit 1
+fi
 # The API the bundle was built against is inlined at build time and cannot be
 # changed afterwards, so it is recorded WITH the artefact. An APK pointing at
 # the wrong host is indistinguishable from a broken server, and this is the
@@ -90,8 +109,23 @@ VERSION=$(node -p "require('./apps/mobile/app.json').expo.version" 2>/dev/null |
 API_URL="$EXPO_PUBLIC_API_URL"
 NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
+# NEVER GO BACKWARDS. The update check offers a build only when its versionCode
+# is greater than the installed one, and Android refuses to install a lower one,
+# so republishing an older or equal build would strand every tester on a build
+# they cannot replace. Read what is live and refuse unless this is higher. No
+# manifest yet (first publish) is fine; a manifest from before versionCodes
+# existed has none, so any numbered build is higher than it.
+CURRENT_MANIFEST=$(ssh "$HOST" "cat '$REMOTE_DIR/manifest.json' 2>/dev/null || true")
+CURRENT_CODE=$(printf '%s' "$CURRENT_MANIFEST" | node -e "
+let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{try{const v=Number(JSON.parse(s).versionCode);console.log(Number.isInteger(v)&&v>0?v:0)}catch{console.log(0)}})")
+if [ "$VERSION_CODE" -le "$CURRENT_CODE" ]; then
+  echo "Refusing to publish versionCode $VERSION_CODE: the server already has $CURRENT_CODE." >&2
+  echo "A published build must be NEWER. Commit your work and rebuild, or set a higher SNAP_BUILD_NUMBER." >&2
+  exit 1
+fi
+
 echo "publishing $(basename "$APK")"
-echo "  version   $VERSION"
+echo "  version   $VERSION (versionCode $VERSION_CODE)"
 echo "  commit    $COMMIT"
 echo "  sha256    $SHA"
 echo "  size      $SIZE bytes"
@@ -118,6 +152,7 @@ fi
 ssh "$HOST" "cat > '$REMOTE_DIR/manifest.json'" <<JSON
 {
   "version": "$VERSION",
+  "versionCode": $VERSION_CODE,
   "buildNumber": "$COMMIT",
   "commit": "$COMMIT",
   "sha256": "$SHA",

@@ -1,0 +1,91 @@
+{
+  "schemaVersion": 1,
+  "financialYear": "2025-26",
+  "generatedAt": "2026-07-14T03:21:09Z",
+  "source": {
+    "app": "snapapp",
+    "appVersion": "1.4.0"
+  },
+  "occupation": "tradie",
+  "workKilometres": 4200,
+  "lines": [
+    {
+      "label": "D3",
+      "itemId": "boots",
+      "description": "Steel-cap work boots",
+      "amount": "189.00",
+      "gstInclusive": true,
+      "receiptCount": 1,
+      "receiptRefs": [
+        "4779db9332a123d90a4a06252d18aef6837fcbc84e0f1794cf3dbced7e30e4ce"
+      ]
+    },
+    {
+      "label": "D5",
+      "itemId": "tools",
+      "description": "Cordless drill and bits",
+      "amount": "329.00",
+      "gstInclusive": true,
+      "receiptCount": 1,
+      "receiptRefs": [
+        "5278703ad44c4dd6f6bba34e2ac7acaaf54df46ee12863a0d0a6e5264ce5df2b"
+      ]
+    },
+    {
+      "label": "RENTAL",
+      "itemId": "councilRates",
+      "description": "Council rates, Unit 4",
+      "amount": "1620.35",
+      "gstInclusive": false,
+      "receiptCount": 2,
+      "receiptRefs": [
+        "0df126076caea542bc63a87fbea06c81d90b324c66f9f6197d33114ec553677a",
+        "d202de0b3295700c9610582bd76611525658fd26c37e3aceb6780fa25d1bc3cf"
+      ]
+    },
+    {
+      "label": "RENTAL",
+      "itemId": "mgmtFees",
+      "description": "Property management fees",
+      "amount": "1342.00",
+      "gstInclusive": true,
+      "receiptCount": 12,
+      "receiptRefs": [
+        "1fc00f1ce04671876b063e7ccf1b5b892c736bb405dd9abea1e2ca07acd3d314",
+        "e375158833fb831bb336a16d3659e7a730291a810ce12d3a82add08d6d42ca92",
+        "1d23230461bbeb50a7a8a8a13812c29b0aba66052d8881e525d4c9cf4ccfb499"
+      ]
+    },
+    {
+      "label": "RENTAL",
+      "itemId": "landlordInsurance",
+      "description": "Landlord insurance premium",
+      "amount": "980.50",
+      "gstInclusive": true,
+      "receiptCount": 1,
+      "receiptRefs": [
+        "d44585c0091043f76ac093ed1b5bb1cc4c4c21e3302e63d714a4eefa27451fa3"
+      ]
+    },
+    {
+      "label": "RENTAL",
+      "itemId": "loanInterest",
+      "description": "Investment loan interest, interest only",
+      "amount": "14210.75",
+      "gstInclusive": false,
+      "receiptCount": 0,
+      "receiptRefs": []
+    },
+    {
+      "label": "RENTAL",
+      "itemId": "repairs",
+      "description": "Plumber, blocked drain",
+      "amount": "385.00",
+      "gstInclusive": true,
+      "receiptCount": 1,
+      "receiptRefs": [
+        "67c296da0d59ecb9364a230e040b201659c8408be5424ff899c29bf837b27a1f"
+      ]
+    }
+  ]
+}

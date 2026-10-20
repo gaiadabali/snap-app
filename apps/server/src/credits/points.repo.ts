@@ -7,7 +7,7 @@ import { getDb } from '../db.js';
 
 /**
  * Points — earned by scanning, spent in a different ecosystem app entirely
- * (yourtal, unbuilt). USER-scoped: `docs/ECOSYSTEM.md` D27, migration 0024.
+ * (YourTal; linking it to Snap Apps is not built yet). USER-scoped: `docs/ECOSYSTEM.md` D27, migration 0024.
  * A point is earned by a person and redeemed somewhere a workspace has no
  * meaning, so every function here runs under `asUser`, never `withTenantAs` —
  * `current_tenant_id()` is the wrong predicate for this table.

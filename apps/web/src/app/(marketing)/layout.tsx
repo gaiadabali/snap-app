@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-import { ChatWidget } from '@/components/chat';
+import { Assistant } from '@/components/assistant/Assistant';
 import '@/design/site/site.css';
 
 import { SiteFooter } from './_components/site-footer';
@@ -20,7 +20,7 @@ export default function MarketingLayout({ children }: { children: ReactNode }) {
       <SiteFooter />
       {/* Mounted once here rather than per-page: every route in this group
           nests inside this layout, so a second mount would render two widgets. */}
-      <ChatWidget />
+      <Assistant />
     </div>
   );
 }
