@@ -14,8 +14,8 @@ and an earlier draft of this file collided with it.
 |---|---|---|---|
 | **D30** | On-device VLM | **Preview on device, server authoritative** | Keeps D1/D21 intact. The phone reads instantly and offline; the server's read is the record. |
 | **D31** | Advertising | **House ads now, one vetted partner later, always self-served** | No third-party SDK next to financial records. |
-| **D32** | Identity | **One ecosystem account** — register in any app, sign in to all | The "Gaiada Account". Resolves open question O2. |
-| **D33** | Consumer economy | **Credits (money, tenant-scoped) + points (earned, user-scoped)** | Two mechanisms because they answer different questions and travel differently. |
+| **D32** | Identity | **One ecosystem account** — register in any app, sign in to all | The YourTal account, "Sign in with YourTal" (decided 2026-10-20; it was called the "Gaiada Account"). Resolves open question O2. |
+| **D33** | Consumer economy | **Credits (money, tenant-scoped) + points (earned, user-scoped)** | Two mechanisms because they answer different questions and travel differently. The points are YourTal points (decided 2026-10-20). |
 | **D34** | Business surfaces | **Dark behind a flag, not deleted** | Personal-only so it can be designed properly. Reversible in one line — but it hides the revenue line, so the trade is recorded below. |
 
 ---
@@ -112,6 +112,27 @@ right seam. Nothing stores a password today, which is what makes this cheap.
 Points are keyed on `users.id` precisely because that identity is the one thing
 every app in the ecosystem will share.
 
+### Decided 2026-10-20: the identity service is YourTal
+
+The founder chose YourTal's account as the one account. **"Sign in with
+YourTal" works like "Sign in with Google"**: YourTal is the OpenID Connect
+provider, and Snap Apps and free-tax-returns are its clients. Snap Apps stores
+only the YourTal subject in `users.subject`, and registering from Snap Apps
+creates a YourTal account. There is no separate "Gaiada Account" and no
+Zitadel. The rule above still holds: Snap Apps is a client, never the provider.
+
+- A YourTal account belongs to one region, AU or ID, and records a date of
+  birth, so Snap Apps inherits both.
+- **No SMS.** People prove who they are with a verified email and passkeys,
+  with authenticator-app codes as backup.
+- **Teens** (13–17, a YourTal teen account) may use Snap Apps **only when a
+  parent invites them**. The teen gets their own space; the inviting parent can
+  view it, and the teen is told so. Teens earn no receipt points.
+
+The cross-app plan that builds this is `god/TASKS.md` Phase 3, outside this
+repo. YourTal records the same decisions as F99, F102 and F105 in its
+`docs/16-decisions.md` § V.
+
 ---
 
 ## D33 — Credits and points are different mechanisms
@@ -196,9 +217,16 @@ none. Stripe is phase 6.5 and unwired. `credit_purchases.provider` defaults to
 `'manual'` so credits can be granted by hand for a demo without pretending a
 checkout exists.
 
-**Not decided:** which on-device model, and whether the redemption side of
-points lives here or in yourtal. Redemption writes a negative entry; nothing in
-this schema assumes which app does it.
+**Decided 2026-10-20 (founder):** the points are **YourTal points**. YourTal
+points are the one global economy, and the only points with money value. Snap
+Apps reports each confirmed receipt to YourTal, and YourTal pays the points from
+its own marketing budget: 10 per receipt in Australia (100 in Indonesia, which
+stays a demo), once per receipt, adults only. So redemption lives in YourTal,
+not here. Credits stay Snap Apps' own and never leave Snap Apps.
+`point_ledger` stops being a balance people spend; whether it stays as the
+record of receipts reported to YourTal is settled when the link is built.
+
+**Not decided:** which on-device model.
 
 ---
 
