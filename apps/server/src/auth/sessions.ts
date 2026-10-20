@@ -137,3 +137,14 @@ export async function revokeAllSessions(tokenHash: Buffer): Promise<number> {
   `);
   return Number(rows[0]?.revoked ?? 0);
 }
+
+/**
+ * Deletes sessions and mailed links 30 days after they stopped working, so
+ * neither table grows for ever. Run about hourly from main.ts.
+ */
+export async function authHousekeeping(): Promise<number> {
+  const { rows } = await getDb().execute<{ removed: number }>(sql`
+    select identity_auth_housekeeping() as removed
+  `);
+  return Number(rows[0]?.removed ?? 0);
+}

@@ -208,6 +208,30 @@ describeIfDb('sign-in safety — real HTTP, real database', () => {
       expect((await session(bystander.token)).statusCode).toBe(200);
     });
 
+    it('housekeeping deletes sessions 30 days after they ended, and keeps everything younger', async () => {
+      const old = await register(freshEmail('housekeep-old'));
+      const recent = await register(freshEmail('housekeep-recent'));
+      const live = await register(freshEmail('housekeep-live'));
+      await admin.query(
+        `UPDATE user_sessions SET revoked_at = now() - interval '31 days', revoked_reason = 'sign_out' WHERE user_id = $1`,
+        [old.user.userId],
+      );
+      await admin.query(
+        `UPDATE user_sessions SET revoked_at = now() - interval '29 days', revoked_reason = 'sign_out' WHERE user_id = $1`,
+        [recent.user.userId],
+      );
+
+      const { authHousekeeping } = await import('./sessions.js');
+      expect(await authHousekeeping()).toBeGreaterThanOrEqual(1);
+
+      const { rows } = await admin.query<{ user_id: string }>(
+        'SELECT user_id FROM user_sessions WHERE user_id = ANY($1)',
+        [[old.user.userId, recent.user.userId, live.user.userId]],
+      );
+      expect(rows.map((r) => r.user_id).sort()).toEqual([recent.user.userId, live.user.userId].sort());
+      expect((await session(live.token)).statusCode).toBe(200);
+    });
+
     it('the application role cannot read the session table at all', async () => {
       const app_ = new Client({ connectionString: url });
       await app_.connect();

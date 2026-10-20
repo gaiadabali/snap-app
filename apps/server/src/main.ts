@@ -228,6 +228,7 @@ export async function bootstrap(): Promise<NestFastifyApplication> {
  */
 const globalRateLimiter = new RateLimiter(settings.GLOBAL_RATE_LIMIT, 60_000);
 let lastGlobalSweep = 0;
+let lastAuthHousekeeping = 0;
 app.use((request: { ip?: string; url?: string }, response: import('http').ServerResponse, next: () => void) => {
   const url = request.url ?? '';
   if (
@@ -276,6 +277,15 @@ app.use((request: { ip?: string; url?: string }, response: import('http').Server
   if (dueSweep) {
     void globalRateLimiter.sweep('global:').catch(() => undefined);
     void RateLimiter.sweepStale(60 * 60 * 1000).catch(() => undefined);
+  }
+  // Ended sessions and used reset/verification links, 30 days on (0036).
+  // Hourly is plenty; the same opportunistic trigger, so an idle process
+  // holds no timer.
+  if (dueSweep && now - lastAuthHousekeeping > 60 * 60 * 1000) {
+    lastAuthHousekeeping = now;
+    void import('./auth/sessions.js')
+      .then(({ authHousekeeping }) => authHousekeeping())
+      .catch((error) => logger.warn(`auth housekeeping failed: ${String(error)}`));
   }
 });
 

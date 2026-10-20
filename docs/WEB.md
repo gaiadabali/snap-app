@@ -63,6 +63,12 @@ calls `api()`. That is the intended shape, not an obstacle to route around.
 One XSS on a page that holds a bearer token is an attacker downloading five
 years of someone's financial records.
 
+Since migration 0036 the token names a server-side session that expires and
+can be revoked (`docs/AUTH.md`). Signing out therefore calls
+`POST /v1/auth/sign-out` before clearing the cookie
+(`lib/auth/session.ts#endServerSession`), and a 401 from the API means the
+session is over, not that the cookie is malformed.
+
 ### 3.2 Money is a decimal string, always
 
 `@snap/api-contract` says it plainly: a JSON float cannot hold `110.10` exactly

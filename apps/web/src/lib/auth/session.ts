@@ -2,7 +2,7 @@ import 'server-only';
 
 import { cookies } from 'next/headers';
 
-import { SESSION_COOKIE, WORKSPACE_COOKIE, api } from '@/lib/api/server';
+import { SESSION_COOKIE, WORKSPACE_COOKIE, api, newIdempotencyKey } from '@/lib/api/server';
 
 /**
  * The session cookie, set exactly once, here.
@@ -52,7 +52,11 @@ export async function endServerSession(): Promise<void> {
   const jar = await cookies();
   if (!jar.get(SESSION_COOKIE)?.value) return;
   try {
-    await api('/v1/auth/sign-out', { method: 'POST', bypassImpersonation: true, idempotencyKey: 'sign-out' });
+    await api('/v1/auth/sign-out', {
+      method: 'POST',
+      bypassImpersonation: true,
+      idempotencyKey: newIdempotencyKey(),
+    });
   } catch {
     // See the doc comment: signing out locally must never fail.
   }

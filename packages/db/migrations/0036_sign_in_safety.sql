@@ -553,6 +553,39 @@ BEGIN
 END;
 $fn$;
 
+-- ── Housekeeping ─────────────────────────────────────────────────────────────
+--
+-- Every sign-in adds a session row and every reset or verification adds a
+-- link row; without this both tables grow for ever. A row is deleted 30 days
+-- after it stopped working (expired, idle-expired, revoked, used) — kept that
+-- long so "which devices were signed in when this happened" can still be
+-- answered after an incident. Takes no argument and reveals nothing; returns
+-- how many rows went.
+CREATE OR REPLACE FUNCTION identity_auth_housekeeping()
+RETURNS integer
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $fn$
+DECLARE
+  v_sessions integer;
+  v_links integer;
+BEGIN
+  DELETE FROM user_sessions s
+   WHERE LEAST(
+           s.expires_at,
+           s.last_seen_at + make_interval(secs => s.idle_timeout_seconds),
+           COALESCE(s.revoked_at, 'infinity'::timestamptz)
+         ) < now() - interval '30 days';
+  GET DIAGNOSTICS v_sessions = ROW_COUNT;
+
+  DELETE FROM auth_email_tokens t
+   WHERE LEAST(t.expires_at, COALESCE(t.used_at, 'infinity'::timestamptz)) < now() - interval '30 days';
+  GET DIAGNOSTICS v_links = ROW_COUNT;
+
+  RETURN v_sessions + v_links;
+END;
+$fn$;
+
+GRANT DELETE ON user_sessions, auth_email_tokens TO app_identity;
+
 -- ── Who may call these ───────────────────────────────────────────────────────
 
 REVOKE EXECUTE ON FUNCTION identity_session_open(uuid, bytea, integer, integer)            FROM PUBLIC;
@@ -568,6 +601,7 @@ REVOKE EXECUTE ON FUNCTION identity_password_reset_consume(bytea, text)         
 REVOKE EXECUTE ON FUNCTION identity_password_change(bytea, text)                          FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION identity_email_verification_issue(uuid, bytea, integer)        FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION identity_email_verify(bytea)                                   FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION identity_auth_housekeeping()                                   FROM PUBLIC;
 
 ALTER FUNCTION identity_session_open(uuid, bytea, integer, integer)            OWNER TO app_identity;
 ALTER FUNCTION identity_session_check(bytea, uuid)                            OWNER TO app_identity;
@@ -582,6 +616,7 @@ ALTER FUNCTION identity_password_reset_consume(bytea, text)                   OW
 ALTER FUNCTION identity_password_change(bytea, text)                          OWNER TO app_identity;
 ALTER FUNCTION identity_email_verification_issue(uuid, bytea, integer)        OWNER TO app_identity;
 ALTER FUNCTION identity_email_verify(bytea)                                   OWNER TO app_identity;
+ALTER FUNCTION identity_auth_housekeeping()                                   OWNER TO app_identity;
 
 GRANT EXECUTE ON FUNCTION identity_session_open(uuid, bytea, integer, integer)            TO app_rw;
 GRANT EXECUTE ON FUNCTION identity_session_check(bytea, uuid)                            TO app_rw;
@@ -596,6 +631,7 @@ GRANT EXECUTE ON FUNCTION identity_password_reset_consume(bytea, text)          
 GRANT EXECUTE ON FUNCTION identity_password_change(bytea, text)                          TO app_rw;
 GRANT EXECUTE ON FUNCTION identity_email_verification_issue(uuid, bytea, integer)        TO app_rw;
 GRANT EXECUTE ON FUNCTION identity_email_verify(bytea)                                   TO app_rw;
+GRANT EXECUTE ON FUNCTION identity_auth_housekeeping()                                   TO app_rw;
 
 -- ── Self-check ───────────────────────────────────────────────────────────────
 -- Fails the migration (inside db.mjs's transaction) rather than shipping a
