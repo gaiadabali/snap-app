@@ -288,3 +288,38 @@ describe('presentation helpers', () => {
     expect(m.describe({ version: '', commit: '6f3e576abcdef' })).toBe('6f3e576');
   });
 });
+
+describe('release notes ("What\'s new")', () => {
+  it('rides along on the offered build, from the manifest', async () => {
+    const m = await load(200);
+    respond({ available: true, build: { ...MANIFEST, notes: 'The bar is new. Receipts send when online.' } });
+    const state = await m.checkForUpdate(URL);
+    expect(state.status).toBe('available');
+    if (state.status !== 'available') return;
+    expect(m.releaseNotes(state.build)).toBe('The bar is new. Receipts send when online.');
+  });
+
+  it('is null for a build published before release notes existed', async () => {
+    const m = await load(200);
+    respond({ available: true, build: MANIFEST });
+    const state = await m.checkForUpdate(URL);
+    if (state.status !== 'available') throw new Error('expected an update');
+    expect(m.releaseNotes(state.build)).toBeNull();
+  });
+
+  it('is null for anything that is not a non-empty string, and trims the rest', async () => {
+    const m = await load(200);
+    expect(m.releaseNotes({ notes: '   ' })).toBeNull();
+    expect(m.releaseNotes({ notes: 42 })).toBeNull();
+    expect(m.releaseNotes({ notes: ' One. Two. ' })).toBe('One. Two.');
+    expect(m.releaseNotes(null)).toBeNull();
+  });
+
+  it('reaches the blocking gate too', async () => {
+    const m = await load(100);
+    respond({ available: true, build: { ...MANIFEST, notes: 'Old builds stop working. Update now.' }, minVersionCode: 150 });
+    const state = await m.checkMinimum(URL);
+    if (state.status !== 'required') throw new Error('expected the gate');
+    expect(m.releaseNotes(state.build)).toBe('Old builds stop working. Update now.');
+  });
+});

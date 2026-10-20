@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { API_BASE_URL } from '@/api';
 import { Body, Figure, Screen, Small } from '@/components/ui';
-import { checkMinimum, describe, formatSize, type MinimumState } from '@/lib/updates';
+import { checkMinimum, describe, formatSize, releaseNotes, type MinimumState } from '@/lib/updates';
 import { radius, space, usePalette } from '@/theme';
 
 /**
@@ -62,6 +62,7 @@ function UpdateRequired({ state }: { state: Extract<MinimumState, { status: 'req
   const p = usePalette();
   const insets = useSafeAreaInsets();
   const size = formatSize(state.build.byteSize);
+  const notes = releaseNotes(state.build);
 
   return (
     <Screen>
@@ -89,6 +90,12 @@ function UpdateRequired({ state }: { state: Extract<MinimumState, { status: 'req
             Your receipts and anything waiting to send are kept — installing over the top does not
             sign you out.
           </Body>
+          {notes ? (
+            <View style={{ gap: space.xs }}>
+              <Body strong>What&apos;s new</Body>
+              <Body>{notes}</Body>
+            </View>
+          ) : null}
           <Small>
             Downloads in your browser. Android will ask once for permission to install apps from
             there.

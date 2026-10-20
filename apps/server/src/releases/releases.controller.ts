@@ -32,6 +32,7 @@ import { config } from '../config.js';
 const DOWNLOAD_DIR = 'downloads/android';
 const APK_NAME = 'snap-apps-android.apk';
 const MANIFEST_NAME = 'manifest.json';
+const RELEASES_NAME = 'releases.json';
 
 export type AndroidManifest = {
   version: string;
@@ -48,7 +49,53 @@ export type AndroidManifest = {
   /** Which API the bundle was built against — inlined at build time and
    *  unchangeable afterwards, so it belongs beside the artefact. */
   apiUrl: string;
+  /** What this build says about itself: 2-5 plain sentences from
+   *  apps/mobile/release-notes.json, shown as "What's new" on the update card.
+   *  Absent on builds published before release notes existed. */
+  notes?: string;
 };
+
+/**
+ * One line of the release history. `publish-apk.sh` appends the entry to
+ * `releases.json` beside the manifest; the words come from the repo's
+ * `apps/mobile/release-notes.json` and `id` ties the two together.
+ */
+export type ReleaseEntry = {
+  id: string;
+  versionCode: number;
+  version: string;
+  commit: string;
+  publishedAt: string;
+  notes: string;
+  /** True for the build `latest.apk` serves now. Only that build can still
+   *  be downloaded; the rest are history. */
+  current: boolean;
+};
+
+/** An entry as `releases.json` holds it, or null when it is not usable. */
+function parseEntry(value: unknown): Omit<ReleaseEntry, 'current'> | null {
+  if (!value || typeof value !== 'object') return null;
+  const e = value as Record<string, unknown>;
+  const code = e.versionCode;
+  if (
+    typeof e.id !== 'string' || e.id === '' ||
+    typeof code !== 'number' || !Number.isSafeInteger(code) || code <= 0 ||
+    typeof e.version !== 'string' ||
+    typeof e.commit !== 'string' ||
+    typeof e.publishedAt !== 'string' ||
+    typeof e.notes !== 'string'
+  ) {
+    return null;
+  }
+  return {
+    id: e.id,
+    versionCode: code,
+    version: e.version,
+    commit: e.commit,
+    publishedAt: e.publishedAt,
+    notes: e.notes,
+  };
+}
 
 function downloadRoot(): string {
   return join(resolve(config().STORAGE_DIR), DOWNLOAD_DIR);
@@ -83,6 +130,43 @@ export class ReleasesController {
       // A corrupt manifest is "nothing published", not a 500. The page it
       // feeds should degrade to "no build yet" rather than break.
       return { available: false, build: null, minVersionCode };
+    }
+  }
+
+  @Get('releases')
+  @ApiOperation({
+    summary: 'The release history: what changed in each published build',
+    description:
+      'Newest first. Only builds that were actually published are listed, up to the one being served now (`current: true`); that is the only one still downloadable. An empty list, never an error, when nothing is published or `releases.json` is missing or corrupt. The download page reads this live, so the log changes the moment a build is published.',
+  })
+  releases(): { available: boolean; releases: ReleaseEntry[] } {
+    const { available, build } = this.manifest();
+    // Without a numbered, downloadable build there is no way to say which
+    // entries are published, and listing none is the honest answer.
+    const servedCode = build?.versionCode;
+    if (!available || typeof servedCode !== 'number') return { available, releases: [] };
+    const path = join(downloadRoot(), RELEASES_NAME);
+    if (!existsSync(path)) return { available, releases: [] };
+    try {
+      const raw = JSON.parse(readFileSync(path, 'utf8')) as unknown;
+      if (!Array.isArray(raw)) return { available, releases: [] };
+      const seen = new Set<number>();
+      const releases: ReleaseEntry[] = [];
+      for (const item of raw) {
+        const entry = parseEntry(item);
+        // Publishing writes releases.json BEFORE the manifest, so a run that
+        // died between the two leaves an entry ahead of the served build. It
+        // is not published, and is not listed.
+        if (!entry || entry.versionCode > servedCode || seen.has(entry.versionCode)) continue;
+        seen.add(entry.versionCode);
+        releases.push({ ...entry, current: entry.versionCode === servedCode });
+      }
+      releases.sort((a, b) => b.versionCode - a.versionCode);
+      return { available, releases };
+    } catch {
+      // Corrupt history is "no history", not a 500: the page keeps its
+      // download card and just has no log to show.
+      return { available, releases: [] };
     }
   }
 

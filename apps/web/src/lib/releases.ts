@@ -67,10 +67,15 @@ export type PlatformRelease = {
   sha256: string | null;
 };
 
+/** One build's entry in the "What's new" log, as the page shows it. */
 export type ChangelogEntry = {
   version: string;
+  /** YYYY-MM-DD the build was published. */
   date: string;
+  /** The entry's sentences, one per line. */
   notes: string[];
+  /** The build `latest.apk` serves now; the others are history. */
+  current: boolean;
 };
 
 /**
@@ -94,7 +99,9 @@ export const releases: { android: PlatformRelease; ios: PlatformRelease } = {
     releaseDate: null,
     channel: 'beta',
     availability: 'in_development',
-    minOsVersion: 'Android 8.0 (API 26)',
+    // minSdk 24: React Native 0.86's default, unchanged by this app's config
+    // (docs/BUILD.md section 7). The APK installs on Android 7.0.
+    minOsVersion: 'Android 7.0 (API 24)',
     url: null,
     fileSizeLabel: null,
     sha256: null,
@@ -127,20 +134,6 @@ export const releases: { android: PlatformRelease; ios: PlatformRelease } = {
  */
 export const IOS_NOTIFY_CONTACT =
   'mailto:ios-beta@snapapps.example?subject=Notify%20me%20when%20iOS%20is%20ready';
-
-/** PLACEHOLDER copy — replace once there is a shipped build to describe. */
-export const changelog: ChangelogEntry[] = [
-  {
-    version: '0.1.0',
-    date: '2026-09-12',
-    notes: [
-      'First Android beta build. Capture a receipt, get a categorised, GST-aware line item.',
-      'BAS pack export and Xero sync (Sole Trader and Practice plans).',
-      'iOS is in development — see the iOS section below for what to expect.',
-      'Known gap: this build has not yet been run on a physical device — see docs/BUILD.md §5.',
-    ],
-  },
-];
 
 export type SystemRequirement = {
   platform: 'android' | 'ios';
@@ -177,7 +170,7 @@ export type SystemRequirement = {
  * nobody has evidence for.
  */
 export const systemRequirements: SystemRequirement[] = [
-  { platform: 'android', label: 'Android 8.0 or later' },
+  { platform: 'android', label: 'Android 7.0 or later' },
   {
     platform: 'android',
     label: '4 GB RAM for the instant preview',
@@ -261,10 +254,60 @@ export async function getAndroidRelease(): Promise<PlatformRelease> {
   }
 }
 
-export function getChangelog(): ChangelogEntry[] {
-  return changelog;
+/**
+ * Notes that describe business surfaces (BAS, Xero, practices) are not shown
+ * while those surfaces are off in the app: the site does not sell what does not
+ * ship. This only decides what is displayed; the log itself is the server's.
+ */
+export const BUSINESS_NOTE = /\b(BAS|Xero|Practice|Sole Trader)\b/;
+
+/** An entry's words as sentences, the way the release-notes script counts them. */
+export function splitSentences(text: string): string[] {
+  return text
+    .trim()
+    .split(/(?<=[.!?])\s+/)
+    .filter((s) => s.length > 0);
 }
 
+/**
+ * What `GET /v1/downloads/android/releases` answers, turned into the log.
+ *
+ * Pure, so the shape and the business filter are unit-tested. Anything that is
+ * not the shape we expect is dropped rather than rendered, and an entry left
+ * with no sentences after the filter is dropped whole.
+ */
+export function parseReleaseLog(body: unknown, opts: { showBusiness: boolean }): ChangelogEntry[] {
+  const list = (body as { releases?: unknown } | null)?.releases;
+  if (!Array.isArray(list)) return [];
+  const log: ChangelogEntry[] = [];
+  for (const item of list) {
+    if (!item || typeof item !== 'object') continue;
+    const e = item as Record<string, unknown>;
+    if (typeof e.version !== 'string' || typeof e.publishedAt !== 'string' || typeof e.notes !== 'string') continue;
+    const sentences = splitSentences(e.notes);
+    const notes = opts.showBusiness ? sentences : sentences.filter((n) => !BUSINESS_NOTE.test(n));
+    if (notes.length === 0) continue;
+    log.push({ version: e.version, date: e.publishedAt.slice(0, 10), notes, current: e.current === true });
+  }
+  return log;
+}
+
+/**
+ * The release history, asked at render time like the manifest, with the same
+ * `no-store`: the log changes the moment a build is published, with no website
+ * deploy, and the server only lists builds that were actually published. Any
+ * failure is an empty log (the page then says there are no notes yet) rather
+ * than an error on the download page.
+ */
+export async function getChangelog(opts: { showBusiness: boolean }): Promise<ChangelogEntry[]> {
+  try {
+    const response = await fetch(`${config.apiUrl}/v1/downloads/android/releases`, { cache: 'no-store' });
+    if (!response.ok) return [];
+    return parseReleaseLog(await response.json(), opts);
+  } catch {
+    return [];
+  }
+}
 export function getSystemRequirements(platform?: 'android' | 'ios'): SystemRequirement[] {
   if (!platform) return systemRequirements;
   return systemRequirements.filter((r) => r.platform === platform);

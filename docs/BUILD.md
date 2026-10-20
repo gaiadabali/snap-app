@@ -252,3 +252,54 @@ refuses an APK that has none. The manifest still carries `buildNumber` and
   it, checked at launch and when the app returns to the foreground. Raise it
   only to a number the published build already meets, or people are blocked
   with nothing newer to install. It does nothing while no build is published.
+
+### Release notes and release history (task 1.12.d, 1.12.j, 1.12.k)
+
+Every published build says what changed, in words a customer understands. The
+same entry is the "What's new" on the website, on the in-app update card and
+the blocking update screen, and the release notes for Google Play (8.4).
+
+**The words live in the repo.** `apps/mobile/release-notes.json` is a list,
+newest first. Each entry is `{ id, date, notes }`: a short stable `id` (a slug),
+the `date` it was written (YYYY-MM-DD), and `notes`, 2 to 5 plain sentences in
+one paragraph and at most 500 characters in all (Google Play's limit). They are
+reviewed in the release PR. Entries are NOT keyed by versionCode: the versionCode
+is the commit count at build time and the release PR's own squash merge changes
+it, so nobody can know the number while writing the entry. Commit subjects are
+not customer copy ("Revert ...", "The gap check counts in BigInt"); rewrite them.
+Avoid abbreviations with full stops (e.g.), because a sentence ends at one.
+
+**The server holds the history.** `releases.json` sits beside `manifest.json`
+under `downloads/android/`: `[{ id, versionCode, version, commit, publishedAt,
+notes }]`, newest first. It is the authority on which build an entry became.
+`GET /v1/downloads/android/releases` serves it: only entries up to the build
+being served, newest first, with `current: true` on the one `latest.apk` serves
+(the only build still downloadable). A missing or corrupt file is an empty list,
+never a 500. The download page reads it live (`cache: 'no-store'`, like the
+manifest), so the log changes the moment a build is published, with no website
+deploy. The manifest also carries the entry's `notes`, which is what the update
+card shows. The build served before this scheme (e228773) has no entry and is
+not backfilled; history starts with the first build published under it.
+
+**Publishing.** `deploy/release-notes.mjs` holds every rule (validation, which
+entry, the draft); `publish-apk.sh` calls it and the CI publish job (1.12.b)
+must call the same command, `release-notes.mjs plan` (see its header). The
+newest entry is taken. If its `id` is already attached to a published build the
+publish is REFUSED before anything is uploaded, and the commit subjects since the
+last published commit (limited to `apps/mobile` and `packages`) are printed as a
+draft to rewrite. Otherwise the APK is uploaded, then `releases.json`, then
+`manifest.json`, each written to a `.part` file and moved into place. A publish
+that dies after `releases.json` shows nothing new (the API lists nothing ahead of
+the manifest) and can simply be run again: the same versionCode resumes.
+`test/release-notes.test.ts` validates the real file, so a bad entry fails CI in
+the release PR.
+
+**Release operator.** Before a release PR merges: add an entry at the top of
+`apps/mobile/release-notes.json` with a new `id`, today's date and 2 to 5
+sentences. After it merges, build and run `deploy/publish-apk.sh` as before. If
+it refuses with "already attached", write the next entry and rebuild.
+
+**Android minimum.** The APK installs on Android 7.0 (minSdk 24): React Native
+0.86's default, with no override in `app.json` or `app.config.js` and no
+`expo-build-properties`; `snap-ocr`'s own `minSdkVersion 24` matches. The site
+used to say 8.0.

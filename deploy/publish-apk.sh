@@ -16,11 +16,24 @@
 # re-checks that the APK exists before trusting the manifest, so a crash
 # between the two reads as "nothing published" rather than as a 404 download.
 #
+# RELEASE NOTES ARE REQUIRED (task 1.12.d/j/k). The newest entry in
+# apps/mobile/release-notes.json is what this build says about itself. If that
+# entry is already attached to a published build there is nothing new to say
+# and the publish is refused, with the commit subjects since the last published
+# build printed as a draft to rewrite. Otherwise the entry is recorded in
+# `releases.json` beside `manifest.json` (the server's release history) and its
+# words are copied into the manifest, which is what the update card shows. All
+# the rules live in deploy/release-notes.mjs, which the CI publish job calls too.
+#
 # Requires: ssh access to the deploy host. Set SNAP_DEPLOY_HOST, or pass it in
 # the environment:
 #
 #   SNAP_DEPLOY_HOST=user@host deploy/publish-apk.sh app-release.apk
 set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Overridable so the logic can be run against a copy; the real path is the repo's.
+NOTES_FILE="${SNAP_RELEASE_NOTES:-$SCRIPT_DIR/../apps/mobile/release-notes.json}"
 
 APK="${1:-}"
 COMMIT="${2:-$(git rev-parse --short HEAD 2>/dev/null || echo unknown)}"
@@ -124,6 +137,28 @@ if [ "$VERSION_CODE" -le "$CURRENT_CODE" ]; then
   exit 1
 fi
 
+# RELEASE NOTES. Validate the repo's notes, take the newest entry, and refuse
+# when it is already attached to a published build. Done HERE, before anything
+# is uploaded, so a refusal costs nothing. The script writes the next
+# releases.json and manifest.json into a temp dir; they are moved into place
+# below, after the APK. A missing releases.json (nothing published under this
+# scheme yet) is fine: history starts with this build.
+WORK=$(mktemp -d)
+trap 'rm -rf "$WORK"' EXIT
+ssh "$HOST" "cat '$REMOTE_DIR/releases.json' 2>/dev/null || true" > "$WORK/releases.current.json"
+printf '%s' "$CURRENT_MANIFEST" > "$WORK/manifest.current.json"
+if ! node "$SCRIPT_DIR/release-notes.mjs" plan \
+    --notes "$NOTES_FILE" \
+    --releases "$WORK/releases.current.json" \
+    --manifest "$WORK/manifest.current.json" \
+    --out-releases "$WORK/releases.json" \
+    --out-manifest "$WORK/manifest.json" \
+    --version "$VERSION" --version-code "$VERSION_CODE" --commit "$COMMIT" \
+    --published-at "$NOW" --sha256 "$SHA" --size "$SIZE" --api-url "$API_URL"; then
+  echo "Nothing was uploaded." >&2
+  exit 1
+fi
+
 echo "publishing $(basename "$APK")"
 echo "  version   $VERSION (versionCode $VERSION_CODE)"
 echo "  commit    $COMMIT"
@@ -148,21 +183,22 @@ if [ "$REMOTE_SHA" != "$SHA" ]; then
   exit 1
 fi
 
-# Manifest second — this is what makes it visible.
-ssh "$HOST" "cat > '$REMOTE_DIR/manifest.json'" <<JSON
-{
-  "version": "$VERSION",
-  "versionCode": $VERSION_CODE,
-  "buildNumber": "$COMMIT",
-  "commit": "$COMMIT",
-  "sha256": "$SHA",
-  "byteSize": $SIZE,
-  "publishedAt": "$NOW",
-  "apiUrl": "$API_URL"
+# Then the history, then the manifest. The manifest is what makes the build
+# visible, so it goes LAST. releases.json goes before it, and the API only lists
+# entries up to the manifest's versionCode, so a run that dies between the two
+# shows nothing new; running the publish again resumes the same build (the
+# script accepts an entry already attached to this very versionCode).
+#
+# Both are written atomically: `.part`, then mv on the same filesystem, so a
+# reader never sees half a file.
+put_atomic() {
+  ssh "$HOST" "cat > '$REMOTE_DIR/$2.part' && mv '$REMOTE_DIR/$2.part' '$REMOTE_DIR/$2'" < "$1"
 }
-JSON
+put_atomic "$WORK/releases.json" releases.json
+put_atomic "$WORK/manifest.json" manifest.json
 
 echo
 echo "published. verify with:"
 echo "  curl -s $API_URL/v1/downloads/android/manifest"
+echo "  curl -s $API_URL/v1/downloads/android/releases"
 echo "  curl -sI $API_URL/v1/downloads/android/latest.apk"
