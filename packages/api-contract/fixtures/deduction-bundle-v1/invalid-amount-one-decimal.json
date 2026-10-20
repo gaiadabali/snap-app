@@ -1,0 +1,94 @@
+{
+  "schemaVersion": 1,
+  "financialYear": "2025-26",
+  "generatedAt": "2026-07-14T03:21:09Z",
+  "source": {
+    "app": "snapapp",
+    "appVersion": "1.4.0"
+  },
+  "occupation": "teacher",
+  "workKilometres": 1200,
+  "lines": [
+    {
+      "label": "D3",
+      "itemId": "sunHat",
+      "description": "Wide-brim hat for yard duty",
+      "amount": "39.95",
+      "gstInclusive": true,
+      "receiptCount": 1,
+      "receiptRefs": [
+        "9261dddfe977678e37e7e36c40e203c312c362e4ffd1b559e7917f7fcaca74e4"
+      ]
+    },
+    {
+      "label": "D4",
+      "itemId": "fees",
+      "description": "Graduate certificate course fee",
+      "amount": "1850.00",
+      "gstInclusive": false,
+      "receiptCount": 1,
+      "receiptRefs": [
+        "df8b45bcc0819cb48c98963de1b568a25791e5e4fa5e5bf7e780ad9ae100869a"
+      ]
+    },
+    {
+      "label": "D5",
+      "itemId": "classroom",
+      "description": "Classroom supplies, stickers and posters",
+      "amount": "212.4",
+      "gstInclusive": true,
+      "receiptCount": 3,
+      "receiptRefs": [
+        "c6c05754ed0575739021160367b3b0223aa37fb203ad0f8424577ed937df9c9a",
+        "b4cbe8eda7c9b277704df29d4198dbc021ba2d4bad21ef9353a9eb5457fb7612",
+        "2be66e63bccda6c2009a445a832ffbfa0fa4a2867b7345a3309a8026bd0047d3"
+      ]
+    },
+    {
+      "label": "D5",
+      "itemId": "resources",
+      "description": "Teaching reference books",
+      "amount": "86.00",
+      "gstInclusive": true,
+      "receiptCount": 2,
+      "receiptRefs": [
+        "d4051a5784f674f3374a9bec5cfc25aac0891aee2649dcc0396892330171436c",
+        "5a9962db147ae8777cfb694e0ee10de9f6a2dedbcf5d442055cb64d9096e4a45"
+      ]
+    },
+    {
+      "label": "D5",
+      "itemId": "phoneDevices",
+      "description": "Mobile phone, work portion",
+      "amount": "899.00",
+      "gstInclusive": true,
+      "receiptCount": 1,
+      "receiptRefs": [
+        "f14a33f2544d690007f1b3d78a8ea75ab31bed4c893ccb89465aff79c1e5d922"
+      ],
+      "privateUsePercent": 60
+    },
+    {
+      "label": "D9",
+      "itemId": "d9",
+      "description": "Donation to a registered charity",
+      "amount": "150.00",
+      "gstInclusive": false,
+      "receiptCount": 1,
+      "receiptRefs": [
+        "ffaeed08ecf8a6b787e75f9bdd4c21d20e3031035bf529cbb22b77716124f74d"
+      ]
+    },
+    {
+      "label": "D10",
+      "itemId": "lastReturnFee",
+      "description": "Tax agent fee for the 2024-25 return",
+      "amount": "110.00",
+      "gstInclusive": true,
+      "receiptCount": 1,
+      "receiptRefs": [
+        "a456bca122852dec19b5c92bec2418844eaea98db9058f3da26ff96acac30e82"
+      ]
+    }
+  ]
+}
