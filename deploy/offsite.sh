@@ -121,4 +121,11 @@ restic backup \
 echo "==> applying retention: 7 daily, 12 monthly, prune"
 restic forget --keep-daily 7 --keep-monthly 12 --prune 2>&1 | tail -3
 
+# The success stamp, written only now: set -e means any earlier failure (push,
+# forget, an unreachable repo) exits before this line, so the stamp's age is
+# "time since the last COMPLETE run". monitor/alert.sh reads it (cheaply, every
+# 10 minutes, without touching restic or the network) and alerts past 26 hours.
+# Path overridable for tests.
+date -u +%FT%TZ > "${OFFSITE_STAMP:-/opt/snap-apps/backups/.offsite-last-ok}"
+
 echo "==> offsite replication done."
