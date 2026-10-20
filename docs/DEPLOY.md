@@ -542,6 +542,18 @@ read -rs SECRET && printf 'YOURTAL_PARTNER_SECRET=%s\n' "$SECRET" > /etc/snap-ap
 #    in /opt/snap-apps/deploy/.env, and redeploy api and worker.
 ```
 
+**The receipt-ref key (group plan 2.5.e).** The same file takes a second line,
+`YOURTAL_RECEIPT_REF_KEY=...` (32 characters or more). It lets a re-photo of one
+paper receipt, in any workspace and by any person, report under the same ref so
+YourTal pays it once. Generate it on the box, once, and never copy it anywhere:
+`printf 'YOURTAL_RECEIPT_REF_KEY=%s
+' "$(openssl rand -hex 32)" >> /etc/snap-apps/secrets/yourtal.env`.
+**Never rotate it**: a new key gives every receipt already reported a new ref,
+and they could all be paid again. Without it the server runs, reports receipts
+under their image hash, and the worker logs one warning that
+cross-account duplicate protection is off. Add it BEFORE the deploy that carries
+migration 0038, so no receipt is first reported under the image ref.
+
 Unset, compose mounts `/dev/null` (an empty file: no secret, link off). Set to
 a path with no file, `deploy.sh` warns and mounts `/dev/null` for that run; a
 bare `docker compose up` refuses to start instead (`create_host_path: false`),

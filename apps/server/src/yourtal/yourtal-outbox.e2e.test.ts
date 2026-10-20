@@ -7,7 +7,7 @@ import { asUser, createDb, createPool, withTenantAs, type Db } from '@snap/db';
 import { sql } from 'drizzle-orm';
 import type { Client } from 'pg';
 import type { Pool } from 'pg';
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { closeDb, getDb } from '../db.js';
 import type { ValidatedExtraction } from '../extraction/types.js';
@@ -32,19 +32,30 @@ const TENANT = 'b7a20000-0000-4000-8000-000000000001';
 const WORKER = 'b7a20000-0000-4000-8000-0000000000a1';
 const DANI = 'b7a20000-0000-4000-8000-0000000000a2';
 const EVE = 'b7a20000-0000-4000-8000-0000000000a3';
+// A second workspace, owned by FRAN, a second linked person. DANI and WORKER
+// are members of it too, so one person can scan the same receipt in two workspaces.
+const TENANT2 = 'b7a20000-0000-4000-8000-000000000002';
+const FRAN = 'b7a20000-0000-4000-8000-0000000000a4';
+const REF_KEY = `e2e-receipt-ref-key-${'k'.repeat(32)}`;
 
 const f = <T>(value: T | null, confidence = 0.99) => ({ value, confidence });
-function reading(payable: string): ValidatedExtraction {
+interface ReadingOptions {
+  documentNumber?: string | null;
+  abn?: string | null;
+  supplier?: string;
+  date?: string;
+}
+function reading(payable: string, o: ReadingOptions = {}): ValidatedExtraction {
   return {
     extraction: {
       schemaVersion: '1',
       docType: f('receipt' as const),
       saysTaxInvoice: f(false),
-      documentNumber: f(null),
-      issueDate: f('2026-10-20'),
+      documentNumber: f(o.documentNumber ?? null),
+      issueDate: f(o.date ?? '2026-10-20'),
       currency: f('AUD'),
-      supplierName: f('Outbox Test Cafe'),
-      supplierAbn: f(null),
+      supplierName: f(o.supplier ?? 'Outbox Test Cafe'),
+      supplierAbn: f(o.abn ?? null),
       buyerIdentified: f(false),
       taxExclusiveAmount: f(null),
       taxAmount: f(null),
@@ -75,20 +86,24 @@ describeIfDb('the YourTal outbox (2.5)', () => {
   let counter = 0;
 
   /** A photographed one-page receipt uploaded by `uploader`; returns its page hash. */
-  async function photographedCapture(uploader: string, receivedAt?: string): Promise<{ captureId: string; pageSha: string }> {
+  async function photographedCapture(
+    uploader: string,
+    receivedAt?: string,
+    tenant: string = TENANT,
+  ): Promise<{ captureId: string; pageSha: string }> {
     counter += 1;
     const captureId = randomUUID();
     const pageSha = sha(`receipt photo ${counter} ${captureId}`);
-    await withTenantAs(getDb(), uploader, TENANT, async (tx) => {
+    await withTenantAs(getDb(), uploader, tenant, async (tx) => {
       await tx.execute(sql`
         insert into captures (id, tenant_id, uploaded_by, original_storage_key, original_mime_type,
                               original_byte_size, original_sha256, status, received_at)
-        values (${captureId}, ${TENANT}, ${uploader}, ${`${TENANT}/pages/${pageSha.slice(0, 2)}/${pageSha}`},
+        values (${captureId}, ${tenant}, ${uploader}, ${`${tenant}/pages/${pageSha.slice(0, 2)}/${pageSha}`},
                 'image/jpeg', 2048, decode(${pageSha}, 'hex'), 'received', coalesce(${receivedAt ?? null}::timestamptz, now()))
       `);
       await tx.execute(sql`
         insert into capture_pages (id, tenant_id, capture_id, page_number, storage_key, mime_type, byte_size, sha256, source)
-        values (${randomUUID()}, ${TENANT}, ${captureId}, 1, ${`${TENANT}/pages/${pageSha.slice(0, 2)}/${pageSha}`},
+        values (${randomUUID()}, ${tenant}, ${captureId}, 1, ${`${tenant}/pages/${pageSha.slice(0, 2)}/${pageSha}`},
                 'image/jpeg', 2048, decode(${pageSha}, 'hex'), 'capture')
       `);
     });
@@ -101,6 +116,13 @@ describeIfDb('the YourTal outbox (2.5)', () => {
   let amounts = 0;
   const scan = (captureId: string, payable = `${(amounts += 1)}.25`) =>
     saveExtraction(WORKER, TENANT, captureId, reading(payable), META, null);
+  const scanIn = (tenant: string, captureId: string, payable: string, o: ReadingOptions) =>
+    saveExtraction(WORKER, tenant, captureId, reading(payable, o), META, null);
+
+  // A document number nobody else in this run has used, so the fake's
+  // once-per-ref ledger never carries over between tests.
+  let docs = 0;
+  const newDocNumber = () => `INV-${700 + (docs += 1)}`;
 
   async function outboxFor(captureId: string) {
     const rows = await admin.query(
@@ -116,6 +138,7 @@ describeIfDb('the YourTal outbox (2.5)', () => {
 
   beforeAll(async () => {
     process.env.STORAGE_DIR = mkdtempSync(join(tmpdir(), 'yourtal-outbox-'));
+    process.env.YOURTAL_RECEIPT_REF_KEY = REF_KEY;
     fake = await startFakeYourtal();
     client = new YourtalPartnerClient({ baseUrl: fake.url, partnerId: fake.partnerId, secret: fake.secret, timeoutMs: 2000 });
 
@@ -129,6 +152,16 @@ describeIfDb('the YourTal outbox (2.5)', () => {
       ],
     });
     await admin.query(`delete from rate_limits where bucket_key like 'yourtal-link:%'`);
+
+    const adminTwo = await provisionTenant({
+      tenantId: TENANT2,
+      name: 'YourTal outbox test co two',
+      users: [{ id: FRAN, role: 'owner', subject: 'test|yto-fran', email: 'fran@yourtal-outbox.test' }],
+    });
+    await adminTwo.end();
+    for (const user of [WORKER, DANI]) {
+      await admin.query(`insert into memberships (tenant_id, user_id, role) values ($1, $2, 'member')`, [TENANT2, user]);
+    }
 
     // The worker's own role: the only one that reads the queue across users.
     const workerUrl =
@@ -148,15 +181,25 @@ describeIfDb('the YourTal outbox (2.5)', () => {
       { code },
     );
     await admin.query(`update yourtal_links set linked_at = now() - interval '1 minute' where user_id = $1`, [DANI]);
+
+    // Fran is a different person with her own YourTal account, linked the same way.
+    await controller.link(
+      { userId: FRAN, email: 'fran@yourtal-outbox.test', displayName: 'Fran', initials: 'FR', emailVerified: true },
+      { sessionId: 'test', tokenHash: Buffer.alloc(32) },
+      { code: fake.issueCode({ id: 'yt-fran', region: 'AU' }) },
+    );
+    await admin.query(`update yourtal_links set linked_at = now() - interval '1 minute' where user_id = $1`, [FRAN]);
   });
 
   beforeEach(async () => {
     // Nothing from an earlier test may be due now and be drained by a later one.
-    await admin.query(`update yourtal_outbox set status = 'failed', finished_at = now() where status = 'pending' and user_id = any($1)`, [[DANI, EVE]]);
+    await admin.query(`update yourtal_outbox set status = 'failed', finished_at = now() where status = 'pending' and user_id = any($1)`, [[DANI, EVE, FRAN]]);
   });
 
   afterAll(async () => {
+    await wipeTenant(admin, TENANT2, [FRAN]);
     await wipeTenant(admin, TENANT, [WORKER, DANI, EVE]);
+    delete process.env.YOURTAL_RECEIPT_REF_KEY;
     await admin.end();
     await workerPool.end();
     await closeDb();
@@ -264,6 +307,155 @@ describeIfDb('the YourTal outbox (2.5)', () => {
     const again = await photographedCapture(DANI);
     await scan(again.captureId, '31.00');
     expect((await outboxFor(again.captureId))[0]).toMatchObject({ status: 'pending' });
+  });
+
+  describe('a receipt with a document number (2.5.e)', () => {
+    const receipt = (o: Partial<ReadingOptions> = {}): ReadingOptions => ({
+      documentNumber: newDocNumber(),
+      abn: '51824753556',
+      ...o,
+    });
+
+    it('is reported under a keyed content ref that the same receipt shares across users and workspaces; YourTal pays it once', async () => {
+      const shared = receipt();
+      const dani = await photographedCapture(DANI);
+      const fran = await photographedCapture(FRAN, undefined, TENANT2);
+      expect(dani.pageSha).not.toBe(fran.pageSha); // two photos: different bytes
+
+      await scanIn(TENANT, dani.captureId, '48.60', { ...shared, supplier: 'Outbox Test Cafe' });
+      await scanIn(TENANT2, fran.captureId, '48.60', { ...shared, supplier: 'OUTBOX CAFE PTY LTD' });
+
+      const [d] = await outboxFor(dani.captureId);
+      const [fr] = await outboxFor(fran.captureId);
+      expect(d.status).toBe('pending');
+      expect(fr.status).toBe('pending');
+      expect(d.external_ref).toMatch(/^rcpt:v1:[0-9a-f]{64}$/);
+      expect(fr.external_ref).toBe(d.external_ref);
+      expect(JSON.parse(d.body).externalRef).toBe(d.external_ref);
+      // Nothing about the receipt or its image leaves Snap Apps beside the keyed ref.
+      expect(d.body).not.toContain(dani.pageSha);
+      expect(JSON.parse(d.body).evidence).toEqual({ captureId: dani.captureId });
+
+      expect(await drain()).toMatchObject({ claimed: 2, sent: 1, duplicate: 1 });
+      expect((await outboxFor(dani.captureId))[0]).toMatchObject({ status: 'sent', granted: true, points: 10 });
+      expect((await outboxFor(fran.captureId))[0]).toMatchObject({ status: 'duplicate', granted: false, points: 0 });
+    });
+
+    it('is skipped when the same person scans it again in another workspace, and never sent', async () => {
+      const shared = receipt();
+      const first = await photographedCapture(DANI);
+      const again = await photographedCapture(DANI, undefined, TENANT2);
+      await scanIn(TENANT, first.captureId, '19.95', shared);
+      await scanIn(TENANT2, again.captureId, '19.95', shared);
+
+      const [kept] = await outboxFor(first.captureId);
+      expect(kept).toMatchObject({ status: 'pending' });
+      expect(kept.external_ref).toMatch(/^rcpt:v1:/);
+      const skipped = await admin.query(
+        `select status, finished_at is not null as finished, last_code, duplicate_of_capture_id, external_ref, body
+           from yourtal_outbox where capture_id = $1`,
+        [again.captureId],
+      );
+      expect(skipped.rows).toHaveLength(1);
+      // The skipped row keeps the IMAGE ref; the content ref belongs to the report.
+      expect(skipped.rows[0]).toMatchObject({
+        status: 'skipped_duplicate',
+        finished: true,
+        last_code: 'likely_duplicate',
+        duplicate_of_capture_id: first.captureId,
+        external_ref: `sha256:${again.pageSha}`,
+      });
+      expect(JSON.parse(skipped.rows[0].body).externalRef).toBe(`sha256:${again.pageSha}`);
+
+      // Re-extracting the skipped capture changes nothing.
+      await scanIn(TENANT2, again.captureId, '19.95', shared);
+      expect(await outboxFor(again.captureId)).toHaveLength(1);
+
+      const before = fake.requests.length;
+      expect(await drain()).toMatchObject({ claimed: 1, sent: 1 });
+      expect(fake.requests.slice(before)).toHaveLength(1);
+      expect(JSON.parse(fake.requests.at(-1)!.raw).evidence).toEqual({ captureId: first.captureId });
+    });
+
+    it('queues nothing new when the same capture is re-extracted with a different document number', async () => {
+      const { captureId } = await photographedCapture(DANI);
+      const o = receipt();
+      await scanIn(TENANT, captureId, '33.30', o);
+      const [first] = await outboxFor(captureId);
+      expect(first.external_ref).toMatch(/^rcpt:v1:/);
+
+      await scanIn(TENANT, captureId, '33.30', { ...o, documentNumber: newDocNumber() });
+      await scanIn(TENANT, captureId, '33.30', { ...o, documentNumber: null });
+      const rows = await outboxFor(captureId);
+      expect(rows).toHaveLength(1);
+      expect(rows[0]).toMatchObject({ id: first.id, external_ref: first.external_ref, status: 'pending' });
+    });
+
+    it('still tells two different receipts apart: another number, or another total', async () => {
+      const a = await photographedCapture(DANI);
+      // In the other workspace, so only the content ref (not the in-workspace
+      // business-key check) can tell it apart from the first.
+      const b = await photographedCapture(DANI, undefined, TENANT2);
+      const c = await photographedCapture(DANI);
+      const o = receipt();
+      await scanIn(TENANT, a.captureId, '8.80', o);
+      await scanIn(TENANT2, b.captureId, '8.80', { ...o, documentNumber: newDocNumber() });
+      await scanIn(TENANT, c.captureId, '8.90', o);
+      const rows = await Promise.all([a, b, c].map((x) => outboxFor(x.captureId)));
+      expect(rows.map((r) => r[0].status)).toEqual(['pending', 'pending', 'pending']);
+      expect(new Set(rows.map((r) => r[0].external_ref)).size).toBe(3);
+    });
+  });
+
+  describe('a receipt without a usable document number (2.5.e)', () => {
+    it('is still reported under the image ref, and the in-workspace re-photo check is unchanged', async () => {
+      const first = await photographedCapture(DANI);
+      const rephoto = await photographedCapture(DANI);
+      const other = await photographedCapture(FRAN, undefined, TENANT2);
+      const o = { abn: '51824753556', documentNumber: null };
+      await scanIn(TENANT, first.captureId, '26.40', o);
+      await scanIn(TENANT, rephoto.captureId, '26.40', o);
+      await scanIn(TENANT2, other.captureId, '26.40', o);
+
+      expect((await outboxFor(first.captureId))[0]).toMatchObject({ status: 'pending', external_ref: `sha256:${first.pageSha}` });
+      expect((await outboxFor(rephoto.captureId))[0]).toMatchObject({
+        status: 'skipped_duplicate',
+        external_ref: `sha256:${rephoto.pageSha}`,
+      });
+      // Another person in another workspace is not matched without a number: two
+      // strangers buying the same coffee must both earn.
+      expect((await outboxFor(other.captureId))[0]).toMatchObject({ status: 'pending', external_ref: `sha256:${other.pageSha}` });
+    });
+
+    it('treats a number with no digit in it as no number', async () => {
+      const { captureId, pageSha } = await photographedCapture(DANI);
+      await scanIn(TENANT, captureId, '14.10', { documentNumber: 'N/A', abn: '51824753556' });
+      expect((await outboxFor(captureId))[0].external_ref).toBe(`sha256:${pageSha}`);
+    });
+  });
+
+  describe('with no receipt-ref key (2.5.e)', () => {
+    it('reports under the image ref, and warns once that cross-account protection is off', async () => {
+      const saved = process.env.YOURTAL_RECEIPT_REF_KEY;
+      delete process.env.YOURTAL_RECEIPT_REF_KEY;
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      try {
+        const a = await photographedCapture(DANI);
+        const b = await photographedCapture(DANI);
+        const o = { documentNumber: newDocNumber(), abn: '51824753556' };
+        await scanIn(TENANT, a.captureId, '5.55', o);
+        await scanIn(TENANT, b.captureId, '6.66', o);
+        expect((await outboxFor(a.captureId))[0].external_ref).toBe(`sha256:${a.pageSha}`);
+        expect((await outboxFor(b.captureId))[0].external_ref).toBe(`sha256:${b.pageSha}`);
+
+        const warnings = warn.mock.calls.filter((c) => String(c[0]).includes('YOURTAL_RECEIPT_REF_KEY'));
+        expect(warnings.length).toBeLessThanOrEqual(1);
+        expect(JSON.stringify(warn.mock.calls)).not.toContain(REF_KEY);
+      } finally {
+        warn.mockRestore();
+        process.env.YOURTAL_RECEIPT_REF_KEY = saved;
+      }
+    });
   });
 
   it('names a PDF by the stored PDF\'s bytes, read back from storage', async () => {

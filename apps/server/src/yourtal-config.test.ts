@@ -21,6 +21,7 @@ beforeEach(() => {
     'YOURTAL_API_URL',
     'YOURTAL_PARTNER_ID',
     'YOURTAL_PARTNER_SECRET',
+    'YOURTAL_RECEIPT_REF_KEY',
     'YOURTAL_ENV_FILE',
   ]) {
     vi.stubEnv(name, '');
@@ -86,5 +87,62 @@ describe('YourTal settings', () => {
     vi.stubEnv('YOURTAL_ENV_FILE', join(tmpdir(), 'does-not-exist-yt.env'));
     const c = await load();
     expect(c.yourtalPartnerSecret()).toBeUndefined();
+  });
+
+  describe('the receipt ref key', () => {
+    const KEY = 'k'.repeat(40);
+
+    it('is unset by default', async () => {
+      const c = await load();
+      expect(c.yourtalReceiptRefKey()).toBeUndefined();
+    });
+
+    it('is read from the environment', async () => {
+      vi.stubEnv('YOURTAL_RECEIPT_REF_KEY', ` ${KEY} `);
+      const c = await load();
+      expect(c.yourtalReceiptRefKey()).toBe(KEY);
+    });
+
+    it('is read from the host secrets file, matched by name, next to the partner secret', async () => {
+      const dir = mkdtempSync(join(tmpdir(), 'yt-refkey-'));
+      const file = join(dir, 'yourtal.env');
+      writeFileSync(file, `YOURTAL_PARTNER_SECRET=partner-secret
+YOURTAL_RECEIPT_REF_KEY="${KEY}"
+`);
+      vi.stubEnv('YOURTAL_ENV_FILE', file);
+      const c = await load();
+      expect(c.yourtalReceiptRefKey()).toBe(KEY);
+      expect(c.yourtalPartnerSecret()).toBe('partner-secret');
+    });
+
+    it('prefers the environment over the file', async () => {
+      const dir = mkdtempSync(join(tmpdir(), 'yt-refkey-'));
+      const file = join(dir, 'yourtal.env');
+      writeFileSync(file, `YOURTAL_RECEIPT_REF_KEY=${'f'.repeat(40)}
+`);
+      vi.stubEnv('YOURTAL_ENV_FILE', file);
+      vi.stubEnv('YOURTAL_RECEIPT_REF_KEY', KEY);
+      const c = await load();
+      expect(c.yourtalReceiptRefKey()).toBe(KEY);
+    });
+
+    it('counts as unset under 32 characters, in either place', async () => {
+      vi.stubEnv('YOURTAL_RECEIPT_REF_KEY', 'k'.repeat(31));
+      let c = await load();
+      expect(c.yourtalReceiptRefKey()).toBeUndefined();
+
+      vi.stubEnv('YOURTAL_RECEIPT_REF_KEY', '');
+      const dir = mkdtempSync(join(tmpdir(), 'yt-refkey-'));
+      const file = join(dir, 'yourtal.env');
+      writeFileSync(file, `YOURTAL_RECEIPT_REF_KEY=${'k'.repeat(31)}
+`);
+      vi.stubEnv('YOURTAL_ENV_FILE', file);
+      c = await load();
+      expect(c.yourtalReceiptRefKey()).toBeUndefined();
+
+      writeFileSync(file, `YOURTAL_RECEIPT_REF_KEY=${'k'.repeat(32)}
+`);
+      expect(c.yourtalReceiptRefKey()).toBe('k'.repeat(32));
+    });
   });
 });
