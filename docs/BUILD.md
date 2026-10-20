@@ -433,3 +433,20 @@ testers must uninstall once when it changes. It is not implemented.
 5. **Optional:** `EXPECTED_API_URL` and `REPO_SLUG` default to
    `https://snap-apps-api.gaiada.com` and `gaiadabali/snap-app`; set them in a
    systemd drop-in only if either changes.
+
+## 9. Google Play (decided by the owner, 2026-10-21)
+
+Group plan 0.12. Nothing below is set up yet; this is what the Play work
+(group plan Phase 8) builds to.
+
+- **Publisher: an organisation developer account** for the company that owns
+  Snap Apps. It needs a D-U-N-S number and the website verified in Search
+  Console, and it is widely reported to skip the 12-testers-for-14-days closed
+  test that new personal accounts must pass.
+- **Purchases: Google Play Billing** in the Play build. At about 10c a scan, a
+  credit still keeps about 2.9c after Google's fee, GST and the 3c YourTal point.
+- **Contact email for the listing and for account-deletion requests:
+  hansel@gaiada.com** for now. The support addresses have no mailbox, and Play
+  requires one that works.
+- **The website APK stays, for testers,** signed with the same key as the Play
+  build, so a tester can move to Play later without losing data.

@@ -120,6 +120,28 @@ Two conditions before it can be quoted to anyone:
 
 ## 3. Pricing
 
+### Decided 2026-10-20 and 2026-10-21 (founder): what a person pays per scan
+
+These override the per-scan figures elsewhere in this file where they disagree
+(group plan 0.10, 0.11).
+
+- **About 10c a scan**, in packs of **50, 100 and 250 scans for A$5, A$10 and
+  A$25** including GST. Nothing smaller: Stripe's fixed 30c would take a third
+  of an A$1 pack. The 10 free signup scans stay.
+- **One snap is one page.** A scan is charged per page, so a 40-page statement
+  is 40 snaps. An upload with more than one page, a PDF included, is refused
+  with "one page per snap".
+- **A scan that no model can read gives its credit back.**
+- **Receipts earn YourTal points: 1 per receipt in Australia**, once per
+  receipt, adults only, and never for scans on the free signup credits. Snap
+  Apps buys those points from YourTal **at cost, 3c a point**, as a point
+  package with alerts at 50%, 80% and 100%; receipts stop earning when it is
+  spent. There is no per-person cap.
+- **The arithmetic, per scan on an A$5 pack:** 9.09c after GST, less 0.77c for
+  Stripe, about 0.5c to read and store it for five years, and 3c for the point,
+  leaves **about 4.8c (53%)**. A scan bought through Google Play Billing keeps
+  about 2.9c after Google's fee.
+
 ### Practice (the primary line)
 
 Sold to accounting and bookkeeping firms. Billed to the **firm**, not the client.
