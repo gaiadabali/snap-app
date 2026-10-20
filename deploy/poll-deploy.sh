@@ -80,6 +80,18 @@ set -a; source "${SECRETS}"; set +a
 mkdir -p "$(dirname "${STATE_FILE}")"
 DEPLOYED="$(cat "${STATE_FILE}" 2>/dev/null || echo none)"
 
+# The Android half of the same pull model: if CI has published a newer
+# `android-v*` GitHub Release, place its APK where the API serves it. It runs
+# BEFORE the fast path below because a release is independent of what is on
+# `main`, and it is one free conditional API call (HTTP 304) when nothing is
+# new. It runs under the lock above, so an APK placement and a deploy never
+# overlap, and it can never fail a deploy: whatever it does, this script goes
+# on. Disable it with SKIP_APK_PULL=1 (e.g. in a drop-in). See pull-apk.sh.
+if [[ "${SKIP_APK_PULL:-}" != "1" ]]; then
+  timeout 600 bash "$(dirname "${BASH_SOURCE[0]}")/pull-apk.sh" \
+    || log "pull-apk.sh did not complete (exit $?); deploys are unaffected"
+fi
+
 api() {
   curl -sS --fail-with-body -m 30 \
     -H "Authorization: Bearer ${GITHUB_TOKEN}" \

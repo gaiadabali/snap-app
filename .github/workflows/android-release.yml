@@ -1,0 +1,313 @@
+name: Android release
+
+# GitHub tag -> CI builds the APK -> GitHub Release -> the deploy host pulls it.
+# Nobody builds on a laptop. Full story: docs/BUILD.md section 8.
+#
+#   git tag android-v0.1.<commit count>   (see docs/BUILD.md for the exact command)
+#   git push origin android-v0.1.<commit count>
+#
+# PULL, NOT PUSH. Nothing in this file can reach the server. The tag job's only
+# power is to create a Release in THIS repository, and deploy/pull-apk.sh (run by
+# the host's poller, deploy/poll-deploy.sh) reads that release, checks it and
+# places the APK itself. CI holds no SSH key, no host address and no deploy
+# credential, for the reason poll-deploy.sh gives: a credential that can change
+# the server is exactly what a compromised runner would steal.
+#
+# THREE TRIGGERS, ONE BUILD:
+#   tag `android-v*`   build, then create the release (the only job with write access)
+#   pull_request       build only, and keep the APK as a workflow artifact. This is
+#                      how a change to the build is proven BEFORE it merges. No release.
+#   workflow_dispatch  build only, same as a pull request, against an API URL you choose.
+#
+# A tag must be on `main` and must be named after the APK's own version, so the
+# tag, the release and the number inside the APK can never disagree.
+#
+# SIGNING. Every APK is signed with the public React Native debug key, which
+# `expo prebuild` copies from its template into android/app/debug.keystore. Testers
+# install each build over the last, and Android only allows that when the signing
+# certificate is identical, so this workflow REFUSES an APK whose signer is not the
+# one in EXPECTED_SIGNER_SHA256 below. Task 8.1 replaces the debug key with a private
+# one held as a repository secret; the seam for it is marked "SIGNING SEAM".
+
+on:
+  push:
+    tags: ['android-v*']
+  workflow_dispatch:
+    inputs:
+      api_url:
+        description: 'API the app is built against (a build-only run: nothing is released)'
+        required: false
+        default: 'https://snap-apps-api.gaiada.com'
+        type: string
+  pull_request:
+    paths:
+      - 'apps/mobile/**'
+      - 'packages/**'
+      - 'deploy/build-apk.sh'
+      - 'deploy/release-notes.mjs'
+      - 'deploy/apk-release.mjs'
+      - '.github/workflows/android-release.yml'
+
+# Read-only by default, like ci.yml. Only the `release` job below widens it.
+permissions:
+  contents: read
+
+concurrency:
+  group: android-release-${{ github.ref }}
+  # A newer push to a pull request supersedes the old build; a tag build is never cancelled.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  API_URL: ${{ inputs.api_url || 'https://snap-apps-api.gaiada.com' }}
+  # SIGNING SEAM (task 8.1). The SHA-256 of the certificate the shipped APKs are
+  # signed with: the public React Native debug key, "CN=Android Debug". When 8.1
+  # moves to a private key, the keystore is restored from a repository secret
+  # BEFORE the build step and the build is told to sign with it (a signingConfig
+  # in apps/mobile config), this value becomes the new certificate's fingerprint,
+  # and the change is announced, because testers must uninstall once.
+  EXPECTED_SIGNER_SHA256: fac61745dc0903786fb9ede62a962b399f7348f0bb6f899b8332667591033b9c
+  # What `react-native` 0.86 builds with (packages/react-native/gradle/libs.versions.toml).
+  NDK_VERSION: 27.1.12297006
+  BUILD_TOOLS_VERSION: 36.0.0
+  ANDROID_PLATFORM: android-36
+  PUBLIC_API: https://snap-apps-api.gaiada.com
+
+jobs:
+  build:
+    name: build the APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+
+    steps:
+      # The FULL history: apps/mobile/app.config.js numbers the build from
+      # `git rev-list --count HEAD` and refuses a shallow clone.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: A release tag must be on main
+        if: github.ref_type == 'tag'
+        run: |
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::$GITHUB_REF_NAME is not on main. Releases are cut from commits that have been reviewed and merged."
+            exit 1
+          fi
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.3.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      # The runner image ships an Android SDK ($ANDROID_HOME). It may not have the
+      # exact NDK, build tools and platform React Native 0.86 asks for, so name
+      # them: a build that downloads them half way through is slower and can fail
+      # on a licence prompt.
+      - name: Android SDK pieces
+        run: |
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKMANAGER" --licenses > /dev/null || true
+          "$SDKMANAGER" "ndk;${NDK_VERSION}" "build-tools;${BUILD_TOOLS_VERSION}" "platforms;${ANDROID_PLATFORM}" > /dev/null
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/${NDK_VERSION}" >> "$GITHUB_ENV"
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: gradle-${{ runner.os }}-
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Release notes are valid
+        run: node deploy/release-notes.mjs check --notes apps/mobile/release-notes.json
+
+      # The number and name this checkout will build, from the SAME code that
+      # `expo prebuild` runs. A tag push must be named after it.
+      - name: Work out the build number
+        id: build
+        working-directory: apps/mobile
+        run: |
+          node -e "
+          const c = require('./app.config.js')({ config: require('./app.json').expo });
+          const out = [
+            'version=' + c.version,
+            'version_code=' + c.android.versionCode,
+          ].join('\n');
+          require('fs').appendFileSync(process.env.GITHUB_OUTPUT, out + '\n');
+          console.log(out);
+          "
+          echo "commit=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: The tag names this build
+        if: github.ref_type == 'tag'
+        env:
+          VERSION: ${{ steps.build.outputs.version }}
+        run: |
+          if [ "$GITHUB_REF_NAME" != "android-v$VERSION" ]; then
+            echo "::error::This commit builds version $VERSION, so its tag must be android-v$VERSION, not $GITHUB_REF_NAME."
+            echo "::error::Find it with: git rev-list --count <commit> (the last number of the version)."
+            exit 1
+          fi
+
+      # FAIL EARLY. A tag whose release note is already published, or whose
+      # versionCode is not above the live one, would be refused by the host after
+      # a 20 minute build. Ask the public API now. If it cannot be reached the
+      # check is skipped with a warning: the host applies the same rules anyway.
+      - name: Is this build publishable? (tags only)
+        if: github.ref_type == 'tag'
+        env:
+          VERSION_CODE: ${{ steps.build.outputs.version_code }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/live"
+          if ! curl -fsS -m 30 -o "$RUNNER_TEMP/live/releases.json" "$PUBLIC_API/v1/downloads/android/releases" \
+             || ! curl -fsS -m 30 -o "$RUNNER_TEMP/live/manifest.json" "$PUBLIC_API/v1/downloads/android/manifest"; then
+            echo "::warning::Could not read $PUBLIC_API, so the already-published check is skipped. The host still applies it."
+            exit 0
+          fi
+          # The API wraps the manifest as { available, build }; the plan wants the build itself.
+          node -e "
+          const fs = require('fs');
+          const m = JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP + '/live/manifest.json', 'utf8'));
+          fs.writeFileSync(process.env.RUNNER_TEMP + '/live/build.json', JSON.stringify(m.build || null));
+          const live = Number(m.build && m.build.versionCode) || 0;
+          const mine = Number(process.env.VERSION_CODE);
+          if (mine <= live) {
+            console.error('::error::versionCode ' + mine + ' is not above the one live (' + live + '). A published build must be NEWER; to roll back, publish a NEW commit.');
+            process.exit(1);
+          }
+          console.log('versionCode ' + mine + ' is above the live ' + live);
+          "
+          node deploy/release-notes.mjs pick \
+            --notes apps/mobile/release-notes.json \
+            --releases "$RUNNER_TEMP/live/releases.json" \
+            --manifest "$RUNNER_TEMP/live/build.json" \
+            --version-code "$VERSION_CODE"
+
+      # expo prebuild + gradle assembleRelease, arm64-v8a, against API_URL. The
+      # script sets EXPO_PUBLIC_API_URL, _BUILD_COMMIT, _BUILD_VERSION and
+      # _BUILD_VERSION_CODE itself; this is the same command a person runs.
+      - name: Build
+        run: |
+          case "$API_URL" in
+            https://*) ;;
+            *) echo "::error::api_url must be an https URL"; exit 1 ;;
+          esac
+          deploy/build-apk.sh "$API_URL"
+
+      - name: Check what was built
+        id: apk
+        env:
+          VERSION: ${{ steps.build.outputs.version }}
+          VERSION_CODE: ${{ steps.build.outputs.version_code }}
+          COMMIT: ${{ steps.build.outputs.commit }}
+        run: |
+          set -euo pipefail
+          SRC=apps/mobile/android/app/build/outputs/apk/release/app-release.apk
+          mkdir -p dist
+          cp "$SRC" dist/snap-apps-android.apk
+          APK=dist/snap-apps-android.apk
+
+          # 1. The bundle points at the API (otherwise it runs on fixtures),
+          #    the same grep publish-apk.sh and place-apk.sh do. -c, not -q:
+          #    with pipefail -q makes unzip die of SIGPIPE.
+          HITS=$(unzip -p "$APK" assets/index.android.bundle | grep -cF "$API_URL" || true)
+          [ "${HITS:-0}" -ge 1 ] || { echo "::error::the bundle does not contain $API_URL"; exit 1; }
+
+          # 2. The APK carries the build number of THIS checkout: its commit count.
+          EMBEDDED=$(unzip -p "$APK" assets/app.config | node -p "const c=JSON.parse(require('fs').readFileSync(0,'utf8'));c.android.versionCode+' '+c.version")
+          COUNT=$(git rev-list --count HEAD)
+          echo "embedded versionCode/version: $EMBEDDED; commit count: $COUNT"
+          [ "$EMBEDDED" = "$COUNT $VERSION" ] || { echo "::error::the APK says '$EMBEDDED' but this checkout is '$COUNT $VERSION'"; exit 1; }
+          [ "$VERSION_CODE" = "$COUNT" ] || { echo "::error::app.config.js says $VERSION_CODE but the commit count is $COUNT"; exit 1; }
+
+          # 3. The signing certificate is the one testers already have.
+          APKSIGNER="$ANDROID_HOME/build-tools/${BUILD_TOOLS_VERSION}/apksigner"
+          "$APKSIGNER" verify --print-certs -v "$APK" | tee "$RUNNER_TEMP/certs.txt"
+          SIGNER=$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' "$RUNNER_TEMP/certs.txt")
+          echo "signer=$SIGNER" >> "$GITHUB_OUTPUT"
+          [ "$SIGNER" = "$EXPECTED_SIGNER_SHA256" ] || {
+            echo "::error::signed by $SIGNER, expected $EXPECTED_SIGNER_SHA256. Testers could not install this over their current build."
+            exit 1
+          }
+
+          # 4. The same question asked of the APK testers have right now. Not a
+          #    gate (the constant above is), but it shows the claim is true today.
+          if curl -fsSL -m 300 -o "$RUNNER_TEMP/live.apk" "$PUBLIC_API/v1/downloads/android/latest.apk"; then
+            LIVE=$("$APKSIGNER" verify --print-certs "$RUNNER_TEMP/live.apk" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p')
+            echo "signer of the APK served now: $LIVE"
+            [ "$LIVE" = "$SIGNER" ] && echo "same signer as the live build" || echo "::warning::the live build is signed by $LIVE, this one by $SIGNER"
+          else
+            echo "::notice::no live APK to compare the signer with"
+          fi
+
+          # 5. The release assets.
+          SHA=$(sha256sum "$APK" | cut -d' ' -f1)
+          echo "$SHA  snap-apps-android.apk" > dist/snap-apps-android.apk.sha256
+          node deploy/apk-release.mjs build-json \
+            --notes apps/mobile/release-notes.json \
+            --tag "android-v$VERSION" --version "$VERSION" --version-code "$VERSION_CODE" \
+            --commit "$COMMIT" --api-url "$API_URL" \
+            --sha256 "$SHA" --size "$(stat -c%s "$APK")" \
+            --out dist/build.json
+          cat dist/build.json
+          ls -la dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: snap-apps-android
+          path: dist/
+          if-no-files-found: error
+          retention-days: ${{ github.event_name == 'pull_request' && 14 || 30 }}
+
+  # The ONLY job that can write to the repository, and it runs no repository code:
+  # it has no checkout, and does nothing but turn the built files into a release.
+  release:
+    name: create the GitHub Release
+    if: github.event_name == 'push' && github.ref_type == 'tag'
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: snap-apps-android
+          path: dist
+
+      # A DRAFT first, assets second, published last. The host ignores drafts, so
+      # it can never see a release that is still missing its APK or its checksum.
+      - name: Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          VERSION_CODE=$(jq -r .versionCode dist/build.json)
+          {
+            jq -r .entry.notes dist/build.json
+            echo
+            echo "Build $VERSION_CODE, commit $(jq -r .commit dist/build.json), built for $(jq -r .apiUrl dist/build.json)."
+            echo "sha256: $(cut -d' ' -f1 dist/snap-apps-android.apk.sha256)"
+            echo
+            echo "Testers get this build from the deploy host, which picks it up from this release on its next poll."
+          } > "$RUNNER_TEMP/notes.md"
+          gh release create "$TAG" --draft --verify-tag \
+            --title "Android $(jq -r .version dist/build.json)" \
+            --notes-file "$RUNNER_TEMP/notes.md"
+          gh release upload "$TAG" dist/snap-apps-android.apk dist/snap-apps-android.apk.sha256 dist/build.json
+          gh release edit "$TAG" --draft=false
