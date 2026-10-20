@@ -168,6 +168,10 @@ to be reconciled against a subscription.
 
 ### Pricing, and the arithmetic that has to be honest
 
+> **Superseded 2026-10-21 for consumer pricing:** about 10c a scan, one page
+> per snap, packs of 50, 100 and 250 for A$5, A$10 and A$25. See
+> `MONETISATION.md` section 3. The packs below are kept for their reasoning.
+
 Packs, GST-inclusive AUD, unit price falling with volume:
 
 | Pack | Price | Per scan |

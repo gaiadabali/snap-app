@@ -703,3 +703,10 @@ bugs that only appeared when someone drove the actual screen — `initials`
 declared twice and absent from every response, `memberships_self` being
 PERMISSIVE and double-counting seats, a drain that could never send because CORS
 blocked the header at preflight. None of those were visible in the code.
+
+## The download page after Google Play (decided 2026-10-21)
+
+The website keeps its APK download for testers once Snap Apps is on Google
+Play. That APK is signed with the same key as the Play build. The download
+page adds a Google Play link when the listing exists (see `BUILD.md`
+section 9).
