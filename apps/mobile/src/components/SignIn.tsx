@@ -23,7 +23,8 @@ import { control, radius, space, type, usePalette } from '@/theme';
 
 /**
  * Everything before there is a session, rebuilt against the 2026-09-19
- * prototype: choose, register, log in, forgot, and the six-digit code.
+ * prototype: choose, register, log in, and forgot (which mails a reset link;
+ * the prototype's six-digit code step was replaced by the link, task 1.2.a).
  *
  * Held as ONE component with a `step` rather than five routes. The prototype
  * treats them as routes, but `SessionGate` renders this whole tree instead of
@@ -35,11 +36,18 @@ import { control, radius, space, type, usePalette } from '@/theme';
  * real, and a presenter needs to become a Staff member in one tap to show
  * that they cannot post to the ledger.
  */
-type Step = 'choose' | 'register' | 'login' | 'forgot' | 'otp' | 'reset';
+type Step = 'choose' | 'register' | 'login' | 'forgot';
 
 const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
-export function SignIn({ onSignedIn }: { onSignedIn: (s: Session) => void }) {
+export function SignIn({
+  onSignedIn,
+  notice = null,
+}: {
+  onSignedIn: (s: Session) => void;
+  /** Why the person is here again — a session that ended. Shown first. */
+  notice?: string | null;
+}) {
   const p = usePalette();
   const insets = useSafeAreaInsets();
   const [step, setStep] = useState<Step>('choose');
@@ -53,7 +61,9 @@ export function SignIn({ onSignedIn }: { onSignedIn: (s: Session) => void }) {
   const [country, setCountry] = useState<AvailableTaxRules | null>(null);
   const [agreed, setAgreed] = useState(false);
   const [showPw, setShowPw] = useState(false);
-  const [code, setCode] = useState('');
+  // The address a reset link was last requested for, so the screen can say
+  // "sent" — and stop saying it the moment the address is edited.
+  const [sentTo, setSentTo] = useState<string | null>(null);
 
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -141,6 +151,7 @@ export function SignIn({ onSignedIn }: { onSignedIn: (s: Session) => void }) {
             </Small>
           </Card>
 
+          {notice ? <Notice tone="info" icon="info">{notice}</Notice> : null}
           {error ? <Notice tone="risk" icon="alert">{error}</Notice> : null}
 
           {accounts.length > 0 ? (
@@ -348,126 +359,57 @@ export function SignIn({ onSignedIn }: { onSignedIn: (s: Session) => void }) {
   }
 
   /* ── Forgot ─────────────────────────────────────────────────────────── */
-  if (step === 'forgot') {
-    return (
-      <Screen>
-        <BackBar onPress={() => go('login')} />
-        <ScrollView contentContainerStyle={{ ...pad, paddingTop: space.xs }} keyboardShouldPersistTaps="handled">
-          <AuthHeader title="Reset your password">
-            Give us the email on your account. We send a six-digit code to it.
-          </AuthHeader>
-          <AuthInput
-            label="Email"
-            value={email}
-            onChangeText={setEmail}
-            placeholder="you@example.com"
-            keyboardType="email-address"
-            invalid={email.length > 0 && !emailOk}
-            error={email.length > 0 && !emailOk ? 'Enter a valid email address.' : undefined}
-          />
-          {error ? <Notice tone="risk" icon="alert">{error}</Notice> : null}
+  // A LINK, not a six-digit code (task 1.2.a). The link carries 256 random
+  // bits, so it needs no attempt counter to be safe; a code would. It opens
+  // the website's reset page, which works in this phone's browser, and the
+  // person comes back here to log in with the new password.
+  const sent = sentTo !== null && sentTo === address;
+  return (
+    <Screen>
+      <BackBar onPress={() => go('login')} />
+      <ScrollView contentContainerStyle={{ ...pad, paddingTop: space.xs }} keyboardShouldPersistTaps="handled">
+        <AuthHeader title="Reset your password">
+          Give us the email on your account. We send a link that lets you choose a new password.
+        </AuthHeader>
+        <AuthInput
+          label="Email"
+          value={email}
+          onChangeText={setEmail}
+          placeholder="you@example.com"
+          keyboardType="email-address"
+          invalid={email.length > 0 && !emailOk}
+          error={email.length > 0 && !emailOk ? 'Enter a valid email address.' : undefined}
+        />
+        {error ? <Notice tone="risk" icon="alert">{error}</Notice> : null}
+        {sent ? (
+          <>
+            <Notice tone="info" icon="info">
+              {`If ${address} has an account, a link is on its way. Open it on this phone to choose a new password. It works once, for 30 minutes. Then log in here.`}
+            </Notice>
+            <Button label="Back to log in" onPress={() => go('login')} />
+            <Resend onResend={() => void api().requestPasswordReset(address).catch(() => {})} />
+          </>
+        ) : (
           <Button
-            label="Send the code"
-            busy={busy === 'otp-request'}
+            label="Send the link"
+            busy={busy === 'reset-request'}
             disabled={!emailOk}
             onPress={() =>
               void (async () => {
-                setBusy('otp-request');
+                setBusy('reset-request');
                 setError(null);
                 try {
-                  const res = await api().requestOtp({ email: address, purpose: 'reset-password' });
-                  setNote(`We sent six digits to ${res.maskedTarget}.`);
-                  setCode('');
-                  setStep('otp');
+                  await api().requestPasswordReset(address);
+                  setSentTo(address);
                 } catch (e) {
-                  setError(e instanceof Error ? e.message : 'Could not send a code.');
+                  setError(e instanceof Error ? e.message : 'Could not send the link.');
                 } finally {
                   setBusy(null);
                 }
               })()
             }
           />
-        </ScrollView>
-      </Screen>
-    );
-  }
-
-  /* ── New password ───────────────────────────────────────────────────── */
-  if (step === 'reset') {
-    return (
-      <Screen>
-        <BackBar onPress={() => go('login')} />
-        <ScrollView contentContainerStyle={{ ...pad, paddingTop: space.xs }} keyboardShouldPersistTaps="handled">
-          <AuthHeader title="Choose a new password">
-            That code checked out. Pick something you have not used here before.
-          </AuthHeader>
-          <PasswordInput
-            label="New password"
-            value={password}
-            onChangeText={setPassword}
-            placeholder="At least ten characters"
-            shown={showPw}
-            onToggle={() => setShowPw((v) => !v)}
-            error={password.length > 0 && !pwOk ? 'Use at least ten characters.' : undefined}
-          />
-          {error ? <Notice tone="risk" icon="alert">{error}</Notice> : null}
-          <Button
-            label="Save and sign in"
-            busy={busy === 'reset'}
-            disabled={!pwOk}
-            onPress={() =>
-              void run('reset', () =>
-                api().resetPassword({ email: address, code, newPassword: password }),
-              )
-            }
-          />
-        </ScrollView>
-      </Screen>
-    );
-  }
-
-  /* ── Code ───────────────────────────────────────────────────────────── */
-  return (
-    <Screen>
-      <BackBar onPress={() => go('forgot')} />
-      <ScrollView contentContainerStyle={{ ...pad, paddingTop: space.xs }} keyboardShouldPersistTaps="handled">
-        <AuthHeader title="Enter the code">
-          {note ?? `We sent six digits to ${address}.`} It is good for ten minutes.
-        </AuthHeader>
-
-        <CodeInput value={code} onChange={setCode} invalid={!!error} />
-
-        {error ? <Notice tone="risk" icon="alert">{error}</Notice> : null}
-
-        <Button
-          label="Verify"
-          busy={busy === 'otp-verify'}
-          disabled={code.length !== 6}
-          onPress={() =>
-            void (async () => {
-              setBusy('otp-verify');
-              setError(null);
-              try {
-                await api().verifyOtp({ email: address, code, purpose: 'reset-password' });
-                // A reset returns no session by design — the password still
-                // has to be set before there is anything to sign in with.
-                setPassword('');
-                setNote(null);
-                setStep('reset');
-              } catch (e) {
-                setError(e instanceof Error ? e.message : 'That code is not right.');
-              } finally {
-                setBusy(null);
-              }
-            })()
-          }
-        />
-
-        <Resend
-          onResend={() =>
-            void api().requestOtp({ email: address, purpose: 'reset-password' }).catch(() => {})
-          }
-        />
+        )}
       </ScrollView>
     </Screen>
   );
@@ -790,70 +732,6 @@ function FootLink({
         {prompt} <Text style={{ fontWeight: '600', color: p.accentText }}>{action}</Text>
       </Text>
     </Pressable>
-  );
-}
-
-/**
- * Six boxes with one real field behind them.
- *
- * The boxes are decoration: a transparent `TextInput` covers the row so the
- * keyboard, paste and SMS autofill all behave normally. Six separate fields
- * would break one-tap autofill, which is the only way most people enter these.
- */
-function CodeInput({
-  value,
-  onChange,
-  invalid,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  invalid?: boolean;
-}) {
-  const p = usePalette();
-  const cells = [0, 1, 2, 3, 4, 5];
-  return (
-    <View style={{ position: 'relative' }}>
-      <View style={{ flexDirection: 'row', gap: space.sm }} pointerEvents="none">
-        {cells.map((i) => (
-          <View
-            key={i}
-            style={{
-              flex: 1,
-              height: 56,
-              // The active box (the next digit to land) takes a 2px accent
-              // edge; the rest are a 1px rule on white.
-              borderWidth: !invalid && value.length === i ? 2 : 1,
-              borderColor: invalid ? p.risk : value.length === i ? p.accent : p.ruleStrong,
-              borderRadius: radius.md,
-              backgroundColor: p.card,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Text style={{ fontSize: 28, lineHeight: 34, fontWeight: '700', color: p.ink }}>
-              {value[i] ?? ''}
-            </Text>
-          </View>
-        ))}
-      </View>
-      <TextInput
-        accessibilityLabel="Six-digit code"
-        value={value}
-        onChangeText={(v) => onChange(v.replace(/\D/g, '').slice(0, 6))}
-        keyboardType="number-pad"
-        textContentType="oneTimeCode"
-        autoComplete="sms-otp"
-        maxLength={6}
-        style={{
-          position: 'absolute',
-          left: 0,
-          right: 0,
-          top: 0,
-          height: 56,
-          opacity: 0,
-        }}
-      />
-    </View>
   );
 }
 

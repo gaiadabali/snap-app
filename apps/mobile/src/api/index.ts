@@ -5,7 +5,7 @@ import type { SnapApi } from './types';
 export * from './types';
 export { abnIsValid, resetDemoData } from './mock';
 export { ApiError } from './http';
-export { restoreAuthToken, setActiveWorkspaceId } from './context';
+export { onSessionEnded, restoreAuthToken, setActiveWorkspaceId } from './context';
 
 /**
  * The one place the app chooses its backend.

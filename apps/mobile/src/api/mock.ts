@@ -71,11 +71,6 @@ import type {
   NotificationPrefs,
   AlertItem,
   PrivacySettings,
-  OtpPurpose,
-  RequestOtpRequest,
-  RequestOtpResponse,
-  VerifyOtpRequest,
-  ResetPasswordRequest,
   StockMovement,
   TaxPack,
   Trip,
@@ -160,6 +155,7 @@ const ACCOUNTS: Array<AuthUser & { role: string; note: string }> = [
     displayName: 'Kate Marsh',
     email: 'kate@marshtransport.example',
     initials: 'KM',
+    emailVerified: true,
     role: 'Owner of both workspaces',
     note: 'Sees the business and the household',
   },
@@ -168,6 +164,7 @@ const ACCOUNTS: Array<AuthUser & { role: string; note: string }> = [
     displayName: 'Sam Oyelaran',
     email: 'sam@marshtransport.example',
     initials: 'SO',
+    emailVerified: true,
     role: 'Manager',
     note: 'Everything except billing',
   },
@@ -176,6 +173,7 @@ const ACCOUNTS: Array<AuthUser & { role: string; note: string }> = [
     displayName: 'Dan Whitby',
     email: 'dan@marshtransport.example',
     initials: 'DW',
+    emailVerified: true,
     role: 'Staff',
     note: 'Scans and corrects; cannot post to the ledger',
   },
@@ -184,6 +182,7 @@ const ACCOUNTS: Array<AuthUser & { role: string; note: string }> = [
     displayName: 'Jem Marsh',
     email: 'jem@example.com',
     initials: 'JM',
+    emailVerified: true,
     role: 'Partner, household only',
     note: 'Never sees the business',
   },
@@ -192,6 +191,7 @@ const ACCOUNTS: Array<AuthUser & { role: string; note: string }> = [
     displayName: 'Priya Nandan',
     email: 'priya@marshaccountants.example',
     initials: 'PN',
+    emailVerified: true,
     role: 'Viewer, the accountant',
     note: 'Read only',
   },
@@ -227,6 +227,7 @@ function sessionFor(userId: string): Session | null {
       displayName,
       email: known?.email ?? membership?.email ?? '',
       initials: known?.initials ?? initialsOfName(displayName),
+      emailVerified: true,
     },
     workspaceIds: members.filter((m) => m.userId === userId).map((m) => m.workspaceId),
   };
@@ -640,11 +641,6 @@ function labelOf(brand: CardBrand): string {
   return { visa: 'Visa', mastercard: 'Mastercard', amex: 'Amex', other: 'Card' }[brand];
 }
 
-function maskEmail(email: string): string {
-  const [user = '', domain = ''] = email.split('@');
-  return `${user.slice(0, 1)}${'•'.repeat(Math.max(1, user.length - 1))}@${domain}`;
-}
-
 /** Itemised spend, mirroring the prototype's own demo months. */
 const usageByMonth: Record<UsageKind, Record<string, UsageItem[]>> = {
   credits: {
@@ -755,9 +751,6 @@ let privacySettings: PrivacySettings = {
   retentionMonths: 84,
 };
 
-/** The last code issued. A real server would not keep this in memory. */
-let lastOtp: { email: string; code: string; purpose: OtpPurpose } | null = null;
-
 export class MockApi implements SnapApi {
   // ── Identity ──
 
@@ -768,11 +761,12 @@ export class MockApi implements SnapApi {
 
   async listDemoAccounts(): Promise<AuthUser[]> {
     await settle(60);
-    return ACCOUNTS.map(({ userId, displayName, email, initials }) => ({
+    return ACCOUNTS.map(({ userId, displayName, email, initials, emailVerified }) => ({
       userId,
       displayName,
       email,
       initials,
+      emailVerified,
     }));
   }
 
@@ -844,6 +838,7 @@ export class MockApi implements SnapApi {
         displayName: name.replace(/\b\w/g, (c) => c.toUpperCase()),
         email: clean,
         initials: initialsOfName(name),
+        emailVerified: true,
       },
       workspaceIds: [],
     };
@@ -2230,30 +2225,18 @@ export class MockApi implements SnapApi {
     return privacySettings;
   }
 
-  async requestOtp(input: RequestOtpRequest): Promise<RequestOtpResponse> {
+  async requestPasswordReset(_email: string): Promise<void> {
+    // The demo sends no mail. Same answer as the server either way.
     await settle(400);
-    lastOtp = { email: input.email.toLowerCase(), code: '424242', purpose: input.purpose };
-    return { retryAfterSeconds: 30, maskedTarget: maskEmail(input.email) };
   }
 
-  async verifyOtp(input: VerifyOtpRequest): Promise<Session | null> {
-    await settle(400);
-    const ok =
-      lastOtp !== null &&
-      lastOtp.email === input.email.toLowerCase() &&
-      lastOtp.purpose === input.purpose &&
-      lastOtp.code === input.code.trim();
-    if (!ok) throw new Error('That code is not right. Check the last text and try again.');
-    lastOtp = null;
-    // A reset still has to set a password before there is a session.
-    if (input.purpose === 'reset-password') return null;
-    return this.signIn(input.email);
+  async resendEmailVerification(): Promise<{ alreadyVerified: boolean }> {
+    await settle(300);
+    return { alreadyVerified: true };
   }
 
-  async resetPassword(input: ResetPasswordRequest): Promise<Session> {
-    await settle(450);
-    if (input.newPassword.length < 8) throw new Error('Use at least eight characters.');
-    return this.signIn(input.email);
+  async signOutEverywhere(): Promise<void> {
+    await this.signOut();
   }
 }
 

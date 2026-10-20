@@ -8,7 +8,7 @@ import { IS_DEMO, abnIsValid, api, resetDemoData, type BusinessSettings, type Pl
 import { currentDevice, deviceReadAvailable } from '@/lib/device-read';
 import { Icon } from '@/components/Icon';
 import { Avatar, Choice, Field, Loading, Sheet, Toggle } from '@/components/form';
-import { Body, Card, Divider, Figure, Screen, SectionHeader, Small } from '@/components/ui';
+import { Body, Button, Card, Divider, Figure, Notice, Screen, SectionHeader, Small } from '@/components/ui';
 import { formatAbn, space, type, usePalette } from '@/theme';
 import { useSession } from '@/session';
 import { WorkspacePicker, useWorkspace } from '@/workspace';
@@ -33,7 +33,7 @@ export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { isBusiness, workspaceName, active } = useWorkspace();
-  const { session, signOut } = useSession();
+  const { session, signOut, refresh } = useSession();
   const [settings, setSettings] = useState<BusinessSettings | null>(null);
   const [plan, setPlan] = useState<PlanUsage | null>(null);
   const [editing, setEditing] = useState<null | 'details'>(null);
@@ -113,6 +113,9 @@ export default function SettingsScreen() {
                   In {session.workspaceIds.length} workspace
                   {session.workspaceIds.length === 1 ? '' : 's'} · you are {roleWord} here
                 </Small>
+                {session.user.emailVerified ? null : (
+                  <VerifyEmailCard email={session.user.email} onCheckAgain={refresh} />
+                )}
               </View>
             ) : null}
 
@@ -318,6 +321,33 @@ export default function SettingsScreen() {
                     ])
                   }
                 />
+                <Divider />
+                <DangerRow
+                  label="Sign out on every device"
+                  onPress={() =>
+                    Alert.alert(
+                      'Sign out everywhere?',
+                      'Every phone and browser signed in to this account is signed out, this one included. Use it if a device is lost or someone else knows your password.',
+                      [
+                        { text: 'Cancel', style: 'cancel' },
+                        {
+                          text: 'Sign out everywhere',
+                          style: 'destructive',
+                          onPress: () =>
+                            void api()
+                              .signOutEverywhere()
+                              .then(() => signOut())
+                              .catch((e: unknown) =>
+                                Alert.alert(
+                                  'Not signed out',
+                                  e instanceof Error ? e.message : 'Could not reach the server. Try again with a connection.',
+                                ),
+                              ),
+                        },
+                      ],
+                    )
+                  }
+                />
               </Card>
             ) : null}
 
@@ -411,6 +441,59 @@ function Row({ label, value, href }: { label: string; value: string; href: Href 
 }
 
 /** A destructive action as a plain red text row, iOS-settings style. */
+/**
+ * Shown while the account's address is unproven (task 1.2.b).
+ *
+ * Says what is blocked and why, offers a new link, and lets the person tell
+ * the app they have clicked it — the link opens in a browser, so the app has
+ * no other way to find out until the next session read.
+ */
+function VerifyEmailCard({ email, onCheckAgain }: { email: string; onCheckAgain: () => Promise<void> }) {
+  const [busy, setBusy] = useState<null | 'send' | 'check'>(null);
+  const [note, setNote] = useState<string | null>(null);
+  return (
+    <Card style={{ gap: space.md, padding: space.lg }}>
+      <Notice tone="info" icon="info">
+        {`Confirm ${email} to invite people, accept an invitation or link accounting software. Everything else works already.`}
+      </Notice>
+      {note ? <Small>{note}</Small> : null}
+      <Button
+        label="Email me a new link"
+        busy={busy === 'send'}
+        onPress={() =>
+          void (async () => {
+            setBusy('send');
+            try {
+              const { alreadyVerified } = await api().resendEmailVerification();
+              setNote(alreadyVerified ? 'That address is already confirmed.' : `Sent to ${email}. The link works for 24 hours.`);
+              if (alreadyVerified) await onCheckAgain();
+            } catch (e) {
+              setNote(e instanceof Error ? e.message : 'Could not send the link.');
+            } finally {
+              setBusy(null);
+            }
+          })()
+        }
+      />
+      <Button
+        label="I have confirmed it"
+        tone="outline"
+        busy={busy === 'check'}
+        onPress={() =>
+          void (async () => {
+            setBusy('check');
+            try {
+              await onCheckAgain();
+            } finally {
+              setBusy(null);
+            }
+          })()
+        }
+      />
+    </Card>
+  );
+}
+
 function DangerRow({ label, onPress }: { label: string; onPress: () => void }) {
   const p = usePalette();
   return (
