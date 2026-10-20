@@ -96,6 +96,9 @@ export type RemoteBuild = {
   byteSize: number;
   publishedAt: string;
   apiUrl: string;
+  /** "What's new" for this build, from apps/mobile/release-notes.json via the
+   *  manifest. Absent on builds published before release notes existed. */
+  notes?: string;
 };
 
 export type UpdateState =
@@ -207,6 +210,18 @@ async function wasDismissed(versionCode: number): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+/**
+ * The words to show under "What's new", or null when the build has none (a
+ * build published before release notes, or a manifest that is not the shape we
+ * expect). Never throws: it is displayed text, not a gate.
+ */
+export function releaseNotes(build: { notes?: unknown } | null | undefined): string | null {
+  const notes = build?.notes;
+  if (typeof notes !== 'string') return null;
+  const text = notes.trim();
+  return text === '' ? null : text;
 }
 
 /** `52862425` -> `50.4 MB`, for a line that says what the download will cost. */

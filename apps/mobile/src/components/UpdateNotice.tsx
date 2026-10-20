@@ -11,6 +11,7 @@ import {
   describe,
   dismiss,
   formatSize,
+  releaseNotes,
   type UpdateState,
 } from '@/lib/updates';
 
@@ -61,6 +62,7 @@ export function UpdateNotice() {
   if (state.status !== 'available') return null;
 
   const size = formatSize(state.build.byteSize);
+  const notes = releaseNotes(state.build);
 
   return (
     // A white lifted card; the accent button inside carries the call to action.
@@ -75,6 +77,12 @@ export function UpdateNotice() {
           A newer build is ready{size ? ` (${size})` : ''}. Your receipts and anything waiting to
           send are kept — installing over the top does not sign you out.
         </Body>
+        {notes ? (
+          <View style={{ gap: space.xs }}>
+            <Body strong>What&apos;s new</Body>
+            <Body>{notes}</Body>
+          </View>
+        ) : null}
         <Small>
           Downloads in your browser. Android will ask once for permission to install apps from
           there.

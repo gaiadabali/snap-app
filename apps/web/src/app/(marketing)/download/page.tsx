@@ -73,14 +73,6 @@ const IOS_FEATURES = [
 ];
 
 /**
- * Changelog notes that describe business surfaces (BAS, Xero, practices) are
- * not displayed while those surfaces are off in the app — the site does not
- * sell what does not ship. `lib/releases.ts` is untouched; this only decides
- * what is shown.
- */
-const BUSINESS_NOTE = /\b(BAS|Xero|Practice|Sole Trader)\b/;
-
-/**
  * SoftwareApplication structured data for both platforms. Android is
  * reported as a real, available (beta-channel) app. iOS is reported
  * honestly as in development — no `offers`/availability claim that would
@@ -141,14 +133,7 @@ export const dynamic = 'force-dynamic';
 export default async function DownloadPage() {
   const android = await getAndroidRelease();
   const ios = getRelease('ios');
-  const changelog = getChangelog()
-    .map((entry) => ({
-      ...entry,
-      notes: BUSINESS_SURFACES_ENABLED
-        ? entry.notes
-        : entry.notes.filter((note) => !BUSINESS_NOTE.test(note)),
-    }))
-    .filter((entry) => entry.notes.length > 0);
+  const changelog = await getChangelog({ showBusiness: BUSINESS_SURFACES_ENABLED });
   const androidReqs = getSystemRequirements('android');
   const iosReqs = getSystemRequirements('ios');
   const jsonLd = buildJsonLd(android, ios);
@@ -451,6 +436,11 @@ export default async function DownloadPage() {
               <Reveal>
                 <h2 className="hd-2">What&apos;s new</h2>
               </Reveal>
+              {changelog.length === 0 ? (
+                <p className="lede mt-5 max-w-[36ch]">
+                  Release notes appear here as each new build is published.
+                </p>
+              ) : null}
               <div className="mt-10 space-y-10">
                 {changelog.map((entry, i) => (
                   <Reveal delay={i} key={entry.version}>
@@ -460,6 +450,7 @@ export default async function DownloadPage() {
                           v{entry.version}
                         </span>
                         <span className="small tabular-nums">{entry.date}</span>
+                        {entry.current ? <span className="small">Current download</span> : null}
                       </div>
                       <ul className="dl-list body mt-4 space-y-2">
                         {entry.notes.map((note) => (

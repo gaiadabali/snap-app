@@ -195,3 +195,98 @@ describe('minVersionCode', () => {
     delete process.env.ANDROID_MIN_VERSION_CODE;
   });
 });
+
+/**
+ * The release history (`releases.json`, written by publish-apk.sh). Same rule
+ * as the manifest: a missing, corrupt or half-written file is an empty list,
+ * never a 500, and nothing is listed that is not published.
+ */
+describe('releases', () => {
+  const entry = (versionCode: number, over: Record<string, unknown> = {}) => ({
+    id: `entry-${versionCode}`,
+    versionCode,
+    version: `0.1.${versionCode}`,
+    commit: `c${versionCode}`,
+    publishedAt: '2026-10-21T01:00:00Z',
+    notes: 'Something changed. Something else did too.',
+    ...over,
+  });
+  const writeReleases = (value: unknown) =>
+    writeFileSync(join(androidDir, 'releases.json'), JSON.stringify(value), 'utf8');
+  const published = (code = 300) => {
+    writeManifest({ ...MANIFEST, versionCode: code, version: `0.1.${code}` });
+    writeApk();
+  };
+
+  it('is empty when nothing is published, even if a history file exists', () => {
+    remove('manifest.json');
+    remove('snap-apps-android.apk');
+    writeReleases([entry(300)]);
+    expect(controller.releases()).toEqual({ available: false, releases: [] });
+  });
+
+  it('is empty, not an error, while releases.json does not exist yet', () => {
+    // Today's served build predates the scheme: the manifest is fine and there
+    // is no history file. The page must still show the build.
+    published();
+    remove('releases.json');
+    expect(controller.releases()).toEqual({ available: true, releases: [] });
+    expect(controller.manifest().available).toBe(true);
+  });
+
+  it('is empty, not a 500, when releases.json is corrupt or the wrong shape', () => {
+    published();
+    writeFileSync(join(androidDir, 'releases.json'), '{ not json', 'utf8');
+    expect(controller.releases()).toEqual({ available: true, releases: [] });
+    writeReleases({ releases: 'nope' });
+    expect(controller.releases()).toEqual({ available: true, releases: [] });
+  });
+
+  it('lists the history newest first and flags the current download', () => {
+    published(302);
+    writeReleases([entry(300), entry(302), entry(301)]);
+    const { available, releases } = controller.releases();
+    expect(available).toBe(true);
+    expect(releases.map((r) => [r.versionCode, r.current])).toEqual([
+      [302, true],
+      [301, false],
+      [300, false],
+    ]);
+    expect(releases[0]).toEqual({ ...entry(302), current: true });
+  });
+
+  it('does not list an entry ahead of the served build (a publish that died between its writes)', () => {
+    published(301);
+    writeReleases([entry(302), entry(301), entry(300)]);
+    expect(controller.releases().releases.map((r) => r.versionCode)).toEqual([301, 300]);
+  });
+
+  it('skips malformed entries and duplicates, and keeps the good ones', () => {
+    published(301);
+    writeReleases([
+      entry(301),
+      { id: 'no-code', version: '0.1.1', commit: 'x', publishedAt: 'x', notes: 'x' },
+      entry(300, { notes: 42 }),
+      entry(0),
+      null,
+      'text',
+      entry(301, { id: 'duplicate-of-301' }),
+      entry(299),
+    ]);
+    expect(controller.releases().releases.map((r) => r.versionCode)).toEqual([301, 299]);
+  });
+
+  it('is empty when the served manifest has no versionCode (cannot say what is published)', () => {
+    const { versionCode: _omit, ...legacy } = MANIFEST;
+    writeManifest(legacy);
+    writeApk();
+    writeReleases([entry(300)]);
+    expect(controller.releases()).toEqual({ available: true, releases: [] });
+  });
+
+  it('carries the notes through the manifest too', () => {
+    writeManifest({ ...MANIFEST, notes: 'One. Two.' });
+    writeApk();
+    expect(controller.manifest().build?.notes).toBe('One. Two.');
+  });
+});

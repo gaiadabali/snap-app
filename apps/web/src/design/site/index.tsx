@@ -231,7 +231,7 @@ export function StoreButtons({ className, compact = false }: { className?: strin
       <Link href="/download" className="store">
         <AndroidGlyph />
         <span>
-          <span className="store-meta">{compact ? 'Android 8.0+' : 'Get it for Android'}</span>
+          <span className="store-meta">{compact ? 'Android 7.0+' : 'Get it for Android'}</span>
           <span className="store-name">Download the app</span>
         </span>
       </Link>

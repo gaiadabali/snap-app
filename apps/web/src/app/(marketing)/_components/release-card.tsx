@@ -67,7 +67,7 @@ export function SpecRow({
 }: {
   label: string;
   value: ReactNode;
-  /** Off for prose values like "Android 8.0 (API 26)" that are not figures. */
+  /** Off for prose values like "Android 7.0 (API 24)" that are not figures. */
   mono?: boolean;
 }) {
   return (

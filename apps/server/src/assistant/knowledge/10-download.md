@@ -6,7 +6,7 @@ kind: howto
 
 ## Android
 
-Android is a direct download today. It is an APK, and it is not on Google Play yet. The app needs Android 8.0 or later.
+Android is a direct download today. It is an APK, and it is not on Google Play yet. The app needs Android 7.0 or later.
 
 ## Installing the APK
 
@@ -30,7 +30,7 @@ The web app works in any phone, tablet or computer browser, with nothing to inst
 Not yet. It is in development and cannot be installed today.
 
 ### What Android version do I need?
-Android 8.0 or later.
+Android 7.0 or later.
 
 ### Is it on Google Play?
 Not yet. Android is a direct APK download from the download page.
