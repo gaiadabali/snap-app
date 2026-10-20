@@ -1,0 +1,152 @@
+{
+  "schemaVersion": 1,
+  "specSha256": "925a361e8f04b609f317a78c68feac00c5cebe2c1674a1df9f59f4d0602ec594",
+  "cases": [
+    {
+      "file": "valid-employee.json",
+      "valid": true,
+      "errorPaths": [],
+      "sha256": "87a5385bec71560d6bcd81be6dc300ea18ccc4a5706ceffa0a2207119a064764"
+    },
+    {
+      "file": "valid-with-rental.json",
+      "valid": true,
+      "errorPaths": [],
+      "sha256": "35d5a370e282a258fca9b4f371094ac1b9aa3a0e7876bfb577c49083b0236596"
+    },
+    {
+      "file": "valid-minimal.json",
+      "valid": true,
+      "errorPaths": [],
+      "sha256": "06fc70de8488dd6a4f2c5dce8cf044ffa354d9c176e4b3d737c76b67ddf6a196"
+    },
+    {
+      "file": "invalid-float-amount.json",
+      "valid": false,
+      "errorPaths": [
+        "lines.0.amount"
+      ],
+      "sha256": "d354e5120b613dc23042da7b9fb1d7cb72263bd4a18a14c70c11a21351cfcc3e"
+    },
+    {
+      "file": "invalid-amount-thousands-separator.json",
+      "valid": false,
+      "errorPaths": [
+        "lines.1.amount"
+      ],
+      "sha256": "cbc021f445a0a1a7be69501616ef6d1b65aa27a86bb3c7ff3b7ea739c93ac93f"
+    },
+    {
+      "file": "invalid-amount-one-decimal.json",
+      "valid": false,
+      "errorPaths": [
+        "lines.2.amount"
+      ],
+      "sha256": "4fcaada46d7606a402a913690803517eda6ab12d86a3a1c4875b56369c0643b7"
+    },
+    {
+      "file": "invalid-negative-amount.json",
+      "valid": false,
+      "errorPaths": [
+        "lines.0.amount"
+      ],
+      "sha256": "be55bfc8a2204895742ca457534808506a533ab6e6f0efff67b3cbddd21a5831"
+    },
+    {
+      "file": "invalid-financial-year-format.json",
+      "valid": false,
+      "errorPaths": [
+        "financialYear"
+      ],
+      "sha256": "b37a157d7207b1f2fee2d58e932b21c63bc422e7cde212e5f755b402ea38a39f"
+    },
+    {
+      "file": "invalid-financial-year-mismatch.json",
+      "valid": false,
+      "errorPaths": [
+        "financialYear"
+      ],
+      "sha256": "ca1f48c1f480976b1b37d1ea6efb7ae098e4f9231c1f38cda4d10ccee27fe7b1"
+    },
+    {
+      "file": "invalid-unknown-label.json",
+      "valid": false,
+      "errorPaths": [
+        "lines.0.label"
+      ],
+      "sha256": "5c9dfe51189da41e366855d93e7709754fc1e02af5987fd005740c915a1e9ff4"
+    },
+    {
+      "file": "invalid-unknown-item-id.json",
+      "valid": false,
+      "errorPaths": [
+        "lines.0.itemId"
+      ],
+      "sha256": "d59024a353eb2df8434accb4e26fd526e17150c9fa3a7f23510b4705bc813d00"
+    },
+    {
+      "file": "invalid-item-id-for-other-label.json",
+      "valid": false,
+      "errorPaths": [
+        "lines.0.itemId"
+      ],
+      "sha256": "58e1fae110edb28bec7b06cf9882069c9bd77a326a01d8c858c437037bd5856b"
+    },
+    {
+      "file": "invalid-unknown-occupation.json",
+      "valid": false,
+      "errorPaths": [
+        "occupation"
+      ],
+      "sha256": "7480ee8b5598090a5d61c491c099adbd41f40164349215caafeac2b84a6f42ba"
+    },
+    {
+      "file": "invalid-occupation-sole.json",
+      "valid": false,
+      "errorPaths": [
+        "occupation"
+      ],
+      "sha256": "ef0b9f9c4a7fb4661bd20d486632a9946a5ffcfaadec72d05bafe1e347059c0f"
+    },
+    {
+      "file": "invalid-schema-version.json",
+      "valid": false,
+      "errorPaths": [
+        "schemaVersion"
+      ],
+      "sha256": "23e3e019641cec18a07e71223d619d9ab555b2a698ffcdc02fadc11790a065ce"
+    },
+    {
+      "file": "invalid-extra-pii-field.json",
+      "valid": false,
+      "errorPaths": [
+        ""
+      ],
+      "sha256": "b04df4a237d51363de15262ff63e819015e16c316b9b4d25446617d35f59df34"
+    },
+    {
+      "file": "invalid-receipt-count-below-refs.json",
+      "valid": false,
+      "errorPaths": [
+        "lines.2.receiptCount"
+      ],
+      "sha256": "2247bb3a34d59e364f5a6755e740783e03e4e5e7c6e4313ca105c0a2a7e1ef93"
+    },
+    {
+      "file": "invalid-receipt-ref-format.json",
+      "valid": false,
+      "errorPaths": [
+        "lines.0.receiptRefs.0"
+      ],
+      "sha256": "cac620ab241841b5367c07cc1e0f62635662f3eb1d0e53ff380ac4bf39c7a727"
+    },
+    {
+      "file": "invalid-too-many-lines.json",
+      "valid": false,
+      "errorPaths": [
+        "lines"
+      ],
+      "sha256": "777582aae262e737b0f7215b922c55248c5ac9ec151212c19cfa64c2d43e7b46"
+    }
+  ]
+}

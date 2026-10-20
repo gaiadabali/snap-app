@@ -9,7 +9,8 @@
     ".": "./src/index.ts",
     "./money": "./src/money.ts",
     "./analytics": "./src/analytics.ts",
-    "./docdom": "./src/docdom.ts"
+    "./docdom": "./src/docdom.ts",
+    "./deduction-bundle": "./src/deduction-bundle.ts"
   },
   "types": "./src/index.ts",
   "sideEffects": false,
