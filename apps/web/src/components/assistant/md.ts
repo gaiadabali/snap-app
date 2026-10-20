@@ -38,10 +38,44 @@ const el = <K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string): HTMLEl
 /** The only targets a link may have. Everything else is shown as text. */
 export function safeHref(raw: string): { href: string; external: boolean } | null {
   const u = raw.trim();
-  if (/^\/(?![/\\])[^\s<>"]*$/.test(u)) return { href: u, external: false };
-  if (/^mailto:[^\s<>"?]+@[^\s<>"?]+$/.test(u)) return { href: u, external: false };
-  return null;
+  if (!u) return null;
+  if (u.toLowerCase() === SUPPORT_MAILTO) return { href: SUPPORT_MAILTO, external: false };
+  const path = (u.split('#')[0] ?? '').replace(/\/+$/, '') || '/';
+  const hit = SITE_PATHS.find((p) => p === path);
+  return hit ? { href: hit, external: false } : null;
 }
+
+/**
+ * The pages a link may point to (docs/ASSISTANT.md §9) and the one address.
+ *
+ * The href is always one of THESE constants, never the text it was matched
+ * from, so nothing a model or a visitor wrote can become a link target —
+ * not even a harmless one. (The earlier pattern-based check allowed only
+ * same-site paths and mailto:, but it handed the matched text itself to
+ * `a.href`, which is the flow CodeQL's js/xss-through-dom rule reports.)
+ * Anchors are dropped: a link lands on the page.
+ */
+const SITE_PATHS = [
+  '/',
+  '/features',
+  '/how-it-works',
+  '/pricing',
+  '/download',
+  '/support',
+  '/docs',
+  '/docs/getting-started',
+  '/docs/capturing-receipts',
+  '/docs/reviewing-corrections',
+  '/docs/confidence-and-flags',
+  '/docs/ledger-and-posted',
+  '/docs/data-retention',
+  '/legal/privacy',
+  '/legal/terms',
+  '/legal/security',
+  '/register',
+  '/sign-in',
+] as const;
+const SUPPORT_MAILTO = 'mailto:support@snapapps.com.au';
 
 function addText(parent: Node, str: string, c: Ctx): void {
   const start = c.pos;
