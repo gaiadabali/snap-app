@@ -223,9 +223,9 @@ describe('alert.sh email channel', () => {
     setUptime(FAILING);
     run([], { ALERT_WEBHOOK_URL: 'https://hooks.example.test/x' });
     expect(calls()).toBe(2);
-    const urls = [1, 2].map((n) => argv(n).join(' '));
-    expect(urls.some((u) => u.includes('https://hooks.example.test/x'))).toBe(true);
-    expect(urls.some((u) => u.includes('smtp://smtp.resend.com:587'))).toBe(true);
+    const all = [...argv(1), ...argv(2)];
+    expect(all).toContain('https://hooks.example.test/x');
+    expect(all).toContain('smtp://smtp.resend.com:587');
   });
 });
 
