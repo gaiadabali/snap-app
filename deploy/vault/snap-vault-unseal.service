@@ -1,0 +1,13 @@
+[Unit]
+Description=Unseal Vault if it is sealed (Snap Apps)
+# Owner decision 2026-10-20: Vault unseals itself from two shares held in
+# /etc/snap-apps/secrets/vault-unseal. See deploy/vault/README.md.
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+# Silent when Vault is already unsealed; one journal line when it unseals or fails.
+ExecStart=/opt/snap-apps/deploy/vault/unseal.sh
+StandardOutput=journal
+StandardError=journal

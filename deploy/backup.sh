@@ -20,6 +20,15 @@
 
 set -euo pipefail
 
+# An explicit PATH, because cron gives this job none worth having: Ubuntu's
+# cron takes PATH from PAM, and on this host /etc/environment holds only
+# LC_ALL. bash falls back to a built-in default search path for its own
+# lookups, but anything that program starts in turn (docker, gzip, tar, ...)
+# inherits the empty one, which is how offsite.sh died with
+# `exec: "ssh": executable file not found in $PATH`. Same fix here, so this
+# script cannot be broken the same way by a future tool it shells out to.
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${HERE}/.." && pwd)"
 ENV_FILE="${HERE}/.env"
@@ -84,8 +93,15 @@ if [ "$(date -u +%u)" = "7" ]; then
   BASE_DIR="${BACKUP_ROOT}/basebackups"
   mkdir -p "$BASE_DIR"
   base_tmp="${BASE_DIR}/base-${STAMP}.tmp"
+  # -X fetch, not -X stream: pg_basebackup cannot stream WAL in tar mode to
+  # stdout ("cannot stream write-ahead logs in tar mode to stdout"), which made
+  # every Sunday run fail. `fetch` collects the WAL the backup needs at the end
+  # and writes it into the same tar (pg_wal/...), so the backup is consistent
+  # on its own. -z gzips it on the way out: the file was always NAMED .tar.gz
+  # but was never compressed. Output is redirected on the HOST (docker exec
+  # without -t keeps stdout binary-clean).
   docker exec "${SNAP_PG_CONTAINER:-snap-postgres}" pg_basebackup -U postgres \
-    -D - -X stream --format=tar > "$base_tmp.tar.gz.tmp" 2>"${BACKUP_ROOT}/basebackup.err" \
+    -D - -X fetch --format=tar -z > "$base_tmp.tar.gz.tmp" 2>"${BACKUP_ROOT}/basebackup.err" \
     && mv "$base_tmp.tar.gz.tmp" "${BASE_DIR}/base-${STAMP}.tar.gz" \
     || { echo "    pg_basebackup FAILED — see ${BACKUP_ROOT}/basebackup.err" >&2; rm -f "$base_tmp.tar.gz.tmp"; exit 1; }
   echo "    wrote ${BASE_DIR}/base-${STAMP}.tar.gz"
