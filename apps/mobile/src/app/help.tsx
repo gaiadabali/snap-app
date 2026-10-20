@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/Icon';
 import { Card, Divider, Row, Screen, ScreenHeader, SectionHeader, Small } from '@/components/ui';
+import { BUILD } from '@/lib/updates';
 import { space, type, usePalette } from '@/theme';
 
 /**
@@ -41,6 +42,17 @@ const TOPICS: Array<{ q: string; a: string }> = [
     a: 'Privacy and data, then Export receipts. You get every original photo for the period you pick, zipped with a summary sheet of the fields we read.',
   },
 ];
+
+/**
+ * Which build this is, in words a problem report can quote: "0.1.226 (build
+ * 226)". It was hard-coded "0.1.0" until 2026-10, which every build said and
+ * which read as "0.10" on a phone. Dev builds and Expo Go carry no version and
+ * say so rather than invent one. Same source as Settings → App version.
+ */
+function buildLabel(): string {
+  if (!BUILD.version) return 'development build';
+  return BUILD.versionCode !== null ? `${BUILD.version} (build ${BUILD.versionCode})` : BUILD.version;
+}
 
 export default function HelpScreen() {
   const p = usePalette();
@@ -124,7 +136,9 @@ export default function HelpScreen() {
               iconTone="neutral"
               onPress={() =>
                 void Linking.openURL(
-                  'mailto:hello@snap-apps.com.au?subject=Problem%20report%20(Snap%20Apps%200.1.0)',
+                  `mailto:hello@snap-apps.com.au?subject=${encodeURIComponent(
+                    `Problem report (Snap Apps ${buildLabel()}${BUILD.commit ? ` · ${BUILD.commit.slice(0, 7)}` : ''})`,
+                  )}`,
                 )
               }
             />
@@ -132,7 +146,7 @@ export default function HelpScreen() {
         </View>
 
         <Small style={{ textAlign: 'center' }}>
-          Snap Apps 0.1.0 · your receipts stay in this space while we look into anything you
+          Snap Apps {buildLabel()} · your receipts stay in this space while we look into anything you
           report.
         </Small>
       </ScrollView>

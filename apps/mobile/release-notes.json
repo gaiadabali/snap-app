@@ -1,5 +1,10 @@
 [
   {
+    "id": "password-reset-and-sign-out-everywhere",
+    "date": "2026-10-20",
+    "notes": "You can now reset a forgotten password by email, and a new account confirms its email address. Sessions now expire, so after a long time away you may be asked to sign in again, and Settings can sign you out on every device at once. Help now shows your version and build, so a problem report says which one you have."
+  },
+  {
     "id": "new-look-and-offline-capture",
     "date": "2026-10-20",
     "notes": "Snap Apps has a new look: a bar along the bottom of every screen with Scan raised in the middle, white cards and a new typeface. A photo you take with no signal is kept on your phone and sent when you are back online. Settings now shows your version and build, and the update card tells you what is new. Screens that are not finished yet, such as the wallet, alerts and rewards, are hidden for now."
