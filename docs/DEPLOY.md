@@ -511,7 +511,12 @@ needs repeated every minute.
 container user can read it), `/opt/snap-apps/data/storage` (the captured
 originals, owned by uid 1001), the `snap-apps_*` docker volumes, and both
 systemd units with the timer enabled. Root's crontab runs `deploy/backup.sh`
-at 03:15 and `deploy/monitor/alert.sh --inbox` every 10 minutes.
+at 03:15 and `deploy/monitor/alert.sh --inbox` every 10 minutes. That script
+emails hansel@gaiada.com and web@gaiada.com (recipients in
+`/etc/snap-apps/secrets/alert.env`, sent through the Resend SMTP login in
+`deploy/.env`) on a flip to failing and again on recovery; prove it with
+`alert.sh --test-alert`. A fully down host is covered by GitHub's failed-run
+email from `.github/workflows/monitor.yml`. Setup: `deploy/monitor/README.md`.
 
 ### The YourTal partner secret (points link, group plan 2.4/2.5)
 

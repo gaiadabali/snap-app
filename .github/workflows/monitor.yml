@@ -8,11 +8,15 @@
 # Schedule: every 15 minutes (uptime.sh is three curl calls and one TLS check;
 # anything slower than 15 min risks hours of unnoticed downtime).
 #
-# Alerting: on failure, posts one message to ALERT_WEBHOOK_URL (a Slack or
-# Discord incoming webhook) IF that repository secret is set. Whether or not
-# a webhook exists, the failed run itself is visible in the Actions tab and
-# emails the repo watchers by default. Secrets live in repo settings — never
-# here.
+# Alerting: this off-box check relies on GitHub's own failed-run email. When
+# the check fails, the last step below fails the run, and GitHub emails the
+# account that owns the scheduled workflow (the person who last changed the
+# schedule or the file; set under Settings -> Notifications -> Actions). No
+# new secret is needed. It is also the only alarm that still works when the
+# host is completely down, because the host's own alert.sh (which emails
+# through SMTP) cannot run then. If the repository secret ALERT_WEBHOOK_URL
+# (a Slack or Discord incoming webhook) is set, a message is posted as well.
+# Secrets live in repo settings, never here.
 #
 # Manual run: Actions → external-uptime-monitor → Run workflow, to test the
 # plumbing before trusting it.
@@ -55,7 +59,7 @@ jobs:
           SUMMARY: ${{ steps.check.outputs.summary }}
         run: |
           if [ -z "$ALERT_WEBHOOK_URL" ]; then
-            echo "ALERT_WEBHOOK_URL not configured — relying on the failed run itself to notify"
+            echo "ALERT_WEBHOOK_URL not configured — relying on GitHub's failed-run email to notify"
             exit 0
           fi
           python3 -c 'import json,sys; print(json.dumps({"text": "snap-apps ALERT\n" + sys.stdin.read()}))' \
@@ -63,7 +67,7 @@ jobs:
           curl -fsS -X POST -H 'Content-Type: application/json' -d @/tmp/payload.json \
             "$ALERT_WEBHOOK_URL" || echo "warning: could not post alert webhook"
 
-      - name: Fail the run so the Actions tab / watchers see it
+      - name: Fail the run so GitHub emails the workflow owner and the Actions tab shows it
         if: steps.check.outputs.outcome == 'failed'
         env:
           SUMMARY: ${{ steps.check.outputs.summary }}
