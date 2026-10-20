@@ -147,3 +147,18 @@ describe('the tool surface itself', () => {
     expect(r.data.gstAmount).toBe('10.0000');
   });
 });
+
+describe('GST registration', () => {
+  it('states the business and non-profit thresholds and the ride-sourcing rule', () => {
+    const r = callTool('gst_registration', {});
+    expect(r.answer).toContain('$75,000');
+    expect(r.answer).toContain('$150,000');
+    expect(r.answer).toMatch(/ride-sourcing/);
+    expect(r.data.businessThreshold).toBe('75000');
+    expect(r.source).toMatch(/23-15/);
+  });
+
+  it('is offered to the model with a schema', () => {
+    expect(TOOL_SCHEMAS.some((t) => t.function.name === 'gst_registration')).toBe(true);
+  });
+});

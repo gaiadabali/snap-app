@@ -159,7 +159,9 @@ export default function PrivacyPolicyPage() {
       <section>
         <h2>6. Security</h2>
         <p>
-          Financial data is encrypted at rest and in transit, tenant data is isolated so one
+          {/* Corrected 2026-10-20: "at rest" was not true of the running server — see /legal/security. */}
+          Financial data is encrypted in transit (encryption at rest is planned with the move to
+          Australian hosting), tenant data is isolated so one
           business&apos;s records are never visible to another, and particularly sensitive fields
           (bank details, Xero tokens) receive additional application-level encryption. Full detail is
           in{' '}
