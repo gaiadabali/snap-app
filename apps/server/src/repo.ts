@@ -12,7 +12,7 @@ import type { ConsumptionTaxSpec, TaxRules } from '@snap/tax-rules';
 import { sql } from 'drizzle-orm';
 
 import { getDb } from './db.js';
-import type { ReceiptOriginal } from './yourtal/external-ref.js';
+import type { ReceiptContent, ReceiptOriginal } from './yourtal/external-ref.js';
 import { queueReceiptReport } from './yourtal/outbox.repo.js';
 import { maskCardLast4, type ValidatedExtraction } from './extraction/types.js';
 
@@ -1260,6 +1260,41 @@ export async function flagPossibleDuplicate(
   `);
 }
 
+/**
+ * What a stored document says, for the YourTal content ref
+ * (`yourtal/external-ref.ts`): its number, date, total and currency, and its
+ * supplier's ABN (only a VALID one) and normalised name. Read from the rows as
+ * written, so a field a person corrected and locked counts.
+ */
+async function readReceiptContent(tx: Tx, documentId: string): Promise<ReceiptContent | null> {
+  const rows = await tx.execute<{
+    document_number: string | null;
+    issue_date: string | null;
+    payable_amount: string | null;
+    currency: string | null;
+    abn: string | null;
+    name_normalised: string | null;
+  }>(sql`
+    select d.document_number, d.issue_date::text as issue_date, d.payable_amount::text as payable_amount,
+           d.currency::text as currency,
+           case when p.abn_valid then p.abn::text end as abn,
+           p.name_normalised
+      from documents d
+      left join parties p on p.id = d.supplier_id
+     where d.id = ${documentId}
+  `);
+  const r = rows.rows[0];
+  if (!r) return null;
+  return {
+    supplierAbn: r.abn,
+    supplierName: r.name_normalised,
+    issueDate: r.issue_date,
+    payableAmount: r.payable_amount,
+    currency: r.currency,
+    documentNumber: r.document_number,
+  };
+}
+
 export async function saveExtraction(
   workerUserId: string,
   tenantId: string,
@@ -1296,7 +1331,7 @@ export async function saveExtraction(
       }
     : AU_CONSUMPTION_TAX;
 
-  const { documentId, uploadedBy, receiptOriginal, sameReceiptCaptureIds } = await withTenantAs(getDb(), workerUserId, tenantId, async (tx) => {
+  const { documentId, uploadedBy, receiptOriginal, sameReceiptCaptureIds, receiptContent } = await withTenantAs(getDb(), workerUserId, tenantId, async (tx) => {
     const e = result.extraction;
 
     // S1 (docs/STATEMENTS.md §12 Lane S): `documents.card_last4` / `card_brand`
@@ -1446,7 +1481,13 @@ export async function saveExtraction(
           2
         )
       `);
-      return { documentId: before.id, uploadedBy, receiptOriginal, sameReceiptCaptureIds: [] as string[] };
+      return {
+        documentId: before.id,
+        uploadedBy,
+        receiptOriginal,
+        sameReceiptCaptureIds: [] as string[],
+        receiptContent: await readReceiptContent(tx, before.id),
+      };
     }
 
     const locked = new Set(before?.locked_fields ?? []);
@@ -1589,6 +1630,10 @@ export async function saveExtraction(
         ).rows.map((r) => r.capture_id)
       : [];
 
+    // The same stored values name the receipt to YourTal across workspaces and
+    // users (`receiptContentRef`). Read after the write, like the fingerprint.
+    const receiptContent = await readReceiptContent(tx, documentId);
+
     let n = 0;
     for (const line of e.lines) {
       if (line.amount.value == null) continue;
@@ -1637,7 +1682,7 @@ export async function saveExtraction(
     }
 
     await tx.execute(sql`update captures set status = 'extracted' where id = ${captureId}`);
-    return { documentId, uploadedBy, receiptOriginal, sameReceiptCaptureIds };
+    return { documentId, uploadedBy, receiptOriginal, sameReceiptCaptureIds, receiptContent };
   });
 
   // No Snap Apps point is written here any more (docs/ECOSYSTEM.md D33: local
@@ -1652,13 +1697,14 @@ export async function saveExtraction(
   // compliance problem. A crash between the
   // commit above and this line is covered by the job itself: it is completed
   // only after `handle()` returns, so the retry re-runs this path, and the
-  // outbox's (user, action, external_ref) key makes the second call a no-op.
+  // outbox's one-row-per-capture rule makes the second call a no-op.
   if (uploadedBy && receiptOriginal) {
     await queueReceiptReport({
       userId: uploadedBy,
       captureId,
       original: receiptOriginal,
       sameReceiptCaptureIds,
+      content: receiptContent,
     }).catch((error) => {
       console.error(`queueReceiptReport failed for capture ${captureId}:`, error instanceof Error ? error.message : error);
     });

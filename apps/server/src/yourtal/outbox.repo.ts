@@ -3,9 +3,10 @@ import { randomUUID } from 'node:crypto';
 import { asUser, type Db } from '@snap/db';
 import { sql } from 'drizzle-orm';
 
+import { yourtalReceiptRefKey } from '../config.js';
 import { getDb } from '../db.js';
 import { get as readObject } from '../storage.js';
-import { receiptExternalRef, type ReceiptOriginal } from './external-ref.js';
+import { receiptContentRef, receiptExternalRef, type ReceiptContent, type ReceiptOriginal } from './external-ref.js';
 import { liveLink } from './links.repo.js';
 
 /**
@@ -31,6 +32,25 @@ export type QueueResult =
  */
 const REPORTED = ['pending', 'sent', 'duplicate', 'refused'];
 
+let warnedNoReceiptRefKey = false;
+
+/**
+ * The content-ref key, or null when it is unset (or under 32 characters). In
+ * that case every receipt goes out under its image ref, and a re-photo is only
+ * caught inside one workspace — so the process says so, once.
+ */
+function contentRefKey(): string | null {
+  const key = yourtalReceiptRefKey();
+  if (key) return key;
+  if (!warnedNoReceiptRefKey) {
+    warnedNoReceiptRefKey = true;
+    console.warn(
+      'YOURTAL_RECEIPT_REF_KEY is not set (or is shorter than 32 characters): cross-account duplicate protection for YourTal receipt reports is OFF; receipts are reported under their image hash.',
+    );
+  }
+  return null;
+}
+
 /**
  * Queues one `receipt_scanned` report for a confirmed scan.
  *
@@ -38,21 +58,42 @@ const REPORTED = ['pending', 'sent', 'duplicate', 'refused'];
  * after the moment they linked: re-extracting an old capture (a better model
  * re-reading it) must not report a receipt from before the link existed.
  *
- * Not for a likely RE-PHOTO (founder decision 2026-10-20). A second photo of
- * the same paper receipt is new bytes and so a new `externalRef`, which
- * YourTal would pay again. `sameReceiptCaptureIds` are the captures whose
- * documents share this one's business key (supplier, date, amount, in the
- * workspace — `flagPossibleDuplicate`'s fingerprint in repo.ts); if any of
- * them was already reported for this user, this capture is recorded as
- * `skipped_duplicate` instead of queued — never sent, and counted in the
- * status so the person can see why it earned nothing.
+ * The `externalRef` is a keyed CONTENT ref when the receipt has a document
+ * number and the key is set (`receiptContentRef`), else the IMAGE ref
+ * (`receiptExternalRef`); see `external-ref.ts`. A second photo of the same
+ * paper receipt is new bytes, so under the image ref YourTal would pay it
+ * again; under the content ref it is the same receipt.
+ *
+ * What is NOT reported, each recorded as a `skipped_duplicate` row (never
+ * sent, counted in the status so the person can see why it earned nothing):
+ *
+ *   - A re-photo with the same content ref as an earlier report of this
+ *     user's, in any of their workspaces. (Another user's repeat is not
+ *     visible here, by RLS, and is not needed: YourTal answers it
+ *     `duplicate: true`, so it earns once, for whoever reported it first.)
+ *   - A likely re-photo without a document number (founder decision
+ *     2026-10-20): `sameReceiptCaptureIds` are the captures whose documents
+ *     share this one's business key (supplier, date, amount, in the workspace
+ *     — `flagPossibleDuplicate`'s fingerprint in repo.ts); if any of them was
+ *     already reported for this user, this capture is skipped.
+ *
+ * ONE REPORT PER CAPTURE. A re-extraction can change the fields it reads, and
+ * so the content ref; it must never queue a second report for a capture that
+ * already has a row. (Migration 0038 enforces it.)
  *
  * The body is serialised HERE, once, and stored. Every later attempt signs
  * and sends exactly that text under the same Idempotency-Key, which is what
  * YourTal's idempotency rules need (partner-api.md §4).
  */
 export async function queueReceiptReport(
-  input: { userId: string; captureId: string; original: ReceiptOriginal; sameReceiptCaptureIds?: string[] },
+  input: {
+    userId: string;
+    captureId: string;
+    original: ReceiptOriginal;
+    sameReceiptCaptureIds?: string[];
+    /** What the stored document says; without it, or without a document number, the image ref is used. */
+    content?: ReceiptContent | null;
+  },
   deps: { db?: Db; read?: (key: string) => Buffer } = {},
 ): Promise<QueueResult> {
   const db = deps.db ?? getDb();
@@ -63,27 +104,65 @@ export async function queueReceiptReport(
   }
 
   // After the link check, so an unlinked user's PDF is never read for nothing.
-  const externalRef = receiptExternalRef(input.original, deps.read ?? readObject);
-  const body = JSON.stringify({
-    linkId: link.link_id,
-    action: 'receipt_scanned',
-    externalRef,
-    // Kept by YourTal for audit and never parsed. The capture id lets the two
-    // sides reconcile a disputed grant; nothing about the receipt's contents
-    // or the person leaves Snap Apps (lead decision 2026-10-20: minimum data).
-    evidence: { captureId: input.captureId },
-  });
+  const imageRef = receiptExternalRef(input.original, deps.read ?? readObject);
+  const key = contentRefKey();
+  const contentRef = key && input.content ? receiptContentRef(input.content, key) : null;
+  const reportRef = contentRef ?? imageRef;
+
+  const bodyFor = (externalRef: string): string =>
+    JSON.stringify({
+      linkId: link.link_id,
+      action: 'receipt_scanned',
+      externalRef,
+      // Kept by YourTal for audit and never parsed. The capture id lets the two
+      // sides reconcile a disputed grant; nothing about the receipt's contents
+      // or the person leaves Snap Apps (lead decision 2026-10-20: minimum data).
+      evidence: { captureId: input.captureId },
+    });
   const others = (input.sameReceiptCaptureIds ?? []).filter((id) => id !== input.captureId);
 
   return asUser(db, input.userId, async (tx): Promise<QueueResult> => {
-    // Its own row first: re-extracting a receipt that is already queued,
-    // sent or skipped changes nothing.
+    // A skipped row stores the IMAGE ref, and its body carries that ref. It is
+    // never sent, and the content ref belongs to the row that WAS reported:
+    // `(user_id, action, external_ref)` is unique, so a skipped row holding it
+    // would collide with the reported one.
+    const skip = async (duplicateOf: string | null, code: string): Promise<void> => {
+      await tx.execute(sql`
+        insert into yourtal_outbox (user_id, link_row_id, capture_id, action, external_ref, idempotency_key, body,
+                                    status, finished_at, last_code, duplicate_of_capture_id)
+        values (current_user_id(), ${link.id}, ${input.captureId}, 'receipt_scanned', ${imageRef},
+                ${randomUUID()}, ${bodyFor(imageRef)}, 'skipped_duplicate', now(), ${code}, ${duplicateOf})
+        on conflict do nothing
+      `);
+    };
+
+    // One report per capture, whatever its ref has become since: a
+    // re-extraction of a receipt that is already queued, sent or skipped
+    // changes nothing.
     const own = await tx.execute<{ id: string }>(sql`
       select id from yourtal_outbox
-       where user_id = current_user_id() and action = 'receipt_scanned' and external_ref = ${externalRef}
+       where user_id = current_user_id() and action = 'receipt_scanned' and capture_id = ${input.captureId}
        limit 1
     `);
     if (own.rows[0]) return { queued: false, reason: 'already_queued' };
+
+    // The same receipt as one this user already reported, from another capture
+    // (a re-photo, in this workspace or another). Only the content ref names
+    // that; an identical image ref falls through to the insert's conflict.
+    if (contentRef) {
+      const same = await tx.execute<{ capture_id: string | null }>(sql`
+        select capture_id from yourtal_outbox
+         where user_id = current_user_id() and action = 'receipt_scanned' and external_ref = ${contentRef}
+         limit 1
+      `);
+      if (same.rows[0]) {
+        const duplicateOf = same.rows[0].capture_id;
+        await skip(duplicateOf, 'likely_duplicate');
+        return duplicateOf
+          ? { queued: false, reason: 'likely_duplicate', duplicateOfCaptureId: duplicateOf }
+          : { queued: false, reason: 'already_queued' };
+      }
+    }
 
     if (others.length > 0) {
       const earlier = await tx.execute<{ capture_id: string }>(sql`
@@ -96,27 +175,21 @@ export async function queueReceiptReport(
       `);
       const duplicateOf = earlier.rows[0]?.capture_id;
       if (duplicateOf) {
-        await tx.execute(sql`
-          insert into yourtal_outbox (user_id, link_row_id, capture_id, action, external_ref, idempotency_key, body,
-                                      status, finished_at, last_code, duplicate_of_capture_id)
-          values (current_user_id(), ${link.id}, ${input.captureId}, 'receipt_scanned', ${externalRef},
-                  ${randomUUID()}, ${body}, 'skipped_duplicate', now(), 'likely_duplicate', ${duplicateOf})
-          on conflict (user_id, action, external_ref) do nothing
-        `);
+        await skip(duplicateOf, 'likely_duplicate');
         return { queued: false, reason: 'likely_duplicate', duplicateOfCaptureId: duplicateOf };
       }
     }
 
     const inserted = await tx.execute<{ id: string }>(sql`
       insert into yourtal_outbox (user_id, link_row_id, capture_id, action, external_ref, idempotency_key, body)
-      values (current_user_id(), ${link.id}, ${input.captureId}, 'receipt_scanned', ${externalRef},
-              ${randomUUID()}, ${body})
-      on conflict (user_id, action, external_ref) do nothing
+      values (current_user_id(), ${link.id}, ${input.captureId}, 'receipt_scanned', ${reportRef},
+              ${randomUUID()}, ${bodyFor(reportRef)})
+      on conflict do nothing
       returning id
     `);
     const id = inserted.rows[0]?.id;
     if (!id) return { queued: false, reason: 'already_queued' };
-    return { queued: true, outboxId: id, externalRef };
+    return { queued: true, outboxId: id, externalRef: reportRef };
   });
 }
 

@@ -255,15 +255,31 @@ the screens are 2.6. YourTal's contract is its partner guide
   Shape: `YourtalLinkStatus` in `@snap/api-contract`.
 - `yourtal_outbox`: a confirmed scan (`saveExtraction`) queues one
   `receipt_scanned` report when the uploader holds a live link and the
-  capture arrived after they linked. `externalRef` is `sha256:` + the SHA-256
-  of the stored original (`apps/server/src/yourtal/external-ref.ts`). The
-  worker drains it in its own loop with the stored body bytes and one
+  capture arrived after they linked. `externalRef` is a keyed content ref,
+  `rcpt:v1:` + an HMAC-SHA256 of the receipt's supplier (valid ABN, else name),
+  date, currency, total and document number, when the receipt has a document
+  number and `YOURTAL_RECEIPT_REF_KEY` is set. Otherwise it is `sha256:` + the
+  SHA-256 of the stored original (`apps/server/src/yourtal/external-ref.ts`).
+  One report per capture (migration 0038). The worker drains it in its own loop with the stored body bytes and one
   Idempotency-Key per event; the retry and error rules are at the top of
   `apps/server/src/yourtal/outbox.ts`.
 - A likely re-photo is not reported: a capture whose document shares its
   business key (supplier, date, amount, in the workspace) with a capture
   already reported for the same user is recorded as `skipped_duplicate`,
   never sent, and counted in the status (`receipts.skippedDuplicate`).
+- **Re-photos across workspaces and users (group plan 2.5.e).** A second photo
+  is different bytes, so the image hash alone would be paid again. When the
+  receipt has a document number, the ref names what it says, so a re-photo gets
+  the same ref. For the same user, in any of their workspaces, it is recorded
+  as `skipped_duplicate` and never sent. For another user, YourTal answers
+  `duplicate: true`: a receipt earns once, for whoever reported it first. The
+  key is HMAC, not a plain hash, so a leaked ref cannot confirm a guess of where
+  and when someone shopped; it is Snap Apps' own, never sent to YourTal, and
+  never rotated. A receipt with no document number keeps the image hash and the
+  in-workspace check only: without a number, two strangers buying the same
+  coffee on the same day would collide, and a missed duplicate costs one point
+  (A$0.03) where a false match cheats a real person. A skipped row keeps the
+  image ref, not the content ref of the report it repeats.
 - `point_ledger` still got its one Snap Apps point per scan when this was built; group plan 2.6 stopped that (below).
 
 **Decided 2026-10-20 (founder, on the 2.4/2.5 review):**

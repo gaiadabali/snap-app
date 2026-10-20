@@ -25,13 +25,20 @@ export const yourtalLinks = pgTable('yourtal_links', {
   brokenReason: text('broken_reason'),
 });
 
-/** A transactional outbox of reports owed to YourTal, drained by the worker. */
+/**
+ * A transactional outbox of reports owed to YourTal, drained by the worker.
+ *
+ * Unique in the SQL, not declared here: `(user_id, action, external_ref)`
+ * (0037) and `(user_id, action, capture_id)` where `capture_id` is not null
+ * (0038, one report per capture).
+ */
 export const yourtalOutbox = pgTable('yourtal_outbox', {
   id: uuid('id').primaryKey().defaultRandom(),
   userId: uuid('user_id').notNull(),
   linkRowId: uuid('link_row_id').notNull(),
   captureId: uuid('capture_id'),
   action: text('action').notNull().default('receipt_scanned'),
+  /** `rcpt:v1:<hex>` (a keyed content ref) or `sha256:<hex>` (the image); a skipped row always holds the image ref. */
   externalRef: text('external_ref').notNull(),
   idempotencyKey: uuid('idempotency_key').notNull(),
   /** The exact JSON text signed and sent on every attempt. */

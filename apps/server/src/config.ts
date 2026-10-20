@@ -354,7 +354,31 @@ export function yourtalApiUrl(): string {
 }
 
 /**
- * The partner secret YourTal issued: `YOURTAL_PARTNER_SECRET` in the
+ * One `NAME=value` setting from the YourTal host secret file
+ * (`YOURTAL_ENV_FILE`). Undefined when the file is not configured, unreadable
+ * or has no such line; never throws, never logs the value.
+ */
+function yourtalFileSetting(name: string): string | undefined {
+  const path = config().YOURTAL_ENV_FILE;
+  if (!path) return undefined;
+  try {
+    for (const line of readFileSync(path, 'utf8').split(/\r?\n/)) {
+      const trimmed = line.trim();
+      if (!trimmed.startsWith(`${name}=`)) continue;
+      const value = trimmed
+        .slice(name.length + 1)
+        .trim()
+        .replace(/^["']|["']$/g, '');
+      return value || undefined;
+    }
+  } catch {
+    /* unreadable file: treat as not configured */
+  }
+  return undefined;
+}
+
+/**
+ * The partner secret YourTal issued:`YOURTAL_PARTNER_SECRET` in the
  * environment, or the line of that exact name in `YOURTAL_ENV_FILE`, the
  * secret file kept on the host in `/etc/snap-apps/secrets/` and mounted
  * read-only. Same shape as `readOpenRouterKey` in `extraction/provider.ts`.
@@ -364,22 +388,24 @@ export function yourtalApiUrl(): string {
 export function yourtalPartnerSecret(): string | undefined {
   const fromEnv = process.env.YOURTAL_PARTNER_SECRET?.trim();
   if (fromEnv) return fromEnv;
-  const path = config().YOURTAL_ENV_FILE;
-  if (!path) return undefined;
-  try {
-    for (const line of readFileSync(path, 'utf8').split(/\r?\n/)) {
-      const trimmed = line.trim();
-      if (!trimmed.startsWith('YOURTAL_PARTNER_SECRET=')) continue;
-      const value = trimmed
-        .slice('YOURTAL_PARTNER_SECRET='.length)
-        .trim()
-        .replace(/^["']|["']$/g, '');
-      return value || undefined;
-    }
-  } catch {
-    /* unreadable file: treat as not configured */
-  }
-  return undefined;
+  return yourtalFileSetting('YOURTAL_PARTNER_SECRET');
+}
+
+/** The shortest `YOURTAL_RECEIPT_REF_KEY` taken seriously. */
+export const RECEIPT_REF_KEY_MIN_LENGTH = 32;
+
+/**
+ * The key for the receipt content ref (`yourtal/external-ref.ts`):
+ * `YOURTAL_RECEIPT_REF_KEY` in the environment, or the line of that name in
+ * `YOURTAL_ENV_FILE`, read exactly like the partner secret. Snap Apps' own,
+ * never sent to YourTal, and never to be rotated (a new key gives every old
+ * receipt a new ref, so they could be paid again). A value shorter than 32
+ * characters counts as unset, and then the content ref is not used. Never
+ * throws, never logs the value.
+ */
+export function yourtalReceiptRefKey(): string | undefined {
+  const value = process.env.YOURTAL_RECEIPT_REF_KEY?.trim() || yourtalFileSetting('YOURTAL_RECEIPT_REF_KEY');
+  return value && value.length >= RECEIPT_REF_KEY_MIN_LENGTH ? value : undefined;
 }
 
 /** True only when both the partner id and the partner secret are present. */
