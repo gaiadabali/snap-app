@@ -22,6 +22,11 @@
 #                            every build ever made — so it declines to compare
 #                            and nobody is ever offered an update.
 #
+#   EXPO_PUBLIC_BUILD_VERSION_CODE  The app's own build number, which the update
+#                            check compares with the server's. Set below from
+#                            app.config.js; without it the app never offers or
+#                            requires an update.
+#
 # arm64-v8a only. Building all four ABIs in RelWithDebInfo drove the load
 # average past 100 on an 8-core box for no benefit: every Android phone worth
 # testing on is arm64, and armeabi-v7a is 32-bit hardware from before 2015. A
@@ -37,9 +42,18 @@ export EXPO_PUBLIC_API_URL="$API_URL"
 # repository's sessions push to origin/main by refspec and leave local main
 # behind.
 export EXPO_PUBLIC_BUILD_COMMIT="$(git -C "$REPO_ROOT" rev-parse --short HEAD)"
-export EXPO_PUBLIC_BUILD_VERSION="$(node -p "require('$REPO_ROOT/apps/mobile/app.json').expo.version")"
+# Version and build number come from apps/mobile/app.config.js, the SAME code
+# that writes android.versionCode during prebuild, so the number inlined into
+# the bundle cannot differ from the one Android sees. It fails loudly on a
+# shallow clone (the commit count would be 1); set SNAP_BUILD_NUMBER to override.
+BUILD_JSON="$(cd "$REPO_ROOT/apps/mobile" && node -e "
+const c = require('./app.config.js')({ config: require('./app.json').expo });
+console.log(JSON.stringify({ version: c.version, versionCode: c.android.versionCode }));
+")"
+export EXPO_PUBLIC_BUILD_VERSION="$(node -p "JSON.parse(process.argv[1]).version" "$BUILD_JSON")"
+export EXPO_PUBLIC_BUILD_VERSION_CODE="$(node -p "JSON.parse(process.argv[1]).versionCode" "$BUILD_JSON")"
 
-echo "building $EXPO_PUBLIC_BUILD_VERSION / $EXPO_PUBLIC_BUILD_COMMIT"
+echo "building $EXPO_PUBLIC_BUILD_VERSION (versionCode $EXPO_PUBLIC_BUILD_VERSION_CODE) / $EXPO_PUBLIC_BUILD_COMMIT"
 echo "  against $EXPO_PUBLIC_API_URL"
 
 # Refuse to build from a dirty tree. The commit inlined above is what the
@@ -67,3 +81,4 @@ echo
 echo "built. publish it with:"
 echo "  EXPO_PUBLIC_API_URL=$EXPO_PUBLIC_API_URL SNAP_DEPLOY_HOST=<user@host> \\"
 echo "    deploy/publish-apk.sh $APK $EXPO_PUBLIC_BUILD_COMMIT"
+echo "(publish-apk.sh reads the versionCode from the APK itself and refuses one not above the published build)"

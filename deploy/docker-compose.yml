@@ -127,6 +127,10 @@ services:
       # API still boots.
       ASSISTANT_PROXY_SECRET: ${ASSISTANT_PROXY_SECRET:-}
       ASSISTANT_LOG_TRANSCRIPTS: ${ASSISTANT_LOG_TRANSCRIPTS:-0}
+      # Lowest Android build (versionCode) still allowed to run; apps below it
+      # show a blocking "update required". 0 = no minimum. Served in the
+      # manifest at /v1/downloads/android/manifest (docs/BUILD.md).
+      ANDROID_MIN_VERSION_CODE: ${ANDROID_MIN_VERSION_CODE:-0}
     volumes:
       - ${STORAGE_HOST_DIR:?set STORAGE_HOST_DIR in .env — where original captures persist on the host}:/data/storage
       # Same file, same mount, same uid-1001 readability rule as the worker's

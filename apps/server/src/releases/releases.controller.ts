@@ -35,6 +35,11 @@ const MANIFEST_NAME = 'manifest.json';
 
 export type AndroidManifest = {
   version: string;
+  /** Android's `versionCode`, recorded by `publish-apk.sh`: a positive integer
+   *  that rises with every build, and the only thing the app compares.
+   *  Absent on builds published before 2026-10. */
+  versionCode?: number;
+  /** Holds the commit today. Kept as is: installs in the field read it. */
   buildNumber: string;
   commit: string;
   sha256: string;
@@ -56,22 +61,28 @@ export class ReleasesController {
   @ApiOperation({
     summary: 'What Android build is currently being served',
     description:
-      'Null fields and `available: false` when no build has been published yet — the download page renders the honest "nothing to download" state from this rather than from a hardcoded placeholder.',
+      'Null fields and `available: false` when no build has been published yet — the download page renders the honest "nothing to download" state from this rather than from a hardcoded placeholder. `minVersionCode` is the lowest `versionCode` still allowed to run (ANDROID_MIN_VERSION_CODE, 0 = no minimum). It is a server setting carried in the manifest because the minimum is enforced by the app, not by a request guard. The build is whatever `publish-apk.sh` wrote, including `versionCode`.',
   })
-  manifest(): { available: boolean; build: AndroidManifest | null } {
+  manifest(): { available: boolean; build: AndroidManifest | null; minVersionCode: number } {
+    // A server setting, not part of any one build. Reported even when nothing
+    // is published; the app only acts on it when there is also something to
+    // download.
+    const minVersionCode = config().ANDROID_MIN_VERSION_CODE;
     const path = join(downloadRoot(), MANIFEST_NAME);
-    if (!existsSync(path)) return { available: false, build: null };
+    if (!existsSync(path)) return { available: false, build: null, minVersionCode };
     try {
       const build = JSON.parse(readFileSync(path, 'utf8')) as AndroidManifest;
       // The manifest is only trustworthy if the file it describes is actually
       // there. Publishing is two writes and a crash between them would
       // otherwise advertise a download that 404s.
-      if (!existsSync(join(downloadRoot(), APK_NAME))) return { available: false, build: null };
-      return { available: true, build };
+      if (!existsSync(join(downloadRoot(), APK_NAME))) {
+        return { available: false, build: null, minVersionCode };
+      }
+      return { available: true, build, minVersionCode };
     } catch {
       // A corrupt manifest is "nothing published", not a 500. The page it
       // feeds should degrade to "no build yet" rather than break.
-      return { available: false, build: null };
+      return { available: false, build: null, minVersionCode };
     }
   }
 

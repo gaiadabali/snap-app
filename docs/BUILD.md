@@ -181,3 +181,74 @@ against the real server.
 Unchanged and still not side-loadable: TestFlight, then the App Store. The
 website's download page states this honestly and its structured data marks iOS
 as unreleased — see `docs/WEB.md` §7.
+
+---
+
+## 7. Version, build number and updates (task 1.12, 2026-10)
+
+Until 2026-10 every build ever made said `0.1.0` with Android `versionCode` 1,
+because nothing changed either, so the in-app update card had to compare
+commits and could tell a tester on a NEWER build to "update" to an older one.
+Now every build is numbered, and the app offers a build only when it is newer.
+
+### Where the number comes from
+
+`apps/mobile/app.config.js` (Expo's dynamic config, reading `app.json`) sets:
+
+| Field | Value | Example |
+|---|---|---|
+| `android.versionCode` | `git rev-list --count HEAD` | `219` |
+| `version` | `app.json` major.minor + that count | `0.1.219` |
+| `extra.versionCode` | the same number, for the app to read | `219` |
+
+The rules live in the pure function `apps/mobile/build-version.cjs`
+(`computeBuild`, tested in `build-version.test.ts`). To move the major or minor
+number, edit `expo.version` in `app.json`; the count always supplies the patch.
+
+- **Override:** `SNAP_BUILD_NUMBER=<n>` replaces the commit count (CI, EAS).
+- **Shallow clones fail loudly.** `git rev-parse --is-shallow-repository` true
+  with no override stops the build, because a shallow clone counts 1 and would
+  produce a build Android treats as older than everything installed. Run
+  `git fetch --unshallow`, or set `SNAP_BUILD_NUMBER`. CI builds must do one or
+  the other (`fetch-depth: 0` is the usual fix).
+- **No git at all** (the web image, which does not copy `.git`) also fails
+  unless the override is set; `apps/mobile/Dockerfile` sets `SNAP_BUILD_NUMBER=1`
+  because a web export has no versionCode that anything reads.
+- **EAS:** `eas.json` now has `appVersionSource: "local"` and no `autoIncrement`,
+  so EAS uses `app.config.js` instead of its own remote counter. EAS uploads
+  without git history, so give it the number: `SNAP_BUILD_NUMBER=$(git rev-list
+  --count HEAD) npx eas build ...`.
+- `expo prebuild` writes it: `android/app/build.gradle` gets
+  `versionCode 219` and `versionName "0.1.219"` (checked).
+
+### How the running app knows its own number
+
+`deploy/build-apk.sh` computes it from `app.config.js` and inlines it as
+`EXPO_PUBLIC_BUILD_VERSION_CODE`, the same way `EXPO_PUBLIC_BUILD_COMMIT` is
+inlined. If that is absent the app falls back to `extra.versionCode`, which
+`expo-constants` embeds in the APK from the same config. No native module was
+added (`expo-application` would give the native value but is not a dependency).
+Expo Go, `__DEV__` bundles and the web build report "unknown", and an app that
+does not know its number never offers or requires an update. Settings > App
+version shows version, build and commit.
+
+### Publishing
+
+`deploy/publish-apk.sh` now reads `version` and `versionCode` from the APK
+itself (`assets/app.config`), writes both into `manifest.json`, and **refuses to
+publish a `versionCode` that is not greater than the one already live**. It also
+refuses an APK that has none. The manifest still carries `buildNumber` and
+`commit` exactly as before, because installs already in the field read them.
+
+### Update card, and minimum supported build
+
+- The card (all home screens) appears only when the manifest's `versionCode` is
+  greater than the app's. Missing on either side means no card. A dismissal is
+  remembered per versionCode.
+- `ANDROID_MIN_VERSION_CODE` (server setting, `deploy/.env`, default `0` = no
+  minimum) is served as `minVersionCode` in
+  `GET /v1/downloads/android/manifest`. An app whose own versionCode is below it
+  shows a full-screen "Update required" with a download button and no way past
+  it, checked at launch and when the app returns to the foreground. Raise it
+  only to a number the published build already meets, or people are blocked
+  with nothing newer to install. It does nothing while no build is published.
