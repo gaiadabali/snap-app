@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { cookies } from 'next/headers';
+import { cookies, headers as requestHeaders } from 'next/headers';
 
 import { config } from '../config';
 import {
@@ -153,6 +153,15 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
   if (body !== undefined) headers['content-type'] = 'application/json';
   if (idempotencyKey) headers['idempotency-key'] = idempotencyKey;
 
+  // Who the browser is, for the API's per-IP limits (sign-in, reset, the
+  // global limiter). Without it every website visitor is one address — this
+  // server's — and one person's twenty wrong attempts lock out everybody.
+  // The API trusts only private hops and reads the address nginx appended,
+  // so a value a browser forged earlier in the header is never the one used
+  // (apps/server/src/main.ts, `trustProxy`).
+  const forwardedFor = await incomingForwardedFor();
+  if (forwardedFor) headers['x-forwarded-for'] = forwardedFor;
+
   const isWrite = method !== 'GET';
   if (isWrite && !idempotencyKey) {
     // Loud, in development, because the server will reject it anyway and the
@@ -186,6 +195,16 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
   }
 
   return parsed as T;
+}
+
+/** The browser request's X-Forwarded-For, or nothing outside a request. */
+async function incomingForwardedFor(): Promise<string | undefined> {
+  try {
+    return (await requestHeaders()).get('x-forwarded-for') ?? undefined;
+  } catch {
+    // Called outside a request (a build-time render): there is no browser.
+    return undefined;
+  }
 }
 
 function safeJson(text: string): unknown {
