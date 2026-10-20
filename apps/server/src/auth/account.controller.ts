@@ -29,7 +29,7 @@ import {
   passwordResetMessage,
 } from './account-mail.js';
 import {
-  changePassword,
+  changePassword as storeChangedPassword,
   consumeEmailVerification,
   consumePasswordReset,
   hashLinkSecret,
@@ -218,7 +218,7 @@ export class AccountController {
       });
     }
 
-    const changed = await changePassword(session.tokenHash, await hashPassword(body.newPassword));
+    const changed = await storeChangedPassword(session.tokenHash, await hashPassword(body.newPassword));
     // No row means this very session ended between the guard and here.
     if (!changed) throw new UnauthorizedException('Your session has ended. Sign in again.');
 
