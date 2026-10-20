@@ -100,7 +100,9 @@ if [ "$(date -u +%u)" = "7" ]; then
   # on its own. -z gzips it on the way out: the file was always NAMED .tar.gz
   # but was never compressed. Output is redirected on the HOST (docker exec
   # without -t keeps stdout binary-clean).
-  docker exec "${SNAP_PG_CONTAINER:-snap-postgres}" pg_basebackup -U postgres     -D - -X fetch --format=tar -z > "$base_tmp.tar.gz.tmp" 2>"${BACKUP_ROOT}/basebackup.err"     && mv "$base_tmp.tar.gz.tmp" "${BASE_DIR}/base-${STAMP}.tar.gz" \
+  docker exec "${SNAP_PG_CONTAINER:-snap-postgres}" pg_basebackup -U postgres \
+    -D - -X fetch --format=tar -z > "$base_tmp.tar.gz.tmp" 2>"${BACKUP_ROOT}/basebackup.err" \
+    && mv "$base_tmp.tar.gz.tmp" "${BASE_DIR}/base-${STAMP}.tar.gz" \
     || { echo "    pg_basebackup FAILED — see ${BACKUP_ROOT}/basebackup.err" >&2; rm -f "$base_tmp.tar.gz.tmp"; exit 1; }
   echo "    wrote ${BASE_DIR}/base-${STAMP}.tar.gz"
   find "$BASE_DIR" -name 'base-*.tar.gz' -mtime +35 -delete

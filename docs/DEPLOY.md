@@ -360,8 +360,11 @@ ATO retention, so they must be in the backup set (`deploy/backup.sh`), not just
 in a container volume.
 
 **Offsite replication:** `deploy/offsite.sh` (restic → object storage) pushes
-the DB dumps, the weekly PITR base backups, and the storage originals off the
-box nightly, 30 minutes after the 03:15 backup. Until its secrets exist
+the DB dumps, the weekly PITR base backups, the WAL archive, and the storage
+originals off the box nightly, 30 minutes after the 03:15 backup. Until
+2026-10-20 it never ran from cron (no PATH, so restic could not find `ssh`);
+both scripts now export one. The Vault unseal shares are deliberately not in
+the pushed set (`deploy/vault/README.md`: Vault unseals itself from them). Until its secrets exist
 (`/etc/snap-apps/secrets/restic{,.env}` — see the script header) and its
 verify drill has been run, ONE DISK holds both the data and its only backup:
 the gap is recorded in the readiness plan, not closed.

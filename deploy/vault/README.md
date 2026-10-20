@@ -201,13 +201,16 @@ Nothing in the app renews `VAULT_TOKEN` (`vault-transit.ts`: "No token
 renewal"). Root's crontab on the host renews it every 12h:
 
 ```
-0 */12 * * * /usr/local/sbin/snap-vault-renew.sh >> /var/log/snap-vault-renew.log 2>&1
+0 */12 * * * /opt/snap-apps/deploy/vault/renew-token.sh >> /var/log/snap-vault-renew.log 2>&1
 ```
 
-`renew-token.sh` in this directory is that script: copy it to the path above
-(it exports an explicit PATH because cron on this host has none worth having). It
-reads `VAULT_TOKEN` from `deploy/.env` and POSTs `auth/token/renew-self` through
-the vault container. A sealed Vault fails here, which is why the unseal timer
+The cron line runs `renew-token.sh` from the checkout itself, so a fix to it
+arrives with the next deploy. (Until 2026-10-20 it ran a hand-made copy at
+`/usr/local/sbin/snap-vault-renew.sh`, which put the token in a process argv
+and never received a fix.) It exports an explicit PATH because cron on this
+host has none worth having, reads `VAULT_TOKEN` from `deploy/.env`, and runs
+`vault token renew` in the vault container with the token passed as an
+environment variable. A sealed Vault fails here, which is why the unseal timer
 matters; if the host is down or Vault is sealed for more than 72h the token
 expires and `mint-app-token.sh` re-mints it.
 

@@ -77,7 +77,8 @@ restic cat config >/dev/null 2>"$probe_err"
 probe_rc=$?
 set -e
 if [[ $probe_rc -ne 0 ]]; then
-  if [[ $probe_rc -eq 10 ]]      || grep -qiE 'Is there a repository at the following location|repository does not exist|config: file does not exist|unable to open config file.*(does not exist|no such file)' "$probe_err"; then
+  if [[ $probe_rc -eq 10 ]] \
+      || grep -qiE 'Is there a repository at the following location|repository does not exist|config: file does not exist|unable to open config file.*(does not exist|no such file)' "$probe_err"; then
     echo "==> initialising restic repository ${RESTIC_REPOSITORY}"
     restic init
   else
@@ -114,7 +115,8 @@ restic backup \
   /opt/snap-apps/backups/postgres \
   /opt/snap-apps/backups/basebackups \
   /opt/snap-apps/backups/vault \
-  /opt/snap-apps/data/storage   "${extra_paths[@]}" 2>&1 | tail -3
+  /opt/snap-apps/data/storage \
+  "${extra_paths[@]}" 2>&1 | tail -3
 
 echo "==> applying retention: 7 daily, 12 monthly, prune"
 restic forget --keep-daily 7 --keep-monthly 12 --prune 2>&1 | tail -3
