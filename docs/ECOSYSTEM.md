@@ -226,6 +226,28 @@ not here. Credits stay Snap Apps' own and never leave Snap Apps.
 `point_ledger` stops being a balance people spend; whether it stays as the
 record of receipts reported to YourTal is settled when the link is built.
 
+**Built 2026-10-20 (group plan 2.4/2.5, migration 0037), server side only;**
+the screens are 2.6. YourTal's contract is its partner guide
+(`yourtal/docs/developers/partner-api.md`).
+
+- `yourtal_links` (user-scoped, RLS): one live link per user and one live
+  Snap Apps account per YourTal link; history kept (`revoked_at` when the user
+  unlinks here, `broken_at` + `broken_reason` when YourTal says
+  `link_revoked` or `unknown_link`).
+- `GET / POST / DELETE /v1/yourtal/link`: status, link with a one-time code
+  (verified email and the person's own session required; teens refused by
+  YourTal with `teen_consent_not_allowed`), unlink (YourTal is told first).
+  Shape: `YourtalLinkStatus` in `@snap/api-contract`.
+- `yourtal_outbox`: a confirmed scan (`saveExtraction`) queues one
+  `receipt_scanned` report when the uploader holds a live link and the
+  capture arrived after they linked. `externalRef` is `sha256:` + the SHA-256
+  of the stored original (`apps/server/src/yourtal/external-ref.ts`). The
+  worker drains it in its own loop with the stored body bytes and one
+  Idempotency-Key per event; the retry and error rules are at the top of
+  `apps/server/src/yourtal/outbox.ts`.
+- `point_ledger` still gets its one Snap Apps point per scan, unchanged. It is
+  not shown as spendable; retiring it is a separate decision.
+
 **Not decided:** which on-device model.
 
 ---

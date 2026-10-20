@@ -27,6 +27,7 @@ import { listCapturePages, groundingForCapture, readTenant, saveExtraction, save
 import { importPdfStatement, StatementPageCapError } from './statements/pdf-statement-import.js';
 import { rulesFor } from './taxrules/taxrules.repo.js';
 import { get as readObject } from './storage.js';
+import { runYourtalOutboxLoop } from './yourtal/outbox.js';
 
 /**
  * The extraction worker.
@@ -561,6 +562,14 @@ export async function runForever(intervalMs = 2000): Promise<void> {
   }
 
   console.log(`worker up · provider ${config().EXTRACTION_PROVIDER}`);
+
+  // The YourTal outbox drains in its OWN loop beside extraction (group plan
+  // 2.5), never inside a job: a slow or dead YourTal must cost the drain time
+  // and never a scan's. It stops on the same signal.
+  const outbox = runYourtalOutboxLoop(() => stopping).catch((error) => {
+    console.error('yourtal outbox loop stopped:', error instanceof Error ? error.message : error);
+  });
+
   while (!stopping) {
     try {
       const done = await runOnce(1);
@@ -571,4 +580,5 @@ export async function runForever(intervalMs = 2000): Promise<void> {
       await new Promise((r) => setTimeout(r, intervalMs));
     }
   }
+  await outbox;
 }

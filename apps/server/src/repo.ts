@@ -13,6 +13,8 @@ import { sql } from 'drizzle-orm';
 
 import { getDb } from './db.js';
 import { awardScanPoint } from './credits/points.repo.js';
+import type { ReceiptOriginal } from './yourtal/external-ref.js';
+import { queueReceiptReport } from './yourtal/outbox.repo.js';
 import { maskCardLast4, type ValidatedExtraction } from './extraction/types.js';
 
 /**
@@ -1295,7 +1297,7 @@ export async function saveExtraction(
       }
     : AU_CONSUMPTION_TAX;
 
-  const { documentId, uploadedBy } = await withTenantAs(getDb(), workerUserId, tenantId, async (tx) => {
+  const { documentId, uploadedBy, receiptOriginal } = await withTenantAs(getDb(), workerUserId, tenantId, async (tx) => {
     const e = result.extraction;
 
     // S1 (docs/STATEMENTS.md §12 Lane S): `documents.card_last4` / `card_brand`
@@ -1326,10 +1328,37 @@ export async function saveExtraction(
     // this person, not to the worker's own service identity that is running
     // this transaction. Read once, up front, so it is available regardless
     // of which branch below this run takes.
-    const captureRow = await tx.execute<{ uploaded_by: string | null }>(sql`
-      select uploaded_by from captures where id = ${captureId} limit 1
+    //
+    // The same read also takes what the YourTal report needs to name this
+    // receipt (`yourtal/external-ref.ts`): the stored original and the hashes
+    // of the photographed pages, which are tenant rows and so must be read
+    // here, inside the tenant transaction, not later under `asUser`.
+    const captureRow = await tx.execute<{
+      uploaded_by: string | null;
+      original_mime_type: string;
+      original_storage_key: string;
+      page_count: number;
+      received_at: string;
+      page_hashes: string[] | null;
+    }>(sql`
+      select c.uploaded_by, c.original_mime_type, c.original_storage_key, c.page_count,
+             to_json(c.received_at)#>>'{}' as received_at,
+             (select array_agg(encode(p.sha256, 'hex') order by p.page_number)
+                from capture_pages p
+               where p.capture_id = c.id and p.source = 'capture') as page_hashes
+        from captures c where c.id = ${captureId} limit 1
     `);
     const uploadedBy = captureRow.rows[0]?.uploaded_by ?? null;
+    const capture = captureRow.rows[0];
+    const receiptOriginal: ReceiptOriginal | null = capture
+      ? {
+          mimeType: capture.original_mime_type,
+          storageKey: capture.original_storage_key,
+          pageCount: capture.page_count,
+          capturePageHashes: capture.page_hashes ?? [],
+          receivedAt: capture.received_at,
+        }
+      : null;
 
     const runId = randomUUID();
     await tx.execute(sql`
@@ -1418,7 +1447,7 @@ export async function saveExtraction(
           2
         )
       `);
-      return { documentId: before.id, uploadedBy };
+      return { documentId: before.id, uploadedBy, receiptOriginal };
     }
 
     const locked = new Set(before?.locked_fields ?? []);
@@ -1589,7 +1618,7 @@ export async function saveExtraction(
     }
 
     await tx.execute(sql`update captures set status = 'extracted' where id = ${captureId}`);
-    return { documentId, uploadedBy };
+    return { documentId, uploadedBy, receiptOriginal };
   });
 
   // One point for one genuinely completed scan — see the header on
@@ -1601,6 +1630,20 @@ export async function saveExtraction(
   if (uploadedBy) {
     await awardScanPoint(uploadedBy, captureId).catch((error) => {
       console.error(`awardScanPoint failed for capture ${captureId}:`, error);
+    });
+  }
+
+  // Queue the receipt for YourTal (group plan 2.5), when the person who
+  // captured it holds a live link. This writes one outbox row and makes NO
+  // network call: the worker drains the outbox, so YourTal being slow or down
+  // can never hold up or fail a scan. Never allowed to fail the extraction
+  // either, for the same reason as the point above. A crash between the
+  // commit above and this line is covered by the job itself: it is completed
+  // only after `handle()` returns, so the retry re-runs this path, and the
+  // outbox's (user, action, external_ref) key makes the second call a no-op.
+  if (uploadedBy && receiptOriginal) {
+    await queueReceiptReport({ userId: uploadedBy, captureId, original: receiptOriginal }).catch((error) => {
+      console.error(`queueReceiptReport failed for capture ${captureId}:`, error instanceof Error ? error.message : error);
     });
   }
   return { documentId };

@@ -193,8 +193,16 @@ const schema = z.object({
    * the link is simply off (`isYourtalPartnerConfigured()` is false). The
    * server boots either way. The secret itself is NOT in this schema; see
    * `yourtalPartnerSecret()`.
+   *
+   * Blank reads as unset, never as a boot failure: compose passes an empty
+   * `YOURTAL_PARTNER_ID=` line in deploy/.env as an empty string, and a
+   * `min(1)` here would turn that blank line into an API that refuses to
+   * start over a feature that is meant to be simply off.
    */
-  YOURTAL_PARTNER_ID: z.string().min(1).optional(),
+  YOURTAL_PARTNER_ID: z
+    .string()
+    .optional()
+    .transform((v) => (v ?? '').trim() || undefined),
 
   /**
    * In-container path of the file holding `YOURTAL_PARTNER_SECRET=...`
