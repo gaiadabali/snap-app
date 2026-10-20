@@ -62,6 +62,12 @@ COPY apps/mobile apps/mobile
 ARG EXPO_PUBLIC_API_URL=""
 ENV EXPO_PUBLIC_API_URL=${EXPO_PUBLIC_API_URL}
 
+# app.config.js numbers a build from `git rev-list --count HEAD` and refuses
+# when there is no git history, which is the case here (.git is not copied in).
+# A web export has no versionCode that anything reads, so give it a fixed one
+# rather than failing the image build.
+ENV SNAP_BUILD_NUMBER=1
+
 WORKDIR /repo/apps/mobile
 RUN npx expo export --platform web --output-dir /export
 

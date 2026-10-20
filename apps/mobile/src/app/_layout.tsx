@@ -7,6 +7,7 @@ import { Platform, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { NavFrame } from '@/components/BottomNav';
+import { UpdateGate } from '@/components/UpdateGate';
 import { ThemeProvider, usePalette, useTheme } from '@/theme';
 import { face, useAppFonts } from '@/theme/text';
 import { SessionGate } from '@/session';
@@ -61,6 +62,10 @@ function RootChrome() {
 
   return (
     <SafeAreaProvider style={{ backgroundColor: p.ground }}>
+      {/* Outside the session gate: an unsupported build is told to update
+          before it is asked to sign in. Renders its children untouched
+          unless the server's minimum build is above this one. */}
+      <UpdateGate>
       <SessionGate>
         <WorkspaceProvider>
       <View style={{ flex: 1, backgroundColor: p.ground }}>
@@ -140,6 +145,7 @@ function RootChrome() {
           </View>
         </WorkspaceProvider>
       </SessionGate>
+      </UpdateGate>
     </SafeAreaProvider>
   );
 }

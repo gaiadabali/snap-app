@@ -269,6 +269,31 @@ const schema = z.object({
     .transform((v) => v === 'true'),
 
   /**
+   * The lowest Android build (`versionCode`) still allowed to run. An app
+   * below it is blocked by a full-screen "update required" until it installs
+   * the published build; see `releases/releases.controller.ts` and the mobile
+   * `UpdateGate`. 0 (the default) means no minimum.
+   *
+   * A string at the edge ON PURPOSE: compose passes an unset `${VAR:-0}` or a
+   * blank line in deploy/.env as text, so blank is read as 0. A value that is
+   * not a whole number refuses to boot rather than quietly meaning "no
+   * minimum", because a typo here would otherwise switch the safety net off
+   * without anyone noticing.
+   */
+  ANDROID_MIN_VERSION_CODE: z
+    .string()
+    .optional()
+    .transform((v, ctx) => {
+      const t = (v ?? '').trim();
+      if (t === '') return 0;
+      if (!/^\d+$/.test(t) || !Number.isSafeInteger(Number(t))) {
+        ctx.addIssue({ code: 'custom', message: 'must be a whole number (0 = no minimum)' });
+        return z.NEVER;
+      }
+      return Number(t);
+    }),
+
+  /**
    * Snapper, the website assistant — docs/ASSISTANT.md §4, §8. All optional
    * and all plain strings ON PURPOSE: compose passes an unset `${VAR:-}` as
    * an empty string, and a coerced number or a `min(1)` would turn a blank

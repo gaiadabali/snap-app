@@ -47,7 +47,9 @@ export function UpdateNotice() {
 
   const onDismiss = useCallback(() => {
     if (state.status !== 'available') return;
-    void dismiss(state.build.commit);
+    // Keyed by versionCode: only an available state has one (it is what made
+    // the build "newer"), so the guard above guarantees it is present.
+    if (state.build.versionCode !== undefined) void dismiss(state.build.versionCode);
     setState({ status: 'none' });
   }, [state]);
 

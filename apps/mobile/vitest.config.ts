@@ -13,7 +13,7 @@ export default defineConfig({
   test: {
     // The fixture is included as well as the libraries: it is generated
     // arithmetic that every screen depends on, so it is checked, not trusted.
-    include: ['src/lib/**/*.test.ts', 'src/fixtures/**/*.test.ts', 'src/api/**/*.test.ts'],
+    include: ['build-version.test.ts', 'src/lib/**/*.test.ts', 'src/fixtures/**/*.test.ts', 'src/api/**/*.test.ts'],
     environment: 'node',
   },
 });
