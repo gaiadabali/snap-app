@@ -13,12 +13,32 @@ runtime crash inside the extraction worker.
 
 ---
 
+## Source of truth
+
+This copy (`packages/tax-engine/src`) is the **source**. Free Tax Returns keeps a copy of it at
+`src/engine` (private repo `gaiadabali/free-tax-return`), and that copy must stay byte for byte the same.
+
+Order of change:
+
+1. Change the engine here and merge it to `main`.
+2. Copy the whole folder into FTR's `src/engine` and open a PR there.
+3. Re-pin `ENGINE_TREE_SHA256` in `test/tax-engine-shared.test.ts` (in the same PR as step 1).
+
+FTR's `engine-sync` workflow diffs its copy against this folder on `main` on every push and daily, so a
+change here that is not copied across shows up within a day. This repo pins a sha256 of the folder (sorted
+relative paths, each with its CRLF-normalised content) in `test/tax-engine-shared.test.ts`, so an edit here
+cannot go unnoticed.
+
 ## Provenance
 
 Extracted from `free-tax-returns/free-tax-return-preview/src/engine` on 2026-09-09, **byte-identical**
 (verified with `diff -r`). The engine was already self-contained — its only non-relative import was
 `vitest` — and the source project enforces that with an eslint boundary rule (`lint:boundaries`).
 Extraction added packaging and a boundary test; it changed no engine code.
+
+On 2026-10-20 the direction flipped: this copy is now the source and FTR's `src/engine` is the copy.
+This repo is public, so FTR's CI can read it with no token, while this repo's CI can never read the
+private FTR repo.
 
 The numbers originate from a certified Australian tax consultant's spreadsheet, via
 `docs/FORMULAS.md`, which is the oracle the golden tests assert against.
@@ -163,5 +183,5 @@ room:
 3. Delete `src/engine/`; keep the eslint boundary rule pointed at the package.
 4. Add `transpilePackages: ['@snap/tax-engine']` to `next.config.ts`.
 
-Until then there are two copies, and this one is downstream. Re-run the `diff -r` drift check before
-trusting either.
+Until then there are two copies, and this one is the source (see "Source of truth"). FTR's
+`engine-sync` workflow checks the drift.
