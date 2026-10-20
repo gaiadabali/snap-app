@@ -78,7 +78,7 @@ cd android
 APK="$REPO_ROOT/apps/mobile/android/app/build/outputs/apk/release/app-release.apk"
 ls -la "$APK"
 echo
-echo "built. publish it with:"
+echo "built. CI releases by tag (docs/BUILD.md section 8); to publish this APK by hand:"
 echo "  EXPO_PUBLIC_API_URL=$EXPO_PUBLIC_API_URL SNAP_DEPLOY_HOST=<user@host> \\"
 echo "    deploy/publish-apk.sh $APK $EXPO_PUBLIC_BUILD_COMMIT"
 echo "(publish-apk.sh reads the versionCode from the APK itself and refuses one not above the published build)"

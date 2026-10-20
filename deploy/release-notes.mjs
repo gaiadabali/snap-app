@@ -2,9 +2,9 @@
 /**
  * Release notes: validation, "which entry is this build?", and the draft.
  *
- * ONE SCRIPT, TWO CALLERS. `deploy/publish-apk.sh` runs it today and the CI
- * publish job (task 1.12.b) will run the same commands, so the rules cannot
- * drift between the laptop path and the pipeline path. It has no dependencies.
+ * ONE SCRIPT, TWO PATHS. `deploy/place-apk.sh` runs it on the host, and both the
+ * laptop path (publish-apk.sh) and the tag pipeline (pull-apk.sh) end there, and
+ * the CI workflow runs `check` and `pick` early, so the rules cannot drift. It has no dependencies.
  *
  * THE MODEL (task 1.12.d/j/k). The words live in the repo, in
  * `apps/mobile/release-notes.json`: a list, newest first, each entry
