@@ -1,0 +1,316 @@
+/**
+ * Home split ("One docket. Two tax answers.") — section styles.
+ *
+ * No JavaScript. The mode switch is a native radio pair, so it works by
+ * keyboard (arrow keys), is announced as a radio group, and still works before
+ * hydration. `.split-stage:has(.split-in-total:checked)` is the one selector
+ * every moving part keys off; the default (and the no-`:has()` fallback) is
+ * "every line".
+ *
+ * Both readings are always in the DOM. The inactive one is faded and set to
+ * `visibility: hidden`, which also takes it out of the accessibility tree.
+ *
+ * Row geometry is mirrored in split.tsx (ROW, HEAD, FOOT, GAP, RESULT): the
+ * rows slide toward the centre of the block when the reading collapses to a
+ * total, and the distance is computed from these heights.
+ *
+ * Motion rules: the hidden start-state of the rows and the brackets is gated
+ * behind `.motion` and released by `[data-in]`; every transition ends on the
+ * visible state; reduced motion switches the transitions off.
+ */
+
+@layer components {
+
+/* ── The mode switch ────────────────────────────────────────────────────── */
+
+.split-seg {
+  position: relative;
+  display: inline-grid;
+  grid-template-columns: 1fr 1fr;
+  min-width: 0;
+  margin: 0;
+  padding: 4px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--s-mist-2);
+}
+
+/* The thumb. Rests on the right half: "every line" is the default. */
+.split-seg::before {
+  content: "";
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  width: calc(50% - 4px);
+  border-radius: 999px;
+  background: var(--s-card);
+  box-shadow: 0 0 0 1px var(--s-edge), var(--s-shadow-2);
+  transform: translateX(100%);
+  transition: transform 0.5s var(--s-ease);
+}
+
+.split-stage:has(.split-in-total:checked) .split-seg::before {
+  transform: translateX(0);
+}
+
+.split-opt {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  min-height: 44px;
+  padding: 0 22px;
+  border-radius: 999px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  color: var(--s-ink-3);
+  cursor: pointer;
+  transition: color 0.25s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.split-opt:hover {
+  color: var(--s-ink);
+}
+
+.split-in:checked + .split-opt {
+  color: var(--s-ink);
+}
+
+.split-in:focus-visible + .split-opt {
+  outline: 2px solid var(--s-blue);
+  outline-offset: 2px;
+}
+
+/* ── The paper ──────────────────────────────────────────────────────────── */
+
+/* `.paper` is masked to its torn edge, which would clip its own box-shadow;
+   a drop-shadow filter on the wrapper is applied after the mask. */
+.split-sheet {
+  transform: rotate(-2.2deg);
+  filter: drop-shadow(0 1px 1px rgb(11 17 26 / 0.06)) drop-shadow(0 26px 24px rgb(11 17 26 / 0.2));
+}
+
+.split-legend-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  margin-right: 8px;
+  border: 1.5px solid;
+}
+
+/* The recogniser's brackets (DocketPaper `locks`). The kit plays them once on
+   page load, which is long before anyone scrolls here, so they are driven by
+   this section instead: in on first sight, out in "total" mode. */
+.split-paper .seq-lock {
+  animation: none !important;
+  transition:
+    opacity 0.4s ease calc(0.35s + var(--i, 0) * 90ms),
+    transform 0.55s var(--s-spring) calc(0.35s + var(--i, 0) * 90ms);
+}
+
+.split-stage:has(.split-in-total:checked) .split-paper .seq-lock,
+.motion .split-paper:not([data-in]) .seq-lock {
+  opacity: 0;
+  transform: scale(1.1);
+  transition-delay: 0s;
+}
+
+/* ── The two readings ───────────────────────────────────────────────────── */
+
+.split-reading {
+  display: grid;
+}
+
+.split-view {
+  grid-area: 1 / 1;
+  min-width: 0;
+}
+
+.split-view-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: opacity 0.35s ease 0.1s, visibility 0s linear 0s;
+}
+
+.split-view-total {
+  align-self: center;
+  opacity: 0;
+  visibility: hidden;
+  transform: translate3d(0, 14px, 0);
+  transition:
+    opacity 0.25s ease,
+    transform 0.4s var(--s-ease),
+    visibility 0s linear 0.25s;
+}
+
+.split-stage:has(.split-in-total:checked) .split-view-lines {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.3s ease 0.3s, visibility 0s linear 0.6s;
+}
+
+.split-stage:has(.split-in-total:checked) .split-view-total {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition:
+    opacity 0.45s ease 0.35s,
+    transform 0.7s var(--s-ease) 0.35s,
+    visibility 0s;
+}
+
+/* Groups: the frame is a pseudo-element so the rows inside it can travel
+   while the frame itself fades. */
+.split-group {
+  position: relative;
+  isolation: isolate;
+}
+
+.split-group::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: 20px;
+  background: var(--s-card);
+  border: 1px solid var(--tone-edge);
+  box-shadow: var(--s-shadow-1);
+  transition: opacity 0.35s ease 0.1s;
+}
+
+.split-group[data-tone="free"] {
+  --tone: var(--s-green);
+  --tone-soft: var(--s-green-soft);
+  --tone-edge: color-mix(in srgb, var(--s-green) 24%, transparent);
+}
+
+.split-group[data-tone="taxable"] {
+  --tone: var(--s-blue-text);
+  --tone-soft: var(--s-blue-soft);
+  --tone-edge: color-mix(in srgb, var(--s-blue) 26%, transparent);
+}
+
+.split-head,
+.split-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-inline: 14px 18px;
+  transition: opacity 0.3s ease 0.15s;
+}
+
+.split-head {
+  height: 48px;
+  border-radius: 20px 20px 0 0;
+  background: var(--tone-soft);
+  color: var(--tone);
+}
+
+.split-foot {
+  height: 44px;
+  border-radius: 0 0 20px 20px;
+  background: color-mix(in srgb, var(--tone-soft) 55%, transparent);
+  font-size: 0.8125rem;
+  color: var(--s-ink-2);
+}
+
+.split-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  height: 44px;
+  padding-inline: 18px;
+  font-size: 0.9375rem;
+  letter-spacing: -0.01em;
+  color: var(--s-ink);
+  box-shadow: inset 0 1px 0 var(--s-edge);
+  transition:
+    transform 0.75s var(--s-ease) calc(0.18s + var(--i, 0) * 60ms),
+    opacity 0.5s ease calc(0.18s + var(--i, 0) * 60ms);
+}
+
+.split-row:first-child {
+  box-shadow: none;
+}
+
+.split-result {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  height: 64px;
+  padding-inline: 18px;
+  border-radius: 18px;
+  background: var(--s-green-soft);
+  color: var(--s-green);
+  transition: opacity 0.35s ease 0.5s;
+}
+
+/* "Total" mode, and the moment before the section is first seen: the frames
+   and chrome fade, and the rows converge on the middle of the block. */
+.split-stage:has(.split-in-total:checked) .split-group::before,
+.split-stage:has(.split-in-total:checked) .split-head,
+.split-stage:has(.split-in-total:checked) .split-foot,
+.split-stage:has(.split-in-total:checked) .split-result,
+.motion .split-reading:not([data-in]) .split-group::before,
+.motion .split-reading:not([data-in]) .split-head,
+.motion .split-reading:not([data-in]) .split-foot,
+.motion .split-reading:not([data-in]) .split-result {
+  opacity: 0;
+  transition-delay: 0s;
+}
+
+.split-stage:has(.split-in-total:checked) .split-row,
+.motion .split-reading:not([data-in]) .split-row {
+  opacity: 0;
+  transform: translate3d(0, calc(var(--dy) * 1px), 0) scale(0.97);
+  transition:
+    transform 0.5s var(--s-ease-in-out) calc(var(--i, 0) * 22ms),
+    opacity 0.32s ease calc(var(--i, 0) * 22ms);
+}
+
+/* ── The lump ───────────────────────────────────────────────────────────── */
+
+.split-lump {
+  padding: 28px;
+  border-radius: 24px;
+  background: var(--s-card);
+  border: 1px solid var(--s-edge);
+  box-shadow: var(--s-shadow-2);
+}
+
+.split-warn {
+  display: flex;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 18px;
+  background: var(--s-red-soft);
+  border: 1px solid color-mix(in srgb, var(--s-red) 32%, transparent);
+  color: var(--s-red);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .split-seg::before,
+  .split-opt,
+  .split-view-lines,
+  .split-view-total,
+  .split-group::before,
+  .split-head,
+  .split-foot,
+  .split-row,
+  .split-result,
+  .split-paper .seq-lock {
+    transition: none !important;
+  }
+}
+
+} /* @layer components */

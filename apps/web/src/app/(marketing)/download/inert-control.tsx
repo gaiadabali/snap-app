@@ -1,3 +1,5 @@
+import { Icon } from '@/design/site';
+
 /**
  * A download control that is visibly present, focusable, and announced by
  * assistive tech as unavailable — but genuinely cannot be activated.
@@ -14,28 +16,25 @@
  * click, an Enter, or a Space on this element does precisely nothing,
  * because nothing was ever wired to listen for them. There is no JS on this
  * component at all; it needs none, which also keeps it server-rendered and
- * crawlable.
+ * crawlable. The status is also stated in visible text beneath it
+ * (docs/WEB.md §7).
  */
 export function InertDownloadControl({
   label,
   statusText,
+  icon = 'phone',
 }: {
   label: string;
   statusText: string;
+  icon?: Parameters<typeof Icon>[0]['name'];
 }) {
   return (
     <div>
-      <span
-        role="button"
-        tabIndex={0}
-        aria-disabled="true"
-        className="flex h-12 w-full cursor-not-allowed items-center justify-center gap-2 rounded-[var(--radius-md)] border-2 border-dashed border-[var(--color-rule-strong)] bg-[var(--color-surface-alt)] text-[16px] font-semibold text-[var(--color-ink-faint)]"
-      >
+      <span role="button" tabIndex={0} aria-disabled="true" className="dl-inert">
+        <Icon name={icon} size={20} strokeWidth={1.7} />
         {label}
       </span>
-      <p className="mt-2 text-center text-[12px] font-semibold text-[var(--color-ink-muted)]">
-        {statusText}
-      </p>
+      <p className="small mt-3 text-center font-medium">{statusText}</p>
     </div>
   );
 }

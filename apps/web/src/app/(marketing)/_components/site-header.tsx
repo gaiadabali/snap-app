@@ -4,189 +4,165 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-import { ButtonLink, Container, cx } from '@/design/primitives';
+import { cx } from '@/design/primitives/cx';
+import { Icon, SnapMark } from '@/design/site/icons';
 
-import { CloseIcon, MenuIcon } from './icons';
 import { ThemeToggle } from './theme-toggle';
 
-const NAV = [
+/**
+ * Download keeps its own slot: the owner once went looking for it and could
+ * not find it, and for an app whose premise is photographing a docket in a
+ * ute, getting it onto a phone is a primary path. Help replaces Docs in the
+ * bar — the docs are one click into it, and "Help" is what a stuck person
+ * looks for.
+ */
+export const NAV = [
   { href: '/features', label: 'Features' },
   { href: '/how-it-works', label: 'How it works' },
   { href: '/pricing', label: 'Pricing' },
-  /*
-   * Download earns a nav slot of its own.
-   *
-   * It was reachable only from the footer and from one button on the home
-   * page, and the owner went looking for it and could not find it — which is
-   * the whole test. "Get started" is not a substitute: that is register and
-   * sign in, an account action. This is where you get the app onto a phone,
-   * which for a product whose entire premise is photographing a docket in a
-   * ute is a primary path, not a footer link.
-   *
-   * Placed after Pricing and before Docs: it belongs with the things a buyer
-   * does, ahead of the reference material.
-   */
   { href: '/download', label: 'Download' },
-  { href: '/docs', label: 'Docs' },
+  { href: '/support', label: 'Help' },
 ] as const;
 
-/**
- * The mark: a docket with the teaser's scan line across it.
- *
- * Drawn rather than lettered so it survives at 28px, and it reuses the same
- * cyan the capture UI uses — the icon and the product's most recognisable
- * moment are the same object.
- */
-function Wordmark() {
+function isActive(pathname: string, href: string) {
+  return pathname === href || pathname.startsWith(href + '/');
+}
+
+export function Wordmark({ className }: { className?: string }) {
   return (
     <Link
       href="/"
-      className="group flex items-center gap-2.5 text-[15px] font-medium tracking-[-0.01em] text-[var(--color-ink)]"
+      aria-label="Snap Apps, home"
+      className={cx('flex items-center gap-2.5 text-[1.0625rem] font-[650] tracking-[-0.03em] text-[var(--s-ink)]', className)}
     >
-      <span
-        aria-hidden
-        className="relative flex h-7 w-[1.375rem] flex-col justify-start gap-[3.5px] overflow-hidden bg-[var(--color-ink)] px-[3px] pt-[5px]"
-        style={{
-          /* A torn docket edge. Four teeth, cut out of the bottom — the
-             silhouette reads as a receipt at 22px, where three stacked rules
-             would just read as a hamburger menu. */
-          clipPath:
-            'polygon(0 0, 100% 0, 100% 86%, 87.5% 100%, 75% 86%, 62.5% 100%, 50% 86%, 37.5% 100%, 25% 86%, 12.5% 100%, 0 86%)',
-        }}
-      >
-        <span className="h-px w-full bg-[var(--color-ground)] opacity-55" />
-        <span className="h-px w-2/3 bg-[var(--color-ground)] opacity-55" />
-        <span className="h-px w-full bg-[var(--color-ground)] opacity-55" />
-        <span
-          className="absolute inset-x-0 h-px transition-all duration-500 ease-out group-hover:top-[72%]"
-          style={{
-            top: '28%',
-            background: 'var(--color-scan)',
-            boxShadow: '0 0 5px var(--color-scan)',
-          }}
-        />
-      </span>
+      <SnapMark size={30} className="rounded-[9px] shadow-[0_4px_12px_-4px_rgb(24_120_216_/_0.6)]" />
       Snap Apps
     </Link>
   );
 }
 
+/**
+ * A floating bar, detached from the top edge — the same shape as the phone
+ * app's floating tab bar, which is the point: the site's chrome and the
+ * product's chrome rhyme.
+ */
 export function SiteHeader() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
-  // Close the mobile panel on route change so a stale menu never lingers.
+  useEffect(() => setOpen(false), [pathname]);
+
   useEffect(() => {
-    setOpen(false);
-  }, [pathname]);
+    const onScroll = () => setScrolled(window.scrollY > 12);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  // The open sheet owns the screen: no page scroll behind it, Escape closes.
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-[var(--color-rule)] bg-[var(--color-ground)]/85 backdrop-blur-md">
-      <Container width="wide">
-        <div className="flex h-16 items-center justify-between gap-6">
-          <Wordmark />
+    <header className="pointer-events-none fixed inset-x-0 top-0 z-50 px-3 pt-3 sm:px-5 sm:pt-4">
+      <div
+        className={cx(
+          'pointer-events-auto mx-auto flex h-[60px] max-w-[1180px] items-center justify-between gap-4 pl-4 pr-2.5 sm:pl-5',
+          'nav-pill',
+          scrolled && 'shadow-[0_1px_2px_rgb(11_17_26_/_0.05),0_16px_40px_-20px_rgb(11_17_26_/_0.35)]',
+        )}
+      >
+        <Wordmark />
 
-          <nav aria-label="Primary" className="hidden items-center gap-8 md:flex">
-            {NAV.map((item) => {
-              const active = pathname === item.href || pathname.startsWith(item.href + '/');
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  aria-current={active ? 'page' : undefined}
-                  className={cx(
-                    'relative py-1 text-[14px] transition-colors',
-                    active
-                      ? 'text-[var(--color-ink)]'
-                      : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]',
-                  )}
-                >
-                  {item.label}
-                  {active ? (
-                    <span
-                      aria-hidden
-                      className="absolute -bottom-px left-0 h-px w-full bg-[var(--color-accent)]"
-                    />
-                  ) : null}
-                </Link>
-              );
-            })}
-          </nav>
-
-          <div className="hidden items-center gap-3 md:flex">
-            <ThemeToggle />
+        <nav aria-label="Primary" className="hidden items-center gap-0.5 lg:flex">
+          {NAV.map((item) => (
             <Link
-              href="/sign-in"
-              className="tap px-1 text-[14px] text-[var(--color-ink-muted)] transition-colors hover:text-[var(--color-ink)]"
+              key={item.href}
+              href={item.href}
+              aria-current={isActive(pathname, item.href) ? 'page' : undefined}
+              className="nav-link"
             >
-              Sign in
+              {item.label}
             </Link>
-            <ButtonLink href="/register" size="sm">
-              Get started
-            </ButtonLink>
-          </div>
+          ))}
+        </nav>
 
-          <div className="flex items-center gap-1 md:hidden">
-            <ThemeToggle />
-            <button
-              type="button"
-              aria-expanded={open}
-              aria-controls="mobile-nav"
-              aria-label={open ? 'Close menu' : 'Open menu'}
-              onClick={() => setOpen((v) => !v)}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-[var(--radius-sm)] text-[var(--color-ink)] hover:bg-[var(--color-surface-alt)]"
-            >
-              {open ? <CloseIcon className="h-5 w-5" /> : <MenuIcon className="h-5 w-5" />}
-            </button>
-          </div>
+        <div className="hidden items-center gap-1.5 lg:flex">
+          <ThemeToggle />
+          <Link
+            href="/sign-in"
+            className="rounded-full px-3.5 py-2 text-[0.9rem] font-[520] text-[var(--s-ink-3)] transition-colors hover:text-[var(--s-ink)]"
+          >
+            Sign in
+          </Link>
+          <Link href="/register" className="btn btn-primary btn-sm">
+            Start free
+          </Link>
         </div>
 
-        {open ? (
-          <nav
-            id="mobile-nav"
-            aria-label="Mobile"
-            className="flex flex-col border-t border-[var(--color-rule)] py-2 md:hidden"
+        <div className="flex items-center gap-1 lg:hidden">
+          <Link href="/download" className="btn btn-primary btn-sm">
+            Get the app
+          </Link>
+          <button
+            type="button"
+            aria-expanded={open}
+            aria-controls="mobile-nav"
+            aria-label={open ? 'Close menu' : 'Open menu'}
+            onClick={() => setOpen((v) => !v)}
+            className="grid size-10 place-items-center rounded-full text-[var(--s-ink)] hover:bg-[var(--s-mist)]"
           >
-            {NAV.map((item) => {
-              const active = pathname === item.href || pathname.startsWith(item.href + '/');
-              return (
+            <Icon name={open ? 'x' : 'menu'} size={22} />
+          </button>
+        </div>
+      </div>
+
+      {open ? (
+        <nav
+          id="mobile-nav"
+          aria-label="Mobile"
+          className="pointer-events-auto fixed inset-x-3 top-[84px] bottom-3 flex flex-col overflow-y-auto rounded-[28px] border border-[var(--s-edge)] bg-[var(--s-bg)] p-6 shadow-[var(--s-shadow-3)] lg:hidden"
+        >
+          <ul className="flex flex-col">
+            {NAV.map((item) => (
+              <li key={item.href}>
                 <Link
-                  key={item.href}
                   href={item.href}
-                  aria-current={active ? 'page' : undefined}
+                  aria-current={isActive(pathname, item.href) ? 'page' : undefined}
                   className={cx(
-                    'border-b border-[var(--color-rule)] py-3.5 text-[16px] last:border-b-0',
-                    active ? 'text-[var(--color-accent)]' : 'text-[var(--color-ink-muted)]',
+                    'flex items-center justify-between border-b border-[var(--s-edge)] py-4 text-[1.6rem] font-[620] tracking-[-0.035em]',
+                    isActive(pathname, item.href) ? 'text-[var(--s-blue-text)]' : 'text-[var(--s-ink)]',
                   )}
                 >
                   {item.label}
+                  <Icon name="arrow-right" size={20} className="text-[var(--s-ink-4)]" />
                 </Link>
-              );
-            })}
-            <div className="mt-4 flex flex-col gap-3 pb-2">
-              <Link href="/sign-in" className="text-[15px] text-[var(--color-ink-muted)]">
+              </li>
+            ))}
+          </ul>
+          <div className="mt-auto flex flex-col gap-3 pt-8">
+            <Link href="/register" className="btn btn-primary btn-lg w-full">
+              Start free — no card
+            </Link>
+            <div className="flex items-center justify-between">
+              <Link href="/sign-in" className="btn btn-secondary btn-lg flex-1">
                 Sign in
               </Link>
-              <ButtonLink href="/register" size="md" className="w-full">
-                Get started
-              </ButtonLink>
+              <ThemeToggle className="ml-3 size-14 border border-[var(--s-edge)]" />
             </div>
-          </nav>
-        ) : null}
-      </Container>
-
-      {/*
-        The read-through progress bar that used to live here is gone.
-
-        It reported exactly the same quantity as the spine rail down the left
-        gutter (`.page-spine` in globals.css), so the page carried two trackers
-        for one fact. Two indicators of the same thing is worse than one: a
-        reader has to work out whether they disagree, and the answer is always
-        that they do not.
-
-        The spine survives because it is where the ATO codes already hang, so
-        it is measuring the document rather than decorating the chrome.
-      */}
+          </div>
+        </nav>
+      ) : null}
     </header>
   );
 }

@@ -1,20 +1,9 @@
 'use client';
 
-/**
- * Explicit light/dark override.
- *
- * Absent a stored choice, the site follows the OS (`prefers-color-scheme`) —
- * see the inline script in the root layout, which sets `data-theme` before
- * first paint so there is no flash. Clicking here writes an explicit choice
- * to localStorage and flips the attribute immediately; it never touches a
- * server cookie because theme is a per-device display preference, not
- * account state.
- */
 import { useEffect, useState } from 'react';
 
-import { cx } from '@/design/primitives';
-
-import { MoonIcon, SunIcon } from './icons';
+import { cx } from '@/design/primitives/cx';
+import { Icon } from '@/design/site/icons';
 
 const STORAGE_KEY = 'snap-theme';
 
@@ -31,7 +20,12 @@ function readStored(): 'light' | 'dark' | null {
   }
 }
 
-export function ThemeToggle() {
+/**
+ * Light / dark. An explicit choice is stored and wins; absent one the page
+ * follows the OS. The pre-paint script in `app/layout.tsx` applies the stored
+ * choice before first paint, so this only has to keep the two in step.
+ */
+export function ThemeToggle({ className }: { className?: string }) {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [ready, setReady] = useState(false);
 
@@ -47,7 +41,7 @@ export function ThemeToggle() {
     try {
       window.localStorage.setItem(STORAGE_KEY, next);
     } catch {
-      // Private browsing / storage blocked — the click still applies for this load.
+      // Private mode: the choice lasts for this page only, which is fine.
     }
   }
 
@@ -58,15 +52,12 @@ export function ThemeToggle() {
       aria-label={ready ? `Switch to ${theme === 'dark' ? 'light' : 'dark'} mode` : 'Toggle colour theme'}
       title="Toggle colour theme"
       className={cx(
-        'inline-flex h-9 w-9 items-center justify-center rounded-[var(--radius-md)]',
-        'text-[var(--color-ink-muted)] transition-colors hover:bg-[var(--color-surface-alt)] hover:text-[var(--color-ink)]',
+        'inline-grid size-10 place-items-center rounded-full text-[var(--s-ink-3)] transition-colors',
+        'hover:bg-[var(--s-mist)] hover:text-[var(--s-ink)]',
+        className,
       )}
     >
-      {ready && theme === 'dark' ? (
-        <SunIcon className="h-[18px] w-[18px]" />
-      ) : (
-        <MoonIcon className="h-[18px] w-[18px]" />
-      )}
+      <Icon name={ready && theme === 'dark' ? 'sun' : 'moon'} size={18} />
     </button>
   );
 }

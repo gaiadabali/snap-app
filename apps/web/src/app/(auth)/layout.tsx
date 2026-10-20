@@ -1,23 +1,46 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 
-import { Container } from '@/design/primitives';
+import { FREE_SCANS_AT_SIGNUP } from '@/app/(marketing)/pricing/credit-packs';
+import { Phone } from '@/design/site';
+import { HomeScreen } from '@/design/site/app-ui';
+import { SnapMark } from '@/design/site/icons';
+import '@/design/site/site.css';
 
+import './auth.css';
+
+/**
+ * Split screen: the form on the left, the app on the right. Under `lg` the
+ * brand panel drops to a slim strip above the form and the phone is not drawn.
+ * The phone is a picture (`aria-hidden`); the one claim beside it is text.
+ */
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="flex min-h-screen flex-col bg-[var(--color-ground)]">
-      <header className="border-b border-[var(--color-rule)] py-5">
-        <Container width="prose">
-          <Link href="/" className="text-[15px] font-semibold tracking-tight text-[var(--color-ink)]">
+    <div className="site auth-split">
+      <div className="auth-form-col">
+        <header className="auth-top">
+          <Link href="/" aria-label="Snap Apps, home" className="auth-logo">
+            <SnapMark size={32} className="rounded-[9px]" />
             Snap Apps
           </Link>
-        </Container>
-      </header>
-      <main className="flex flex-1 items-center justify-center py-12">
-        <Container width="prose">
-          <div className="mx-auto w-full max-w-[420px]">{children}</div>
-        </Container>
-      </main>
+        </header>
+        <main className="auth-main">
+          <div className="auth-main-inner">{children}</div>
+        </main>
+      </div>
+
+      <aside className="auth-brand" aria-label="About Snap Apps">
+        <div className="auth-brand-glow" aria-hidden />
+        <div className="auth-brand-phone">
+          <Phone className="[--pw:290] xl:[--pw:320]">
+            <HomeScreen />
+          </Phone>
+        </div>
+        <p className="auth-brand-line">
+          Photograph a docket. Snap Apps reads every line. {FREE_SCANS_AT_SIGNUP} free scans to
+          start, no card.
+        </p>
+      </aside>
     </div>
   );
 }

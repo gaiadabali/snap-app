@@ -1,0 +1,317 @@
+/**
+ * /features — the few rules Tailwind cannot say briefly. Every class is
+ * `feat-` prefixed. Component rules sit in `@layer components` (below
+ * utilities, like the kit). The one block outside the layer is the capture
+ * hold at the bottom: it has to beat the kit's own UNLAYERED `.motion .seq-*`
+ * animation shorthand, and a layered rule cannot.
+ *
+ * Motion contract (design/site/README): nothing here hides content unless
+ * `.motion` is present, every keyframe ends on the visible state, and nothing
+ * loops.
+ */
+
+@layer components {
+
+/* ── Hero: a fan of three phones ────────────────────────────────────────── *
+ * `--c` is the centre phone's width in px; the side phones are 82% of it.
+ * Slots are absolutely placed and carry the reveal; the tilt lives on the
+ * `.phone` inside, so the two transforms never fight. */
+
+.feat-fan {
+  --c: 196;
+  position: relative;
+  width: 100%;
+  max-width: 560px;
+  margin-inline: auto;
+  height: calc(var(--c) * 2.1667px + 64px);
+}
+
+@media (min-width: 480px) {
+  .feat-fan { --c: 226; }
+}
+@media (min-width: 640px) {
+  .feat-fan { --c: 256; }
+}
+@media (min-width: 1024px) {
+  .feat-fan { --c: 270; }
+}
+
+.feat-fan .feat-slot {
+  position: absolute;
+}
+
+.feat-fan .feat-slot .phone {
+  --pw: var(--c);
+}
+
+.feat-fan .feat-slot-c {
+  z-index: 3;
+  left: 50%;
+  top: 0;
+  margin-left: calc(var(--c) * -0.5px);
+}
+
+.feat-fan .feat-slot-l {
+  z-index: 2;
+  left: 0;
+  top: calc(var(--c) * 0.2px);
+}
+
+.feat-fan .feat-slot-r {
+  z-index: 1;
+  right: 0;
+  top: calc(var(--c) * 0.34px);
+}
+
+.feat-fan .feat-slot-l .phone,
+.feat-fan .feat-slot-r .phone {
+  --pw: calc(var(--c) * 0.82);
+}
+
+.feat-fan .feat-slot-l .phone {
+  transform: rotate(-7deg);
+  transform-origin: 50% 100%;
+}
+
+.feat-fan .feat-slot-r .phone {
+  transform: rotate(7deg);
+  transform-origin: 50% 100%;
+}
+
+.feat-fan .feat-slot-c .phone {
+  box-shadow:
+    0 0 0 1px rgb(0 0 0 / 0.55),
+    inset 0 0 0 1.5px rgb(255 255 255 / 0.1),
+    0 40px 70px -28px rgb(11 17 26 / 0.55),
+    0 14px 30px -14px rgb(11 17 26 / 0.3);
+}
+
+/* ── Chapter nav ────────────────────────────────────────────────────────── */
+
+.feat-nav {
+  max-width: 100%;
+  overflow-x: auto;
+  padding: 5px;
+  border-radius: 999px;
+  border: 1px solid var(--s-edge);
+  background: color-mix(in srgb, var(--s-bg) 82%, transparent);
+  backdrop-filter: blur(18px) saturate(1.6);
+  box-shadow: 0 1px 2px rgb(11 17 26 / 0.04), 0 14px 34px -16px rgb(11 17 26 / 0.28);
+  scrollbar-width: none;
+}
+
+.feat-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.feat-nav-track {
+  position: relative;
+  width: max-content;
+}
+
+.feat-nav ul {
+  position: relative;
+  display: flex;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.feat-nav a {
+  position: relative;
+  z-index: 1;
+  display: block;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 560;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  color: var(--s-ink-3);
+  transition: color 0.25s ease;
+}
+
+.feat-nav a:hover {
+  color: var(--s-ink);
+}
+
+.feat-nav a[aria-current="true"] {
+  color: var(--s-bg);
+}
+
+.feat-nav-ind {
+  position: absolute;
+  z-index: 0;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: calc(var(--w, 0) * 1px);
+  transform: translateX(calc(var(--x, 0) * 1px));
+  border-radius: 999px;
+  background: var(--s-ink);
+  opacity: 0;
+  transition:
+    transform 0.5s var(--s-ease),
+    width 0.5s var(--s-ease),
+    opacity 0.2s ease;
+}
+
+.feat-nav-track[data-ready] .feat-nav-ind {
+  opacity: 1;
+}
+
+/* ── Capture: spec leaders ──────────────────────────────────────────────── */
+
+.feat-spec {
+  position: relative;
+}
+
+@media (min-width: 1024px) {
+  .feat-spec::before {
+    content: "";
+    position: absolute;
+    top: 22px;
+    left: -68px;
+    width: 56px;
+    border-top: 1.5px dashed rgb(255 255 255 / 0.22);
+  }
+
+  .feat-spec::after {
+    content: "";
+    position: absolute;
+    top: 18.5px;
+    left: -72px;
+    width: 7px;
+    height: 7px;
+    border-radius: 99px;
+    background: #3fc6ee;
+    box-shadow: 0 0 0 4px rgb(63 198 238 / 0.18);
+  }
+}
+
+/* ── Reading: the docket-to-panel link and the mode switch ──────────────── */
+
+.feat-link {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .feat-link {
+    display: block;
+    position: absolute;
+    top: 50%;
+    width: 56px;
+    border-top: 1.5px dashed var(--s-edge-2);
+  }
+
+  .feat-link::after {
+    content: "";
+    position: absolute;
+    top: -5px;
+    width: 8px;
+    height: 8px;
+    border-radius: 99px;
+    background: var(--s-blue);
+  }
+
+  .feat-link-l {
+    left: -60px;
+  }
+  .feat-link-l::after {
+    right: -1px;
+  }
+  .feat-link-r {
+    right: -60px;
+  }
+  .feat-link-r::after {
+    left: -1px;
+  }
+}
+
+.feat-seg {
+  display: inline-flex;
+  padding: 4px;
+  gap: 2px;
+  border-radius: 999px;
+  background: var(--s-mist-2);
+}
+
+.feat-seg button {
+  height: 38px;
+  padding: 0 18px;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 580;
+  letter-spacing: -0.01em;
+  color: var(--s-ink-3);
+  transition: background-color 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.feat-seg button:hover {
+  color: var(--s-ink);
+}
+
+.feat-seg button[aria-pressed="true"] {
+  background: var(--s-card);
+  color: var(--s-ink);
+  box-shadow: var(--s-shadow-1), 0 0 0 1px var(--s-edge);
+}
+
+/* The panel behind the switch changes state; it does not just appear. */
+.motion .feat-swap {
+  animation: feat-swap 0.5s var(--s-ease) both;
+}
+
+@keyframes feat-swap {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ── Records: the search box ────────────────────────────────────────────── */
+
+.feat-search:focus-within {
+  border-color: var(--s-blue);
+  box-shadow: 0 0 0 4px var(--s-blue-tint);
+}
+
+.feat-search input:focus-visible {
+  outline: none;
+}
+
+.feat-chip {
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--s-edge-2);
+  background: var(--s-card);
+  font-size: 0.8125rem;
+  font-weight: 560;
+  color: var(--s-ink-2);
+  transition: border-color 0.2s ease, color 0.2s ease, background-color 0.2s ease;
+}
+
+.feat-chip:hover {
+  border-color: var(--s-blue);
+  color: var(--s-blue-text);
+}
+
+} /* @layer components */
+
+@media (prefers-reduced-motion: reduce) {
+  .feat-nav-ind,
+  .feat-nav a {
+    transition: none;
+  }
+}
+
+/* ── Capture hold (unlayered on purpose)────────────────────────────────── *
+ * `CaptureScreen animated` and `DocketPaper locks` run their sequence on page
+ * load, which is long over by the time anyone scrolls here. Inside a
+ * `.feat-cap` Reveal they wait, paused on their first frame, until the
+ * observer sets `data-in`, then play once and end on the finished state.
+ * Gated by `.motion`, so no JS or reduced motion shows the finished frame. */
+
+.motion .feat-cap:not([data-in]) :is(.seq-lock, .seq-beam, .seq-flash) {
+  animation-play-state: paused;
+}

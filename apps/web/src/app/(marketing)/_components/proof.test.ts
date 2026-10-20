@@ -83,3 +83,16 @@ describe('the testimonial list stays unambiguous', () => {
     }
   });
 });
+
+describe('the guard is armed by a page that is always built', () => {
+  it('is called at module scope by the home page', async () => {
+    // It once ran only because the old home page happened to import
+    // `proof.tsx`. A redesign that stopped importing it disarmed the guard
+    // with nothing failing — this is the check that would have caught it.
+    const { readFileSync } = await import('node:fs');
+    const { join } = await import('node:path');
+    const page = readFileSync(join(__dirname, '..', 'page.tsx'), 'utf8');
+    expect(page).toMatch(/import \{ assertNoPlaceholdersInProduction \} from '\.\/_components\/proof-data'/);
+    expect(page).toMatch(/^assertNoPlaceholdersInProduction\(\);$/m);
+  });
+});

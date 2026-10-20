@@ -1,157 +1,289 @@
 import type { Metadata } from 'next';
 
-import { Badge, Card, PageHero, Reveal, Section, Tear } from '@/design/primitives';
-
-import { PageSpine } from '../_components/page-spine';
+import { Btn, Chip, Icon, IconTile, Reveal, SectionHead, TextLink } from '@/design/site';
+import { BUSINESS_SURFACES_ENABLED } from '@/lib/features';
+import type { IconName } from '@/design/site';
 
 import { CATEGORIES, SEARCH_INDEX } from './_data';
 import { SupportSearch } from './SupportSearch';
+import './support.css';
 
 export const metadata: Metadata = {
   title: 'Support',
-  description: 'Help with capture, extraction, BAS, Xero, billing, and your data — plus system status.',
+  description: BUSINESS_SURFACES_ENABLED
+    ? 'Help with capture, extraction, BAS, Xero, billing, and your data — plus system status.'
+    : 'Help with capture, reading, GST and tax invoices, credits, and your data — plus system status.',
 };
 
-const RESPONSE_TIMES = [
-  { plan: 'Free', time: 'Best-effort, typically within 3 business days', note: 'Docs and Support search cover most questions.' },
-  { plan: 'Sole Trader', time: 'Within 1 business day' },
-  { plan: 'Practice', time: 'Same business day' },
-  { plan: 'Practice Plus', time: 'Priority queue — within 4 business hours' },
+/**
+ * Response targets by plan. Plans belong to the business surfaces (docs/WEB.md
+ * §7: credits replaced subscriptions), so with those off a reader sees only
+ * the one row that applies to everyone.
+ */
+const ALL_RESPONSE_TIMES = [
+  { plan: 'Free', time: 'Best-effort, typically within 3 business days', note: 'Docs and Support search cover most questions.', business: false },
+  { plan: 'Sole Trader', time: 'Within 1 business day', business: true },
+  { plan: 'Practice', time: 'Same business day', business: true },
+  { plan: 'Practice Plus', time: 'Priority queue — within 4 business hours', business: true },
+];
+const RESPONSE_TIMES = ALL_RESPONSE_TIMES.filter((r) => BUSINESS_SURFACES_ENABLED || !r.business);
+
+/** BAS reporting is switched off in the app and Xero sync is not built
+ *  (docs/ROADMAP.md §3); a status board should not list either as running. */
+const STATUS_ROWS = [
+  { name: 'Capture & upload', status: 'Operational', business: false },
+  { name: 'Extraction pipeline', status: 'Operational', business: false },
+  { name: 'Ledger & BAS reporting', status: 'Operational', business: true },
+  { name: 'Xero sync', status: 'Operational', business: true },
+  { name: 'Web app', status: 'Operational', business: false },
+].filter((r) => BUSINESS_SURFACES_ENABLED || !r.business);
+
+const CATEGORY_ICONS: Record<string, IconName> = {
+  capture: 'camera',
+  extraction: 'eye',
+  'bas-gst': 'receipt',
+  xero: 'repeat',
+  billing: 'tag',
+  data: 'database',
+};
+
+/** Popular articles: [category id, index of the issue in that category]. */
+const POPULAR: Array<[string, number]> = [
+  ['capture', 0],
+  ['extraction', 2],
+  ['bas-gst', 0],
+  ['data', 1],
 ];
 
-const STATUS_ROWS = [
-  { name: 'Capture & upload', status: 'Operational' },
-  { name: 'Extraction pipeline', status: 'Operational' },
-  { name: 'Ledger & BAS reporting', status: 'Operational' },
-  { name: 'Xero sync', status: 'Operational' },
-  { name: 'Web app', status: 'Operational' },
-];
+const popular = POPULAR.flatMap(([id, i]) => {
+  const category = CATEGORIES.find((c) => c.id === id);
+  const issue = category?.issues[i];
+  return category && issue ? [{ category, issue }] : [];
+});
 
 export default function SupportPage() {
   return (
     <>
-      <PageSpine />
-
-      {/*
-        Ported to the section language 2026-09-17, but DELIBERATELY QUIET.
-
-        A help centre is a reading surface: someone arrives here with a problem
-        and wants an answer, not a performance. So it takes the shell, the rule
-        and a staggered reveal on the cards — and none of the asset layer's
-        document annotations (`docs/WEB.md` §4.8). A field box belongs on a
-        figure the product read off a docket; there is no docket on this page.
-        Same reasoning keeps `/docs` and `/legal` quiet.
-
-        Copy is untouched.
-      */}
-      <PageHero
-        kicker="Support"
-        title="Help centre"
-        lede="Search for a topic, browse by category, or contact us directly. This page covers the product as it actually works — nothing here describes a feature that isn't shipped."
-      />
-
-      <Section form="measure" className="sect-3d">
-        <div>
-          <SupportSearch index={SEARCH_INDEX} />
+      {/* ── Hero: the search, front and centre ──────────────────────────── */}
+      <section className="relative -mt-[84px] overflow-hidden pt-[124px] pb-16 sm:pt-[150px] sm:pb-20">
+        <div className="dots" aria-hidden />
+        <div className="shell-narrow relative text-center">
+          <div data-reveal="fade" suppressHydrationWarning>
+            <Chip dot>Help centre</Chip>
+          </div>
+          <h1
+            className="hd-1 mt-7"
+            data-reveal="blur"
+            suppressHydrationWarning
+            style={{ ['--d' as string]: 1 }}
+          >
+            How can we help?
+          </h1>
+          <p
+            className="lede mx-auto mt-6 max-w-[40rem]"
+            data-reveal=""
+            suppressHydrationWarning
+            style={{ ['--d' as string]: 2 }}
+          >
+            Search for a topic, browse by category, or contact us directly. This page covers the
+            product as it actually works — nothing here describes a feature that isn&apos;t shipped.
+          </p>
+          <div
+            className="mx-auto mt-10 max-w-[40rem]"
+            data-reveal=""
+            suppressHydrationWarning
+            style={{ ['--d' as string]: 3 }}
+          >
+            <SupportSearch index={SEARCH_INDEX} />
+          </div>
         </div>
+      </section>
 
-        <div className="mt-12 flex flex-col gap-12">
-          {CATEGORIES.map((category) => (
-            <section key={category.id} id={category.id}>
-              <Tear className="mb-4" />
-              <Reveal>
-                <h2 className="text-[20px] font-bold text-[var(--color-ink)]">{category.title}</h2>
-              </Reveal>
-              <Reveal>
-                <p className="mt-2 text-[14px] leading-relaxed text-[var(--color-ink-muted)]">{category.intro}</p>
-              </Reveal>
-              <div className="mt-4 flex flex-col gap-3">
-                {category.issues.map((issue, i) => (
-                  <Card key={i}>
-                    <div className="text-[14px] font-semibold text-[var(--color-ink)]">{issue.q}</div>
-                    <p className="mt-1.5 text-[13px] leading-relaxed text-[var(--color-ink-muted)]">{issue.a}</p>
-                  </Card>
-                ))}
-              </div>
-              {category.docsHref ? (
-                <a
-                  href={category.docsHref}
-                  className="mt-3 inline-block text-[13px] text-[var(--color-accent)] hover:underline"
-                >
-                  Read the full guide: {category.docsLabel} →
-                </a>
-              ) : null}
-            </section>
-          ))}
-
-          <section id="contact">
-            <Tear className="mb-4" />
-            <h2 className="text-[20px] font-bold text-[var(--color-ink)]">Contact support</h2>
-            <p className="mt-2 text-[14px] leading-relaxed text-[var(--color-ink-muted)]">
-              Couldn&apos;t find your answer above? Email{' '}
-              <a href="mailto:support@snapapps.com.au" className="text-[var(--color-accent)] hover:underline">
-                support@snapapps.com.au
-              </a>{' '}
-              with your workspace name and, if it&apos;s about a specific document, its date and
-              supplier so we can find it quickly. If you&apos;re on a Practice plan, your firm&apos;s
-              administrator can also raise it on your behalf.
-            </p>
-
-            <h3 className="mt-6 text-[14px] font-semibold uppercase tracking-[0.06em] text-[var(--color-ink-faint)]">
-              Expected response time by plan
-            </h3>
-            <div className="mt-3 overflow-x-auto rounded-[var(--radius-md)] border border-[var(--color-rule)]">
-              <table className="w-full text-[13px]">
-                <thead>
-                  <tr className="border-b border-[var(--color-rule)] text-left text-[var(--color-ink-faint)]">
-                    <th className="px-3 py-2 font-semibold">Plan</th>
-                    <th className="px-3 py-2 font-semibold">Typical response</th>
-                  </tr>
-                </thead>
-                <tbody className="text-[var(--color-ink)]">
-                  {RESPONSE_TIMES.map((row) => (
-                    <tr key={row.plan} className="border-b border-[var(--color-rule)] last:border-0">
-                      <td className="px-3 py-2 font-semibold">{row.plan}</td>
-                      <td className="px-3 py-2 text-[var(--color-ink-muted)]">
-                        {row.time}
-                        {row.note ? <span className="block text-[12px]">{row.note}</span> : null}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <p className="mt-2 text-[12px] text-[var(--color-ink-faint)]">
-              These are targets, not a contractual guarantee — see the{' '}
-              <a href="/legal/terms" className="text-[var(--color-accent)] hover:underline">
-                Terms of Service
+      {/* ── Categories ──────────────────────────────────────────────────── */}
+      <section className="pb-16 sm:pb-24">
+        <div className="shell">
+          <h2 className="sr-only">Browse by category</h2>
+          <Reveal stagger className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {CATEGORIES.map((category) => (
+              <a
+                key={category.id}
+                href={`#${category.id}`}
+                className="card card-hover flex flex-col p-7"
+              >
+                <IconTile name={CATEGORY_ICONS[category.id] ?? 'help'} size={48} />
+                <h3 className="hd-4 mt-6">{category.title}</h3>
+                <p className="small mt-2 flex-1">{category.intro}</p>
+                <span className="mt-5 text-[0.875rem] font-semibold text-[var(--s-blue-text)]">
+                  {category.issues.length} {category.issues.length === 1 ? 'article' : 'articles'}
+                </span>
               </a>
-              .
-            </p>
-          </section>
-
-          <section id="status">
-            <Tear className="mb-4" />
-            <h2 className="text-[20px] font-bold text-[var(--color-ink)]">System status</h2>
-            <p className="mt-2 text-[13px] leading-relaxed text-[var(--color-ink-muted)]">
-              A manually-maintained snapshot, not a live monitoring feed. If something looks wrong here
-              or in the app and it isn&apos;t reflected below, contact support — that&apos;s the fastest
-              way to reach us about an outage.
-            </p>
-            <div className="mt-4 flex flex-col gap-2">
-              {STATUS_ROWS.map((row) => (
-                <div
-                  key={row.name}
-                  className="flex items-center justify-between rounded-[var(--radius-md)] border border-[var(--color-rule)] bg-[var(--color-surface)] px-4 py-2.5"
-                >
-                  <span className="text-[14px] text-[var(--color-ink)]">{row.name}</span>
-                  <Badge tone="good">{row.status}</Badge>
-                </div>
-              ))}
-            </div>
-          </section>
+            ))}
+          </Reveal>
         </div>
-      </Section>
+      </section>
+
+      {/* ── Popular, and the docs ───────────────────────────────────────── */}
+      <section className="band-mist">
+        <div className="shell py-16 sm:py-24">
+          <div className="grid gap-12 lg:grid-cols-[1fr_0.9fr] lg:gap-20">
+            <div>
+              <Reveal>
+                <h2 className="hd-2">Popular articles</h2>
+              </Reveal>
+              <ul className="mt-8">
+                {popular.map(({ category, issue }) => (
+                  <li key={issue.q} className="border-b border-[var(--s-edge-2)] last:border-b-0">
+                    <a href={`#${category.id}`} className="group block py-5">
+                      <span className="text-[0.75rem] font-semibold uppercase tracking-[0.06em] text-[var(--s-blue-text)]">
+                        {category.title}
+                      </span>
+                      <span className="mt-1 flex items-center justify-between gap-4 text-[1.125rem] font-semibold tracking-[-0.02em]">
+                        {issue.q}
+                        <Icon
+                          name="arrow-right"
+                          size={18}
+                          className="shrink-0 text-[var(--s-ink-3)] transition-transform duration-300 group-hover:translate-x-0.5"
+                        />
+                      </span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <Reveal delay={1} className="card self-start p-8 sm:p-10">
+              <IconTile name="file" size={48} />
+              <h2 className="hd-3 mt-6">Prefer to read the guides?</h2>
+              <p className="body mt-3">
+                The docs walk through capture, flags, GST and your data in full, one topic per page.
+              </p>
+              <Btn href="/docs" variant="secondary" arrow className="mt-7">
+                Open the docs
+              </Btn>
+            </Reveal>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Every category, every answer ────────────────────────────────── */}
+      <section className="section">
+        <div className="shell-narrow">
+          <SectionHead align="left" title="All articles" className="mb-4" />
+          <div className="flex flex-col gap-16">
+            {CATEGORIES.map((category) => (
+              <section key={category.id} id={category.id} className="scroll-mt-28">
+                <Reveal>
+                  <h3 className="hd-3">{category.title}</h3>
+                  <p className="body mt-2">{category.intro}</p>
+                </Reveal>
+                <div className="mt-6 border-t border-[var(--s-edge)]">
+                  {category.issues.map((issue, i) => (
+                    <details key={i} className="faq sup-faq">
+                      <summary>
+                        {issue.q}
+                        <Icon name="plus" size={20} className="faq-icon shrink-0 text-[var(--s-ink-3)]" />
+                      </summary>
+                      <p className="body">{issue.a}</p>
+                    </details>
+                  ))}
+                </div>
+                {category.docsHref ? (
+                  <TextLink href={category.docsHref} className="mt-5">
+                    Read the full guide: {category.docsLabel}
+                  </TextLink>
+                ) : null}
+              </section>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Contact and status ──────────────────────────────────────────── */}
+      <section id="contact" className="band-mist scroll-mt-28">
+        <div className="shell py-16 sm:py-24">
+          <div className="grid gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:gap-20">
+            <Reveal>
+              <IconTile name="mail" size={52} />
+              <h2 className="hd-2 mt-6">Contact support</h2>
+              <p className="body mt-4 max-w-[44ch]">
+                Couldn&apos;t find your answer above? Email{' '}
+                <a
+                  href="mailto:support@snapapps.com.au"
+                  className="font-semibold text-[var(--s-blue-text)] hover:underline"
+                >
+                  support@snapapps.com.au
+                </a>{' '}
+                with your workspace name and, if it&apos;s about a specific document, its date and
+                supplier so we can find it quickly.
+                {BUSINESS_SURFACES_ENABLED
+                  ? " If you're on a Practice plan, your firm's administrator can also raise it on your behalf."
+                  : null}
+              </p>
+              <Btn href="mailto:support@snapapps.com.au" arrow className="mt-7">
+                Email support
+              </Btn>
+            </Reveal>
+
+            <Reveal delay={1} className="card p-7 sm:p-9">
+              <h3 className="hd-4">
+                {BUSINESS_SURFACES_ENABLED ? 'Expected response time by plan' : 'Expected response time'}
+              </h3>
+              <div className="mt-4 overflow-x-auto">
+                <table className="sup-table w-full text-[0.9375rem]">
+                  <thead className="sr-only">
+                    <tr>
+                      <th>Plan</th>
+                      <th>Typical response</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {RESPONSE_TIMES.map((row) => (
+                      <tr key={row.plan}>
+                        <td className="pr-6 font-semibold text-[var(--s-ink)]">{row.plan}</td>
+                        <td className="text-[var(--s-ink-3)]">
+                          {row.time}
+                          {row.note ? <span className="small block">{row.note}</span> : null}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p className="small mt-3">
+                These are targets, not a contractual guarantee — see the{' '}
+                <a href="/legal/terms" className="font-semibold text-[var(--s-blue-text)] hover:underline">
+                  Terms of Service
+                </a>
+                .
+              </p>
+            </Reveal>
+          </div>
+
+          <div id="status" className="mt-16 scroll-mt-28">
+            <Reveal>
+              <h2 className="hd-3">System status</h2>
+              <p className="body mt-3 max-w-[60ch]">
+                A manually-maintained snapshot, not a live monitoring feed. If something looks wrong
+                here or in the app and it isn&apos;t reflected below, contact support — that&apos;s
+                the fastest way to reach us about an outage.
+              </p>
+            </Reveal>
+            <ul className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {STATUS_ROWS.map((row) => (
+                <li
+                  key={row.name}
+                  className="card flex items-center justify-between gap-4 px-5 py-4"
+                >
+                  <span className="text-[0.9375rem] font-medium">{row.name}</span>
+                  <span className="flex items-center gap-2 text-[0.8125rem] font-semibold text-[var(--s-green)]">
+                    <Icon name="check-circle" size={16} />
+                    {row.status}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </section>
     </>
   );
 }

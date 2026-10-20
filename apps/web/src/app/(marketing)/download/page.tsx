@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 
-import { PageHero, Reveal, Section, SectionHead, Tear } from '@/design/primitives';
+import { Btn, Chip, Icon, IconTile, Phone, Reveal, SectionHead, TextLink } from '@/design/site';
+import { HomeScreen } from '@/design/site/app-ui';
+import { BUSINESS_SURFACES_ENABLED } from '@/lib/features';
 import {
   IOS_NOTIFY_CONTACT,
   getAndroidRelease,
@@ -9,9 +11,9 @@ import {
   getSystemRequirements,
 } from '@/lib/releases';
 
-import { PageSpine } from '../_components/page-spine';
 import { ReleaseBlock, ReleaseCard, SpecRow } from '../_components/release-card';
 import { CopyableChecksum } from './copyable-checksum';
+import './download.css';
 import { InertDownloadControl } from './inert-control';
 
 const PUBLIC_URL = process.env.WEB_PUBLIC_URL ?? 'http://127.0.0.1:3000';
@@ -44,23 +46,39 @@ const ANDROID_STEPS = [
   {
     title: 'Allow installs from this browser',
     body: 'When the download finishes, Android will warn that it blocks installs from unknown sources. Tap Settings on that warning, then turn on "Allow from this source" for your browser. You only do this once.',
+    optional: false,
   },
   {
     title: 'Open the downloaded file',
     body: 'Find "Snap Apps" in your Downloads or notification shade and tap it. Android will show the permissions the app asks for — camera, for photographing receipts — then tap Install.',
+    optional: false,
   },
   {
-    title: '(Optional) check the file is exactly what we built',
-    body: "If your file manager can show a file's SHA-256, compare it to the checksum below before installing. They should match exactly. If you don't know how to do this, it's fine to skip — most people do.",
+    title: 'Optional: check the file is exactly what we built',
+    body: "If your file manager can show a file's SHA-256, compare it to the checksum on this page before installing. They should match exactly. If you don't know how to do this, it's fine to skip — most people do.",
+    optional: true,
   },
 ];
 
+/**
+ * What the iPhone app is meant to do: the shipped personal release only. The
+ * earlier list led with BAS export and Xero sync, which the app does not show
+ * today, and "same accuracy" — an accuracy claim (design/site/README.md).
+ */
 const IOS_FEATURES = [
-  'Photograph a receipt, get a categorised, GST-aware line item',
-  'Realtime extraction on the paid plans, batch mode on Free',
-  'BAS pack export and Xero sync',
-  'Same occupation-aware deduction engine as Android — same accuracy, same tax logic',
+  'Photograph a receipt and have every line read and priced',
+  'GST-free and taxable lines split, with tax invoice and ABN checks',
+  'A true copy of the original kept for five years',
+  'Spending, budgets, savings goals and household sharing',
 ];
+
+/**
+ * Changelog notes that describe business surfaces (BAS, Xero, practices) are
+ * not displayed while those surfaces are off in the app — the site does not
+ * sell what does not ship. `lib/releases.ts` is untouched; this only decides
+ * what is shown.
+ */
+const BUSINESS_NOTE = /\b(BAS|Xero|Practice|Sole Trader)\b/;
 
 /**
  * SoftwareApplication structured data for both platforms. Android is
@@ -123,10 +141,24 @@ export const dynamic = 'force-dynamic';
 export default async function DownloadPage() {
   const android = await getAndroidRelease();
   const ios = getRelease('ios');
-  const changelog = getChangelog();
+  const changelog = getChangelog()
+    .map((entry) => ({
+      ...entry,
+      notes: BUSINESS_SURFACES_ENABLED
+        ? entry.notes
+        : entry.notes.filter((note) => !BUSINESS_NOTE.test(note)),
+    }))
+    .filter((entry) => entry.notes.length > 0);
   const androidReqs = getSystemRequirements('android');
   const iosReqs = getSystemRequirements('ios');
   const jsonLd = buildJsonLd(android, ios);
+
+  const liveUrl = android.availability === 'available' ? android.url : null;
+  const facts = [
+    android.version ? `Version ${android.version}` : null,
+    android.fileSizeLabel,
+    android.minOsVersion,
+  ].filter((f): f is string => Boolean(f));
 
   return (
     <>
@@ -136,267 +168,325 @@ export default async function DownloadPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      {/* The same reading rail as every other marketing page. */}
-      <PageSpine />
+      {/* ── Hero ────────────────────────────────────────────────────────── */}
+      <section className="relative -mt-[84px] overflow-hidden pt-[124px] sm:pt-[140px]">
+        <div className="dots" aria-hidden />
+        <div className="shell relative">
+          <div className="grid items-center gap-y-14 lg:grid-cols-[1.1fr_0.9fr] lg:gap-x-10">
+            <div className="relative z-10 max-w-[40rem]">
+              <div data-reveal="fade" suppressHydrationWarning>
+                <Chip dot>
+                  {liveUrl
+                    ? `Android ${android.channel === 'beta' ? 'beta' : 'build'} available`
+                    : 'Android build not published yet'}
+                  {' · iPhone in development'}
+                </Chip>
+              </div>
 
-      {/*
-        Rebuilt 2026-09-17, for the reason the pricing page was rebuilt the
-        same week: this was the last page still built the old way — a bare
-        `<main className="py-20">` of `Container` + `SectionTitle`, which is
-        the eyebrow/title/lede stack `docs/DESIGN-HANDOFF.md` §12.1 lists under
-        Avoid, with no gutter codes and not one line of motion. Arriving here
-        from a home page that moves landed you in a static document.
+              <h1
+                className="hd-1 mt-7"
+                data-reveal="blur"
+                suppressHydrationWarning
+                style={{ ['--d' as string]: 1 }}
+              >
+                Get Snap Apps on <span className="ink-grad">Android.</span>
+              </h1>
 
-        NOT pinned, and that is deliberate. The home page locks each section
-        until its animation finishes, which is right for a page whose job is to
-        be read in order. This page's job is to hand someone an APK and a
-        checksum, and making them scroll-wrestle a lock to reach a SHA-256
-        would be hostile. It gets the asset layer and the section language; it
-        does not get `.screen` or `.pin-track`.
-
-        Copy is untouched — every sentence, figure and step is the owner's,
-        word for word. Only the structure and the motion changed.
-      */}
-
-      {/* 1 — the hero, through the one component every page opens with. */}
-      <PageHero
-        kicker="Download"
-        title={
-          <>
-            Get Snap Apps on Android — and see what&apos;s coming to iPhone
-          </>
-        }
-        lede="Android is a direct download today, with Google Play to follow. The iPhone app is in active development: this page shows exactly what it will do and how to hear the moment it's ready, rather than a link that doesn't work yet."
-      />
-
-      {/* 2 — gutter. The two platforms, as release records. */}
-      <Section code="APK" className="sect-3d">
-        <div className="pop-3d grid items-stretch gap-5 lg:grid-cols-2">
-          {/* ── Android ─────────────────────────────────────────────────── */}
-          <ReleaseCard
-            platform="Android"
-            title="Direct APK download"
-            status={android.channel === 'beta' ? 'Beta' : 'Stable'}
-            statusTone={android.channel === 'beta' ? 'warn' : 'good'}
-            lede={
-              <>
-                Installed the same way any app was installed on Android before app stores existed —
-                you&apos;ll see one extra permission prompt the first time, covered in the steps
-                below. <strong className="text-[var(--color-ink)]">Coming to Google Play</strong>{' '}
-                once the listing clears review.
-              </>
-            }
-            action={
-              <>
-                <a
-                  href={android.url ?? '#'}
-                  className="flex h-12 w-full items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-accent)] text-[16px] font-semibold text-[var(--color-accent-ink)] transition-colors duration-150 hover:bg-[var(--color-accent-deep)]"
-                >
-                  Download for Android
-                  {android.availability === 'available' && android.version
-                    ? ` · v${android.version}`
-                    : ''}
-                </a>
-                {android.availability === 'available' ? null : (
-                  <p className="mt-2 text-center text-[12px] text-[var(--color-ink-faint)]">
-                    No build published yet — this link will not install anything. See &quot;What&apos;s
-                    new&quot; below.
-                  </p>
-                )}
-              </>
-            }
-          >
-            <ReleaseBlock title="This build">
-              <SpecRow
-                label="Version"
-                value={`${android.version || '—'}${android.buildNumber ? ` (${android.buildNumber})` : ''}`}
-              />
-              <SpecRow label="Released" value={android.releaseDate || '—'} />
-              <SpecRow label="File size" value={android.fileSizeLabel || '—'} />
-              <SpecRow label="Requires" value={android.minOsVersion} mono={false} />
-            </ReleaseBlock>
-
-            <ReleaseBlock title="SHA-256 checksum">
-              <CopyableChecksum sha256={android.sha256 ?? ''} />
-              <p className="mt-2 text-[12px] leading-relaxed text-[var(--color-ink-faint)]">
-                Step 3 below is how to compare it. Skipping it is fine — most people do.
+              <p
+                className="lede mt-6 max-w-[34rem]"
+                data-reveal=""
+                suppressHydrationWarning
+                style={{ ['--d' as string]: 2 }}
+              >
+                Android is a direct download today; it is not on Google Play yet. The iPhone app is
+                in active development: this page shows exactly what it will do and how to hear the
+                moment it&apos;s ready, rather than a link that doesn&apos;t work yet.
               </p>
-            </ReleaseBlock>
 
-            {/* Mirrors the iOS card's footer so the two columns end flush.
-                Both are `mt-auto`, so whichever side runs shorter takes up
-                the slack instead of leaving a tall empty box beside a full
-                one — which is what the old pair did. */}
-            <div className="mt-auto grid gap-2 pt-6 text-[13px]">
-              <a
-                href="#android-top"
-                className="flex h-10 w-full items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-rule-strong)] font-semibold text-[var(--color-ink)] transition-colors duration-150 hover:bg-[var(--color-surface-alt)]"
+              <div
+                className="mt-9 max-w-[26rem]"
+                data-reveal=""
+                suppressHydrationWarning
+                style={{ ['--d' as string]: 3 }}
               >
-                How to install it
-              </a>
-              <a
-                href="#whats-new"
-                className="text-center font-semibold text-[var(--color-accent)] hover:underline"
-              >
-                What changed in this build →
-              </a>
+                {liveUrl ? (
+                  <>
+                    <Btn href={liveUrl} size="lg" className="w-full" external>
+                      <Icon name="download" size={20} />
+                      Download APK
+                    </Btn>
+                    {facts.length > 0 ? (
+                      <ul className="dl-meta mt-4">
+                        {facts.map((f) => (
+                          <li key={f}>{f}</li>
+                        ))}
+                      </ul>
+                    ) : null}
+                  </>
+                ) : (
+                  <InertDownloadControl
+                    icon="download"
+                    label="No Android build yet"
+                    statusText="In development. No APK has been published, so there is nothing to install."
+                  />
+                )}
+                <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3">
+                  <TextLink href="#install">How to install it</TextLink>
+                  <TextLink href="#web">Use it in your browser</TextLink>
+                </div>
+              </div>
             </div>
-          </ReleaseCard>
 
-          {/* ── iOS ─────────────────────────────────────────────────────── */}
-          <ReleaseCard
-            platform="iOS · iPhone"
-            title="Snap Apps for iPhone"
-            status="In development"
-            statusTone="warn"
-            lede={
-              <>
-                The iPhone build is being actively worked on. Apple doesn&apos;t allow a public .ipa
-                download in any case — every iOS app reaches phones through Apple&apos;s own
-                TestFlight channel first, then the App Store — and we&apos;ll open TestFlight here
-                the moment there is a build worth putting in front of people.
-              </>
-            }
-            action={
-              <InertDownloadControl
-                label="Not yet available on iOS"
-                statusText="In development — no install link exists yet"
+            <div className="relative mx-auto flex w-full max-w-[460px] justify-center py-4 lg:py-8">
+              <div
+                className="horizon"
+                aria-hidden
+                style={{ width: '120%', height: '70%', left: '-10%', top: '18%' }}
               />
-            }
-          >
-            <ReleaseBlock title="What it will do">
-              <ul className="space-y-2 text-[14px] text-[var(--color-ink)]">
-                {IOS_FEATURES.map((f) => (
-                  <li key={f} className="flex gap-2">
-                    <span className="text-[var(--color-accent)]" aria-hidden="true">
-                      ✓
+              <div className="tilt relative" data-reveal="scale" suppressHydrationWarning>
+                <Phone className="relative [--pw:272] sm:[--pw:320]">
+                  <HomeScreen />
+                </Phone>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Android: the build, its checksum, the install ──────────────── */}
+      <section id="android" className="section">
+        <div className="shell">
+          <Reveal className="card grid gap-0 lg:grid-cols-[0.95fr_1.05fr]">
+            <div className="p-7 sm:p-10 lg:border-r lg:border-[var(--s-edge)]">
+              <div className="flex items-center justify-between gap-3">
+                <span className="kicker">Android · direct APK</span>
+                <span
+                  className={
+                    android.channel === 'beta'
+                      ? 'rounded-full bg-[var(--s-amber-soft)] px-3 py-1 text-[0.75rem] font-semibold text-[var(--s-amber)]'
+                      : 'rounded-full bg-[var(--s-green-soft)] px-3 py-1 text-[0.75rem] font-semibold text-[var(--s-green)]'
+                  }
+                >
+                  {android.channel === 'beta' ? 'Beta' : 'Stable'}
+                </span>
+              </div>
+              <h2 className="hd-2 mt-4">This build</h2>
+              <p className="body mt-3 max-w-[36ch]">
+                Installed the same way any app was installed on Android before app stores existed.
+                You&apos;ll see one extra permission prompt the first time, because it is{' '}
+                <strong className="font-semibold text-[var(--s-ink)]">not on Google Play yet</strong>.
+              </p>
+
+              <div className="mt-8">
+                <SpecRow
+                  label="Version"
+                  value={`${android.version || '—'}${android.buildNumber ? ` (${android.buildNumber})` : ''}`}
+                />
+                <SpecRow label="Released" value={android.releaseDate || '—'} />
+                <SpecRow label="File size" value={android.fileSizeLabel || '—'} />
+                <SpecRow label="Requires" value={android.minOsVersion} mono={false} />
+              </div>
+
+              <div className="mt-8">
+                <h3 className="text-[0.8125rem] font-semibold uppercase tracking-[0.06em] text-[var(--s-ink-4)]">
+                  SHA-256 checksum
+                </h3>
+                <div className="mt-3">
+                  <CopyableChecksum sha256={android.sha256 ?? ''} />
+                </div>
+                <p className="small mt-3">
+                  The optional last install step is how to compare it. Skipping it is fine — most
+                  people do.
+                </p>
+              </div>
+            </div>
+
+            <div id="install" className="p-7 sm:p-10">
+              <h2 className="hd-3">Installing the APK, step by step</h2>
+              <p className="body mt-3 max-w-[44ch]">
+                This app doesn&apos;t come from the Play Store yet, so Android calls it an app from
+                an &quot;unknown source&quot; — that just means it isn&apos;t from a store, not that
+                anything is wrong. Here&apos;s exactly what to expect.
+              </p>
+              <ol className="dl-steps mt-8">
+                {ANDROID_STEPS.map((step, i) => (
+                  <li
+                    key={step.title}
+                    className={`dl-step${step.optional ? ' dl-step-optional' : ''}`}
+                  >
+                    <span className="dl-step-n" aria-hidden>
+                      {i + 1}
                     </span>
-                    <span>{f}</span>
+                    <div>
+                      <h3 className="hd-4">{step.title}</h3>
+                      <p className="small mt-1.5">{step.body}</p>
+                    </div>
                   </li>
                 ))}
-              </ul>
-            </ReleaseBlock>
-
-            <ReleaseBlock title="Planned">
-              <SpecRow label="Minimum OS" value={ios.minOsVersion} mono={false} />
-              <SpecRow label="Status" value="In development" mono={false} />
-            </ReleaseBlock>
-
-            {/* Pushed to the bottom so the two cards end on the same line
-                however differently their middles run. */}
-            <div className="mt-auto grid gap-2 pt-6 text-[13px]">
-              <a
-                href={IOS_NOTIFY_CONTACT}
-                className="flex h-10 w-full items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-rule-strong)] font-semibold text-[var(--color-ink)] transition-colors duration-150 hover:bg-[var(--color-surface-alt)]"
-              >
-                Get notified when iOS is ready
-              </a>
-              <a
-                href="#android-top"
-                className="text-center font-semibold text-[var(--color-accent)] hover:underline"
-              >
-                Or get the Android build right now →
-              </a>
+              </ol>
+              <div className="mt-8">
+                <TextLink href="#whats-new">What changed in this build</TextLink>
+              </div>
             </div>
-          </ReleaseCard>
-        </div>
-      </Section>
-
-      {/* 3 — measure. */}
-      <Section form="measure" className="sect-3d">
-        <SectionHead
-          kicker="Before you install"
-          title="System requirements"
-          lede="Stated here rather than discovered afterwards. The memory line is the one worth reading: it changes how the app works, not whether it works."
-        />
-        <div className="mt-10 grid gap-6 sm:grid-cols-2">
-          <Reveal variant="deal" delay={0}>
-            <h3 className="text-[13px] font-semibold text-[var(--color-ink)]">Android</h3>
-            <Tear className="mt-2" />
-            <ul className="mt-3 space-y-2.5 text-[14px] text-[var(--color-ink-muted)]">
-              {androidReqs.map((r) => (
-                <li key={r.label}>
-                  {r.label}
-                  {r.note ? (
-                    <span className="mt-0.5 block text-[13px] leading-relaxed text-[var(--color-ink-faint)]">
-                      {r.note}
-                    </span>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
-          </Reveal>
-          <Reveal variant="deal" delay={1}>
-            <h3 className="text-[13px] font-semibold text-[var(--color-ink)]">iPhone (planned)</h3>
-            <Tear className="mt-2" />
-            <ul className="mt-3 space-y-2.5 text-[14px] text-[var(--color-ink-muted)]">
-              {iosReqs.map((r) => (
-                <li key={r.label}>
-                  {r.label}
-                  {r.note ? (
-                    <span className="mt-0.5 block text-[13px] leading-relaxed text-[var(--color-ink-faint)]">
-                      {r.note}
-                    </span>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
           </Reveal>
         </div>
-      </Section>
+      </section>
 
-      {/* 4 — gutter. The install itself. */}
-      <Section code="INSTALL" id="android-top" className="sect-3d">
-        <SectionHead
-          kicker="Installing on Android"
-          title="Installing the APK, step by step"
-          lede={
-            'This app doesn\'t come from the Play Store yet, so Android calls it an app from an ' +
-            '"unknown source" — that just means it isn\'t from a store, not that anything is ' +
-            'wrong. Here\'s exactly what to expect.'
-          }
-        />
-        <ol className="mt-10 space-y-6">
-          {ANDROID_STEPS.map((step, i) => (
-            <Reveal as="li" variant="deal" delay={i} key={step.title}>
-              <div className="flex gap-4">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--color-accent-soft)] text-[14px] font-bold tabular text-[var(--color-accent)]">
-                  {i + 1}
+      {/* ── iPhone and the browser ──────────────────────────────────────── */}
+      <section className="band-mist">
+        <div className="shell py-16 sm:py-24">
+          <SectionHead
+            align="left"
+            title="Not on Android? Two other ways in."
+            lede="The iPhone app is on its way. The web app works in any browser today."
+            className="mb-12"
+          />
+          <div className="grid gap-5 lg:grid-cols-2">
+            {/* iPhone — full weight, honest, non-actionable */}
+            <Reveal className="h-full">
+              <ReleaseCard
+                platform="iPhone"
+                title="Snap Apps for iPhone"
+                status="In development"
+                statusTone="warn"
+                lede={
+                  <>
+                    The iPhone build is being actively worked on. Apple doesn&apos;t allow a public
+                    .ipa download in any case — every iOS app reaches phones through Apple&apos;s own
+                    TestFlight channel first, then the App Store — and we&apos;ll open TestFlight
+                    here the moment there is a build worth putting in front of people.
+                  </>
+                }
+                action={
+                  <InertDownloadControl
+                    label="Not yet available on iOS"
+                    statusText="In development — no install link exists yet"
+                  />
+                }
+              >
+                <ReleaseBlock title="What it will do">
+                  <ul className="dl-list space-y-2.5 text-[0.9375rem] text-[var(--s-ink-2)]">
+                    {IOS_FEATURES.map((f) => (
+                      <li key={f}>{f}</li>
+                    ))}
+                  </ul>
+                </ReleaseBlock>
+
+                <ReleaseBlock title="Planned">
+                  <SpecRow label="Minimum OS" value={ios.minOsVersion} mono={false} />
+                  <SpecRow label="Status" value="In development" mono={false} />
+                </ReleaseBlock>
+
+                <div className="mt-auto pt-7">
+                  <Btn href={IOS_NOTIFY_CONTACT} variant="secondary" className="w-full">
+                    Get notified when iOS is ready
+                  </Btn>
                 </div>
-                <div>
-                  <h3 className="text-[15px] font-semibold text-[var(--color-ink)]">{step.title}</h3>
-                  <p className="mt-1 text-[14px] leading-relaxed text-[var(--color-ink-muted)]">
-                    {step.body}
+              </ReleaseCard>
+            </Reveal>
+
+            {/* The web app */}
+            <Reveal delay={1} className="h-full">
+              <div
+                id="web"
+                className="night grain flex h-full flex-col rounded-[var(--s-radius)] p-7 sm:p-9"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <span className="kicker">Web app</span>
+                  <span className="rounded-full bg-[var(--s-green-soft)] px-3 py-1 text-[0.75rem] font-semibold text-[var(--s-green)]">
+                    Available now
+                  </span>
+                </div>
+                <h2 className="hd-3 mt-4">Use it in your browser today</h2>
+                <p className="body mt-3">
+                  Any phone, tablet or computer. Upload a docket, review the reading, and see your
+                  spending, with nothing to install.
+                </p>
+                <div className="mt-7 flex items-center gap-4">
+                  <IconTile name="globe" tone="white" size={52} />
+                  <p className="small">
+                    Same account as the app, so what you scan on the web is there when you pick up
+                    your phone.
                   </p>
                 </div>
+                <div className="mt-auto flex flex-wrap items-center gap-x-4 gap-y-3 pt-9">
+                  <Btn href="/register" variant="light" arrow>
+                    Start free on the web
+                  </Btn>
+                  <Btn href="/sign-in" variant="glass">
+                    Sign in
+                  </Btn>
+                </div>
               </div>
             </Reveal>
-          ))}
-        </ol>
-      </Section>
-
-      {/* 5 — measure. */}
-      <Section form="measure" id="whats-new" className="sect-3d">
-        <SectionHead kicker="Changelog" title="What's new" />
-        <div className="mt-10 space-y-8">
-          {changelog.map((entry, i) => (
-            <Reveal variant="deal" delay={i} key={entry.version}>
-              <div className="flex items-baseline gap-2">
-                <span className="text-[15px] font-bold tabular text-[var(--color-ink)]">
-                  v{entry.version}
-                </span>
-                <span className="tabular text-[13px] text-[var(--color-ink-faint)]">{entry.date}</span>
-              </div>
-              <Tear className="mt-2" />
-              <ul className="mt-3 list-disc space-y-1 pl-5 text-[14px] text-[var(--color-ink-muted)]">
-                {entry.notes.map((note) => (
-                  <li key={note}>{note}</li>
-                ))}
-              </ul>
-            </Reveal>
-          ))}
+          </div>
         </div>
-      </Section>
+      </section>
+
+      {/* ── Requirements and changelog ──────────────────────────────────── */}
+      <section className="section">
+        <div className="shell">
+          <div className="grid gap-16 lg:grid-cols-[0.9fr_1.1fr] lg:gap-20">
+            <div>
+              <Reveal>
+                <h2 className="hd-2">Before you install</h2>
+                <p className="lede mt-5 max-w-[36ch]">
+                  Stated here rather than discovered afterwards. The memory line is the one worth
+                  reading: it changes how the app works, not whether it works.
+                </p>
+              </Reveal>
+              <div className="mt-10 grid gap-8">
+                <Reveal>
+                  <h3 className="hd-4">Android</h3>
+                  <RequirementList items={androidReqs} />
+                </Reveal>
+                <Reveal delay={1}>
+                  <h3 className="hd-4">iPhone (planned)</h3>
+                  <RequirementList items={iosReqs} />
+                </Reveal>
+              </div>
+            </div>
+
+            <div id="whats-new">
+              <Reveal>
+                <h2 className="hd-2">What&apos;s new</h2>
+              </Reveal>
+              <div className="mt-10 space-y-10">
+                {changelog.map((entry, i) => (
+                  <Reveal delay={i} key={entry.version}>
+                    <div className="dl-log">
+                      <div className="flex items-baseline gap-3">
+                        <span className="text-[1.125rem] font-[650] tabular-nums tracking-[-0.02em]">
+                          v{entry.version}
+                        </span>
+                        <span className="small tabular-nums">{entry.date}</span>
+                      </div>
+                      <ul className="dl-list body mt-4 space-y-2">
+                        {entry.notes.map((note) => (
+                          <li key={note}>{note}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </Reveal>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
     </>
+  );
+}
+
+function RequirementList({ items }: { items: ReturnType<typeof getSystemRequirements> }) {
+  return (
+    <ul className="dl-list mt-4 space-y-3 text-[0.9375rem] text-[var(--s-ink-2)]">
+      {items.map((r) => (
+        <li key={r.label}>
+          {r.label}
+          {r.note ? <span className="small mt-0.5 block">{r.note}</span> : null}
+        </li>
+      ))}
+    </ul>
   );
 }

@@ -1,7 +1,8 @@
 import Link from 'next/link';
 
-import { Container, Rule } from '@/design/primitives';
 import { BUSINESS_SURFACES_ENABLED } from '@/lib/features';
+import { ILLUSTRATIVE_NOTE, StoreButtons } from '@/design/site';
+import { SnapMark } from '@/design/site/icons';
 
 const COLUMNS: Array<{ heading: string; links: Array<{ href: string; label: string }> }> = [
   {
@@ -13,81 +14,92 @@ const COLUMNS: Array<{ heading: string; links: Array<{ href: string; label: stri
       { href: '/download', label: 'Download' },
     ],
   },
-  // The whole "Practices" column is a business surface — hidden below while
-  // BUSINESS_SURFACES_ENABLED is false (`src/lib/features.ts`), not deleted,
-  // so it comes back verbatim when the flag flips back on.
+  // The practice column is part of the business surfaces (docs/ECOSYSTEM.md
+  // D34) and returns with them.
+  ...(BUSINESS_SURFACES_ENABLED
+    ? [
+        {
+          heading: 'For practices',
+          links: [
+            { href: '/pricing#practice', label: 'Practice plans' },
+            { href: '/register', label: 'Onboard a firm' },
+            { href: '/support', label: 'Talk to us' },
+          ],
+        },
+      ]
+    : []),
   {
-    heading: 'Practices',
+    heading: 'Help',
     links: [
-      { href: '/pricing#practice', label: 'Practice plans' },
-      { href: '/register', label: 'Onboard a firm' },
-      { href: '/support', label: 'Talk to us' },
-    ],
-  },
-  {
-    heading: 'Resources',
-    links: [
-      { href: '/support', label: 'Support' },
-      { href: '/docs', label: 'Documentation' },
+      { href: '/support', label: 'Help centre' },
+      { href: '/docs', label: 'Guides' },
+      { href: '/docs/getting-started', label: 'Getting started' },
+      { href: '/sign-in', label: 'Sign in' },
     ],
   },
   {
     heading: 'Legal',
     links: [
       { href: '/legal/privacy', label: 'Privacy' },
-      { href: '/legal/terms', label: 'Terms of service' },
+      { href: '/legal/terms', label: 'Terms' },
       { href: '/legal/security', label: 'Security' },
     ],
   },
 ];
 
-const VISIBLE_COLUMNS = COLUMNS.filter((c) => c.heading !== 'Practices' || BUSINESS_SURFACES_ENABLED);
-
 export function SiteFooter() {
   return (
-    <footer className="border-t border-[var(--color-rule)] bg-[var(--color-ground)]">
-      <Container width="wide" className="py-20">
-        <div
-          className={
-            VISIBLE_COLUMNS.length === COLUMNS.length
-              ? 'grid gap-14 lg:grid-cols-[1.6fr_1fr_1fr_1fr_1fr]'
-              : 'grid gap-14 lg:grid-cols-[1.6fr_1fr_1fr_1fr]'
-          }
-        >
-          <div className="max-w-[32ch]">
-            <div className="text-[15px] font-medium text-[var(--color-ink)]">Snap Apps</div>
-            <p className="mt-3 text-[13.5px] leading-relaxed text-[var(--color-ink-muted)]">
-              A BAS and deduction-compliance layer for Australian sole traders and tradies.
+    <footer className="relative overflow-hidden border-t border-[var(--s-edge)] bg-[var(--s-bg)]">
+      <div className="shell pt-20 pb-10">
+        <div className="grid gap-14 lg:grid-cols-[1.35fr_1.65fr]">
+          <div>
+            <Link href="/" className="inline-flex items-center gap-3" aria-label="Snap Apps, home">
+              <SnapMark size={40} className="rounded-[11px]" />
+              <span className="text-[1.35rem] font-[650] tracking-[-0.035em]">Snap Apps</span>
+            </Link>
+            <p className="body mt-5 max-w-[34ch]">
+              The receipt app that reads every line. Built in Australia, for the way Australians are taxed.
             </p>
+            <StoreButtons className="mt-8" compact />
           </div>
-          {VISIBLE_COLUMNS.map((col) => (
-            <div key={col.heading}>
-              <div className="t-label text-[var(--color-ink-faint)]">{col.heading}</div>
-              <ul className="mt-4 flex flex-col gap-3">
-                {col.links.map((link) => (
-                  <li key={link.href}>
-                    <Link
-                      href={link.href}
-                      className="tap text-[13.5px] text-[var(--color-ink-muted)] transition-colors hover:text-[var(--color-ink)]"
-                    >
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+
+          <div className="grid grid-cols-2 gap-10 sm:grid-cols-3">
+            {COLUMNS.map((col) => (
+              <div key={col.heading}>
+                <h2 className="text-[0.8125rem] font-semibold tracking-[-0.005em] text-[var(--s-ink)]">
+                  {col.heading}
+                </h2>
+                <ul className="mt-4 flex flex-col gap-3">
+                  {col.links.map((link) => (
+                    <li key={link.label}>
+                      <Link
+                        href={link.href}
+                        className="text-[0.9375rem] text-[var(--s-ink-3)] transition-colors hover:text-[var(--s-ink)]"
+                      >
+                        {link.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
         </div>
 
-        <div className="mt-16">
-          <Rule animate={false} />
+        <div className="mt-16 flex flex-col gap-3 border-t border-[var(--s-edge)] pt-8 text-[0.8125rem] text-[var(--s-ink-4)] sm:flex-row sm:items-center sm:justify-between">
+          <span>© {new Date().getFullYear()} Snap Apps. Made in Australia.</span>
+          <span>{ILLUSTRATIVE_NOTE} Not tax advice.</span>
         </div>
+      </div>
 
-        <div className="mt-6 flex flex-col gap-2 text-[12px] text-[var(--color-ink-faint)] sm:flex-row sm:items-center sm:justify-between">
-          <span>© {new Date().getFullYear()} Snap Apps. Made for Australian GST.</span>
-          <span>Figures shown across this site are illustrative examples, not live data.</span>
-        </div>
-      </Container>
+      {/* The name, set very large and cut off by the page edge. */}
+      <div
+        aria-hidden
+        className="pointer-events-none select-none px-3 text-center font-[700] leading-[0.78] tracking-[-0.07em] text-[var(--s-mist-2)]"
+        style={{ fontSize: 'clamp(4.5rem, 19vw, 17rem)', marginBottom: '-0.12em' }}
+      >
+        Snap Apps
+      </div>
     </footer>
   );
 }

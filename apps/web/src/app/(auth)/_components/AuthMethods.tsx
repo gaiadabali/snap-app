@@ -1,8 +1,11 @@
-import { Badge, Button, ButtonLink, Card, Field, Input } from '@/design/primitives';
+import Link from 'next/link';
+
 import { devBypassSignInAction, requestMagicLinkAction } from '@/lib/auth/actions';
 import { isDevBypassAvailable } from '@/lib/auth/dev-bypass';
 import { isGoogleSignInSimulatorAvailable } from '@/lib/auth/google-simulator';
 import { config } from '@/lib/config';
+
+import { AuthField, AuthInput } from './ui';
 
 /**
  * The ways in: Google (real or, on the demo host, simulated), a magic-link
@@ -30,58 +33,48 @@ export function AuthMethods({
       : 'No password to invent or remember — a link in your inbox is the whole account.';
 
   return (
-    <Card className="flex flex-col gap-6">
+    <div className="auth-panel">
       <div>
-        <h1 className="text-[22px] font-semibold tracking-tight text-[var(--color-ink)]">
-          {heading}
-        </h1>
-        <p className="mt-1.5 text-[14px] text-[var(--color-ink-muted)]">{lede}</p>
+        <h1 className="auth-title">{heading}</h1>
+        <p className="auth-lede">{lede}</p>
       </div>
 
       {error ? (
-        <div className="rounded-[var(--radius-md)] border border-[var(--color-risk)] bg-[var(--color-risk-soft)] px-3 py-2 text-[13px] text-[var(--color-risk)]">
+        <div role="alert" className="auth-alert auth-alert-error">
           {error}
         </div>
       ) : null}
 
       {sent ? (
-        <div className="rounded-[var(--radius-md)] border border-[var(--color-good)] bg-[var(--color-good-soft)] px-3 py-2 text-[13px] text-[var(--color-good)]">
+        <div role="status" className="auth-alert auth-alert-ok">
           Check your email for a sign-in link. It expires in 15 minutes and works once.
         </div>
       ) : (
         <>
           {!config.googleOauthConfigured && isGoogleSignInSimulatorAvailable() ? (
-            <ButtonLink
+            <Link
               href={`/auth/google-simulator?returnTo=${encodeURIComponent(returnTo)}`}
-              variant="secondary"
-              size="lg"
-              className="w-full"
+              className="btn btn-secondary btn-lg w-full"
             >
               Continue with Google (demo sign-in)
-            </ButtonLink>
+            </Link>
           ) : (
-            <ButtonLink
+            <Link
               href={`/auth/google?returnTo=${encodeURIComponent(returnTo)}`}
-              variant="secondary"
-              size="lg"
-              className="w-full"
+              className="btn btn-secondary btn-lg w-full"
             >
               Continue with Google
-            </ButtonLink>
+            </Link>
           )}
 
           {config.mailerConfigured ? (
             <>
-              <div className="flex items-center gap-3 text-[12px] font-medium uppercase tracking-[0.08em] text-[var(--color-ink-faint)]">
-                <span className="h-px flex-1 bg-[var(--color-rule)]" />
-                or
-                <span className="h-px flex-1 bg-[var(--color-rule)]" />
-              </div>
+              <div className="auth-divider">or</div>
 
-              <form action={requestMagicLinkAction} className="flex flex-col gap-4">
+              <form action={requestMagicLinkAction} className="auth-form">
                 <input type="hidden" name="returnTo" value={returnTo} />
-                <Field label="Email address" htmlFor="magic-email">
-                  <Input
+                <AuthField label="Email address" htmlFor="magic-email">
+                  <AuthInput
                     id="magic-email"
                     name="email"
                     type="email"
@@ -89,10 +82,10 @@ export function AuthMethods({
                     placeholder="you@example.com"
                     required
                   />
-                </Field>
-                <Button type="submit" size="lg">
+                </AuthField>
+                <button type="submit" className="btn btn-primary btn-lg w-full">
                   Email me a sign-in link
-                </Button>
+                </button>
               </form>
             </>
           ) : (
@@ -103,13 +96,13 @@ export function AuthMethods({
              * wastes a reviewer's time before they think to try anything else.
              * Say so instead, and point at the way in that does work.
              */
-            <div className="rounded-[var(--radius-md)] border border-[var(--color-rule-strong)] bg-[var(--color-surface-alt)] px-3 py-3 text-[13px] text-[var(--color-ink-muted)]">
-              <strong className="font-semibold text-[var(--color-ink)]">
+            <div className="auth-note">
+              <strong>
                 {mode === 'register'
                   ? 'Account creation is closed on this demo host.'
                   : 'Email sign-in is unavailable on this demo host.'}
               </strong>
-              <p className="mt-1">
+              <p>
                 No mail provider is configured, so a sign-in link cannot be delivered.
                 {mode === 'register'
                   ? ' Use one of the demo identities above to explore every role — including the platform admin console.'
@@ -121,7 +114,7 @@ export function AuthMethods({
       )}
 
       {!sent && isDevBypassAvailable() ? <DevBypass returnTo={returnTo} /> : null}
-    </Card>
+    </div>
   );
 }
 
@@ -135,25 +128,25 @@ export function AuthMethods({
  */
 function DevBypass({ returnTo }: { returnTo: string }) {
   return (
-    <div className="flex flex-col gap-3 rounded-[var(--radius-md)] border-2 border-dashed border-[var(--color-warn)] bg-[var(--color-warn-soft)] p-4">
-      <div className="flex items-center gap-2">
-        <Badge tone="warn">Development only</Badge>
-        <span className="text-[12px] text-[var(--color-warn)]">
+    <div className="auth-dev">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="auth-badge">Development only</span>
+        <span className="text-[12px] font-medium text-[var(--s-amber)]">
           Never reachable when NODE_ENV=production
         </span>
       </div>
-      <p className="text-[13px] text-[var(--color-ink-muted)]">
+      <p>
         Trades a bare email for a session with no proof you own it. Stands in for the Google
         exchange until staging credentials exist.
       </p>
-      <form action={devBypassSignInAction} className="flex flex-col gap-3">
+      <form action={devBypassSignInAction} className="auth-form">
         <input type="hidden" name="returnTo" value={returnTo} />
-        <Field label="Email address" htmlFor="dev-email">
-          <Input id="dev-email" name="email" type="email" placeholder="you@example.com" required />
-        </Field>
-        <Button type="submit" variant="secondary">
+        <AuthField label="Email address" htmlFor="dev-email">
+          <AuthInput id="dev-email" name="email" type="email" placeholder="you@example.com" required />
+        </AuthField>
+        <button type="submit" className="btn btn-secondary btn-lg w-full">
           Sign in without verification (dev)
-        </Button>
+        </button>
       </form>
     </div>
   );

@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 
-import { ArticleHero } from '@/design/primitives';
-
+import { DocHeader } from '../_components/DocHeader';
 import { Toc } from '../_components/Toc';
 
 export const metadata: Metadata = { title: 'BAS and the unclaimable-GST report' };
@@ -17,22 +16,19 @@ const sections = [
 
 export default function BasAndGstPage() {
   return (
-    <div className="grid gap-10 xl:grid-cols-[1fr_200px]">
-      <article className="max-w-[68ch]">
-        <ArticleHero
-        kicker="Documentation"
-        title={<>BAS and the unclaimable-GST report</>}
-      />
-        <p className="mt-3 text-[16px] leading-relaxed text-[var(--color-ink-muted)]">
+    <div className="docs-page">
+      <article className="docs-prose">
+        <DocHeader title={<>BAS and the unclaimable-GST report</>} />
+        <p className="docs-lead">
           The BAS report is built directly from your posted transactions and their tax codes — it is
           the same ledger you&apos;ve been confirming receipts into, grouped the way the ATO asks for
           it.
         </p>
 
-        <h2 id="simpler-vs-full" className="mt-10 text-[20px] font-bold text-[var(--color-ink)]">
+        <h2 id="simpler-vs-full">
           Simpler BAS vs. the full method
         </h2>
-        <p className="mt-3 leading-relaxed text-[var(--color-ink-muted)]">
+        <p>
           Most businesses report under <strong>Simpler BAS</strong> — GST turnover under $10 million —
           which only needs three labels: <strong>G1</strong> (total sales), <strong>1A</strong> (GST on
           sales), and <strong>1B</strong> (GST on purchases). Larger businesses, and input-taxed
@@ -40,10 +36,10 @@ export default function BasAndGstPage() {
           supports both and defaults to Simpler BAS.
         </p>
 
-        <h2 id="tax-codes" className="mt-10 text-[20px] font-bold text-[var(--color-ink)]">
+        <h2 id="tax-codes">
           Tax codes, not free-text categories
         </h2>
-        <p className="mt-3 leading-relaxed text-[var(--color-ink-muted)]">
+        <p>
           Every taxable split carries a tax code — <code>GST</code>, <code>CAP</code> (capital
           purchases), <code>GSTONINCOME</code>, <code>FRE</code> (GST-free), <code>INP</code>{' '}
           (input-taxed), <code>EXP</code> (export), or <code>N-T</code> (not reportable) — each mapped
@@ -51,24 +47,24 @@ export default function BasAndGstPage() {
           means the same thing your accountant already reads it as.
         </p>
 
-        <h2 id="the-tax-invoice-rule" className="mt-10 text-[20px] font-bold text-[var(--color-ink)]">
+        <h2 id="the-tax-invoice-rule">
           The rule that decides what you can actually claim
         </h2>
-        <p className="mt-3 leading-relaxed text-[var(--color-ink-muted)]">
+        <p>
           You can only claim a GST credit on a purchase if you hold a valid tax invoice — required once
           a purchase reaches $82.50 including GST, and the invoice must also show your identity or ABN
           once it reaches $1,000 including GST. Whether a document meets that bar is decided by the
           same checks described in{' '}
-          <a className="text-[var(--color-accent)] hover:underline" href="/docs/confidence-and-flags">
+          <a href="/docs/confidence-and-flags">
             Confidence and why a field was flagged
           </a>
           , not by you having to remember the thresholds.
         </p>
 
-        <h2 id="the-unclaimable-report" className="mt-10 text-[20px] font-bold text-[var(--color-ink)]">
+        <h2 id="the-unclaimable-report">
           The unclaimable-GST report
         </h2>
-        <p className="mt-3 leading-relaxed text-[var(--color-ink-muted)]">
+        <p>
           Label 1B only ever includes GST from purchases backed by a valid tax invoice. Everything
           else — a receipt missing a supplier ABN above the threshold, one that doesn&apos;t show
           GST separately, a docket that&apos;s simply too incomplete — is excluded from what you claim
@@ -77,24 +73,24 @@ export default function BasAndGstPage() {
           possible to get one.
         </p>
 
-        <h2 id="sanity-checks" className="mt-10 text-[20px] font-bold text-[var(--color-ink)]">
+        <h2 id="sanity-checks">
           Sanity checks on the numbers
         </h2>
-        <p className="mt-3 leading-relaxed text-[var(--color-ink-muted)]">
+        <p>
           The report checks its own arithmetic before you see it: 1A should be about a tenth of G1, and
           1B should be about a tenth of your reportable purchases. A BAS period that doesn&apos;t
           reconcile against its own inputs is flagged rather than handed to you looking clean.
         </p>
 
-        <h2 id="not-advice" className="mt-10 text-[20px] font-bold text-[var(--color-ink)]">
+        <h2 id="not-advice">
           What this is not
         </h2>
-        <p className="mt-3 leading-relaxed text-[var(--color-ink-muted)]">
+        <p>
           This report is a tool for preparing your BAS, built from rules the ATO publishes — it is not
           personalised tax advice, and it doesn&apos;t replace a registered BAS or tax agent reviewing
           your position, particularly for anything unusual (input-taxed supplies, mixed-use assets,
           GST grouping). See{' '}
-          <a className="text-[var(--color-accent)] hover:underline" href="/legal/terms">
+          <a href="/legal/terms">
             Terms of Service
           </a>{' '}
           for how this is scoped.

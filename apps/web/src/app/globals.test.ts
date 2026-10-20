@@ -104,9 +104,11 @@ describe('globals.css', () => {
     // forever. These are load-bearing classes; if the parse breaks, this fails.
     const all = topLevelSelectors(CSS);
     const classes = new Set(all.flatMap((r) => r.split(',').map(bareClass)).filter(Boolean));
-    expect(classes.has('seam')).toBe(true);
-    expect(classes.has('join')).toBe(true);
-    expect(classes.has('fieldbox')).toBe(true);
-    expect(all.length).toBeGreaterThan(40);
+    // Re-pointed 2026-10-20: `seam`, `join` and `fieldbox` left with the
+    // ledger register when the marketing site moved to design/site.
+    expect(classes.has('t-label')).toBe(true);
+    expect(classes.has('tabular')).toBe(true);
+    expect(classes.has('tap')).toBe(true);
+    expect(all.length).toBeGreaterThan(10);
   });
 });

@@ -1,0 +1,99 @@
+/*
+ * The estimator's range slider. Every class is `pricing-teaser-` prefixed.
+ *
+ * A native <input type="range">, so the keyboard, touch and screen readers
+ * all work for free; only its skin is ours. `--p` (0 to 1, set inline by the
+ * island) is how far along the track the thumb sits, and it paints the filled
+ * part. Nothing here hides anything, so there is no motion gate to release.
+ */
+
+@layer components {
+  .pricing-teaser-range {
+    --thumb: 30px;
+    -webkit-appearance: none;
+    appearance: none;
+    display: block;
+    width: 100%;
+    height: 40px;
+    margin: 0;
+    background: transparent;
+    cursor: pointer;
+    touch-action: pan-y;
+  }
+
+  .pricing-teaser-range::-webkit-slider-runnable-track {
+    height: 10px;
+    border-radius: 999px;
+    background: linear-gradient(
+      90deg,
+      var(--s-blue) calc(var(--thumb) / 2 + (100% - var(--thumb)) * var(--p, 0)),
+      var(--s-mist-2) calc(var(--thumb) / 2 + (100% - var(--thumb)) * var(--p, 0))
+    );
+  }
+
+  .pricing-teaser-range::-moz-range-track {
+    height: 10px;
+    border-radius: 999px;
+    background: linear-gradient(
+      90deg,
+      var(--s-blue) calc(var(--thumb) / 2 + (100% - var(--thumb)) * var(--p, 0)),
+      var(--s-mist-2) calc(var(--thumb) / 2 + (100% - var(--thumb)) * var(--p, 0))
+    );
+  }
+
+  .pricing-teaser-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: var(--thumb);
+    height: var(--thumb);
+    margin-top: calc((10px - var(--thumb)) / 2);
+    border-radius: 999px;
+    border: 4px solid var(--s-blue);
+    background: #fff;
+    box-shadow: 0 6px 14px -4px rgb(24 120 216 / 0.55);
+    transition: transform 0.25s var(--s-spring), box-shadow 0.25s ease;
+  }
+
+  .pricing-teaser-range::-moz-range-thumb {
+    box-sizing: border-box;
+    width: var(--thumb);
+    height: var(--thumb);
+    border-radius: 999px;
+    border: 4px solid var(--s-blue);
+    background: #fff;
+    box-shadow: 0 6px 14px -4px rgb(24 120 216 / 0.55);
+    transition: transform 0.25s var(--s-spring), box-shadow 0.25s ease;
+  }
+
+  .pricing-teaser-range:hover::-webkit-slider-thumb {
+    transform: scale(1.08);
+  }
+
+  .pricing-teaser-range:hover::-moz-range-thumb {
+    transform: scale(1.08);
+  }
+
+  .pricing-teaser-range:focus-visible {
+    outline: none;
+  }
+
+  .pricing-teaser-range:focus-visible::-webkit-slider-thumb {
+    box-shadow: 0 0 0 6px rgb(24 120 216 / 0.28), 0 6px 14px -4px rgb(24 120 216 / 0.55);
+  }
+
+  .pricing-teaser-range:focus-visible::-moz-range-thumb {
+    box-shadow: 0 0 0 6px rgb(24 120 216 / 0.28), 0 6px 14px -4px rgb(24 120 216 / 0.55);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pricing-teaser-range::-webkit-slider-thumb,
+    .pricing-teaser-range::-moz-range-thumb {
+      transition: none;
+    }
+
+    .pricing-teaser-range:hover::-webkit-slider-thumb,
+    .pricing-teaser-range:hover::-moz-range-thumb {
+      transform: none;
+    }
+  }
+}

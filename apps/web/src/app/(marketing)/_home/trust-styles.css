@@ -1,0 +1,175 @@
+/**
+ * Home trust — the "record stack". Every class is `trust-`.
+ *
+ * The stage is a fixed-height box, positioned by hand, so the picture is the
+ * same at every width: the docket at the base, three translucent layers above
+ * it, and a cyan rail that ties them to the original (a lineage graph, read
+ * bottom to top). Each layer carries three numbers:
+ *   --x  left offset in px, which is also where its tick meets the rail
+ *   --n  y of its node, measured from the layer's own top
+ *   --i  order of arrival, base first
+ *
+ * Motion follows design/site/README.md: a hidden start-state exists only under
+ * `.motion` and is released by `[data-in]` on the stage's <Reveal>. Nothing
+ * loops, and the end state is the finished picture.
+ */
+
+@layer components {
+  .trust-stage {
+    --rail: 11; /* px: x of the rail's centre line */
+  }
+
+  /* The rail: the thread from the original up to your record. */
+  .trust-rail {
+    position: absolute;
+    left: calc(var(--rail) * 1px - 1px);
+    top: 30px;
+    width: 2px;
+    height: 296px;
+    border-radius: 2px;
+    background: linear-gradient(to top, var(--s-cyan), rgb(28 168 219 / 0.18));
+    box-shadow: 0 0 14px rgb(63 198 238 / 0.45);
+  }
+
+  .trust-layer {
+    position: absolute;
+    left: calc(var(--x) * 1px);
+  }
+
+  /* A tick from the rail to the layer, and the node where it joins. */
+  .trust-layer::before {
+    content: "";
+    position: absolute;
+    top: calc(var(--n) * 1px);
+    right: 100%;
+    width: calc((var(--x) - var(--rail)) * 1px);
+    height: 1px;
+    background: linear-gradient(90deg, rgb(63 198 238 / 0.9), rgb(63 198 238 / 0.3));
+  }
+
+  .trust-layer::after {
+    content: "";
+    position: absolute;
+    top: calc(var(--n) * 1px - 5px);
+    left: calc((var(--rail) - var(--x)) * 1px - 5px);
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    background: var(--s-cyan);
+    box-shadow:
+      0 0 0 3px var(--s-night),
+      0 0 14px 2px rgb(63 198 238 / 0.7);
+  }
+
+  /* ── The four layers, base first ─────────────────────────────────────── */
+
+  .trust-orig {
+    top: 294px;
+    width: min(54%, 270px);
+  }
+
+  .trust-glass {
+    height: 100px;
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    padding: 0 16px 14px;
+    border-radius: 22px;
+    border: 1px solid rgb(255 255 255 / 0.1);
+    background: color-mix(in srgb, var(--s-night-3) 62%, transparent);
+    backdrop-filter: blur(12px) saturate(1.3);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.07),
+      0 24px 40px -24px rgb(0 0 0 / 0.7);
+    font-size: 0.8125rem;
+    color: var(--s-night-ink-2);
+  }
+
+  .trust-v1 {
+    top: 186px;
+    right: 28px;
+  }
+
+  .trust-v2 {
+    top: 128px;
+    right: 14px;
+  }
+
+  .trust-record {
+    top: 0;
+    right: 0;
+    height: 170px;
+    padding: 18px 20px 16px;
+    display: flex;
+    flex-direction: column;
+    border-radius: 24px;
+    background: var(--s-grad);
+    color: #fff;
+    box-shadow:
+      inset 0 0 0 1px rgb(255 255 255 / 0.16),
+      0 30px 60px -24px rgb(24 120 216 / 0.65);
+  }
+
+  .trust-tag {
+    display: inline-flex;
+    align-items: center;
+    flex: none;
+    height: 24px;
+    padding: 0 10px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 650;
+    letter-spacing: -0.005em;
+    background: rgb(255 255 255 / 0.1);
+    color: var(--s-night-ink);
+  }
+
+  .trust-record .trust-tag {
+    background: rgb(255 255 255 / 0.18);
+  }
+
+  /* ── Arrival ─────────────────────────────────────────────────────────── */
+
+  .motion [data-reveal]:not([data-in]) .trust-layer {
+    opacity: 0;
+    transform: translate3d(0, 34px, 0);
+  }
+
+  .motion .trust-layer {
+    transition:
+      opacity 0.9s var(--s-ease),
+      transform 1.1s var(--s-ease);
+    transition-delay: calc(0.2s + var(--i, 0) * 0.35s);
+  }
+
+  .motion [data-reveal]:not([data-in]) .trust-rail {
+    transform: scaleY(0);
+  }
+
+  .motion .trust-rail {
+    transform-origin: bottom center;
+    transition: transform 1.4s var(--s-ease-in-out) 0.4s;
+  }
+
+  /* The scan sweeps the original once, then the rail climbs. */
+  .motion [data-in] .trust-beam {
+    animation: trust-beam 1.5s var(--s-ease-in-out) 0.3s both;
+  }
+}
+
+@keyframes trust-beam {
+  0% {
+    top: 4%;
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  88% {
+    opacity: 1;
+  }
+  100% {
+    top: 94%;
+    opacity: 0;
+  }
+}

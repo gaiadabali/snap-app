@@ -1,24 +1,49 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+
 /**
- * In-page "On this page" table of contents.
+ * "On this page", with the section being read highlighted.
  *
- * Static, not scroll-spied — the content here does not change per render, so
- * a hand-written list of section ids costs nothing and cannot drift silently
- * the way a DOM-scanning version can if a heading is edited without care.
- * Each `id` must match a heading's `id` in the same page.
+ * The list is hand-written per page (each `id` must match a heading's `id`
+ * in the same page, so a renamed heading cannot drift silently); this island
+ * only adds the active state, using an IntersectionObserver rather than a
+ * scroll listener. Without JS the links still jump to their sections.
  */
 export function Toc({ items }: { items: Array<{ id: string; label: string }> }) {
+  const [active, setActive] = useState<string | null>(null);
+
+  useEffect(() => {
+    const targets = items
+      .map((item) => document.getElementById(item.id))
+      .filter((el): el is HTMLElement => el !== null);
+    if (targets.length === 0) return;
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        // The topmost heading inside the reading band wins.
+        const top = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+        if (top) setActive(top.target.id);
+      },
+      { rootMargin: '-96px 0px -68% 0px', threshold: 0 },
+    );
+    targets.forEach((el) => io.observe(el));
+    return () => io.disconnect();
+  }, [items]);
+
   if (items.length === 0) return null;
   return (
-    <nav aria-label="On this page" className="sticky top-8 hidden lg:block">
-      <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-ink-faint)]">
-        On this page
-      </div>
-      <ul className="mt-3 flex flex-col gap-2 border-l border-[var(--color-rule)] pl-4">
+    <nav aria-label="On this page" className="docs-toc">
+      <div className="docs-side-title">On this page</div>
+      <ul>
         {items.map((item) => (
           <li key={item.id}>
             <a
               href={`#${item.id}`}
-              className="text-[13px] leading-snug text-[var(--color-ink-muted)] hover:text-[var(--color-accent)]"
+              aria-current={active === item.id ? 'location' : undefined}
+              onClick={() => setActive(item.id)}
             >
               {item.label}
             </a>

@@ -1,0 +1,152 @@
+/*
+ * The comparison table. Every class is `compare-` prefixed.
+ *
+ * The Snap Apps column is a raised card drawn with pseudo-elements: a gradient
+ * cap above the header row, a tinted body, a rounded foot below the last row.
+ * The scroller's block padding is the room those extensions grow into.
+ * Marks pop in once the table is seen; without `.motion` nothing is hidden.
+ */
+
+@layer components {
+  .compare-scroll {
+    --cap: 18px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    padding-block: var(--cap);
+    scrollbar-width: thin;
+    scrollbar-color: var(--s-edge-2) transparent;
+  }
+
+  .compare-table {
+    width: 100%;
+    min-width: 46rem;
+    border-collapse: separate;
+    border-spacing: 0;
+    text-align: left;
+  }
+
+  .compare-table th,
+  .compare-table td {
+    border-bottom: 1px solid var(--s-edge);
+  }
+
+  .compare-table tbody tr:last-child > * {
+    border-bottom-color: transparent;
+  }
+
+  /* The first column stays put while the rest scrolls under it. */
+  .compare-sticky {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background: var(--s-bg);
+  }
+
+  /* A soft edge where content slides under the pinned column. Only drawn
+     when the table actually scrolls. */
+  .compare-sticky::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 14px;
+    translate: 100% 0;
+    pointer-events: none;
+    background: linear-gradient(90deg, rgb(11 17 26 / 0.08), transparent);
+    opacity: 0;
+  }
+
+  @media (max-width: 1023px) {
+    .compare-sticky::after {
+      opacity: 1;
+    }
+  }
+
+  /* The headline row: the one nobody else can tick. */
+  .compare-headline > th,
+  .compare-headline > td:not(.compare-us) {
+    background: var(--s-mist);
+  }
+
+  /* ── The Snap Apps column ──────────────────────────────────────────────── */
+
+  .compare-us {
+    position: relative;
+    z-index: 1;
+    border-inline: 1px solid rgb(24 120 216 / 0.3);
+    background: transparent;
+  }
+
+  .compare-us::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: var(--s-blue-soft);
+  }
+
+  .compare-headline > .compare-us::before {
+    background: color-mix(in srgb, var(--s-blue) 17%, var(--s-bg));
+  }
+
+  thead .compare-us {
+    color: #fff;
+    border-bottom-color: transparent;
+    border-inline-color: transparent;
+  }
+
+  thead .compare-us::before {
+    top: calc(var(--cap) * -1);
+    border-radius: 22px 22px 0 0;
+    background: var(--s-grad);
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.14);
+  }
+
+  tbody tr:last-child > .compare-us {
+    border-bottom: 1px solid rgb(24 120 216 / 0.3);
+  }
+
+  tbody tr:last-child > .compare-us::before {
+    bottom: calc(var(--cap) * -1);
+    border-radius: 0 0 22px 22px;
+    box-shadow: inset 0 0 0 1px rgb(24 120 216 / 0.3);
+  }
+
+  /* ── Marks ─────────────────────────────────────────────────────────────── */
+
+  .compare-mark {
+    display: inline-grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 999px;
+  }
+
+  .compare-mark-yes {
+    background: var(--s-green-soft);
+    color: var(--s-green);
+  }
+
+  .compare-mark-no {
+    color: var(--s-ink-3);
+  }
+
+  .compare-mark-big {
+    width: 34px;
+    height: 34px;
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--s-green) 14%, transparent);
+  }
+
+  .motion [data-reveal] .compare-pop {
+    transition:
+      opacity 0.5s var(--s-ease),
+      transform 0.8s var(--s-spring);
+    transition-delay: calc(0.4s + var(--i, 0) * 0.1s);
+  }
+
+  .motion [data-reveal]:not([data-in]) .compare-pop {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+}
