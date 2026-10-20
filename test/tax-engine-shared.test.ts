@@ -36,7 +36,7 @@ function engineTreeSha256(): string {
   return hash.digest('hex');
 }
 
-/** Pinned here. Changing the engine means changing this, in the same PR as FTR's copy. */
+/** Pinned here. Changing the engine means re-pinning this in the same PR, then copying the folder to FTR in a PR there. */
 const ENGINE_TREE_SHA256 = 'eb31dea57a18cedfe35b143dbdc6dc6d87140c7d92b4222857d4c180485fb5b2';
 
 describe('tax engine is the agreed bytes', () => {
