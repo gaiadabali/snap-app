@@ -119,7 +119,7 @@ describe('the free scan allowance', () => {
     // A scanner matching nothing would pass the assertion below forever.
     const files = sources(MARKETING);
     expect(files.length).toBeGreaterThan(15);
-    expect(files.some((f) => f.endsWith('proof.tsx'))).toBe(true);
+    expect(files.some((f) => f.endsWith('pricing-teaser.tsx'))).toBe(true);
     expect(files.join('\n')).toMatch(/page\.tsx/);
   });
 

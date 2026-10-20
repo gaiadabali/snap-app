@@ -1,281 +1,64 @@
 import type { Metadata } from 'next';
 
-import {
-  ButtonLink,
-  FieldBox,
-  LedgerRow,
-  Money,
-  PageHero,
-  Reveal,
-  Rule,
-  Section,
-  SectionHead,
-  Split,
-  SplitBar,
-  Tear,
-} from '@/design/primitives';
+import { ILLUSTRATIVE_NOTE } from '@/design/site';
 
-import { Scene } from '@/design/three/Scene';
-import { SCENES_3D_ENABLED } from '@/lib/features';
-
-import { PageSpine } from '../_components/page-spine';
-import { ReceiptScanCard } from '../_components/receipt-scan-card';
+import { FeaturesHero } from './_hero';
+import { ChapterNav, type Chapter } from './_nav';
+import { CaptureChapter, ChecksChapter, ReadingChapter } from './_chapters-a';
+import { FeaturesCta, HouseholdChapter, MoneyChapter, RecordsChapter } from './_chapters-b';
+import './features.css';
 
 export const metadata: Metadata = {
   title: 'Features',
   description:
-    'Per-line GST, nine checks that catch what a bigger model would not, books that cannot go out of balance, and a tax pack that is already filled in.',
+    'Snap a docket and Snap Apps reads every line, splits GST-free from taxable, checks the tax invoice rules, keeps a five-year true copy and shows what is safe to spend.',
 };
 
 /**
- * Benefit-led, per `docs/DESIGN-HANDOFF.md` §12.6.
+ * A tour of what the shipped (personal) release does, in six chapters, each a
+ * different shape: a night panel around the camera, a docket-to-phone
+ * composition with a switch, a checklist beside a failing receipt, a bento, a
+ * household pair with a fading phone, a live search box. Business features
+ * (BAS, tax pack, invoices, Xero) are not shown at all — they would sit behind
+ * BUSINESS_SURFACES_ENABLED, which is off.
  *
- * The previous version was the pipeline in nine numbered steps — "01 ·
- * Capture", "02 · Extraction" — which §8 explicitly rules out: the gutter
- * carries real ATO labels, never invented 01/02/03 markers. Icons are gone
- * under §12.2 (purely typographic; no decorative iconography).
- *
- * Mechanism survives only as the reason to believe. "Nine deterministic
- * checks" stays because it is the accuracy claim; "versioned replayable
- * extraction runs" becomes "nothing changes behind your back", which is the
- * same fact told from the reader's side.
- *
- * Forms vary and no two adjacent sections share one (§12.1):
- * wide → gutter → measure → gutter/void → wide → gutter → measure.
+ * The chapter nav is a zero-height sticky wrapper, so it floats over the
+ * chapters without pushing any of them down.
  */
-
-/** The supermarket docket. Reconciles: 18.40 + 21.60 = 40.00, and 21.60 ÷ 11 = 1.96 (to the cent). */
-const DOCKET = {
-  free: '18.40',
-  taxable: '21.60',
-  gst: '1.96',
-  total: '40.00',
-} as const;
-
-const CHECKS = [
-  { code: 'ABN', name: 'ABN checksum', rule: 'Mod-89 on every ABN read off the page, so one mistyped digit is caught here rather than at lodgement.' },
-  { code: 'ABR', name: 'ABN identity', rule: 'Checked against the ABR register — legal name and whether they are actually registered for GST.' },
-  { code: 'SUM', name: 'GST arithmetic', rule: 'Ex-GST amount plus GST must equal the inclusive total, to the cent.' },
-  { code: '1/11', name: 'GST rate', rule: 'An all-taxable invoice must show GST at one eleventh of the inclusive price.' },
-  { code: 'LINE', name: 'Line-item sum', rule: 'Every line has to add up to the invoice total before any of it is trusted.' },
-  { code: '5c', name: 'Cash rounding', rule: 'Australian 5c rounding tolerated to ±$0.02 — and the difference is recorded, not quietly dropped.' },
-  { code: 'MIX', name: 'Mixed-tax reconciliation', rule: 'The GST-free and taxable subtotals must each reconcile on their own, not merely sum to the right total.' },
-  { code: '1B', name: 'Tax-invoice completeness', rule: 'The seven elements the ATO requires. This is the check that decides whether the GST is claimable at all.' },
-  { code: 'DATE', name: 'Date sanity', rule: 'Not in the future, not more than ten years past.' },
-] as const;
+const CHAPTERS: readonly Chapter[] = [
+  { id: 'capture', label: 'Capture' },
+  { id: 'reading', label: 'Reading' },
+  { id: 'checks', label: 'Checks' },
+  { id: 'money', label: 'Money' },
+  { id: 'household', label: 'Household' },
+  { id: 'records', label: 'Records' },
+];
 
 export default function FeaturesPage() {
   return (
     <>
-      {/* Same reading rail as the home page. One tracker, in the gutter where
-          the ATO codes hang. See `_components/page-spine.tsx`. */}
-      <PageSpine />
+      <FeaturesHero />
 
-      {/* 1 — the shared opening. */}
-      <PageHero
-        screen
-        kicker="What it does"
-        title="Right to the cent, or it says so."
-        lede="Most tools hand you a total off the front of a receipt. This one works out the GST line by line, checks it nine ways against the ATO's own rules, and refuses to post anything that does not balance."
-      />
-
-      {/* 2 — gutter. The wedge, first, because it is the thing nobody else does. */}
-      <Section code="G11" size="lg" className="screen sect-3d">
-        <Split
-          lead={
-            <>
-              <SectionHead
-                kicker="The one nobody else has"
-                title="A grocery run, split the way the ATO actually sees it"
-                lede="Fresh food is GST-free. Packaged goods are not. On one docket for site lunch, only part of it is claimable — and a tool that reads the header total cannot tell you which part."
-              />
-              <Reveal>
-                <p className="t-body mt-6 max-w-[54ch] text-[var(--color-ink-muted)]">
-                  Snap Apps keeps a subtotal per tax category on the same document, and reconciles
-                  each one independently. Hubdoc, Dext and myDeductions all record a single header
-                  figure.
-                </p>
-              </Reveal>
-            </>
-          }
-          aside={
-            <div className="lg:pt-6">
-              {/*
-                The same two figures the rows carry, drawn to scale. Not a
-                confidence meter — see `SplitBar`: this is arithmetic the
-                reader can check, 18.40 and 21.60 against a 40.00 total.
-              */}
-              <SplitBar
-                className="mb-8"
-                parts={[
-                  { weight: Number(DOCKET.free), tone: 'good', label: 'GST-free' },
-                  { weight: Number(DOCKET.taxable), tone: 'accent', label: 'Taxable' },
-                ]}
-              />
-              <Tear className="mb-6" />
-              <LedgerRow code="FREE" label="GST-free — fresh food" value={<Money amount={DOCKET.free} />} index={0} />
-              <LedgerRow code="TAX" label="Taxable — packaged goods" value={<Money amount={DOCKET.taxable} />} index={1} />
-              <LedgerRow
-                code="G11"
-                label="GST you can claim"
-                value={
-                  <FieldBox code="G11">
-                    <Money amount={DOCKET.gst} />
-                  </FieldBox>
-                }
-                emphasis
-                index={2}
-              />
-              <LedgerRow code="TOT" label="Docket total" value={<Money amount={DOCKET.total} />} emphasis index={3} />
+      <div>
+        <div className="pointer-events-none sticky top-[84px] z-40 h-0">
+          <div className="shell flex justify-center">
+            <div className="pointer-events-auto max-w-full">
+              <ChapterNav chapters={CHAPTERS} />
             </div>
-          }
-        />
-      </Section>
-
-      {/* 3 — measure. Prose. */}
-      <Section form="measure" className="screen sect-3d">
-        <Rule />
-        <Reveal>
-          <h2 className="t-head mt-5 max-w-[22ch]">Nothing changes behind your back</h2>
-        </Reveal>
-        <Reveal>
-          <p className="t-body mt-6 text-[var(--color-ink-muted)]">
-            Every read is kept as its own numbered attempt rather than overwriting the last one. So
-            when a better model arrives, your whole history can be read again — and the improvement
-            shows up as a change you can look at and accept, not as a figure that quietly differs
-            from what you remember.
-          </p>
-        </Reveal>
-        <Reveal>
-          <p className="t-body mt-4 text-[var(--color-ink-muted)]">
-            Once a transaction is posted, it is locked. A later re-read that disagrees raises a task
-            for a person. It cannot rewrite a number that is already on a lodged BAS.
-          </p>
-        </Reveal>
-      </Section>
-
-      {/* 4 — gutter + void. The single inverted band, on the accuracy claim. */}
-      <Section code="CHECK" tone="void" size="lg" className="screen sect-3d">
-        <SectionHead
-          tone="void"
-          kicker="Nine checks, every document"
-          title="The cheapest accuracy in the system is arithmetic"
-          lede="These cost nothing to run and catch things a larger model does not. They run in code, against the ATO's rules — the model is never asked to grade its own work."
-        />
-        <Tear className="mt-10" tone="void" />
-        <div className="mt-6">
-          {CHECKS.map((c, i) => (
-            <LedgerRow
-              key={c.code}
-              tone="void"
-              code={c.code}
-              label={c.name}
-              note={c.rule}
-              value="pass / fail"
-              index={i}
-            />
-          ))}
+          </div>
         </div>
-      </Section>
 
-      {/* 5 — wide. One idea at display size. */}
-      <Section form="wide" size="lg" className="screen sect-3d">
-        <Rule />
-        <Reveal variant="fade">
-          <div className="t-label mt-5 text-[var(--color-ink-muted)]">Before lodgement</div>
-        </Reveal>
-        <Reveal>
-          <h2 className="t-head mt-4 max-w-[24ch]">
-            It tells you which receipts will cost you, while you can still fix them
-          </h2>
-        </Reveal>
-        <Reveal>
-          <p className="t-lede mt-6 max-w-[56ch] text-[var(--color-ink-muted)]">
-            A failed check does not get quietly dropped or quietly claimed. It becomes one specific,
-            fixable line — which document, which check, what to do about it. An ABN to chase up, an
-            invoice to ask to have reissued. Not a number you discover was wrong a quarter later.
-          </p>
-        </Reveal>
-      </Section>
+        <CaptureChapter />
+        <ReadingChapter />
+        <ChecksChapter />
+        <MoneyChapter />
+        <HouseholdChapter />
+        <RecordsChapter />
 
-      {/* 6 — gutter. The rest, enumerated. */}
-      <Section code="D1–D5" size="lg" className="screen sect-3d">
-        <SectionHead
-          kicker="And the rest of it"
-          title="What happens after the reading is done"
-        />
-        <Tear className="mt-10" />
-        <div className="mt-6">
-          <LedgerRow
-            code="SUM"
-            label="Books that cannot go out of balance"
-            note="Every entry is double-entry and the splits must sum to zero — enforced by the database, not by the app remembering to check."
-            value="= 0"
-            emphasis
-            index={0}
-          />
-          <LedgerRow
-            code="D1–D5"
-            label="Deductions sorted by what you do"
-            note="A sparky and a courier do not claim the same things. Categories follow the occupation rather than a generic expense list."
-            value="by trade"
-            emphasis
-            index={1}
-          />
-          <LedgerRow
-            code="PACK"
-            label="A tax pack that is already filled in"
-            note="Filled in before 1 July, not after. Every figure traces back to the photograph it came from, so an accountant can check any line in one click."
-            value="ready"
-            emphasis
-            index={2}
-          />
-          <LedgerRow
-            code="XERO"
-            label="Feeds the chart of accounts you already run"
-            note="This does not replace Xero. Categories map to your existing accounts, BAS labels travel with each line, and nothing asks you to migrate."
-            value="sync"
-            emphasis
-            index={3}
-          />
-        </div>
-      </Section>
+        <p className="shell small pb-12 text-center">{ILLUSTRATIVE_NOTE}</p>
+      </div>
 
-      {/* 7 — measure. Close. */}
-      <Section form="measure" className="screen sect-3d">
-        <Rule />
-        <Reveal>
-          <h2 className="t-head mt-5 max-w-[18ch]">Start with one receipt</h2>
-        </Reveal>
-        <Reveal>
-          <p className="t-lede mt-6 text-[var(--color-ink-muted)]">
-            Ten scans free, no card. After that a scan costs a credit, and credits do not expire.
-          </p>
-        </Reveal>
-        <Reveal>
-          {/*
-            The docket, in depth. `Scene` is a passthrough unless the
-            host allows it AND the device can take it — so what is inside is
-            not a placeholder, it is the page. See src/design/three/Scene.
-          */}
-          <Scene
-            enabled={SCENES_3D_ENABLED}
-            className="mt-10 aspect-[3/4] w-full max-w-[420px]"
-          >
-            <div className="flex h-full items-center justify-center">
-              <ReceiptScanCard className="w-full" />
-            </div>
-          </Scene>
-        </Reveal>
-        <div className="mt-10 flex flex-wrap gap-3">
-          <ButtonLink href="/register" size="lg">
-            Get started free
-          </ButtonLink>
-          <ButtonLink href="/how-it-works" size="lg" variant="secondary">
-            See how it works
-          </ButtonLink>
-        </div>
-      </Section>
+      <FeaturesCta />
     </>
   );
 }

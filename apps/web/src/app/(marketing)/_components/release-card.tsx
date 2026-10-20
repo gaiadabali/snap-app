@@ -1,28 +1,11 @@
 import type { ReactNode } from 'react';
 
-import { Badge, Tear, cx } from '@/design/primitives';
+import { cx } from '@/design/primitives/cx';
 
 /**
- * A platform's release, as a record rather than a panel.
- *
- * WHAT WAS WRONG WITH THE OLD ONES. Two `Card`s side by side, each a bordered
- * box holding a heading, a paragraph, a button and a `<dl>` in a 2×2 grid.
- * Three problems, and the third is the one that mattered:
- *
- *   1. The 2×2 `<dl>` put "Version" beside "Released" and "File size" beside
- *      "Requires", so four figures sat in four quadrants with nothing aligning
- *      to anything. This site's entire visual argument is that figures belong
- *      in a column (`docs/WEB.md` §4.1) — a release manifest is exactly the
- *      kind of thing that should be read down a ruled edge.
- *   2. The cards were different shapes inside, so the two platforms could not
- *      be compared: the eye had to re-learn the layout on the right.
- *   3. They ended ragged. The Android card ran out of content well before the
- *      iOS card did, leaving a tall empty box beside a full one — which reads
- *      as something failing to load rather than as a shorter list.
- *
- * So both platforms now render through THIS, in the same order, with the spec
- * rows ruled and right-aligned, and the whole thing built to sit flush at the
- * bottom of whatever row it is in.
+ * A platform's release as a raised card in the marketing kit's language:
+ * platform and status on one line, the title, a lede, then the action and the
+ * facts. Both platforms render through this so they can be compared.
  */
 export function ReleaseCard({
   platform,
@@ -34,7 +17,7 @@ export function ReleaseCard({
   children,
   className,
 }: {
-  /** ANDROID · IPHONE — set in the mono face, above the title. */
+  /** "Android" or "iPhone" — the small label above the title. */
   platform: string;
   title: string;
   status: string;
@@ -46,41 +29,37 @@ export function ReleaseCard({
   children?: ReactNode;
   className?: string;
 }) {
+  const tone =
+    statusTone === 'good'
+      ? 'bg-[var(--s-green-soft)] text-[var(--s-green)]'
+      : statusTone === 'warn'
+        ? 'bg-[var(--s-amber-soft)] text-[var(--s-amber)]'
+        : 'bg-[var(--s-mist-2)] text-[var(--s-ink-2)]';
   return (
-    <div
-      className={cx(
-        'flex h-full min-w-0 flex-col rounded-[var(--radius-md)] border border-[var(--color-rule)] bg-[var(--color-surface)] p-6',
-        className,
-      )}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <span className="t-label text-[var(--color-accent)]">{platform}</span>
-        <Badge tone={statusTone}>{status}</Badge>
+    <div className={cx('card flex h-full min-w-0 flex-col p-7 sm:p-9', className)}>
+      <div className="flex items-center justify-between gap-3">
+        <span className="kicker">{platform}</span>
+        <span
+          className={cx(
+            'rounded-full px-3 py-1 text-[0.75rem] font-semibold tracking-[-0.005em]',
+            tone,
+          )}
+        >
+          {status}
+        </span>
       </div>
 
-      <h2 className="mt-3 text-[21px] font-semibold leading-tight text-[var(--color-ink)]">
-        {title}
-      </h2>
+      <h2 className="hd-3 mt-4">{title}</h2>
+      <div className="body mt-3">{lede}</div>
 
-      <div className="mt-3 text-[14px] leading-relaxed text-[var(--color-ink-muted)]">{lede}</div>
+      <div className="mt-7">{action}</div>
 
-      {/* The action sits at a fixed distance from the top of the card on both
-          sides, so the two download controls line up across the row however
-          long the two paragraphs above them run. */}
-      <div className="mt-6">{action}</div>
-
-      {children ? <div className="mt-7 flex flex-1 flex-col">{children}</div> : null}
+      {children ? <div className="mt-8 flex flex-1 flex-col">{children}</div> : null}
     </div>
   );
 }
 
-/**
- * One line of a release manifest: label left, figure locked to the right.
- *
- * The marketing counterpart of `LedgerRow`, minus the gutter code — a release
- * has no ATO label, and inventing one would be exactly the decorative
- * marker §8 rules out.
- */
+/** One line of a release manifest: label left, figure right. */
 export function SpecRow({
   label,
   value,
@@ -92,12 +71,12 @@ export function SpecRow({
   mono?: boolean;
 }) {
   return (
-    <div className="flex items-baseline justify-between gap-4 border-b border-[var(--color-rule)] py-2.5 last:border-b-0">
-      <span className="text-[13px] text-[var(--color-ink-muted)]">{label}</span>
+    <div className="flex items-baseline justify-between gap-4 border-b border-[var(--s-edge)] py-3 last:border-b-0">
+      <span className="text-[0.875rem] text-[var(--s-ink-3)]">{label}</span>
       <span
         className={cx(
-          'shrink-0 text-[13px] font-medium text-[var(--color-ink)]',
-          mono && 'font-mono tabular',
+          'shrink-0 text-[0.9375rem] font-medium text-[var(--s-ink)]',
+          mono && 'font-mono tabular-nums',
         )}
       >
         {value}
@@ -106,12 +85,13 @@ export function SpecRow({
   );
 }
 
-/** A titled block inside a release card, separated by the docket's cut line. */
+/** A titled block inside a release card. */
 export function ReleaseBlock({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div className="mt-5 first:mt-0">
-      <Tear className="mb-4" />
-      <div className="t-label text-[var(--color-ink-faint)]">{title}</div>
+    <div className="mt-7 first:mt-0">
+      <h3 className="text-[0.8125rem] font-semibold uppercase tracking-[0.06em] text-[var(--s-ink-4)]">
+        {title}
+      </h3>
       <div className="mt-3">{children}</div>
     </div>
   );

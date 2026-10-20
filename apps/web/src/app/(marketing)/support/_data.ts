@@ -1,10 +1,31 @@
+import { BUSINESS_SURFACES_ENABLED } from '@/lib/features';
+
+import { FREE_SCANS_AT_SIGNUP } from '../pricing/credit-packs';
+
 /**
  * Support content, kept as data so the search box and the category sections
  * read from one source and can never drift apart.
+ *
+ * ── What changed on 2026-10-20, and why ───────────────────────────────────
+ *
+ * This list predated two decisions and contradicted the page it sits on,
+ * which promises "nothing here describes a feature that isn't shipped":
+ *
+ * - **Credits replaced plans** (docs/WEB.md §7). "Monthly scan quota",
+ *   "change plans mid-cycle" and "Practice plan" described a subscription
+ *   model that no longer exists. The billing answers are rewritten from
+ *   `pricing/credit-packs.ts`, the same source the pricing page uses.
+ * - **The app ships as the personal release** (docs/ECOSYSTEM.md D34). The
+ *   BAS report, the tax pack, Xero and practice billing are switched off in
+ *   the app, and Xero sync is not built at all (docs/ROADMAP.md §3). Those
+ *   answers are kept, word for word, marked `business: true`, and return when
+ *   BUSINESS_SURFACES_ENABLED does — the same switch the rest of the site uses.
  */
 export type SupportIssue = {
   q: string;
   a: string;
+  /** Shown only while the business surfaces are on. */
+  business?: true;
 };
 
 export type SupportCategory = {
@@ -14,9 +35,11 @@ export type SupportCategory = {
   docsHref?: string;
   docsLabel?: string;
   issues: SupportIssue[];
+  /** Shown only while the business surfaces are on. */
+  business?: true;
 };
 
-export const CATEGORIES: SupportCategory[] = [
+const ALL_CATEGORIES: SupportCategory[] = [
   {
     id: 'capture',
     title: 'Capture problems',
@@ -68,23 +91,29 @@ export const CATEGORIES: SupportCategory[] = [
     ],
   },
   {
+    // The id is kept from when this was "BAS and GST" so existing #bas-gst
+    // links still land here.
     id: 'bas-gst',
-    title: 'BAS and GST questions',
-    intro: 'Understanding a BAS figure, or why some GST shows as unclaimable.',
-    docsHref: '/docs/bas-and-gst',
-    docsLabel: 'BAS and the unclaimable-GST report',
+    title: 'GST and tax invoices',
+    intro: 'Why some GST cannot be claimed, and why one docket can carry two tax treatments.',
     issues: [
       {
         q: 'Why can’t I claim the GST on this receipt?',
-        a: 'You need a valid tax invoice to claim a GST credit once a purchase reaches $82.50 including GST. A receipt missing required details — often the supplier’s ABN — shows up in the unclaimable-GST report instead of label 1B.',
+        a: 'You need a valid tax invoice to claim a GST credit once a purchase reaches $82.50 including GST. A docket missing a required detail — most often the supplier’s ABN — is flagged on the receipt itself, with what to ask the supplier for.',
+      },
+      {
+        q: 'Why are some lines on one docket GST-free?',
+        a: 'Basic food such as milk, bread and eggs is GST-free; hot food, soft drinks and most other goods carry GST. Snap Apps reads each line, so a mixed docket is split into its GST-free and taxable parts instead of being treated as one taxable total.',
       },
       {
         q: 'My BAS labels look different to what my bookkeeper expects',
         a: 'Check whether your workspace is set to Simpler BAS (G1, 1A, 1B only) or the full seven-label method — this is a per-workspace setting.',
+        business: true,
       },
       {
         q: 'The BAS report flagged its own numbers',
         a: 'The report checks 1A against roughly a tenth of G1 and 1B against roughly a tenth of reportable purchases before showing you anything — a flag here means the period is worth a closer look before lodging.',
+        business: true,
       },
     ],
   },
@@ -94,6 +123,7 @@ export const CATEGORIES: SupportCategory[] = [
     intro: 'Connecting, syncing, or disconnecting Xero.',
     docsHref: '/docs/connecting-xero',
     docsLabel: 'Connecting Xero',
+    business: true,
     issues: [
       {
         q: 'A posted transaction hasn’t appeared in Xero yet',
@@ -111,20 +141,25 @@ export const CATEGORIES: SupportCategory[] = [
   },
   {
     id: 'billing',
-    title: 'Billing and quota',
-    intro: 'Plans, scan limits, and what happens when you reach them.',
+    title: 'Credits and pricing',
+    intro: 'Free scans, credits, and what a scan costs after that.',
     issues: [
       {
-        q: 'I’ve hit my monthly scan quota',
-        a: 'Nothing is ever dropped — the image is still stored and you’ll be offered a top-up. Extraction resumes as soon as quota is available again.',
+        q: 'What happens when my free scans run out?',
+        a: `A new account starts with ${FREE_SCANS_AT_SIGNUP} free scans. After that, each scan uses one credit. Nothing is dropped when you run out — the photo is still kept, and it is read once there is a credit to read it with.`,
       },
       {
-        q: 'Can I change plans mid-cycle?',
-        a: 'Yes — talk to Support or, on a Practice plan, your firm’s administrator.',
+        q: 'Do credits expire?',
+        a: 'No. Credits never expire and never reset, and there is no subscription — you buy a pack when you want more.',
+      },
+      {
+        q: 'Can I buy credits yet?',
+        a: 'Not yet. The checkout is not connected to a payment processor, so there is nothing to pay with today. The prices on the pricing page are the ones that will apply.',
       },
       {
         q: 'I’m on a Practice plan — who do I contact about billing?',
         a: 'Practice billing is managed by your firm, at the firm level, not per client — contact your firm’s administrator first.',
+        business: true,
       },
     ],
   },
@@ -137,7 +172,9 @@ export const CATEGORIES: SupportCategory[] = [
     issues: [
       {
         q: 'How do I get everything for my accountant?',
-        a: 'Export a tax pack — a CSV of transactions, a PDF BAS summary, and every original receipt image, foldered by quarter and category.',
+        a: BUSINESS_SURFACES_ENABLED
+          ? 'Export a tax pack — a CSV of transactions, a PDF BAS summary, and every original receipt image, foldered by quarter and category.'
+          : 'Export your receipts as CSV from the Spending screen — one row per receipt, or one row per line item. The original photos stay in the app for the full five years.',
       },
       {
         q: 'How long is my data kept?',
@@ -150,6 +187,14 @@ export const CATEGORIES: SupportCategory[] = [
     ],
   },
 ];
+
+/** What the page shows: business content only while the business surfaces are on. */
+export const CATEGORIES: SupportCategory[] = ALL_CATEGORIES.filter(
+  (c) => BUSINESS_SURFACES_ENABLED || !c.business,
+).map((c) => ({
+  ...c,
+  issues: c.issues.filter((i) => BUSINESS_SURFACES_ENABLED || !i.business),
+}));
 
 export type SearchableTopic = {
   category: string;

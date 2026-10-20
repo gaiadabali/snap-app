@@ -22,18 +22,17 @@ export default async function RegisterPage({
   const returnTo = safeReturnPath(params.returnTo, '/app');
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <AuthMethods
         mode="register"
         returnTo={returnTo}
         error={params.error}
         sent={params.sent === '1'}
       />
-      <p className="text-center text-[13px] text-[var(--color-ink-muted)]">
+      <p className="auth-switch">
         Already have an account?{' '}
         <Link
           href={`/sign-in?returnTo=${encodeURIComponent(returnTo)}`}
-          className="font-semibold text-[var(--color-accent)] hover:underline"
         >
           Sign in
         </Link>

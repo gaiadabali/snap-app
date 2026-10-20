@@ -1,0 +1,215 @@
+/* Legal shell and reading typography. Classes are prefixed `legal-`. */
+
+@layer components {
+
+.legal-shell {
+  max-width: 800px;
+  padding-block: 20px 112px;
+}
+
+/* Sticky pill bar, sitting under the floating site header. */
+.legal-nav {
+  position: sticky;
+  top: 84px;
+  z-index: 20;
+  margin-bottom: 28px;
+  padding-block: 8px;
+  background: color-mix(in srgb, var(--s-bg) 86%, transparent);
+  backdrop-filter: blur(14px) saturate(1.4);
+}
+
+.legal-nav-inner {
+  display: flex;
+  gap: 4px;
+  width: fit-content;
+  max-width: 100%;
+  padding: 4px;
+  overflow-x: auto;
+  border: 1px solid var(--s-edge);
+  border-radius: 999px;
+  background: var(--s-card);
+}
+
+.legal-nav-link {
+  flex-shrink: 0;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 540;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  color: var(--s-ink-3);
+  transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+.legal-nav-link:hover {
+  color: var(--s-ink);
+  background: var(--s-mist);
+}
+
+.legal-nav-link[aria-current="page"] {
+  color: var(--s-ink);
+  background: var(--s-mist-2);
+}
+
+.legal-draft {
+  padding: 14px 18px;
+  border: 1px solid color-mix(in srgb, var(--s-amber) 35%, transparent);
+  border-radius: 16px;
+  background: var(--s-amber-soft);
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: var(--s-ink-2);
+}
+
+.legal-draft strong {
+  color: var(--s-amber);
+  font-weight: 650;
+}
+
+.legal-body {
+  margin-top: 40px;
+}
+
+.legal-header {
+  padding-bottom: 32px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--s-edge);
+}
+
+.legal-title {
+  margin-top: 14px;
+  font-size: clamp(2.1rem, 4.6vw, 3.25rem);
+  font-weight: 650;
+  line-height: 1.04;
+  letter-spacing: -0.046em;
+  text-wrap: balance;
+  color: var(--s-ink);
+}
+
+.legal-meta {
+  margin-top: 16px;
+  font-size: 0.875rem;
+  font-weight: 540;
+  color: var(--s-ink-3);
+}
+
+/* ── Reading typography ─────────────────────────────────────────────────── */
+
+.legal-prose {
+  max-width: 68ch;
+  font-size: 1.0625rem;
+  line-height: 1.7;
+  color: var(--s-ink-2);
+}
+
+.legal-prose > p:first-of-type {
+  margin-top: 28px;
+  font-size: 1.1875rem;
+  line-height: 1.6;
+  color: var(--s-ink-3);
+}
+
+.legal-prose section {
+  margin-top: 3rem;
+}
+
+.legal-prose h2 {
+  font-size: 1.4rem;
+  font-weight: 640;
+  line-height: 1.22;
+  letter-spacing: -0.03em;
+  color: var(--s-ink);
+}
+
+.legal-prose h3 {
+  margin-top: 1.6rem;
+  font-size: 1.0625rem;
+  font-weight: 620;
+  color: var(--s-ink);
+}
+
+.legal-prose h2 + *,
+.legal-prose h3 + * {
+  margin-top: 0.9rem;
+}
+
+.legal-prose p + p,
+.legal-prose p + ul,
+.legal-prose p + ol,
+.legal-prose ul + p,
+.legal-prose ol + p {
+  margin-top: 1.1rem;
+}
+
+.legal-prose strong {
+  font-weight: 640;
+  color: var(--s-ink);
+}
+
+.legal-prose a {
+  color: var(--s-blue-text);
+  font-weight: 540;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--s-blue) 35%, transparent);
+  text-underline-offset: 3px;
+}
+
+.legal-prose a:hover {
+  text-decoration-color: currentColor;
+}
+
+.legal-prose ul,
+.legal-prose ol {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  list-style: none;
+  padding-left: 0;
+}
+
+.legal-prose ul > li {
+  position: relative;
+  padding-left: 1.35rem;
+}
+
+.legal-prose ul > li::before {
+  content: "";
+  position: absolute;
+  left: 0.2rem;
+  top: 0.72em;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--s-blue);
+}
+
+.legal-prose ol {
+  counter-reset: legal-n;
+}
+
+.legal-prose ol > li {
+  counter-increment: legal-n;
+  position: relative;
+  padding-left: 2rem;
+}
+
+.legal-prose ol > li::before {
+  content: counter(legal-n) ".";
+  position: absolute;
+  left: 0;
+  font-weight: 640;
+  font-variant-numeric: tabular-nums;
+  color: var(--s-blue-text);
+}
+
+.legal-prose code {
+  padding: 0.12em 0.42em;
+  border-radius: 7px;
+  background: var(--s-mist-2);
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 0.86em;
+  color: var(--s-ink);
+}
+
+}

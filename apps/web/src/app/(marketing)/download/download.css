@@ -1,0 +1,185 @@
+/* /download — rules Tailwind cannot express. Nothing here hides content. */
+
+@layer components {
+  /* The install sequence: a numbered column joined by a quiet line. */
+  .dl-steps {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    counter-reset: dl-step;
+  }
+
+  .dl-step {
+    position: relative;
+    display: grid;
+    grid-template-columns: 40px 1fr;
+    column-gap: 18px;
+    padding-bottom: 28px;
+  }
+
+  .dl-step:last-child {
+    padding-bottom: 0;
+  }
+
+  .dl-step::before {
+    content: '';
+    position: absolute;
+    left: 19px;
+    top: 44px;
+    bottom: 4px;
+    width: 2px;
+    border-radius: 2px;
+    background: var(--s-edge);
+  }
+
+  .dl-step:last-child::before {
+    display: none;
+  }
+
+  .dl-step-n {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+    background: var(--s-blue-soft);
+    color: var(--s-blue-text);
+    font-size: 1rem;
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .dl-step-optional .dl-step-n {
+    background: transparent;
+    border: 1.5px dashed var(--s-edge-2);
+    color: var(--s-ink-3);
+  }
+
+  /* The checksum block. */
+  .dl-hash {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    border: 1px solid var(--s-edge);
+    border-radius: 16px;
+    background: var(--s-mist);
+    overflow: hidden;
+  }
+
+  .dl-hash code {
+    flex: 1;
+    min-width: 0;
+    padding: 14px 16px;
+    font-family: var(--font-mono, ui-monospace, 'SFMono-Regular', Menlo, monospace);
+    font-size: 0.8125rem;
+    line-height: 1.6;
+    letter-spacing: 0.01em;
+    color: var(--s-ink);
+    word-break: break-all;
+  }
+
+  .dl-hash button {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 18px;
+    border: 0;
+    border-left: 1px solid var(--s-edge);
+    background: var(--s-card);
+    color: var(--s-ink-2);
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  .dl-hash button:hover {
+    background: var(--s-blue-soft);
+    color: var(--s-blue-text);
+  }
+
+  .dl-hash-empty code {
+    color: var(--s-ink-3);
+    font-family: inherit;
+    letter-spacing: 0;
+  }
+
+  /* A control that is present, focusable and plainly unavailable. */
+  .dl-inert {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    min-height: 56px;
+    padding: 0 22px;
+    border: 1.5px dashed var(--s-edge-2);
+    border-radius: 16px;
+    background: transparent;
+    color: var(--s-ink-2);
+    font-size: 1.0625rem;
+    font-weight: 620;
+    letter-spacing: -0.015em;
+    text-align: center;
+    cursor: not-allowed;
+  }
+
+  /* Facts under the primary action. */
+  .dl-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 0.9375rem;
+    color: var(--s-ink-3);
+  }
+
+  .dl-meta li + li::before {
+    content: '';
+    display: inline-block;
+    width: 4px;
+    height: 4px;
+    margin: 0 12px;
+    border-radius: 999px;
+    background: var(--s-ink-4);
+    vertical-align: middle;
+  }
+
+  .dl-list li {
+    position: relative;
+    padding-left: 26px;
+  }
+
+  .dl-list li::before {
+    content: '';
+    position: absolute;
+    left: 2px;
+    top: 0.62em;
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: var(--s-blue-soft);
+    box-shadow: inset 0 0 0 2px var(--s-blue);
+  }
+
+  .dl-log {
+    position: relative;
+    padding-left: 28px;
+    border-left: 2px solid var(--s-edge);
+  }
+
+  .dl-log::before {
+    content: '';
+    position: absolute;
+    left: -7px;
+    top: 6px;
+    width: 12px;
+    height: 12px;
+    border-radius: 999px;
+    background: var(--s-bg);
+    box-shadow: inset 0 0 0 2px var(--s-blue);
+  }
+}

@@ -1,0 +1,363 @@
+/**
+ * /how-it-works — the rules Tailwind cannot say. Every class is `hiw-`.
+ *
+ * Motion follows design/site/README.md: anything that starts hidden is gated
+ * behind `.motion` and released by `[data-in]`; every keyframe ends on the
+ * finished state; scroll-driven effects move or fill, they never hide content
+ * and sit behind @supports + no-preference. No JS, reduced motion, or a
+ * browser without view timelines gets the finished page.
+ */
+
+@layer components {
+
+/* ── Hero stage ─────────────────────────────────────────────────────────── *
+ * A docket on the left, the read receipt on the right, a cyan scan plane
+ * between them. */
+
+.hiw-stage {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  border-radius: 36px;
+  background: var(--s-mist);
+}
+
+/* The phone sinks into the stage rather than being cut off by it. */
+.hiw-stage::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 30%;
+  z-index: 5;
+  pointer-events: none;
+  background: linear-gradient(to bottom, transparent, var(--s-mist));
+}
+
+.hiw-paper {
+  width: 270px;
+  zoom: var(--z, 1);
+  transform: rotate(-3deg);
+  transform-origin: 50% 100%;
+}
+
+.hiw-beam {
+  --tr: 14px;
+  position: relative;
+  flex: none;
+  align-self: stretch;
+  width: 36px;
+}
+
+@media (min-width: 640px) {
+  .hiw-beam { --tr: 28px; width: 72px; }
+}
+
+@media (min-width: 1024px) {
+  .hiw-beam { --tr: 52px; width: 132px; }
+}
+
+.hiw-beam::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: -80px;
+  bottom: -80px;
+  width: 2px;
+  margin-left: -1px;
+  border-radius: 2px;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    var(--s-cyan) 20%,
+    #a8ecff 50%,
+    var(--s-cyan) 80%,
+    transparent 100%
+  );
+  box-shadow: 0 0 18px 3px rgb(28 168 219 / 0.5), 0 0 60px 10px rgb(28 168 219 / 0.2);
+  transform-origin: center;
+}
+
+/* The plane the line sits in: a faint vertical wash either side of it. */
+.hiw-beam::after {
+  content: "";
+  position: absolute;
+  inset: -80px 0;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgb(28 168 219 / 0.12), transparent);
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 25%, #000 75%, transparent);
+  mask-image: linear-gradient(180deg, transparent, #000 25%, #000 75%, transparent);
+}
+
+/* One bar per docket line crosses the plane: green for GST-free, blue for
+   taxable. Decorative, plays once, invisible without motion. */
+.hiw-bit {
+  position: absolute;
+  z-index: 1;
+  left: 50%;
+  top: var(--y, 40%);
+  width: 22px;
+  height: 5px;
+  margin-left: -11px;
+  border-radius: 3px;
+  background: var(--c, var(--s-blue));
+  box-shadow: 0 0 10px var(--c, var(--s-blue));
+  opacity: 0;
+}
+
+.motion .hiw-beam::before {
+  transition: transform 1.4s var(--s-ease) 0.35s, opacity 1s ease 0.35s;
+}
+
+.motion .hiw-stage:not([data-in]) .hiw-beam::before {
+  transform: scaleY(0);
+  opacity: 0;
+}
+
+.motion .hiw-stage[data-in] .hiw-bit {
+  animation: hiw-bit 1.6s var(--s-ease-in-out) calc(1s + var(--i, 0) * 0.17s) both;
+}
+
+@keyframes hiw-bit {
+  0% { opacity: 0; transform: translateX(calc(var(--tr) * -1)) scaleX(0.5); }
+  25% { opacity: 1; }
+  75% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(var(--tr)) scaleX(1); }
+}
+
+/* ── The journey rail ───────────────────────────────────────────────────── *
+ * Each station owns the segment of rail that leads to the NEXT node, so a
+ * station can fill its own segment as it crosses the reading line (60% of
+ * the way down the viewport) and the segments chain into one line. */
+
+.hiw-rail {
+  --node: 48px;
+  --gap: 4.5rem;
+}
+
+@media (min-width: 1024px) {
+  .hiw-rail { --gap: 7.5rem; }
+}
+
+.hiw-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hiw-station {
+  position: relative;
+}
+
+.hiw-seg {
+  position: absolute;
+  left: calc(var(--node) / 2 - 1px);
+  top: calc(var(--node) / 2);
+  bottom: calc(-1 * (var(--gap) + var(--node) / 2));
+  width: 2px;
+  border-radius: 2px;
+  background: var(--s-edge-2);
+}
+
+.hiw-fill {
+  position: absolute;
+  inset: 0;
+  border-radius: 2px;
+  background: linear-gradient(180deg, var(--s-blue), var(--s-cyan));
+  box-shadow: 0 0 12px rgb(24 120 216 / 0.45);
+  transform-origin: top center;
+}
+
+.hiw-node {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: var(--node);
+  height: var(--node);
+  border-radius: 999px;
+  border: 2px solid var(--s-blue);
+  background: var(--s-card);
+  color: var(--s-blue-text);
+  font-size: 0.9375rem;
+  font-weight: 650;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 0 0 7px var(--s-bg);
+}
+
+@keyframes hiw-fill {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+
+@keyframes hiw-lit {
+  from {
+    background: var(--s-card);
+    border-color: var(--s-edge-2);
+    color: var(--s-ink-4);
+    box-shadow: 0 0 0 7px var(--s-bg);
+  }
+  to {
+    background: var(--s-blue);
+    border-color: var(--s-blue);
+    color: #fff;
+    box-shadow: 0 0 0 7px var(--s-bg), 0 10px 22px -8px rgb(24 120 216 / 0.75);
+  }
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .hiw-fill {
+      animation: hiw-fill linear both;
+      animation-timeline: view();
+      animation-range: cover 40vh cover calc(100% - 60vh);
+    }
+
+    .hiw-node {
+      animation: hiw-lit linear both;
+      animation-timeline: view();
+      animation-range: cover 40vh cover calc(40vh + 56px);
+    }
+  }
+}
+
+/* ── Queued → sent swap (station 2) ─────────────────────────────────────── *
+ * Both states are in the DOM. Without motion only the finished one ("sent")
+ * shows; with motion the queued state shows first, then hands over. */
+
+.hiw-swap {
+  display: inline-grid;
+}
+
+.hiw-swap > * {
+  grid-area: 1 / 1;
+  justify-self: end;
+}
+
+.hiw-swap-start > * {
+  justify-self: start;
+}
+
+.hiw-swap-a {
+  opacity: 0;
+}
+
+.motion .hiw-swap-a {
+  opacity: 1;
+}
+
+.motion .hiw-swap-b {
+  opacity: 0;
+}
+
+.motion [data-in] .hiw-swap-a {
+  animation: hiw-a-out 0.5s ease calc(1.3s + var(--i, 0) * 0.4s) both;
+}
+
+.motion [data-in] .hiw-swap-b {
+  animation: hiw-b-in 0.5s ease calc(1.3s + var(--i, 0) * 0.4s) both;
+}
+
+@keyframes hiw-a-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes hiw-b-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ── Four principles ────────────────────────────────────────────────────── */
+
+.hiw-panel {
+  position: relative;
+  overflow: hidden;
+  border-radius: 32px;
+  border: 1px solid var(--s-edge);
+  background: linear-gradient(160deg, var(--s-night-3) 0%, var(--s-night-2) 62%);
+  transition: border-color 0.4s ease;
+}
+
+.hiw-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(70% 60% at 0% 0%, rgb(24 120 216 / 0.16), transparent 70%);
+}
+
+.hiw-panel:hover {
+  border-color: rgb(127 180 238 / 0.32);
+}
+
+.hiw-panel > * {
+  position: relative;
+}
+
+.hiw-num {
+  position: absolute;
+  top: 14px;
+  right: 26px;
+  font-size: clamp(4.5rem, 8vw, 7.5rem);
+  font-weight: 650;
+  line-height: 0.8;
+  letter-spacing: -0.07em;
+  color: transparent;
+  -webkit-text-stroke: 1px rgb(255 255 255 / 0.2);
+  user-select: none;
+  pointer-events: none;
+}
+
+/* ── The closing docket ─────────────────────────────────────────────────── */
+
+.hiw-ticket {
+  transform: rotate(1.4deg);
+  transition: transform 0.6s var(--s-ease);
+}
+
+.hiw-ticket:hover,
+.hiw-ticket:focus-within {
+  transform: rotate(0deg);
+}
+
+.hiw-ticket a {
+  color: #1d2026;
+  text-decoration: none;
+}
+
+.hiw-ticket a:hover .hiw-go,
+.hiw-ticket a:focus-visible .hiw-go {
+  color: #0f5bb5;
+}
+
+.hiw-ticket a:hover .hiw-go svg {
+  transform: translateX(3px);
+}
+
+.hiw-ticket .hiw-go svg {
+  transition: transform 0.3s var(--s-ease);
+}
+
+.hiw-leader {
+  flex: 1;
+  min-width: 12px;
+  border-bottom: 2px dotted rgb(0 0 0 / 0.3);
+  transform: translateY(-4px);
+}
+
+} /* @layer components */
+
+@media (prefers-reduced-motion: reduce) {
+  .hiw-ticket {
+    transform: none;
+    transition: none;
+  }
+
+  .hiw-paper {
+    transform: none;
+  }
+}

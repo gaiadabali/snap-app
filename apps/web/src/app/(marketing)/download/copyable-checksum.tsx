@@ -2,15 +2,26 @@
 
 import { useState } from 'react';
 
-import { cx } from '@/design/primitives';
+import { Icon } from '@/design/site/icons';
 
 /**
  * The SHA-256 shown on the page, with a copy button. It exists so someone who
  * side-loaded the APK outside the Play Store can actually verify what they
  * installed — showing it and making it easy to copy is the whole point.
+ *
+ * With no build published there is no hash to show; the block says so rather
+ * than rendering an empty box with a copy button that copies nothing.
  */
 export function CopyableChecksum({ sha256 }: { sha256: string }) {
   const [copied, setCopied] = useState(false);
+
+  if (!sha256) {
+    return (
+      <div className="dl-hash dl-hash-empty">
+        <code>Published with each build. There is no build to check yet.</code>
+      </div>
+    );
+  }
 
   async function copy() {
     try {
@@ -24,21 +35,14 @@ export function CopyableChecksum({ sha256 }: { sha256: string }) {
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <code className="break-all rounded-[var(--radius-sm)] bg-[var(--color-surface-alt)] px-2 py-1 font-mono text-[12px] text-[var(--color-ink)]">
-        {sha256}
-      </code>
-      <button
-        type="button"
-        onClick={copy}
-        className={cx(
-          'rounded-[var(--radius-sm)] border border-[var(--color-rule-strong)] px-2 py-1 text-[11px] font-semibold',
-          'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-surface-alt)]',
-          'transition-colors duration-150',
-        )}
-      >
-        {copied ? 'Copied' : 'Copy'}
-      </button>
+    <div>
+      <div className="dl-hash">
+        <code>{sha256}</code>
+        <button type="button" onClick={copy} aria-label="Copy SHA-256 checksum">
+          <Icon name={copied ? 'check' : 'file'} size={16} />
+          <span aria-live="polite">{copied ? 'Copied' : 'Copy'}</span>
+        </button>
+      </div>
     </div>
   );
 }

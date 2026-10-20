@@ -1,0 +1,115 @@
+/**
+ * Home bento — the few rules Tailwind cannot say. Every class is `bento-`.
+ *
+ * Motion follows design/site/README.md: anything that starts hidden is gated
+ * behind `.motion` and released by `[data-in]` (set on the tile's <Reveal>
+ * wrapper). Every keyframe ENDS on the finished state, so no JS, reduced
+ * motion, or a script error shows the finished picture. Nothing loops.
+ */
+
+@layer components {
+  /* The one filled tile: the app's hero card, as a grid cell. */
+  .bento-tile.bento-tile-grad {
+    background: var(--s-grad);
+    border-color: rgb(255 255 255 / 0.14);
+    color: #fff;
+  }
+
+  .bento-tile.bento-tile-grad::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(70% 60% at 100% 0%, rgb(255 255 255 / 0.16), transparent 65%);
+  }
+
+  .bento-tile.bento-tile-grad > * {
+    position: relative;
+  }
+
+  .bento-tile.bento-tile-grad .small {
+    color: rgb(255 255 255 / 0.82);
+  }
+
+  /* Household: the second avatar steps out when the tile is hovered. */
+  .bento-av {
+    transition: transform 0.5s var(--s-ease);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .bento-tile:hover .bento-av-b {
+      transform: translateX(10px);
+    }
+  }
+
+  /* Export: a table in the file's own monospace. */
+  .bento-csv {
+    font-family: var(--font-mono), ui-monospace, "SFMono-Regular", Menlo, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Offline: two stacked states in one cell. The finished state is
+     "uploaded"; under .motion the "waiting" face shows first and hands over. */
+  .bento-wait {
+    opacity: 0;
+  }
+
+  .bento-done {
+    opacity: 1;
+  }
+
+  .motion .bento-wait {
+    opacity: 1;
+  }
+
+  .motion .bento-done {
+    opacity: 0;
+  }
+
+  .motion [data-in] .bento-wait {
+    animation: bento-wait-out 0.35s ease both;
+    animation-delay: calc(1.5s + var(--i, 0) * 0.35s);
+  }
+
+  .motion [data-in] .bento-done {
+    animation: bento-done-in 0.5s var(--s-ease) both;
+    animation-delay: calc(1.5s + var(--i, 0) * 0.35s);
+  }
+
+  /* Export rows set themselves down one by one. */
+  .motion [data-in] .bento-csv-row {
+    animation: bento-row 0.6s var(--s-ease) both;
+    animation-delay: calc(0.35s + var(--i, 0) * 70ms);
+  }
+}
+
+@keyframes bento-wait-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes bento-done-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes bento-row {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

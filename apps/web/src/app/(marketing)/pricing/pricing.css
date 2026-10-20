@@ -1,0 +1,297 @@
+/**
+ * /pricing — the rules Tailwind cannot say briefly.
+ *
+ * Everything is prefixed `price-` and sits in `@layer components`, below
+ * Tailwind's utilities (same as design/site/site.css), so a utility on one of
+ * these elements still wins.
+ *
+ * Motion: nothing here hides content unless `html.motion` is present, and every
+ * start-state is released by the `[data-in]` the shared reveal observer puts on
+ * the nearest `<Reveal>`. Every keyframe ENDS on the finished state. No loops.
+ */
+
+@layer components {
+
+/* ── The hero's price stage ─────────────────────────────────────────────── */
+
+.price-stage {
+  position: relative;
+  overflow: hidden;
+  border-radius: 36px;
+  border: 1px solid var(--s-edge);
+  background: var(--s-mist);
+  padding: clamp(24px, 3.4vw, 40px);
+}
+
+.price-stage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(60% 55% at 88% 0%, rgb(24 120 216 / 0.14), transparent 70%),
+    radial-gradient(50% 45% at 0% 100%, rgb(28 168 219 / 0.08), transparent 70%);
+}
+
+.price-stage > * {
+  position: relative;
+}
+
+.price-over {
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  color: var(--s-ink-3);
+}
+
+/* 3.7¢ — the whole page in one figure. */
+.price-figure {
+  display: flex;
+  align-items: baseline;
+  gap: 0.05em;
+  margin-top: 0.6rem;
+  font-size: clamp(6.25rem, 15vw, 10.5rem);
+  font-weight: 650;
+  line-height: 0.92;
+  letter-spacing: -0.065em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The clip behind `ink-grad` crops at the glyph box; give the tight tracking room. */
+.price-figure-n {
+  padding: 0.04em 0.06em 0.08em 0;
+}
+
+.price-figure-c {
+  font-size: 0.4em;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: var(--s-ink-3);
+}
+
+.price-per {
+  margin-top: 0.35rem;
+  font-size: clamp(1.25rem, 2.2vw, 1.6rem);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+
+/* The scan line crosses the figure once, as if reading it. Decoration only:
+   it carries no content, so its resting state (not drawn) is the finished one. */
+.price-beam {
+  position: absolute;
+  z-index: 2;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 2px;
+  opacity: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, var(--s-cyan) 25%, #a8ecff 50%, var(--s-cyan) 75%, transparent);
+  box-shadow: 0 0 16px 3px rgb(28 168 219 / 0.45);
+}
+
+/* ── The free-then-paid strip ───────────────────────────────────────────── */
+
+.price-strip {
+  display: flex;
+  gap: 14px;
+}
+
+.price-group {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.price-slots {
+  display: flex;
+  gap: 4px;
+}
+
+.price-slot {
+  flex: 1 1 0;
+  height: 38px;
+  border-radius: 10px;
+}
+
+.price-slot[data-kind="free"] {
+  background: var(--s-green-soft);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--s-green) 30%, transparent);
+}
+
+.price-slot[data-kind="paid"] {
+  background: var(--s-blue-soft);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--s-blue-text) 26%, transparent);
+}
+
+/* The paid scans run on past the edge: there is no last one. */
+.price-group[data-kind="paid"] .price-slots {
+  -webkit-mask-image: linear-gradient(90deg, #000 25%, transparent);
+  mask-image: linear-gradient(90deg, #000 25%, transparent);
+}
+
+.price-group-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  white-space: nowrap;
+}
+
+.price-group[data-kind="free"] .price-group-label {
+  color: var(--s-green);
+}
+
+.price-group[data-kind="paid"] .price-group-label {
+  color: var(--s-blue-text);
+}
+
+/* ── The estimator's slider ─────────────────────────────────────────────── */
+
+.price-range {
+  --fill: 0%;
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 44px;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.price-range:focus-visible {
+  outline: none;
+}
+
+.price-range::-webkit-slider-runnable-track {
+  height: 10px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--s-blue) var(--fill), var(--s-mist-2) var(--fill));
+}
+
+.price-range::-moz-range-track {
+  height: 10px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--s-blue) var(--fill), var(--s-mist-2) var(--fill));
+}
+
+.price-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 30px;
+  height: 30px;
+  margin-top: -10px;
+  border-radius: 999px;
+  border: 1px solid var(--s-edge-2);
+  background: #fff;
+  box-shadow: var(--s-shadow-2);
+  transition: transform 0.25s var(--s-spring), box-shadow 0.25s var(--s-ease);
+}
+
+.price-range::-moz-range-thumb {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  border: 1px solid var(--s-edge-2);
+  background: #fff;
+  box-shadow: var(--s-shadow-2);
+  transition: transform 0.25s var(--s-spring), box-shadow 0.25s var(--s-ease);
+}
+
+.price-range:hover::-webkit-slider-thumb {
+  transform: scale(1.08);
+}
+
+.price-range:hover::-moz-range-thumb {
+  transform: scale(1.08);
+}
+
+.price-range:active::-webkit-slider-thumb {
+  transform: scale(1.14);
+}
+
+.price-range:active::-moz-range-thumb {
+  transform: scale(1.14);
+}
+
+.price-range:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 3px var(--s-bg), 0 0 0 5.5px var(--s-blue), var(--s-shadow-2);
+}
+
+.price-range:focus-visible::-moz-range-thumb {
+  box-shadow: 0 0 0 3px var(--s-bg), 0 0 0 5.5px var(--s-blue), var(--s-shadow-2);
+}
+
+/* How long a pack lasts, drawn against a year. */
+.price-fillbar {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--s-mist-2);
+}
+
+.price-fillbar > i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--s-grad-bright);
+  transition: width 0.5s var(--s-ease);
+}
+
+.price-lasts[data-best] {
+  background: var(--s-blue-soft);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--s-blue) 55%, transparent);
+}
+
+/* ── The closing card's watermark ───────────────────────────────────────── */
+
+.price-cta-mark {
+  position: absolute;
+  right: -1%;
+  bottom: -16%;
+  font-size: clamp(11rem, 28vw, 22rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.06em;
+  color: transparent;
+  -webkit-text-stroke: 2px rgb(255 255 255 / 0.16);
+  pointer-events: none;
+  user-select: none;
+}
+
+} /* @layer components */
+
+/* ── Motion ─────────────────────────────────────────────────────────────── *
+ * Unlayered on purpose, like the kit's own sequences. Gated behind `.motion`
+ * and released by the stage's `[data-in]`. */
+
+.motion .price-stage[data-in] .price-beam {
+  animation: price-beam 1.9s var(--s-ease-in-out) 0.45s both;
+}
+
+.motion .price-stage[data-in] .price-slot {
+  animation: price-slot 0.55s var(--s-spring) both;
+  animation-delay: calc(0.75s + var(--i, 0) * 55ms);
+}
+
+@keyframes price-beam {
+  0% { top: 0; opacity: 0; }
+  12% { opacity: 1; }
+  88% { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
+
+@keyframes price-slot {
+  from { opacity: 0; transform: translateY(8px) scale(0.82); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .price-range::-webkit-slider-thumb,
+  .price-range::-moz-range-thumb,
+  .price-fillbar > i {
+    transition: none;
+  }
+}

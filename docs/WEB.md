@@ -35,7 +35,8 @@ marketing site ever needs a different release cadence — not before.
 | Thing | Where | Note |
 |---|---|---|
 | Design tokens | `src/app/globals.css` | Light + dark, type roles (`.t-display` `.t-head` `.t-label`), scroll-driven motion. **Never hard-code a colour.** |
-| Marketing primitives | `src/design/primitives/index.tsx` | `Section` `SectionHead` `Rule` `LedgerRow` `Reveal` `ArrowLink` — the ledger language, see §4 |
+| **Marketing kit (2026-10)** | `src/design/site/` | Tokens, type, motion, the phone and the app drawn in code. Read its README first. |
+| Ledger primitives (retired on marketing) | `src/design/primitives/index.tsx` | `Section` `SectionHead` `Rule` `LedgerRow` `Reveal` `ArrowLink` — the ledger language, see §4 |
 | Panel primitives | `src/design/primitives/index.tsx` | `Container` `Card` `Button` `Badge` `Money` `Stat` `Field` `Input` `SectionTitle` `Empty` `Table` |
 | Server API client | `src/lib/api/server.ts` | `api<T>()`, `ApiError`, cookie names |
 | Config | `src/lib/config.ts` | `server-only`. No secret defaults. |
@@ -88,7 +89,87 @@ a real explanation when there is genuinely nothing to show.
 
 ---
 
-## 4. The design language — how not to look generic
+## 4. The design language (2026-10 redesign)
+
+**Rebuilt 2026-10-20.** The owner asked for "a major upgrade and UI/UX
+redesign … a proper website for app marketing … clean but high level and
+professional … think about other mobile apps' websites", having said on
+2026-10-19 that the site was "still too ugly". The marketing site is now an
+**app's website**: it shows the phone app, in the app's own type and surfaces.
+
+The binding contract is **`apps/web/src/design/site/README.md`**. In short:
+
+| | |
+|---|---|
+| **Type** | Geist + Geist Mono — the phone app's families since its premium pass. Archivo and IBM Plex Mono are gone. |
+| **Surfaces** | White raised cards on a cool ground, the app's blue gradient hero card (`--s-grad`), pill buttons, a floating header that rhymes with the app's floating tab bar. One dark "night" band per page. |
+| **The app, drawn in code** | `design/site/app-ui.tsx` redraws the app's screens and fills them from `design/site/demo.ts`. Not screenshots: the review build's demo account carries staging test data, and the old `public/screens/*.png` predate the app redesign. Drawn screens are sharp, themed, animatable, and reconcile with every other figure (`demo.test.ts`). |
+| **Motion** | `<Reveal>` + an inline IntersectionObserver in `app/layout.tsx`. Content is only hidden under `html.motion`, which that script sets — no JS, reduced motion or a script error leaves everything visible. The hero plays one capture → read sequence and ends on the finished state. Scroll-driven CSS is used for movement only. |
+| **Ledger register** | Retired on marketing pages (kept below as §4-old for its reasoning). The panels keep `design/primitives` unchanged. |
+
+### 4.0 Positioning — PROPOSED by Claude, not yet confirmed by the owner
+
+The app ships as the **personal release** (`docs/ECOSYSTEM.md` D34): BAS,
+tax pack, deduction estimates, invoices, bills, mileage, Xero and practices are
+switched off in the app. The old site still sold those. The redesign sells
+what ships — per-line reading with the GST-free/taxable split and the
+tax-invoice/ABN checks (which the personal app does), plus spending, budgets,
+recurring, goals, household sharing, export and credits. Business content
+stays behind `BUSINESS_SURFACES_ENABLED`, as before.
+
+That is Claude's reading of the honest default, recorded here as a proposal.
+If the owner wants the tax-professional pitch back on the default page, flip
+the flag or say so — the evidence for each side is in §4.5-old and D34.
+
+### 4.0.1 Corrected on the way
+
+- The worked docket listed a **fresh sandwich as GST-free**. A prepared
+  sandwich is generally taxable. Free-range eggs at the same price replace it;
+  the subtotals (16.80 / 15.40 / GST 1.40) did not move.
+- The docket's merchant is now fictional ("Hume Hwy Roadhouse"), so no real
+  business is shown beside an invented ABN. The ABN is the ATO's own
+  checksum-valid example, as in the app's fixtures.
+
+### 4.0.2 Fixed before the redesign went live (2026-10-20)
+
+The owner asked for every flagged problem to be fixed before merging.
+
+- **Privacy and security pages described the planned hosting, not the running
+  one.** They said storage and receipt reading ran in AWS Sydney with no
+  overseas disclosure. Checked on the host that day: the service runs on a
+  Hostinger server in **Jakarta**, and extraction goes through **OpenRouter**
+  (US) (`EXTRACTION_PROVIDER=openrouter`). Both pages now say so and name the
+  APP 8 disclosures; Sydney (PLAN.md D12/D13) is described as planned. Still
+  marked Draft and still due a legal review.
+- **The testimonial guard had gone quiet.** `assertNoPlaceholdersInProduction`
+  ran only because the old home page imported `proof.tsx`. It now runs at
+  module scope in `(marketing)/page.tsx`, and `proof.test.ts` fails if the
+  home page stops calling it.
+- **Help and docs advertised features that are off or unbuilt** (Xero, BAS
+  report, subscription plans and quotas, a static "Operational" Xero status).
+  Gated behind `BUSINESS_SURFACES_ENABLED`; billing answers rewritten for
+  credits from `credit-packs.ts`. Business guides are hidden from the docs
+  nav, still reachable by URL.
+- **"Coming to Google Play once the listing clears review"** asserted a
+  listing nothing shows exists. Now: "not on Google Play yet".
+- **The "not sure" state** was drawn as a quoted "I could not read this" with
+  a "Provisional" pill. The app leaves an uncertain field blank and flags it
+  (in the app "Provisional" means the on-device preview). Redrawn to match.
+- **Retired code removed:** the WebGL scenes (`src/design/three/`, `/lab`,
+  `SCENES_3D_ENABLED`, `DESIGN_LAB_ENABLED`, the `SNAP_WEB_3D` kill switch —
+  a leftover value in deploy/.env is inert), the `three` /
+  `@react-three/fiber` dependencies, the ledger-only primitives (`Section`,
+  `SectionHead`, `LedgerRow`, `ArrowLink`, `Split`, `PageHero`, `HeroFact`,
+  the asset layer) and their CSS. `globals.css` went from 75 KB to 16 KB;
+  `bed.test.ts` went with the bed it tested.
+- **Kept on purpose, by the owner's call:** the support and iPhone-notify
+  email addresses, although their domains (`snapapps.com.au`,
+  `snapapps.example`) do not receive mail yet. Mail is not set up; the
+  owner wants them left until it is.
+
+---
+
+## 4-old. The ledger language — retired 2026-10, kept for its reasoning
 
 **Rewritten 2026-09-14.** The site had good copy inside a template: every
 section was `border-b` + alternating `bg-surface` + eyebrow/title/lede + a

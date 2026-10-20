@@ -2,8 +2,9 @@
 
 import { useState } from 'react';
 
-import { Button, Card, Field, Input, Select } from '@/design/primitives';
 import { completeOnboardingAction } from '@/lib/auth/actions';
+
+import { AuthField as Field, AuthInput as Input, AuthSelect as Select } from '../_components/ui';
 
 import type { AvailableTaxRules } from '@snap/api-contract';
 
@@ -48,29 +49,25 @@ export function OnboardingForm({
   const isAustralian = chosen === null || chosen.country === 'AU';
 
   return (
-    <Card className="flex w-full max-w-[520px] flex-col gap-6">
+    <div className="auth-panel">
       <div>
-        <h1 className="text-[22px] font-semibold tracking-tight text-[var(--color-ink)]">
-          Set up your workspace
-        </h1>
-        <p className="mt-1.5 text-[14px] text-[var(--color-ink-muted)]">
-          Three questions, then you are in.
-        </p>
+        <h1 className="auth-title">Set up your workspace</h1>
+        <p className="auth-lede">Three questions, then you are in.</p>
       </div>
 
       {error ? (
-        <div className="rounded-[var(--radius-md)] border border-[var(--color-risk)] bg-[var(--color-risk-soft)] px-3 py-2 text-[13px] text-[var(--color-risk)]">
+        <div role="alert" className="auth-alert auth-alert-error">
           {error}
         </div>
       ) : null}
 
-      <form action={completeOnboardingAction} className="flex flex-col gap-8">
+      <form action={completeOnboardingAction} className="auth-steps">
         {/* ── Step 1: individual or business ─────────────────────────── */}
-        <fieldset className="flex flex-col gap-3">
-          <legend className="text-[13px] font-semibold text-[var(--color-ink)]">
+        <fieldset className="auth-fieldset">
+          <legend className="auth-legend">
             1. What is this workspace for?
           </legend>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="auth-kinds">
             <KindOption
               value="personal"
               label="Just me / my household"
@@ -89,8 +86,8 @@ export function OnboardingForm({
         </fieldset>
 
         {/* ── Step 2: workspace details ───────────────────────────────── */}
-        <fieldset className="flex flex-col gap-4">
-          <legend className="text-[13px] font-semibold text-[var(--color-ink)]">
+        <fieldset className="auth-fieldset">
+          <legend className="auth-legend">
             2. Name it
           </legend>
           <Field label="Workspace name" htmlFor="workspaceName">
@@ -133,8 +130,8 @@ export function OnboardingForm({
               >
                 <Input id="abn" name="abn" inputMode="numeric" placeholder="51 824 753 556" />
               </Field>
-              <label className="flex items-center gap-2 text-[14px] text-[var(--color-ink)]">
-                <input type="checkbox" name="gstRegistered" className="h-4 w-4" />
+              <label className="auth-check">
+                <input type="checkbox" name="gstRegistered" />
                 Registered for GST
               </label>
               <Field label="GST basis" htmlFor="gstBasis">
@@ -157,8 +154,8 @@ export function OnboardingForm({
 
         {/* ── Step 3: occupation, for deduction targeting ─────────────── */}
         {isAustralian ? (
-          <fieldset className="flex flex-col gap-3">
-            <legend className="text-[13px] font-semibold text-[var(--color-ink)]">
+          <fieldset className="auth-fieldset">
+            <legend className="auth-legend">
               3. Occupation (optional)
             </legend>
             <Field
@@ -184,11 +181,11 @@ export function OnboardingForm({
           /* Not a lesser version of the Australian flow — a different, true
              one. Saying this here is cheaper than letting someone discover it
              after categorising receipts for a month. */
-          <fieldset className="flex flex-col gap-2">
-            <legend className="text-[13px] font-semibold text-[var(--color-ink)]">
+          <fieldset className="auth-fieldset">
+            <legend className="auth-legend">
               3. What this will do for you
             </legend>
-            <p className="text-[13px] leading-relaxed text-[var(--color-ink-muted)]">
+            <p className="auth-hint">
               {chosen?.countryName} has no itemised deduction worksheet for individuals, so
               there is no occupation to target and no deduction to optimise. What you get is a
               clean record of what you spent, read straight off your receipts, with{' '}
@@ -198,11 +195,11 @@ export function OnboardingForm({
           </fieldset>
         )}
 
-        <Button type="submit" size="lg">
+        <button type="submit" className="btn btn-primary btn-lg w-full">
           Finish setup
-        </Button>
+        </button>
       </form>
-    </Card>
+    </div>
   );
 }
 
@@ -220,13 +217,7 @@ function KindOption({
   onSelect: () => void;
 }) {
   return (
-    <label
-      className={`flex cursor-pointer flex-col gap-1 rounded-[var(--radius-md)] border p-3 text-left transition-colors ${
-        checked
-          ? 'border-[var(--color-accent)] bg-[var(--color-accent-soft)]'
-          : 'border-[var(--color-rule-strong)] hover:bg-[var(--color-surface-alt)]'
-      }`}
-    >
+    <label className="auth-kind" data-checked={checked ? "true" : "false"}>
       <input
         type="radio"
         name="kind"
@@ -235,8 +226,8 @@ function KindOption({
         onChange={onSelect}
         className="sr-only"
       />
-      <span className="text-[14px] font-semibold text-[var(--color-ink)]">{label}</span>
-      <span className="text-[12px] text-[var(--color-ink-muted)]">{hint}</span>
+      <span className="auth-kind-label">{label}</span>
+      <span className="auth-kind-hint">{hint}</span>
     </label>
   );
 }

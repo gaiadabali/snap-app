@@ -1,19 +1,13 @@
 import type { Metadata } from 'next';
 
-import { ArticleHero } from '@/design/primitives';
+import { LegalHeader } from '../_components/LegalHeader';
 
 export const metadata: Metadata = { title: 'Privacy Policy' };
 
 export default function PrivacyPolicyPage() {
   return (
-    <article className="flex flex-col gap-8 leading-relaxed text-[var(--color-ink-muted)]">
-      <header>
-        <ArticleHero
-        kicker="Documentation"
-        title={<>Privacy Policy</>}
-        meta={<>Draft — last updated 17 September 2026</>}
-      />
-      </header>
+    <article className="legal-prose">
+      <LegalHeader title={<>Privacy Policy</>} meta={<>Draft — last updated 20 October 2026</>} />
 
       <p>
         Snap Apps (&quot;we&quot;, &quot;us&quot;) provides receipt capture, extraction, ledger, and
@@ -24,36 +18,36 @@ export default function PrivacyPolicyPage() {
       </p>
 
       <section>
-        <h2 className="text-[20px] font-bold text-[var(--color-ink)]">1. What we collect</h2>
-        <ul className="mt-3 flex flex-col gap-2">
+        <h2>1. What we collect</h2>
+        <ul>
           <li>
-            <strong className="text-[var(--color-ink)]">Account information:</strong> name, email,
+            <strong>Account information:</strong> name, email,
             business/ABN details if you operate a business workspace, and your chosen occupation
             profile if you use the deduction tools.
           </li>
           <li>
-            <strong className="text-[var(--color-ink)]">Receipt and invoice images</strong> you
+            <strong>Receipt and invoice images</strong> you
             capture, plus the financial data extracted from them: supplier names and ABNs, amounts,
             GST, line items, and dates.
           </li>
           <li>
-            <strong className="text-[var(--color-ink)]">Ledger and tax data</strong> derived from your
+            <strong>Ledger and tax data</strong> derived from your
             confirmed transactions, including BAS figures calculated from them.
           </li>
           <li>
-            <strong className="text-[var(--color-ink)]">Connection data</strong> if you connect Xero
+            <strong>Connection data</strong> if you connect Xero
             or another accounting platform — an authorisation token, not your Xero password.
           </li>
           <li>
-            <strong className="text-[var(--color-ink)]">Usage and device data</strong> needed to
+            <strong>Usage and device data</strong> needed to
             operate and secure the service, such as sign-in events and error diagnostics.
           </li>
         </ul>
-        <p className="mt-3">
+        <p>
           We do <strong>not</strong> collect or store full card numbers. Receipts that show a masked
           card number have it reduced at the point of capture to only the last four digits and the
           card brand — see{' '}
-          <a className="text-[var(--color-accent)] hover:underline" href="/legal/security">
+          <a href="/legal/security">
             Data handling &amp; security
           </a>
           . We do not collect device location from your receipt photos: GPS metadata is stripped from
@@ -62,8 +56,8 @@ export default function PrivacyPolicyPage() {
       </section>
 
       <section>
-        <h2 className="text-[20px] font-bold text-[var(--color-ink)]">2. Why we collect it</h2>
-        <p className="mt-3">
+        <h2>2. Why we collect it</h2>
+        <p>
           To extract and validate the data on your receipts, maintain your ledger, calculate your BAS
           and deduction figures, sync confirmed transactions to Xero if you choose to connect it,
           bill your plan, and secure your account. We do not use your financial data to sell you
@@ -72,18 +66,30 @@ export default function PrivacyPolicyPage() {
       </section>
 
       <section>
-        <h2 className="text-[20px] font-bold text-[var(--color-ink)]">3. Where your data is processed</h2>
-        <p className="mt-3">
-          Your data is stored in Australia (AWS <code>ap-southeast-2</code>, Sydney). The model that
-          reads your receipts also runs in that region, on purpose: keeping extraction in Sydney
-          avoids sending your financial records overseas to get a receipt read, which is otherwise a
-          cross-border disclosure under APP 8. Where a provider outside Australia is used during
-          development or as a fallback, this is disclosed to you separately and is not used for
-          production processing of your data without that disclosure.
+        <h2>3. Where your data is processed</h2>
+        {/*
+          Corrected 2026-10-20. This section said storage and receipt reading
+          ran in AWS Sydney (ap-southeast-2). That is the PLANNED arrangement
+          (docs/PLAN.md D12/D13), not the running one: the service runs on a
+          Hostinger server in Jakarta, and extraction goes through OpenRouter
+          (EXTRACTION_PROVIDER=openrouter on the host, checked that day). A
+          privacy policy has to describe what actually happens to the data.
+          Still a draft — see the banner — and due a legal review.
+        */}
+        <p>
+          Your data — your account, your records and the original images of your receipts — is
+          stored on a server operated for us by Hostinger in Jakarta, Indonesia.
         </p>
-        <p className="mt-3">
-          Where our AI provider is Anthropic, Anthropic does not train its models on data submitted via
-          its API.
+        <p>
+          To read a receipt, a copy of its image is sent to OpenRouter, Inc. in the United States,
+          which passes it to the provider running the language model that reads it. That provider
+          may be in the United States or another country. Each of them processes the image under its
+          own terms.
+        </p>
+        <p>
+          Both are disclosures of your personal information outside Australia, and APP 8 of the
+          Privacy Act applies to them. Moving storage and receipt reading to Australia is planned;
+          until that happens, the arrangement above is the one in use.
         </p>
         {/*
           ML Kit disclosure — docs/ON-DEVICE.md §11 OD-9.
@@ -93,42 +99,42 @@ export default function PrivacyPolicyPage() {
           metrics do. Both halves are stated because only stating the first
           would be the flattering half.
         */}
-        <p className="mt-3">
-          <strong className="text-[var(--color-ink)]">Reading on your phone.</strong> When the Android
+        <p>
+          <strong>Reading on your phone.</strong> When the Android
           app reads a receipt on the device itself, it uses Google&apos;s ML Kit text recogniser. Your
           photo and the text read from it stay on your phone — ML Kit does not send the image or its
           result to Google. Google does receive usage and performance metrics about the recogniser
           itself, which Google processes under its own terms; those metrics describe how the
           recogniser ran, not what your receipt says. The recognition model is supplied by Google
           Play services rather than bundled into the app, which is why Google is involved at all, and
-          a device without Google Play services simply uses the Sydney extraction described above.
+          a device without Google Play services simply uses the server extraction described above.
         </p>
       </section>
 
       <section>
-        <h2 className="text-[20px] font-bold text-[var(--color-ink)]">4. Who we share it with</h2>
-        <ul className="mt-3 flex flex-col gap-2">
+        <h2>4. Who we share it with</h2>
+        <ul>
           <li>
-            <strong className="text-[var(--color-ink)]">Xero</strong>, or another accounting platform,
+            <strong>Xero</strong>, or another accounting platform,
             only if and when you connect it — and only your posted transactions and their receipt
             images, not your whole account.
           </li>
           <li>
-            <strong className="text-[var(--color-ink)]">The Australian Business Register</strong>, to
+            <strong>The Australian Business Register</strong>, to
             confirm a supplier&apos;s ABN and GST registration status. This is a lookup of public
             business information, not a disclosure of your own data to the Register.
           </li>
           <li>
-            <strong className="text-[var(--color-ink)]">Infrastructure and processing providers</strong>{' '}
+            <strong>Infrastructure and processing providers</strong>{' '}
             (cloud hosting, storage, and the AI provider described above) who process data on our
             behalf under contract, and are not permitted to use it for their own purposes.
           </li>
           <li>
-            <strong className="text-[var(--color-ink)]">Your accounting practice</strong>, if your
+            <strong>Your accounting practice</strong>, if your
             account is managed under a Practice plan by a bookkeeper or accountant you&apos;ve engaged.
           </li>
           <li>
-            <strong className="text-[var(--color-ink)]">Google</strong>, where the Android app reads a
+            <strong>Google</strong>, where the Android app reads a
             receipt on your device — and only usage and performance metrics from its ML Kit text
             recogniser. Not your receipt images, and not the text read from them.
           </li>
@@ -137,11 +143,11 @@ export default function PrivacyPolicyPage() {
       </section>
 
       <section>
-        <h2 className="text-[20px] font-bold text-[var(--color-ink)]">5. How long we keep it</h2>
-        <p className="mt-3">
+        <h2>5. How long we keep it</h2>
+        <p>
           Business records are retained for five years from the date they were prepared or the related
           transaction completed, matching the ATO&apos;s record-keeping requirement — see{' '}
-          <a className="text-[var(--color-accent)] hover:underline" href="/docs/data-retention">
+          <a href="/docs/data-retention">
             Data retention and deletion
           </a>
           . Records are actively removed by an automated process once that period passes, rather than
@@ -151,13 +157,13 @@ export default function PrivacyPolicyPage() {
       </section>
 
       <section>
-        <h2 className="text-[20px] font-bold text-[var(--color-ink)]">6. Security</h2>
-        <p className="mt-3">
+        <h2>6. Security</h2>
+        <p>
           Financial data is encrypted at rest and in transit, tenant data is isolated so one
           business&apos;s records are never visible to another, and particularly sensitive fields
           (bank details, Xero tokens) receive additional application-level encryption. Full detail is
           in{' '}
-          <a className="text-[var(--color-accent)] hover:underline" href="/legal/security">
+          <a href="/legal/security">
             Data handling &amp; security
           </a>
           .
@@ -165,8 +171,8 @@ export default function PrivacyPolicyPage() {
       </section>
 
       <section>
-        <h2 className="text-[20px] font-bold text-[var(--color-ink)]">7. Data breaches</h2>
-        <p className="mt-3">
+        <h2>7. Data breaches</h2>
+        <p>
           We maintain an audit trail of access to your data so that, in the event of a suspected
           breach, the scope of what was affected can be established quickly. Where a breach is likely
           to result in serious harm, we intend to notify affected individuals and the Office of the
@@ -176,11 +182,11 @@ export default function PrivacyPolicyPage() {
       </section>
 
       <section>
-        <h2 className="text-[20px] font-bold text-[var(--color-ink)]">8. Your rights</h2>
-        <p className="mt-3">
+        <h2>8. Your rights</h2>
+        <p>
           You can ask us for access to the personal information we hold about you, ask us to correct
           it, and ask us to delete your account — see{' '}
-          <a className="text-[var(--color-accent)] hover:underline" href="/support">
+          <a href="/support">
             Support
           </a>
           . Where a record is still inside its mandatory five-year retention window, we can close it
@@ -191,18 +197,18 @@ export default function PrivacyPolicyPage() {
       </section>
 
       <section>
-        <h2 className="text-[20px] font-bold text-[var(--color-ink)]">9. Changes to this policy</h2>
-        <p className="mt-3">
+        <h2>9. Changes to this policy</h2>
+        <p>
           We will post any material change here and, where practical, notify account holders directly
           before it takes effect.
         </p>
       </section>
 
       <section>
-        <h2 className="text-[20px] font-bold text-[var(--color-ink)]">10. Contact</h2>
-        <p className="mt-3">
+        <h2>10. Contact</h2>
+        <p>
           For privacy questions or requests, contact Support (see the{' '}
-          <a className="text-[var(--color-accent)] hover:underline" href="/support">
+          <a href="/support">
             Support
           </a>{' '}
           page for current channels).
