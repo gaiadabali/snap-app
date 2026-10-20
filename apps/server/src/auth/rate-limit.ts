@@ -53,16 +53,36 @@ export class RateLimiter {
   }
 
   /**
-   * Deletes rows whose window has elapsed.
+   * Deletes THIS limiter's rows whose window has elapsed.
+   *
+   * Scoped by key prefix, and that scoping is the fix for a real defect. The
+   * table is shared by limiters with different windows: the global limiter
+   * counts per minute, the sign-in and reset limiters per fifteen minutes.
+   * This used to delete every row older than the CALLER's window, so the
+   * global limiter's once-a-minute sweep wiped the fifteen-minute counters
+   * about a minute into their window — "5 per address per 15 minutes" was in
+   * practice about 5 per minute, for every auth limit in the API.
    *
    * One row per key means the table cannot grow with history, only with the
    * number of distinct keys ever seen — which a scrape across many addresses
-   * can still inflate. Call this periodically (the global limiter in main.ts
-   * does, roughly once per window) so abandoned keys are reclaimed.
+   * can still inflate. `sweepStale` reclaims every limiter's abandoned keys.
    */
-  async sweep(): Promise<void> {
+  async sweep(keyPrefix: string): Promise<void> {
     await this.db().execute(sql`
-      DELETE FROM rate_limits WHERE window_start < now() - ${`'${this.windowMs} milliseconds'`}::interval
+      DELETE FROM rate_limits
+       WHERE starts_with(bucket_key, ${keyPrefix})
+         AND window_start < now() - ${`${this.windowMs} milliseconds`}::interval
+    `);
+  }
+
+  /**
+   * Deletes every row, whatever its limiter, whose window started longer ago
+   * than `olderThanMs` — which must be at least the LONGEST window any
+   * limiter uses, or this is the bug `sweep` describes all over again.
+   */
+  static async sweepStale(olderThanMs: number, db: () => Db = getDb): Promise<void> {
+    await db().execute(sql`
+      DELETE FROM rate_limits WHERE window_start < now() - ${`${olderThanMs} milliseconds`}::interval
     `);
   }
 }

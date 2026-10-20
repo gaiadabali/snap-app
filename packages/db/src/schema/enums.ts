@@ -214,7 +214,23 @@ export const matchProposer = pgEnum('match_proposer', ['matcher', 'user']);
  * each purpose implies a decision about whether that mail may be RETRIED —
  * see `docs/INTEGRATIONS.md` Lane N and 0034's header.
  */
-export const mailPurpose = pgEnum('mail_purpose', ['magic_link', 'firm_invite', 'notification']);
+export const mailPurpose = pgEnum('mail_purpose', [
+  'magic_link',
+  'firm_invite',
+  'notification',
+  // 0036 — sign-in safety. The first two carry a live single-use link and
+  // are never retried from a queue; `security_notice` ("your password was
+  // changed") carries none.
+  'password_reset',
+  'email_verification',
+  'security_notice',
+]);
+
+/** What an `auth_email_tokens` row is a link for (0036). */
+export const authEmailTokenPurpose = pgEnum('auth_email_token_purpose', [
+  'password_reset',
+  'email_verification',
+]);
 
 /**
  * How a send ended. Three values, not a boolean: a 550 must never be retried

@@ -24,10 +24,14 @@ import {
   upsertUserByEmail,
 } from '../repo.js';
 import { getDb } from '../db.js';
-import { issueMagicLinkToken, issueSession, readMagicLinkToken } from '../tokens.js';
+import { issueMagicLinkToken, readMagicLinkToken } from '../tokens.js';
+import { dispatchMail, emailVerificationMessage } from './account-mail.js';
+import { issueEmailVerification, markEmailProven, newLinkSecret } from './account.repo.js';
+import { clientIp, type IpAwareRequest } from './client-ip.js';
 import { GoogleIdTokenError, verifyGoogleIdToken } from './google-verify.js';
 import { tryConsume } from './magic-link-store.js';
 import { sendAndRecord } from './mail-delivery.js';
+import { signedIn, type SignInResponse } from './signed-in.js';
 import {
   dummyHash,
   hashPassword,
@@ -82,9 +86,6 @@ export class GoogleSimulatorSignInDto {
   email!: string;
 }
 
-/** The bit of the request this controller reads for rate limiting. Fastify supplies `.ip`. */
-type IpAwareRequest = { ip?: string };
-
 // Five requests per address, twenty per source IP, both per fifteen minutes —
 // blunts a targeted flood of one inbox and a broad scrape across many
 // addresses. Counted in Postgres (see RateLimiter), so two API replicas
@@ -118,11 +119,7 @@ export class AuthController {
     description:
       'Development stand-in for an OIDC code exchange. Creates the user if the address is unknown, in which case the session has no workspaces and the client must run onboarding. Returns 404 when NODE_ENV is production — use Google sign-in or a magic link there.',
   })
-  async signIn(@ValidBody(SignInDto) body: SignInDto): Promise<{
-    token: string;
-    user: AuthUser;
-    workspaces: Array<{ id: string; name: string; kind: string; role: string }>;
-  }> {
+  async signIn(@ValidBody(SignInDto) body: SignInDto): Promise<SignInResponse> {
     // THE GATE.
     //
     // This endpoint trades an email address for a full session with no proof
@@ -179,11 +176,9 @@ export class AuthController {
     const nameFromEmail = nameFromAddress(email);
 
     const user = await upsertUserByEmail(email, nameFromEmail);
-    // Read the memberships with a user context and no tenant context — the one
-    // query that is legitimately answered in that state (migration 0012).
-    const workspaces = await listWorkspacesFor(getDb(), user.userId);
-
-    return { token: issueSession(user.userId), user, workspaces };
+    // NOT `markEmailProven`: this route proves nothing about the address,
+    // which is exactly why it is closed in production.
+    return signedIn(user.userId);
   }
 
   @Post('register')
@@ -191,18 +186,25 @@ export class AuthController {
   @ApiOperation({
     summary: 'Create an account with an email address and a password',
     description:
-      'Registration is the same account the website dashboard uses: one users row, one memberships row per workspace. There is NO password reset in this build, because no mail transport is configured.',
+      'Creates a NEW account only: an address that already has an account, with or without a password, ' +
+      'answers 409 (an existing account adopts a password through the reset link, which proves the inbox). ' +
+      'Signs in at once with emailVerified false, and mails a verification link.',
   })
-  async register(@ValidBody(RegisterDto) body: RegisterDto): Promise<{
-    token: string;
-    user: AuthUser;
-    workspaces: Array<{ id: string; name: string; kind: string; role: string }>;
-  }> {
+  async register(
+    @ValidBody(RegisterDto) body: RegisterDto,
+    @Req() request: IpAwareRequest = {},
+  ): Promise<SignInResponse> {
     const email = body.email.trim().toLowerCase();
-    const ip = 'register';
     // Registration is a write and a scrypt hash, so it is rate limited on the
     // same limiters the magic link uses rather than left open.
-    if (!(await perEmailLimiter.consume(`register:${email}`)) || !(await perIpLimiter.consume(`ip:${ip}`))) {
+    //
+    // The IP key used to be the constant `ip:register` — one bucket for the
+    // whole internet, so twenty sign-ups anywhere in fifteen minutes refused
+    // everyone. Keyed by the caller now (see client-ip.ts).
+    if (
+      !(await perEmailLimiter.consume(`register:${email}`)) ||
+      !(await perIpLimiter.consume(`ip:register:${clientIp(request)}`))
+    ) {
       throw new HttpException('Too many attempts. Try again shortly.', HttpStatus.TOO_MANY_REQUESTS);
     }
 
@@ -212,16 +214,29 @@ export class AuthController {
     const displayName = (body.displayName ?? '').trim() || nameFromAddress(email);
     const user = await registerWithPassword(email, displayName, await hashPassword(body.password));
     if (!user) {
-      // The address already carries a password. This DOES disclose that an
+      // The address already has an account. This DOES disclose that an
       // account exists, and that is unavoidable for a registration endpoint:
       // the alternative is to accept the request and silently not create
       // anything, which leaves the person stuck with no way to tell why they
       // cannot sign in. Enumeration is closed on sign-in, where it matters.
-      throw new HttpException('That address already has an account.', HttpStatus.CONFLICT);
+      //
+      // Since 0036 this includes an account with NO password. Attaching one
+      // here took over any magic-link or Google account for the price of its
+      // address; "forgot password" is the way to add one now.
+      throw new HttpException(
+        'That address already has an account. Sign in, or use "Forgot password" to set a password.',
+        HttpStatus.CONFLICT,
+      );
     }
 
-    const workspaces = await listWorkspacesFor(getDb(), user.userId);
-    return { token: issueSession(user.userId), user, workspaces };
+    // Prove the address. Sent in the background (account-mail.ts) so the
+    // sign-up does not wait on SMTP; a failed send is recorded and the
+    // person can ask for another from Settings.
+    const link = newLinkSecret();
+    const pending = await issueEmailVerification(user.userId, link.hash);
+    if (pending) dispatchMail('email_verification', emailVerificationMessage(pending.email, link.secret));
+
+    return signedIn(user.userId);
   }
 
   @Post('password/sign-in')
@@ -231,13 +246,18 @@ export class AuthController {
     description:
       'Answers identically for an unknown address, an account with no password, and a wrong password.',
   })
-  async passwordSignIn(@ValidBody(PasswordCredentialsDto) body: PasswordCredentialsDto): Promise<{
-    token: string;
-    user: AuthUser;
-    workspaces: Array<{ id: string; name: string; kind: string; role: string }>;
-  }> {
+  async passwordSignIn(
+    @ValidBody(PasswordCredentialsDto) body: PasswordCredentialsDto,
+    @Req() request: IpAwareRequest = {},
+  ): Promise<SignInResponse> {
     const email = body.email.trim().toLowerCase();
-    if (!(await perEmailLimiter.consume(`pwd:${email}`)) || !(await perIpLimiter.consume('ip:password'))) {
+    // Per caller, not the constant `ip:password` it used to be — that was one
+    // bucket for everybody, so twenty wrong passwords anywhere locked every
+    // account out of password sign-in for fifteen minutes.
+    if (
+      !(await perEmailLimiter.consume(`pwd:${email}`)) ||
+      !(await perIpLimiter.consume(`ip:password:${clientIp(request)}`))
+    ) {
       throw new HttpException('Too many attempts. Try again shortly.', HttpStatus.TOO_MANY_REQUESTS);
     }
 
@@ -252,8 +272,7 @@ export class AuthController {
       throw new HttpException('Email or password is incorrect.', HttpStatus.UNAUTHORIZED);
     }
 
-    const workspaces = await listWorkspacesFor(getDb(), record.user.userId);
-    return { token: issueSession(record.user.userId), user: record.user, workspaces };
+    return signedIn(record.user.userId);
   }
 
   @Get('demo-accounts')
@@ -298,7 +317,7 @@ export class AuthController {
     @Req() request: IpAwareRequest,
   ): Promise<{ ok: true }> {
     const email = body.email.trim().toLowerCase();
-    const ip = request.ip ?? 'unknown';
+    const ip = clientIp(request);
 
     if (!(await perEmailLimiter.consume(`email:${email}`)) || !(await perIpLimiter.consume(`ip:${ip}`))) {
       throw new HttpException(
@@ -349,11 +368,7 @@ export class AuthController {
       "there is no reason to confirm it and no legitimate client needs the distinction — it just " +
       "shows the sign-in form again either way.",
   })
-  async consumeMagicLink(@ValidBody(MagicLinkConsumeDto) body: MagicLinkConsumeDto): Promise<{
-    token: string;
-    user: AuthUser;
-    workspaces: Array<{ id: string; name: string; kind: string; role: string }>;
-  }> {
+  async consumeMagicLink(@ValidBody(MagicLinkConsumeDto) body: MagicLinkConsumeDto): Promise<SignInResponse> {
     const invalid = () => new UnauthorizedException('This link is invalid or has expired.');
 
     const decoded = readMagicLinkToken(body.token);
@@ -366,8 +381,12 @@ export class AuthController {
       .replace(/\b\w/g, (c) => c.toUpperCase());
 
     const user = await upsertUserByEmail(email, nameFromEmail);
-    const workspaces = await listWorkspacesFor(getDb(), user.userId);
-    return { token: issueSession(user.userId), user, workspaces };
+    // The link reached this inbox, so the address is proven. BEFORE the new
+    // session: on the first proof, a password somebody set while the address
+    // was unproven is cleared and its sessions are revoked (0036's
+    // pre-hijacking case), and the session opened below must survive that.
+    await markEmailProven(user.userId);
+    return signedIn(user.userId);
   }
 
   /* ── Google OAuth ─────────────────────────────────────────────────────────
@@ -391,11 +410,7 @@ export class AuthController {
       'audience, expiry and nonce, before trusting any claim in it. Answers 501 if ' +
       'GOOGLE_CLIENT_ID is not configured yet.',
   })
-  async googleExchange(@ValidBody(GoogleExchangeDto) body: GoogleExchangeDto): Promise<{
-    token: string;
-    user: AuthUser;
-    workspaces: Array<{ id: string; name: string; kind: string; role: string }>;
-  }> {
+  async googleExchange(@ValidBody(GoogleExchangeDto) body: GoogleExchangeDto): Promise<SignInResponse> {
     const clientId = config().GOOGLE_CLIENT_ID;
     if (!clientId) {
       throw new HttpException(
@@ -417,8 +432,11 @@ export class AuthController {
     }
 
     const user = await upsertUserByEmail(identity.email, identity.displayName);
-    const workspaces = await listWorkspacesFor(getDb(), user.userId);
-    return { token: issueSession(user.userId), user, workspaces };
+    // `verifyGoogleIdToken` refuses unless Google asserts `email_verified`,
+    // so this is a proof of the address — same order and reason as the
+    // magic link above.
+    await markEmailProven(user.userId);
+    return signedIn(user.userId);
   }
 
   /* ── Simulated Google sign-in (staging/demo host only) ───────────────────
@@ -438,7 +456,7 @@ export class AuthController {
    * still constrained to the fixed, seeded accounts `listDemoAccounts()`
    * already serves elsewhere in this file — never an arbitrary address — and
    * everything downstream is the exact same `upsertUserByEmail` +
-   * `issueSession` call the real flow makes, so the session shape, cookie,
+   * `signedIn` call the real flow makes, so the session shape, cookie,
    * onboarding and workspace/RBAC behaviour are identical either way.
    */
 
@@ -470,11 +488,7 @@ export class AuthController {
   })
   async googleSimulatorSignIn(
     @ValidBody(GoogleSimulatorSignInDto) body: GoogleSimulatorSignInDto,
-  ): Promise<{
-    token: string;
-    user: AuthUser;
-    workspaces: Array<{ id: string; name: string; kind: string; role: string }>;
-  }> {
+  ): Promise<SignInResponse> {
     // THE GATE. Checked first and unconditionally, same as `signIn` above —
     // a production server (the demo host included, absent its two extra
     // opt-ins) must not admit this route exists any more than that one does.
@@ -493,8 +507,9 @@ export class AuthController {
     }
 
     const user = await upsertUserByEmail(identity.email, identity.displayName);
-    const workspaces = await listWorkspacesFor(getDb(), user.userId);
-    return { token: issueSession(user.userId), user, workspaces };
+    // Not `markEmailProven`: the simulator asserts nothing about an inbox.
+    // The seeded demo people are marked verified by scripts/seed.ts instead.
+    return signedIn(user.userId);
   }
 }
 

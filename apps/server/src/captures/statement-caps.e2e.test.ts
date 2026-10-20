@@ -78,7 +78,7 @@ function statementPdf(pageCount: number): Buffer {
 describeIfDb('statement intake caps — real HTTP (T7)', () => {
   let app: NestFastifyApplication;
   let admin: Client;
-  let issueSession: typeof import('../tokens.js').issueSession;
+  let issueSession: (userId: string) => string;
 
   const auth = () => ({
     authorization: `Bearer ${issueSession(USER)}`,
@@ -95,8 +95,8 @@ describeIfDb('statement intake caps — real HTTP (T7)', () => {
       users: [{ id: USER, role: 'owner' }],
     });
 
-    const tokens = await import('../tokens.js');
-    issueSession = tokens.issueSession;
+    // Real sessions (0036): a token is only good while its row stands.
+    issueSession = await (await import('../test-support/sessions.js')).openSessions(USER);
 
     const { AppModule } = await import('../app.module.js');
     app = await NestFactory.create<NestFastifyApplication>(

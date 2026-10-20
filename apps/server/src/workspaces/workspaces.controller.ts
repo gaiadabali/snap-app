@@ -22,6 +22,7 @@ import {
   CurrentUser,
   MembershipGuard,
   SessionGuard,
+  VerifiedEmailGuard,
   WorkspaceId,
   type AuthUser,
 } from '../common/auth.guard.js';
@@ -298,7 +299,10 @@ export class WorkspacesController {
   }
 
   @Post('invitations/accept')
-  @UseGuards(SessionGuard)
+  // Verified, because `invitation_accept` matches the caller's EMAIL against
+  // the invitation's: an address nobody has proven must not be enough to
+  // join someone's books (0036).
+  @UseGuards(SessionGuard, VerifiedEmailGuard)
   @HttpCode(200)
   @ApiOperation({
     summary: 'Join a workspace you were invited to',
@@ -342,7 +346,8 @@ export class WorkspacesController {
   }
 
   @Post(':id/invitations')
-  @UseGuards(SessionGuard, MembershipGuard)
+  // Verified: an invitation acts on other people in this account's name.
+  @UseGuards(SessionGuard, MembershipGuard, VerifiedEmailGuard)
   @ApiOperation({
     summary: 'Invite someone',
     description:

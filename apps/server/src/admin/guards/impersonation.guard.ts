@@ -7,8 +7,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 
-import { readSession } from '../../tokens.js';
-import { getUser } from '../../repo.js';
+import { authenticateSession } from '../../auth/sessions.js';
 import { hashImpersonationToken } from '../crypto/impersonation-tokens.js';
 import { getMyCapabilities, verifyImpersonation } from '../admin.repo.js';
 
@@ -81,15 +80,20 @@ export class TenantRecordsAccessGuard implements CanActivate {
     }
 
     // No impersonation token: fall back to an ordinary staff session. This
-    // duplicates `SessionGuard`'s own lookup (readSession + getUser) rather
+    // duplicates `SessionGuard`'s own lookup (authenticateSession) rather
     // than composing Nest guards, because this route needs to accept EITHER
     // credential and Nest's guard chain has no OR — see the class comment.
     const header = request.headers?.authorization;
     const token = header?.startsWith('Bearer ') ? header.slice(7) : undefined;
-    const userId = readSession(token);
-    if (!userId) throw new UnauthorizedException('Sign in to continue, or present an impersonation token.');
-    const user = await getUser(userId);
-    if (!user) throw new UnauthorizedException('That session is no longer valid.');
+    if (!token) throw new UnauthorizedException('Sign in to continue, or present an impersonation token.');
+    // The same live-session check as `SessionGuard` (0036): a signed token
+    // whose session was signed out, revoked or has expired is refused here
+    // too, or this route would be the one place an ended staff session
+    // still worked.
+    const authenticated = await authenticateSession(token);
+    if (!authenticated) throw new UnauthorizedException('That session is no longer valid.');
+    const user = authenticated.user;
+    const userId = user.userId;
     request.authUser = user;
 
     const session = await getMyCapabilities(userId);

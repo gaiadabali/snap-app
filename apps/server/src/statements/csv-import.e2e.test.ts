@@ -41,7 +41,7 @@ const USER = 'f5f5f5f5-0000-4000-8000-000000000002';
 describeIfDb('CSV statement intake — real HTTP (T5)', () => {
   let app: NestFastifyApplication;
   let admin: Client;
-  let issueSession: typeof import('../tokens.js').issueSession;
+  let issueSession: (userId: string) => string;
 
   const auth = () => ({
     authorization: `Bearer ${issueSession(USER)}`,
@@ -58,8 +58,8 @@ describeIfDb('CSV statement intake — real HTTP (T5)', () => {
       users: [{ id: USER, role: 'owner' }],
     });
 
-    const tokens = await import('../tokens.js');
-    issueSession = tokens.issueSession;
+    // Real sessions (0036): a token is only good while its row stands.
+    issueSession = await (await import('../test-support/sessions.js')).openSessions(USER);
 
     const { AppModule } = await import('../app.module.js');
     app = await NestFactory.create<NestFastifyApplication>(

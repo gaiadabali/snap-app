@@ -9,8 +9,8 @@ import {
 
 import { verifyImpersonation } from '../admin/admin.repo.js';
 import { hashImpersonationToken } from '../admin/crypto/impersonation-tokens.js';
+import { authenticateSession } from '../auth/sessions.js';
 import { getUser } from '../repo.js';
-import { readSession } from '../tokens.js';
 import type { AuthUser } from '@snap/api-contract';
 
 /**
@@ -55,7 +55,15 @@ type GuardedRequest = {
   method?: string;
   url?: string;
   impersonation?: ProductImpersonation;
+  session?: CurrentSessionInfo;
 };
+
+/**
+ * The session behind an ordinary signed-in request (0036). Absent under
+ * impersonation, where nobody signed in as the subject and there is no
+ * session of theirs to act on.
+ */
+export type CurrentSessionInfo = { sessionId: string; tokenHash: Buffer };
 
 /**
  * Set when the request is being made by platform staff ACTING AS a user,
@@ -109,16 +117,56 @@ export class SessionGuard implements CanActivate {
 
     const header = request.headers?.authorization;
     const token = header?.startsWith('Bearer ') ? header.slice(7) : undefined;
+    if (!token) throw new UnauthorizedException('Sign in to continue.');
 
-    const userId = readSession(token);
-    if (!userId) throw new UnauthorizedException('Sign in to continue.');
+    // A signature alone proves only that this server minted the token. The
+    // session row (0036) is what says it is still live: not signed out, not
+    // revoked by a password change, not past its absolute or idle expiry,
+    // and naming a user who still exists. Every one of those failures gets
+    // the same answer — the client's only useful move is the same for all.
+    const session = await authenticateSession(token);
+    if (!session) {
+      throw new UnauthorizedException({
+        error: 'session_expired',
+        message: 'Your session has ended. Sign in again.',
+      });
+    }
 
-    const user = await getUser(userId);
-    // A token can outlive the user it names — a deleted account, a restored
-    // database. A signature alone is not proof the subject still exists.
-    if (!user) throw new UnauthorizedException('That session is no longer valid.');
+    request.authUser = session.user;
+    request.session = { sessionId: session.sessionId, tokenHash: session.tokenHash };
+    return true;
+  }
+}
 
-    request.authUser = user;
+/**
+ * Refuses a signed-in user whose email address is not yet proven (1.2.b).
+ *
+ * WHAT AN UNVERIFIED ACCOUNT MAY DO: sign in, and use its own workspaces in
+ * full — capture, review, export. Nothing there reaches anyone else, and
+ * blocking it would punish the person for a slow inbox.
+ *
+ * WHAT IT MAY NOT: anything that acts on the address towards other people or
+ * other services — inviting someone, accepting an invitation (which is
+ * matched by email address, so an unproven address must not be enough), and
+ * linking accounting software. Those are where an address someone typed but
+ * does not own would do harm.
+ *
+ * Applied after `SessionGuard`. Under impersonation the subject's own status
+ * decides, like every other check.
+ */
+@Injectable()
+export class VerifiedEmailGuard implements CanActivate {
+  canActivate(context: ExecutionContext): boolean {
+    const request: GuardedRequest = context.switchToHttp().getRequest();
+    const user = request.authUser;
+    if (!user) throw new UnauthorizedException('Sign in to continue.');
+    if (!user.emailVerified) {
+      throw new ForbiddenException({
+        error: 'email_unverified',
+        message:
+          'Confirm your email address first. We sent you a link when you signed up, and you can ask for a new one in Settings.',
+      });
+    }
     return true;
   }
 }
@@ -179,6 +227,18 @@ export const WorkspaceId = createParamDecorator(
     const tenantId = request.tenantId;
     if (!tenantId) throw new ForbiddenException('No workspace on this request.');
     return tenantId;
+  },
+);
+
+/** The session behind this request, for a handler that has passed `SessionGuard`. */
+export const CurrentSession = createParamDecorator(
+  (_data: unknown, context: ExecutionContext): CurrentSessionInfo => {
+    const request: GuardedRequest = context.switchToHttp().getRequest();
+    // Absent under impersonation. A handler that acts on "my session" —
+    // signing out everywhere, changing a password — must not run as staff
+    // holding someone else's identity.
+    if (!request.session) throw new ForbiddenException('This needs your own signed-in session.');
+    return request.session;
   },
 );
 

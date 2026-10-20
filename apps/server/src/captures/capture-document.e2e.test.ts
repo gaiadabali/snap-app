@@ -120,7 +120,7 @@ async function makeCapture(tenant: string = TENANT, uploadedBy: string = WORKER)
   return id;
 }
 
-const user = { userId: WORKER, email: 'worker@od11.test', displayName: 'OD11 Worker', initials: 'OW' };
+const user = { userId: WORKER, email: 'worker@od11.test', displayName: 'OD11 Worker', initials: 'OW', emailVerified: true };
 
 describeIfDb('PATCH /v1/captures/:id/document', () => {
   let admin: Client;

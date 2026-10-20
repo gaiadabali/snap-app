@@ -109,10 +109,63 @@ describeIfDb('RateLimiter (Postgres-backed)', () => {
       UPDATE rate_limits SET window_start = window_start - interval '2 minutes'
       WHERE bucket_key = ${stale}
     `);
-    await limiter.sweep();
+    await limiter.sweep('test:');
     const { rows } = await db.execute<{ bucket_key: string }>(sql`
       SELECT bucket_key FROM rate_limits WHERE bucket_key IN (${stale}, ${fresh})
     `);
     expect(rows.map((r) => r.bucket_key)).toEqual([fresh]);
+  });
+
+  // The regression this pins (task 1.2): the global limiter (1-minute window)
+  // swept the whole table at ITS window, deleting the 15-minute auth counters
+  // about a minute into their window — so "5 per address per 15 minutes" was
+  // in practice about 5 per minute. A sweep now touches only its own keys.
+  it("a short-window limiter's sweep leaves a longer-window limiter's live counter alone", async () => {
+    const global = new RateLimiter(300, 60_000, () => db);
+    const auth = new RateLimiter(3, 15 * 60_000, () => db);
+    const authKey = `reset:email:sweep-${Date.now()}@example.test`;
+    const globalKey = `global:sweep-${Date.now()}`;
+
+    await auth.consume(authKey);
+    await auth.consume(authKey);
+    await auth.consume(authKey);
+    await global.consume(globalKey);
+    // Both windows started five minutes ago: stale for the 1-minute limiter,
+    // very much live for the 15-minute one.
+    await db.execute(sql`
+      UPDATE rate_limits SET window_start = window_start - interval '5 minutes'
+      WHERE bucket_key IN (${authKey}, ${globalKey})
+    `);
+
+    await global.sweep('global:');
+
+    const { rows } = await db.execute<{ bucket_key: string }>(sql`
+      SELECT bucket_key FROM rate_limits WHERE bucket_key IN (${authKey}, ${globalKey})
+    `);
+    expect(rows.map((r) => r.bucket_key)).toEqual([authKey]);
+
+    // And the counter still holds: the fourth attempt in the (backdated, but
+    // still current) window is refused. Undo the backdating first, or the
+    // consumer would see a different window_start and restart the count.
+    await db.execute(sql`
+      UPDATE rate_limits SET window_start = window_start + interval '5 minutes' WHERE bucket_key = ${authKey}
+    `);
+    expect(await auth.consume(authKey)).toBe(false);
+  });
+
+  it('sweepStale reclaims abandoned keys of every limiter past the longest window', async () => {
+    const auth = new RateLimiter(3, 15 * 60_000, () => db);
+    const abandoned = `pwd:abandoned-${Date.now()}@example.test`;
+    const live = `pwd:live-${Date.now()}@example.test`;
+    await auth.consume(abandoned);
+    await auth.consume(live);
+    await db.execute(sql`
+      UPDATE rate_limits SET window_start = window_start - interval '2 hours' WHERE bucket_key = ${abandoned}
+    `);
+    await RateLimiter.sweepStale(60 * 60 * 1000, () => db);
+    const { rows } = await db.execute<{ bucket_key: string }>(sql`
+      SELECT bucket_key FROM rate_limits WHERE bucket_key IN (${abandoned}, ${live})
+    `);
+    expect(rows.map((r) => r.bucket_key)).toEqual([live]);
   });
 });

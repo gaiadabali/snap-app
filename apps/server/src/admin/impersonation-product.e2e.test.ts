@@ -28,7 +28,7 @@ const describeIfDb = url ? describe : describe.skip;
 describeIfDb('impersonation on the product API', () => {
   let app: NestFastifyApplication;
   let admin: Client;
-  let issueSession: typeof import('../tokens.js').issueSession;
+  let issueSession: (userId: string) => string;
 
   const STAFF_USER = 'cccccccc-0000-4000-8000-000000000001';
   const OTHER_STAFF = 'cccccccc-0000-4000-8000-000000000002';
@@ -143,8 +143,8 @@ describeIfDb('impersonation on the product API', () => {
       [OTHER_STAFF],
     );
 
-    const tokens = await import('../tokens.js');
-    issueSession = tokens.issueSession;
+    // Real sessions (0036): a token is only good while its row stands.
+    issueSession = await (await import('../test-support/sessions.js')).openSessions(STAFF_USER);
 
     const { AppModule } = await import('../app.module.js');
     app = await NestFactory.create<NestFastifyApplication>(AppModule, new FastifyAdapter(), {

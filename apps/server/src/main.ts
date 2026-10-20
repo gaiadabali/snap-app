@@ -109,6 +109,20 @@ export async function bootstrap(): Promise<NestFastifyApplication> {
       // Under `routerOptions` because reading it at the top level is
       // deprecated and removed in Fastify 6.
       routerOptions: { maxParamLength: 600 },
+      // WHO IS CALLING. Without this, `request.ip` is the proxy in front of
+      // the API — nginx (via the Docker bridge) or the web container — so
+      // every "per IP" limit was one bucket for the whole internet: twenty
+      // magic-link requests anywhere refused everybody, and the global limiter
+      // capped the entire service at its per-IP number.
+      //
+      // Trusting PRIVATE hops only is what keeps this unforgeable. The API is
+      // published on 127.0.0.1 (deploy/docker-compose.yml), so every
+      // connection arrives from a private address; Fastify walks
+      // X-Forwarded-For from the socket backwards and stops at the first
+      // public address, which is the one nginx appended — whatever a client
+      // put earlier in the header is never reached. The web app forwards the
+      // browser's header for the same reason (apps/web/src/lib/api/server.ts).
+      trustProxy: ['loopback', 'linklocal', 'uniquelocal'],
     }),
     { logger: ['error', 'warn', 'log'] },
   );
@@ -253,7 +267,16 @@ app.use((request: { ip?: string; url?: string }, response: import('http').Server
     });
   // The periodic sweep shares the limiter's connection; run it opportunistically
   // rather than from a timer, so an idle process holds nothing open.
-  if (dueSweep) void globalRateLimiter.sweep().catch(() => undefined);
+  //
+  // Two sweeps, because the table is shared: this limiter's own one-minute
+  // keys, and — far less often in effect, since it only matches rows over an
+  // hour old — the abandoned keys of every other limiter (all of which use
+  // windows of fifteen minutes or less). One unscoped sweep at THIS
+  // limiter's window used to delete the auth limiters' live counters.
+  if (dueSweep) {
+    void globalRateLimiter.sweep('global:').catch(() => undefined);
+    void RateLimiter.sweepStale(60 * 60 * 1000).catch(() => undefined);
+  }
 });
 
   app.useGlobalPipes(

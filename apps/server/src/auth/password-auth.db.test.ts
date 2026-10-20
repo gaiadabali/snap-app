@@ -87,16 +87,23 @@ describeIfDb('password auth — real database', () => {
     expect(after.user.email).toBe(email);
   });
 
-  it('lets an account created WITHOUT a password adopt one', async () => {
-    // A tester who first arrived through a magic link or Google has a NULL
-    // hash, and should be able to claim a password without an operator.
+  it('REFUSES to attach a password to an existing account that has none (0036)', async () => {
+    // This used to SUCCEED and return a session: anyone could "register" the
+    // address of a magic-link or Google account, set their own password on
+    // it and be signed in as its owner — an unauthenticated takeover. Such an
+    // account adopts a password through the reset link now, which proves the
+    // inbox first (account-safety.db.test.ts covers that path).
     const email = freshEmail('adopt');
     const repo = await import('../repo.js');
-    const existing = await repo.upsertUserByEmail(email, 'Existing Person');
-    const registered = await controller.register({ email, password: 'a-decent-password' });
-    expect(registered.user.userId).toBe(existing.userId);
-    // The display name they already had is not overwritten.
-    expect(registered.user.displayName).toBe('Existing Person');
+    await repo.upsertUserByEmail(email, 'Existing Person');
+    await expect(
+      controller.register({ email, password: 'a-decent-password' }),
+    ).rejects.toMatchObject({ status: 409 });
+
+    // And no password landed on the account: password sign-in still fails.
+    await expect(
+      controller.passwordSignIn({ email, password: 'a-decent-password' }),
+    ).rejects.toMatchObject({ status: 401 });
   });
 
   it('answers the SAME for wrong password, unknown address, and no password set', async () => {

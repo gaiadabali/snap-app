@@ -50,9 +50,15 @@ type Payload = {
    * was already known and fixed at `POST /v1/captures` time.
    */
   c?: number;
-  /** Expiry, epoch seconds. Absent for a session, which does not expire here. */
+  /**
+   * Expiry, epoch seconds. Every kind is issued with one; a session or a magic
+   * link is refused without one.
+   */
   e?: number;
-  /** Nonce, so two tokens for the same subject differ. */
+  /**
+   * Nonce, so two tokens for the same subject differ. For a session it is the
+   * secret whose SHA-256 is the `user_sessions` row (0036).
+   */
   n: string;
 };
 
@@ -91,17 +97,45 @@ function decode(token: string): Payload | null {
 
 /* ── Sessions ────────────────────────────────────────────────────────────── */
 
-export function issueSession(userId: string): string {
-  return encode({ k: 'session', s: userId, n: randomUUID() });
+/**
+ * The bearer half of a session (1.2.c, migration 0036).
+ *
+ * A session used to be this token and nothing else: signed, no expiry, no
+ * server-side record — valid forever, and impossible to revoke. Now the token
+ * carries a random SECRET (`n`) whose SHA-256 is a row in `user_sessions`,
+ * plus the absolute expiry (`e`) so a dead token is refused before any
+ * database round trip. The signature still proves this server minted it; the
+ * row is what lets a sign-out, a sign-out-everywhere or a password change end
+ * it. `auth/sessions.ts` owns the row; this only signs and reads.
+ *
+ * Pure on purpose: nothing here opens a session. A signed token with no row
+ * behind it is refused by `SessionGuard`, so this function cannot be used as
+ * a shortcut around `issueSession`.
+ */
+export function signSessionToken(userId: string, secret: string, expiresAt: number): string {
+  return encode({ k: 'session', s: userId, e: expiresAt, n: secret });
 }
 
-/** The user id a session token names, or null if it is not a valid one. */
-export function readSession(token: string | undefined): string | null {
+/**
+ * What a session token claims, or null if it is not a valid, unexpired one.
+ *
+ * A claim, not a session: the caller must still find the live row
+ * (`auth/sessions.ts#authenticateSession`).
+ */
+export function readSession(
+  token: string | undefined,
+): { userId: string; secret: string; expiresAt: number } | null {
   if (!token) return null;
   const payload = decode(token);
   // The kind is checked, not assumed: without it an upload token would be
   // accepted as a session for whatever id it happens to carry.
-  return payload && payload.k === 'session' ? payload.s : null;
+  //
+  // `e` is required: a token minted before 0036 has none, names no row, and
+  // is refused here rather than one step later. That signs everybody out
+  // once, at the deploy that ships this — the intended consequence of
+  // retiring credentials that never expired.
+  if (!payload || payload.k !== 'session' || payload.e == null || !payload.n) return null;
+  return { userId: payload.s, secret: payload.n, expiresAt: payload.e };
 }
 
 /* ── Magic links ─────────────────────────────────────────────────────────── */

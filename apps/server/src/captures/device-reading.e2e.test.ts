@@ -40,7 +40,7 @@ describeIfDb('POST /v1/captures/:id/device-reading', () => {
   const CAPTURE = '11111111-2222-4333-8444-555555555004';
   const OTHER_CAPTURE = '11111111-2222-4333-8444-555555555005';
 
-  const user = { userId: USER, email: 'od7@example.test', displayName: 'OD7', initials: 'O7' };
+  const user = { userId: USER, email: 'od7@example.test', displayName: 'OD7', initials: 'O7', emailVerified: true };
 
   const docdom = (pages = [{ number: 1, width: 600, height: 900 }]) => ({
     version: '1.0.0',

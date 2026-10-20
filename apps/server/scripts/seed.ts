@@ -89,9 +89,13 @@ await db.execute(sql`
 
 for (const person of PEOPLE) {
   await db.execute(sql`
-    insert into users (id, subject, email, display_name)
-    values (${person.id}, ${`dev|${person.email}`}, ${person.email}, ${person.name})
-    on conflict (id) do update set display_name = excluded.display_name
+    -- Seeded demo people count as having proven their (fixture) address, so
+    -- a demo can show invitations and linked services (0036). Never a real
+    -- person's address: these rows exist only where this script runs.
+    insert into users (id, subject, email, display_name, email_verified_at)
+    values (${person.id}, ${`dev|${person.email}`}, ${person.email}, ${person.name}, now())
+    on conflict (id) do update set display_name = excluded.display_name,
+      email_verified_at = coalesce(users.email_verified_at, excluded.email_verified_at)
   `);
 }
 

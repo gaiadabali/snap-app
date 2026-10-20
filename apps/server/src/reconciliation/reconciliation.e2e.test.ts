@@ -45,7 +45,7 @@ const OWNER_B = 'b5c5b5c5-0000-4000-8000-0000000000d1';
 describeIfDb('R5c: reconciliation — candidates, accept / reject / unlink / manual link', () => {
   let app: NestFastifyApplication;
   let admin: Client;
-  let issueSession: typeof import('../tokens.js').issueSession;
+  let issueSession: (userId: string) => string;
 
   const auth = (userId: string, tenantId: string) => ({
     authorization: `Bearer ${issueSession(userId)}`,
@@ -87,8 +87,8 @@ describeIfDb('R5c: reconciliation — candidates, accept / reject / unlink / man
       TENANT_PERSONAL,
     ]);
 
-    const tokens = await import('../tokens.js');
-    issueSession = tokens.issueSession;
+    // Real sessions (0036): a token is only good while its row stands.
+    issueSession = await (await import('../test-support/sessions.js')).openSessions(OWNER, READONLY, MEMBER, OWNER_ID, OWNER_PERSONAL, OWNER_B);
 
     const { AppModule } = await import('../app.module.js');
     app = await NestFactory.create<NestFastifyApplication>(AppModule, new FastifyAdapter(), { logger: false });

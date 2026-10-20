@@ -199,9 +199,16 @@ describe('which mail may be retried', () => {
     expect(isRetryable('magic_link')).toBe(false);
   });
 
+  it('refuses to queue a reset or verification link, for the same reason (0036)', () => {
+    expect(isRetryable('password_reset')).toBe(false);
+    expect(isRetryable('email_verification')).toBe(false);
+  });
+
   it('allows mail that carries no credential', () => {
     // Lane F's firm invite is the case the retry mechanism exists for.
     expect(isRetryable('firm_invite')).toBe(true);
     expect(isRetryable('notification')).toBe(true);
+    // "Your password was changed" names no link that does anything.
+    expect(isRetryable('security_notice')).toBe(true);
   });
 });

@@ -37,7 +37,13 @@ import { MailDeliveryError, type DeliveryOutcome } from './smtp-mailer.js';
 
 const logger = new Logger('mail-delivery');
 
-export type MailPurpose = 'magic_link' | 'firm_invite' | 'notification';
+export type MailPurpose =
+  | 'magic_link'
+  | 'firm_invite'
+  | 'notification'
+  | 'password_reset'
+  | 'email_verification'
+  | 'security_notice';
 
 export interface SendResult {
   outcome: DeliveryOutcome;
@@ -70,7 +76,11 @@ export interface SendResult {
  * the retry mechanism exists for.
  */
 export function isRetryable(purpose: MailPurpose): boolean {
-  return purpose !== 'magic_link';
+  // A reset link and a verification link carry a live single-use token for
+  // exactly the reason given above for a magic link, so the same rule holds:
+  // never written into a queue. `security_notice` ("your password was
+  // changed") carries no credential and may be retried.
+  return purpose !== 'magic_link' && purpose !== 'password_reset' && purpose !== 'email_verification';
 }
 
 /** Write the attempt down. Never throws. */
