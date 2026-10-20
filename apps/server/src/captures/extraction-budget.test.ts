@@ -38,7 +38,7 @@ const describeIfDb = hasDb ? describe : describe.skip;
 const TENANT = 'd5d5d5d5-0000-4000-8000-000000000001';
 const USER = 'd5d5d5d5-0000-4000-8000-000000000002';
 
-const user: AuthUser = { userId: USER, displayName: 'Budget Test', email: 'budget@test', initials: 'BT' };
+const user: AuthUser = { userId: USER, displayName: 'Budget Test', email: 'budget@test', initials: 'BT', emailVerified: true };
 
 function dto(sha256?: string): CreateCaptureDto {
   const page = { sha256: sha256 ?? randomBytes(32).toString('hex'), mimeType: 'image/jpeg', byteSize: 1024 };

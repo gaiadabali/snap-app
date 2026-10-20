@@ -3,6 +3,7 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { AdminModule } from './admin/admin.module.js';
 import { AssistantController } from './assistant/assistant.controller.js';
+import { AccountController } from './auth/account.controller.js';
 import { AuthController } from './auth/auth.controller.js';
 import { CapturesController } from './captures/captures.controller.js';
 import { BusinessController } from './business/business.controller.js';
@@ -99,6 +100,7 @@ export class HealthController {
   controllers: [
     HealthController,
     AuthController,
+    AccountController,
     WorkspacesController,
     CapturesController,
     DeviceReadingController,

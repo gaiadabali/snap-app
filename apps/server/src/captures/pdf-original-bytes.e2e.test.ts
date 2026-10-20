@@ -70,7 +70,7 @@ function fixturePdf(pageCount: number): Buffer {
 describeIfDb('the raw PDF is actually persisted at original_storage_key', () => {
   let app: NestFastifyApplication;
   let admin: Client;
-  let issueSession: typeof import('../tokens.js').issueSession;
+  let issueSession: (userId: string) => string;
   let getStored: typeof import('../storage.js').get;
   let demuxPdf: typeof import('../extraction/pdf.js').demuxPdf;
 
@@ -89,8 +89,8 @@ describeIfDb('the raw PDF is actually persisted at original_storage_key', () => 
       users: [{ id: USER, role: 'owner' }],
     });
 
-    const tokens = await import('../tokens.js');
-    issueSession = tokens.issueSession;
+    // Real sessions (0036): a token is only good while its row stands.
+    issueSession = await (await import('../test-support/sessions.js')).openSessions(USER);
     const storage = await import('../storage.js');
     getStored = storage.get;
     const pdf = await import('../extraction/pdf.js');

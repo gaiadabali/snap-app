@@ -14,7 +14,7 @@ import { hashImpersonationToken, mintImpersonationToken } from './impersonation-
  * against the REAL `readSession` from `apps/server/src/tokens.ts`, not a
  * reimplementation of it.
  */
-let issueSession: typeof import('../../tokens.js').issueSession;
+let signSessionToken: typeof import('../../tokens.js').signSessionToken;
 let readSession: typeof import('../../tokens.js').readSession;
 
 beforeAll(async () => {
@@ -24,7 +24,7 @@ beforeAll(async () => {
   process.env.DATABASE_URL ??= 'postgres://test:test@localhost:5432/test';
   process.env.TOKEN_SECRET ??= 'test-only-secret-at-least-32-characters-long';
   const tokens = await import('../../tokens.js');
-  issueSession = tokens.issueSession;
+  signSessionToken = tokens.signSessionToken;
   readSession = tokens.readSession;
 });
 
@@ -64,14 +64,14 @@ describe('a real impersonation token is refused by the REAL session verifier', (
 
 describe('a real session token has no structure this module could mistake for one of its own', () => {
   it('a session token contains a "." separating a signed body from a signature — an impersonation token never does', () => {
-    const session = issueSession('11111111-1111-4111-8111-111111111111');
+    const session = signSessionToken('11111111-1111-4111-8111-111111111111', 'session-secret', Math.floor(Date.now() / 1000) + 3600);
     expect(session.includes('.')).toBe(true);
     const { token: impersonationToken } = mintImpersonationToken();
     expect(impersonationToken.includes('.')).toBe(false);
   });
 
   it('hashing a real session token produces a hash that matches no impersonation token this module minted', () => {
-    const session = issueSession('11111111-1111-4111-8111-111111111111');
+    const session = signSessionToken('11111111-1111-4111-8111-111111111111', 'session-secret', Math.floor(Date.now() / 1000) + 3600);
     const sessionHash = hashImpersonationToken(session);
     const { tokenHash: mintedHash } = mintImpersonationToken();
     expect(sessionHash.equals(mintedHash)).toBe(false);

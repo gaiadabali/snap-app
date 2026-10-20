@@ -39,6 +39,7 @@ import {
   gstBasis,
   mailOutcome,
   mailPurpose,
+  authEmailTokenPurpose,
   matchCandidateStatus,
   matchProposer,
   observationKind,
@@ -135,6 +136,48 @@ export const users = pgTable('users', {
   passwordHash: text('password_hash'),
   passwordUpdatedAt: timestamp('password_updated_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  /**
+   * When the owner first proved they receive mail at `email` (0036). NULL =
+   * unproven: the account signs in, but cannot invite, accept an invitation
+   * or link another service until it is set.
+   */
+  emailVerifiedAt: timestamp('email_verified_at', { withTimezone: true }),
+});
+
+/**
+ * One row per signed-in device or browser (0036).
+ *
+ * The bearer token carries a random secret; only its SHA-256 is stored here,
+ * so a database disclosure does not yield working sessions. Reached only
+ * through `identity_session_*` (SECURITY DEFINER, owned by app_identity): the
+ * application role has no grant and no policy on this table.
+ */
+export const userSessions = pgTable('user_sessions', {
+  id: uuid('id').primaryKey(),
+  userId: uuid('user_id').notNull(),
+  tokenHash: bytea('token_hash').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  lastSeenAt: timestamp('last_seen_at', { withTimezone: true }).notNull().defaultNow(),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  idleTimeoutSeconds: integer('idle_timeout_seconds').notNull(),
+  revokedAt: timestamp('revoked_at', { withTimezone: true }),
+  revokedReason: text('revoked_reason'),
+});
+
+/**
+ * A mailed single-use link: a password reset or an email verification (0036).
+ * Only the SHA-256 of the link's secret is stored. Same access rule as
+ * `user_sessions`: functions only.
+ */
+export const authEmailTokens = pgTable('auth_email_tokens', {
+  id: uuid('id').primaryKey(),
+  userId: uuid('user_id').notNull(),
+  purpose: authEmailTokenPurpose('purpose').notNull(),
+  tokenHash: bytea('token_hash').notNull(),
+  email: citext('email').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  usedAt: timestamp('used_at', { withTimezone: true }),
 });
 
 export const memberships = pgTable('memberships', {

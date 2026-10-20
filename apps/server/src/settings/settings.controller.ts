@@ -28,6 +28,7 @@ import {
   CurrentUser,
   MembershipGuard,
   SessionGuard,
+  VerifiedEmailGuard,
   WorkspaceId,
   type AuthUser,
 } from '../common/auth.guard.js';
@@ -306,6 +307,8 @@ export class SettingsController {
   }
 
   @Post('connections/:id/connect')
+  // Linking another service needs a proven address (0036, VerifiedEmailGuard).
+  @UseGuards(VerifiedEmailGuard)
   @HttpCode(200)
   @ApiOperation({
     summary: 'Begin linking accounting software',

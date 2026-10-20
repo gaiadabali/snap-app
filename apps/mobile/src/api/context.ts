@@ -152,6 +152,48 @@ export function authToken(): string | null {
   return token;
 }
 
+/* ── When the server ends the session ────────────────────────────────────── */
+
+type SessionEndedListener = () => void;
+const sessionEndedListeners = new Set<SessionEndedListener>();
+
+/**
+ * Subscribe to "the server says this session is over" (task 1.2.c).
+ *
+ * Sessions expire now — 30 days at most, 14 days unused — and can be revoked
+ * from elsewhere (sign-out-everywhere, a password reset). The session gate
+ * listens so it can swap the app for the sign-in screen, with a sentence
+ * saying why, instead of leaving every screen to show its own 401.
+ */
+export function onSessionEnded(listener: SessionEndedListener): () => void {
+  sessionEndedListeners.add(listener);
+  return () => {
+    sessionEndedListeners.delete(listener);
+  };
+}
+
+/**
+ * Forget a session the server has refused, and tell the listeners — ONCE.
+ *
+ * Only acts when `refused` is still the current token. That one comparison
+ * is what makes this loop-proof: the first 401 clears the token, so every
+ * other request already in flight with the same token, and every request
+ * after it (which carries no token at all), finds nothing to end. A sign-in
+ * that happened in between is a different token and is left alone.
+ */
+export function endSession(refused: string): void {
+  if (token === null || token !== refused) return;
+  setAuthToken(null);
+  setActiveWorkspaceId(null);
+  for (const listener of [...sessionEndedListeners]) {
+    try {
+      listener();
+    } catch {
+      // A listener that throws must not stop the others, or leave the token.
+    }
+  }
+}
+
 /**
  * Resolves as soon as a workspace is known.
  *

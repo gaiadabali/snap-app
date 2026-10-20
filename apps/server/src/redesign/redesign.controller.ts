@@ -411,10 +411,16 @@ export class AuthCodesController {
   }
 
   @Post('password/reset')
-  @ApiOperation({ summary: 'Reset a password with a code (NOT IMPLEMENTED — refuses)' })
+  @ApiOperation({
+    summary: 'Reset a password with a code (NOT IMPLEMENTED — refuses; use the reset LINK)',
+    description:
+      'Password reset exists since 0036, by link rather than by code: POST /v1/auth/password/reset/request ' +
+      'mails a single-use link (auth/account.controller.ts). A six-digit code would need an attempt cap ' +
+      'to be safe, and the link needs none.',
+  })
   reset(): never {
     throw new NotImplementedException(
-      'Password reset is not available: it needs an email code, and no mail provider is configured.',
+      'Reset by code is not available. Ask for a reset link instead: POST /v1/auth/password/reset/request.',
     );
   }
 }

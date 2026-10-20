@@ -1092,6 +1092,15 @@ export interface AuthUser {
   email: string;
   /** Two letters for the avatar, so every client agrees on them. */
   initials: string;
+  /**
+   * Whether the owner has proven they receive mail at `email` (migration
+   * 0036). An unproven account can sign in and use its own books, but the
+   * server refuses anything that acts on the address towards other people —
+   * inviting someone, accepting an invitation, linking another service —
+   * with 403 `email_unverified`. Magic-link and Google sign-ins prove it; a
+   * password sign-up proves it through the link mailed at registration.
+   */
+  emailVerified: boolean;
 }
 
 export interface Session {

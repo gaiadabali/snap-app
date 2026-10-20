@@ -2,7 +2,7 @@ import 'server-only';
 
 import { cookies } from 'next/headers';
 
-import { SESSION_COOKIE, WORKSPACE_COOKIE } from '@/lib/api/server';
+import { SESSION_COOKIE, WORKSPACE_COOKIE, api, newIdempotencyKey } from '@/lib/api/server';
 
 /**
  * The session cookie, set exactly once, here.
@@ -38,6 +38,28 @@ export async function clearAuthCookies(): Promise<void> {
   const jar = await cookies();
   jar.delete(SESSION_COOKIE);
   jar.delete(WORKSPACE_COOKIE);
+}
+
+/**
+ * Ends this browser's session on the API before its cookie is cleared.
+ *
+ * Best effort: the cookie is cleared whatever happens here, and a session
+ * the API never heard about expires on its own. The ordinary bearer is sent
+ * even under impersonation (`bypassImpersonation`), because it is the staff
+ * member's own session being ended, never the subject's.
+ */
+export async function endServerSession(): Promise<void> {
+  const jar = await cookies();
+  if (!jar.get(SESSION_COOKIE)?.value) return;
+  try {
+    await api('/v1/auth/sign-out', {
+      method: 'POST',
+      bypassImpersonation: true,
+      idempotencyKey: newIdempotencyKey(),
+    });
+  } catch {
+    // See the doc comment: signing out locally must never fail.
+  }
 }
 
 export async function hasSessionCookie(): Promise<boolean> {

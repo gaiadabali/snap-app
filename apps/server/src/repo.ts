@@ -37,23 +37,38 @@ export { NotAMemberError, listWorkspacesFor };
 type IdentityRow = { user_id: string; email: string; display_name: string };
 
 /**
+ * An account, as the identity functions that create or find one return it.
+ *
+ * Deliberately NOT an `AuthUser`: those functions do not report whether the
+ * address is proven (0036), and an `AuthUser` with a guessed `emailVerified`
+ * is the same class of bug as the `initials` that once shipped undefined. A
+ * full `AuthUser` comes from `getUser` or from the session check.
+ */
+export type IdentityRef = Pick<AuthUser, 'userId' | 'email' | 'displayName'>;
+
+/**
  * The two letters every client shows in an avatar.
  *
  * Computed HERE, not in each client, because the contract says so and because
  * two clients disagreeing about a person's initials is the sort of difference
  * nobody notices until a screenshot in a bug report shows the wrong one.
  */
-function initialsOf(name: string): string {
+export function initialsOf(name: string): string {
   const parts = name.trim().split(/\s+/);
   return ((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '')).toUpperCase() || '?';
 }
 
-function toAuthUser(row: IdentityRow): AuthUser {
+function toIdentityRef(row: IdentityRow): IdentityRef {
+  return { userId: row.user_id, displayName: row.display_name, email: row.email };
+}
+
+function toAuthUser(row: IdentityRow & { email_verified: boolean }): AuthUser {
   return {
     userId: row.user_id,
     displayName: row.display_name,
     email: row.email,
     initials: initialsOf(row.display_name),
+    emailVerified: row.email_verified,
   };
 }
 
@@ -71,53 +86,61 @@ function toAuthUser(row: IdentityRow): AuthUser {
  * Authentication has already happened by the time this runs: the address is
  * proven, and this only decides which row it corresponds to.
  */
-export async function upsertUserByEmail(email: string, displayName: string): Promise<AuthUser> {
+export async function upsertUserByEmail(email: string, displayName: string): Promise<IdentityRef> {
   const rows = await getDb().execute<IdentityRow>(sql`
     select user_id, email, display_name
       from identity_sign_in(${`dev|${email}`}, ${email}, ${displayName})
   `);
   const row = rows.rows[0];
   if (!row) throw new Error('identity_sign_in returned no row');
-  return toAuthUser(row);
+  return toIdentityRef(row);
 }
 
 /**
- * Create an account with a password, or attach one to an account that has none.
+ * Create a NEW account with a password.
  *
- * `null` means the address already HAS a password — the controller turns that
- * into a conflict. The function cannot overwrite one (migration 0025): an
- * unauthenticated endpoint that can replace a credential is a reset primitive,
- * and there is no email here to confirm such a thing.
+ * `null` means the address already has an account, with or without a
+ * password — the controller turns that into a conflict. Until 0036 an account
+ * with no password could "adopt" one here, unauthenticated, which was a
+ * takeover of every magic-link and Google account; adopting a password now
+ * goes through the reset link, which proves the inbox first.
  */
 export async function registerWithPassword(
   email: string,
   displayName: string,
   passwordHash: string,
-): Promise<AuthUser | null> {
+): Promise<IdentityRef | null> {
   const rows = await getDb().execute<IdentityRow>(sql`
     select user_id, email, display_name
       from identity_password_register(${email}, ${displayName}, ${passwordHash})
   `);
   const row = rows.rows[0];
-  return row ? toAuthUser(row) : null;
+  return row ? toIdentityRef(row) : null;
 }
 
 /** The stored hash for an address, or null when the address is unknown. */
 export async function passwordRecordFor(
   email: string,
-): Promise<{ user: AuthUser; passwordHash: string | null } | null> {
+): Promise<{ user: IdentityRef; passwordHash: string | null } | null> {
   const rows = await getDb().execute<IdentityRow & { password_hash: string | null }>(sql`
     select user_id, email, display_name, password_hash
       from identity_password_lookup(${email})
   `);
   const row = rows.rows[0];
-  return row ? { user: toAuthUser(row), passwordHash: row.password_hash } : null;
+  return row ? { user: toIdentityRef(row), passwordHash: row.password_hash } : null;
 }
 
-/** The caller's own row, by id. Read on every authenticated request. */
+/**
+ * An account by id, including whether its address is proven.
+ *
+ * The ordinary authenticated request no longer comes through here — the
+ * session check returns the same fields in the same round trip
+ * (`auth/sessions.ts`). Used to build a sign-in response and for an
+ * impersonation subject.
+ */
 export async function getUser(userId: string): Promise<AuthUser | null> {
-  const rows = await getDb().execute<IdentityRow>(sql`
-    select user_id, email, display_name from identity_user(${userId})
+  const rows = await getDb().execute<IdentityRow & { email_verified: boolean }>(sql`
+    select user_id, email, display_name, email_verified from identity_user_status(${userId})
   `);
   const row = rows.rows[0];
   return row ? toAuthUser(row) : null;

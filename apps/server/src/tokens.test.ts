@@ -1,3 +1,5 @@
+import { createHmac } from 'node:crypto';
+
 import { beforeAll, describe, expect, it } from 'vitest';
 
 /**
@@ -14,7 +16,7 @@ let issueUploadToken: typeof import('./tokens.js').issueUploadToken;
 let readUploadToken: typeof import('./tokens.js').readUploadToken;
 let issueImageToken: typeof import('./tokens.js').issueImageToken;
 let readImageToken: typeof import('./tokens.js').readImageToken;
-let issueSession: typeof import('./tokens.js').issueSession;
+let signSessionToken: typeof import('./tokens.js').signSessionToken;
 let readSession: typeof import('./tokens.js').readSession;
 let issueMagicLinkToken: typeof import('./tokens.js').issueMagicLinkToken;
 let readMagicLinkToken: typeof import('./tokens.js').readMagicLinkToken;
@@ -29,7 +31,7 @@ beforeAll(async () => {
   readUploadToken = tokens.readUploadToken;
   issueImageToken = tokens.issueImageToken;
   readImageToken = tokens.readImageToken;
-  issueSession = tokens.issueSession;
+  signSessionToken = tokens.signSessionToken;
   readSession = tokens.readSession;
   issueMagicLinkToken = tokens.issueMagicLinkToken;
   readMagicLinkToken = tokens.readMagicLinkToken;
@@ -236,7 +238,7 @@ describe('magic-link tokens', () => {
   });
 
   it('a session token is never accepted as a magic-link token', () => {
-    const session = issueSession('user-1');
+    const session = signSessionToken('user-1', 'session-secret', Math.floor(Date.now() / 1000) + 3600);
     expect(readMagicLinkToken(session)).toBeNull();
   });
 
@@ -247,5 +249,39 @@ describe('magic-link tokens', () => {
     // authenticate as the user it happens to name.
     const { token } = issueMagicLinkToken('person@example.com');
     expect(readSession(token)).toBeNull();
+  });
+});
+
+describe('session tokens (0036)', () => {
+  const inAnHour = () => Math.floor(Date.now() / 1000) + 3600;
+
+  it('round-trips the user, the secret and the absolute expiry', () => {
+    const e = inAnHour();
+    const token = signSessionToken('user-1', 'the-secret', e);
+    expect(readSession(token)).toEqual({ userId: 'user-1', secret: 'the-secret', expiresAt: e });
+  });
+
+  it('refuses a token past its absolute expiry before any database is asked', () => {
+    const token = signSessionToken('user-1', 'the-secret', Math.floor(Date.now() / 1000) - 1);
+    expect(readSession(token)).toBeNull();
+  });
+
+  it('refuses a pre-0036 session token, which carried no expiry', () => {
+    // What every session minted before this change looks like. It must not
+    // be read as a claim at all: those tokens never expired, and the deploy
+    // that ships 0036 is what ends them.
+    const body = Buffer.from(JSON.stringify({ k: 'session', s: 'user-1', n: 'nonce' }), 'utf8').toString('base64url');
+    const sig = createHmac('sha256', process.env.TOKEN_SECRET!).update(body).digest('base64url');
+    expect(readSession(`${body}.${sig}`)).toBeNull();
+  });
+
+  it('refuses a tampered token', () => {
+    const token = signSessionToken('user-1', 'the-secret', inAnHour());
+    const [body, sig] = token.split('.') as [string, string];
+    const forgedBody = Buffer.from(
+      JSON.stringify({ ...JSON.parse(Buffer.from(body, 'base64url').toString('utf8')), s: 'user-2' }),
+      'utf8',
+    ).toString('base64url');
+    expect(readSession(`${forgedBody}.${sig}`)).toBeNull();
   });
 });

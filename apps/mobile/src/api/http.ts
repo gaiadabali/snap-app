@@ -1,6 +1,7 @@
 import {
   authToken,
   awaitWorkspace,
+  endSession,
   setActiveWorkspaceId,
   setAuthToken,
 } from './context';
@@ -59,10 +60,6 @@ import type {
   NotificationPrefs,
   AlertItem,
   PrivacySettings,
-  RequestOtpRequest,
-  RequestOtpResponse,
-  VerifyOtpRequest,
-  ResetPasswordRequest,
   Recurring,
   SalesSummary,
   Session,
@@ -161,10 +158,10 @@ export class HttpApi implements SnapApi {
     } = {},
   ): Promise<T> {
     const headers: Record<string, string> = {};
-    if (options.auth !== false) {
-      const token = authToken();
-      if (token) headers.Authorization = `Bearer ${token}`;
-    }
+    // Remembered, so a 401 can be pinned to the token that earned it — see
+    // `endSession` for why that is what keeps expiry from looping.
+    const sentToken = options.auth !== false ? authToken() : null;
+    if (sentToken) headers.Authorization = `Bearer ${sentToken}`;
     // `workspaceId: null` is an explicit "this call is not workspace-scoped"
     // (signing in, listing workspaces) and must not wait for one. Anything
     // else waits, because on a cold start the screens mount before the
@@ -223,6 +220,13 @@ export class HttpApi implements SnapApi {
         if (typeof problem.error === 'string') code = problem.error;
       } catch {
         // A body that is not JSON tells us nothing more than the status did.
+      }
+      // The session is over: expired, idle too long, signed out elsewhere, or
+      // revoked by a password reset. Only when a token was SENT — a wrong
+      // password at sign-in is a 401 too, and ends nothing.
+      if (response.status === 401 && sentToken) {
+        this.workspaces = [];
+        endSession(sentToken);
       }
       throw new ApiError(response.status, message, code);
     }
@@ -319,6 +323,10 @@ export class HttpApi implements SnapApi {
           return { kind: 'sent' };
         } catch (error) {
           if (error instanceof ApiError && error.status === 0) return { kind: 'offline' };
+          // The session ended mid-drain. The write is not refused — nobody is
+          // signed in to send it — so it stays queued, like being offline,
+          // instead of being dropped as 'rejected' would.
+          if (error instanceof ApiError && error.status === 401) return { kind: 'offline' };
           // `docs/ON-DEVICE.md` §7.2 (OD-11): a correction sent for a capture
           // whose extraction has not produced a document yet answers 409 with
           // `error: 'document_not_ready'`. That is the ONE 4xx this app knows
@@ -508,9 +516,18 @@ export class HttpApi implements SnapApi {
   }
 
   async signOut(): Promise<void> {
-    // Nothing to call: a session is a signed token with no server-side row, so
-    // forgetting it IS signing out. Said here rather than left as an empty
-    // method somebody later "fixes" by inventing an endpoint.
+    // The session is a row on the server now (0036), so it is ENDED there,
+    // not just forgotten here: a copy of the token lifted off this phone
+    // stops working too. Best effort and not awaited — signing out must work
+    // offline and must not wait on a slow network; a revoke that never
+    // arrives leaves a token that expires on its own.
+    const token = authToken();
+    if (token) {
+      void fetch(`${this.baseUrl}/v1/auth/sign-out`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      }).catch(() => {});
+    }
     setAuthToken(null);
     setActiveWorkspaceId(null);
     this.workspaces = [];
@@ -1214,34 +1231,31 @@ export class HttpApi implements SnapApi {
     });
   }
 
-  requestOtp(input: RequestOtpRequest): Promise<RequestOtpResponse> {
-    return this.request<RequestOtpResponse>('POST', '/v1/auth/otp/request', {
-      body: input,
+  async requestPasswordReset(email: string): Promise<void> {
+    // The answer is the same whether or not the address has an account, so
+    // there is nothing to read from it but success.
+    await this.request<{ ok: true }>('POST', '/v1/auth/password/reset/request', {
+      body: { email },
       auth: false,
       workspaceId: null,
       queue: false,
     });
   }
 
-  async verifyOtp(input: VerifyOtpRequest): Promise<Session | null> {
-    const res = await this.request<AuthResponse | null>('POST', '/v1/auth/otp/verify', {
-      body: input,
-      auth: false,
+  resendEmailVerification(): Promise<{ alreadyVerified: boolean }> {
+    return this.request<{ alreadyVerified: boolean }>('POST', '/v1/auth/email/verification/resend', {
       workspaceId: null,
       queue: false,
     });
-    // A reset has no session yet — the password still has to be set.
-    if (!res) return null;
-    return this.adopt(res);
   }
 
-  async resetPassword(input: ResetPasswordRequest): Promise<Session> {
-    const res = await this.request<AuthResponse>('POST', '/v1/auth/password/reset', {
-      body: input,
-      auth: false,
+  async signOutEverywhere(): Promise<void> {
+    // Must reach the server — that is the whole point — so a failure is
+    // thrown to the screen rather than swallowed, and nothing is cleared.
+    await this.request<{ revoked: number }>('POST', '/v1/auth/sign-out-everywhere', {
       workspaceId: null,
       queue: false,
     });
-    return this.adopt(res);
+    await this.signOut();
   }
 }

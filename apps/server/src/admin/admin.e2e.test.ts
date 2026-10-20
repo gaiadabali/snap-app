@@ -26,7 +26,7 @@ const describeIfDb = url ? describe : describe.skip;
 describeIfDb('admin plane — real HTTP', () => {
   let app: NestFastifyApplication;
   let admin: Client; // superuser fixture connection — never what the app connects as
-  let issueSession: typeof import('../tokens.js').issueSession;
+  let issueSession: (userId: string) => string;
 
   const STAFF_USER = 'bbbbbbbb-0000-4000-8000-000000000001';
   const PLAIN_USER = 'bbbbbbbb-0000-4000-8000-000000000002';
@@ -57,8 +57,8 @@ describeIfDb('admin plane — real HTTP', () => {
       [STAFF_USER],
     );
 
-    const tokens = await import('../tokens.js');
-    issueSession = tokens.issueSession;
+    // Real sessions (0036): a token is only good while its row stands.
+    issueSession = await (await import('../test-support/sessions.js')).openSessions(STAFF_USER, PLAIN_USER);
 
     const { AppModule } = await import('../app.module.js');
     app = await NestFactory.create<NestFastifyApplication>(AppModule, new FastifyAdapter(), {

@@ -109,11 +109,6 @@ import type {
   NotificationPrefs,
   AlertItem,
   PrivacySettings,
-  OtpPurpose,
-  RequestOtpRequest,
-  RequestOtpResponse,
-  VerifyOtpRequest,
-  ResetPasswordRequest,
 } from '@snap/api-contract';
 
 /**
@@ -460,13 +455,17 @@ export interface SnapApi {
   getPrivacySettings(): Promise<PrivacySettings>;
   updatePrivacySettings(patch: Partial<PrivacySettings>): Promise<PrivacySettings>;
 
-  // ── Auth: codes and password reset ──
-  /** `POST /v1/auth/otp/request`. Never reveals whether the address exists. */
-  requestOtp(input: RequestOtpRequest): Promise<RequestOtpResponse>;
-  /** `POST /v1/auth/otp/verify`. Returns a session for `register`/`sign-in`. */
-  verifyOtp(input: VerifyOtpRequest): Promise<Session | null>;
-  /** `POST /v1/auth/password/reset`. */
-  resetPassword(input: ResetPasswordRequest): Promise<Session>;
+  // ── Auth: password reset, email verification, sign-out everywhere ──
+  /**
+   * `POST /v1/auth/password/reset/request`. Mails a single-use link (30
+   * minutes) that opens the website's reset page. Resolves the same whether
+   * or not the address has an account.
+   */
+  requestPasswordReset(email: string): Promise<void>;
+  /** `POST /v1/auth/email/verification/resend`. */
+  resendEmailVerification(): Promise<{ alreadyVerified: boolean }>;
+  /** `POST /v1/auth/sign-out-everywhere`, then a local sign-out. */
+  signOutEverywhere(): Promise<void>;
 }
 
 /**

@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 
 import { api, getImpersonation, IMPERSONATION_COOKIE, SESSION_COOKIE, WORKSPACE_COOKIE, newIdempotencyKey } from '@/lib/api/server';
+import { endServerSession } from '@/lib/auth/session';
 
 /**
  * Switches the active workspace.
@@ -30,13 +31,14 @@ export async function switchWorkspace(path: string, workspaceId: string): Promis
 /**
  * Signs out.
  *
- * There is no server call to make — a session here is a signed, stateless
- * token (§ the mobile client's own `signOut`), so forgetting the cookies IS
- * signing out. Clears the workspace choice too: leaving it would hand the
- * next person to sign in on this browser someone else's last-viewed
- * workspace for a moment before they pick their own.
+ * Ends the session on the API first — since 0036 a session is a row there,
+ * and a cookie copied off this browser keeps working until it is revoked —
+ * then forgets the cookies. Clears the workspace choice too: leaving it
+ * would hand the next person to sign in on this browser someone else's
+ * last-viewed workspace for a moment before they pick their own.
  */
 export async function signOut(): Promise<void> {
+  await endServerSession();
   const jar = await cookies();
   jar.delete(SESSION_COOKIE);
   jar.delete(WORKSPACE_COOKIE);

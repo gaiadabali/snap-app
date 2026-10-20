@@ -87,7 +87,7 @@ function statementPdf(pageCount: number): Buffer {
 describeIfDb('PDF intake persists its own bytes for classification (Task 9)', () => {
   let app: NestFastifyApplication;
   let admin: Client;
-  let issueSession: typeof import('./tokens.js').issueSession;
+  let issueSession: (userId: string) => string;
   let classifyCapture: typeof import('./worker.js').classifyCapture;
   let useWorkerConnection: typeof import('./db.js').useWorkerConnection;
   let closeDb: typeof import('./db.js').closeDb;
@@ -133,13 +133,14 @@ describeIfDb('PDF intake persists its own bytes for classification (Task 9)', ()
       ],
     });
 
-    const tokens = await import('./tokens.js');
-    issueSession = tokens.issueSession;
-
     const dbModule = await import('./db.js');
     useWorkerConnection = dbModule.useWorkerConnection;
     closeDb = dbModule.closeDb;
     useWorkerConnection();
+
+    // Real sessions (0036): a token is only good while its row stands.
+    // Opened AFTER the switch above, which must precede the first pool.
+    issueSession = await (await import('./test-support/sessions.js')).openSessions(USER);
 
     const storageModule = await import('./storage.js');
     getStored = storageModule.get;

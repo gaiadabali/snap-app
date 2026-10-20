@@ -21,14 +21,20 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 const mockListDemoAccounts = vi.fn();
 const mockUpsertUserByEmail = vi.fn();
 const mockListWorkspacesFor = vi.fn();
+const mockGetUser = vi.fn();
 
 vi.mock('../repo.js', () => ({
   listDemoAccounts: (...args: unknown[]) => mockListDemoAccounts(...(args as [])),
   upsertUserByEmail: (...args: unknown[]) => mockUpsertUserByEmail(...(args as [string, string])),
   listWorkspacesFor: (...args: unknown[]) => mockListWorkspacesFor(...(args as [])),
+  getUser: (...args: unknown[]) => mockGetUser(...(args as [string])),
   NotAMemberError: class NotAMemberError extends Error {},
 }));
 vi.mock('../db.js', () => ({ getDb: () => ({ __fakeDb: true }) }));
+// Sessions are rows since 0036; opening one needs Postgres, which this file
+// deliberately does without. What is under test here is the GATE, and that
+// the simulator answers through the same `signedIn` as every real route.
+vi.mock('./sessions.js', () => ({ issueSession: async () => 'simulated-session-token' }));
 
 const DEMO_IDENTITY = {
   userId: '33333333-3333-4333-8333-333333333331',
@@ -69,6 +75,16 @@ async function withEnv<T>(
   mockListDemoAccounts.mockReset();
   mockUpsertUserByEmail.mockReset();
   mockListWorkspacesFor.mockReset();
+  mockGetUser.mockReset();
+  // The seeded demo people are verified (scripts/seed.ts), and `signedIn`
+  // reads the account back rather than trusting what the route assumed.
+  mockGetUser.mockImplementation(async (userId: string) => ({
+    userId,
+    email: DEMO_IDENTITY.email,
+    displayName: DEMO_IDENTITY.displayName,
+    initials: 'DI',
+    emailVerified: true,
+  }));
 
   process.env.DATABASE_URL ??= 'postgres://unused:unused@127.0.0.1:1/unused';
   process.env.TOKEN_SECRET ??= 'test-only-secret-at-least-32-characters-long';
@@ -171,6 +187,7 @@ describe('the demo-host gate — refused unless all three conditions hold', () =
             email: DEMO_IDENTITY.email,
             displayName: DEMO_IDENTITY.displayName,
             initials: 'DI',
+            emailVerified: true,
           },
           workspaces: [{ id: 'ws-1', name: 'Demo Co', kind: 'business', role: 'owner' }],
         });
@@ -205,6 +222,7 @@ describe('the simulated sign-in produces the same session shape as the real ones
         expect(Object.keys(result.user).sort()).toEqual([
           'displayName',
           'email',
+          'emailVerified',
           'initials',
           'userId',
         ]);
