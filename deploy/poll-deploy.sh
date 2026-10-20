@@ -88,7 +88,10 @@ DEPLOYED="$(cat "${STATE_FILE}" 2>/dev/null || echo none)"
 # overlap, and it can never fail a deploy: whatever it does, this script goes
 # on. Disable it with SKIP_APK_PULL=1 (e.g. in a drop-in). See pull-apk.sh.
 if [[ "${SKIP_APK_PULL:-}" != "1" ]]; then
-  timeout 600 bash "$(dirname "${BASH_SOURCE[0]}")/pull-apk.sh" \
+# At most 240 s (the APK download itself is capped at 180 s in pull-apk.sh), so
+# a slow GitHub still leaves a deploy in the same tick most of the service's
+# 900 s TimeoutStartSec; systemd would otherwise kill that deploy half-way.
+  timeout 240 bash "$(dirname "${BASH_SOURCE[0]}")/pull-apk.sh" \
     || log "pull-apk.sh did not complete (exit $?); deploys are unaffected"
 fi
 

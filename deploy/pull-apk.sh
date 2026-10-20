@@ -127,7 +127,7 @@ const p=JSON.parse(process.argv[1]);
 console.log([p.tag,p.assets.build,p.assets.apk,p.assets.sha256].join('\n'))" "$PICKED")
 
 # 3. build.json, and the cheap "is it newer" test.
-download() { curl -sSL --fail -m 600 -o "$2" "$1" || fail "could not download $1"; }
+download() { curl -sSL --fail -m 180 -o "$2" "$1" || fail "could not download $1"; }
 download "$URL_BUILD" "$WORK/build.json"
 if ! node "$SCRIPT_DIR/apk-release.mjs" check-build "$WORK/build.json" 2>"$WORK/problems"; then
   log "REFUSED $TAG: $(tr '\n' ' ' < "$WORK/problems")" >&2
