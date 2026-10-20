@@ -517,8 +517,13 @@ at 03:15 and `deploy/monitor/alert.sh --inbox` every 10 minutes.
 
 Optional: without it the YourTal points link is off and everything else runs.
 The api (link, unlink) and the worker (the receipt-report outbox) read it from
-`/run/secrets/yourtal.env`, bind-mounted from `YOURTAL_ENV_FILE_HOST`. To turn
-the link on, in this order:
+`/run/secrets/yourtal.env`, bind-mounted from `YOURTAL_ENV_FILE_HOST`.
+
+**On helios this is already done (2026-10-20):**
+`/etc/snap-apps/secrets/yourtal.env` exists (0600, owned 1001:1001), and
+`/opt/snap-apps/deploy/.env` sets `YOURTAL_ENV_FILE_HOST` and
+`YOURTAL_PARTNER_ID=snap-app`. The link turns on with the first deploy that
+carries migration 0037 and this mount. For a new host, in this order:
 
 ```bash
 # 1. The file first. One line, owned by the container user, 0600.
@@ -537,8 +542,8 @@ a path with no file, `deploy.sh` warns and mounts `/dev/null` for that run; a
 bare `docker compose up` refuses to start instead (`create_host_path: false`),
 because the short mount syntax would have Docker create a root-owned
 DIRECTORY at that path, which then blocks the real file. Check it took:
-`GET /v1/yourtal/link` answers `"available": true`, and the worker logs
-`yourtal outbox: partner link on`.
+`GET /v1/yourtal/link` answers `"available": true`, and the worker's log has
+no `yourtal outbox: partner link off` line after its `worker up`.
 
 `bootstrap.sh` was deliberately **not** run here either: helios is also a
 shared host (nginx on 80/443 for many sites, its own Postgres on 5432, MinIO on

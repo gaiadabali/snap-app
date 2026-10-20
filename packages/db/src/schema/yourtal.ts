@@ -44,6 +44,7 @@ export const yourtalOutbox = pgTable('yourtal_outbox', {
   lastHttpStatus: integer('last_http_status'),
   lastCode: text('last_code'),
   lastError: text('last_error'),
+  duplicateOfCaptureId: uuid('duplicate_of_capture_id'),
   granted: boolean('granted'),
   points: integer('points'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

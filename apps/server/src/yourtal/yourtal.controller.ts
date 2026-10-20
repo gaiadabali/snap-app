@@ -211,7 +211,12 @@ export class YourtalLinkController {
       region: shown?.region ?? null,
       linkedAt: shown?.linked_at ?? null,
       brokenReason: broken?.broken_reason ?? null,
-      receipts: { pending: counts.pending, rewarded: counts.rewarded, refused: counts.refused },
+      receipts: {
+        pending: counts.pending,
+        rewarded: counts.rewarded,
+        refused: counts.refused,
+        skippedDuplicate: counts.skippedDuplicate,
+      },
       pointsReported: counts.pointsReported,
     };
   }

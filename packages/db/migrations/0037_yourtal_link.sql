@@ -110,6 +110,10 @@ CREATE TABLE IF NOT EXISTS yourtal_outbox (
   last_http_status integer,
   last_code        text,
   last_error       text,
+  /* A `skipped_duplicate` row: the capture already reported for this user
+     that this one looks like a re-photo of (same supplier, date and amount
+     in the workspace). Never sent. */
+  duplicate_of_capture_id uuid,
   /* YourTal's answer on success. */
   granted          boolean,
   points           integer,
@@ -127,7 +131,9 @@ CREATE TABLE IF NOT EXISTS yourtal_outbox (
     'link_broken',  -- 403 link_revoked / 400 unknown_link: the link is marked broken
     'cancelled',    -- its link was unlinked or broken before it was sent
     'failed',       -- any other 4xx: final, logged, needs a person
-    'dead'          -- retries exhausted: kept for a person to requeue
+    'dead',         -- retries exhausted: kept for a person to requeue
+    'skipped_duplicate' -- never sent: a likely re-photo of a receipt already
+                        -- reported for this user (founder decision 2026-10-20)
   )),
   CONSTRAINT yourtal_outbox_finished CHECK ((status = 'pending') = (finished_at IS NULL)),
   -- Once per receipt per user, enforced: a re-extraction or a retried scan
@@ -171,7 +177,9 @@ CREATE POLICY yourtal_links_self_update ON yourtal_links
 -- Outbox: the API may queue and read its own events. The link named must be
 -- the caller's own, so one user can never queue a report against another
 -- user's link (the subquery runs under the caller's RLS, which already hides
--- every other user's link).
+-- every other user's link). And a new row can only be what the queueing code
+-- writes — pending, or skipped as a likely duplicate — never an outcome:
+-- only the drain records what YourTal answered.
 CREATE POLICY yourtal_outbox_self_read ON yourtal_outbox
   FOR SELECT TO app_rw
   USING (user_id = current_user_id());
@@ -179,6 +187,10 @@ CREATE POLICY yourtal_outbox_self_insert ON yourtal_outbox
   FOR INSERT TO app_rw
   WITH CHECK (
     user_id = current_user_id()
+    AND status IN ('pending', 'skipped_duplicate')
+    AND attempts = 0
+    AND granted IS NULL AND points IS NULL
+    AND locked_at IS NULL AND last_http_status IS NULL
     AND EXISTS (
       SELECT 1 FROM yourtal_links l
        WHERE l.id = link_row_id AND l.user_id = current_user_id()

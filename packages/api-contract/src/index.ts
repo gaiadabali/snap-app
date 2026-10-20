@@ -1651,6 +1651,12 @@ export interface YourtalLinkStatus {
     rewarded: number;
     /** YourTal's ledger refused them (the daily limit, or funding). */
     refused: number;
+    /**
+     * Not reported: each looked like another photo of a receipt already
+     * reported from this account (same supplier, date and amount in the
+     * workspace), so it would not earn again.
+     */
+    skippedDuplicate: number;
   };
   pointsReported: number;
 }

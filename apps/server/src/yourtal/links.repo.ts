@@ -144,6 +144,7 @@ export interface ReceiptReportCounts {
   pending: number;
   rewarded: number;
   refused: number;
+  skippedDuplicate: number;
   pointsReported: number;
 }
 
@@ -155,10 +156,17 @@ export interface ReceiptReportCounts {
  */
 export async function receiptReportCounts(userId: string, db: Db = getDb()): Promise<ReceiptReportCounts> {
   return asUser(db, userId, async (tx) => {
-    const rows = await tx.execute<{ pending: string; rewarded: string; refused: string; points: string }>(sql`
+    const rows = await tx.execute<{
+      pending: string;
+      rewarded: string;
+      refused: string;
+      skipped_duplicate: string;
+      points: string;
+    }>(sql`
       select count(*) filter (where status = 'pending')                                as pending,
              count(*) filter (where status in ('sent', 'duplicate') and granted)       as rewarded,
              count(*) filter (where status = 'refused')                                as refused,
+             count(*) filter (where status = 'skipped_duplicate')                      as skipped_duplicate,
              coalesce(sum(points) filter (where status in ('sent', 'duplicate') and granted), 0) as points
         from yourtal_outbox
        where user_id = current_user_id()
@@ -168,6 +176,7 @@ export async function receiptReportCounts(userId: string, db: Db = getDb()): Pro
       pending: Number(r?.pending ?? 0),
       rewarded: Number(r?.rewarded ?? 0),
       refused: Number(r?.refused ?? 0),
+      skippedDuplicate: Number(r?.skipped_duplicate ?? 0),
       pointsReported: Number(r?.points ?? 0),
     };
   });

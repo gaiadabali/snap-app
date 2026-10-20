@@ -1297,7 +1297,7 @@ export async function saveExtraction(
       }
     : AU_CONSUMPTION_TAX;
 
-  const { documentId, uploadedBy, receiptOriginal } = await withTenantAs(getDb(), workerUserId, tenantId, async (tx) => {
+  const { documentId, uploadedBy, receiptOriginal, sameReceiptCaptureIds } = await withTenantAs(getDb(), workerUserId, tenantId, async (tx) => {
     const e = result.extraction;
 
     // S1 (docs/STATEMENTS.md §12 Lane S): `documents.card_last4` / `card_brand`
@@ -1447,7 +1447,7 @@ export async function saveExtraction(
           2
         )
       `);
-      return { documentId: before.id, uploadedBy, receiptOriginal };
+      return { documentId: before.id, uploadedBy, receiptOriginal, sameReceiptCaptureIds: [] as string[] };
     }
 
     const locked = new Set(before?.locked_fields ?? []);
@@ -1570,6 +1570,26 @@ export async function saveExtraction(
     `);
     await flagPossibleDuplicate(tx, tenantId, documentId, fingerprint.rows[0]?.dedup_group_id ?? null);
 
+    // The same business key, for the YourTal report (founder decision
+    // 2026-10-20): a second photo of a receipt is different bytes, so its
+    // content hash is new, but the same supplier, date and amount in the
+    // workspace says it is the same receipt. The captures behind those other
+    // documents are handed to `queueReceiptReport`, which skips this one if
+    // any of them was already reported for the uploader. Tenant rows, so read
+    // here, inside the tenant transaction.
+    const dedupGroupId = fingerprint.rows[0]?.dedup_group_id ?? null;
+    const sameReceiptCaptureIds = dedupGroupId
+      ? (
+          await tx.execute<{ capture_id: string }>(sql`
+            select capture_id from documents
+             where tenant_id = ${tenantId}
+               and dedup_group_id = ${dedupGroupId}
+               and id <> ${documentId}
+               and deleted_at is null
+          `)
+        ).rows.map((r) => r.capture_id)
+      : [];
+
     let n = 0;
     for (const line of e.lines) {
       if (line.amount.value == null) continue;
@@ -1618,7 +1638,7 @@ export async function saveExtraction(
     }
 
     await tx.execute(sql`update captures set status = 'extracted' where id = ${captureId}`);
-    return { documentId, uploadedBy, receiptOriginal };
+    return { documentId, uploadedBy, receiptOriginal, sameReceiptCaptureIds };
   });
 
   // One point for one genuinely completed scan — see the header on
@@ -1642,7 +1662,12 @@ export async function saveExtraction(
   // only after `handle()` returns, so the retry re-runs this path, and the
   // outbox's (user, action, external_ref) key makes the second call a no-op.
   if (uploadedBy && receiptOriginal) {
-    await queueReceiptReport({ userId: uploadedBy, captureId, original: receiptOriginal }).catch((error) => {
+    await queueReceiptReport({
+      userId: uploadedBy,
+      captureId,
+      original: receiptOriginal,
+      sameReceiptCaptureIds,
+    }).catch((error) => {
       console.error(`queueReceiptReport failed for capture ${captureId}:`, error instanceof Error ? error.message : error);
     });
   }

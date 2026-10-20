@@ -245,8 +245,28 @@ the screens are 2.6. YourTal's contract is its partner guide
   worker drains it in its own loop with the stored body bytes and one
   Idempotency-Key per event; the retry and error rules are at the top of
   `apps/server/src/yourtal/outbox.ts`.
-- `point_ledger` still gets its one Snap Apps point per scan, unchanged. It is
-  not shown as spendable; retiring it is a separate decision.
+- A likely re-photo is not reported: a capture whose document shares its
+  business key (supplier, date, amount, in the workspace) with a capture
+  already reported for the same user is recorded as `skipped_duplicate`,
+  never sent, and counted in the status (`receipts.skippedDuplicate`).
+- `point_ledger` still gets its one Snap Apps point per scan, unchanged here.
+
+**Decided 2026-10-20 (founder, on the 2.4/2.5 review):**
+
+1. **Re-photographed receipts are skipped.** Two photos of one paper receipt
+   are different bytes, so the content hash alone would pay twice. The
+   business-key check above decides; the cost is that two genuinely identical
+   purchases (same shop, day and amount) earn once.
+2. **Ledger refusals are final.** `velocity_capped` and the funding refusals
+   end that receipt's report; it is not re-sent the next day, although
+   YourTal's guide allows it.
+3. **Only receipts captured after linking** are reported. Linking does not
+   back-fill earlier scans.
+4. **`evidence` is the capture id only** (lead's call: minimum data). Nothing
+   about the receipt's contents or the person goes to YourTal.
+
+`point_ledger` is to be retired (founder, same review). That is its own
+ticket, with the screens that still show it; nothing here changes it.
 
 **Not decided:** which on-device model.
 

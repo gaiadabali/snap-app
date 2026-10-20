@@ -91,7 +91,7 @@ describeIfDb('the YourTal link endpoints (2.4)', () => {
       region: null,
       linkedAt: null,
       brokenReason: null,
-      receipts: { pending: 0, rewarded: 0, refused: 0 },
+      receipts: { pending: 0, rewarded: 0, refused: 0, skippedDuplicate: 0 },
       pointsReported: 0,
     });
   });

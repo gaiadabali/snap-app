@@ -34,7 +34,7 @@ const DANI = 'b7a20000-0000-4000-8000-0000000000a2';
 const EVE = 'b7a20000-0000-4000-8000-0000000000a3';
 
 const f = <T>(value: T | null, confidence = 0.99) => ({ value, confidence });
-function reading(): ValidatedExtraction {
+function reading(payable: string): ValidatedExtraction {
   return {
     extraction: {
       schemaVersion: '1',
@@ -48,8 +48,8 @@ function reading(): ValidatedExtraction {
       buyerIdentified: f(false),
       taxExclusiveAmount: f(null),
       taxAmount: f(null),
-      payableAmount: f('4.50'),
-      lines: [{ description: f('Coffee'), quantity: f(1), unitPrice: f('4.50'), amount: f('4.50'), gstFree: f(false) }],
+      payableAmount: f(payable),
+      lines: [{ description: f('Coffee'), quantity: f(1), unitPrice: f(payable), amount: f(payable), gstFree: f(false) }],
       notes: { legible: true, imageIssues: [], warnings: [] },
     },
     findings: [],
@@ -95,7 +95,12 @@ describeIfDb('the YourTal outbox (2.5)', () => {
     return { captureId, pageSha };
   }
 
-  const scan = (captureId: string) => saveExtraction(WORKER, TENANT, captureId, reading(), META, null);
+  // Every receipt gets its own amount unless a test says otherwise: the
+  // same supplier, date and amount is how a re-photo is recognised, so a
+  // shared default would make every scenario a "duplicate" of the first.
+  let amounts = 0;
+  const scan = (captureId: string, payable = `${(amounts += 1)}.25`) =>
+    saveExtraction(WORKER, TENANT, captureId, reading(payable), META, null);
 
   async function outboxFor(captureId: string) {
     const rows = await admin.query(
@@ -205,6 +210,62 @@ describeIfDb('the YourTal outbox (2.5)', () => {
     expect(await outboxFor(old.captureId)).toHaveLength(0);
   });
 
+  it('skips a re-photo of a receipt already reported, and says so in the status', async () => {
+    const first = await photographedCapture(DANI);
+    const rephoto = await photographedCapture(DANI);
+    await scan(first.captureId, '17.40');
+    await scan(rephoto.captureId, '17.40'); // same supplier, date and amount; different bytes
+
+    expect((await outboxFor(first.captureId))[0]).toMatchObject({ status: 'pending' });
+    const skipped = await admin.query(
+      `select status, finished_at is not null as finished, last_code, duplicate_of_capture_id, external_ref
+         from yourtal_outbox where capture_id = $1`,
+      [rephoto.captureId],
+    );
+    expect(skipped.rows).toEqual([
+      {
+        status: 'skipped_duplicate',
+        finished: true,
+        last_code: 'likely_duplicate',
+        duplicate_of_capture_id: first.captureId,
+        external_ref: `sha256:${rephoto.pageSha}`,
+      },
+    ]);
+
+    // Re-extracting the re-photo changes nothing; and only the first is sent.
+    await scan(rephoto.captureId, '17.40');
+    expect(await outboxFor(rephoto.captureId)).toHaveLength(1);
+    const before = fake.requests.length;
+    expect(await drain()).toMatchObject({ claimed: 1, sent: 1 });
+    expect(JSON.parse(fake.requests.slice(before)[0]!.raw).evidence).toEqual({ captureId: first.captureId });
+
+    const controller = new YourtalLinkController();
+    controller.clientFor = () => client;
+    const status = await controller.status({
+      userId: DANI, email: 'dani@yourtal-outbox.test', displayName: 'Dani', initials: 'DA', emailVerified: true,
+    });
+    expect(status.receipts.skippedDuplicate).toBe(1);
+  });
+
+  it('still reports a genuinely different receipt from the same shop on the same day', async () => {
+    const coffee = await photographedCapture(DANI);
+    const lunch = await photographedCapture(DANI);
+    await scan(coffee.captureId, '23.10');
+    await scan(lunch.captureId, '23.90');
+    expect((await outboxFor(coffee.captureId))[0]).toMatchObject({ status: 'pending' });
+    expect((await outboxFor(lunch.captureId))[0]).toMatchObject({ status: 'pending' });
+  });
+
+  it('reports a re-photo when the earlier one never reached YourTal\'s ledger', async () => {
+    const first = await photographedCapture(DANI);
+    await scan(first.captureId, '31.00');
+    // Its report died (cancelled, failed or dead): nothing was paid or refused.
+    await admin.query(`update yourtal_outbox set status = 'failed', finished_at = now() where capture_id = $1`, [first.captureId]);
+    const again = await photographedCapture(DANI);
+    await scan(again.captureId, '31.00');
+    expect((await outboxFor(again.captureId))[0]).toMatchObject({ status: 'pending' });
+  });
+
   it('names a PDF by the stored PDF\'s bytes, read back from storage', async () => {
     const { put } = await import('../storage.js');
     const pdf = Buffer.from(`%PDF-1.7 outbox test ${randomUUID()}`);
@@ -308,6 +369,18 @@ describeIfDb('the YourTal outbox (2.5)', () => {
 
     // Nor can anyone queue against a link that is not theirs.
     const danisLink = await admin.query(`select id from yourtal_links where user_id = $1 and revoked_at is null`, [DANI]);
+    // Nor write a finished outcome into its own outbox: only the drain may.
+    const outcome = await asUser(getDb(), DANI, (tx) =>
+      tx.execute(sql`
+        insert into yourtal_outbox (user_id, link_row_id, external_ref, idempotency_key, body, status, finished_at, granted, points)
+        values (current_user_id(), ${danisLink.rows[0].id}, 'sha256:self-paid', gen_random_uuid(), '{}', 'sent', now(), true, 999)
+      `),
+    ).then(
+      () => null,
+      (e: { cause?: { message?: string } }) => e.cause?.message ?? String(e),
+    );
+    expect(outcome).toMatch(/row-level security/);
+
     const forged = await asUser(getDb(), EVE, (tx) =>
       tx.execute(sql`
         insert into yourtal_outbox (user_id, link_row_id, external_ref, idempotency_key, body)

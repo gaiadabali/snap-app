@@ -20,7 +20,16 @@ import { liveLink } from './links.repo.js';
 
 export type QueueResult =
   | { queued: true; outboxId: string; externalRef: string }
-  | { queued: false; reason: 'not_linked' | 'captured_before_link' | 'already_queued' };
+  | { queued: false; reason: 'not_linked' | 'captured_before_link' | 'already_queued' }
+  | { queued: false; reason: 'likely_duplicate'; duplicateOfCaptureId: string };
+
+/**
+ * A report that counts as "this receipt was already reported": still to be
+ * sent, or answered by YourTal — paid, a duplicate, or refused by its ledger
+ * (a refusal is final, so a re-photo must not get a second chance at it).
+ * Not cancelled, failed or dead ones: those never reached YourTal's ledger.
+ */
+const REPORTED = ['pending', 'sent', 'duplicate', 'refused'];
 
 /**
  * Queues one `receipt_scanned` report for a confirmed scan.
@@ -29,12 +38,21 @@ export type QueueResult =
  * after the moment they linked: re-extracting an old capture (a better model
  * re-reading it) must not report a receipt from before the link existed.
  *
+ * Not for a likely RE-PHOTO (founder decision 2026-10-20). A second photo of
+ * the same paper receipt is new bytes and so a new `externalRef`, which
+ * YourTal would pay again. `sameReceiptCaptureIds` are the captures whose
+ * documents share this one's business key (supplier, date, amount, in the
+ * workspace — `flagPossibleDuplicate`'s fingerprint in repo.ts); if any of
+ * them was already reported for this user, this capture is recorded as
+ * `skipped_duplicate` instead of queued — never sent, and counted in the
+ * status so the person can see why it earned nothing.
+ *
  * The body is serialised HERE, once, and stored. Every later attempt signs
  * and sends exactly that text under the same Idempotency-Key, which is what
  * YourTal's idempotency rules need (partner-api.md §4).
  */
 export async function queueReceiptReport(
-  input: { userId: string; captureId: string; original: ReceiptOriginal },
+  input: { userId: string; captureId: string; original: ReceiptOriginal; sameReceiptCaptureIds?: string[] },
   deps: { db?: Db; read?: (key: string) => Buffer } = {},
 ): Promise<QueueResult> {
   const db = deps.db ?? getDb();
@@ -52,22 +70,54 @@ export async function queueReceiptReport(
     externalRef,
     // Kept by YourTal for audit and never parsed. The capture id lets the two
     // sides reconcile a disputed grant; nothing about the receipt's contents
-    // or the person leaves Snap Apps.
+    // or the person leaves Snap Apps (lead decision 2026-10-20: minimum data).
     evidence: { captureId: input.captureId },
   });
+  const others = (input.sameReceiptCaptureIds ?? []).filter((id) => id !== input.captureId);
 
-  const inserted = await asUser(db, input.userId, async (tx) =>
-    tx.execute<{ id: string }>(sql`
+  return asUser(db, input.userId, async (tx): Promise<QueueResult> => {
+    // Its own row first: re-extracting a receipt that is already queued,
+    // sent or skipped changes nothing.
+    const own = await tx.execute<{ id: string }>(sql`
+      select id from yourtal_outbox
+       where user_id = current_user_id() and action = 'receipt_scanned' and external_ref = ${externalRef}
+       limit 1
+    `);
+    if (own.rows[0]) return { queued: false, reason: 'already_queued' };
+
+    if (others.length > 0) {
+      const earlier = await tx.execute<{ capture_id: string }>(sql`
+        select capture_id from yourtal_outbox
+         where user_id = current_user_id()
+           and capture_id = any(${`{${others.join(',')}}`}::uuid[])
+           and status = any(${`{${REPORTED.join(',')}}`}::text[])
+         order by created_at
+         limit 1
+      `);
+      const duplicateOf = earlier.rows[0]?.capture_id;
+      if (duplicateOf) {
+        await tx.execute(sql`
+          insert into yourtal_outbox (user_id, link_row_id, capture_id, action, external_ref, idempotency_key, body,
+                                      status, finished_at, last_code, duplicate_of_capture_id)
+          values (current_user_id(), ${link.id}, ${input.captureId}, 'receipt_scanned', ${externalRef},
+                  ${randomUUID()}, ${body}, 'skipped_duplicate', now(), 'likely_duplicate', ${duplicateOf})
+          on conflict (user_id, action, external_ref) do nothing
+        `);
+        return { queued: false, reason: 'likely_duplicate', duplicateOfCaptureId: duplicateOf };
+      }
+    }
+
+    const inserted = await tx.execute<{ id: string }>(sql`
       insert into yourtal_outbox (user_id, link_row_id, capture_id, action, external_ref, idempotency_key, body)
       values (current_user_id(), ${link.id}, ${input.captureId}, 'receipt_scanned', ${externalRef},
               ${randomUUID()}, ${body})
       on conflict (user_id, action, external_ref) do nothing
       returning id
-    `),
-  );
-  const id = inserted.rows[0]?.id;
-  if (!id) return { queued: false, reason: 'already_queued' };
-  return { queued: true, outboxId: id, externalRef };
+    `);
+    const id = inserted.rows[0]?.id;
+    if (!id) return { queued: false, reason: 'already_queued' };
+    return { queued: true, outboxId: id, externalRef };
+  });
 }
 
 // ── The drain's side (worker connection) ─────────────────────────────────────
