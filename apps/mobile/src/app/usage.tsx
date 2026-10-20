@@ -1,4 +1,4 @@
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Text } from '@/theme/text';
@@ -10,14 +10,13 @@ import { Card, Notice, Screen, ScreenHeader, SectionHeader, Small } from '@/comp
 import { numeric, radius, shadow, space, type, usePalette, useTheme } from '@/theme';
 
 /**
- * Where the credits or the points went, one month at a time.
+ * Where the credits went, one month at a time.
  *
  * The bar chart is twelve months of the chosen year and the list under it is
  * the chosen month, itemised. The two are one control: tapping a bar changes
  * the month, which is why the bars are buttons rather than a drawing.
  *
- * `kind` arrives as a route param because Profile's two balance tiles both
- * land here and the tile you tapped is the question you asked.
+ * Credits only: Snap Apps points are retired (`docs/ECOSYSTEM.md` D33).
  */
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -26,9 +25,10 @@ export default function UsageScreen() {
   const { scheme } = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const params = useLocalSearchParams<{ kind?: string }>();
 
-  const [kind, setKind] = useState<UsageKind>(params.kind === 'points' ? 'points' : 'credits');
+  // Credits only. Snap Apps points are retired (D33); YourTal's points are paid
+  // and held in YourTal and are shown on the Points screen.
+  const kind: UsageKind = 'credits';
   const [months, setMonths] = useState<string[]>([]);
   const [year, setYear] = useState(new Date().getFullYear());
   const [month, setMonth] = useState<string | null>(null);
@@ -92,8 +92,8 @@ export default function UsageScreen() {
     [months],
   );
 
-  const unit = kind === 'credits' ? 'credits' : 'points';
-  const title = kind === 'credits' ? 'Credit usage' : 'Point usage';
+  const unit = 'credits';
+  const title = 'Credit usage';
 
   return (
     <Screen>
@@ -107,41 +107,6 @@ export default function UsageScreen() {
         }}
       >
         <ScreenHeader title={title} onBack={() => router.back()} />
-
-        {/* Credits / points: a recessed track with the chosen option a white
-            pill lifted out of it. */}
-        <View style={{ flexDirection: 'row', gap: space.xs, backgroundColor: p.surface, borderRadius: 14, padding: space.xs }}>
-          {(['credits', 'points'] as const).map((k) => {
-            const on = kind === k;
-            return (
-              <Pressable
-                key={k}
-                accessibilityRole="tab"
-                accessibilityState={{ selected: on }}
-                onPress={() => setKind(k)}
-                style={[
-                  {
-                    flex: 1,
-                    minHeight: 40,
-                    borderRadius: 10,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: on ? p.card : 'transparent',
-                  },
-                  on
-                    ? scheme === 'light'
-                      ? shadow.card
-                      : { borderWidth: StyleSheet.hairlineWidth * 2, borderColor: p.cardEdge }
-                    : null,
-                ]}
-              >
-                <Text style={[on ? type.bodyStrong : type.body, { color: on ? p.ink : p.inkMuted }]}>
-                  {k === 'credits' ? 'Credits' : 'Points'}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
 
         <View style={{ gap: space.md }}>
         <SectionHeader title="By month" />
@@ -308,9 +273,7 @@ export default function UsageScreen() {
               </View>
               <Text style={[type.bodyStrong, { color: p.ink, marginTop: 6 }]}>Nothing here yet</Text>
               <Small style={{ textAlign: 'center' }}>
-                {kind === 'credits'
-                  ? 'Credits show up here as you scan.'
-                  : 'Points show up here once you start spending them.'}
+                Credits show up here as you scan.
               </Small>
             </View>
           )}
@@ -318,9 +281,7 @@ export default function UsageScreen() {
         </View>
 
         <Notice tone="info" icon="info">
-          {kind === 'credits'
-            ? 'One credit is one page. A two-page invoice costs two, and a failed scan costs nothing.'
-            : 'Points are earned by scanning and can be traded for scan credits, or spent in yourtal.'}
+          One credit is one page. A two-page invoice costs two, and a failed scan costs nothing.
         </Notice>
       </ScrollView>
     </Screen>

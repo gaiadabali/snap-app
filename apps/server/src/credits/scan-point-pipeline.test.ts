@@ -13,16 +13,12 @@ import { getPointBalance, listPointLedger } from './points.repo.js';
 import type { ValidatedExtraction } from '../extraction/types.js';
 
 /**
- * Proves the wiring, not just the mechanism: a real `saveExtraction` call —
- * the exact function the worker (`worker.ts`) calls on a successful
- * extraction — results in one point for the person who captured the receipt,
- * and a second run over the SAME capture (re-extraction, `docs/PLAN.md`'s
- * second principle) never pays a second one.
- *
- * `points.repo.test.ts` covers `awardScanPoint` itself in isolation; this
- * file is the one place that proves `saveExtraction` actually calls it, with
- * the right capture, and attributed to the right person — `uploaded_by`, not
- * the worker's own service identity.
+ * Proves Snap Apps points are retired (`docs/ECOSYSTEM.md` D33): a real
+ * `saveExtraction` call — the exact function the worker (`worker.ts`) calls on
+ * a successful extraction — writes NO `point_ledger` row, for the person who
+ * captured the receipt or anyone else, on the first extraction or a
+ * re-extraction. YourTal points are earned through the outbox instead
+ * (`yourtal-outbox.e2e.test.ts`).
  */
 const hasDb = Boolean(process.env.DATABASE_URL);
 const describeIfDb = hasDb ? describe : describe.skip;
@@ -96,7 +92,7 @@ async function makeCapture(): Promise<string> {
   return id;
 }
 
-describeIfDb('saveExtraction awards a scan point', () => {
+describeIfDb('saveExtraction writes no Snap Apps point', () => {
   let admin: Client;
 
   beforeAll(async () => {
@@ -117,29 +113,31 @@ describeIfDb('saveExtraction awards a scan point', () => {
     await closeDb();
   });
 
-  it('credits the CAPTURING user, not the worker, exactly once', async () => {
+  const ledgerRows = async (): Promise<number> => {
+    const r = await admin.query<{ n: string }>(
+      'SELECT count(*)::text AS n FROM point_ledger WHERE user_id = ANY($1::uuid[])',
+      [[UPLOADER, WORKER]],
+    );
+    return Number(r.rows[0]!.n);
+  };
+
+  it('a confirmed scan writes no point_ledger row for the capturing user or the worker', async () => {
     const capture = await makeCapture();
-    const before = await getPointBalance(UPLOADER);
+    const before = await ledgerRows();
 
     await saveExtraction(WORKER, TENANT, capture, reading(), META, null);
 
-    expect(await getPointBalance(UPLOADER)).toBe(before + 1);
-    expect(await getPointBalance(WORKER)).toBe(0); // never the worker's own identity
-
-    const ledger = await listPointLedger(UPLOADER);
-    expect(ledger.find((r) => r.ref === capture)).toMatchObject({ reason: 'scan', delta: 1 });
+    expect(await ledgerRows()).toBe(before);
+    expect(await getPointBalance(UPLOADER)).toBe(0);
+    expect(await getPointBalance(WORKER)).toBe(0);
+    expect(await listPointLedger(UPLOADER)).toEqual([]);
   });
 
-  it('a re-extraction of the SAME capture does not pay a second point', async () => {
+  it('a re-extraction of the same capture writes none either', async () => {
     const capture = await makeCapture();
     await saveExtraction(WORKER, TENANT, capture, reading('110.00'), META, null);
-    const afterFirst = await getPointBalance(UPLOADER);
-
-    // A better model re-reads the same receipt later — same capture id.
     await saveExtraction(WORKER, TENANT, capture, reading('120.00'), META, null);
 
-    expect(await getPointBalance(UPLOADER)).toBe(afterFirst);
-    const ledger = await listPointLedger(UPLOADER);
-    expect(ledger.filter((r) => r.ref === capture)).toHaveLength(1);
+    expect(await ledgerRows()).toBe(0);
   });
 });

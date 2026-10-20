@@ -6,7 +6,6 @@ import type {
   UpdateDocumentRequest,
 } from '@snap/api-contract';
 
-import { YOURTAL_WEB_URL } from '@/config';
 import { DEMO } from '@/fixtures/demo';
 import { gstFromInclusive } from '@/lib/money';
 
@@ -53,8 +52,7 @@ import type {
   Permissions,
   PersonalSummary,
   PlanUsage,
-  PointBalance,
-  PointLedgerEntry,
+  YourtalLinkStatus,
   Recurring,
   SalesSummary,
   Session,
@@ -66,9 +64,6 @@ import type {
   UsageKind,
   UsageItem,
   UsagePeriod,
-  Reward,
-  RedeemVoucherRequest,
-  VoucherRedemption,
   NotificationPrefs,
   AlertItem,
   PrivacySettings,
@@ -297,7 +292,7 @@ const CREDIT_PACKS: CreditPack[] = [
 ];
 
 /**
- * Credits (tenant-scoped) and points (user-scoped) — D27.
+ * Credits (tenant-scoped) — D27 — and the YourTal link (user-scoped) — D33.
  *
  * Kept as session state exactly like `budgets`/`goals`: a purchase in the
  * demo has to move the balance on screen, or "buy a pack" would be a button
@@ -330,19 +325,25 @@ const seedCreditPurchases = (): CreditPurchase[] => [
     paidAt: '2026-06-02T01:15:40.000Z',
   },
 ];
-/** One point per scan (D27); a handful seeded against real fixture dates. */
-const seedPointLedger = (): PointLedgerEntry[] =>
-  DEMO.documents.slice(0, 6).map((d, i) => ({
-    id: `pt_${i + 1}`,
-    delta: 1,
-    reason: 'scan',
-    ref: d.id,
-    app: 'snap-apps',
-    createdAt: `${d.issueDate}T09:00:00.000Z`,
-  }));
-
 let creditPurchases: CreditPurchase[] = seedCreditPurchases();
-let pointLedger: PointLedgerEntry[] = seedPointLedger();
+
+/**
+ * The YourTal link (D33), as session state so the demo behaves: linking moves
+ * the screen to "Linked to YourTal", unlinking moves it back. Not persisted,
+ * and `resetDemoData` restores the unlinked start. A code of `TEEN0000`,
+ * `NOPE0000` or `DOWN0000` answers with that error, so every message can be
+ * seen on fixtures; anything else of six or more characters links.
+ */
+const seedYourtalLink = (): YourtalLinkStatus => ({
+  available: true,
+  state: 'unlinked',
+  region: null,
+  linkedAt: null,
+  brokenReason: null,
+  receipts: { pending: 0, rewarded: 0, refused: 0, skippedDuplicate: 0 },
+  pointsReported: 0,
+});
+let yourtalLink: YourtalLinkStatus = seedYourtalLink();
 
 /**
  * Hydration, run once before the first read.
@@ -419,7 +420,6 @@ function snapshot(): Persisted {
     extraWorkspaces,
     creditBalance,
     creditPurchases,
-    pointLedger,
   };
 }
 
@@ -480,7 +480,7 @@ export async function resetDemoData(): Promise<void> {
   extraWorkspaces = [];
   creditBalance = 7;
   creditPurchases = seedCreditPurchases();
-  pointLedger = seedPointLedger();
+  yourtalLink = seedYourtalLink();
   WHO = 'usr_kate';
   signedIn = false;
 }
@@ -515,7 +515,6 @@ async function hydrate(): Promise<void> {
   extraWorkspaces = stored.extraWorkspaces ?? [];
   if (typeof stored.creditBalance === 'number') creditBalance = stored.creditBalance;
   if (stored.creditPurchases) creditPurchases = stored.creditPurchases;
-  if (stored.pointLedger) pointLedger = stored.pointLedger;
   // Restored last, so the session lines up with the memberships just loaded.
   if (stored.signedInUserId) WHO = stored.signedInUserId;
   signedIn = stored.signedIn ?? false;
@@ -674,38 +673,9 @@ const usageByMonth: Record<UsageKind, Record<string, UsageItem[]>> = {
       { id: 'u22', label: 'Bulk import, four receipts', occurredAt: '2026-07-02', amount: 4 },
     ],
   },
-  points: {
-    '2026-09': [
-      { id: 'p1', label: 'yourtal, Priority listing', occurredAt: '2026-09-14', amount: 250 },
-      { id: 'p2', label: 'yourtal, Extra photo slots', occurredAt: '2026-09-09', amount: 120 },
-      { id: 'p3', label: 'yourtal, Featured for a week', occurredAt: '2026-09-02', amount: 400 },
-    ],
-    '2026-08': [
-      { id: 'p4', label: 'yourtal, Priority listing', occurredAt: '2026-08-21', amount: 250 },
-      { id: 'p5', label: 'yourtal, Extra photo slots', occurredAt: '2026-08-12', amount: 120 },
-      { id: 'p6', label: 'yourtal, Listing boost', occurredAt: '2026-08-04', amount: 300 },
-    ],
-    '2026-07': [
-      { id: 'p7', label: 'yourtal, Featured for a week', occurredAt: '2026-07-23', amount: 400 },
-      { id: 'p8', label: 'yourtal, Extra photo slots', occurredAt: '2026-07-09', amount: 120 },
-    ],
-  },
+  // Snap Apps points are retired (D33); YourTal's points are not itemised here.
+  points: {},
 };
-
-/** yourtal listings. Spending happens there; only the voucher comes back. */
-const REWARDS: Reward[] = [
-  { id: 'yt-scan-10', name: '10 free scans', description: 'A Snap Apps voucher for ten receipts.', cost: 200, imageUrl: null, deepLink: `${YOURTAL_WEB_URL}/store/yt-scan-10`, available: true },
-  { id: 'yt-scan-25', name: '25 free scans', description: 'A Snap Apps voucher for a month of shopping.', cost: 450, imageUrl: null, deepLink: `${YOURTAL_WEB_URL}/store/yt-scan-25`, available: true },
-  { id: 'yt-cafe', name: 'Cafe Giro, $10', description: 'Coffee on the way to the next job.', cost: 300, imageUrl: null, deepLink: `${YOURTAL_WEB_URL}/store/yt-cafe`, available: true },
-  { id: 'yt-fuel', name: 'Ampol, $25 fuel', description: 'Redeemed at the pump, not here.', cost: 900, imageUrl: null, deepLink: `${YOURTAL_WEB_URL}/store/yt-fuel`, available: true },
-];
-
-/** Vouchers a demo user is holding, as if minted in yourtal. */
-const DEMO_VOUCHERS: Record<string, { title: string; credits: number }> = {
-  SNAP10: { title: '10 free scans', credits: 10 },
-  SNAP25: { title: '25 free scans', credits: 25 },
-};
-const spentVouchers = new Set<string>();
 
 let alerts: AlertItem[] = [
   {
@@ -2062,17 +2032,42 @@ export class MockApi implements SnapApi {
     return paid;
   }
 
-  async getPointBalance(): Promise<PointBalance> {
-    await settle(120);
-    return { balance: pointLedger.reduce((a, e) => a + e.delta, 0) };
+  async getYourtalLink(): Promise<YourtalLinkStatus> {
+    await settle(140);
+    return yourtalLink;
   }
 
-  async listPointLedger(limit = 50): Promise<PointLedgerEntry[]> {
-    await settle(130);
-    return [...pointLedger].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, limit);
+  async linkYourtal(code: string): Promise<YourtalLinkStatus> {
+    await settle(420);
+    const clean = code.trim().toUpperCase();
+    if (yourtalLink.state === 'linked') {
+      throw new ApiError(409, 'This account is already linked to YourTal.', 'already_linked');
+    }
+    if (clean.length < 6 || clean === 'NOPE0000') {
+      throw new ApiError(400, 'That code is not valid any more.', 'invalid_link_code');
+    }
+    if (clean === 'TEEN0000') {
+      throw new ApiError(403, 'Only adult YourTal accounts can earn points for receipts.', 'teen_consent_not_allowed');
+    }
+    if (clean === 'DOWN0000') {
+      throw new ApiError(503, 'YourTal is not answering right now.', 'yourtal_unavailable');
+    }
+    yourtalLink = {
+      ...seedYourtalLink(),
+      state: 'linked',
+      region: 'AU',
+      linkedAt: new Date().toISOString(),
+    };
+    return yourtalLink;
   }
 
-  /* ── Wallet, usage, rewards & preferences (2026-09-19 redesign) ──────────
+  async unlinkYourtal(): Promise<YourtalLinkStatus> {
+    await settle(300);
+    yourtalLink = seedYourtalLink();
+    return yourtalLink;
+  }
+
+  /* ── Wallet, usage & preferences (2026-09-19 redesign) ──────────
      Backed by module-level state so the demo BEHAVES: adding a card makes it
      selectable at checkout, spending credits shows up in usage, and marking
      alerts read stays read for the session. A mock that only returns fixtures
@@ -2156,38 +2151,6 @@ export class MockApi implements SnapApi {
   async listUsageMonths(kind: UsageKind): Promise<string[]> {
     await settle(90);
     return Object.keys(usageByMonth[kind] ?? {}).sort().reverse();
-  }
-
-  async listRewards(): Promise<Reward[]> {
-    await settle(200);
-    /* `available` is yourtal's stock flag, NOT affordability. Greying a
-       listing out because this user cannot afford it would be this app
-       deciding something the store owns. */
-    return REWARDS;
-  }
-
-  async redeemVoucher(input: RedeemVoucherRequest): Promise<VoucherRedemption> {
-    await settle(520);
-    const code = input.code.trim().toUpperCase();
-    if (code.length < 6) throw new Error('A voucher code is at least six characters.');
-
-    const voucher = DEMO_VOUCHERS[code];
-    if (!voucher) throw new Error('That code is not a voucher we recognise.');
-    // Single-use: the only partial-redemption policy that makes sense while
-    // Snap grants whole credit packs. See `RedeemVoucherRequest`.
-    if (spentVouchers.has(code)) throw new Error('That voucher has already been used.');
-
-    spentVouchers.add(code);
-    creditBalance += voucher.credits;
-    /* No point ledger entry. The points were spent in yourtal when the
-       voucher was minted; nothing leaves this balance here. */
-    return {
-      code,
-      title: voucher.title,
-      creditsGranted: voucher.credits,
-      creditsBalance: creditBalance,
-      redeemedAt: new Date().toISOString(),
-    };
   }
 
   async listAlerts(): Promise<AlertItem[]> {

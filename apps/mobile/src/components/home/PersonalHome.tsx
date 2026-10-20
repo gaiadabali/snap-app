@@ -5,12 +5,14 @@ import { Text } from '@/theme/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { IS_DEMO, api, type DocumentView, type PersonalSummary } from '@/api';
+import type { YourtalLinkStatus } from '@snap/api-contract';
 import { CategoryRing, RingLegend } from '@/components/charts';
 import { Icon } from '@/components/Icon';
 import { EXPERIMENTAL_FEATURES_ENABLED } from '@/config';
 import { GradientHero, HeroBody, HeroLabel, Raised } from '@/components/rich';
 import { Card, Chip, Divider, Figure, Screen, SectionHeader, Small } from '@/components/ui';
 import { UpdateNotice } from '@/components/UpdateNotice';
+import { pointsSummary } from '@/lib/yourtal-link';
 import { useSession } from '@/session';
 import { control, formatAud, numeric, radius, space, type, usePalette, useTheme } from '@/theme';
 
@@ -48,9 +50,10 @@ export default function PersonalHome() {
   const [summary, setSummary] = useState<PersonalSummary | null>(null);
   const [docs, setDocs] = useState<DocumentView[]>([]);
   const [credits, setCredits] = useState<number | null>(null);
-  const [points, setPoints] = useState<number | null>(null);
+  const [yourtal, setYourtal] = useState<YourtalLinkStatus | null>(null);
   const [unread, setUnread] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  const points = pointsSummary(yourtal);
 
   const load = useCallback(async () => {
     const [s, d] = await Promise.all([
@@ -64,7 +67,7 @@ export default function PersonalHome() {
        awaited by the caller: none of them is worth holding the whole screen
        for, and a points outage must not blank the month. */
     void api().getCreditBalance().then((b) => setCredits(b.creditsRemaining)).catch(() => {});
-    void api().getPointBalance().then((b) => setPoints(b.balance)).catch(() => {});
+    void api().getYourtalLink().then(setYourtal).catch(() => {});
     // Only the bell uses this count, and the bell is hidden with the flag.
     if (EXPERIMENTAL_FEATURES_ENABLED) {
       void api()
@@ -288,19 +291,23 @@ export default function PersonalHome() {
               tone={credits !== null && credits <= 5 ? 'warn' : 'accent'}
               onPress={() => router.push('/credits')}
             />
-            <Divider />
-            <BalanceRow
-              icon="spark"
-              label="Points earned"
-              value={points === null ? '—' : points.toLocaleString('en-AU')}
-              /* NOT derived from the document count. Points are awarded per
-                 capture by the server and the two numbers legitimately
-                 disagree — a document imported from a statement earns none.
-                 Showing "from N scans" next to a smaller balance reads as a
-                 bug in the app rather than a fact about the ledger. */
-              hint="Trade them for scan credits"
-              onPress={() => router.push('/points')}
-            />
+            {points ? (
+              <>
+                <Divider />
+                {/* YourTal's points, not a Snap Apps balance (D33): the number
+                    is what YourTal said it paid for receipts reported from
+                    this account, and the wallet itself is in YourTal. Not
+                    derived from the document count: duplicates and receipts
+                    from before the link earn nothing, so the two disagree. */}
+                <BalanceRow
+                  icon="spark"
+                  label="YourTal points"
+                  value={points.value}
+                  hint={points.hint}
+                  onPress={() => router.push('/points')}
+                />
+              </>
+            ) : null}
           </Card>
         </View>
 

@@ -96,19 +96,15 @@ import type {
   CreditBalance,
   CreditPack,
   CreditPurchase,
-  PointBalance,
-  PointLedgerEntry,
   AvailableTaxRules,
   SavedCard,
   AddSavedCardRequest,
   UsageKind,
   UsagePeriod,
-  Reward,
-  RedeemVoucherRequest,
-  VoucherRedemption,
   NotificationPrefs,
   AlertItem,
   PrivacySettings,
+  YourtalLinkStatus,
 } from '@snap/api-contract';
 
 /**
@@ -126,8 +122,9 @@ import type {
  *   - plan quota  — `PlanUsage.scanQuota`/`scansUsed`, tenant, resets monthly.
  *   - credits     — `CreditBalance`/`CreditPack`/`CreditPurchase`, tenant,
  *                    bought or granted, never reset.
- *   - points      — `PointBalance`/`PointLedgerEntry`, USER-scoped, earned by
- *                    scanning, never reset.
+ *   - points      — YourTal points, USER-scoped, paid and held by YourTal;
+ *                    `YourtalLinkStatus` says what it reported. Snap Apps keeps
+ *                    no balance (D33).
  *
  * There is no grant-level breakdown endpoint (e.g. "free-to-start: 7 of 10
  * left" as its own row) — only the aggregate `CreditBalance.creditsRemaining`
@@ -394,10 +391,17 @@ export interface SnapApi {
    */
   fulfilCreditPurchase(purchaseId: string): Promise<CreditPurchase>;
 
-  /** `GET /v1/points` — USER-scoped, not workspace-scoped. */
-  getPointBalance(): Promise<PointBalance>;
-  /** `GET /v1/points/ledger` — most recent first, how the balance was earned. */
-  listPointLedger(limit?: number): Promise<PointLedgerEntry[]>;
+  /**
+   * `GET /v1/yourtal/link` — USER-scoped, not workspace-scoped. YourTal points
+   * are the only points with value (D33); this is how the app learns whether
+   * the account is linked and what YourTal said it paid. `available: false`
+   * means the feature is off: show nothing.
+   */
+  getYourtalLink(): Promise<YourtalLinkStatus>;
+  /** `POST /v1/yourtal/link` — the one-time code from YourTal. Throws `ApiError` with `code`. */
+  linkYourtal(code: string): Promise<YourtalLinkStatus>;
+  /** `DELETE /v1/yourtal/link`. */
+  unlinkYourtal(): Promise<YourtalLinkStatus>;
 
   /**
    * `GET /v1/tax-rules-catalogue` — the rule sets this deployment can install,
@@ -431,17 +435,6 @@ export interface SnapApi {
   getUsage(kind: UsageKind, month: string): Promise<UsagePeriod>;
   /** `GET /v1/usage/months?kind=` — which months have anything to show. */
   listUsageMonths(kind: UsageKind): Promise<string[]>;
-
-  // ── Rewards ──
-  /** `GET /v1/rewards` — yourtal listings, shown so points have a purpose. */
-  listRewards(): Promise<Reward[]>;
-  /**
-   * `POST /v1/vouchers/redeem` — present a yourtal voucher here.
-   *
-   * The server authorises and captures against yourtal and grants the credits.
-   * Points are never spent from this app; see `Reward` in the contract.
-   */
-  redeemVoucher(input: RedeemVoucherRequest): Promise<VoucherRedemption>;
 
   // ── Alerts & preferences ──
   /** `GET /v1/alerts` — the in-app feed, newest first. */

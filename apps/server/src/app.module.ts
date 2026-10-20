@@ -25,8 +25,6 @@ import {
   AlertsController,
   AuthCodesController,
   MePreferencesController,
-  RewardsController,
-  VouchersController,
   UsageController,
   WalletController,
 } from './redesign/redesign.controller.js';
@@ -130,8 +128,6 @@ export class HealthController {
        routes deliberately refuse rather than pretend. */
     WalletController,
     UsageController,
-    RewardsController,
-    VouchersController,
     AlertsController,
     MePreferencesController,
     AuthCodesController,

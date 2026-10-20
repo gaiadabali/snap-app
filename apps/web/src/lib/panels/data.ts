@@ -22,13 +22,12 @@ import type {
   Payment,
   PersonalSummary,
   PlanUsage,
-  PointBalance,
-  PointLedgerEntry,
   Recurring,
   SalesSummary,
   StockMovement,
   TaxPack,
   Trip,
+  YourtalLinkStatus,
 } from '@snap/api-contract';
 import type { ConsumptionTaxReport, InstalledTaxRules } from '@snap/api-contract';
 
@@ -102,12 +101,13 @@ export const listParties = (workspaceId: string, kind?: 'customer' | 'supplier')
 export const listMembers = (workspaceId: string) =>
   api<MemberList>(`/v1/workspaces/${workspaceId}/members`, { workspaceId });
 
-/* ── Credits & points — docs/ECOSYSTEM.md D27 ─────────────────────────────
+/* ── Credits, and the YourTal points link — docs/ECOSYSTEM.md D27, D33 ───
  *
- * Credits are tenant-scoped, like everything above. Points are USER-scoped —
- * a point is earned by a person, not a workspace — so those two calls take
- * no `workspaceId` at all; the server's `PointsController` uses
- * `SessionGuard` alone and never reads `X-Workspace-Id`.
+ * Credits are tenant-scoped, like everything above. YourTal points are not
+ * Snap Apps' to keep: they are paid and held by YourTal, so the only call is
+ * the link status. It is USER-scoped (a link belongs to a person), so it takes
+ * no `workspaceId`: the server's `YourtalLinkController` uses `SessionGuard`
+ * alone and never reads `X-Workspace-Id`.
  */
 
 export const listCreditPacks = (workspaceId: string) => api<CreditPack[]>('/v1/credit-packs', { workspaceId });
@@ -117,10 +117,7 @@ export const getCreditBalance = (workspaceId: string) => api<CreditBalance>('/v1
 export const listCreditPurchases = (workspaceId: string) =>
   api<CreditPurchase[]>('/v1/credits/purchases', { workspaceId });
 
-export const getPointBalance = () => api<PointBalance>('/v1/points');
-
-export const listPointLedger = (limit?: number) =>
-  api<PointLedgerEntry[]>(`/v1/points/ledger${limit ? `?limit=${limit}` : ''}`);
+export const getYourtalLink = () => api<YourtalLinkStatus>('/v1/yourtal/link');
 
 /* ── The ledger — not part of the mobile seam, called directly ───────────── */
 

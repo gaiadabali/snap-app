@@ -6,6 +6,9 @@
  */
 export type NavItem = { href: string; label: string };
 
+/** The YourTal points page. Shown only while the server has the YourTal link on. */
+export const POINTS_HREF = '/app/points';
+
 export const INDIVIDUAL_NAV: NavItem[] = [
   { href: '/app', label: 'Overview' },
   { href: '/app/documents', label: 'Documents' },
@@ -15,10 +18,15 @@ export const INDIVIDUAL_NAV: NavItem[] = [
   { href: '/app/goals', label: 'Goals' },
   { href: '/app/plan', label: 'Plan & usage' },
   { href: '/app/credits', label: 'Credits' },
-  { href: '/app/points', label: 'Points' },
+  { href: POINTS_HREF, label: 'YourTal points' },
   { href: '/app/connections', label: 'Connections' },
   { href: '/app/settings', label: 'Settings' },
 ];
+
+/** The individual nav, without the points entry when the YourTal link is off (`available: false`). */
+export function individualNavFor(yourtalAvailable: boolean): NavItem[] {
+  return yourtalAvailable ? INDIVIDUAL_NAV : INDIVIDUAL_NAV.filter((item) => item.href !== POINTS_HREF);
+}
 
 export const BUSINESS_NAV: NavItem[] = [
   { href: '/app/business', label: 'Overview' },

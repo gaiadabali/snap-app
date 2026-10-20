@@ -61,9 +61,11 @@ export const STATE_CHANGING = [
  *
  * `createCapture` reserves an id and `uploadOriginal` PUTs bytes to storage;
  * neither touches session state, so whether they match the pattern is
- * immaterial. Listed so the set of methods stays exhaustive.
+ * immaterial. `linkYourtal` and `unlinkYourtal` move state on the server (and
+ * in the mock's own module state), which is not part of the persisted
+ * session. Listed so the set of methods stays exhaustive.
  */
-export const SIDE_EFFECT_ONLY = ['createCapture', 'uploadOriginal'] as const;
+export const SIDE_EFFECT_ONLY = ['createCapture', 'uploadOriginal', 'linkYourtal', 'unlinkYourtal'] as const;
 
 /** Reads. None of these may match `MUTATION`, or every list would queue a write. */
 export const READ_METHODS = [
@@ -97,6 +99,5 @@ export const READ_METHODS = [
   'listCreditPacks',
   'getCreditBalance',
   'listCreditPurchases',
-  'getPointBalance',
-  'listPointLedger',
+  'getYourtalLink',
 ] as const;

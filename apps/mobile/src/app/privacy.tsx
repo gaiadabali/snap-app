@@ -67,7 +67,7 @@ export default function PrivacyScreen() {
   function confirmWipe() {
     Alert.alert(
       'Delete every receipt?',
-      'This clears every record in this space, including the original photos. It cannot be undone. Credits and points stay on your account.',
+      'This clears every record in this space, including the original photos. It cannot be undone. Your credits and your YourTal link stay on your account.',
       [
         { text: 'Keep them', style: 'cancel' },
         {
@@ -191,7 +191,7 @@ export default function PrivacyScreen() {
             </Pressable>
           </Card>
           <Small>
-            This clears every record in this space. Credits and points stay on your account.
+            This clears every record in this space. Your credits and your YourTal link stay on your account.
           </Small>
         </View>
       </ScrollView>

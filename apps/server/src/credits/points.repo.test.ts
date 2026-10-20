@@ -4,10 +4,13 @@ import { Client } from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { closeDb, getDb } from '../db.js';
-import { awardScanPoint, getPointBalance, listPointLedger } from './points.repo.js';
+import { getPointBalance, listPointLedger } from './points.repo.js';
 
 /**
  * `points.repo.ts` — against a real Postgres, as the real application role.
+ * The module is READ ONLY since the retirement of Snap Apps points
+ * (`docs/ECOSYSTEM.md` D33), so the fixtures here are history rows inserted
+ * with the owner connection, the way the old scan path wrote them.
  *
  * Points are USER-scoped (`docs/ECOSYSTEM.md` D27), so unlike every other
  * suite in this codebase these fixtures need no tenant at all — just a user.
@@ -41,15 +44,23 @@ describeIfDb('points.repo', () => {
     await closeDb();
   });
 
+  /** One history row, as the retired scan path wrote it. Owner connection: `app_rw` can only INSERT own rows. */
+  async function historyRow(userId: string, ref: string, at = 'now()'): Promise<void> {
+    await admin.query(
+      `INSERT INTO point_ledger (id, user_id, delta, reason, ref, app, created_at)
+       VALUES ($1, $2, 1, 'scan', $3, 'snap-apps', ${at})`,
+      [randomUUID(), userId, ref],
+    );
+  }
+
   it('balance and ledger start empty', async () => {
     expect(await getPointBalance(USER)).toBe(0);
     expect(await listPointLedger(USER)).toEqual([]);
   });
 
-  it('awards one point for a completed scan, attributed to the capturing user', async () => {
+  it('reads the retired history, and only the callers own', async () => {
     const captureId = randomUUID();
-    const result = await awardScanPoint(USER, captureId);
-    expect(result).toEqual({ awarded: true });
+    await historyRow(USER, captureId);
 
     expect(await getPointBalance(USER)).toBe(1);
     const ledger = await listPointLedger(USER);
@@ -60,47 +71,21 @@ describeIfDb('points.repo', () => {
     expect(await getPointBalance(OTHER_USER)).toBe(0);
   });
 
-  it('refuses a second point for the SAME scan — a retried or re-run capture does not pay twice', async () => {
-    const captureId = randomUUID();
-    const first = await awardScanPoint(USER, captureId);
-    expect(first).toEqual({ awarded: true });
-
-    // Re-extraction of the same capture calls this again with the same ref.
-    const second = await awardScanPoint(USER, captureId);
-    expect(second).toEqual({ awarded: false });
-
-    const ledger = await listPointLedger(USER);
-    expect(ledger.filter((r) => r.ref === captureId)).toHaveLength(1);
-  });
-
-  it('a different capture for the same user earns a separate point', async () => {
-    const before = await getPointBalance(USER);
-    await awardScanPoint(USER, randomUUID());
-    expect(await getPointBalance(USER)).toBe(before + 1);
-  });
-
-  it('handles many concurrent awards for the SAME scan as exactly one point', async () => {
-    // The shape of a retried capture racing itself: several calls land at
-    // once, and the unique index — not a check-then-insert — is what keeps
-    // this at one point rather than N.
-    const captureId = randomUUID();
-    const results = await Promise.all(Array.from({ length: 5 }, () => awardScanPoint(USER, captureId)));
-    expect(results.filter((r) => r.awarded)).toHaveLength(1);
-
-    const ledger = await listPointLedger(USER);
-    expect(ledger.filter((r) => r.ref === captureId)).toHaveLength(1);
-  });
-
   it('lists most-recent first and caps at the requested limit', async () => {
     const balanceBefore = await getPointBalance(OTHER_USER);
     const refs = Array.from({ length: 3 }, () => randomUUID());
-    for (const ref of refs) {
-      // eslint-disable-next-line no-await-in-loop -- ordering matters: created_at must differ.
-      await awardScanPoint(OTHER_USER, ref);
+    for (const [i, ref] of refs.entries()) {
+      // eslint-disable-next-line no-await-in-loop -- created_at must differ.
+      await historyRow(OTHER_USER, ref, `now() + interval '${i} seconds'`);
     }
     const ledger = await listPointLedger(OTHER_USER, 2);
     expect(ledger).toHaveLength(2);
     expect(ledger[0]!.ref).toBe(refs[2]);
     expect(await getPointBalance(OTHER_USER)).toBe(balanceBefore + 3);
+  });
+
+  it('exports no writer: Snap Apps points are retired', async () => {
+    const mod = await import('./points.repo.js');
+    expect(Object.keys(mod).sort()).toEqual(['getPointBalance', 'listPointLedger']);
   });
 });

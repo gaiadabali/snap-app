@@ -5,10 +5,12 @@ import { Text } from '@/theme/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api } from '@/api';
+import type { YourtalLinkStatus } from '@snap/api-contract';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { Icon, type IconName } from '@/components/Icon';
 import { Body, Card, Divider, Screen, SectionHeader, Small } from '@/components/ui';
+import { pointsSummary } from '@/lib/yourtal-link';
 import { useSession } from '@/session';
 import { WorkspacePicker, useWorkspace } from '@/workspace';
 import { heroGradient, numeric, radius, shadow, space, type, usePalette, useTheme } from '@/theme';
@@ -21,7 +23,9 @@ import { heroGradient, numeric, radius, shadow, space, type, usePalette, useThem
  * signed in as, what have I got left, and whose books am I looking at. The two
  * balances sit on the brand gradient because they are the only numbers here,
  * and both are tappable: a balance nobody can explain is a support ticket, so
- * each one leads to the ledger that produced it.
+ * credits lead to the usage that produced them and YourTal points lead to the
+ * link. The points tile is YourTal's, not a Snap Apps balance (D33), and is
+ * absent when the server has the link off.
  */
 export default function ProfileScreen() {
   const p = usePalette();
@@ -31,7 +35,7 @@ export default function ProfileScreen() {
   const { session } = useSession();
   const { active, workspaces } = useWorkspace();
   const [credits, setCredits] = useState<number | null>(null);
-  const [points, setPoints] = useState<number | null>(null);
+  const [yourtal, setYourtal] = useState<YourtalLinkStatus | null>(null);
   const [switching, setSwitching] = useState(false);
 
   useFocusEffect(
@@ -44,8 +48,8 @@ export default function ProfileScreen() {
         .then((b) => live && setCredits(b.creditsRemaining))
         .catch(() => {});
       void api()
-        .getPointBalance()
-        .then((b) => live && setPoints(b.balance))
+        .getYourtalLink()
+        .then((s) => live && setYourtal(s))
         .catch(() => {});
       return () => {
         live = false;
@@ -54,6 +58,7 @@ export default function ProfileScreen() {
   );
 
   const user = session?.user;
+  const points = pointsSummary(yourtal);
   const memberWord = active.memberCount === 1 ? 'person' : 'people';
 
   return (
@@ -137,20 +142,27 @@ export default function ProfileScreen() {
                   value={credits === null ? '—' : String(credits)}
                   onPress={() => router.push({ pathname: '/usage', params: { kind: 'credits' } })}
                 />
-                <View style={{ justifyContent: 'center' }}>
-                  <View style={{ width: 1, height: 48, backgroundColor: 'rgba(255,255,255,0.18)' }} />
-                </View>
-                <BalanceTile
-                  icon="spark"
-                  label="Points"
-                  value={points === null ? '—' : points.toLocaleString('en-AU')}
-                  onPress={() => router.push({ pathname: '/usage', params: { kind: 'points' } })}
-                />
+                {points ? (
+                  <>
+                    <View style={{ justifyContent: 'center' }}>
+                      <View style={{ width: 1, height: 48, backgroundColor: 'rgba(255,255,255,0.18)' }} />
+                    </View>
+                    <BalanceTile
+                      icon="spark"
+                      label="YourTal points"
+                      value={points.value}
+                      hint="Open YourTal points."
+                      onPress={() => router.push('/points')}
+                    />
+                  </>
+                ) : null}
               </View>
             </LinearGradient>
           </View>
           <Small>
-            Tap a tile to see how it was used: credits spent on scanning, points spent in yourtal.
+            {points
+              ? 'Tap Credits to see how they were used. YourTal points are paid in YourTal.'
+              : 'Tap Credits to see how they were used.'}
           </Small>
         </View>
 
@@ -240,17 +252,19 @@ function BalanceTile({
   icon,
   label,
   value,
+  hint = 'Show how they were used.',
   onPress,
 }: {
   icon: IconName;
   label: string;
   value: string;
+  hint?: string;
   onPress: () => void;
 }) {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${label}: ${value}. Show how they were used.`}
+      accessibilityLabel={`${label}: ${value}. ${hint}`}
       onPress={onPress}
       style={({ pressed }) => ({
         flex: 1,

@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import type { ReactNode } from 'react';
 
+import { HouseAdProvider } from '@/components/ads';
 import { Container, Empty } from '@/design/primitives';
 import { getActiveWorkspaceId } from '@/lib/api/server';
 import { BUSINESS_SURFACES_ENABLED } from '@/lib/features';
@@ -10,10 +11,17 @@ import { resolveActiveWorkspace } from '@/lib/panels/workspace';
 import { CreateWorkspaceForm } from '../_shell/CreateWorkspaceForm';
 import { ImpersonationBanner } from '../_shell/ImpersonationBanner';
 import { PanelShell } from '../_shell/PanelShell';
-import { INDIVIDUAL_NAV } from '../_shell/nav';
+import { individualNavFor } from '../_shell/nav';
+import { getYourtalLink } from '@/lib/panels/data';
 
 export default async function IndividualLayout({ children }: { children: ReactNode }) {
   const { user, workspaces, impersonation } = await requireSession();
+
+  // The YourTal points entry, and the house ad that sends people to it, are
+  // offered only while the server has the link on. A failed read hides both
+  // rather than failing the whole panel: fail closed.
+  const yourtalAvailable = await getYourtalLink().then((s) => s.available, () => false);
+  const nav = individualNavFor(yourtalAvailable);
 
   if (impersonation) {
     // Pinned to the EXACT tenant the session was opened for
@@ -55,10 +63,10 @@ export default async function IndividualLayout({ children }: { children: ReactNo
         workspace={pinned}
         sameKindWorkspaces={[pinned]}
         otherKindHref={null}
-        nav={INDIVIDUAL_NAV}
+        nav={nav}
         impersonation={impersonation}
       >
-        {children}
+        <HouseAdProvider context={{ yourtalAvailable }}>{children}</HouseAdProvider>
       </PanelShell>
     );
   }
@@ -103,9 +111,9 @@ export default async function IndividualLayout({ children }: { children: ReactNo
       workspace={workspace}
       sameKindWorkspaces={workspaces.filter((w) => w.kind === 'personal')}
       otherKindHref={BUSINESS_SURFACES_ENABLED && businessWorkspace ? '/app/business' : null}
-      nav={INDIVIDUAL_NAV}
+      nav={nav}
     >
-      {children}
+      <HouseAdProvider context={{ yourtalAvailable }}>{children}</HouseAdProvider>
     </PanelShell>
   );
 }

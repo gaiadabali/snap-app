@@ -262,6 +262,12 @@ recorded as `transient` and does retry, via `jobs`.
 
 ## Lane P — Stripe
 
+**Decided 2026-10-20 (founder): every payment is simulated for now.** No Stripe
+account is opened yet; opening it is group plan 6.8. Until then the Stripe
+provider runs only against its simulator, and credits are bought with test
+cards. The price these lanes sell at is about 10c a scan, in packs of 50, 100
+and 250 for A$5, A$10 and A$25 (group plan 0.11.a, 7.6).
+
 **P1 — `StripePaymentProvider`.** Implements the existing `PaymentProvider`
 port, returning `{state: 'redirect', url}` — the descriptor that port was shaped
 around so that StoreKit stays possible.

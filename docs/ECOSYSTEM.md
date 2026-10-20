@@ -15,7 +15,7 @@ and an earlier draft of this file collided with it.
 | **D30** | On-device VLM | **Preview on device, server authoritative** | Keeps D1/D21 intact. The phone reads instantly and offline; the server's read is the record. |
 | **D31** | Advertising | **House ads now, one vetted partner later, always self-served** | No third-party SDK next to financial records. |
 | **D32** | Identity | **One ecosystem account** — register in any app, sign in to all | The YourTal account, "Sign in with YourTal" (decided 2026-10-20; it was called the "Gaiada Account"). Resolves open question O2. |
-| **D33** | Consumer economy | **Credits (money, tenant-scoped) + points (earned, user-scoped)** | Two mechanisms because they answer different questions and travel differently. The points are YourTal points (decided 2026-10-20). |
+| **D33** | Consumer economy | **Credits (money, tenant-scoped) + YourTal points (earned in YourTal, not held here)** | Two mechanisms because they answer different questions and travel differently. The points are YourTal points (decided 2026-10-20), and Snap Apps' own local points are retired (2026-10-20, built in group plan 2.6). |
 | **D34** | Business surfaces | **Dark behind a flag, not deleted** | Personal-only so it can be designed properly. Reversible in one line — but it hides the revenue line, so the trade is recorded below. |
 
 ---
@@ -137,6 +137,13 @@ repo. YourTal records the same decisions as F99, F102 and F105 in its
 
 ## D33 — Credits and points are different mechanisms
 
+> **Local points are retired (founder, 2026-10-20; built in group plan 2.6).**
+> Snap Apps no longer awards or shows a points balance. The only points with
+> value are YourTal's, paid by YourTal and held in the person's YourTal wallet.
+> `point_ledger` and its history stay, read-only: nothing writes it, and no
+> screen shows it. See "Local points are retired" below. The rest of this
+> section is kept as the record of what the local points were.
+
 Three balances that look alike and are not. Confusing them is how a customer
 gets billed for scans they already had.
 
@@ -144,7 +151,7 @@ gets billed for scans they already had.
 |---|---|---|---|---|
 | **Plan quota** | What a subscription includes monthly | Tenant | Monthly | `usage_counters` |
 | **Credits** | Bought with money, or granted free | Tenant | Never | `usage_grants` |
-| **Points** | Earned by scanning, spent in another app | **User** | Never | `point_ledger` |
+| **Points** (RETIRED) | Was: earned by scanning, spent in another app. Now YourTal's, held in YourTal | **User** | Never | `point_ledger` (history only) |
 
 **Credits are tenant-scoped** because a credit buys a scan and a scan happens
 inside a workspace. **Points are user-scoped** because they are earned by a
@@ -200,8 +207,9 @@ UPDATE or DELETE. A correction is a compensating entry. The outstanding balance
 is always reconstructible, which is what makes it auditable and what makes the
 eventual terms defensible.
 
-Earning is one point per scan, recorded with the capture id, and a unique index
-means a retried capture cannot pay twice.
+Earning was one point per scan, recorded with the capture id, and a unique
+index meant a retried capture could not pay twice. That earning has stopped
+(see "Local points are retired" below); the index and the rows remain.
 
 ---
 
@@ -219,12 +227,15 @@ checkout exists.
 
 **Decided 2026-10-20 (founder):** the points are **YourTal points**. YourTal
 points are the one global economy, and the only points with money value. Snap
-Apps reports each confirmed receipt to YourTal, and YourTal pays the points from
-its own marketing budget: 10 per receipt in Australia (100 in Indonesia, which
-stays a demo), once per receipt, adults only. So redemption lives in YourTal,
+Apps reports each confirmed receipt to YourTal, and YourTal pays 1 point per
+receipt in Australia (10 in Indonesia, which stays a demo), once per receipt,
+adults only. Snap Apps buys those points from YourTal at cost (B = 3c a point)
+as a point package, alerted at 50%, 80% and 100% and stopping when spent
+(founder, 2026-10-20; YourTal F119-F121). Scans on the free signup credits earn
+nothing, and there is no per-person cap. So redemption lives in YourTal,
 not here. Credits stay Snap Apps' own and never leave Snap Apps.
-`point_ledger` stops being a balance people spend; whether it stays as the
-record of receipts reported to YourTal is settled when the link is built.
+`point_ledger` stops being a balance people spend. (Settled in group plan 2.6:
+it is retired, see below.)
 
 **Built 2026-10-20 (group plan 2.4/2.5, migration 0037), server side only;**
 the screens are 2.6. YourTal's contract is its partner guide
@@ -249,7 +260,7 @@ the screens are 2.6. YourTal's contract is its partner guide
   business key (supplier, date, amount, in the workspace) with a capture
   already reported for the same user is recorded as `skipped_duplicate`,
   never sent, and counted in the status (`receipts.skippedDuplicate`).
-- `point_ledger` still gets its one Snap Apps point per scan, unchanged here.
+- `point_ledger` still got its one Snap Apps point per scan when this was built; group plan 2.6 stopped that (below).
 
 **Decided 2026-10-20 (founder, on the 2.4/2.5 review):**
 
@@ -265,8 +276,38 @@ the screens are 2.6. YourTal's contract is its partner guide
 4. **`evidence` is the capture id only** (lead's call: minimum data). Nothing
    about the receipt's contents or the person goes to YourTal.
 
-`point_ledger` is to be retired (founder, same review). That is its own
-ticket, with the screens that still show it; nothing here changes it.
+### Local points are retired (founder, 2026-10-20; built in group plan 2.6)
+
+YourTal points are the only points with value, so Snap Apps keeps no points of
+its own.
+
+- **No new `point_ledger` rows.** `saveExtraction` no longer calls
+  `awardScanPoint`, and the function is deleted
+  (`apps/server/src/credits/points.repo.ts` now holds only the two reads). A
+  confirmed scan queues the YourTal report and nothing else. Re-extraction
+  writes nothing either.
+- **No destructive migration.** The table, its append-only grant, its unique
+  index and every existing row stay. History is readable through the two
+  deprecated reads, `GET /v1/points` and `GET /v1/points/ledger`, which return
+  what was earned before the retirement and never change. Nothing in the
+  current apps or website calls them; they stay so an older installed app still
+  loads, and so support can read the history. They can be removed once those
+  app versions are gone.
+- **The screens show YourTal points.** The Points screen (phone) and page
+  (website, `/app/points`) are the YourTal link: unlinked, linked (date,
+  receipts rewarded, waiting, skipped as duplicates, points reported, a link to
+  the YourTal wallet, unlink with a confirm step) and broken, with a message
+  for every error code. `pointsReported` is only what YourTal said it granted;
+  the balance is in YourTal's wallet. Everything is hidden when
+  `GET /v1/yourtal/link` says `available: false`.
+- **The rewards list is gone.** `GET /v1/rewards` (a hard-coded list of YourTal
+  store deep links), the phone's Rewards screen, and the unbuilt voucher
+  redemption (`POST /v1/vouchers/redeem`, which only ever refused) are removed.
+  Snap Apps does not fake YourTal's store: it points people to their YourTal
+  wallet. The phone's usage screen lost its Points tab.
+- **The house ad** that said "Spending them in yourtal is coming" now says what
+  is true (link your YourTal account, 1 point a receipt in Australia, adults
+  only) and shows only when the link is available.
 
 **Not decided:** which on-device model.
 
