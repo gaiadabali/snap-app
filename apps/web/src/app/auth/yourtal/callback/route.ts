@@ -1,3 +1,4 @@
+import { publicUrl } from '@/lib/http/public-url';
 import { NextRequest, NextResponse } from 'next/server';
 import type { AuthUser } from '@snap/api-contract';
 
@@ -39,14 +40,14 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   const providerError = params.get('error');
   if (providerError) {
-    return failure(request, yourtalErrorMessage(providerError, params.get('error_description')));
+    return failure(yourtalErrorMessage(providerError, params.get('error_description')));
   }
 
   const code = params.get('code');
   const state = params.get('state');
   const iss = params.get('iss');
   if (!flowId || !code || !state || !iss) {
-    return failure(request, YOURTAL_LINK_INVALID_ERROR);
+    return failure(YOURTAL_LINK_INVALID_ERROR);
   }
 
   let result: FinishResult;
@@ -59,20 +60,20 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   } catch (error) {
     const message =
       error instanceof ApiError && error.message ? error.message : YOURTAL_GENERIC_ERROR;
-    return failure(request, message);
+    return failure(message);
   }
 
   const destination = destinationAfterYourtalSignIn(result.workspaces, result.returnTo);
-  const response = NextResponse.redirect(new URL(destination, request.url));
+  const response = NextResponse.redirect(publicUrl(destination));
   response.cookies.set(SESSION_COOKIE, result.token, AUTH_COOKIE_OPTIONS);
   clearFlowCookie(response);
   return response;
 }
 
-function failure(request: NextRequest, message: string): NextResponse {
+function failure(message: string): NextResponse {
   // The stored returnTo is owned by the API and not known on a failure, so the
   // person retries from the plain sign-in page.
-  const url = new URL('/sign-in', request.url);
+  const url = publicUrl('/sign-in');
   url.searchParams.set('error', message);
   const response = NextResponse.redirect(url);
   clearFlowCookie(response);

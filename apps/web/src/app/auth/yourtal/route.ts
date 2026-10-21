@@ -1,3 +1,4 @@
+import { publicUrl } from '@/lib/http/public-url';
 import { NextRequest, NextResponse } from 'next/server';
 
 import { ApiError, api } from '@/lib/api/server';
@@ -32,7 +33,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   } catch (error) {
     const message =
       error instanceof ApiError && error.message ? error.message : YOURTAL_UNAVAILABLE_ERROR;
-    const url = new URL(signUp ? '/register' : '/sign-in', request.url);
+    const url = publicUrl(signUp ? '/register' : '/sign-in');
     url.searchParams.set('error', message);
     url.searchParams.set('returnTo', returnTo);
     return NextResponse.redirect(url);
