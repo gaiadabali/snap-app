@@ -133,6 +133,10 @@ export const LINK_COPY = {
   rowPoints: 'Points reported',
   duplicateHint: 'A second photo of a receipt already reported earns nothing.',
   freeHint: "Scans on free credits don't earn YourTal points.",
+  pausedTitle: 'Receipt points are paused.',
+  pausedBody: "Receipts you scan now won't earn YourTal points. They start again once Snap Apps tops up.",
+  rowPaused: 'Paused while points were topped up',
+  pausedHint: "These were scanned while receipt points were paused. They won't earn later.",
   refusedHint: "YourTal's daily limit or funding stopped these.",
 } as const;
 
@@ -154,4 +158,12 @@ export function pointsSummary(
   }
   if (status.state === 'broken') return { value: 'Ended', hint: 'Link again to keep earning' };
   return { value: 'Link', hint: 'Earn YourTal points from receipts' };
+}
+
+/**
+ * Refusals other than the paused ones: the server's `refused` counts the
+ * paused receipts too, and they have their own row.
+ */
+export function otherRefused(receipts: { refused: number; pausedRefused?: number }): number {
+  return Math.max(0, receipts.refused - (receipts.pausedRefused ?? 0));
 }

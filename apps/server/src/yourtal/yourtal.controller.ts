@@ -26,9 +26,11 @@ import { ValidBody } from '../common/valid-body.decorator.js';
 import { isYourtalPartnerConfigured } from '../config.js';
 import { yourtalPartnerClient, type YourtalPartnerClient } from './client.js';
 import { exchangeLinkCode, normaliseLinkCode, revokeLinkAtYourtal } from './link.service.js';
+import { receiptStatusCache, type ReceiptStatusCache } from './receipt-status.js';
 import {
   insertLink,
   latestLink,
+  lastPausedRefusalAt,
   liveLink,
   markLinkRevoked,
   receiptReportCounts,
@@ -78,6 +80,9 @@ export class YourtalLinkController {
    * injector never sees it; tests replace it with a client for a fake YourTal.
    */
   clientFor: () => YourtalPartnerClient | null = yourtalPartnerClient;
+
+  /** Process-wide by default; tests replace it to control the 5-minute cache. */
+  receiptStatus: ReceiptStatusCache = receiptStatusCache;
 
   @Get('link')
   @ApiOperation({ summary: 'Whether this account is linked to YourTal, and how its receipts have fared' })
@@ -205,6 +210,7 @@ export class YourtalLinkController {
     const live = link && !link.revoked_at && !link.broken_at ? link : null;
     const broken = !live && link?.broken_at && !link.revoked_at ? link : null;
     const shown = live ?? broken;
+    const receiptPoints = live ? await this.receiptPointsFor(userId, live.region) : undefined;
     return {
       available: isYourtalPartnerConfigured(),
       state: live ? 'linked' : broken ? 'broken' : 'unlinked',
@@ -215,10 +221,42 @@ export class YourtalLinkController {
         pending: counts.pending,
         rewarded: counts.rewarded,
         refused: counts.refused,
+        pausedRefused: counts.pausedRefused,
         skippedDuplicate: counts.skippedDuplicate,
         skippedFree: counts.skippedFree,
       },
       pointsReported: counts.pointsReported,
+      ...(receiptPoints ? { receiptPoints } : {}),
     };
+  }
+
+  /**
+   * Whether receipts earn now, for a linked user (group 2.10.c, F127). Never
+   * throws and never fails the request: any trouble reading YourTal is
+   * "unknown". The cached status read (5 minutes) is overridden by the user's
+   * own latest ledger refusal when that is newer than the read, so the first
+   * refusal shows at once and a top-up shows once the cache has been refilled.
+   */
+  private async receiptPointsFor(
+    userId: string,
+    region: 'AU' | 'ID',
+  ): Promise<YourtalLinkStatus['receiptPoints'] | undefined> {
+    try {
+      const client = this.clientFor();
+      const [reading, refusedAt] = await Promise.all([
+        client ? this.receiptStatus.read(client, region) : null,
+        lastPausedRefusalAt(userId),
+      ]);
+      const readingIsNewer = reading !== null && reading.state !== 'unknown' && reading.fetchedAt >= (refusedAt ?? 0);
+      if (refusedAt !== null && !readingIsNewer) return { state: 'paused' };
+      if (!reading || reading.state === 'unknown') return { state: 'unknown' };
+      return {
+        state: reading.state,
+        ...(reading.pointsPerReceipt !== null ? { pointsPerReceipt: reading.pointsPerReceipt } : {}),
+      };
+    } catch (error) {
+      this.logger.warn(`receipt points status unavailable: ${error instanceof Error ? error.message : String(error)}`);
+      return { state: 'unknown' };
+    }
   }
 }

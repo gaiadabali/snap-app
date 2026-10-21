@@ -17,6 +17,7 @@ import { startFakeYourtal, type FakeYourtal } from '../test-support/fake-yourtal
 import { provisionTenant, wipeTenant } from '../test-support/tenant.js';
 import { workerActor, type WorkerActor } from '../tenant-entry.js';
 import { YourtalPartnerClient } from './client.js';
+import { ReceiptStatusCache } from './receipt-status.js';
 import { insertLink } from './links.repo.js';
 import { drainYourtalOutbox, OUTBOX_RETRY } from './outbox.js';
 import { YourtalLinkController } from './yourtal.controller.js';
@@ -764,6 +765,136 @@ describeIfDb('the YourTal outbox (2.5)', () => {
       expect((await outboxFor(captureId))[0]).toMatchObject({ status: 'skipped_free', last_code: 'free_scan' });
       const status = await giaStatus();
       expect(status.receipts).toMatchObject({ skippedFree: 2, rewarded: 1 });
+    });
+  });
+
+  // Group 2.10.c (F127): YourTal says Snap Apps' receipt package is used up.
+  // FRAN is the user here; DANI's counts are asserted elsewhere in this file.
+  describe('receipt points paused (2.10.c)', () => {
+    const franUser = { userId: FRAN, email: 'fran@yourtal-outbox.test', displayName: 'Fran', initials: 'FR', emailVerified: true };
+    const statusCalls = () => fake.requests.filter((r) => r.path === '/api/partners/receipts/status');
+    let controller: YourtalLinkController;
+    let cache: ReceiptStatusCache;
+
+    /** A controller whose YourTal is `through`, with its own empty cache. */
+    const controllerWith = (through: YourtalPartnerClient | null) => {
+      const c = new YourtalLinkController();
+      c.clientFor = () => through;
+      c.receiptStatus = new ReceiptStatusCache();
+      return c;
+    };
+
+    beforeAll(() => {
+      cache = new ReceiptStatusCache();
+      controller = controllerWith(client);
+      controller.receiptStatus = cache;
+    });
+    afterAll(() => fake.setPaused(false));
+
+    const scanFran = async (payable: string) => {
+      const { captureId } = await photographedCapture(FRAN, undefined, TENANT2);
+      await scanIn(TENANT2, captureId, payable, {});
+      return captureId;
+    };
+
+    it('reads the status signed, once per cache window, and reports earning without any remaining-points figure', async () => {
+      cache.clear();
+      const before = statusCalls().length;
+      const first = await controller.status(franUser);
+      const second = await controller.status(franUser);
+      expect(first.receiptPoints).toEqual({ state: 'earning', pointsPerReceipt: 1 });
+      expect(second.receiptPoints).toEqual(first.receiptPoints);
+      expect(JSON.stringify(first)).not.toMatch(/remaining/i);
+
+      const calls = statusCalls().slice(before);
+      expect(calls).toHaveLength(1); // the second read was served from memory
+      expect(calls[0]).toMatchObject({ method: 'POST', raw: '{"region":"AU"}', signatureValid: true });
+      expect(calls[0]!.idempotencyKey).toBeTruthy();
+    });
+
+    it('is not offered to someone whose link is not live', async () => {
+      const unlinked = await controller.status({ ...franUser, userId: EVE, email: 'eve@yourtal-outbox.test' });
+      expect(unlinked.state).not.toBe('linked');
+      expect(unlinked.receiptPoints).toBeUndefined();
+    });
+
+    it('reports paused from the status read', async () => {
+      fake.setPaused(true);
+      cache.clear();
+      const status = await controller.status(franUser);
+      expect(status.receiptPoints).toEqual({ state: 'paused', pointsPerReceipt: 1 });
+      expect(status.receipts.pausedRefused).toBe(0);
+      expect(JSON.stringify(status)).not.toMatch(/remaining/i);
+    });
+
+    it('refuses a receipt while paused as allocation_exhausted, final, with no retry', async () => {
+      fake.setPaused(true);
+      const captureId = await scanFran('41.15');
+      const summary = await drain();
+      expect(summary).toMatchObject({ claimed: 1, refused: 1, retried: 0 });
+      expect((await outboxFor(captureId))[0]).toMatchObject({
+        status: 'refused',
+        last_code: 'allocation_exhausted',
+        last_http_status: 409,
+        attempts: 1,
+      });
+
+      // Nothing is left to retry, and a top-up later does not revive it.
+      fake.setPaused(false);
+      expect(await drain()).toMatchObject({ claimed: 0 });
+      expect((await outboxFor(captureId))[0]).toMatchObject({ status: 'refused', attempts: 1 });
+
+      const status = await controller.status(franUser);
+      expect(status.receipts.pausedRefused).toBe(1);
+      expect(status.receipts.refused).toBeGreaterThanOrEqual(1);
+    });
+
+    it('shows paused at once after a refusal, even while the cache still says earning', async () => {
+      fake.setPaused(false);
+      cache.clear();
+      expect((await controller.status(franUser)).receiptPoints?.state).toBe('earning');
+      const reads = statusCalls().length;
+
+      fake.setPaused(true);
+      const captureId = await scanFran('42.15');
+      expect(await drain()).toMatchObject({ refused: 1 });
+      expect((await outboxFor(captureId))[0]).toMatchObject({ last_code: 'allocation_exhausted' });
+
+      // The cache entry is still fresh and says earning; the refusal is newer.
+      const status = await controller.status(franUser);
+      expect(status.receiptPoints).toEqual({ state: 'paused' });
+      expect(statusCalls().length).toBe(reads); // no new read was needed
+      expect(status.receipts.pausedRefused).toBe(2);
+    });
+
+    it('resumes earning when YourTal is topped up: a fresh read wins over an older refusal, and new receipts are paid', async () => {
+      fake.setPaused(false);
+      cache.clear(); // bypass the 5-minute window
+      const resumed = await controller.status(franUser);
+      expect(resumed.receiptPoints).toEqual({ state: 'earning', pointsPerReceipt: 1 });
+      // The refused receipts stay refused and counted.
+      expect(resumed.receipts.pausedRefused).toBe(2);
+
+      const captureId = await scanFran('43.15');
+      expect(await drain()).toMatchObject({ sent: 1 });
+      expect((await outboxFor(captureId))[0]).toMatchObject({ status: 'sent', granted: true });
+    });
+
+    it('says unknown, without an error, when YourTal is down or answers badly', async () => {
+      const down = new YourtalPartnerClient({ baseUrl: 'http://127.0.0.1:1', partnerId: fake.partnerId, secret: fake.secret, timeoutMs: 500 });
+      const status = await controllerWith(down).status(franUser);
+      expect(status.state).toBe('linked');
+      expect(status.receiptPoints).toEqual({ state: 'unknown' });
+
+      // A 5xx and a body that is not the contract are unknown too.
+      for (const answer of [{ status: 503, body: { code: 'down' } }, { status: 200, body: { hello: 'world' } }]) {
+        fake.inject({ ...answer, path: '/api/partners/receipts/status' });
+        expect((await controllerWith(client).status(franUser)).receiptPoints).toEqual({ state: 'unknown' });
+      }
+    });
+
+    it('says unknown when the partner link has no credentials', async () => {
+      expect((await controllerWith(null).status(franUser)).receiptPoints).toEqual({ state: 'unknown' });
     });
   });
 });
