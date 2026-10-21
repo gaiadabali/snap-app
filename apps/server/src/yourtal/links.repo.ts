@@ -145,6 +145,8 @@ export interface ReceiptReportCounts {
   rewarded: number;
   refused: number;
   skippedDuplicate: number;
+  /** Scans on a free credit, or none: never sent (group plan 2.5.f). */
+  skippedFree: number;
   pointsReported: number;
 }
 
@@ -161,12 +163,14 @@ export async function receiptReportCounts(userId: string, db: Db = getDb()): Pro
       rewarded: string;
       refused: string;
       skipped_duplicate: string;
+      skipped_free: string;
       points: string;
     }>(sql`
       select count(*) filter (where status = 'pending')                                as pending,
              count(*) filter (where status in ('sent', 'duplicate') and granted)       as rewarded,
              count(*) filter (where status = 'refused')                                as refused,
              count(*) filter (where status = 'skipped_duplicate')                      as skipped_duplicate,
+             count(*) filter (where status = 'skipped_free')                           as skipped_free,
              coalesce(sum(points) filter (where status in ('sent', 'duplicate') and granted), 0) as points
         from yourtal_outbox
        where user_id = current_user_id()
@@ -177,6 +181,7 @@ export async function receiptReportCounts(userId: string, db: Db = getDb()): Pro
       rewarded: Number(r?.rewarded ?? 0),
       refused: Number(r?.refused ?? 0),
       skippedDuplicate: Number(r?.skipped_duplicate ?? 0),
+      skippedFree: Number(r?.skipped_free ?? 0),
       pointsReported: Number(r?.points ?? 0),
     };
   });

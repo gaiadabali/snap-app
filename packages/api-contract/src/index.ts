@@ -1661,6 +1661,12 @@ export interface YourtalLinkStatus {
      * workspace), so it would not earn again.
      */
     skippedDuplicate: number;
+    /**
+     * Not reported: scanned on a free credit (the signup bonus, a support or
+     * staff grant) or with no credit left. Only scans on bought credits earn
+     * YourTal points.
+     */
+    skippedFree: number;
   };
   pointsReported: number;
 }

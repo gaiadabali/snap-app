@@ -166,6 +166,15 @@ tracking the same number is how they drift. Migration 0024 adds the catalogue
 `source = 'signup_bonus'`. Not a plan change, so it never resets and never has
 to be reconciled against a subscription.
 
+**Spending (built, group plan 7.1.a and 7.1.c, migration 0039).** A scan
+spends one credit when its capture is queued for reading, in the same
+transaction as the job, and `credit_spends` records which grant paid. Free
+credits go first (the signup bonus first), then bought ones, oldest first. A
+bought credit is a grant backed by a paid `credit_purchases` row. A scan no
+model can read gives its credit back when its last attempt fails. Running out
+does not block scanning yet (7.1.b): the scan is recorded with no credit and
+still read.
+
 ### Pricing, and the arithmetic that has to be honest
 
 > **Superseded 2026-10-21 for consumer pricing:** about 10c a scan, one page
@@ -280,6 +289,13 @@ the screens are 2.6. YourTal's contract is its partner guide
   coffee on the same day would collide, and a missed duplicate costs one point
   (A$0.03) where a false match cheats a real person. A skipped row keeps the
   image ref, not the content ref of the report it repeats.
+- **Only scans on bought credits earn (group plan 2.5.f, founder decision
+  0.10.b).** A scan paid with a bought credit is reported. A scan on the signup
+  bonus, a support or staff credit, or no credit at all is recorded as
+  `skipped_free` (code `free_scan`), never sent, and counted in the status
+  (`receipts.skippedFree`). A credit given back for an unreadable scan does not
+  count as paid. The link screens say "Scans on free credits don't earn YourTal
+  points."
 - `point_ledger` still got its one Snap Apps point per scan when this was built; group plan 2.6 stopped that (below).
 
 **Decided 2026-10-20 (founder, on the 2.4/2.5 review):**
@@ -315,7 +331,8 @@ its own.
   app versions are gone.
 - **The screens show YourTal points.** The Points screen (phone) and page
   (website, `/app/points`) are the YourTal link: unlinked, linked (date,
-  receipts rewarded, waiting, skipped as duplicates, points reported, a link to
+  receipts rewarded, waiting, skipped as duplicates, scanned on free credits,
+  points reported, a link to
   the YourTal wallet, unlink with a confirm step) and broken, with a message
   for every error code. `pointsReported` is only what YourTal said it granted;
   the balance is in YourTal's wallet. Everything is hidden when

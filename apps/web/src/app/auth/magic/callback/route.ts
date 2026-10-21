@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import type { AuthUser } from '@snap/api-contract';
 
 import { ApiError, SESSION_COOKIE, api } from '@/lib/api/server';
+import { publicUrl } from '@/lib/http/public-url';
 import { safeReturnPath } from '@/lib/auth/safe-redirect';
 import { AUTH_COOKIE_OPTIONS } from '@/lib/auth/session';
 
@@ -36,13 +37,13 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   }
 
   const destination = result.workspaces.length === 0 ? '/onboarding' : returnTo;
-  const response = NextResponse.redirect(new URL(destination, request.url));
+  const response = NextResponse.redirect(publicUrl(destination));
   response.cookies.set(SESSION_COOKIE, result.token, AUTH_COOKIE_OPTIONS);
   return response;
 }
 
 function failure(request: NextRequest, message: string, returnTo: string): NextResponse {
-  const url = new URL('/sign-in', request.url);
+  const url = publicUrl('/sign-in');
   url.searchParams.set('error', message);
   url.searchParams.set('returnTo', returnTo);
   return NextResponse.redirect(url);

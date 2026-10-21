@@ -170,6 +170,11 @@ export function YourtalLinkView(props: YourtalLinkViewProps) {
               value={status.receipts.skippedDuplicate.toLocaleString('en-AU')}
               hint={LINK_COPY.duplicateHint}
             />
+            <StatRow
+              label={LINK_COPY.rowFree}
+              value={status.receipts.skippedFree.toLocaleString('en-AU')}
+              hint={LINK_COPY.freeHint}
+            />
             {status.receipts.refused > 0 ? (
               <StatRow
                 label={LINK_COPY.rowRefused}

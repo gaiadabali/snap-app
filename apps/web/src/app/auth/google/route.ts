@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { publicUrl } from '@/lib/http/public-url';
 import { buildGoogleAuthorizeUrl } from '@/lib/auth/google';
 import {
   OAUTH_COOKIE_MAX_AGE_SECONDS,
@@ -37,7 +38,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     // `googleOauth()` throws when GOOGLE_CLIENT_ID/SECRET are not set —
     // expected in every environment before staging credentials exist. A
     // clean redirect back to sign-in beats an unhandled 500.
-    const url = new URL('/sign-in', request.url);
+    const url = publicUrl('/sign-in');
     url.searchParams.set('error', 'Google sign-in is not configured yet.');
     url.searchParams.set('returnTo', returnTo);
     return NextResponse.redirect(url);

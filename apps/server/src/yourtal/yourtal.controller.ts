@@ -216,6 +216,7 @@ export class YourtalLinkController {
         rewarded: counts.rewarded,
         refused: counts.refused,
         skippedDuplicate: counts.skippedDuplicate,
+        skippedFree: counts.skippedFree,
       },
       pointsReported: counts.pointsReported,
     };

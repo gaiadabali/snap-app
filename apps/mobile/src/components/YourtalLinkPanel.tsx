@@ -170,6 +170,12 @@ export function YourtalLinkPanel(props: YourtalLinkPanelProps) {
               value={status.receipts.skippedDuplicate.toLocaleString('en-AU')}
               hint={LINK_COPY.duplicateHint}
             />
+            <Divider />
+            <StatRow
+              label={LINK_COPY.rowFree}
+              value={status.receipts.skippedFree.toLocaleString('en-AU')}
+              hint={LINK_COPY.freeHint}
+            />
             {status.receipts.refused > 0 ? (
               <>
                 <Divider />

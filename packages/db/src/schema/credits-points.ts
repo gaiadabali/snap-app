@@ -80,3 +80,30 @@ export const pointLedger = pgTable('point_ledger', {
   app: text('app').notNull().default('snap-apps'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
+
+/**
+ * One row per capture queued for extraction (migration 0039): which credit
+ * paid for the scan. Tenant-scoped like `usage_grants`.
+ *
+ * `paid` is true only for a BOUGHT credit (the grant is backed by a paid
+ * `credit_purchases` row); only a paid, unrefunded spend lets a receipt earn
+ * YourTal points. `grant_id` NULL means no credit was available.
+ *
+ * Unique in the SQL, not declared here: `capture_id` where it is not null.
+ * `app_rw` may only SELECT and INSERT; the worker may set `refunded_at` and
+ * `refund_reason`, once, when the capture ends unreadable.
+ */
+export const creditSpends = pgTable('credit_spends', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: uuid('tenant_id').notNull(),
+  captureId: uuid('capture_id'),
+  userId: uuid('user_id'),
+  grantId: uuid('grant_id'),
+  /** A copy of `usage_grants.source` at spend time. */
+  grantSource: text('grant_source'),
+  paid: boolean('paid').notNull(),
+  spentAt: timestamp('spent_at', { withTimezone: true }).notNull().defaultNow(),
+  refundedAt: timestamp('refunded_at', { withTimezone: true }),
+  /** 'unreadable' or 'not_extracted'. */
+  refundReason: text('refund_reason'),
+});
