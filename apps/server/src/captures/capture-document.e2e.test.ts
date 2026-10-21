@@ -9,6 +9,7 @@ import { withTenantAs } from '@snap/db';
 import { closeDb, getDb } from '../db.js';
 import { saveExtraction } from '../repo.js';
 import { provisionTenant, wipeTenant } from '../test-support/tenant.js';
+import { openWorkerDb, type WorkerDb } from '../test-support/worker-db.js';
 import type { ValidatedExtraction } from '../extraction/types.js';
 
 /**
@@ -48,7 +49,7 @@ const KATE = 'd0d0d0d0-0000-4000-8000-0000000000a2';
 
 const q = <T extends Record<string, unknown> = Record<string, unknown>>(
   text: ReturnType<typeof sql>,
-  userId: string = WORKER,
+  userId: string = KATE,
   tenant: string = TENANT,
 ) => withTenantAs(getDb(), userId, tenant, (tx) => tx.execute<T>(text));
 
@@ -102,7 +103,7 @@ const META = {
   raw: '{}',
 };
 
-async function makeCapture(tenant: string = TENANT, uploadedBy: string = WORKER): Promise<string> {
+async function makeCapture(tenant: string = TENANT, uploadedBy: string = KATE): Promise<string> {
   const id = randomUUID();
   await q(
     sql`
@@ -120,10 +121,14 @@ async function makeCapture(tenant: string = TENANT, uploadedBy: string = WORKER)
   return id;
 }
 
-const user = { userId: WORKER, email: 'worker@od11.test', displayName: 'OD11 Worker', initials: 'OW', emailVerified: true };
+// The person correcting the document: a real member. The worker only ever
+// produces documents (`saveExtraction`, on its own connection below); it is
+// not a member of any workspace and could not make this request.
+const user = { userId: KATE, email: 'kate@od11.test', displayName: 'OD11 Kate', initials: 'OK', emailVerified: true };
 
 describeIfDb('PATCH /v1/captures/:id/document', () => {
   let admin: Client;
+  let worker: WorkerDb;
   let controller: InstanceType<
     typeof import('./capture-document.controller.js').CaptureDocumentController
   >;
@@ -133,12 +138,12 @@ describeIfDb('PATCH /v1/captures/:id/document', () => {
     admin = await provisionTenant({
       tenantId: TENANT,
       name: 'OD-11 test co',
-      users: [
-        { id: WORKER, role: 'member', subject: 'test|od11-worker', email: 'worker@od11.test', displayName: 'OD11 Worker' },
-        { id: KATE, role: 'owner', subject: 'test|od11-kate', email: 'kate@od11.test', displayName: 'OD11 Kate' },
-      ],
+      users: [{ id: KATE, role: 'owner', subject: 'test|od11-kate', email: 'kate@od11.test', displayName: 'OD11 Kate' }],
+      // No membership: the worker enters through `withWorkerTenant`.
+      serviceUsers: [{ id: WORKER, subject: 'test|od11-worker', email: 'worker@od11.test', displayName: 'OD11 Worker' }],
     });
-    // A second tenant, membership-less for WORKER, so the 404 test proves
+    worker = openWorkerDb(WORKER);
+    // A second tenant, membership-less for KATE, so the 404 test proves
     // RLS is doing the isolating rather than an `if` the handler could get
     // wrong.
     await admin.query(
@@ -156,6 +161,7 @@ describeIfDb('PATCH /v1/captures/:id/document', () => {
     await admin.query('DELETE FROM tenants WHERE id = $1', [OTHER_TENANT]);
     await wipeTenant(admin, TENANT, [WORKER, KATE]);
     await admin.end();
+    await worker.pool.end();
     await closeDb();
   });
 
@@ -185,7 +191,7 @@ describeIfDb('PATCH /v1/captures/:id/document', () => {
 
   it('2. applies the correction once extraction has run, and LOCKS the path', async () => {
     const capture = await makeCapture();
-    const { documentId } = await saveExtraction(WORKER, TENANT, capture, reading(), META, null);
+    const { documentId } = await saveExtraction(worker.actor, TENANT, capture, reading(), META, null);
 
     const result = await controller.patch(user, TENANT, capture, {
       edits: { 'totals.payable': '55.00' },
@@ -202,13 +208,13 @@ describeIfDb('PATCH /v1/captures/:id/document', () => {
 
   it('3. a re-extraction that disagrees with the locked path is CONTESTED, not overwritten', async () => {
     const capture = await makeCapture();
-    const { documentId } = await saveExtraction(WORKER, TENANT, capture, reading(), META, null);
+    const { documentId } = await saveExtraction(worker.actor, TENANT, capture, reading(), META, null);
     await controller.patch(user, TENANT, capture, {
       edits: { 'totals.payable': '55.00' },
     } as never);
 
     // Extraction ran a SECOND time — "ran twice" — and disagrees.
-    await saveExtraction(WORKER, TENANT, capture, reading({ payable: '110.00' }), META, null);
+    await saveExtraction(worker.actor, TENANT, capture, reading({ payable: '110.00' }), META, null);
 
     const after = await q<{ payable_amount: string; review_status: string }>(sql`
       select payable_amount::text, review_status::text from documents where id = ${documentId}
@@ -234,7 +240,7 @@ describeIfDb('PATCH /v1/captures/:id/document', () => {
 
   it('4. replaying the same correction (an outbox retry) does not double-apply', async () => {
     const capture = await makeCapture();
-    const { documentId } = await saveExtraction(WORKER, TENANT, capture, reading(), META, null);
+    const { documentId } = await saveExtraction(worker.actor, TENANT, capture, reading(), META, null);
 
     const first = await controller.patch(user, TENANT, capture, {
       edits: { 'totals.payable': '55.00' },
@@ -258,7 +264,7 @@ describeIfDb('PATCH /v1/captures/:id/document', () => {
   });
 
   it('refuses a capture belonging to another tenant — RLS, not a 409', async () => {
-    // Inserted through the admin connection, not `q()`: WORKER has no
+    // Inserted through the admin connection, not `q()`: KATE has no
     // membership in OTHER_TENANT, so `withTenantAs` would refuse the insert
     // itself — this capture has to exist "some other way", the same as a real
     // cross-tenant id a client could send.
@@ -270,7 +276,7 @@ describeIfDb('PATCH /v1/captures/:id/document', () => {
        ) values ($1, $2, $3, 'image/png', 1024, decode(repeat('cd', 32), 'hex'), 'received')`,
       [foreignCapture, OTHER_TENANT, `${OTHER_TENANT}/originals/test/${foreignCapture}`],
     );
-    // WORKER has no membership in OTHER_TENANT — `withTenantAs` refuses
+    // KATE has no membership in OTHER_TENANT — `withTenantAs` refuses
     // before any row is visible (a `NotAMemberError`, not an `HttpException`),
     // which is the RLS boundary doing the isolating rather than an `if` in
     // this handler that could be gotten wrong. Whatever shape it throws, it
@@ -305,7 +311,7 @@ describeIfDb('PATCH /v1/captures/:id/document', () => {
     }
     expect((before as { status?: number }).status).toBe(409);
 
-    await saveExtraction(WORKER, TENANT, capture, reading(), META, null);
+    await saveExtraction(worker.actor, TENANT, capture, reading(), META, null);
 
     // Now it must NOT throw 409 — the same capture id, the only thing that
     // changed is a document now exists.

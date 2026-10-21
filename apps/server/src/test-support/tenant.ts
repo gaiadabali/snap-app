@@ -28,7 +28,18 @@ export interface FixtureUserSpec {
 export interface TenantSpec {
   tenantId: string;
   name: string;
+  /** People in the workspace: a `users` row AND a membership (a seat). */
   users: FixtureUserSpec[];
+  /**
+   * Service identities — in practice the extraction worker — that need a
+   * `users` row so audit columns (`extraction_runs`, `documents.created_by`,
+   * ...) resolve, and NO membership. This is how production looks: the worker
+   * is never a member of a workspace (a membership is a seat), and enters a
+   * tenant through `withWorkerTenant` on its own connection instead. Giving a
+   * fixture worker a membership hid exactly that bug: every workspace made by
+   * a real sign-up lacked one, and its scans were never extracted.
+   */
+  serviceUsers?: Array<Omit<FixtureUserSpec, 'role'>>;
   abn?: string;
   gstRegistered?: boolean;
   gstBasis?: 'cash' | 'accrual';
@@ -123,7 +134,7 @@ export async function provisionTenant(spec: TenantSpec): Promise<Client> {
   const admin = new Client({ connectionString: process.env.ADMIN_DATABASE_URL ?? process.env.DATABASE_URL });
   await admin.connect();
 
-  const userIds = spec.users.map((u) => u.id);
+  const userIds = [...spec.users, ...(spec.serviceUsers ?? [])].map((u) => u.id);
   await wipeTenant(admin, spec.tenantId, userIds);
 
   // `gst_basis` defaults to the same value the `tenants` table itself
@@ -146,6 +157,15 @@ export async function provisionTenant(spec: TenantSpec): Promise<Client> {
       u.id,
       u.role,
     ]);
+  }
+
+  for (const u of spec.serviceUsers ?? []) {
+    const short = u.id.slice(0, 8);
+    await admin.query(
+      `insert into users (id, subject, email, display_name) values ($1, $2, $3, $4)
+       on conflict (id) do nothing`,
+      [u.id, u.subject ?? `test|${short}`, u.email ?? `${short}@test.invalid`, u.displayName ?? `Service ${short}`],
+    );
   }
 
   return admin;

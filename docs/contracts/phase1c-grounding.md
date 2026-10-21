@@ -107,7 +107,8 @@ CREATE TABLE document_field_grounding (
 );
 ```
 
-RLS as the sibling tables; the worker is an ordinary member, no bypass. A
+RLS as the sibling tables; the worker goes through the same policies (it
+enters through `withWorkerTenant`, not a membership), no bypass. A
 `CHECK` that a grounded row has a box and an ungrounded one does not is
 welcome if it reads cleanly — the invariant is real, and the comment above
 `span_ids` states it.

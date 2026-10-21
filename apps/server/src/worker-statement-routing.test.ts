@@ -127,7 +127,9 @@ describeIfDb('worker statement routing (T1)', () => {
     admin = await provisionTenant({
       tenantId: TENANT,
       name: 'T1 statement routing co',
-      users: [{ id: WORKER_USER_ID, role: 'member' }],
+      users: [],
+      // No membership: the worker enters through `withWorkerTenant`, as in production.
+      serviceUsers: [{ id: WORKER_USER_ID }],
     });
 
     const dbModule = await import('./db.js');

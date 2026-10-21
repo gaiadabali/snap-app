@@ -16,6 +16,7 @@ import { getDb } from './db.js';
 import type { ReceiptContent, ReceiptOriginal } from './yourtal/external-ref.js';
 import { queueReceiptReport } from './yourtal/outbox.repo.js';
 import { maskCardLast4, type ValidatedExtraction } from './extraction/types.js';
+import { enterTenant, enterTenantAsWorker, type TenantActor, type WorkerActor } from './tenant-entry.js';
 
 /**
  * Every database access the API makes.
@@ -530,11 +531,11 @@ export type CapturePageRow = {
 
 /** A capture's pages, in page order. */
 export async function listCapturePages(
-  userId: string,
+  actor: TenantActor,
   tenantId: string,
   captureId: string,
 ): Promise<CapturePageRow[]> {
-  return withTenantAs(getDb(), userId, tenantId, async (tx) => {
+  return enterTenant(actor, tenantId, async (tx) => {
     const rows = await tx.execute<CapturePageRow>(sql`
       select page_number, storage_key, mime_type, byte_size::text as byte_size,
              encode(sha256, 'hex') as sha256, width, height,
@@ -918,10 +919,10 @@ export type TenantRow = {
 };
 
 export async function readTenant(
-  userId: string,
+  actor: TenantActor,
   tenantId: string,
 ): Promise<TenantRow | null> {
-  return withTenantAs(getDb(), userId, tenantId, async (tx) => {
+  return enterTenant(actor, tenantId, async (tx) => {
     const rows = await tx.execute<TenantRow>(sql`
       select id, name, kind, abn, abn_valid, gst_registered, gst_basis,
              simpler_bas, occupation_profile_id, financial_year_start_month,
@@ -1307,7 +1308,10 @@ async function readReceiptContent(tx: Tx, documentId: string): Promise<ReceiptCo
 }
 
 export async function saveExtraction(
-  workerUserId: string,
+  // The worker, and only the worker: this is the extraction write path, and
+  // it enters the tenant through `withWorkerTenant`, which the API's
+  // connection cannot use (see `tenant-entry.ts`).
+  worker: WorkerActor,
   tenantId: string,
   captureId: string,
   result: ValidatedExtraction,
@@ -1342,7 +1346,7 @@ export async function saveExtraction(
       }
     : AU_CONSUMPTION_TAX;
 
-  const { documentId, uploadedBy, receiptOriginal, sameReceiptCaptureIds, receiptContent, paidScan } = await withTenantAs(getDb(), workerUserId, tenantId, async (tx) => {
+  const { documentId, uploadedBy, receiptOriginal, sameReceiptCaptureIds, receiptContent, paidScan } = await enterTenantAsWorker(worker, tenantId, async (tx) => {
     const e = result.extraction;
 
     // S1 (docs/STATEMENTS.md §12 Lane S): `documents.card_last4` / `card_brand`
@@ -1603,7 +1607,7 @@ export async function saveExtraction(
           ${e.taxExclusiveAmount.value}, ${e.taxAmount.value},
           ${e.payableAmount.value}, ${e.payableAmount.value},
           ${roundingAmount}, ${paymentMethod}, ${cardLast4}, ${cardBrand},
-          ${result.reviewStatus}, ${result.confidenceOverall}, ${workerUserId},
+          ${result.reviewStatus}, ${result.confidenceOverall}, ${worker.userId},
           -- Five years from the issue date: the ATO's retention period, computed
           -- now so a purge job never has to guess.
           (${e.issueDate.value}::date + interval '5 years')::date
@@ -1742,14 +1746,14 @@ export async function saveExtraction(
 
 /** Records why an extraction failed, so a retry has something to read. */
 export async function saveExtractionFailure(
-  workerUserId: string,
+  worker: WorkerActor,
   tenantId: string,
   captureId: string,
   stage: string,
   error: string,
   model: string,
 ): Promise<void> {
-  await withTenantAs(getDb(), workerUserId, tenantId, async (tx) => {
+  await enterTenantAsWorker(worker, tenantId, async (tx) => {
     await tx.execute(sql`
       insert into extraction_runs (
         id, tenant_id, capture_id, engine, model_id, prompt_version, schema_version,
@@ -1766,8 +1770,9 @@ export async function saveExtractionFailure(
  *
  * `docs/contracts/phase1b-shadow-stage.md` §2. The DocDOM JSON itself lives
  * in object storage (lane I writes it); this is only the pointer + index
- * (`docs/OCR.md` §5.7), and it goes through `withTenantAs` like every other
- * tenant write — the worker is an ordinary app_rw member on this table
+ * (`docs/OCR.md` §5.7), and it goes through the ordinary tenant door like
+ * every other tenant write — `withTenantAs` for a user, `withWorkerTenant`
+ * for the worker (`tenant-entry.ts`), which is plain app_rw on this table
  * (migration 0019), same as `capture_pages` (0018): no elevated policy, no
  * bypass.
  */
@@ -1826,7 +1831,7 @@ function toLayoutRow(row: LayoutSqlRow): LayoutRow {
  * is the only row.
  */
 export async function saveLayout(
-  userId: string,
+  actor: TenantActor,
   tenantId: string,
   input: {
     captureId: string;
@@ -1848,7 +1853,7 @@ export async function saveLayout(
     deviceMeta?: Record<string, unknown>;
   },
 ): Promise<{ layoutId: string }> {
-  return withTenantAs(getDb(), userId, tenantId, async (tx) => {
+  return enterTenant(actor, tenantId, async (tx) => {
     const id = randomUUID();
     // A bare `${array}` splices as a Postgres ROW literal, not an array
     // literal (drizzle's sql tag treats a JS array as a tuple of params) —
@@ -1969,7 +1974,7 @@ function toGroundingRow(row: GroundingSqlRow): GroundingRow {
  * promise.
  */
 export async function saveFieldGrounding(
-  userId: string,
+  actor: TenantActor,
   tenantId: string,
   rows: Array<{
     captureId: string;
@@ -1985,7 +1990,7 @@ export async function saveFieldGrounding(
 ): Promise<{ saved: number }> {
   if (rows.length === 0) return { saved: 0 };
 
-  return withTenantAs(getDb(), userId, tenantId, async (tx) => {
+  return enterTenant(actor, tenantId, async (tx) => {
     const layoutIds = [...new Set(rows.map((r) => r.layoutId))];
     const layoutIdsLiteral = sql`array[${sql.join(
       layoutIds.map((id) => sql`${id}`),
@@ -2021,11 +2026,11 @@ export async function saveFieldGrounding(
 
 /** Every field grounded for one layout, in no particular order. */
 export async function groundingForLayout(
-  userId: string,
+  actor: TenantActor,
   tenantId: string,
   layoutId: string,
 ): Promise<GroundingRow[]> {
-  return withTenantAs(getDb(), userId, tenantId, async (tx) => {
+  return enterTenant(actor, tenantId, async (tx) => {
     const rows = await tx.execute<GroundingSqlRow>(sql`
       select id, capture_id, layout_id, field_path, value, grounded, span_ids,
              box, page, confidence::text as confidence, enforced,
@@ -2038,11 +2043,12 @@ export async function groundingForLayout(
 }
 
 export async function groundingForCapture(
-  userId: string,
+  // Only the worker reads this (its accept gate, `worker.ts`).
+  worker: WorkerActor,
   tenantId: string,
   captureId: string,
 ): Promise<GroundingRow[]> {
-  return withTenantAs(getDb(), userId, tenantId, async (tx) => {
+  return enterTenantAsWorker(worker, tenantId, async (tx) => {
     const rows = await tx.execute<GroundingSqlRow>(sql`
       select id, capture_id, layout_id, field_path, value, grounded, span_ids,
              box, page, confidence::text as confidence, enforced,

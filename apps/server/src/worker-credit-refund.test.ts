@@ -24,6 +24,8 @@ const describeIfDb = hasDb ? describe : describe.skip;
 
 const TENANT = 'c5e50000-0000-4000-8000-000000000001';
 const WORKER_USER_ID = 'c5e50000-0000-4000-8000-0000000000a1';
+/** The person who photographed the receipt and whose upload spent the credit. */
+const USER = 'c5e50000-0000-4000-8000-0000000000a2';
 
 describeIfDb('worker: an unreadable scan gives its credit back (7.1.c)', () => {
   let admin: Client;
@@ -56,7 +58,9 @@ describeIfDb('worker: an unreadable scan gives its credit back (7.1.c)', () => {
     admin = await provisionTenant({
       tenantId: TENANT,
       name: 'Credit refund worker co',
-      users: [{ id: WORKER_USER_ID, role: 'member', subject: 'test|refund-worker', email: 'worker@credit-refund.test' }],
+      users: [{ id: USER, role: 'owner', subject: 'test|refund-user', email: 'user@credit-refund.test' }],
+      // No membership: the worker enters through `withWorkerTenant`, as in production.
+      serviceUsers: [{ id: WORKER_USER_ID, subject: 'test|refund-worker', email: 'worker@credit-refund.test' }],
     });
 
     const dbModule = await import('./db.js');
@@ -85,7 +89,7 @@ describeIfDb('worker: an unreadable scan gives its credit back (7.1.c)', () => {
     await admin.query(`delete from jobs where tenant_id = $1`, [TENANT]);
     await admin.query(`delete from credit_spends where tenant_id = $1`, [TENANT]);
     await admin.query(`delete from usage_grants where tenant_id = $1`, [TENANT]);
-    await wipeTenant(admin, TENANT, [WORKER_USER_ID]);
+    await wipeTenant(admin, TENANT, [WORKER_USER_ID, USER]);
     await admin.end();
     rmSync(storageRoot, { recursive: true, force: true });
     for (const [key, value] of Object.entries(savedEnv)) {
@@ -102,9 +106,9 @@ describeIfDb('worker: an unreadable scan gives its credit back (7.1.c)', () => {
       `insert into captures (id, tenant_id, uploaded_by, original_storage_key, original_mime_type,
                              original_byte_size, original_sha256, status)
        values ($1, $2, $3, $4, 'image/jpeg', $5, decode($6, 'hex'), 'received')`,
-      [id, TENANT, WORKER_USER_ID, key, byteSize, randomUUID().replace(/-/g, '').repeat(2)],
+      [id, TENANT, USER, key, byteSize, randomUUID().replace(/-/g, '').repeat(2)],
     );
-    await enqueueExtraction(WORKER_USER_ID, TENANT, id);
+    await enqueueExtraction(USER, TENANT, id);
     await admin.query(`update jobs set max_attempts = $2 where tenant_id = $1`, [TENANT, maxAttempts]);
     return id;
   }

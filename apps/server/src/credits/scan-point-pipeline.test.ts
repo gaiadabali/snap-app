@@ -9,6 +9,7 @@ import { withTenantAs } from '@snap/db';
 import { closeDb, getDb } from '../db.js';
 import { saveExtraction } from '../repo.js';
 import { provisionTenant, wipeTenant } from '../test-support/tenant.js';
+import { openWorkerDb, type WorkerDb } from '../test-support/worker-db.js';
 import { getPointBalance, listPointLedger } from './points.repo.js';
 import type { ValidatedExtraction } from '../extraction/types.js';
 
@@ -28,7 +29,7 @@ const WORKER = 'de200000-0000-4000-8000-0000000000a1';
 const UPLOADER = 'de200000-0000-4000-8000-0000000000a2';
 
 const q = <T extends Record<string, unknown> = Record<string, unknown>>(text: ReturnType<typeof sql>) =>
-  withTenantAs(getDb(), WORKER, TENANT, (tx) => tx.execute<T>(text));
+  withTenantAs(getDb(), UPLOADER, TENANT, (tx) => tx.execute<T>(text));
 
 const f = <T>(value: T | null, confidence = 0.99) => ({ value, confidence });
 
@@ -94,22 +95,24 @@ async function makeCapture(): Promise<string> {
 
 describeIfDb('saveExtraction writes no Snap Apps point', () => {
   let admin: Client;
+  let worker: WorkerDb;
 
   beforeAll(async () => {
     admin = await provisionTenant({
       tenantId: TENANT,
       name: 'Scan point pipeline test co',
-      users: [
-        { id: WORKER, role: 'member', subject: 'test|scanpoint-worker', email: 'worker@scanpoint.test' },
-        { id: UPLOADER, role: 'owner', subject: 'test|scanpoint-uploader', email: 'uploader@scanpoint.test' },
-      ],
+      users: [{ id: UPLOADER, role: 'owner', subject: 'test|scanpoint-uploader', email: 'uploader@scanpoint.test' }],
+      // No membership: the worker enters through `withWorkerTenant`.
+      serviceUsers: [{ id: WORKER, subject: 'test|scanpoint-worker', email: 'worker@scanpoint.test' }],
     });
+    worker = openWorkerDb(WORKER);
   });
 
   afterAll(async () => {
     await admin.query('DELETE FROM point_ledger WHERE user_id = $1', [UPLOADER]);
     await wipeTenant(admin, TENANT, [WORKER, UPLOADER]);
     await admin.end();
+    await worker.pool.end();
     await closeDb();
   });
 
@@ -125,7 +128,7 @@ describeIfDb('saveExtraction writes no Snap Apps point', () => {
     const capture = await makeCapture();
     const before = await ledgerRows();
 
-    await saveExtraction(WORKER, TENANT, capture, reading(), META, null);
+    await saveExtraction(worker.actor, TENANT, capture, reading(), META, null);
 
     expect(await ledgerRows()).toBe(before);
     expect(await getPointBalance(UPLOADER)).toBe(0);
@@ -135,8 +138,8 @@ describeIfDb('saveExtraction writes no Snap Apps point', () => {
 
   it('a re-extraction of the same capture writes none either', async () => {
     const capture = await makeCapture();
-    await saveExtraction(WORKER, TENANT, capture, reading('110.00'), META, null);
-    await saveExtraction(WORKER, TENANT, capture, reading('120.00'), META, null);
+    await saveExtraction(worker.actor, TENANT, capture, reading('110.00'), META, null);
+    await saveExtraction(worker.actor, TENANT, capture, reading('120.00'), META, null);
 
     expect(await ledgerRows()).toBe(0);
   });

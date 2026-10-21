@@ -15,6 +15,7 @@ import { fulfilCreditPurchase, grantSignupBonusIfFirst, startCreditPurchase } fr
 import { enqueueExtraction, saveExtraction } from '../repo.js';
 import { startFakeYourtal, type FakeYourtal } from '../test-support/fake-yourtal.js';
 import { provisionTenant, wipeTenant } from '../test-support/tenant.js';
+import { workerActor, type WorkerActor } from '../tenant-entry.js';
 import { YourtalPartnerClient } from './client.js';
 import { insertLink } from './links.repo.js';
 import { drainYourtalOutbox, OUTBOX_RETRY } from './outbox.js';
@@ -33,8 +34,10 @@ const TENANT = 'b7a20000-0000-4000-8000-000000000001';
 const WORKER = 'b7a20000-0000-4000-8000-0000000000a1';
 const DANI = 'b7a20000-0000-4000-8000-0000000000a2';
 const EVE = 'b7a20000-0000-4000-8000-0000000000a3';
-// A second workspace, owned by FRAN, a second linked person. DANI and WORKER
-// are members of it too, so one person can scan the same receipt in two workspaces.
+// A second workspace, owned by FRAN, a second linked person. DANI is a member
+// of it too, so one person can scan the same receipt in two workspaces. The
+// WORKER is a member of no workspace: it enters each through `withWorkerTenant`
+// on its own connection, as in production.
 const TENANT2 = 'b7a20000-0000-4000-8000-000000000002';
 const FRAN = 'b7a20000-0000-4000-8000-0000000000a4';
 const REF_KEY = `e2e-receipt-ref-key-${'k'.repeat(32)}`;
@@ -89,6 +92,8 @@ describeIfDb('the YourTal outbox (2.5)', () => {
   let client: YourtalPartnerClient;
   let workerPool: Pool;
   let workerDb: Db;
+  /** The worker, on its own connection (`snap_worker`). */
+  let worker: WorkerActor;
   let counter = 0;
 
   /** A photographed one-page receipt uploaded by `uploader`; returns its page hash. */
@@ -131,9 +136,9 @@ describeIfDb('the YourTal outbox (2.5)', () => {
   // shared default would make every scenario a "duplicate" of the first.
   let amounts = 0;
   const scan = (captureId: string, payable = `${(amounts += 1)}.25`) =>
-    saveExtraction(WORKER, TENANT, captureId, reading(payable), META, null);
+    saveExtraction(worker, TENANT, captureId, reading(payable), META, null);
   const scanIn = (tenant: string, captureId: string, payable: string, o: ReadingOptions) =>
-    saveExtraction(WORKER, tenant, captureId, reading(payable, o), META, null);
+    saveExtraction(worker, tenant, captureId, reading(payable, o), META, null);
 
   // A document number nobody else in this run has used, so the fake's
   // once-per-ref ledger never carries over between tests.
@@ -162,10 +167,11 @@ describeIfDb('the YourTal outbox (2.5)', () => {
       tenantId: TENANT,
       name: 'YourTal outbox test co',
       users: [
-        { id: WORKER, role: 'member', subject: 'test|yto-worker', email: 'worker@yourtal-outbox.test' },
         { id: DANI, role: 'owner', subject: 'test|yto-dani', email: 'dani@yourtal-outbox.test' },
         { id: EVE, role: 'member', subject: 'test|yto-eve', email: 'eve@yourtal-outbox.test' },
       ],
+      // No membership: the worker enters through `withWorkerTenant`.
+      serviceUsers: [{ id: WORKER, subject: 'test|yto-worker', email: 'worker@yourtal-outbox.test' }],
     });
     await admin.query(`delete from rate_limits where bucket_key like 'yourtal-link:%'`);
 
@@ -175,9 +181,7 @@ describeIfDb('the YourTal outbox (2.5)', () => {
       users: [{ id: FRAN, role: 'owner', subject: 'test|yto-fran', email: 'fran@yourtal-outbox.test' }],
     });
     await adminTwo.end();
-    for (const user of [WORKER, DANI]) {
-      await admin.query(`insert into memberships (tenant_id, user_id, role) values ($1, $2, 'member')`, [TENANT2, user]);
-    }
+    await admin.query(`insert into memberships (tenant_id, user_id, role) values ($1, $2, 'member')`, [TENANT2, DANI]);
 
     // Scans earn YourTal points only when paid with a BOUGHT credit (2.5.f),
     // so both workspaces start with one.
@@ -189,6 +193,7 @@ describeIfDb('the YourTal outbox (2.5)', () => {
       process.env.WORKER_DATABASE_URL ?? (process.env.DATABASE_URL ?? '').replace(/:\/\/[^:]+:/, '://snap_worker:');
     workerPool = createPool(workerUrl);
     workerDb = createDb(workerPool);
+    worker = workerActor(WORKER, workerDb);
 
     // Dani links through the real endpoint, so the link row is exactly what
     // production writes. Back-date it a minute so "captured after linking"
@@ -676,15 +681,10 @@ describeIfDb('the YourTal outbox (2.5)', () => {
         users: [{ id: GIA, role: 'owner', subject: 'test|yto-gia', email: 'gia@yourtal-outbox.test' }],
       });
       await adminThree.end();
-      await admin.query(`insert into memberships (tenant_id, user_id, role) values ($1, $2, 'member')`, [TENANT3, WORKER]);
       // A second workspace with no credits at all.
       await wipeTenant(admin, TENANT4);
       await admin.query(`insert into tenants (id, name, abn) values ($1, 'YourTal no credits co', '51824753556')`, [TENANT4]);
-      await admin.query(`insert into memberships (tenant_id, user_id, role) values ($1, $2, 'owner'), ($1, $3, 'member')`, [
-        TENANT4,
-        GIA,
-        WORKER,
-      ]);
+      await admin.query(`insert into memberships (tenant_id, user_id, role) values ($1, $2, 'owner')`, [TENANT4, GIA]);
 
       // The ten free credits a new account gets, granted the way onboarding grants them.
       expect(await grantSignupBonusIfFirst(GIA, TENANT3)).toEqual({ granted: true });

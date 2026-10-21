@@ -129,8 +129,9 @@ describeIfDb('PDF intake persists its own bytes for classification (Task 9)', ()
       name: 'Task 9 pdf persistence co',
       users: [
         { id: USER, role: 'owner', subject: 'test|task9-owner', email: 'task9-owner@test.invalid' },
-        { id: WORKER_USER_ID, role: 'member', subject: 'test|task9-worker', email: 'task9-worker@test.invalid' },
       ],
+      // No membership: the worker enters through `withWorkerTenant`, as in production.
+      serviceUsers: [{ id: WORKER_USER_ID, subject: 'test|task9-worker', email: 'task9-worker@test.invalid' }],
     });
 
     const dbModule = await import('./db.js');

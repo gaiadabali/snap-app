@@ -9,6 +9,7 @@ import { withTenantAs } from '@snap/db';
 import { closeDb, getDb } from './db.js';
 import { saveExtraction, updateDocument } from './repo.js';
 import { provisionTenant, wipeTenant } from './test-support/tenant.js';
+import { openWorkerDb, type WorkerDb } from './test-support/worker-db.js';
 import type { ValidatedExtraction } from './extraction/types.js';
 
 /**
@@ -33,7 +34,7 @@ const KATE = 'd0d0d0d0-0000-4000-8000-0000000000a2';
 
 const q = <T extends Record<string, unknown> = Record<string, unknown>>(
   text: ReturnType<typeof sql>,
-  userId: string = WORKER,
+  userId: string = KATE,
 ) => withTenantAs(getDb(), userId, TENANT, (tx) => tx.execute<T>(text));
 
 const f = <T>(value: T | null, confidence = 0.99) => ({ value, confidence });
@@ -102,7 +103,7 @@ async function makeCapture(): Promise<string> {
       id, tenant_id, uploaded_by, original_storage_key, original_mime_type,
       original_byte_size, original_sha256, status
     ) values (
-      ${id}, ${TENANT}, ${WORKER}, ${`${TENANT}/originals/test/${id}`}, 'image/png',
+      ${id}, ${TENANT}, ${KATE}, ${`${TENANT}/originals/test/${id}`}, 'image/png',
       1024, decode(${randomUUID().replace(/-/g, '').repeat(2).slice(0, 64)}, 'hex'), 'received'
     )
   `);
@@ -111,23 +112,25 @@ async function makeCapture(): Promise<string> {
 
 describeIfDb('documents.dedup_group_id — receipt-side writer (R5e)', () => {
   let admin: Client;
+  let worker: WorkerDb;
 
   beforeAll(async () => {
     if (!hasDb) return;
     admin = await provisionTenant({
       tenantId: TENANT,
       name: 'Dedup test co',
-      users: [
-        { id: WORKER, role: 'member', subject: 'test|dedup-worker', email: 'worker@dedup.test', displayName: 'Worker' },
-        { id: KATE, role: 'owner', subject: 'test|dedup-kate', email: 'kate@dedup.test', displayName: 'Kate' },
-      ],
+      users: [{ id: KATE, role: 'owner', subject: 'test|dedup-kate', email: 'kate@dedup.test', displayName: 'Kate' }],
+      // No membership: the worker enters through `withWorkerTenant`.
+      serviceUsers: [{ id: WORKER, subject: 'test|dedup-worker', email: 'worker@dedup.test', displayName: 'Worker' }],
     });
+    worker = openWorkerDb(WORKER);
   });
 
   afterAll(async () => {
     if (!hasDb) return;
     await wipeTenant(admin, TENANT, [WORKER, KATE]);
     await admin.end();
+    await worker.pool.end();
     await closeDb();
   });
 
@@ -135,8 +138,8 @@ describeIfDb('documents.dedup_group_id — receipt-side writer (R5e)', () => {
     const captureA = await makeCapture();
     const captureB = await makeCapture();
 
-    const { documentId: docA } = await saveExtraction(WORKER, TENANT, captureA, reading(), META, null);
-    const { documentId: docB } = await saveExtraction(WORKER, TENANT, captureB, reading(), META, null);
+    const { documentId: docA } = await saveExtraction(worker.actor, TENANT, captureA, reading(), META, null);
+    const { documentId: docB } = await saveExtraction(worker.actor, TENANT, captureB, reading(), META, null);
 
     const rows = await q<{ id: string; dedup_group_id: string | null }>(sql`
       select id, dedup_group_id::text as dedup_group_id from documents where id in (${docA}, ${docB})
@@ -154,7 +157,7 @@ describeIfDb('documents.dedup_group_id — receipt-side writer (R5e)', () => {
     // A third re-scan of the same docket does not raise a second task for the
     // same group — one alert per group, not one per pair.
     const captureC = await makeCapture();
-    await saveExtraction(WORKER, TENANT, captureC, reading(), META, null);
+    await saveExtraction(worker.actor, TENANT, captureC, reading(), META, null);
     const tasksAfterThird = await q<{ id: string }>(sql`
       select id from review_tasks where reason = 'possible_duplicate'
     `);
@@ -167,13 +170,13 @@ describeIfDb('documents.dedup_group_id — receipt-side writer (R5e)', () => {
     const captureNoPayable = await makeCapture();
 
     const { documentId: docNoSupplier } = await saveExtraction(
-      WORKER, TENANT, captureNoSupplier, reading({ supplier: null }), META, null,
+      worker.actor, TENANT, captureNoSupplier, reading({ supplier: null }), META, null,
     );
     const { documentId: docNoDate } = await saveExtraction(
-      WORKER, TENANT, captureNoDate, reading({ date: null }), META, null,
+      worker.actor, TENANT, captureNoDate, reading({ date: null }), META, null,
     );
     const { documentId: docNoPayable } = await saveExtraction(
-      WORKER, TENANT, captureNoPayable, reading({ payable: null }), META, null,
+      worker.actor, TENANT, captureNoPayable, reading({ payable: null }), META, null,
     );
 
     const rows = await q<{ id: string; dedup_group_id: string | null }>(sql`
@@ -200,10 +203,10 @@ describeIfDb('documents.dedup_group_id — receipt-side writer (R5e)', () => {
     const captureA = await makeCapture();
     const captureB = await makeCapture();
     const { documentId: docA } = await saveExtraction(
-      WORKER, TENANT, captureA, reading({ supplier: 'Refusal Test Supplier' }), META, null,
+      worker.actor, TENANT, captureA, reading({ supplier: 'Refusal Test Supplier' }), META, null,
     );
     const { documentId: docB } = await saveExtraction(
-      WORKER, TENANT, captureB, reading({ supplier: 'Refusal Test Supplier' }), META, null,
+      worker.actor, TENANT, captureB, reading({ supplier: 'Refusal Test Supplier' }), META, null,
     );
 
     const task = await q<{ id: string }>(sql`

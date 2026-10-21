@@ -1,7 +1,7 @@
-import { withTenantAs, type Db, type Tx } from '@snap/db';
+import type { Tx } from '@snap/db';
 import { sql } from 'drizzle-orm';
 
-import { getDb } from '../db.js';
+import { enterTenantAsWorker, type WorkerActor } from '../tenant-entry.js';
 
 /**
  * A scan spends one credit; a scan no model could read gives it back
@@ -173,13 +173,15 @@ export type RefundResult =
  * grant from failing the CHECK.
  */
 export async function refundScanCredit(
-  workerUserId: string,
+  // The worker only. It enters through `withWorkerTenant` (the API's
+  // connection is refused there), and only `app_worker` may set
+  // `refunded_at` anyway. A test holding a worker pool passes it on the actor.
+  worker: WorkerActor,
   tenantId: string,
   captureId: string,
   reason: RefundReason,
-  db: Db = getDb(),
 ): Promise<RefundResult> {
-  return withTenantAs(db, workerUserId, tenantId, async (tx): Promise<RefundResult> => {
+  return enterTenantAsWorker(worker, tenantId, async (tx): Promise<RefundResult> => {
     const capture = await tx.execute<{ id: string }>(sql`
       select id from captures where id = ${captureId} for update
     `);

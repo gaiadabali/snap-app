@@ -18,6 +18,11 @@ export {
   asUser,
   listWorkspacesFor,
   NotAMemberError,
+  // The worker's way into a tenant it is not a member of, gated by the
+  // connection's database role (app_worker), never by a membership row.
+  withWorkerTenant,
+  NotTheWorkerError,
+  NoSuchTenantError,
   claimJobs,
   completeJob,
   failJob,

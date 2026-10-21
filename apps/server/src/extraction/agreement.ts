@@ -1,4 +1,4 @@
-import { withTenantAs, type Tx } from '@snap/db';
+import type { Tx } from '@snap/db';
 import type { ExtractionFinding } from '@snap/api-contract';
 import {
   PREVIEW_FIELDS,
@@ -9,8 +9,8 @@ import {
 } from '@snap/docai-preview';
 import { sql } from 'drizzle-orm';
 
-import { getDb } from '../db.js';
 import { groundingForLayout } from '../repo.js';
+import { enterTenant, type TenantActor, type WorkerActor } from '../tenant-entry.js';
 import type { Extraction } from './types.js';
 
 /**
@@ -86,11 +86,12 @@ export function extractionValues(extraction: Extraction): DeviceValues {
  * or reorders extraction), and that is not an error.
  */
 export async function latestDeviceLayoutValues(
-  userId: string,
+  // A user on the documents read path, or the worker after extraction.
+  actor: TenantActor,
   tenantId: string,
   captureId: string,
 ): Promise<DeviceLayoutInfo | null> {
-  const row = await withTenantAs(getDb(), userId, tenantId, async (tx: Tx) => {
+  const row = await enterTenant(actor, tenantId, async (tx: Tx) => {
     const rows = await tx.execute<{
       id: string;
       engine_ids: string[];
@@ -110,7 +111,7 @@ export async function latestDeviceLayoutValues(
   });
   if (!row) return null;
 
-  const grounding = await groundingForLayout(userId, tenantId, row.id);
+  const grounding = await groundingForLayout(actor, tenantId, row.id);
   const values: DeviceValues = {};
   for (const g of grounding) {
     if ((PREVIEW_FIELDS as Record<string, string | undefined>)[g.fieldPath]) {
@@ -173,13 +174,13 @@ export function buildAgreementFindings(
  * be in before extraction finished.
  */
 export async function runAgreementCheck(
-  workerUserId: string,
+  worker: WorkerActor,
   tenantId: string,
   captureId: string,
   extraction: Extraction,
 ): Promise<void> {
   try {
-    const device = await latestDeviceLayoutValues(workerUserId, tenantId, captureId);
+    const device = await latestDeviceLayoutValues(worker, tenantId, captureId);
     if (!device) return; // nothing to shadow-compare against yet — not a failure.
 
     const findings = buildAgreementFindings(device.values, extractionValues(extraction));

@@ -1,4 +1,4 @@
-import { claimJobs, completeJob, failJob, withTenantAs } from '@snap/db';
+import { claimJobs, completeJob, failJob } from '@snap/db';
 import type { TaxRules } from '@snap/tax-rules';
 import { sql } from 'drizzle-orm';
 
@@ -28,6 +28,7 @@ import { listCapturePages, groundingForCapture, readTenant, saveExtraction, save
 import { importPdfStatement, StatementPageCapError } from './statements/pdf-statement-import.js';
 import { rulesFor } from './taxrules/taxrules.repo.js';
 import { get as readObject } from './storage.js';
+import { enterTenantAsWorker, workerActor } from './tenant-entry.js';
 import { runYourtalOutboxLoop } from './yourtal/outbox.js';
 
 /**
@@ -67,12 +68,25 @@ import { runYourtalOutboxLoop } from './yourtal/outbox.js';
  */
 const WORKER_USER = requireWorkerUser();
 
+/**
+ * How the worker enters a job's tenant: through `withWorkerTenant`, which
+ * checks that this process connected as the worker (`app_worker`) instead of
+ * looking for a `memberships` row. The worker holds no memberships — a
+ * membership is a seat, and onboarding never made one for it, which is why
+ * every scan in a real sign-up's workspace used to fail with NotAMemberError.
+ * See `tenant-entry.ts` and `withWorkerTenant` in `@snap/db`.
+ *
+ * Every tenant-scoped call below takes this, never the bare `WORKER_USER` id:
+ * a bare id goes through `withTenantAs` and is refused as a non-member.
+ */
+const WORKER = workerActor(WORKER_USER);
+
 function requireWorkerUser(): string {
   const raw = (process.env.WORKER_USER_ID ?? '').trim();
   if (!raw) {
     throw new Error(
       'WORKER_USER_ID is not set. The extraction worker has no identity to act as, so every ' +
-        'job would fail with `withTenantAs: not a uuid: ""` — which reads like a database bug ' +
+        'job would fail with `withWorkerTenant: not a uuid: ""` — which reads like a database bug ' +
         'and is not one. Set it to the service user (worker@snapapps.internal) in deploy/.env. ' +
         'This refusal exists because the empty-string default silently broke every extraction ' +
         'in production for days.',
@@ -224,7 +238,7 @@ export async function classifyCapture(tenantId: string, captureId: string): Prom
  * failure, not silently downgraded.
  */
 async function readOriginalPdfText(tenantId: string, captureId: string): Promise<string[] | null> {
-  const original = await withTenantAs(getDb(), WORKER_USER, tenantId, async (tx) => {
+  const original = await enterTenantAsWorker(WORKER, tenantId, async (tx) => {
     const rows = await tx.execute<{ key: string; mime: string }>(sql`
       select original_storage_key as key, original_mime_type as mime
         from captures where id = ${captureId} limit 1
@@ -272,7 +286,7 @@ async function handle(job: Job): Promise<HandleOutcome> {
       // (see `classifyCapture`'s header), so completing the job with the
       // failure recorded is honest rather than optimistic.
       const message = error instanceof Error ? error.message : String(error);
-      await saveExtractionFailure(WORKER_USER, job.tenantId, captureId, 'statement_extraction', message, 'pdf-text');
+      await saveExtractionFailure(WORKER, job.tenantId, captureId, 'statement_extraction', message, 'pdf-text');
       return 'not_extracted';
     }
 
@@ -298,7 +312,7 @@ async function handle(job: Job): Promise<HandleOutcome> {
 
       let result: Awaited<ReturnType<typeof importPdfStatement>>;
       try {
-        result = await importPdfStatement(WORKER_USER, job.tenantId, provider, { captureId, pageTexts });
+        result = await importPdfStatement(WORKER, job.tenantId, provider, { captureId, pageTexts });
       } catch (error) {
         // The page cap (Task 10, item 20) throws before any model call and
         // can NEVER succeed on retry — the page count is the PDF's own
@@ -308,7 +322,7 @@ async function handle(job: Job): Promise<HandleOutcome> {
         // PDF case above gets — for the same reason.
         if (error instanceof StatementPageCapError) {
           await saveExtractionFailure(
-            WORKER_USER,
+            WORKER,
             job.tenantId,
             captureId,
             'statement_extraction',
@@ -351,7 +365,7 @@ async function handle(job: Job): Promise<HandleOutcome> {
     // than the receipt path already admits it cannot — see `runOnce`'s own
     // comment on why a released job is safer than a swallowed error.
     await saveExtractionFailure(
-      WORKER_USER,
+      WORKER,
       job.tenantId,
       captureId,
       'statement_extraction',
@@ -364,11 +378,12 @@ async function handle(job: Job): Promise<HandleOutcome> {
   // Every stored page, in page order. Never a normalised derivative: the
   // model reads what the ATO would accept as the record.
   //
-  // Read with the worker's own membership, not as a superuser: the worker is
-  // an ordinary member of the workspace (see scripts/seed.ts) and goes through
-  // the same row-level security as everyone else. A background job with a
-  // bypass is a background job nobody audits.
-  const pageRows = await listCapturePages(WORKER_USER, job.tenantId, captureId);
+  // Read as the worker, not as a superuser: the worker enters the job's
+  // tenant through `withWorkerTenant` (bound to its database role, not to a
+  // membership — it holds none) and goes through the same row-level security
+  // as everyone else. A background job with a bypass is a background job
+  // nobody audits.
+  const pageRows = await listCapturePages(WORKER, job.tenantId, captureId);
 
   let pages: PageImage[];
   if (pageRows.length > 0) {
@@ -378,7 +393,7 @@ async function handle(job: Job): Promise<HandleOutcome> {
     // something upstream skipped recording one. Falling back to the
     // single-file original rather than failing the job keeps every capture
     // made before this change extractable exactly as it always was.
-    const capture = await withTenantAs(getDb(), WORKER_USER, job.tenantId, async (tx) => {
+    const capture = await enterTenantAsWorker(WORKER, job.tenantId, async (tx) => {
       const rows = await tx.execute<{ key: string; mime: string }>(sql`
         select original_storage_key as key, original_mime_type as mime
           from captures where id = ${captureId} limit 1
@@ -411,7 +426,7 @@ async function handle(job: Job): Promise<HandleOutcome> {
    * way: an installed `id-2026` on a workspace that has since moved to AU is
    * the same wrong-law hazard in the other direction.
    */
-  const tenant = await readTenant(WORKER_USER, job.tenantId);
+  const tenant = await readTenant(WORKER, job.tenantId);
   if (!tenant) {
     throw new Error(`job ${job.id}: tenant ${job.tenantId} does not exist`);
   }
@@ -445,7 +460,7 @@ async function handle(job: Job): Promise<HandleOutcome> {
   // honest cost of not trusting a total the page does not say.
   let storedGrounding = null;
   try {
-    storedGrounding = await groundingForCapture(WORKER_USER, job.tenantId, captureId);
+    storedGrounding = await groundingForCapture(WORKER, job.tenantId, captureId);
   } catch (error) {
     // Reading evidence must never break the pipeline: a failed read is the
     // same fail-closed answer as no report — the gate will hold the document.
@@ -465,7 +480,7 @@ async function handle(job: Job): Promise<HandleOutcome> {
     if (outcome.ok) {
       const { run } = outcome;
       await saveExtraction(
-        WORKER_USER,
+        WORKER,
         job.tenantId,
         captureId,
         run.result,
@@ -499,14 +514,14 @@ async function handle(job: Job): Promise<HandleOutcome> {
       // fail this job or touch the extraction result just saved. A no-op,
       // with zero cost beyond the config read, whenever `DOCAI_SIDECAR_URL`
       // is unset.
-      await runShadowOcr(WORKER_USER, job.tenantId, captureId, run.result.extraction, pageRows);
+      await runShadowOcr(WORKER, job.tenantId, captureId, run.result.extraction, pageRows);
 
       // OD-12 (docs/ON-DEVICE.md §11 Stage 2): compares whatever device
       // reading has already arrived for this capture against the model's own
       // extraction and logs the agreement, shadow-style — never throws,
       // writes nothing. See `agreement.ts`'s header for why the finding shown
       // to a user is recomputed at read time instead of persisted here.
-      await runAgreementCheck(WORKER_USER, job.tenantId, captureId, run.result.extraction);
+      await runAgreementCheck(WORKER, job.tenantId, captureId, run.result.extraction);
       return;
     }
 
@@ -526,7 +541,7 @@ async function handle(job: Job): Promise<HandleOutcome> {
   // Every model failed. Recorded against the capture so the next attempt, or
   // a person, can see what happened rather than finding a silent gap.
   await saveExtractionFailure(
-    WORKER_USER,
+    WORKER,
     job.tenantId,
     captureId,
     'provider',
@@ -547,7 +562,7 @@ async function refundUnread(job: Job, reason: RefundReason): Promise<void> {
   const captureId = (job.payload as { captureId?: string } | null)?.captureId;
   if (!captureId || !job.tenantId) return;
   try {
-    const result = await refundScanCredit(WORKER_USER, job.tenantId, captureId, reason);
+    const result = await refundScanCredit(WORKER, job.tenantId, captureId, reason);
     if (result.refunded) console.log(`job ${job.id}: capture ${captureId} unread (${reason}) — scan credit given back`);
   } catch (error) {
     console.error(
