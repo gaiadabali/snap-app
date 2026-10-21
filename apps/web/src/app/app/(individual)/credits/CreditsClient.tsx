@@ -45,7 +45,7 @@ export function CreditsClient({
           <Stat
             label="Credits"
             value={`${balance.creditsRemaining}`}
-            hint="Bought or granted free. Never resets, and is spent only after your plan quota runs out."
+            hint="Bought or granted free, and never expires. Each scan spends one: free credits first, then bought ones. Only scans paid with bought credits earn YourTal points."
           />
         </Card>
       </div>
