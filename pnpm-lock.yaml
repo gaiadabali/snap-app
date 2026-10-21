@@ -207,6 +207,9 @@ importers:
       rxjs:
         specifier: ^7.8.2
         version: 7.8.2
+      sharp:
+        specifier: ^0.35.5
+        version: 0.35.5(@types/node@20.19.43)
       zod:
         specifier: ^4.5.4
         version: 4.5.4
@@ -5975,8 +5978,7 @@ snapshots:
       fastq: 1.20.3
       glob: 13.0.6
 
-  '@img/colour@1.1.0':
-    optional: true
+  '@img/colour@1.1.0': {}
 
   '@img/sharp-darwin-arm64@0.35.5':
     optionalDependencies:
@@ -9277,7 +9279,6 @@ snapshots:
       '@img/sharp-win32-ia32': 0.35.5
       '@img/sharp-win32-x64': 0.35.5
       '@types/node': 20.19.43
-    optional: true
 
   shebang-command@2.0.0:
     dependencies:

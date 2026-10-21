@@ -246,10 +246,14 @@ describeIfDb('worker in a workspace created by a real sign-up (no worker members
     expect(lines.join('\n')).not.toMatch(/not a member of tenant/);
 
     const job = await admin.query(
-      `select attempts, completed_at is not null as completed, last_error from jobs where tenant_id = $1`,
+      `select attempts, completed_at is not null as completed, last_error from jobs
+        where tenant_id = $1 and kind = 'extract'`,
       [tenantId],
     );
     expect(job.rows).toEqual([{ attempts: 1, completed: true, last_error: null }]);
+    // The shadow OCR pass is queued as its own job (group 1.29), by the worker role.
+    const shadow = await admin.query(`select 1 from jobs where tenant_id = $1 and kind = 'shadow_ocr'`, [tenantId]);
+    expect(shadow.rowCount).toBe(1);
 
     // A document, written as the worker: the audit column names it.
     const doc = await admin.query(

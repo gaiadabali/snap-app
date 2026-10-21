@@ -62,6 +62,29 @@ export interface ExtractionProvider {
   extract(pages: PageImage | PageImage[]): Promise<ProviderResult>;
 }
 
+/** Default for one model call; the worker passes `EXTRACTION_CALL_TIMEOUT_MS`. */
+export const DEFAULT_CALL_TIMEOUT_MS = 45_000;
+
+/**
+ * Runs one model call under a wall-clock limit and turns the abort into an
+ * ordinary failure that names the model. The signal covers the response body
+ * as well as the headers, so a model that answers 200 and then stalls is cut
+ * off too. Shared with `statement-provider.ts`.
+ */
+export async function withCallTimeout<T>(
+  label: string,
+  timeoutMs: number,
+  call: (signal: AbortSignal) => Promise<T>,
+): Promise<T> {
+  const signal = AbortSignal.timeout(timeoutMs);
+  try {
+    return await call(signal);
+  } catch (error) {
+    if (signal.aborted) throw new Error(`${label} timed out after ${Math.round(timeoutMs / 1000)} s`);
+    throw error;
+  }
+}
+
 /* ── Parsing ─────────────────────────────────────────────────────────────── */
 
 /**
@@ -229,6 +252,8 @@ export class OllamaCloudProvider implements ExtractionProvider {
      * waste tokens — it instructs it to look for things that are not there.
      */
     private readonly prompt: string = EXTRACTION_PROMPT,
+    /** One call's time limit; see `withCallTimeout`. */
+    private readonly timeoutMs: number = DEFAULT_CALL_TIMEOUT_MS,
   ) {}
 
   async extract(pages: PageImage | PageImage[]): Promise<ProviderResult> {
@@ -236,59 +261,62 @@ export class OllamaCloudProvider implements ExtractionProvider {
     if (images.length === 0) throw new Error(`${this.name} was given no pages to read.`);
 
     const started = Date.now();
-    const response = await fetch(`${this.baseUrl}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${this.apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: this.model,
-        messages: [
-          {
-            role: 'user',
-            content: [
-              // One prompt, then every page in order: the OpenAI content-array
-              // shape lets several images ride one user turn, which is what
-              // lets the model read a two-page invoice as one document
-              // instead of two independent guesses that then have to be
-              // reconciled.
-              { type: 'text', text: this.prompt },
-              ...images.map((image) => ({
-                type: 'image_url' as const,
-                image_url: {
-                  url: `data:${image.mimeType};base64,${image.bytes.toString('base64')}`,
-                },
-              })),
-            ],
-          },
-        ],
-        // Zero, because extraction is a reading task and not a creative one:
-        // the same image must produce the same answer, or a replay proves
-        // nothing.
-        temperature: 0,
-        // Sized for the document, not for a corner-shop docket. A two-page
-        // invoice with 40 line items produced ~7,000 characters of JSON and
-        // was cut off mid-value at the old 2,000-token cap — which surfaced
-        // as a *parse* error, so the router escalated through all four models,
-        // each one truncating at exactly the same place. See the truncation
-        // check below: the cap is now generous, and running into it is
-        // reported as what it is.
-        max_tokens: 16000,
-      }),
+    const data = await withCallTimeout(`${this.model}`, this.timeoutMs, async (signal) => {
+      const response = await fetch(`${this.baseUrl}/chat/completions`, {
+        method: 'POST',
+        signal,
+        headers: {
+          Authorization: `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: this.model,
+          messages: [
+            {
+              role: 'user',
+              content: [
+                // One prompt, then every page in order: the OpenAI content-array
+                // shape lets several images ride one user turn, which is what
+                // lets the model read a two-page invoice as one document
+                // instead of two independent guesses that then have to be
+                // reconciled.
+                { type: 'text', text: this.prompt },
+                ...images.map((image) => ({
+                  type: 'image_url' as const,
+                  image_url: {
+                    url: `data:${image.mimeType};base64,${image.bytes.toString('base64')}`,
+                  },
+                })),
+              ],
+            },
+          ],
+          // Zero, because extraction is a reading task and not a creative one:
+          // the same image must produce the same answer, or a replay proves
+          // nothing.
+          temperature: 0,
+          // Sized for the document, not for a corner-shop docket. A two-page
+          // invoice with 40 line items produced ~7,000 characters of JSON and
+          // was cut off mid-value at the old 2,000-token cap — which surfaced
+          // as a *parse* error, so the router escalated through all four models,
+          // each one truncating at exactly the same place. See the truncation
+          // check below: the cap is now generous, and running into it is
+          // reported as what it is.
+          max_tokens: 16000,
+        }),
+      });
+
+      if (!response.ok) {
+        const detail = await response.text().catch(() => '');
+        throw new Error(
+          `${this.name} ${this.model} returned ${response.status}: ${detail.slice(0, 300)}`,
+        );
+      }
+
+      return (await response.json()) as {
+        choices?: Array<{ message?: { content?: string }; finish_reason?: string }>;
+        usage?: { prompt_tokens?: number; completion_tokens?: number };
+      };
     });
-
-    if (!response.ok) {
-      const detail = await response.text().catch(() => '');
-      throw new Error(
-        `${this.name} ${this.model} returned ${response.status}: ${detail.slice(0, 300)}`,
-      );
-    }
-
-    const data = (await response.json()) as {
-      choices?: Array<{ message?: { content?: string }; finish_reason?: string }>;
-      usage?: { prompt_tokens?: number; completion_tokens?: number };
-    };
     const raw = data.choices?.[0]?.message?.content ?? '';
     if (!raw) throw new Error(`${this.name} returned an empty response.`);
 
@@ -386,8 +414,13 @@ export const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
 export class OpenRouterProvider extends OllamaCloudProvider {
   override readonly name: string = 'openrouter';
 
-  constructor(model: string, prompt: string = EXTRACTION_PROMPT, apiKey = readOpenRouterKey()) {
-    super(model, apiKey, OPENROUTER_BASE_URL, prompt);
+  constructor(
+    model: string,
+    prompt: string = EXTRACTION_PROMPT,
+    apiKey = readOpenRouterKey(),
+    timeoutMs: number = DEFAULT_CALL_TIMEOUT_MS,
+  ) {
+    super(model, apiKey, OPENROUTER_BASE_URL, prompt, timeoutMs);
   }
 }
 
