@@ -57,7 +57,13 @@ export function AuthMethods({
         <>
           {yourtalEnabled ? (
             <>
-              <Link
+              {/*
+               * A plain <a>, never next/link: /auth/yourtal is a GET handler
+               * that starts a sign-in (a flow row, a rate-limit count, a
+               * cookie), and a prefetched Link would run it on every view of
+               * this page. Same for Google below.
+               */}
+              <a
                 href={
                   mode === 'register'
                     ? `/auth/yourtal?signUp=1&returnTo=${encodeURIComponent(returnTo)}`
@@ -66,7 +72,7 @@ export function AuthMethods({
                 className="btn btn-primary btn-lg w-full"
               >
                 {mode === 'register' ? 'Create account with YourTal' : 'Sign in with YourTal'}
-              </Link>
+              </a>
               <p className="auth-method-note">One account for SnapApp, YourTal and our other apps.</p>
               <div className="auth-divider">or</div>
             </>
@@ -80,12 +86,12 @@ export function AuthMethods({
               Continue with Google (demo sign-in)
             </Link>
           ) : (
-            <Link
+            <a
               href={`/auth/google?returnTo=${encodeURIComponent(returnTo)}`}
               className="btn btn-secondary btn-lg w-full"
             >
               Continue with Google
-            </Link>
+            </a>
           )}
 
           {config.mailerConfigured ? (
