@@ -111,6 +111,30 @@ describe('Sign in with YourTal settings', () => {
     }
   });
 
+  it('notices a key file copied into place after boot, within a minute, without a restart', async () => {
+    vi.stubEnv('YOURTAL_OIDC_ISSUER', 'https://yourtal.gaiada.com/oidc');
+    vi.stubEnv('YOURTAL_OIDC_WEB_CLIENT_ID', 'snapapp-staging-web');
+    const later = join(dir, 'later.jwk');
+    vi.stubEnv('YOURTAL_OIDC_KEY_FILE', later);
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      vi.setSystemTime(new Date('2026-10-21T00:00:00Z'));
+      const { settings } = await load();
+      expect(settings.yourtalSignInSettings()?.web).toBeUndefined();
+
+      const { privateKey } = await generateKeyPair('RS256', { extractable: true });
+      writeFileSync(later, JSON.stringify({ ...(await exportJWK(privateKey)), kid: 'k1' }));
+      // Not re-read at every request...
+      vi.setSystemTime(new Date('2026-10-21T00:00:30Z'));
+      expect(settings.yourtalSignInSettings()?.web).toBeUndefined();
+      // ...but within a minute.
+      vi.setSystemTime(new Date('2026-10-21T00:01:01Z'));
+      expect(settings.yourtalSignInSettings()?.web?.clientId).toBe('snapapp-staging-web');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('refuses an http issuer or website redirect in production', async () => {
     vi.stubEnv('NODE_ENV', 'production');
     vi.stubEnv('YOURTAL_OIDC_ISSUER', 'http://yourtal.gaiada.com/oidc');

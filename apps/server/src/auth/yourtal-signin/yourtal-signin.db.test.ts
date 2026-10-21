@@ -71,13 +71,19 @@ describeIfDb('Sign in with YourTal — real database, real provider', () => {
   /** Start, sign in at the stand-in YourTal, and return what the callback would hand to finish. */
   async function authorize(
     who: FakePerson,
-    options: { client?: 'web' | 'mobile'; amr?: string[]; returnTo?: string; signUp?: boolean } = {},
+    options: {
+      client?: 'web' | 'mobile';
+      amr?: string[];
+      authTime?: number;
+      returnTo?: string;
+      signUp?: boolean;
+    } = {},
   ) {
     const started = await controller.start(
       { client: options.client ?? 'web', returnTo: options.returnTo, signUp: options.signUp },
       caller(),
     );
-    yt.nextSignIn = { person: who, amr: options.amr };
+    yt.nextSignIn = { person: who, amr: options.amr, authTime: options.authTime };
     const redirect = await yt.authorize(started.url);
     const code = redirect.searchParams.get('code');
     const state = redirect.searchParams.get('state');
@@ -92,7 +98,8 @@ describeIfDb('Sign in with YourTal — real database, real provider', () => {
 
   async function userRow(userId: string) {
     const { rows } = await admin.query(
-      'SELECT id, subject, email::text AS email, display_name, email_verified_at, password_hash FROM users WHERE id = $1',
+      `SELECT id, subject, email::text AS email, display_name, email_verified_at, password_hash, yourtal_linked_at
+         FROM users WHERE id = $1`,
       [userId],
     );
     return rows[0];
@@ -204,11 +211,21 @@ describeIfDb('Sign in with YourTal — real database, real provider', () => {
     expect(again.user.userId).toBe(result.user.userId);
   });
 
-  it('links an existing verified-email account ONCE, then keys on the sub', async () => {
+  it('links an existing verified-email account ONCE, closes its other doors, then keys on the sub', async () => {
     const repo = await import('../../repo.js');
+    const { issueSession, authenticateSession } = await import('../sessions.js');
+    const { AccountController } = await import('../account.controller.js');
     const who = person('legacy');
     const legacy = await repo.upsertUserByEmail(who.email, 'Legacy Name'); // subject dev|<email>
     await admin.query('UPDATE users SET email_verified_at = now() WHERE id = $1', [legacy.userId]);
+    // Before the link: a live SnapApp session and an unused reset link.
+    const oldSession = await issueSession(legacy.userId);
+    await new AccountController().requestPasswordReset({ email: who.email }, caller());
+    const unused = () =>
+      admin.query('SELECT count(*)::int AS n FROM auth_email_tokens WHERE user_id = $1 AND used_at IS NULL', [
+        legacy.userId,
+      ]);
+    expect((await unused()).rows[0].n).toBe(1);
 
     const first = await signIn(who);
     expect(first.outcome).toBe('linked');
@@ -217,6 +234,17 @@ describeIfDb('Sign in with YourTal — real database, real provider', () => {
 
     const row = await userRow(legacy.userId);
     expect(row.subject).toBe(`yourtal|${yt.subFor(who.accountId)}`);
+    expect(row.yourtal_linked_at).not.toBeNull();
+
+    // A verified account too: every older session ended, every mailed link dead.
+    expect(await authenticateSession(oldSession)).toBeNull();
+    expect((await unused()).rows[0].n).toBe(0);
+    const { rows: reasons } = await admin.query(
+      `SELECT DISTINCT revoked_reason FROM user_sessions WHERE user_id = $1 AND revoked_at IS NOT NULL`,
+      [legacy.userId],
+    );
+    expect(reasons).toEqual([{ revoked_reason: 'yourtal_linked' }]);
+    expect((await authenticateSession(first.token))?.user.userId).toBe(legacy.userId);
 
     const second = await signIn(who);
     expect(second.outcome).toBe('signed_in');
@@ -233,10 +261,13 @@ describeIfDb('Sign in with YourTal — real database, real provider', () => {
     expect(linked.outcome).toBe('linked');
     expect(linked.user.userId).toBe(registered.user.userId);
 
-    // Password: the right password is now refused, pointing to YourTal.
+    // Password: the link removed it, so the old password is just wrong — the
+    // same 401 as any wrong password. (Saying "use YourTal" here, without a
+    // password to check, would tell anyone which addresses are linked.)
+    expect((await userRow(registered.user.userId)).password_hash).toBeNull();
     await expect(
       auth.passwordSignIn({ email: who.email, password: 'a-decent-password' }, caller()),
-    ).rejects.toMatchObject({ status: 403, response: { error: 'use_yourtal' } });
+    ).rejects.toMatchObject({ status: 401 });
 
     // Magic link: a genuine, unused link is refused too.
     const { issueMagicLinkToken } = await import('../../tokens.js');
@@ -256,6 +287,46 @@ describeIfDb('Sign in with YourTal — real database, real provider', () => {
     await auth.register({ email, password: 'a-decent-password' }, caller());
     const ok = await auth.passwordSignIn({ email, password: 'a-decent-password' }, caller());
     expect(ok.user.email).toBe(email);
+  });
+
+  it('the door is in SQL: SnapApp’s own session opener refuses a linked account, YourTal’s only a linked one', async () => {
+    const { issueSession, issueYourTalSession, sqlState } = await import('../sessions.js');
+    const { signedIn } = await import('../signed-in.js');
+    const repo = await import('../../repo.js');
+
+    const linked = await signIn(person('door'));
+    // As an older image of the API would: straight to identity_session_open.
+    const refused = await issueSession(linked.user.userId).catch((error: unknown) => error);
+    expect(sqlState(refused)).toBe('YT001');
+    // Through the shared sign-in path, as password / magic link / Google do.
+    await expect(signedIn(linked.user.userId, 'snapapp')).rejects.toMatchObject({
+      status: 403,
+      response: { error: 'use_yourtal' },
+    });
+
+    // And the YourTal opener will not open a session for an account that is not linked.
+    const plain = await repo.upsertUserByEmail(freshEmail('door-plain'), 'Plain');
+    await expect(issueYourTalSession(plain.userId)).rejects.toBeTruthy();
+    expect(typeof (await issueSession(plain.userId))).toBe('string');
+  });
+
+  it('treats yourtal_linked_at as linked even if the subject was rewritten by hand', async () => {
+    const who = person('marked');
+    const id = randomUUID();
+    await admin.query(
+      `INSERT INTO users (id, subject, email, display_name, email_verified_at, yourtal_linked_at)
+       VALUES ($1, $2, $3, 'Marked', now(), now())`,
+      [id, `dev|${who.email}`, who.email],
+    );
+    await expect(signIn(who)).rejects.toMatchObject({ status: 409, response: { error: 'account_review' } });
+    expect((await userRow(id)).subject).toBe(`dev|${who.email}`);
+    const { rows } = await admin.query('SELECT kind FROM yourtal_sign_in_reviews WHERE yourtal_sub = $1', [
+      yt.subFor(who.accountId),
+    ]);
+    expect(rows).toEqual([{ kind: 'second_sub' }]);
+
+    const { issueSession, sqlState } = await import('../sessions.js');
+    expect(sqlState(await issueSession(id).catch((error: unknown) => error))).toBe('YT001');
   });
 
   it('linking an account whose address was never proven clears its password and ends its sessions', async () => {
@@ -345,6 +416,54 @@ describeIfDb('Sign in with YourTal — real database, real provider', () => {
     expect(rows).toEqual([{ kind: 'email_collision', user_id: first.user.userId, other_user_id: other.userId }]);
   });
 
+  it('flags, rather than fails, when another sign-in route takes the new email mid-refresh (unique violation)', async () => {
+    const who = person('race');
+    const first = await signIn(who);
+    const contested = freshEmail('contested');
+
+    // Another route (magic link, Google) is inserting an account with the
+    // address, uncommitted: the function's look-up cannot see it yet, so its
+    // UPDATE waits on the unique index and then hits the violation.
+    const racer = new Client({ connectionString: process.env.ADMIN_DATABASE_URL ?? url });
+    await racer.connect();
+    try {
+      await racer.query('BEGIN');
+      const otherId = randomUUID();
+      await racer.query(`INSERT INTO users (id, subject, email, display_name) VALUES ($1, $2, $3, 'Racer')`, [
+        otherId,
+        `dev|${contested}`,
+        contested,
+      ]);
+      who.email = contested;
+      const pending = signIn(who);
+      // Wait until the sign-in is genuinely blocked on the racer's row — so
+      // this proves the unique-violation path, not the ordinary look-up.
+      let blocked = false;
+      for (let i = 0; i < 100 && !blocked; i += 1) {
+        const { rows } = await admin.query(
+          `SELECT 1 FROM pg_stat_activity
+            WHERE wait_event_type = 'Lock' AND query LIKE '%identity_yourtal_sign_in%'`,
+        );
+        blocked = rows.length > 0;
+        if (!blocked) await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+      expect(blocked).toBe(true);
+      await racer.query('COMMIT');
+
+      const result = await pending;
+      expect(result.user.userId).toBe(first.user.userId);
+      expect(result.user.email).not.toBe(contested); // the old copy stayed
+      const { rows } = await admin.query(
+        'SELECT kind, other_user_id FROM yourtal_sign_in_reviews WHERE yourtal_sub = $1',
+        [yt.subFor(who.accountId)],
+      );
+      expect(rows).toEqual([{ kind: 'email_collision', other_user_id: otherId }]);
+    } finally {
+      await racer.query('ROLLBACK').catch(() => undefined);
+      await racer.end();
+    }
+  });
+
   it('refuses a wrong state, and the flow is then spent', async () => {
     const who = person('state');
     const response = await authorize(who);
@@ -384,6 +503,24 @@ describeIfDb('Sign in with YourTal — real database, real provider', () => {
       status: 401,
       response: { error: 'yourtal_failed' },
     });
+  });
+
+  it('verifies the ID token signature against the published JWKS (by kid)', async () => {
+    const { resetYourTalDiscoveryCache } = await import('./oidc.js');
+    const who = person('forged-sig');
+    // A fresh configuration, so the JWKS is fetched now, from the impostor set.
+    resetYourTalDiscoveryCache();
+    yt.publishWrongJwks = true;
+    try {
+      await expect(signIn(who)).rejects.toMatchObject({ status: 401, response: { error: 'yourtal_failed' } });
+      const { rows } = await admin.query('SELECT 1 FROM users WHERE email = $1', [who.email]);
+      expect(rows).toHaveLength(0);
+    } finally {
+      yt.publishWrongJwks = false;
+      resetYourTalDiscoveryCache();
+    }
+    // With the real key published again, the same person signs in.
+    expect((await signIn(who)).outcome).toBe('created');
   });
 
   it('refuses a teen (invites are not built yet) and creates nothing', async () => {
@@ -429,6 +566,23 @@ describeIfDb('Sign in with YourTal — real database, real provider', () => {
     expect((await signIn(who, { amr: ['hwk'] })).user.userId).toBe(first.user.userId);
   });
 
+  it('refuses staff whose YourTal sign-in is older than 12 hours; others are not affected', async () => {
+    const now = Math.floor(Date.now() / 1000);
+    const who = person('staff-stale');
+    const first = await signIn(who, { amr: ['hwk'] });
+    await admin.query(`INSERT INTO platform_staff (user_id, role) VALUES ($1, 'support')`, [first.user.userId]);
+
+    await expect(signIn(who, { amr: ['hwk'], authTime: now - 13 * 3600 })).rejects.toMatchObject({
+      status: 403,
+      response: { error: 'staff_reauth_required' },
+    });
+    expect((await signIn(who, { amr: ['hwk'], authTime: now - 11 * 3600 })).user.userId).toBe(first.user.userId);
+
+    // Not staff: an old YourTal sign-in is fine.
+    const plain = person('stale-plain');
+    expect((await signIn(plain, { authTime: now - 72 * 3600 })).outcome).toBe('created');
+  });
+
   it('refuses to LINK a legacy staff account without a passkey, and changes nothing', async () => {
     const repo = await import('../../repo.js');
     const who = person('legacy-staff');
@@ -453,18 +607,79 @@ describeIfDb('Sign in with YourTal — real database, real provider', () => {
     expect(yt.lastAuthorizationParams?.get('redirect_uri')).toBe(yt.mobileRedirectUri);
   });
 
-  it('a phone-app response cannot be finished as a web flow, and vice versa', async () => {
-    // The flow row decides the client, not the caller: a web flow's state
-    // with a phone code fails the code redemption.
-    const phone = await authorize(person('cross-p'), { client: 'mobile' });
-    const web = await authorize(person('cross-w'));
-    await expect(controller.finish({ ...web, code: phone.code }, caller())).rejects.toMatchObject({
+  /**
+   * Run a started flow's OWN authorization request (its state, nonce and PKCE
+   * challenge) with some parameters changed, as an attacker relaying it would.
+   */
+  async function authorizeAltered(
+    started: { url: string },
+    who: FakePerson,
+    change: Record<string, string>,
+  ): Promise<{ code: string; state: string; iss: string }> {
+    const url = new URL(started.url);
+    for (const [k, v] of Object.entries(change)) url.searchParams.set(k, v);
+    yt.nextSignIn = { person: who };
+    const redirect = await yt.authorize(url.href);
+    return {
+      code: redirect.searchParams.get('code')!,
+      state: redirect.searchParams.get('state')!,
+      iss: redirect.searchParams.get('iss')!,
+    };
+  }
+
+  it('binds a flow to its client: a code issued to the phone app cannot finish a website flow', async () => {
+    const started = await controller.start({ client: 'web' }, caller());
+    // The website flow's own state, nonce and PKCE challenge — only the client differs.
+    const response = await authorizeAltered(started, person('bind-w'), {
+      client_id: yt.mobileClientId,
+      redirect_uri: yt.mobileRedirectUri,
+    });
+    expect(response.state).toBe(new URL(started.url).searchParams.get('state'));
+    const before = yt.grantErrors.length;
+    await expect(controller.finish({ flowId: started.flowId, ...response }, caller())).rejects.toMatchObject({
+      status: 401,
       response: { error: 'yourtal_failed' },
     });
+    // Refused by the client check itself, which the provider makes before PKCE.
+    expect(yt.grantErrors.slice(before)).toEqual(['client mismatch']);
+  });
+
+  it('binds a flow to its client: a code issued to the website cannot finish a phone-app flow', async () => {
+    const started = await controller.start({ client: 'mobile' }, caller());
+    const response = await authorizeAltered(started, person('bind-m'), {
+      client_id: yt.webClientId,
+      redirect_uri: yt.webRedirectUri,
+    });
+    const before = yt.grantErrors.length;
+    await expect(controller.finish({ flowId: started.flowId, ...response }, caller())).rejects.toMatchObject({
+      status: 401,
+      response: { error: 'yourtal_failed' },
+    });
+    expect(yt.grantErrors.slice(before)).toEqual(['client mismatch']);
+  });
+
+  it('refuses an ID token whose nonce is not the flow’s (the code redemption itself succeeds)', async () => {
+    const started = await controller.start({ client: 'web' }, caller());
+    // Same client, same state, same PKCE challenge; only the nonce YourTal is asked to sign differs.
+    const response = await authorizeAltered(started, person('nonce'), { nonce: 'not-the-flows-nonce' });
+    const before = yt.grantErrors.length;
+    await expect(controller.finish({ flowId: started.flowId, ...response }, caller())).rejects.toMatchObject({
+      status: 401,
+      response: { error: 'yourtal_failed' },
+    });
+    // YourTal issued the tokens (no grant error): the refusal is SnapApp's nonce check.
+    expect(yt.grantErrors.length).toBe(before);
   });
 
   it('refuses a returnTo that is not a same-origin path', async () => {
-    for (const bad of ['https://evil.example/', '//evil.example/x', '/\\evil.example', 'javascript:alert(1)']) {
+    for (const bad of [
+      'https://evil.example/',
+      '//evil.example/x',
+      '/\\evil.example',
+      'javascript:alert(1)',
+      '/..//evil.example',
+      '/%2e%2e//evil.example',
+    ]) {
       await expect(controller.start({ client: 'web', returnTo: bad }, caller())).rejects.toMatchObject({
         status: 400,
         response: { error: 'invalid_return_to' },
@@ -499,6 +714,12 @@ describeIfDb('Sign in with YourTal — real database, real provider', () => {
     expect(await account.requestPasswordReset({ email: unlinked }, caller())).toEqual({ ok: true });
     expect(await account.requestPasswordReset({ email: who.email }, caller())).toEqual({ ok: true });
     await settleMail();
+    expect(sent.map((m) => m.to)).toEqual([unlinked]);
+
+    // Nor a magic link: the request answers the same, and mails nothing.
+    sent.length = 0;
+    expect(await auth.requestMagicLink({ email: unlinked }, caller())).toEqual({ ok: true });
+    expect(await auth.requestMagicLink({ email: who.email }, caller())).toEqual({ ok: true });
     expect(sent.map((m) => m.to)).toEqual([unlinked]);
   });
 

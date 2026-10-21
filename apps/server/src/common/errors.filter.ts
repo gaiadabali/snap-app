@@ -25,6 +25,28 @@ import { StatementPageCapError } from '../statements/pdf-statement-import.js';
  *     error that helpfully quotes the failing statement hands an attacker the
  *     schema one request at a time.
  */
+/**
+ * An error as it may be written to the log.
+ *
+ * drizzle wraps a failed query as "Failed query: <sql>\nparams: <values>",
+ * in the message AND therefore the stack. The values are whatever the call
+ * bound: for the identity functions that is a YourTal `sub`, an email address,
+ * a name, a password hash. The SQL and the database's own reason are kept
+ * (they are what makes the log useful); the values are not.
+ */
+export function loggableError(error: Error): { message: string; stack?: string } {
+  const message = withoutParams(error.message);
+  const cause = (error as { cause?: unknown }).cause;
+  const reason = cause instanceof Error && cause.message ? ` (cause: ${withoutParams(cause.message)})` : '';
+  const stack = error.stack ? error.stack.split(error.message).join(message) : undefined;
+  return { message: `${message}${reason}`, stack };
+}
+
+function withoutParams(message: string): string {
+  const at = message.indexOf('\nparams:');
+  return at === -1 ? message : `${message.slice(0, at)}\nparams: [redacted]`;
+}
+
 @Catch()
 export class ErrorsFilter implements ExceptionFilter {
   private readonly logger = new Logger('http');
@@ -71,10 +93,8 @@ export class ErrorsFilter implements ExceptionFilter {
     }
 
     const asError = error instanceof Error ? error : new Error(String(error));
-    this.logger.error(
-      `500 ${request.method} ${request.url} — ${asError.message}`,
-      asError.stack,
-    );
+    const loggable = loggableError(asError);
+    this.logger.error(`500 ${request.method} ${request.url} — ${loggable.message}`, loggable.stack);
     void reply.status(HttpStatus.INTERNAL_SERVER_ERROR).send({
       error: 'internal_error',
       message: 'Something went wrong. It has been logged.',

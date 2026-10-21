@@ -20,7 +20,14 @@ export type YourTalIdentity = {
   ageBand: 'adult';
   /** `amr` has `hwk` (a passkey) or `mfa` (two factors): enough for staff. */
   strongAuth: boolean;
+  /** `auth_time` within the last 12 hours: recent enough for staff. */
+  recentAuth: boolean;
 };
+
+/** How old a staff member's YourTal sign-in (`auth_time`) may be. */
+export const STAFF_MAX_AUTH_AGE_SECONDS = 12 * 60 * 60;
+/** Clock skew tolerated for an `auth_time` slightly in the future. */
+const CLOCK_SKEW_SECONDS = 5 * 60;
 
 /** Every refusal the sign-in endpoints give, with its status and the words a person sees. */
 export const REFUSALS = {
@@ -49,6 +56,11 @@ export const REFUSALS = {
     HttpStatus.FORBIDDEN,
     'SnapApp staff must sign in to YourTal with a passkey. Add a passkey to your YourTal account, ' +
       'then sign in again using it.',
+  ],
+  staff_reauth_required: [
+    HttpStatus.FORBIDDEN,
+    'For your security, SnapApp staff must have signed in to YourTal in the last 12 hours. ' +
+      'Sign out of YourTal, sign in there again, then come back to SnapApp.',
   ],
   account_review: [
     HttpStatus.CONFLICT,
@@ -88,7 +100,10 @@ const MAX_NAME = 120;
  * `teen_invite_required` for now: invites are group task 3.10, and until then
  * no teen has one.
  */
-export function identityFromClaims(claims: Record<string, unknown>): YourTalIdentity {
+export function identityFromClaims(
+  claims: Record<string, unknown>,
+  nowSeconds: number = Math.floor(Date.now() / 1000),
+): YourTalIdentity {
   const sub = claims.sub;
   if (typeof sub !== 'string' || sub.length === 0 || sub.length > 255 || /[\s\p{Cc}]/u.test(sub)) {
     throw refusal('yourtal_failed');
@@ -101,8 +116,22 @@ export function identityFromClaims(claims: Record<string, unknown>): YourTalIden
   if (ageBand === 'teen') throw refusal('teen_invite_required');
   if (ageBand !== 'adult') throw refusal('yourtal_failed');
 
-  const email = typeof claims.email === 'string' ? claims.email.trim().toLowerCase() : '';
-  if (!email || email.length > 320 || !email.includes('@') || /[\s\p{Cc}]/u.test(email)) {
+  // Taken exactly as sent, never converted. The contract says YourTal sends a
+  // lower-case address (§1.3). One that is not printable ASCII, or not
+  // already lower-case, is refused rather than "fixed": Unicode case mapping
+  // can turn one address into another (U+212A KELVIN SIGN lower-cases to `k`),
+  // and the one-time link matches an existing account by this value.
+  const email = typeof claims.email === 'string' ? claims.email : '';
+  const at = email.indexOf('@');
+  if (
+    email.length === 0 ||
+    email.length > 320 ||
+    !/^[\x21-\x7e]+$/.test(email) ||
+    email !== email.toLowerCase() ||
+    at <= 0 ||
+    at !== email.lastIndexOf('@') ||
+    at === email.length - 1
+  ) {
     throw refusal('yourtal_failed');
   }
   // Always true by the contract (§1.3), and checked anyway: the one-time
@@ -110,6 +139,8 @@ export function identityFromClaims(claims: Record<string, unknown>): YourTalIden
   if (claims.email_verified !== true) throw refusal('email_unverified');
 
   const amr = Array.isArray(claims.amr) ? claims.amr.filter((v): v is string => typeof v === 'string') : [];
+  const authTime =
+    typeof claims.auth_time === 'number' && Number.isFinite(claims.auth_time) ? claims.auth_time : null;
 
   return {
     sub,
@@ -119,13 +150,29 @@ export function identityFromClaims(claims: Record<string, unknown>): YourTalIden
     region,
     ageBand,
     strongAuth: amr.includes('hwk') || amr.includes('mfa'),
+    // Staff only (docs/26 §1.10 asks for a strong sign-in; this asks for a
+    // recent one too). Decided from the token alone: YourTal may later honour
+    // max_age / prompt=login, and nothing here depends on it.
+    recentAuth:
+      authTime !== null &&
+      authTime <= nowSeconds + CLOCK_SKEW_SECONDS &&
+      nowSeconds - authTime <= STAFF_MAX_AUTH_AGE_SECONDS,
   };
 }
 
-/** A display name, without control characters, at most 120 characters. Never trusted as markup. */
+/**
+ * A display name, at most 120 characters, never trusted as markup. Control
+ * characters become spaces; format characters (Unicode Cf: bidi overrides
+ * such as U+202E, zero-width joiners and spaces) are removed, so a name cannot
+ * reorder or hide the text shown around it.
+ */
 export function cleanName(value: unknown): string | undefined {
   if (typeof value !== 'string') return undefined;
-  const cleaned = value.replace(/\p{Cc}/gu, ' ').replace(/\s+/g, ' ').trim();
+  const cleaned = value
+    .replace(/\p{Cf}/gu, '')
+    .replace(/\p{Cc}/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
   if (!cleaned) return undefined;
   return [...cleaned].slice(0, MAX_NAME).join('');
 }
@@ -140,12 +187,18 @@ export function cleanName(value: unknown): string | undefined {
  */
 export function sameOriginPath(path: string | null | undefined): string | null {
   if (!path || !path.startsWith('/') || path.length > 2048) return null;
-  if (/[\x00-\x1f\x7f]/.test(path)) return null;
+  if (/[\x00-\x1f\x7f\\]/.test(path)) return null;
   const placeholder = 'http://internal.invalid';
   try {
     const resolved = new URL(path, placeholder);
     if (resolved.origin !== placeholder) return null;
-    return `${resolved.pathname}${resolved.search}${resolved.hash}`;
+    const normalised = `${resolved.pathname}${resolved.search}${resolved.hash}`;
+    // Dot segments are resolved above, so `/..//evil.com`, `/.//evil.com`
+    // and `/%2e%2e//evil.com` all come out as `//evil.com`: a link to another
+    // host once a browser follows it. Judge what the path BECAME, not only
+    // what was sent.
+    if (normalised.startsWith('//') || /[\x00-\x1f\x7f\\]/.test(normalised)) return null;
+    return normalised;
   } catch {
     return null;
   }

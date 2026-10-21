@@ -1,3 +1,5 @@
+import { timingSafeEqual } from 'node:crypto';
+
 import * as oidc from 'openid-client';
 
 import { refusal } from './claims.js';
@@ -14,8 +16,16 @@ import {
  * (OpenID Certified). Nothing here is hand-written protocol: discovery, the
  * authorization URL, PKCE, the `iss` response parameter (RFC 9207), the code
  * redemption with `private_key_jwt` or as a public client, and the ID token
- * checks (signature from the JWKS by `kid`, `iss`, `aud`, `azp`, `nonce`,
- * `exp`, `iat`) are the library's. docs/26 §1.7.
+ * checks (`iss`, `aud`, `azp`, `nonce`, `exp`, `iat`) are the library's.
+ * docs/26 §1.7.
+ *
+ * THE SIGNATURE. openid-client does NOT check an ID token's signature by
+ * default when it comes straight from the token endpoint (OIDC Core
+ * §3.1.3.7 lets a client rely on TLS there). We do not: `make()` turns on
+ * `enableNonRepudiationChecks`, so every ID token is verified against
+ * YourTal's published JWKS by `kid` (RS256 only), and a token signed with any
+ * other key is refused. yourtal-signin.db.test.ts proves it with a provider
+ * that publishes the wrong key.
  *
  * YourTal's tokens never leave this module except as the verified claims:
  * nothing is stored, logged or sent to the browser or the phone (§1.9, §1.10).
@@ -58,7 +68,12 @@ async function configurationFor(issuer: URL, client: YourTalClientSettings): Pro
         id_token_signed_response_alg: 'RS256',
       },
       auth,
-      { timeout: HTTP_TIMEOUT_SECONDS, execute: insecure ? [oidc.allowInsecureRequests] : [] },
+      {
+        timeout: HTTP_TIMEOUT_SECONDS,
+        // Order matters: the insecure-transport flag first, so the JWKS fetch
+        // made by the signature check is allowed on a developer's http issuer.
+        execute: [...(insecure ? [oidc.allowInsecureRequests] : []), oidc.enableNonRepudiationChecks],
+      },
     );
   };
 
@@ -131,13 +146,23 @@ export async function startAuthorization(
   return { url: oidc.buildAuthorizationUrl(config, parameters).href, state, nonce, codeVerifier };
 }
 
+/** Constant-time string comparison. */
+function same(a: string, b: string): boolean {
+  const x = Buffer.from(a, 'utf8');
+  const y = Buffer.from(b, 'utf8');
+  return x.byteLength === y.byteLength && timingSafeEqual(x, y);
+}
+
 /**
  * Redeem the code and return the ID token's claims, verified.
  *
- * `state` and `iss` have already been compared by the caller (constant time,
- * against the stored flow and the configured issuer); openid-client checks
- * them again here, together with PKCE, the client authentication and every
- * ID token check. Any failure is one refusal: the person starts again.
+ * `state` has already been compared by the caller against the stored flow.
+ * `iss` is compared here, exactly, with the issuer YourTal's discovery
+ * document names (RFC 9207; a mix-up defence) — the discovered string, not a
+ * re-serialised URL, which would add a trailing slash to a bare-origin
+ * issuer. openid-client then checks both again, with PKCE, the client
+ * authentication and every ID token check including the signature. A wrong
+ * `iss` is `invalid_flow`; any other failure is `yourtal_failed`.
  */
 export async function redeemCode(
   kind: YourTalClientKind,
@@ -151,6 +176,8 @@ export async function redeemCode(
   } catch {
     throw refusal('yourtal_unavailable');
   }
+
+  if (!same(response.iss, config.serverMetadata().issuer)) throw refusal('invalid_flow');
 
   // The authorization response exactly as YourTal sent it to the redirect URI.
   const currentUrl = new URL(client.redirectUri);

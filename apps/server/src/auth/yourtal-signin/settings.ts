@@ -97,7 +97,14 @@ export type WebClientKey = { key: CryptoKey; kid: string; alg: string; publicJwk
 const ALLOWED_ALGS = new Set(['RS256', 'PS256', 'ES256']);
 
 let keyCache: { path: string; result: Promise<WebClientKey> } | null = null;
-let keyStatusCache: { path: string | undefined; status: 'ok' | 'missing' | 'invalid' } | null = null;
+let keyStatusCache: {
+  path: string | undefined;
+  status: 'ok' | 'missing' | 'invalid';
+  checkedAt: number;
+} | null = null;
+
+/** A key file that is missing or unusable is looked at again at most this often. */
+const KEY_RECHECK_MS = 60 * 1000;
 
 function readKeyFile(path: string): string | null {
   try {
@@ -108,13 +115,18 @@ function readKeyFile(path: string): string | null {
 }
 
 /**
- * Whether the key file is present and parses as a private key, checked once
- * per path (cheap, synchronous, no crypto). The full import happens on first
- * use, in `webClientKey()`.
+ * Whether the key file is present and parses as a private key (cheap,
+ * synchronous, no crypto; the full import happens on first use, in
+ * `webClientKey()`). A good answer is kept; a missing or unusable file is
+ * looked at again at most once a minute, so a key copied into place after
+ * boot turns the website client on without a restart.
  */
-function webClientKeyStatus(): 'ok' | 'missing' | 'invalid' {
+function webClientKeyStatus(now: number = Date.now()): 'ok' | 'missing' | 'invalid' {
   const path = config().YOURTAL_OIDC_KEY_FILE;
-  if (keyStatusCache && keyStatusCache.path === path) return keyStatusCache.status;
+  const cached = keyStatusCache;
+  if (cached && cached.path === path && (cached.status === 'ok' || now - cached.checkedAt < KEY_RECHECK_MS)) {
+    return cached.status;
+  }
 
   let status: 'ok' | 'missing' | 'invalid';
   const text = path ? readKeyFile(path) : null;
@@ -132,14 +144,15 @@ function webClientKeyStatus(): 'ok' | 'missing' | 'invalid' {
       status = 'invalid';
     }
   }
-  if (status !== 'ok' && config().YOURTAL_OIDC_WEB_CLIENT_ID) {
-    // Said once per path, and never with the contents.
+  const changed = !cached || cached.path !== path || cached.status !== status;
+  if (changed && status !== 'ok' && config().YOURTAL_OIDC_WEB_CLIENT_ID) {
+    // Said when it changes, not at every re-check, and never with the contents.
     logger.warn(
       `Sign in with YourTal: the website client is OFF — its private key file is ${status}` +
         ` (YOURTAL_OIDC_KEY_FILE${path ? ` = ${path}` : ' is unset'}).`,
     );
   }
-  keyStatusCache = { path, status };
+  keyStatusCache = { path, status, checkedAt: now };
   return status;
 }
 

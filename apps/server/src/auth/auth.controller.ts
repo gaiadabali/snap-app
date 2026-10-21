@@ -39,6 +39,7 @@ import {
   verifyPassword,
 } from './passwords.js';
 import { RateLimiter } from './rate-limit.js';
+import { emailLinkedToYourTal } from './yourtal-signin/repo.js';
 
 export class SignInDto {
   @IsEmail({}, { message: 'That does not look like an email address.' })
@@ -325,6 +326,11 @@ export class AuthController {
         HttpStatus.TOO_MANY_REQUESTS,
       );
     }
+
+    // An account linked to YourTal has no magic-link door (docs/26 §1.10; the
+    // session would be refused in SQL anyway), so it is mailed nothing. The
+    // answer below is the same either way, so this is no oracle.
+    if (await emailLinkedToYourTal(email)) return { ok: true };
 
     const { token } = issueMagicLinkToken(email);
     const link = `${config().WEB_PUBLIC_URL}/auth/magic/callback?token=${encodeURIComponent(token)}`;

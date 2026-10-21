@@ -3,8 +3,7 @@ import type { AuthUser } from '@snap/api-contract';
 
 import { getDb } from '../db.js';
 import { getUser, listWorkspacesFor } from '../repo.js';
-import { issueSession } from './sessions.js';
-import { isLinkedToYourTal } from './yourtal-signin/repo.js';
+import { issueSession, issueYourTalSession, sqlState } from './sessions.js';
 
 /** What every sign-in shaped endpoint returns. */
 export type SignInResponse = {
@@ -41,13 +40,20 @@ export function useYourTalInstead(): ForbiddenException {
  *
  * THE DOOR RULE (docs/26 §1.10). Once an account is linked to YourTal, SnapApp's
  * own methods may not open a session for it: a weaker door beside YourTal
- * defeats its passkeys. Checked here, where every route passes, rather than
- * remembered in each route; `method` is required so no caller can forget to
- * say which door it is.
+ * defeats its passkeys. Enforced in SQL, in the same statement that would
+ * open the session (`identity_session_open` refuses with YT001, 0039), so a
+ * sign-in racing a link cannot slip a session in; this only turns that
+ * refusal into 403 `use_yourtal`. `method` is required so no caller can
+ * forget to say which door it is.
  */
 export async function signedIn(userId: string, method: SignInMethod): Promise<SignInResponse> {
-  if (method === 'snapapp' && (await isLinkedToYourTal(userId))) throw useYourTalInstead();
-  const token = await issueSession(userId);
+  let token: string;
+  try {
+    token = method === 'yourtal' ? await issueYourTalSession(userId) : await issueSession(userId);
+  } catch (error) {
+    if (method === 'snapapp' && sqlState(error) === 'YT001') throw useYourTalInstead();
+    throw error;
+  }
   const user = await getUser(userId);
   if (!user) throw new Error(`signedIn: user ${userId} vanished between sign-in and response`);
   // Read the memberships with a user context and no tenant context — the one

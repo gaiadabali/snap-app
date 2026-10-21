@@ -151,6 +151,7 @@ export class YourTalSignInController {
       'region and age band, then finds, links or creates the account and answers like every sign-in. ' +
       'Refusals are { error, message } with error one of invalid_flow, yourtal_failed, yourtal_unavailable, ' +
       'region_not_supported, teen_invite_required, email_unverified, staff_strong_auth_required, ' +
+        'staff_reauth_required, ' +
       'account_review, try_again, rate_limited, not_configured.',
   })
   async finish(
@@ -171,11 +172,9 @@ export class YourTalSignInController {
       client = flow.client;
 
       // The flow binds this response to the browser or app that started it
-      // (CSRF, docs/26 §4), and `iss` to the one issuer in configuration
-      // (mix-up, RFC 9207). openid-client checks both again.
-      if (!same(body.state, flow.state) || !same(body.iss, settings.issuer.href)) {
-        throw refusal('invalid_flow');
-      }
+      // (CSRF, docs/26 §4). `iss` is compared in redeemCode, against the
+      // issuer the discovery document names (mix-up, RFC 9207).
+      if (!same(body.state, flow.state)) throw refusal('invalid_flow');
 
       const claims = await redeemCode(flow.client, body, flow);
       const identity = identityFromClaims(claims);
@@ -186,6 +185,7 @@ export class YourTalSignInController {
         emailVerified: identity.emailVerified,
         name: identity.name,
         strongAuth: identity.strongAuth,
+        recentAuth: identity.recentAuth,
       });
 
       switch (result.outcome) {
@@ -208,12 +208,15 @@ export class YourTalSignInController {
         case 'staff_strong_auth_required':
           this.logger.warn(`sign-in refused: staff without a passkey client=${flow.client} user=${result.userId}`);
           throw refusal('staff_strong_auth_required');
+        case 'staff_reauth_required':
+          this.logger.warn(`sign-in refused: staff sign-in older than 12h client=${flow.client} user=${result.userId}`);
+          throw refusal('staff_reauth_required');
         case 'retry':
           throw refusal('try_again');
       }
     } catch (error) {
       const code = refusalCode(error);
-      if (code && code !== 'account_review' && code !== 'staff_strong_auth_required') {
+      if (code && code !== 'account_review' && code !== 'staff_strong_auth_required' && code !== 'staff_reauth_required') {
         this.logger.log(`sign-in refused: ${code} client=${client}`);
       }
       throw error;

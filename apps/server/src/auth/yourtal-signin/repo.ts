@@ -67,6 +67,7 @@ export type LinkOutcome =
   | 'unlinkable_account'
   | 'email_unverified'
   | 'staff_strong_auth_required'
+  | 'staff_reauth_required'
   | 'retry';
 
 /** Find, link or create the account for a verified YourTal identity (0039's rules). */
@@ -76,11 +77,13 @@ export async function signInWithYourTal(input: {
   emailVerified: boolean;
   name: string | undefined;
   strongAuth: boolean;
+  recentAuth: boolean;
 }): Promise<{ outcome: LinkOutcome; userId: string | null; emailFlagged: boolean }> {
   const { rows } = await getDb().execute<{ outcome: LinkOutcome; user_id: string | null; email_flagged: boolean }>(sql`
     select outcome, user_id, email_flagged
       from identity_yourtal_sign_in(
-        ${input.sub}, ${input.email}, ${input.emailVerified}, ${input.name ?? null}, ${input.strongAuth}
+        ${input.sub}, ${input.email}, ${input.emailVerified}, ${input.name ?? null},
+        ${input.strongAuth}, ${input.recentAuth}
       )
   `);
   const row = rows[0];
@@ -92,6 +95,18 @@ export async function signInWithYourTal(input: {
 export async function isLinkedToYourTal(userId: string): Promise<boolean> {
   const { rows } = await getDb().execute<{ linked: boolean }>(sql`
     select identity_yourtal_linked(${userId}::uuid) as linked
+  `);
+  return rows[0]?.linked === true;
+}
+
+/**
+ * True when the account with this address is linked to YourTal. Only so the
+ * magic-link request can decline to mail a link that would be refused anyway;
+ * never used to sign anyone in.
+ */
+export async function emailLinkedToYourTal(email: string): Promise<boolean> {
+  const { rows } = await getDb().execute<{ linked: boolean }>(sql`
+    select identity_yourtal_email_linked(${email}) as linked
   `);
   return rows[0]?.linked === true;
 }

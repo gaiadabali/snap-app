@@ -42,7 +42,12 @@ export type FakePerson = {
 };
 
 export type NextSignIn =
-  | { person: FakePerson; amr?: string[] }
+  | {
+      person: FakePerson;
+      amr?: string[];
+      /** When the person signed in at YourTal (epoch seconds): the ID token's `auth_time`. Now when omitted. */
+      authTime?: number;
+    }
   | { cancel: string };
 
 export type FakeYourTalOidc = {
@@ -58,6 +63,13 @@ export type FakeYourTalOidc = {
   nextSignIn: NextSignIn | null;
   /** The parameters of the last authorization request YourTal received. */
   lastAuthorizationParams: URLSearchParams | null;
+  /**
+   * When true, the published JWKS holds a DIFFERENT public key under the same
+   * `kid` as the one that signs ID tokens: every signature check must fail.
+   */
+  publishWrongJwks: boolean;
+  /** Every refusal at the token endpoint, as the provider describes it ("client mismatch", ...). */
+  grantErrors: string[];
   /** The `sub` this provider gives an account (pairwise, same for both clients). */
   subFor(accountId: string): string;
   /** Follow an authorization URL like a browser; returns the URL YourTal redirected to. */
@@ -75,6 +87,11 @@ export async function startFakeYourTalOidc(): Promise<FakeYourTalOidc> {
 
   const signing = await generateKeyPair('RS256', { extractable: true });
   const providerJwk = { ...(await exportJWK(signing.privateKey)), kid: 'test-2026-10-a', alg: 'RS256', use: 'sig' };
+
+  const impostor = await generateKeyPair('RS256', { extractable: true });
+  const impostorJwks = JSON.stringify({
+    keys: [{ ...(await exportJWK(impostor.publicKey)), kid: providerJwk.kid, alg: 'RS256', use: 'sig' }],
+  });
 
   const web = await generateKeyPair('RS256', { extractable: true });
   const webPrivateJwk: JWK = { ...(await exportJWK(web.privateKey)), kid: 'snapapp-test-web-1', alg: 'RS256' };
@@ -97,6 +114,8 @@ export async function startFakeYourTalOidc(): Promise<FakeYourTalOidc> {
     webPrivateJwk,
     nextSignIn: null,
     lastAuthorizationParams: null,
+    publishWrongJwks: false,
+    grantErrors: [],
     subFor,
     authorize: (url) => followAsBrowser(url, fake),
     close: () => new Promise<void>((resolve) => server.close(() => resolve())),
@@ -168,6 +187,9 @@ export async function startFakeYourTalOidc(): Promise<FakeYourTalOidc> {
   });
   // The tests run on plain http; the app talks to it as an insecure issuer.
   provider.proxy = false;
+  provider.on('grant.error', (_ctx: unknown, error: { error_detail?: string; error_description?: string }) => {
+    fake.grantErrors.push(error.error_detail ?? error.error_description ?? 'unknown');
+  });
 
   const callback = provider.callback();
 
@@ -178,6 +200,10 @@ export async function startFakeYourTalOidc(): Promise<FakeYourTalOidc> {
       if (!url.startsWith('/oidc')) {
         res.statusCode = 404;
         return res.end();
+      }
+      if (fake.publishWrongJwks && url.split('?')[0] === '/oidc/jwks') {
+        res.setHeader('content-type', 'application/jwk-set+json');
+        return res.end(impostorJwks);
       }
       if (url.startsWith('/oidc/auth?')) {
         fake.lastAuthorizationParams = new URL(url, issuer).searchParams;
@@ -204,7 +230,7 @@ export async function startFakeYourTalOidc(): Promise<FakeYourTalOidc> {
       await provider.interactionFinished(req, res, { error: 'access_denied', error_description: next.cancel });
       return;
     }
-    const { person, amr = ['pwd'] } = next;
+    const { person, amr = ['pwd'], authTime } = next;
     people.set(person.accountId, person);
     const grant = new provider.Grant({ accountId: person.accountId, clientId: String(details.params.client_id) });
     grant.addOIDCScope(String(details.params.scope));
@@ -212,7 +238,11 @@ export async function startFakeYourTalOidc(): Promise<FakeYourTalOidc> {
     await provider.interactionFinished(
       req,
       res,
-      { login: { accountId: person.accountId, amr }, consent: { grantId }, create: {} },
+      {
+        login: { accountId: person.accountId, amr, ...(authTime === undefined ? {} : { ts: authTime }) },
+        consent: { grantId },
+        create: {},
+      },
       { mergeWithLastSubmission: false },
     );
   }

@@ -4,13 +4,15 @@ import { cleanName, identityFromClaims, refusalCode, sameOriginPath } from './cl
 
 const adult = {
   sub: 'q8mE3s0dW9xYbVvLr2H4tA',
-  email: 'Ana@Example.com',
+  email: 'ana@example.com',
   email_verified: true,
   name: 'Ana',
   region: 'AU',
   age_band: 'adult',
   amr: ['pwd'],
 };
+
+const NOW = 1_792_800_000;
 
 const codeOf = (fn: () => unknown) => {
   try {
@@ -22,8 +24,8 @@ const codeOf = (fn: () => unknown) => {
 };
 
 describe('identityFromClaims', () => {
-  it('reads the contract claims, lower-cases the email copy', () => {
-    expect(identityFromClaims(adult)).toEqual({
+  it('reads the contract claims', () => {
+    expect(identityFromClaims({ ...adult, auth_time: NOW - 60 }, NOW)).toEqual({
       sub: 'q8mE3s0dW9xYbVvLr2H4tA',
       email: 'ana@example.com',
       emailVerified: true,
@@ -31,7 +33,36 @@ describe('identityFromClaims', () => {
       region: 'AU',
       ageBand: 'adult',
       strongAuth: false,
+      recentAuth: true,
     });
+  });
+
+  it('takes the email exactly as sent: never case-folded, refused unless ASCII and lower-case', () => {
+    expect(identityFromClaims({ ...adult, email: 'a.b+c@example.co.id' }).email).toBe('a.b+c@example.co.id');
+    for (const bad of [
+      'Ana@Example.com', // not lower-case: refused, not converted
+      'Kate@example.com', // KELVIN SIGN: toLowerCase() would turn it into "kate@"
+      'ana@exämple.com',
+      ' ana@example.com',
+      'ana@example.com ',
+      'ana@@example.com',
+      'a@b@example.com',
+      '@example.com',
+      'ana@',
+    ]) {
+      expect(codeOf(() => identityFromClaims({ ...adult, email: bad }))).toBe('yourtal_failed');
+    }
+  });
+
+  it('counts a sign-in as recent within 12 hours of auth_time, with a little clock skew', () => {
+    const at = (authTime: unknown) => identityFromClaims({ ...adult, auth_time: authTime }, NOW).recentAuth;
+    expect(at(NOW)).toBe(true);
+    expect(at(NOW - 12 * 3600)).toBe(true);
+    expect(at(NOW - 12 * 3600 - 1)).toBe(false);
+    expect(at(NOW + 60)).toBe(true);
+    expect(at(NOW + 3600)).toBe(false);
+    expect(at(undefined)).toBe(false);
+    expect(at('1792800000')).toBe(false);
   });
 
   it('counts a passkey or two factors as strong, nothing else', () => {
@@ -84,6 +115,12 @@ describe('cleanName', () => {
     expect(cleanName(7)).toBeUndefined();
   });
 
+  it('removes format characters: bidi overrides and zero-width characters', () => {
+    expect(cleanName('Ana‮gnp.exe')).toBe('Anagnp.exe');
+    expect(cleanName('A​n‍a﻿')).toBe('Ana');
+    expect(cleanName('⁦⁩')).toBeUndefined();
+  });
+
   it('keeps markup as text: escaping is the renderer’s job', () => {
     expect(cleanName('<b>Ana</b>')).toBe('<b>Ana</b>');
   });
@@ -102,6 +139,12 @@ describe('sameOriginPath', () => {
       '/\\evil.example',
       '/\t/evil.example',
       'javascript:alert(1)',
+      // Dot segments that normalise to a protocol-relative URL.
+      '/..//evil.com',
+      '/.//evil.com',
+      '/%2e%2e//evil.com',
+      '/%2E%2E//evil.com',
+      '/app/..//evil.com',
       'app',
       '',
       null,
