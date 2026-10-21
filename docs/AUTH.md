@@ -179,6 +179,8 @@ stored `returnTo` (or onboarding). YourTal's own refusals
 `teen_*`, `user_cancelled`) map to messages in `lib/auth/yourtal-errors.ts`;
 the API's refusals carry their own message.
 
+**Phone app (3.3.c).** The sign-in screen shows "Sign in with YourTal" (and the register screen "Create account with YourTal") only when `GET /v1/auth/yourtal` says `mobile`. It calls `start` with `client: "mobile"`, opens the URL with `expo-web-browser`'s `openAuthSessionAsync` (the system browser, never a WebView) and returns to the private-use redirect `au.com.snapapps.app:/oauth/yourtal` (second entry in `scheme` in `app.json`; `app/+native-intent.ts` keeps the router from treating it as a screen). It reads `code`, `state`, `iss` (or `error`) from the return URL, calls `finish`, and stores the returned SnapApp session in SecureStore exactly as any sign-in does. Cancel or dismiss returns quietly. Nothing from YourTal is stored, and the URL, code, state and token are never logged. Words: `src/lib/yourtal-signin.ts`; the old sign-in's `use_yourtal` shows "This account now signs in with YourTal" above the YourTal button.
+
 **The website key.** `pnpm --filter @snap/server yourtal:oidc-key new <file>`
 makes an RS256 key, writes the private JWK (mode 0600) and prints the public
 JWK YourTal registers for the website client; `… public <file>` prints it again.

@@ -398,6 +398,31 @@ export interface SnapApi {
    * means the feature is off: show nothing.
    */
   getYourtalLink(): Promise<YourtalLinkStatus>;
+  /**
+   * `GET /v1/auth/yourtal`: is Sign in with YourTal on for the phone app?
+   * Public. Any failure reads as "not available": the buttons stay hidden.
+   */
+  getYourtalSignInAvailable(): Promise<boolean>;
+  /**
+   * `POST /v1/auth/yourtal/start` as the phone client: YourTal's authorization
+   * URL (it carries `state`, so never log it) and the flow id for `finish`.
+   * Throws `ApiError` with the server's `code`.
+   */
+  startYourtalSignIn(input: {
+    signUp: boolean;
+    locale?: 'en-AU' | 'id-ID';
+  }): Promise<{ url: string; flowId: string }>;
+  /**
+   * `POST /v1/auth/yourtal/finish`: the server redeems the code and answers
+   * with SnapApp's own session, stored exactly as any sign-in's is. No YourTal
+   * token reaches the phone. Throws `ApiError` with `code`.
+   */
+  finishYourtalSignIn(input: {
+    flowId: string;
+    code: string;
+    state: string;
+    iss: string;
+  }): Promise<Session>;
   /** `POST /v1/yourtal/link` — the one-time code from YourTal. Throws `ApiError` with `code`. */
   linkYourtal(code: string): Promise<YourtalLinkStatus>;
   /** `DELETE /v1/yourtal/link`. */

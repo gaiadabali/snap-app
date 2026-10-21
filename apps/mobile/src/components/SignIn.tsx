@@ -3,7 +3,7 @@ import { Animated, Easing, Pressable, ScrollView, StyleSheet, View } from 'react
 import { Text, TextInput } from '@/theme/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { api, type AuthUser, type AvailableTaxRules, type Session } from '@/api';
+import { api, ApiError, type AuthUser, type AvailableTaxRules, type Session } from '@/api';
 import { Icon } from '@/components/Icon';
 import { Avatar } from '@/components/form';
 import { GradientHero, HeroBody, HeroLabel } from '@/components/rich';
@@ -18,7 +18,9 @@ import {
   Small,
   Title,
 } from '@/components/ui';
+import { YourtalSignInButtons } from '@/components/YourtalSignInButtons';
 import { rememberCountry } from '@/lib/pending-country';
+import { isUseYourtal, SIGNIN_COPY } from '@/lib/yourtal-signin';
 import { control, radius, space, type, usePalette } from '@/theme';
 
 /**
@@ -80,6 +82,12 @@ export function SignIn({
     setStep(next);
   }
 
+  /** A refusal from the YourTal sign-in, shown where the old errors are. */
+  function yourtalFailed(message: string) {
+    setNote(null);
+    setError(message);
+  }
+
   async function run(key: string, work: () => Promise<Session | null>) {
     setError(null);
     setBusy(key);
@@ -88,7 +96,13 @@ export function SignIn({
       if (session) onSignedIn(session);
       return session;
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Something went wrong.');
+      if (e instanceof ApiError && isUseYourtal(e.code)) {
+        // An account already linked to YourTal: the old doors are shut, and
+        // the YourTal button on this screen is the way in.
+        setNote(`${SIGNIN_COPY.useYourtalTitle}. ${SIGNIN_COPY.useYourtalBody}`);
+      } else {
+        setError(e instanceof Error ? e.message : 'Something went wrong.');
+      }
       return null;
     } finally {
       setBusy(null);
@@ -151,7 +165,10 @@ export function SignIn({
             </Small>
           </Card>
 
+          <YourtalSignInButtons mode="both" onSignedIn={onSignedIn} onFailure={yourtalFailed} />
+
           {notice ? <Notice tone="info" icon="info">{notice}</Notice> : null}
+          {note ? <Notice tone="info" icon="info">{note}</Notice> : null}
           {error ? <Notice tone="risk" icon="alert">{error}</Notice> : null}
 
           {accounts.length > 0 ? (
@@ -290,6 +307,7 @@ export function SignIn({
             }
           />
 
+          <YourtalSignInButtons mode="signUp" onSignedIn={onSignedIn} onFailure={yourtalFailed} />
           <SocialRow onUnavailable={setNote} />
           {note ? <Notice tone="info" icon="info">{note}</Notice> : null}
 
@@ -345,6 +363,7 @@ export function SignIn({
             }
           />
 
+          <YourtalSignInButtons mode="signIn" onSignedIn={onSignedIn} onFailure={yourtalFailed} />
           <SocialRow onUnavailable={setNote} />
           {note ? <Notice tone="info" icon="info">{note}</Notice> : null}
 

@@ -2032,6 +2032,19 @@ export class MockApi implements SnapApi {
     return paid;
   }
 
+  /** The demo has no YourTal provider to send anyone to: the buttons stay hidden. */
+  async getYourtalSignInAvailable(): Promise<boolean> {
+    return false;
+  }
+
+  async startYourtalSignIn(): Promise<{ url: string; flowId: string }> {
+    throw new Error('Signing in with YourTal is not available in the demo.');
+  }
+
+  async finishYourtalSignIn(): Promise<Session> {
+    throw new Error('Signing in with YourTal is not available in the demo.');
+  }
+
   async getYourtalLink(): Promise<YourtalLinkStatus> {
     await settle(140);
     return yourtalLink;

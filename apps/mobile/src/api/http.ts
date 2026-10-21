@@ -1125,6 +1125,51 @@ export class HttpApi implements SnapApi {
     });
   }
 
+  async getYourtalSignInAvailable(): Promise<boolean> {
+    try {
+      const status = await this.request<{ web: boolean; mobile: boolean }>('GET', '/v1/auth/yourtal', {
+        auth: false,
+        workspaceId: null,
+      });
+      return status?.mobile === true;
+    } catch {
+      return false;
+    }
+  }
+
+  startYourtalSignIn(input: {
+    signUp: boolean;
+    locale?: 'en-AU' | 'id-ID';
+  }): Promise<{ url: string; flowId: string }> {
+    return this.request<{ url: string; flowId: string; expiresAt: string }>(
+      'POST',
+      '/v1/auth/yourtal/start',
+      {
+        body: { client: 'mobile', signUp: input.signUp, ...(input.locale ? { locale: input.locale } : {}) },
+        auth: false,
+        workspaceId: null,
+        queue: false,
+      },
+    );
+  }
+
+  /* Never queued: the code is single-use, so a replay later is a dead code. */
+  async finishYourtalSignIn(input: {
+    flowId: string;
+    code: string;
+    state: string;
+    iss: string;
+  }): Promise<Session> {
+    return this.adopt(
+      await this.request<AuthResponse>('POST', '/v1/auth/yourtal/finish', {
+        body: input,
+        auth: false,
+        workspaceId: null,
+        queue: false,
+      }),
+    );
+  }
+
   getYourtalLink(): Promise<YourtalLinkStatus> {
     return this.get<YourtalLinkStatus>('/v1/yourtal/link', null);
   }
