@@ -9,6 +9,7 @@ import { withTenantAs } from '@snap/db';
 import { closeDb, getDb } from '../db.js';
 import { saveExtraction } from '../repo.js';
 import { provisionTenant, wipeTenant } from '../test-support/tenant.js';
+import { openWorkerDb, type WorkerDb } from '../test-support/worker-db.js';
 import { maskCardLast4 } from './types.js';
 import type { ValidatedExtraction } from './types.js';
 
@@ -35,10 +36,12 @@ const describeIfDb = hasDb ? describe : describe.skip;
 
 const TENANT = 'c4c4c4c4-0000-4000-8000-000000000001';
 const WORKER = 'c4c4c4c4-0000-4000-8000-0000000000a1';
+/** The person who photographed the receipts, and who reads them back. */
+const OWNER = 'c4c4c4c4-0000-4000-8000-0000000000a2';
 
 const q = <T extends Record<string, unknown> = Record<string, unknown>>(
   text: ReturnType<typeof sql>,
-) => withTenantAs(getDb(), WORKER, TENANT, (tx) => tx.execute<T>(text));
+) => withTenantAs(getDb(), OWNER, TENANT, (tx) => tx.execute<T>(text));
 
 const f = <T>(value: T | null, confidence = 0.99) => ({ value, confidence });
 
@@ -102,7 +105,7 @@ async function makeCapture(): Promise<string> {
       id, tenant_id, uploaded_by, original_storage_key, original_mime_type,
       original_byte_size, original_sha256, status
     ) values (
-      ${id}, ${TENANT}, ${WORKER}, ${`${TENANT}/originals/test/${id}`}, 'image/png',
+      ${id}, ${TENANT}, ${OWNER}, ${`${TENANT}/originals/test/${id}`}, 'image/png',
       1024, decode(${randomUUID().replace(/-/g, '').repeat(2).slice(0, 64)}, 'hex'), 'received'
     )
   `);
@@ -111,34 +114,38 @@ async function makeCapture(): Promise<string> {
 
 describeIfDb('card_last4 / card_brand persistence (S1)', () => {
   let admin: Client;
+  let worker: WorkerDb;
 
   beforeAll(async () => {
     if (!hasDb) return;
     admin = await provisionTenant({
       tenantId: TENANT,
       name: 'Card persistence test co',
-      users: [
+      users: [{ id: OWNER, role: 'owner', subject: 'test|card-persistence-owner', email: 'owner@card-persistence.test' }],
+      // No membership: the worker enters through `withWorkerTenant`.
+      serviceUsers: [
         {
           id: WORKER,
-          role: 'member',
           subject: 'test|card-persistence-worker',
           email: 'worker@card-persistence.test',
           displayName: 'Extraction Worker',
         },
       ],
     });
+    worker = openWorkerDb(WORKER);
   });
 
   afterAll(async () => {
     if (!hasDb) return;
-    await wipeTenant(admin, TENANT, [WORKER]);
+    await wipeTenant(admin, TENANT, [WORKER, OWNER]);
     await admin.end();
+    await worker.pool.end();
     await closeDb();
   });
 
   it('a captured card receipt has a non-null card_last4 in the database', async () => {
     const capture = await makeCapture();
-    const { documentId } = await saveExtraction(WORKER, TENANT, capture, cardReading('4417'), META, null);
+    const { documentId } = await saveExtraction(worker.actor, TENANT, capture, cardReading('4417'), META, null);
 
     const row = await q<{ card_last4: string; card_brand: string; payment_method: string }>(sql`
       select card_last4, card_brand, payment_method from documents where id = ${documentId}
@@ -151,7 +158,7 @@ describeIfDb('card_last4 / card_brand persistence (S1)', () => {
   it('does NOT persist a card_last4 when the document did not carry one', async () => {
     // The refusal case: a cash receipt must not fabricate a card identity.
     const capture = await makeCapture();
-    const { documentId } = await saveExtraction(WORKER, TENANT, capture, cardReading(null), META, null);
+    const { documentId } = await saveExtraction(worker.actor, TENANT, capture, cardReading(null), META, null);
 
     const row = await q<{ card_last4: string | null }>(sql`
       select card_last4 from documents where id = ${documentId}
@@ -172,7 +179,7 @@ describeIfDb('card_last4 / card_brand persistence (S1)', () => {
       // reach Postgres.
       const fullLookingPan = '4111111111111111';
       const { documentId } = await saveExtraction(
-        WORKER,
+        worker.actor,
         TENANT,
         capture,
         cardReading(fullLookingPan),
@@ -193,8 +200,8 @@ describeIfDb('card_last4 / card_brand persistence (S1)', () => {
     // The UPDATE branch of saveExtraction, not just the INSERT branch — a
     // card detail read only on a second, better run must still land.
     const capture = await makeCapture();
-    const first = await saveExtraction(WORKER, TENANT, capture, cardReading(null), META, null);
-    const second = await saveExtraction(WORKER, TENANT, capture, cardReading('9012'), META, null);
+    const first = await saveExtraction(worker.actor, TENANT, capture, cardReading(null), META, null);
+    const second = await saveExtraction(worker.actor, TENANT, capture, cardReading('9012'), META, null);
     expect(second.documentId).toBe(first.documentId);
 
     const row = await q<{ card_last4: string }>(sql`

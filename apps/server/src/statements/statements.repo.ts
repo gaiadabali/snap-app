@@ -5,6 +5,7 @@ import type { StatementBalanceCheck } from '@snap/api-contract';
 import { sql } from 'drizzle-orm';
 
 import { getDb } from '../db.js';
+import { enterTenant, type TenantActor } from '../tenant-entry.js';
 import { flagPossibleDuplicate } from '../repo.js';
 import { supersedeAndPost } from '../transactions/transactions.repo.js';
 
@@ -44,11 +45,11 @@ export type FinancialAccountRow = {
  *  nothing, the same "not found, not leaked" shape every other lookup in
  *  this codebase uses. */
 export async function getFinancialAccount(
-  userId: string,
+  actor: TenantActor,
   tenantId: string,
   financialAccountId: string,
 ): Promise<FinancialAccountRow | null> {
-  return withTenantAs(getDb(), userId, tenantId, async (tx) => {
+  return enterTenant(actor, tenantId, async (tx) => {
     const rows = await tx.execute<FinancialAccountRow>(sql`
       select id, currency::text as currency, account_type::text as account_type
         from financial_accounts
@@ -75,11 +76,11 @@ export async function getFinancialAccount(
  * both usable, never a wrong tenant or a lost import.
  */
 export async function ensureDefaultFinancialAccount(
-  userId: string,
+  actor: TenantActor,
   tenantId: string,
   currency: string,
 ): Promise<FinancialAccountRow> {
-  return withTenantAs(getDb(), userId, tenantId, async (tx) => {
+  return enterTenant(actor, tenantId, async (tx) => {
     const existing = await tx.execute<FinancialAccountRow>(sql`
       select id, currency::text as currency, account_type::text as account_type
         from financial_accounts
@@ -169,11 +170,13 @@ export type StatementLineInput = CsvStatementLineInput;
 export type CreateStatementInput = CreateStatementFromCsvInput;
 
 export async function createStatementFromCsv(
-  userId: string,
+  // A user (the CSV import endpoint) or the worker (PDF statements, via the
+  // `createStatementFromPdf` alias below).
+  actor: TenantActor,
   tenantId: string,
   input: CreateStatementFromCsvInput,
 ): Promise<{ documentId: string; statementId: string }> {
-  return withTenantAs(getDb(), userId, tenantId, async (tx: Tx) => {
+  return enterTenant(actor, tenantId, async (tx: Tx) => {
     const documentId = randomUUID();
     // `'pass'` is the only verdict this ticket lets earn `auto_accepted` —
     // T4 (not yet built) may refine this once it exists as a first-class

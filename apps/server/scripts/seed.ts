@@ -33,8 +33,14 @@ const PEOPLE = [
   { id: '33333333-3333-4333-8333-333333333333', name: 'Dan Whitby', email: 'dan@marshtransport.example' },
   { id: '33333333-3333-4333-8333-333333333334', name: 'Jem Marsh', email: 'jem@example.com' },
   { id: '33333333-3333-4333-8333-333333333335', name: 'Priya Nandan', email: 'priya@marshaccountants.example' },
-  // The worker acts as a user so its writes go through the same
-  // membership-verified path as everyone else's. No special case, no bypass.
+  // The worker acts as a user so what it writes is attributed to it. It is a
+  // `users` row and NOTHING ELSE: it holds no membership anywhere (a
+  // membership is a seat and a person in the member list). It enters a job's
+  // workspace through `withWorkerTenant`, which checks that it connected as
+  // the worker's database role (`snap_worker`, app_worker) — the same way it
+  // enters every workspace a real sign-up creates. It used to be a member of
+  // the two demo workspaces below, which is why the demo worked and every
+  // real workspace's scans failed with NotAMemberError.
   { id: '44444444-4444-4444-8444-444444444444', name: 'Extraction worker', email: 'worker@snapapps.internal' },
 ];
 
@@ -43,10 +49,8 @@ const MEMBERSHIPS: Array<[string, string, string]> = [
   [BUSINESS, PEOPLE[1]!.id, 'admin'],
   [BUSINESS, PEOPLE[2]!.id, 'member'],
   [BUSINESS, PEOPLE[4]!.id, 'readonly'],
-  [BUSINESS, PEOPLE[5]!.id, 'member'],
   [HOUSEHOLD, PEOPLE[0]!.id, 'owner'],
   [HOUSEHOLD, PEOPLE[3]!.id, 'admin'],
-  [HOUSEHOLD, PEOPLE[5]!.id, 'member'],
 ];
 
 const db = getDb();

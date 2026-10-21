@@ -59,8 +59,10 @@ CREATE TABLE document_layouts (
 );
 ```
 
-RLS exactly as the sibling tables; the worker is an ordinary member and goes
-through the same policies. Several layouts per capture are expected and fine —
+RLS exactly as the sibling tables; the worker goes through the same policies.
+(It holds no membership: it enters a job's tenant through `withWorkerTenant`,
+which checks its database role, `app_worker`, instead — see
+`packages/db/src/client.ts`. No bypass either way.) Several layouts per capture are expected and fine —
 a re-run produces another, and keeping both is the same replayability argument
 `extraction_runs` already makes.
 

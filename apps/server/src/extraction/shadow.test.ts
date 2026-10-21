@@ -36,6 +36,10 @@ vi.mock('../repo.js', () => ({
 const mockWithTenantAs = vi.fn();
 vi.mock('@snap/db', () => ({
   withTenantAs: (...args: unknown[]) => mockWithTenantAs(...args),
+  // The worker's door (`withWorkerTenant`) lands on the same fake transaction:
+  // these tests are about what happens inside it, not which door is used —
+  // that is pinned against a real database in `worker-tenant-entry.test.ts`.
+  withWorkerTenant: (...args: unknown[]) => mockWithTenantAs(...args),
 }));
 vi.mock('../db.js', () => ({ getDb: () => ({ __fakeDb: true }) }));
 
@@ -59,6 +63,10 @@ vi.mock('@snap/docai', () => ({
 }));
 
 const { runShadowOcr } = await import('./shadow.js');
+const { workerActor } = await import('../tenant-entry.js');
+/** The worker, as `worker.ts` passes it. */
+const WORKER = workerActor('00000000-0000-4000-8000-0000000000aa');
+
 
 const PAGE_ROW: CapturePageRow = {
   page_number: 1,
@@ -141,7 +149,7 @@ describe('runShadowOcr', () => {
   it('does nothing at all when DOCAI_SIDECAR_URL is unset — absent config, absent feature', async () => {
     mockConfig.mockReturnValue({ DOCAI_SIDECAR_URL: undefined, DOCAI_SHADOW_TIMEOUT_MS: 30_000 });
 
-    await runShadowOcr('worker-user', 'tenant-1', 'capture-1', EXTRACTION, [PAGE_ROW]);
+    await runShadowOcr(WORKER, 'tenant-1', 'capture-1', EXTRACTION, [PAGE_ROW]);
 
     expect(mockGet).not.toHaveBeenCalled();
     expect(mockRead).not.toHaveBeenCalled();
@@ -154,7 +162,7 @@ describe('runShadowOcr', () => {
   });
 
   it('does nothing when there are no capture_pages rows to shadow', async () => {
-    await runShadowOcr('worker-user', 'tenant-1', 'capture-1', EXTRACTION, []);
+    await runShadowOcr(WORKER, 'tenant-1', 'capture-1', EXTRACTION, []);
 
     expect(mockRead).not.toHaveBeenCalled();
     expect(mockSaveLayout).not.toHaveBeenCalled();
@@ -193,7 +201,7 @@ describe('runShadowOcr', () => {
       unreadable: [{ page: 2, box: { x: 0, y: 0, width: 1, height: 1 }, reason: 'nothing there' }],
     });
 
-    await runShadowOcr('worker-user', 'tenant-1', 'capture-1', EXTRACTION, [PAGE_ROW]);
+    await runShadowOcr(WORKER, 'tenant-1', 'capture-1', EXTRACTION, [PAGE_ROW]);
 
     expect(mockRead).toHaveBeenCalledTimes(1);
     expect(mockPutAt).toHaveBeenCalledTimes(1);
@@ -203,7 +211,7 @@ describe('runShadowOcr', () => {
 
     expect(mockSaveLayout).toHaveBeenCalledTimes(1);
     const [userId, tenantId, input] = mockSaveLayout.mock.calls[0]!;
-    expect(userId).toBe('worker-user');
+    expect(userId).toBe(WORKER);
     expect(tenantId).toBe('tenant-1');
     expect(input).toMatchObject({
       captureId: 'capture-1',
@@ -222,7 +230,7 @@ describe('runShadowOcr', () => {
   it('when read() throws (sidecar down, wrong, or otherwise broken): swallows it, logs exactly one line, writes nothing', async () => {
     mockRead.mockRejectedValue(new Error('docai-engine sidecar not reachable'));
 
-    await expect(runShadowOcr('worker-user', 'tenant-1', 'capture-1', EXTRACTION, [PAGE_ROW])).resolves.toBeUndefined();
+    await expect(runShadowOcr(WORKER, 'tenant-1', 'capture-1', EXTRACTION, [PAGE_ROW])).resolves.toBeUndefined();
 
     expect(mockPutAt).not.toHaveBeenCalled();
     expect(mockSaveLayout).not.toHaveBeenCalled();
@@ -236,7 +244,7 @@ describe('runShadowOcr', () => {
     mockConfig.mockReturnValue({ DOCAI_SIDECAR_URL: 'http://127.0.0.1:8088', DOCAI_SHADOW_TIMEOUT_MS: 20 });
     mockRead.mockImplementation(() => new Promise(() => {})); // never resolves
 
-    await expect(runShadowOcr('worker-user', 'tenant-1', 'capture-1', EXTRACTION, [PAGE_ROW])).resolves.toBeUndefined();
+    await expect(runShadowOcr(WORKER, 'tenant-1', 'capture-1', EXTRACTION, [PAGE_ROW])).resolves.toBeUndefined();
 
     expect(mockPutAt).not.toHaveBeenCalled();
     expect(mockSaveLayout).not.toHaveBeenCalled();
@@ -249,7 +257,7 @@ describe('runShadowOcr', () => {
     mockRead.mockResolvedValue(emptyDoc);
     mockSaveLayout.mockRejectedValue(new Error('constraint violation'));
 
-    await expect(runShadowOcr('worker-user', 'tenant-1', 'capture-1', EXTRACTION, [PAGE_ROW])).resolves.toBeUndefined();
+    await expect(runShadowOcr(WORKER, 'tenant-1', 'capture-1', EXTRACTION, [PAGE_ROW])).resolves.toBeUndefined();
 
     expect(mockPutAt).toHaveBeenCalledTimes(1);
     expect(mockSaveFieldGrounding).not.toHaveBeenCalled();
@@ -261,7 +269,7 @@ describe('runShadowOcr', () => {
     mockRead.mockResolvedValue(emptyDoc);
     mockWithTenantAs.mockRejectedValue(new Error('no such run'));
 
-    await runShadowOcr('worker-user', 'tenant-1', 'capture-1', EXTRACTION, [PAGE_ROW]);
+    await runShadowOcr(WORKER, 'tenant-1', 'capture-1', EXTRACTION, [PAGE_ROW]);
 
     expect(mockSaveLayout).toHaveBeenCalledTimes(1);
     const [, , input] = mockSaveLayout.mock.calls[0]!;
@@ -325,7 +333,7 @@ describe('runShadowOcr', () => {
       };
       mockGroundExtraction.mockReturnValue(report);
 
-      await runShadowOcr('worker-user', 'tenant-1', 'capture-1', EXTRACTION, [PAGE_ROW]);
+      await runShadowOcr(WORKER, 'tenant-1', 'capture-1', EXTRACTION, [PAGE_ROW]);
 
       expect(mockGroundExtraction).toHaveBeenCalledTimes(1);
       const [, fieldsArg] = mockGroundExtraction.mock.calls[0]!;
@@ -339,7 +347,7 @@ describe('runShadowOcr', () => {
 
       expect(mockSaveFieldGrounding).toHaveBeenCalledTimes(1);
       const [userId, tenantId, rows] = mockSaveFieldGrounding.mock.calls[0]!;
-      expect(userId).toBe('worker-user');
+      expect(userId).toBe(WORKER);
       expect(tenantId).toBe('tenant-1');
       expect(rows).toHaveLength(5);
       expect(rows).toContainEqual({
@@ -377,7 +385,7 @@ describe('runShadowOcr', () => {
       mockSaveFieldGrounding.mockRejectedValue(new Error('db down'));
 
       await expect(
-        runShadowOcr('worker-user', 'tenant-1', 'capture-1', EXTRACTION, [PAGE_ROW]),
+        runShadowOcr(WORKER, 'tenant-1', 'capture-1', EXTRACTION, [PAGE_ROW]),
       ).resolves.toBeUndefined();
 
       expect(mockSaveLayout).toHaveBeenCalledTimes(1);

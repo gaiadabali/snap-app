@@ -15,6 +15,10 @@ import type { Extraction } from './types.js';
 const mockWithTenantAs = vi.fn();
 vi.mock('@snap/db', () => ({
   withTenantAs: (...args: unknown[]) => mockWithTenantAs(...args),
+  // The worker's door (`withWorkerTenant`) lands on the same fake transaction:
+  // these tests are about what happens inside it, not which door is used —
+  // that is pinned against a real database in `worker-tenant-entry.test.ts`.
+  withWorkerTenant: (...args: unknown[]) => mockWithTenantAs(...args),
 }));
 vi.mock('../db.js', () => ({ getDb: () => ({ __fakeDb: true }) }));
 
@@ -25,6 +29,10 @@ vi.mock('../repo.js', () => ({
 
 const { buildAgreementFindings, extractionValues, latestDeviceLayoutValues, runAgreementCheck } =
   await import('./agreement.js');
+const { workerActor } = await import('../tenant-entry.js');
+/** The worker, as `worker.ts` passes it. */
+const WORKER = workerActor('00000000-0000-4000-8000-0000000000aa');
+
 
 const EXTRACTION = {
   supplierName: { value: 'Acme Pty Ltd', confidence: 0.9 },
@@ -197,7 +205,7 @@ describe('runAgreementCheck — the shadow-style entry point the worker calls', 
         fn({ execute: async () => ({ rows: [] }) }),
     );
 
-    await runAgreementCheck('worker-user', 'tenant-1', 'capture-1', EXTRACTION);
+    await runAgreementCheck(WORKER, 'tenant-1', 'capture-1', EXTRACTION);
 
     expect(logSpy).not.toHaveBeenCalled();
     expect(warnSpy).not.toHaveBeenCalled();
@@ -215,7 +223,7 @@ describe('runAgreementCheck — the shadow-style entry point the worker calls', 
     mockGroundingForLayout.mockResolvedValue([{ fieldPath: 'header.payable_amount', value: '48.50' }]);
 
     await expect(
-      runAgreementCheck('worker-user', 'tenant-1', 'capture-1', {
+      runAgreementCheck(WORKER, 'tenant-1', 'capture-1', {
         ...EXTRACTION,
         payableAmount: { value: '46.50', confidence: 0.9 },
       } as unknown as Extraction),
@@ -245,7 +253,7 @@ describe('runAgreementCheck — the shadow-style entry point the worker calls', 
     mockWithTenantAs.mockRejectedValue(new Error('db exploded'));
 
     await expect(
-      runAgreementCheck('worker-user', 'tenant-1', 'capture-1', EXTRACTION),
+      runAgreementCheck(WORKER, 'tenant-1', 'capture-1', EXTRACTION),
     ).resolves.toBeUndefined();
 
     expect(warnSpy).toHaveBeenCalledTimes(1);
@@ -266,7 +274,7 @@ describe('runAgreementCheck — the shadow-style entry point the worker calls', 
     mockGroundingForLayout.mockRejectedValue(new Error('grounding table locked'));
 
     await expect(
-      runAgreementCheck('worker-user', 'tenant-1', 'capture-1', EXTRACTION),
+      runAgreementCheck(WORKER, 'tenant-1', 'capture-1', EXTRACTION),
     ).resolves.toBeUndefined();
 
     expect(warnSpy).toHaveBeenCalledTimes(1);

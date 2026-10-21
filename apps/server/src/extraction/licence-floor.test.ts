@@ -100,6 +100,10 @@ vi.mock('../repo.js', () => ({
 const mockWithTenantAs = vi.fn();
 vi.mock('@snap/db', () => ({
   withTenantAs: (...args: unknown[]) => mockWithTenantAs(...args),
+  // The worker's door (`withWorkerTenant`) lands on the same fake transaction:
+  // these tests are about what happens inside it, not which door is used —
+  // that is pinned against a real database in `worker-tenant-entry.test.ts`.
+  withWorkerTenant: (...args: unknown[]) => mockWithTenantAs(...args),
 }));
 vi.mock('../db.js', () => ({ getDb: () => ({ __fakeDb: true }) }));
 
@@ -124,6 +128,10 @@ vi.mock('@snap/docai', async (importOriginal) => {
 });
 
 const { runShadowOcr } = await import('./shadow.js');
+const { workerActor } = await import('../tenant-entry.js');
+/** The worker, as `worker.ts` passes it. */
+const WORKER = workerActor('00000000-0000-4000-8000-0000000000aa');
+
 
 // The REAL module, unmocked, for part 1 and part 3 — `vi.mock('@snap/docai')`
 // above only replaces what `runShadowOcr` reaches through.
@@ -193,7 +201,7 @@ describe('runShadowOcr — licence floor at the point the sidecar is selected', 
     );
 
     await expect(
-      runShadowOcr('worker-user', 'tenant-1', 'capture-1', EXTRACTION, [PAGE_ROW]),
+      runShadowOcr(WORKER, 'tenant-1', 'capture-1', EXTRACTION, [PAGE_ROW]),
     ).resolves.toBeUndefined();
 
     // Nothing ran: no bytes read, no engine read, no layout, no grounding.
@@ -212,7 +220,7 @@ describe('runShadowOcr — licence floor at the point the sidecar is selected', 
   it('when the floor holds: the stage runs as before', async () => {
     mockRead.mockResolvedValue(emptyDoc);
 
-    await runShadowOcr('worker-user', 'tenant-1', 'capture-1', EXTRACTION, [PAGE_ROW]);
+    await runShadowOcr(WORKER, 'tenant-1', 'capture-1', EXTRACTION, [PAGE_ROW]);
 
     expect(mockAssertSidecarLicenceFloor).toHaveBeenCalledTimes(1);
     // The check runs on the engine actually constructed for this stage, with

@@ -9,6 +9,7 @@ import { withTenantAs } from '@snap/db';
 import { closeDb, getDb } from '../db.js';
 import { saveExtraction, updateDocument } from '../repo.js';
 import { makeAccount, provisionTenant, wipeTenant } from '../test-support/tenant.js';
+import { openWorkerDb, type WorkerDb } from '../test-support/worker-db.js';
 import type { ValidatedExtraction } from './types.js';
 
 /**
@@ -55,7 +56,7 @@ const KATE = 'c3c3c3c3-0000-4000-8000-0000000000a2';
  * around RLS to set itself up would also be proving nothing about the rules it
  * is asserting.
  */
-const q = <T extends Record<string, unknown> = Record<string, unknown>>(text: ReturnType<typeof sql>, userId: string = WORKER) =>
+const q = <T extends Record<string, unknown> = Record<string, unknown>>(text: ReturnType<typeof sql>, userId: string = KATE) =>
   withTenantAs(getDb(), userId, TENANT, (tx) => tx.execute<T>(text));
 
 const f = <T>(value: T | null, confidence = 0.99) => ({ value, confidence });
@@ -114,7 +115,7 @@ async function makeCapture(): Promise<string> {
       id, tenant_id, uploaded_by, original_storage_key, original_mime_type,
       original_byte_size, original_sha256, status
     ) values (
-      ${id}, ${TENANT}, ${WORKER}, ${`${TENANT}/originals/test/${id}`}, 'image/png',
+      ${id}, ${TENANT}, ${KATE}, ${`${TENANT}/originals/test/${id}`}, 'image/png',
       1024, decode(${randomUUID().replace(/-/g, '').repeat(2).slice(0, 64)}, 'hex'), 'received'
     )
   `);
@@ -123,20 +124,23 @@ async function makeCapture(): Promise<string> {
 
 describeIfDb('re-extraction', () => {
   let admin: Client;
+  let worker: WorkerDb;
 
   beforeAll(async () => {
     if (!hasDb) return;
     admin = await provisionTenant({
       tenantId: TENANT,
       name: 'Re-extraction test co',
-      users: [
+      // No membership: the worker enters through `withWorkerTenant`.
+      serviceUsers: [
         {
           id: WORKER,
-          role: 'member',
           subject: 'test|reextraction-worker',
           email: 'worker@reextraction.test',
           displayName: 'Extraction Worker',
         },
+      ],
+      users: [
         {
           id: KATE,
           role: 'owner',
@@ -153,6 +157,7 @@ describeIfDb('re-extraction', () => {
     // that guard is never the reason the test does nothing.
     await makeAccount(admin, TENANT, '6-0000', 'Test expense', 'expense');
     await makeAccount(admin, TENANT, '2-1000', 'Test payable', 'liability');
+    worker = openWorkerDb(WORKER);
   });
 
   afterAll(async () => {
@@ -163,14 +168,15 @@ describeIfDb('re-extraction', () => {
     // cleanup is tenant-scoped rather than capture-scoped.
     await wipeTenant(admin, TENANT, [WORKER, KATE]);
     await admin.end();
+    await worker.pool.end();
     await closeDb();
   });
 
   it('runs twice over the same capture instead of failing', async () => {
     const capture = await makeCapture();
-    const first = await saveExtraction(WORKER, TENANT, capture, reading(), META, null);
+    const first = await saveExtraction(worker.actor, TENANT, capture, reading(), META, null);
     // The bug: this call used to throw a foreign-key violation and roll back.
-    const second = await saveExtraction(WORKER, TENANT, capture, reading({ payable: '120.00' }), META, null);
+    const second = await saveExtraction(worker.actor, TENANT, capture, reading({ payable: '120.00' }), META, null);
 
     expect(second.documentId).toBe(first.documentId);
 
@@ -189,7 +195,7 @@ describeIfDb('re-extraction', () => {
 
   it('does not overwrite a field a human has settled', async () => {
     const capture = await makeCapture();
-    const { documentId } = await saveExtraction(WORKER, TENANT, capture, reading(), META, null);
+    const { documentId } = await saveExtraction(worker.actor, TENANT, capture, reading(), META, null);
 
     // A person corrects the total. That must lock it.
     const edit = await updateDocument(KATE, TENANT, documentId, { payableAmount: '999.00' });
@@ -201,7 +207,7 @@ describeIfDb('re-extraction', () => {
     expect(locked.rows[0]?.locked_fields).toContain('header.payable_amount');
 
     // A later model disagrees. It loses.
-    await saveExtraction(WORKER, TENANT, capture, reading({ payable: '110.00' }), META, null);
+    await saveExtraction(worker.actor, TENANT, capture, reading({ payable: '110.00' }), META, null);
 
     const after = await q<{ payable_amount: string; review_status: string }>(sql`
       select payable_amount::text, review_status::text from documents where id = ${documentId}
@@ -219,7 +225,7 @@ describeIfDb('re-extraction', () => {
 
   it('leaves a document behind a posted transaction completely alone', async () => {
     const capture = await makeCapture();
-    const { documentId } = await saveExtraction(WORKER, TENANT, capture, reading(), META, null);
+    const { documentId } = await saveExtraction(worker.actor, TENANT, capture, reading(), META, null);
 
     // A posted transaction referencing it. Balanced, because the database
     // refuses to post anything else. The two accounts come from this
@@ -263,7 +269,7 @@ describeIfDb('re-extraction', () => {
     // `txn_posted_has_timestamp` check).
     await q(sql`update transactions set status = 'posted', posted_at = now(), posted_by = ${KATE} where id = ${txnId}`);
 
-    await saveExtraction(WORKER, TENANT, capture, reading({ payable: '500.00' }), META, null);
+    await saveExtraction(worker.actor, TENANT, capture, reading({ payable: '500.00' }), META, null);
 
     const after = await q<{ payable_amount: string }>(sql`
       select payable_amount::text from documents where id = ${documentId}

@@ -70,7 +70,9 @@ describeIfDb('worker jurisdiction gate (tax rules must match the workspace count
     admin = await provisionTenant({
       tenantId: TENANT,
       name: 'Jurisdiction gate co',
-      users: [{ id: WORKER_USER_ID, role: 'member' }],
+      users: [],
+      // No membership: the worker enters through `withWorkerTenant`, as in production.
+      serviceUsers: [{ id: WORKER_USER_ID }],
     });
 
     const dbModule = await import('../db.js');

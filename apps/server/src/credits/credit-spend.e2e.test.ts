@@ -1,12 +1,14 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 
-import { createDb, createPool, type Db } from '@snap/db';
+import { createDb, createPool, NotTheWorkerError, withTenantAs, type Db } from '@snap/db';
+import { sql } from 'drizzle-orm';
 import type { Client, Pool } from 'pg';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
-import { closeDb } from '../db.js';
+import { closeDb, getDb } from '../db.js';
 import { enqueueExtraction } from '../repo.js';
 import { provisionTenant, wipeTenant } from '../test-support/tenant.js';
+import { workerActor, type WorkerActor } from '../tenant-entry.js';
 import { refundScanCredit } from './spend.js';
 
 /**
@@ -31,6 +33,8 @@ describeIfDb('scan credits: spend and give back (7.1.a, 7.1.c)', () => {
   let adminOther: Client;
   let workerPool: Pool;
   let workerDb: Db;
+  /** The worker on its own connection — the only way into `refundScanCredit`. */
+  let worker: WorkerActor;
 
   async function capture(tenant = TENANT, uploader = USER): Promise<string> {
     const id = randomUUID();
@@ -92,8 +96,9 @@ describeIfDb('scan credits: spend and give back (7.1.a, 7.1.c)', () => {
       name: 'Credit spend co',
       users: [
         { id: USER, role: 'owner', subject: 'test|spend-user', email: 'user@credit-spend.test' },
-        { id: WORKER, role: 'member', subject: 'test|spend-worker', email: 'worker@credit-spend.test' },
       ],
+      // No membership: the worker enters through `withWorkerTenant`.
+      serviceUsers: [{ id: WORKER, subject: 'test|spend-worker', email: 'worker@credit-spend.test' }],
     });
     adminOther = await provisionTenant({
       tenantId: OTHER_TENANT,
@@ -104,6 +109,7 @@ describeIfDb('scan credits: spend and give back (7.1.a, 7.1.c)', () => {
       process.env.WORKER_DATABASE_URL ?? (process.env.DATABASE_URL ?? '').replace(/:\/\/[^:]+:/, '://snap_worker:');
     workerPool = createPool(workerUrl);
     workerDb = createDb(workerPool);
+    worker = workerActor(WORKER, workerDb);
   });
 
   beforeEach(clearCredits);
@@ -203,11 +209,11 @@ describeIfDb('scan credits: spend and give back (7.1.a, 7.1.c)', () => {
     expect(await remaining(pack)).toBe(1);
 
     const results = await Promise.all([
-      refundScanCredit(WORKER, TENANT, captureId, 'unreadable', workerDb),
-      refundScanCredit(WORKER, TENANT, captureId, 'unreadable', workerDb),
+      refundScanCredit(worker, TENANT, captureId, 'unreadable'),
+      refundScanCredit(worker, TENANT, captureId, 'unreadable'),
     ]);
     expect(results.filter((r) => r.refunded)).toEqual([{ refunded: true, creditReturned: true }]);
-    expect(await refundScanCredit(WORKER, TENANT, captureId, 'not_extracted', workerDb)).toEqual({
+    expect(await refundScanCredit(worker, TENANT, captureId, 'not_extracted')).toEqual({
       refunded: false,
       why: 'no_spend_or_already_refunded',
     });
@@ -226,7 +232,7 @@ describeIfDb('scan credits: spend and give back (7.1.a, 7.1.c)', () => {
       [randomUUID(), TENANT, captureId],
     );
 
-    expect(await refundScanCredit(WORKER, TENANT, captureId, 'unreadable', workerDb)).toEqual({
+    expect(await refundScanCredit(worker, TENANT, captureId, 'unreadable')).toEqual({
       refunded: false,
       why: 'has_document',
     });
@@ -237,7 +243,7 @@ describeIfDb('scan credits: spend and give back (7.1.a, 7.1.c)', () => {
   it('marks a spend with no credit as refunded without inventing one', async () => {
     const captureId = await capture();
     await enqueueExtraction(USER, TENANT, captureId);
-    expect(await refundScanCredit(WORKER, TENANT, captureId, 'unreadable', workerDb)).toEqual({
+    expect(await refundScanCredit(worker, TENANT, captureId, 'unreadable')).toEqual({
       refunded: true,
       creditReturned: false,
     });
@@ -248,23 +254,27 @@ describeIfDb('scan credits: spend and give back (7.1.a, 7.1.c)', () => {
     const captureId = await capture();
     await enqueueExtraction(USER, TENANT, captureId);
 
-    // The API's role may not refund (migration 0039 grants it SELECT, INSERT).
-    const denied = await refundScanCredit(USER, TENANT, captureId, 'unreadable').then(
+    // The API's connection cannot even enter as the worker: `withWorkerTenant`
+    // checks the connection's role, and `snap_app` is not `app_worker`.
+    await expect(refundScanCredit(workerActor(WORKER), TENANT, captureId, 'unreadable')).rejects.toBeInstanceOf(
+      NotTheWorkerError,
+    );
+
+    // And a member on the API's role may not refund either: migration 0039
+    // grants app_rw SELECT and INSERT on credit_spends, never UPDATE.
+    const denied = await withTenantAs(getDb(), USER, TENANT, (tx) =>
+      tx.execute(sql`update credit_spends set refunded_at = now(), refund_reason = 'unreadable' where capture_id = ${captureId}`),
+    ).then(
       () => null,
       (e: { cause?: { message?: string }; message?: string }) => e.cause?.message ?? e.message ?? String(e),
     );
     expect(denied).toMatch(/permission denied/);
 
     // Another workspace's worker context sees no capture and no spend.
-    await admin.query(`insert into memberships (tenant_id, user_id, role) values ($1, $2, 'member')`, [OTHER_TENANT, WORKER]);
-    try {
-      expect(await refundScanCredit(WORKER, OTHER_TENANT, captureId, 'unreadable', workerDb)).toEqual({
-        refunded: false,
-        why: 'no_capture',
-      });
-    } finally {
-      await admin.query(`delete from memberships where tenant_id = $1 and user_id = $2`, [OTHER_TENANT, WORKER]);
-    }
+    expect(await refundScanCredit(worker, OTHER_TENANT, captureId, 'unreadable')).toEqual({
+      refunded: false,
+      why: 'no_capture',
+    });
     expect(await spendOf(captureId)).toMatchObject([{ refunded_at: null }]);
 
     // Spends in another workspace do not use this workspace's credits.

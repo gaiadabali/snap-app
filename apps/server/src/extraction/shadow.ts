@@ -1,6 +1,5 @@
 import { randomUUID } from 'node:crypto';
 
-import { withTenantAs } from '@snap/db';
 import {
   DOCDOM_VERSION,
   PdfTextEngine,
@@ -16,10 +15,10 @@ import {
 import { sql } from 'drizzle-orm';
 
 import { config } from '../config.js';
-import { getDb } from '../db.js';
 import type { CapturePageRow } from '../repo.js';
 import { saveFieldGrounding, saveLayout } from '../repo.js';
 import { get as readObject, putAt } from '../storage.js';
+import { enterTenantAsWorker, type WorkerActor } from '../tenant-entry.js';
 import type { Extraction } from './types.js';
 
 /**
@@ -102,19 +101,20 @@ function spanCountOf(doc: Document): number {
  *
  * `saveExtraction` (repo.ts) generates and inserts its own run id internally
  * but does not return it, and this lane does not touch repo.ts — so the run
- * just written is looked up the same way any other reader would, through the
- * worker's own ordinary tenant membership. Best-effort: `saveLayout`'s
+ * just written is looked up the same way any other reader would, under
+ * ordinary tenant RLS, entered through the worker's own door
+ * (`withWorkerTenant`, `tenant-entry.ts`). Best-effort: `saveLayout`'s
  * `extractionRunId` is nullable precisely because a layout is still useful
  * evidence without it, so a failure here is swallowed to `null` rather than
  * failing the whole shadow attempt over a link that is a courtesy, not a
  * requirement.
  */
 async function latestExtractionRunId(
-  workerUserId: string,
+  worker: WorkerActor,
   tenantId: string,
   captureId: string,
 ): Promise<string | null> {
-  return withTenantAs(getDb(), workerUserId, tenantId, async (tx) => {
+  return enterTenantAsWorker(worker, tenantId, async (tx) => {
     const rows = await tx.execute<{ id: string }>(sql`
       select id from extraction_runs
        where capture_id = ${captureId}
@@ -205,7 +205,7 @@ function withDeadline<T>(promise: Promise<T>, ms: number, label: string): Promis
  * §3's other rule) — `extraction` is read here, never written to or through.
  */
 export async function runShadowOcr(
-  workerUserId: string,
+  worker: WorkerActor,
   tenantId: string,
   captureId: string,
   extraction: Extraction,
@@ -258,11 +258,11 @@ export async function runShadowOcr(
         const storageKey = `${tenantId}/layouts/${captureId}/${runId}.json`;
         putAt(storageKey, Buffer.from(JSON.stringify(doc)));
 
-        const extractionRunId = await latestExtractionRunId(workerUserId, tenantId, captureId).catch(
+        const extractionRunId = await latestExtractionRunId(worker, tenantId, captureId).catch(
           () => null,
         );
 
-        const { layoutId } = await saveLayout(workerUserId, tenantId, {
+        const { layoutId } = await saveLayout(worker, tenantId, {
           captureId,
           extractionRunId,
           storageKey,
@@ -301,7 +301,7 @@ export async function runShadowOcr(
           const fields = fieldsToGround(extraction);
           const report = groundExtraction(doc, fields);
           await saveFieldGrounding(
-            workerUserId,
+            worker,
             tenantId,
             fields.map((f) => {
               const g = report.fields[f.path]!;

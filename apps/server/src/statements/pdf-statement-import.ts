@@ -3,6 +3,7 @@ import type { StatementBalanceCheck } from '@snap/api-contract';
 import type { TaxRules } from '@snap/tax-rules';
 
 import { readTenant } from '../repo.js';
+import { actorUserId, type TenantActor } from '../tenant-entry.js';
 import { rulesFor } from '../taxrules/taxrules.repo.js';
 import { runStatementExtraction, type StitchedStatementLine } from '../extraction/statement-run.js';
 import type { StatementChunkProvider } from '../extraction/statement-provider.js';
@@ -162,7 +163,9 @@ function toCandidateLine(
 }
 
 export async function importPdfStatement(
-  userId: string,
+  // The worker in production (`worker.ts`); a plain user id still works and
+  // goes through `withTenantAs` exactly as before.
+  actor: TenantActor,
   tenantId: string,
   provider: StatementChunkProvider,
   params: ImportPdfStatementParams,
@@ -176,7 +179,7 @@ export async function importPdfStatement(
     throw new StatementPageCapError(params.pageTexts.length);
   }
 
-  const tenant = await readTenant(userId, tenantId);
+  const tenant = await readTenant(actor, tenantId);
   if (!tenant) return { ok: false, stage: 'unreadable', reason: 'No such workspace.' };
 
   let rules: TaxRules;
@@ -188,11 +191,11 @@ export async function importPdfStatement(
 
   let account: FinancialAccountRow;
   if (params.financialAccountId) {
-    const found = await getFinancialAccount(userId, tenantId, params.financialAccountId);
+    const found = await getFinancialAccount(actor, tenantId, params.financialAccountId);
     if (!found) return { ok: false, stage: 'unreadable', reason: 'No such financial account in this workspace.' };
     account = found;
   } else {
-    account = await ensureDefaultFinancialAccount(userId, tenantId, tenant.base_currency);
+    account = await ensureDefaultFinancialAccount(actor, tenantId, tenant.base_currency);
   }
 
   const outcome = await runStatementExtraction(
@@ -259,7 +262,7 @@ export async function importPdfStatement(
     runningBalance: c.runningBalance,
   }));
 
-  const { documentId, statementId } = await createStatementFromPdf(userId, tenantId, {
+  const { documentId, statementId } = await createStatementFromPdf(actor, tenantId, {
     captureId: params.captureId,
     financialAccountId: account.id,
     currency: account.currency,
@@ -270,7 +273,7 @@ export async function importPdfStatement(
     closingBalance: balance.closingBalance,
     balanceCheck: balance.balanceCheck,
     balanceResidual: balance.balanceResidual,
-    createdBy: userId,
+    createdBy: actorUserId(actor),
     fieldProvenance: {
       source: 'pdf_extraction',
       provider: provider.name,
