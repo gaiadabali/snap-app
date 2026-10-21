@@ -43,6 +43,10 @@ import { hashPassword, passwordProblem, verifyPassword } from './passwords.js';
 import { RateLimiter } from './rate-limit.js';
 import { revokeAllSessions, revokeSession } from './sessions.js';
 import { signedIn, type SignInResponse } from './signed-in.js';
+import { isLinkedToYourTal } from './yourtal-signin/repo.js';
+
+/** Asked about when there is no account, so an unknown address costs the same query. */
+const NIL_UUID = '00000000-0000-0000-0000-000000000000';
 
 export class PasswordResetRequestDto {
   @IsEmail({}, { message: 'That does not look like an email address.' })
@@ -139,7 +143,12 @@ export class AccountController {
     // the same work up to the one database call.
     const link = newLinkSecret();
     const account = await issuePasswordReset(email, link.hash);
-    if (account) dispatchMail('password_reset', passwordResetMessage(account.email, link.secret));
+    // An account linked to YourTal has no SnapApp password door any more
+    // (docs/26 §1.10), so it gets no reset link: the row just written holds
+    // only a hash of a secret that is never sent, and dies unused. The check
+    // runs either way, so both paths still cost the same.
+    const linked = await isLinkedToYourTal(account?.userId ?? NIL_UUID);
+    if (account && !linked) dispatchMail('password_reset', passwordResetMessage(account.email, link.secret));
     return { ok: true };
   }
 
@@ -179,7 +188,7 @@ export class AccountController {
     if (!account) throw invalid();
 
     dispatchMail('security_notice', passwordChangedMessage(account.email));
-    return signedIn(account.userId);
+    return signedIn(account.userId, 'snapapp');
   }
 
   /* ── Password change (signed in) ─────────────────────────────────────── */

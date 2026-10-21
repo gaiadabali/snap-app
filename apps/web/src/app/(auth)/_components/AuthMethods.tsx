@@ -8,8 +8,9 @@ import { config } from '@/lib/config';
 import { AuthField, AuthInput } from './ui';
 
 /**
- * The ways in: Google (real or, on the demo host, simulated), a magic-link
- * email, and — development only — the bare-email bypass. Shared between
+ * The ways in: YourTal (first, when the server has it configured), Google
+ * (real or, on the demo host, simulated), a magic-link email, and —
+ * development only — the bare-email bypass. Shared between
  * `/sign-in` and `/register` because the mechanism is identical; only the
  * framing text differs (this app's sign-in endpoint already creates an
  * unknown address's account, so "sign in" and "register" are the same
@@ -20,11 +21,14 @@ export function AuthMethods({
   returnTo,
   error,
   sent,
+  yourtalEnabled = false,
 }: {
   mode: 'sign-in' | 'register';
   returnTo: string;
   error?: string;
   sent?: boolean;
+  /** `GET /v1/auth/yourtal` said the web client is configured. The page fetches it; false hides the button. */
+  yourtalEnabled?: boolean;
 }) {
   const heading = mode === 'sign-in' ? 'Sign in' : 'Create your account';
   const lede =
@@ -51,6 +55,29 @@ export function AuthMethods({
         </div>
       ) : (
         <>
+          {yourtalEnabled ? (
+            <>
+              {/*
+               * A plain <a>, never next/link: /auth/yourtal is a GET handler
+               * that starts a sign-in (a flow row, a rate-limit count, a
+               * cookie), and a prefetched Link would run it on every view of
+               * this page. Same for Google below.
+               */}
+              <a
+                href={
+                  mode === 'register'
+                    ? `/auth/yourtal?signUp=1&returnTo=${encodeURIComponent(returnTo)}`
+                    : `/auth/yourtal?returnTo=${encodeURIComponent(returnTo)}`
+                }
+                className="btn btn-primary btn-lg w-full"
+              >
+                {mode === 'register' ? 'Create account with YourTal' : 'Sign in with YourTal'}
+              </a>
+              <p className="auth-method-note">One account for SnapApp, YourTal and our other apps.</p>
+              <div className="auth-divider">or</div>
+            </>
+          ) : null}
+
           {!config.googleOauthConfigured && isGoogleSignInSimulatorAvailable() ? (
             <Link
               href={`/auth/google-simulator?returnTo=${encodeURIComponent(returnTo)}`}
@@ -59,12 +86,12 @@ export function AuthMethods({
               Continue with Google (demo sign-in)
             </Link>
           ) : (
-            <Link
+            <a
               href={`/auth/google?returnTo=${encodeURIComponent(returnTo)}`}
               className="btn btn-secondary btn-lg w-full"
             >
               Continue with Google
-            </Link>
+            </a>
           )}
 
           {config.mailerConfigured ? (

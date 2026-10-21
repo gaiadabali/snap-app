@@ -39,6 +39,7 @@ import {
   verifyPassword,
 } from './passwords.js';
 import { RateLimiter } from './rate-limit.js';
+import { emailLinkedToYourTal } from './yourtal-signin/repo.js';
 
 export class SignInDto {
   @IsEmail({}, { message: 'That does not look like an email address.' })
@@ -178,7 +179,7 @@ export class AuthController {
     const user = await upsertUserByEmail(email, nameFromEmail);
     // NOT `markEmailProven`: this route proves nothing about the address,
     // which is exactly why it is closed in production.
-    return signedIn(user.userId);
+    return signedIn(user.userId, 'snapapp');
   }
 
   @Post('register')
@@ -236,7 +237,7 @@ export class AuthController {
     const pending = await issueEmailVerification(user.userId, link.hash);
     if (pending) dispatchMail('email_verification', emailVerificationMessage(pending.email, link.secret));
 
-    return signedIn(user.userId);
+    return signedIn(user.userId, 'snapapp');
   }
 
   @Post('password/sign-in')
@@ -272,7 +273,7 @@ export class AuthController {
       throw new HttpException('Email or password is incorrect.', HttpStatus.UNAUTHORIZED);
     }
 
-    return signedIn(record.user.userId);
+    return signedIn(record.user.userId, 'snapapp');
   }
 
   @Get('demo-accounts')
@@ -325,6 +326,11 @@ export class AuthController {
         HttpStatus.TOO_MANY_REQUESTS,
       );
     }
+
+    // An account linked to YourTal has no magic-link door (docs/26 §1.10; the
+    // session would be refused in SQL anyway), so it is mailed nothing. The
+    // answer below is the same either way, so this is no oracle.
+    if (await emailLinkedToYourTal(email)) return { ok: true };
 
     const { token } = issueMagicLinkToken(email);
     const link = `${config().WEB_PUBLIC_URL}/auth/magic/callback?token=${encodeURIComponent(token)}`;
@@ -386,7 +392,7 @@ export class AuthController {
     // was unproven is cleared and its sessions are revoked (0036's
     // pre-hijacking case), and the session opened below must survive that.
     await markEmailProven(user.userId);
-    return signedIn(user.userId);
+    return signedIn(user.userId, 'snapapp');
   }
 
   /* ── Google OAuth ─────────────────────────────────────────────────────────
@@ -436,7 +442,7 @@ export class AuthController {
     // so this is a proof of the address — same order and reason as the
     // magic link above.
     await markEmailProven(user.userId);
-    return signedIn(user.userId);
+    return signedIn(user.userId, 'snapapp');
   }
 
   /* ── Simulated Google sign-in (staging/demo host only) ───────────────────
@@ -509,7 +515,7 @@ export class AuthController {
     const user = await upsertUserByEmail(identity.email, identity.displayName);
     // Not `markEmailProven`: the simulator asserts nothing about an inbox.
     // The seeded demo people are marked verified by scripts/seed.ts instead.
-    return signedIn(user.userId);
+    return signedIn(user.userId, 'snapapp');
   }
 }
 

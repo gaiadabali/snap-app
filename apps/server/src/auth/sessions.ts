@@ -51,22 +51,46 @@ export function hashSecret(secret: string): Buffer {
   return createHash('sha256').update(secret, 'utf8').digest();
 }
 
-/** Open a session for a user who has just authenticated. Returns the bearer token. */
+/**
+ * Open a session for a user who has just authenticated through one of
+ * SnapApp's OWN methods (password, magic link, Google, the demo routes, a
+ * password reset). Returns the bearer token.
+ *
+ * `identity_session_open` refuses an account linked to YourTal with SQLSTATE
+ * YT001 (0039): the door rule lives in SQL, so no code path — nor an older
+ * image of this API — can open one of these doors for a linked account.
+ * `signedIn` turns that refusal into 403 `use_yourtal`.
+ */
 export async function issueSession(userId: string): Promise<string> {
+  return openSession(userId, 'snapapp');
+}
+
+/** Open a session after Sign in with YourTal. Only works for a linked account (0039). */
+export async function issueYourTalSession(userId: string): Promise<string> {
+  return openSession(userId, 'yourtal');
+}
+
+async function openSession(userId: string, door: 'snapapp' | 'yourtal'): Promise<string> {
   const secret = randomBytes(32).toString('base64url');
-  const { rows } = await getDb().execute<{ expires_at: string | Date }>(sql`
-    select expires_at
-      from identity_session_open(
-        ${userId}::uuid,
-        ${hashSecret(secret)},
-        ${SESSION_ABSOLUTE_SECONDS}::int,
-        ${SESSION_IDLE_SECONDS}::int
-      )
-  `);
+  const args = sql`${userId}::uuid, ${hashSecret(secret)}, ${SESSION_ABSOLUTE_SECONDS}::int, ${SESSION_IDLE_SECONDS}::int`;
+  const { rows } = await getDb().execute<{ expires_at: string | Date }>(
+    door === 'yourtal'
+      ? sql`select expires_at from identity_yourtal_session_open(${args})`
+      : sql`select expires_at from identity_session_open(${args})`,
+  );
   const row = rows[0];
-  if (!row) throw new Error('identity_session_open returned no row');
+  if (!row) throw new Error('opening a session returned no row');
   const expiresAt = Math.floor(new Date(row.expires_at).getTime() / 1000);
   return signSessionToken(userId, secret, expiresAt);
+}
+
+/** The Postgres SQLSTATE behind a failed query, whether or not the driver layer wrapped it. */
+export function sqlState(error: unknown): string | undefined {
+  for (let e: unknown = error, depth = 0; e && depth < 4; e = (e as { cause?: unknown }).cause, depth += 1) {
+    const code = (e as { code?: unknown }).code;
+    if (typeof code === 'string' && /^[0-9A-Z]{5}$/.test(code)) return code;
+  }
+  return undefined;
 }
 
 export type AuthenticatedSession = {

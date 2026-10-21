@@ -227,6 +227,13 @@
   background: var(--s-edge-2);
 }
 
+.auth-method-note {
+  margin: -6px 0 0;
+  text-align: center;
+  font-size: 0.8125rem;
+  color: var(--s-ink-4);
+}
+
 .auth-note {
   padding: 14px 16px;
   border: 1px solid var(--s-edge-2);

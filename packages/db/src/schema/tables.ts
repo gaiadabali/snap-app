@@ -142,6 +142,12 @@ export const users = pgTable('users', {
    * or link another service until it is set.
    */
   emailVerifiedAt: timestamp('email_verified_at', { withTimezone: true }),
+  /**
+   * When the account was first linked to (or created by) Sign in with
+   * YourTal (0039). Once set — or once `subject` is `yourtal|…` — SnapApp's
+   * own sign-in methods cannot open a session for it.
+   */
+  yourtalLinkedAt: timestamp('yourtal_linked_at', { withTimezone: true }),
 });
 
 /**

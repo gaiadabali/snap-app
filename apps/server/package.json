@@ -23,7 +23,9 @@
     "class-validator": "^0.15.1",
     "csv-parse": "^7.0.2",
     "drizzle-orm": "^0.45.2",
+    "jose": "^6.2.12",
     "nodemailer": "^10.0.10",
+    "openid-client": "^6.8.8",
     "pdfjs-dist": "^6.3.289",
     "pg": "^8.23.0",
     "reflect-metadata": "^0.2.2",
@@ -33,7 +35,9 @@
   "devDependencies": {
     "@types/node": "^20.19.9",
     "@types/nodemailer": "^8.0.2",
+    "@types/oidc-provider": "^9.12.1",
     "@types/smtp-server": "^3.5.13",
+    "oidc-provider": "^9.12.2",
     "smtp-server": "^3.19.13",
     "tsx": "^4.20.3",
     "typescript": "^5.9.3",
@@ -47,6 +51,7 @@
     "serve": "tsx scripts/serve.ts",
     "worker": "tsx scripts/worker.ts",
     "seed": "tsx scripts/seed.ts",
-    "bench:engine": "tsx scripts/bench-engine.ts"
+    "bench:engine": "tsx scripts/bench-engine.ts",
+    "yourtal:oidc-key": "tsx scripts/yourtal-oidc-key.ts"
   }
 }
