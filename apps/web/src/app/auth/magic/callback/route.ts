@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { AuthUser } from '@snap/api-contract';
 
-import { ApiError, SESSION_COOKIE, api } from '@/lib/api/server';
+import { SESSION_COOKIE, api } from '@/lib/api/server';
+import { type AuthErrorCode, apiErrorCode } from '@/lib/auth/auth-errors';
 import { publicUrl } from '@/lib/http/public-url';
 import { safeReturnPath } from '@/lib/auth/safe-redirect';
 import { AUTH_COOKIE_OPTIONS } from '@/lib/auth/session';
@@ -21,7 +22,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const token = request.nextUrl.searchParams.get('token');
   const returnTo = safeReturnPath(request.nextUrl.searchParams.get('returnTo'), '/app');
 
-  if (!token) return failure(request, 'That link is missing its token.', returnTo);
+  if (!token) return failure(request, 'link_invalid', returnTo);
 
   let result: SignInResult;
   try {
@@ -31,9 +32,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       anonymous: true,
     });
   } catch (error) {
-    const message =
-      error instanceof ApiError ? error.message : 'That link is invalid or has expired.';
-    return failure(request, message, returnTo);
+    return failure(request, apiErrorCode(error, 'link_invalid'), returnTo);
   }
 
   const destination = result.workspaces.length === 0 ? '/onboarding' : returnTo;
@@ -42,9 +41,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   return response;
 }
 
-function failure(request: NextRequest, message: string, returnTo: string): NextResponse {
+function failure(request: NextRequest, code: AuthErrorCode, returnTo: string): NextResponse {
   const url = publicUrl('/sign-in');
-  url.searchParams.set('error', message);
+  url.searchParams.set('error', code);
   url.searchParams.set('returnTo', returnTo);
   return NextResponse.redirect(url);
 }

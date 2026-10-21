@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import type { AvailableTaxRules } from '@snap/api-contract';
 
 import { api } from '@/lib/api/server';
+import { authNotice } from '@/lib/auth/auth-errors';
 import { hasSessionCookie } from '@/lib/auth/session';
 
 import { OnboardingForm } from './OnboardingForm';
@@ -50,7 +51,7 @@ export default async function OnboardingPage({
       occupationGroups={occupations}
       taxRules={taxRules}
       initialKind={initialKind}
-      error={params.error}
+      error={authNotice(params.error)?.message}
     />
   );
 }

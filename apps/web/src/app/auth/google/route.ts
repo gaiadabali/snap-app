@@ -39,7 +39,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     // expected in every environment before staging credentials exist. A
     // clean redirect back to sign-in beats an unhandled 500.
     const url = publicUrl('/sign-in');
-    url.searchParams.set('error', 'Google sign-in is not configured yet.');
+    url.searchParams.set('error', 'google_not_configured');
     url.searchParams.set('returnTo', returnTo);
     return NextResponse.redirect(url);
   }

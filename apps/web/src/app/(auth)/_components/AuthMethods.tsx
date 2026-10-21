@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { devBypassSignInAction, requestMagicLinkAction } from '@/lib/auth/actions';
 import { isDevBypassAvailable } from '@/lib/auth/dev-bypass';
 import { isGoogleSignInSimulatorAvailable } from '@/lib/auth/google-simulator';
+import type { AuthNotice } from '@/lib/auth/auth-errors';
 import { config } from '@/lib/config';
 
 import { AuthField, AuthInput } from './ui';
@@ -19,13 +20,14 @@ import { AuthField, AuthInput } from './ui';
 export function AuthMethods({
   mode,
   returnTo,
-  error,
+  notice,
   sent,
   yourtalEnabled = false,
 }: {
   mode: 'sign-in' | 'register';
   returnTo: string;
-  error?: string;
+  /** Already resolved from a known `?error=` code by `authNotice`; never raw URL text. */
+  notice?: AuthNotice | null;
   sent?: boolean;
   /** `GET /v1/auth/yourtal` said the web client is configured. The page fetches it; false hides the button. */
   yourtalEnabled?: boolean;
@@ -43,10 +45,16 @@ export function AuthMethods({
         <p className="auth-lede">{lede}</p>
       </div>
 
-      {error ? (
-        <div role="alert" className="auth-alert auth-alert-error">
-          {error}
-        </div>
+      {notice ? (
+        notice.quiet ? (
+          <div role="status" className="auth-note">
+            {notice.message}
+          </div>
+        ) : (
+          <div role="alert" className="auth-alert auth-alert-error">
+            {notice.message}
+          </div>
+        )
       ) : null}
 
       {sent ? (

@@ -2,14 +2,11 @@ import { publicUrl } from '@/lib/http/public-url';
 import { NextRequest, NextResponse } from 'next/server';
 import type { AuthUser } from '@snap/api-contract';
 
-import { ApiError, SESSION_COOKIE, api } from '@/lib/api/server';
+import { SESSION_COOKIE, api } from '@/lib/api/server';
+import { type AuthErrorCode, apiErrorCode } from '@/lib/auth/auth-errors';
 import { AUTH_COOKIE_OPTIONS } from '@/lib/auth/session';
 import { destinationAfterYourtalSignIn } from '@/lib/auth/yourtal-destination';
-import {
-  YOURTAL_GENERIC_ERROR,
-  YOURTAL_LINK_INVALID_ERROR,
-  yourtalErrorMessage,
-} from '@/lib/auth/yourtal-errors';
+import { yourtalErrorCode } from '@/lib/auth/yourtal-errors';
 import { YOURTAL_FLOW_COOKIE, YOURTAL_FLOW_COOKIE_PATH } from '@/lib/auth/yourtal-flow';
 
 type WorkspaceSummary = { id: string; name: string; kind: string; role: string };
@@ -40,14 +37,14 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   const providerError = params.get('error');
   if (providerError) {
-    return failure(yourtalErrorMessage(providerError, params.get('error_description')));
+    return failure(yourtalErrorCode(providerError, params.get('error_description')));
   }
 
   const code = params.get('code');
   const state = params.get('state');
   const iss = params.get('iss');
   if (!flowId || !code || !state || !iss) {
-    return failure(YOURTAL_LINK_INVALID_ERROR);
+    return failure('link_invalid');
   }
 
   let result: FinishResult;
@@ -58,9 +55,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       anonymous: true,
     });
   } catch (error) {
-    const message =
-      error instanceof ApiError && error.message ? error.message : YOURTAL_GENERIC_ERROR;
-    return failure(message);
+    return failure(apiErrorCode(error, 'yourtal_failed'));
   }
 
   const destination = destinationAfterYourtalSignIn(result.workspaces, result.returnTo);
@@ -70,11 +65,11 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   return response;
 }
 
-function failure(message: string): NextResponse {
+function failure(code: AuthErrorCode): NextResponse {
   // The stored returnTo is owned by the API and not known on a failure, so the
   // person retries from the plain sign-in page.
   const url = publicUrl('/sign-in');
-  url.searchParams.set('error', message);
+  url.searchParams.set('error', code);
   const response = NextResponse.redirect(url);
   clearFlowCookie(response);
   return response;

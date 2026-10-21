@@ -5,6 +5,7 @@ import type { AuthUser } from '@snap/api-contract';
 
 import { ApiError, api, newIdempotencyKey } from '@/lib/api/server';
 
+import { type AuthErrorCode, apiErrorCode } from './auth-errors';
 import { isDevBypassAvailable } from './dev-bypass';
 import { isGoogleSignInSimulatorAvailable } from './google-simulator';
 import { safeReturnPath } from './safe-redirect';
@@ -20,9 +21,9 @@ function destinationAfterSignIn(workspaces: WorkspaceSummary[], returnTo: string
   return workspaces.length === 0 ? '/onboarding' : returnTo;
 }
 
-function signInFailureRedirect(message: string, returnTo: string, path = '/sign-in'): never {
+function signInFailureRedirect(code: AuthErrorCode, returnTo: string, path = '/sign-in'): never {
   const url = new URL(path, 'http://placeholder');
-  url.searchParams.set('error', message);
+  url.searchParams.set('error', code);
   url.searchParams.set('returnTo', returnTo);
   redirect(`${url.pathname}${url.search}`);
 }
@@ -40,7 +41,7 @@ export async function requestMagicLinkAction(formData: FormData): Promise<void> 
   const email = String(formData.get('email') ?? '').trim();
   const returnTo = safeReturnPath(String(formData.get('returnTo') ?? ''), '/app');
 
-  if (!email) signInFailureRedirect('Enter your email address.', returnTo);
+  if (!email) signInFailureRedirect('email_required', returnTo);
 
   try {
     await api('/v1/auth/magic-link/request', {
@@ -75,7 +76,7 @@ export async function devBypassSignInAction(formData: FormData): Promise<void> {
 
   const email = String(formData.get('email') ?? '').trim();
   const returnTo = safeReturnPath(String(formData.get('returnTo') ?? ''), '/app');
-  if (!email) signInFailureRedirect('Enter an email address.', returnTo);
+  if (!email) signInFailureRedirect('email_required', returnTo);
 
   let result: SignInResult;
   try {
@@ -86,8 +87,7 @@ export async function devBypassSignInAction(formData: FormData): Promise<void> {
       idempotencyKey: newIdempotencyKey(),
     });
   } catch (error) {
-    const message = error instanceof ApiError ? error.message : 'Sign-in failed.';
-    signInFailureRedirect(message, returnTo);
+    signInFailureRedirect(apiErrorCode(error, 'sign_in_failed'), returnTo);
   }
 
   await setSessionCookie(result.token);
@@ -116,7 +116,7 @@ export async function googleSimulatorSignInAction(formData: FormData): Promise<v
 
   const email = String(formData.get('email') ?? '').trim();
   const returnTo = safeReturnPath(String(formData.get('returnTo') ?? ''), '/app');
-  if (!email) signInFailureRedirect('Choose a demo identity.', returnTo, '/auth/google-simulator');
+  if (!email) signInFailureRedirect('demo_identity_required', returnTo, '/auth/google-simulator');
 
   let result: SignInResult;
   try {
@@ -131,13 +131,11 @@ export async function googleSimulatorSignInAction(formData: FormData): Promise<v
     // or the email is simply not on its allow-list — see that endpoint's own
     // comment. Either way, the honest message here is the same for the
     // person looking at this screen.
-    const message =
+    const code: AuthErrorCode =
       error instanceof ApiError && error.status === 404
-        ? 'That is not one of the demo identities.'
-        : error instanceof ApiError
-          ? error.message
-          : 'Simulated sign-in failed.';
-    signInFailureRedirect(message, returnTo, '/auth/google-simulator');
+        ? 'demo_identity_unknown'
+        : apiErrorCode(error, 'sign_in_failed');
+    signInFailureRedirect(code, returnTo, '/auth/google-simulator');
   }
 
   await setSessionCookie(result.token);
@@ -158,7 +156,7 @@ export async function completeOnboardingAction(formData: FormData): Promise<void
   const workspaceName = String(formData.get('workspaceName') ?? '').trim();
 
   if (!workspaceName) {
-    redirect(`/onboarding?error=${encodeURIComponent('Give your workspace a name.')}&kind=${kind}`);
+    redirect(`/onboarding?error=workspace_name_required&kind=${kind}`);
   }
 
   const body: Record<string, unknown> = { workspaceName, kind };
@@ -190,8 +188,7 @@ export async function completeOnboardingAction(formData: FormData): Promise<void
       idempotencyKey: newIdempotencyKey(),
     });
   } catch (error) {
-    const message = error instanceof ApiError ? error.message : 'Something went wrong finishing setup.';
-    redirect(`/onboarding?error=${encodeURIComponent(message)}&kind=${kind}`);
+    redirect(`/onboarding?error=${apiErrorCode(error, 'setup_failed')}&kind=${kind}`);
   }
 
   await setActiveWorkspaceCookie(result.workspaceId);

@@ -3,7 +3,8 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 
 import { Badge, Button, Card, Container, Field, Input } from '@/design/primitives';
-import { ApiError, api } from '@/lib/api/server';
+import { api } from '@/lib/api/server';
+import { authNotice } from '@/lib/auth/auth-errors';
 import { googleSimulatorSignInAction } from '@/lib/auth/actions';
 import { isGoogleSignInSimulatorAvailable } from '@/lib/auth/google-simulator';
 import { safeReturnPath } from '@/lib/auth/safe-redirect';
@@ -35,6 +36,7 @@ export default async function GoogleSimulatorPage({
 }) {
   const params = await searchParams;
   const returnTo = safeReturnPath(params.returnTo, '/app');
+  const notice = authNotice(params.error);
 
   if (!isGoogleSignInSimulatorAvailable()) {
     redirect(`/sign-in?returnTo=${encodeURIComponent(returnTo)}`);
@@ -45,12 +47,8 @@ export default async function GoogleSimulatorPage({
     identities = await api<DemoIdentity[]>('/v1/auth/google-simulator/identities', {
       anonymous: true,
     });
-  } catch (error) {
-    const message =
-      error instanceof ApiError ? error.message : 'The demo sign-in is not available right now.';
-    redirect(
-      `/sign-in?error=${encodeURIComponent(message)}&returnTo=${encodeURIComponent(returnTo)}`,
-    );
+  } catch {
+    redirect(`/sign-in?error=demo_unavailable&returnTo=${encodeURIComponent(returnTo)}`);
   }
 
   return (
@@ -84,9 +82,9 @@ export default async function GoogleSimulatorPage({
                 </p>
               </div>
 
-              {params.error ? (
+              {notice ? (
                 <div className="rounded-[var(--radius-md)] border border-[var(--color-risk)] bg-[var(--color-risk-soft)] px-3 py-2 text-[13px] text-[var(--color-risk)]">
-                  {params.error}
+                  {notice.message}
                 </div>
               ) : null}
 

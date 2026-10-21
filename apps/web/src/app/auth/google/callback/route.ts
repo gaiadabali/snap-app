@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { AuthUser } from '@snap/api-contract';
 
-import { ApiError, SESSION_COOKIE, api } from '@/lib/api/server';
+import { SESSION_COOKIE, api } from '@/lib/api/server';
+import { type AuthErrorCode, apiErrorCode } from '@/lib/auth/auth-errors';
 import { exchangeGoogleCode } from '@/lib/auth/google';
 import { OAUTH_COOKIE_NAME, unpackOAuthState, verifyState } from '@/lib/auth/oauth-state';
 import { publicUrl } from '@/lib/http/public-url';
@@ -18,7 +19,7 @@ type SignInResult = { token: string; user: AuthUser; workspaces: WorkspaceSummar
  *
  *  1. `state` is checked against the cookie set at `/auth/google` — CSRF.
  *     A mismatch (or a missing cookie: expired, cleared, never set) is
- *     refused with the SAME message as every other failure here, because a
+ *     refused with the SAME code as every other failure here, because a
  *     forged callback and an expired one should not be distinguishable to
  *     whoever is looking at the response.
  *  2. The code is exchanged for tokens using the PKCE verifier from that
@@ -40,17 +41,17 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const returnTo = safeReturnPath(saved?.returnTo, '/app');
 
   if (providerError) {
-    return failure(request, 'Google sign-in was cancelled.', returnTo);
+    return failure(request, 'google_cancelled', returnTo);
   }
   if (!code || !verifyState(saved, receivedState)) {
-    return failure(request, 'That sign-in link is no longer valid. Please try again.', returnTo);
+    return failure(request, 'link_invalid', returnTo);
   }
 
   let idToken: string;
   try {
     idToken = await exchangeGoogleCode({ code, codeVerifier: saved!.codeVerifier });
   } catch {
-    return failure(request, 'Could not complete Google sign-in.', returnTo);
+    return failure(request, 'google_failed', returnTo);
   }
 
   let result: SignInResult;
@@ -61,8 +62,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       anonymous: true,
     });
   } catch (error) {
-    const message = error instanceof ApiError ? error.message : 'Could not complete Google sign-in.';
-    return failure(request, message, returnTo);
+    return failure(request, apiErrorCode(error, 'google_failed'), returnTo);
   }
 
   const destination = result.workspaces.length === 0 ? '/onboarding' : returnTo;
@@ -72,9 +72,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   return response;
 }
 
-function failure(request: NextRequest, message: string, returnTo: string): NextResponse {
+function failure(request: NextRequest, code: AuthErrorCode, returnTo: string): NextResponse {
   const url = publicUrl('/sign-in');
-  url.searchParams.set('error', message);
+  url.searchParams.set('error', code);
   url.searchParams.set('returnTo', returnTo);
   const response = NextResponse.redirect(url);
   response.cookies.delete(OAUTH_COOKIE_NAME);

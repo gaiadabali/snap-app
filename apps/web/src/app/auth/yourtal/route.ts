@@ -1,9 +1,9 @@
 import { publicUrl } from '@/lib/http/public-url';
 import { NextRequest, NextResponse } from 'next/server';
 
-import { ApiError, api } from '@/lib/api/server';
+import { api } from '@/lib/api/server';
+import { apiErrorCode } from '@/lib/auth/auth-errors';
 import { safeReturnPath } from '@/lib/auth/safe-redirect';
-import { YOURTAL_UNAVAILABLE_ERROR } from '@/lib/auth/yourtal-errors';
 import { YOURTAL_FLOW_COOKIE, YOURTAL_FLOW_COOKIE_OPTIONS } from '@/lib/auth/yourtal-flow';
 
 type StartResult = { url: string; flowId: string; expiresAt: string };
@@ -31,10 +31,10 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       anonymous: true,
     });
   } catch (error) {
-    const message =
-      error instanceof ApiError && error.message ? error.message : YOURTAL_UNAVAILABLE_ERROR;
+    // A code, never text: the page words it (see `auth-errors.ts`).
+    const code = apiErrorCode(error, 'yourtal_unavailable');
     const url = publicUrl(signUp ? '/register' : '/sign-in');
-    url.searchParams.set('error', message);
+    url.searchParams.set('error', code);
     url.searchParams.set('returnTo', returnTo);
     return NextResponse.redirect(url);
   }
