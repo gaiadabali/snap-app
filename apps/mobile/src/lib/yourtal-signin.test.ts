@@ -92,9 +92,10 @@ describe('refusal messages', () => {
     ['invalid_flow', 'Start again'],
     ['yourtal_failed', 'could not sign you in'],
     ['region_not_supported', 'Australia and Indonesia'],
-    ['teen_invite_required', 'invitation'],
+    ['teen_invite_required', 'invite from the parent or guardian'],
     ['email_unverified', 'Confirm your email'],
-    ['staff_strong_auth_required', 'security key'],
+    ['staff_strong_auth_required', 'passkey'],
+    ['staff_reauth_required', 'last 12 hours'],
     ['account_review', 'flagged'],
     ['try_again', 'try again'],
     ['rate_limited', 'Too many tries'],
@@ -120,8 +121,8 @@ describe('refusal messages', () => {
   it("maps YourTal's own denials, and treats a plain refusal as the person saying no", () => {
     expect(deniedMessage('access_denied', 'account_on_hold')).toContain('on hold');
     expect(deniedMessage('access_denied', 'region_not_supported')).toContain('Australia and Indonesia');
-    expect(deniedMessage('access_denied', 'teen_invite_required')).toContain('invitation');
-    expect(deniedMessage('access_denied', 'teen_not_allowed')).toContain('invitation');
+    expect(deniedMessage('access_denied', 'teen_invite_required')).toContain('invite from the parent or guardian');
+    expect(deniedMessage('access_denied', 'teen_not_allowed')).toContain('invite from the parent or guardian');
     expect(deniedMessage('access_denied', 'user_cancelled')).toBeNull();
     expect(deniedMessage('access_denied', null)).toBeNull();
     expect(deniedMessage('access_denied', 'constructor')).toBeNull();
