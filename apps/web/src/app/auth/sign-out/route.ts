@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { SESSION_COOKIE, WORKSPACE_COOKIE } from '@/lib/api/server';
+import { publicUrl } from '@/lib/http/public-url';
 import { endServerSession } from '@/lib/auth/session';
 
 /**
@@ -12,7 +13,7 @@ import { endServerSession } from '@/lib/auth/session';
  */
 export async function POST(request: NextRequest): Promise<NextResponse> {
   await endServerSession();
-  const response = NextResponse.redirect(new URL('/sign-in', request.url));
+  const response = NextResponse.redirect(publicUrl('/sign-in'));
   response.cookies.delete(SESSION_COOKIE);
   response.cookies.delete(WORKSPACE_COOKIE);
   return response;

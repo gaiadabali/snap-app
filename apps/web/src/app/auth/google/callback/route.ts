@@ -4,6 +4,7 @@ import type { AuthUser } from '@snap/api-contract';
 import { ApiError, SESSION_COOKIE, api } from '@/lib/api/server';
 import { exchangeGoogleCode } from '@/lib/auth/google';
 import { OAUTH_COOKIE_NAME, unpackOAuthState, verifyState } from '@/lib/auth/oauth-state';
+import { publicUrl } from '@/lib/http/public-url';
 import { safeReturnPath } from '@/lib/auth/safe-redirect';
 import { AUTH_COOKIE_OPTIONS } from '@/lib/auth/session';
 
@@ -65,14 +66,14 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   }
 
   const destination = result.workspaces.length === 0 ? '/onboarding' : returnTo;
-  const response = NextResponse.redirect(new URL(destination, request.url));
+  const response = NextResponse.redirect(publicUrl(destination));
   response.cookies.set(SESSION_COOKIE, result.token, AUTH_COOKIE_OPTIONS);
   response.cookies.delete(OAUTH_COOKIE_NAME);
   return response;
 }
 
 function failure(request: NextRequest, message: string, returnTo: string): NextResponse {
-  const url = new URL('/sign-in', request.url);
+  const url = publicUrl('/sign-in');
   url.searchParams.set('error', message);
   url.searchParams.set('returnTo', returnTo);
   const response = NextResponse.redirect(url);
