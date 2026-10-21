@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 
+import { authNotice } from '@/lib/auth/auth-errors';
 import { confirmEmailAction } from '@/lib/auth/account-actions';
 
 /** `no-referrer`: the URL carries a live verification token. */
@@ -20,6 +21,7 @@ export default async function VerifyEmailPage({
   searchParams: Promise<{ token?: string; done?: string; error?: string }>;
 }) {
   const params = await searchParams;
+  const notice = authNotice(params.error);
   const token = params.token ?? '';
 
   return (
@@ -32,9 +34,9 @@ export default async function VerifyEmailPage({
           </p>
         </div>
 
-        {params.error ? (
+        {notice ? (
           <div role="alert" className="auth-alert auth-alert-error">
-            {params.error}
+            {notice.message}
           </div>
         ) : null}
 

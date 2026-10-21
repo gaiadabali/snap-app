@@ -5,6 +5,7 @@ import type { AuthUser } from '@snap/api-contract';
 
 import { ApiError, api } from '@/lib/api/server';
 
+import { apiErrorCode } from './auth-errors';
 import { setSessionCookie } from './session';
 
 type SignInResult = {
@@ -36,13 +37,13 @@ function to(path: string, params: Record<string, string>): never {
  */
 export async function requestPasswordResetAction(formData: FormData): Promise<void> {
   const email = String(formData.get('email') ?? '').trim();
-  if (!email) to('/forgot-password', { error: 'Enter your email address.' });
+  if (!email) to('/forgot-password', { error: 'email_required' });
 
   try {
     await api('/v1/auth/password/reset/request', { method: 'POST', body: { email }, anonymous: true });
   } catch (error) {
     if (error instanceof ApiError && error.status === 429) {
-      to('/forgot-password', { error: error.message });
+      to('/forgot-password', { error: 'rate_limited' });
     }
     // Anything else is swallowed: see the doc comment.
   }
@@ -55,9 +56,9 @@ export async function confirmPasswordResetAction(formData: FormData): Promise<vo
   const newPassword = String(formData.get('newPassword') ?? '');
   const confirm = String(formData.get('confirmPassword') ?? '');
 
-  if (!token) to('/forgot-password', { error: 'That link is missing its token. Ask for a new one.' });
+  if (!token) to('/forgot-password', { error: 'link_invalid' });
   if (newPassword !== confirm) {
-    to('/reset-password', { token, error: 'The two passwords are not the same.' });
+    to('/reset-password', { token, error: 'passwords_mismatch' });
   }
 
   let result: SignInResult;
@@ -68,11 +69,13 @@ export async function confirmPasswordResetAction(formData: FormData): Promise<vo
       anonymous: true,
     });
   } catch (error) {
-    const message = error instanceof ApiError ? error.message : 'Could not reset the password.';
     // A dead link sends the person to ask for a new one; a weak password
     // keeps them on the form with the same (still unspent) link.
-    if (error instanceof ApiError && error.status === 401) to('/forgot-password', { error: message });
-    to('/reset-password', { token, error: message });
+    if (error instanceof ApiError && error.status === 401) to('/forgot-password', { error: 'link_invalid' });
+    to('/reset-password', {
+      token,
+      error: error instanceof ApiError && error.status === 400 ? 'password_rejected' : apiErrorCode(error, 'reset_failed'),
+    });
   }
 
   await setSessionCookie(result.token);
@@ -82,7 +85,7 @@ export async function confirmPasswordResetAction(formData: FormData): Promise<vo
 /** Confirm an email address with the link's token. Needs no session. */
 export async function confirmEmailAction(formData: FormData): Promise<void> {
   const token = String(formData.get('token') ?? '');
-  if (!token) to('/verify-email', { error: 'That link is missing its token.' });
+  if (!token) to('/verify-email', { error: 'link_invalid' });
 
   try {
     await api('/v1/auth/email/verification/confirm', {
@@ -91,9 +94,7 @@ export async function confirmEmailAction(formData: FormData): Promise<void> {
       anonymous: true,
     });
   } catch (error) {
-    to('/verify-email', {
-      error: error instanceof ApiError ? error.message : 'Could not confirm that address.',
-    });
+    to('/verify-email', { error: apiErrorCode(error, 'verify_failed') });
   }
   to('/verify-email', { done: '1' });
 }

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 
+import { authNotice } from '@/lib/auth/auth-errors';
 import { safeReturnPath } from '@/lib/auth/safe-redirect';
 import { isYourtalWebSignInAvailable } from '@/lib/auth/yourtal';
 
@@ -28,7 +29,7 @@ export default async function RegisterPage({
       <AuthMethods
         mode="register"
         returnTo={returnTo}
-        error={params.error}
+        notice={authNotice(params.error)}
         sent={params.sent === '1'}
         yourtalEnabled={yourtalEnabled}
       />

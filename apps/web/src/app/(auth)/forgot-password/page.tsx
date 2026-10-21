@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 
+import { authNotice } from '@/lib/auth/auth-errors';
 import { requestPasswordResetAction } from '@/lib/auth/account-actions';
 
 import { AuthField, AuthInput } from '../_components/ui';
@@ -21,6 +22,7 @@ export default async function ForgotPasswordPage({
   searchParams: Promise<{ sent?: string; error?: string }>;
 }) {
   const params = await searchParams;
+  const notice = authNotice(params.error);
   const sent = params.sent === '1';
 
   return (
@@ -33,9 +35,9 @@ export default async function ForgotPasswordPage({
           </p>
         </div>
 
-        {params.error ? (
+        {notice ? (
           <div role="alert" className="auth-alert auth-alert-error">
-            {params.error}
+            {notice.message}
           </div>
         ) : null}
 
