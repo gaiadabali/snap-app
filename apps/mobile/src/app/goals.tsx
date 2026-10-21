@@ -8,7 +8,8 @@ import { api, type Goal } from '@/api';
 import { AddButton, Empty, Field, Loading, Sheet } from '@/components/form';
 import { GradientHero, HeroBody, HeroFigure, HeroLabel, Raised } from '@/components/rich';
 import { Button, Chip, Figure, Screen, SectionHeader, Small } from '@/components/ui';
-import { formatAud, formatShortDate, radius, space, usePalette } from '@/theme';
+import { formatShortDate, radius, space, usePalette } from '@/theme';
+import { useMoney } from '@/lib/use-money';
 
 /**
  * Savings goals.
@@ -19,6 +20,7 @@ import { formatAud, formatShortDate, radius, space, usePalette } from '@/theme';
  * screen leads with what is left rather than what is spent.
  */
 export default function GoalsScreen() {
+  const money = useMoney();
   const router = useRouter();
   const p = usePalette();
   const insets = useSafeAreaInsets();
@@ -104,12 +106,12 @@ export default function GoalsScreen() {
             <GradientHero>
               <View style={{ gap: space.xs }}>
                 <HeroLabel>Saved so far</HeroLabel>
-                <HeroFigure>{formatAud(saved.toFixed(4), { cents: false })}</HeroFigure>
+                <HeroFigure>{money.fmt(saved.toFixed(4), { cents: false })}</HeroFigure>
                 <HeroBody>
-                  of {formatAud(targets.toFixed(4), { cents: false })} across {all.length}{' '}
+                  of {money.fmt(targets.toFixed(4), { cents: false })} across {all.length}{' '}
                   {all.length === 1 ? 'goal' : 'goals'}
                   {perMonth > 0
-                    ? ` · ${formatAud(perMonth.toFixed(4), { cents: false })} a month to stay on track`
+                    ? ` · ${money.fmt(perMonth.toFixed(4), { cents: false })} a month to stay on track`
                     : ''}
                 </HeroBody>
               </View>
@@ -142,7 +144,7 @@ export default function GoalsScreen() {
                           {g.done ? <Chip tone="accent">Funded</Chip> : null}
                         </View>
                         <Small>
-                          {formatAud(g.saved)} of {formatAud(g.target)}
+                          {money.fmt(g.saved)} of {money.fmt(g.target)}
                           {g.targetDate ? ` · by ${formatShortDate(g.targetDate)}` : ' · no deadline'}
                         </Small>
                       </View>
@@ -181,12 +183,12 @@ export default function GoalsScreen() {
                         ) : g.perMonth ? (
                           <Small>
                             <Small muted={false} style={{ fontWeight: '700', color: p.ink }}>
-                              {formatAud(g.perMonth)}
+                              {money.fmt(g.perMonth)}
                             </Small>
                             {' a month to make the date'}
                           </Small>
                         ) : (
-                          <Small>{formatAud((Number(g.target) - Number(g.saved)).toFixed(4))} to go</Small>
+                          <Small>{money.fmt((Number(g.target) - Number(g.saved)).toFixed(4))} to go</Small>
                         )}
                       </View>
                       <Pressable
@@ -237,7 +239,7 @@ export default function GoalsScreen() {
           value={target}
           onChangeText={setTarget}
           keyboardType="decimal-pad"
-          prefix="$"
+          prefix={money.symbol}
         />
         <Field
           label="By when"
@@ -253,7 +255,7 @@ export default function GoalsScreen() {
         title={contributing ? `Add to ${contributing.name}` : ''}
         subtitle={
           contributing
-            ? `${formatAud((Number(contributing.target) - Number(contributing.saved)).toFixed(4))} to go`
+            ? `${money.fmt((Number(contributing.target) - Number(contributing.saved)).toFixed(4))} to go`
             : undefined
         }
         error={error}
@@ -267,7 +269,7 @@ export default function GoalsScreen() {
           value={amount}
           onChangeText={setAmount}
           keyboardType="decimal-pad"
-          prefix="$"
+          prefix={money.symbol}
           autoFocus
         />
       </Sheet>

@@ -5,7 +5,8 @@ import Svg, { Circle, G, Line, Path, Rect, Text as SvgText } from 'react-native-
 
 import type { CategorySpend, SeriesPoint } from '@/api';
 import { categoryHue } from '@/components/rich';
-import { formatAud, numeric, space, type, usePalette } from '@/theme';
+import { numeric, space, type, usePalette } from '@/theme';
+import { useMoney } from '@/lib/use-money';
 
 /**
  * Charts for the analytics page.
@@ -33,6 +34,7 @@ export function BarSeries({
   /** Called with the index tapped, or null when the selection is cleared. */
   onSelect?: (index: number | null) => void;
 }) {
+  const money = useMoney();
   const p = usePalette();
   const [width, setWidth] = useState(0);
   const [active, setActive] = useState<number | null>(null);
@@ -76,7 +78,7 @@ export function BarSeries({
                 fontSize={9}
                 fontWeight="600"
               >
-                {formatAud(String(max * f), { cents: false })}
+                {money.fmt(String(max * f), { cents: false })}
               </SvgText>
             </G>
           ))}
@@ -126,7 +128,7 @@ export function BarSeries({
           <Pressable
             key={`hit-${pt.label}-${i}`}
             accessibilityRole="button"
-            accessibilityLabel={`${pt.label}: ${formatAud(pt.value)}`}
+            accessibilityLabel={`${pt.label}: ${money.fmt(pt.value)}`}
             onPress={() => select(active === i ? null : i)}
             style={{ flex: 1 }}
           />
@@ -234,6 +236,7 @@ export function CategoryBars({
   parts: CategorySpend[];
   limit?: number;
 }) {
+  const money = useMoney();
   const p = usePalette();
   const shown = parts.slice(0, limit);
   const biggest = Math.max(...shown.map((s) => Number(s.spent)), 1);
@@ -251,11 +254,11 @@ export function CategoryBars({
                 {s.category}
               </Text>
               <Text style={[type.bodyStrong, numeric, { color: over ? p.risk : p.ink }]}>
-                {formatAud(s.spent)}
+                {money.fmt(s.spent)}
               </Text>
               {s.budget ? (
                 <Text style={[type.small, numeric, { color: p.inkFaint }]}>
-                  / {formatAud(s.budget, { cents: false })}
+                  / {money.fmt(s.budget, { cents: false })}
                 </Text>
               ) : null}
             </View>

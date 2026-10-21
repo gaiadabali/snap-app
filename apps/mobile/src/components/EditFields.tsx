@@ -6,6 +6,7 @@ import { api, type DocumentView } from '@/api';
 import { Choice, Field, Sheet } from '@/components/form';
 import { Body, Small } from '@/components/ui';
 import { gstFromInclusive } from '@/lib/money';
+import { useMoney } from '@/lib/use-money';
 import { space, usePalette } from '@/theme';
 
 /**
@@ -56,13 +57,14 @@ export function EditFields({
   onChange: (next: DocumentView) => void;
 }) {
   const p = usePalette();
+  const money = useMoney(doc.currency);
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [draft, setDraft] = useState({
     supplierName: doc.supplierName,
     issueDate: doc.issueDate,
-    total: Number(doc.payableAmount).toFixed(2),
-    gstFree: doc.gstFreeAmount ? Number(doc.gstFreeAmount).toFixed(2) : '',
+    total: Number(doc.payableAmount).toFixed(money.decimals),
+    gstFree: doc.gstFreeAmount ? Number(doc.gstFreeAmount).toFixed(money.decimals) : '',
     category: doc.category,
   });
 
@@ -152,8 +154,8 @@ export function EditFields({
             setDraft({
               supplierName: doc.supplierName,
               issueDate: doc.issueDate,
-              total: Number(doc.payableAmount).toFixed(2),
-              gstFree: doc.gstFreeAmount ? Number(doc.gstFreeAmount).toFixed(2) : '',
+              total: Number(doc.payableAmount).toFixed(money.decimals),
+              gstFree: doc.gstFreeAmount ? Number(doc.gstFreeAmount).toFixed(money.decimals) : '',
               category: doc.category,
             });
             setOpen(true);
@@ -220,7 +222,7 @@ export function EditFields({
               value={draft.total}
               onChangeText={(t) => setDraft({ ...draft, total: t })}
               keyboardType="decimal-pad"
-              prefix="$"
+              prefix={money.symbol}
               hint="Including GST"
             />
           </View>
@@ -230,7 +232,7 @@ export function EditFields({
               value={draft.gstFree}
               onChangeText={(g) => setDraft({ ...draft, gstFree: g })}
               keyboardType="decimal-pad"
-              prefix="$"
+              prefix={money.symbol}
               hint="Fresh food etc."
             />
           </View>
@@ -245,7 +247,7 @@ export function EditFields({
           }}
         >
           <Small muted={false} style={{ color: p.accentText, fontWeight: '700' }}>
-            GST becomes ${Number(newGst).toFixed(2)}
+            GST becomes {money.fmt(newGst)}
           </Small>
           <Small>
             Recalculated as exactly 1/11 of the taxable part. You never type the GST — the ATO

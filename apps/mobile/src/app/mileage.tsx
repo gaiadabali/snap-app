@@ -10,7 +10,8 @@ import { TripTracker } from '@/components/TripTracker';
 import { GradientHero, HeroBody, HeroFigure, HeroLabel, Raised } from '@/components/rich';
 import { Body, Card, Chip, Divider, Label, Screen, Small } from '@/components/ui';
 import { BUSINESS_FEATURES_ENABLED } from '@/config';
-import { formatAud, formatShortDate, space, usePalette } from '@/theme';
+import { formatShortDate, space, usePalette } from '@/theme';
+import { useMoney } from '@/lib/use-money';
 
 /**
  * The trip log behind a D1 car claim.
@@ -36,6 +37,7 @@ const blank = {
 };
 
 export default function MileageScreen() {
+  const money = useMoney();
   // Business-only. Personal-only hides this from every nav path; this covers
   // a direct URL on the web build, where a route always resolves.
   if (!BUSINESS_FEATURES_ENABLED) return <Redirect href="/" />;
@@ -98,7 +100,7 @@ export default function MileageScreen() {
             <GradientHero>
               <View style={{ gap: space.xs }}>
                 <HeroLabel>Claimable at {data.centsPerKmRate * 100}c per km</HeroLabel>
-                <HeroFigure>{formatAud(data.claimAtCentsPerKm)}</HeroFigure>
+                <HeroFigure>{money.fmt(data.claimAtCentsPerKm)}</HeroFigure>
                 <HeroBody>
                   {data.workKm.toLocaleString('en-AU')} work km of{' '}
                   {data.totalKm.toLocaleString('en-AU')} logged

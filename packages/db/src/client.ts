@@ -296,7 +296,9 @@ export async function asUser<T>(db: Db, userId: string, fn: (tx: Tx) => Promise<
 export async function listWorkspacesFor(
   db: Db,
   userId: string,
-): Promise<Array<{ id: string; name: string; kind: 'business' | 'personal'; role: string }>> {
+): Promise<
+  Array<{ id: string; name: string; kind: 'business' | 'personal'; role: string; baseCurrency: string }>
+> {
   if (!UUID.test(userId)) throw new Error(`listWorkspacesFor: not a uuid: ${JSON.stringify(userId)}`);
   return db.transaction(async (tx) => {
     await tx.execute(sql`select set_config('app.user_id', ${userId}, true)`);
@@ -305,8 +307,9 @@ export async function listWorkspacesFor(
       name: string;
       kind: 'business' | 'personal';
       role: string;
+      baseCurrency: string;
     }>(sql`
-      select t.id, t.name, t.kind, m.role
+      select t.id, t.name, t.kind, m.role, t.base_currency as "baseCurrency"
       from memberships m
       join tenants t on t.id = m.tenant_id
       where m.user_id = current_user_id()

@@ -6,7 +6,8 @@ import { api, type Invoice } from '@/api';
 import { GradientHero, HeroBody, HeroFigure, HeroLabel, Raised } from '@/components/rich';
 import { Body, Button, Chip, Figure, Label, Screen, Small } from '@/components/ui';
 import { BUSINESS_FEATURES_ENABLED } from '@/config';
-import { formatAud, formatShortDate, space, usePalette } from '@/theme';
+import { formatShortDate, space, usePalette } from '@/theme';
+import { useMoney } from '@/lib/use-money';
 
 /** Status carries its own colour, so a list sorts itself before it is read. */
 function statusTone(s: Invoice['status']): 'neutral' | 'accent' | 'risk' | 'warn' {
@@ -14,6 +15,7 @@ function statusTone(s: Invoice['status']): 'neutral' | 'accent' | 'risk' | 'warn
 }
 
 export default function InvoicesScreen() {
+  const money = useMoney();
   // Business-only. Personal-only hides this from every nav path; this covers
   // a direct URL on the web build, where a route always resolves.
   if (!BUSINESS_FEATURES_ENABLED) return <Redirect href="/" />;
@@ -64,7 +66,7 @@ export default function InvoicesScreen() {
                 <HeroLabel>
                   {kind === 'estimate' ? 'Quoted, not yet won' : 'Owed to you'}
                 </HeroLabel>
-                <HeroFigure>{formatAud(String(outstanding.toFixed(2)))}</HeroFigure>
+                <HeroFigure>{money.fmt(String(outstanding.toFixed(2)))}</HeroFigure>
                 <HeroBody>
                   {all.length} {kind}
                   {all.length === 1 ? '' : 's'}
@@ -112,7 +114,7 @@ export default function InvoicesScreen() {
                     </Small>
                   </View>
                   <View style={{ alignItems: 'flex-end', gap: 4 }}>
-                    <Figure size="h2">{formatAud(item.totalAmount)}</Figure>
+                    <Figure size="h2">{money.fmt(item.totalAmount)}</Figure>
                     <Chip tone={statusTone(item.status)}>
                       {item.status === 'sent' ? `Due ${formatShortDate(item.dueDate)}` : item.status}
                     </Chip>
@@ -120,7 +122,7 @@ export default function InvoicesScreen() {
                 </View>
                 {Number(item.amountDue) > 0 && item.status !== 'draft' ? (
                   <Small>
-                    {formatAud(item.amountDue)} outstanding · incl {formatAud(item.gstAmount)} GST
+                    {money.fmt(item.amountDue)} outstanding · incl {money.fmt(item.gstAmount)} GST
                   </Small>
                 ) : null}
               </View>

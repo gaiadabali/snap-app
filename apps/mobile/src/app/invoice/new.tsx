@@ -10,7 +10,8 @@ import { Raised } from '@/components/rich';
 import { Body, Button, Chip, Divider, Figure, Label, Screen, Small } from '@/components/ui';
 import { BUSINESS_FEATURES_ENABLED } from '@/config';
 import { add, gstOnSale, multiply, ZERO } from '@/lib/money';
-import { formatAud, radius, space, usePalette } from '@/theme';
+import { radius, space, usePalette } from '@/theme';
+import { useMoney } from '@/lib/use-money';
 
 /**
  * New invoice.
@@ -29,6 +30,7 @@ import { formatAud, radius, space, usePalette } from '@/theme';
 type Line = { itemId: string; qty: number };
 
 export default function NewInvoiceScreen() {
+  const money = useMoney();
   // Business-only. Personal-only hides this from every nav path; this covers
   // a direct URL on the web build, where a route always resolves.
   if (!BUSINESS_FEATURES_ENABLED) return <Redirect href="/" />;
@@ -172,11 +174,11 @@ export default function NewInvoiceScreen() {
                         }}
                       >
                         <Small>
-                          {l.qty} {it.unit} × {formatAud(it.sellPrice)} · tap to change
+                          {l.qty} {it.unit} × {money.fmt(it.sellPrice)} · tap to change
                         </Small>
                       </Pressable>
                     </View>
-                    <Figure>{formatAud(net)}</Figure>
+                    <Figure>{money.fmt(net)}</Figure>
                     <Pressable
                       accessibilityRole="button"
                       accessibilityLabel={`Remove ${it.name}`}
@@ -196,10 +198,10 @@ export default function NewInvoiceScreen() {
         {/* ── Totals ── */}
         <Raised>
           <View style={{ gap: space.sm }}>
-            <Row label="Subtotal (ex GST)" value={formatAud(totals.net)} />
-            <Row label="GST 10%" value={formatAud(totals.gst)} />
+            <Row label="Subtotal (ex GST)" value={money.fmt(totals.net)} />
+            <Row label="GST 10%" value={money.fmt(totals.gst)} />
             <Divider />
-            <Row label="Total" value={formatAud(totals.total)} strong />
+            <Row label="Total" value={money.fmt(totals.total)} strong />
             <Small>
               GST is added on top of the ex-GST price. On a receipt it works the other way — 1/11 of
               the total you paid.
@@ -238,7 +240,7 @@ export default function NewInvoiceScreen() {
       >
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
           <Small>{lines.length} line{lines.length === 1 ? '' : 's'} · incl GST</Small>
-          <Figure size="h1">{formatAud(totals.total)}</Figure>
+          <Figure size="h1">{money.fmt(totals.total)}</Figure>
         </View>
         <Button
           label={saved ? 'Done' : 'Save draft'}
@@ -272,7 +274,7 @@ export default function NewInvoiceScreen() {
           <PickerRow
             key={it.id}
             title={it.name}
-            subtitle={`${formatAud(it.sellPrice)} per ${it.unit}${
+            subtitle={`${money.fmt(it.sellPrice)} per ${it.unit}${
               it.stockOnHand !== null ? ` · ${it.stockOnHand} in stock` : ''
             }`}
             warn={it.stockOnHand === 0}

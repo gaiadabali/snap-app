@@ -7,7 +7,8 @@ import { IS_DEMO, api, type PersonalSummary, type SalesSummary } from '@/api';
 import { GradientHero, HeroBody, HeroFigure, HeroLabel } from '@/components/rich';
 import { MenuContent } from '@/components/MenuContent';
 import { Figure, IconButton, Small } from '@/components/ui';
-import { formatAud, space, usePalette } from '@/theme';
+import { space, usePalette } from '@/theme';
+import { useMoney } from '@/lib/use-money';
 import { useWorkspace } from '@/workspace';
 import { useCallback, useState } from 'react';
 
@@ -23,6 +24,7 @@ import { useCallback, useState } from 'react';
  * keep working while this is open, which a drawer navigator would take over.
  */
 export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const money = useMoney();
   const p = usePalette();
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -137,9 +139,9 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
                 <GradientHero tone={over ? 'risk' : 'brand'}>
                   <View style={{ gap: space.xs }}>
                     <HeroLabel>{over ? 'Over budget' : 'Left this month'}</HeroLabel>
-                    <HeroFigure small>{formatAud(personal.remaining)}</HeroFigure>
+                    <HeroFigure small>{money.fmt(personal.remaining)}</HeroFigure>
                     <HeroBody>
-                      {formatAud(personal.safeToSpendPerDay)} a day for {personal.daysLeftInMonth}{' '}
+                      {money.fmt(personal.safeToSpendPerDay)} a day for {personal.daysLeftInMonth}{' '}
                       day{personal.daysLeftInMonth === 1 ? '' : 's'}
                     </HeroBody>
                   </View>
@@ -159,11 +161,11 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
                   <View style={{ gap: space.xs }}>
                     <HeroLabel>{overdue > 0 ? 'Overdue from customers' : 'Awaiting payment'}</HeroLabel>
                     <HeroFigure small>
-                      {formatAud(overdue > 0 ? sales.overdue : sales.outstanding)}
+                      {money.fmt(overdue > 0 ? sales.overdue : sales.outstanding)}
                     </HeroFigure>
                     <HeroBody>
                       {overdue > 0
-                        ? `${formatAud(sales.outstanding)} outstanding in total`
+                        ? `${money.fmt(sales.outstanding)} outstanding in total`
                         : 'Nothing overdue'}
                     </HeroBody>
                   </View>

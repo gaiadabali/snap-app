@@ -106,6 +106,7 @@ export class WorkspacesController {
           role: w.role,
           memberCount: members.length,
           abn: null as string | null,
+          baseCurrency: w.baseCurrency,
         };
       }),
     );
@@ -150,7 +151,8 @@ export class WorkspacesController {
       console.error(`grantSignupBonusIfFirst failed for tenant ${id}:`, error);
     });
 
-    return { id, name: body.name, kind: body.kind, role: 'owner', memberCount: 1, abn };
+    // A new tenant starts on the column default (AUD) until tax rules are installed.
+    return { id, name: body.name, kind: body.kind, role: 'owner', memberCount: 1, abn, baseCurrency: 'AUD' };
   }
 
   @Post('onboarding')

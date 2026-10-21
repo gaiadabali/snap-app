@@ -7,7 +7,8 @@ import { api, type Recurring } from '@/api';
 import { Empty, Loading } from '@/components/form';
 import { CategoryIcon, GradientHero, HeroBody, HeroFigure, HeroLabel, Raised } from '@/components/rich';
 import { Body, Chip, Divider, Figure, Screen, SectionHeader, Small } from '@/components/ui';
-import { formatAud, formatShortDate, space } from '@/theme';
+import { formatShortDate, space } from '@/theme';
+import { useMoney } from '@/lib/use-money';
 
 /**
  * Subscriptions and standing bills, found rather than entered.
@@ -20,6 +21,7 @@ import { formatAud, formatShortDate, space } from '@/theme';
  * reads as nothing; $204 a year reads as a decision.
  */
 export default function RecurringScreen() {
+  const money = useMoney();
   const insets = useSafeAreaInsets();
   const [rows, setRows] = useState<Recurring[] | null>(null);
 
@@ -55,9 +57,9 @@ export default function RecurringScreen() {
             <GradientHero>
               <View style={{ gap: space.xs }}>
                 <HeroLabel>Committed each year</HeroLabel>
-                <HeroFigure>{formatAud(annual.toFixed(4), { cents: false })}</HeroFigure>
+                <HeroFigure>{money.fmt(annual.toFixed(4), { cents: false })}</HeroFigure>
                 <HeroBody>
-                  {formatAud(monthly.toFixed(4))} a month across {all.length} recurring{' '}
+                  {money.fmt(monthly.toFixed(4))} a month across {all.length} recurring{' '}
                   {all.length === 1 ? 'cost' : 'costs'}
                 </HeroBody>
               </View>
@@ -93,14 +95,14 @@ export default function RecurringScreen() {
                             style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}
                           >
                             <Small numberOfLines={1}>
-                              {formatAud(r.typicalAmount)}/mo · next {formatShortDate(r.nextExpected)}
+                              {money.fmt(r.typicalAmount)}/mo · next {formatShortDate(r.nextExpected)}
                             </Small>
                             <Chip>{r.monthsSeen} months</Chip>
                           </View>
                         </View>
                         <View style={{ alignItems: 'flex-end' }}>
                           <Figure size="h2">
-                            {formatAud(r.annualCost, { cents: false })}
+                            {money.fmt(r.annualCost, { cents: false })}
                           </Figure>
                           <Small>a year</Small>
                         </View>

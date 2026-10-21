@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatAud } from './format';
+import { currencyDecimals, currencySymbol, formatAud, formatMoney } from './format';
 import { ZERO, add, gstFromInclusive, gstOnSale, isZero, multiply, subtract } from './money';
 
 /**
@@ -106,5 +106,61 @@ describe('formatAud', () => {
     expect(formatAud('-110.00')).toBe('-$110.00');
     expect(formatAud(null)).toBe('—');
     expect(formatAud(undefined)).toBe('—');
+  });
+});
+
+describe('formatMoney', () => {
+  it('prints AUD exactly as formatAud always did', () => {
+    for (const v of ['1.7450', '19.1950', '0.9950', '1848.00', '50570.1200', '-110.00', '0']) {
+      expect(formatMoney(v, 'AUD')).toBe(formatAud(v));
+    }
+    expect(formatMoney('1234.56', 'AUD')).toBe('$1,234.56');
+    expect(formatMoney('-1234.56', 'AUD')).toBe('-$1,234.56');
+    expect(formatMoney('999.60', 'AUD', { cents: false })).toBe('$1,000');
+  });
+
+  it('prints rupiah with Rp, dot grouping and no decimals', () => {
+    expect(formatMoney('1234567', 'IDR')).toBe('Rp 1.234.567');
+    expect(formatMoney('1234567.0000', 'IDR')).toBe('Rp 1.234.567');
+    expect(formatMoney('0', 'IDR')).toBe('Rp 0');
+    expect(formatMoney('500', 'IDR')).toBe('Rp 500');
+  });
+
+  it('rounds rupiah half up to the whole rupiah', () => {
+    expect(formatMoney('1234.4999', 'IDR')).toBe('Rp 1.234');
+    expect(formatMoney('1234.5000', 'IDR')).toBe('Rp 1.235');
+    expect(formatMoney('999999.5', 'IDR')).toBe('Rp 1.000.000');
+    expect(formatMoney('1234567.89', 'IDR', { cents: false })).toBe('Rp 1.234.568');
+  });
+
+  it('puts the minus sign before the rupiah symbol', () => {
+    expect(formatMoney('-1234567', 'IDR')).toBe('-Rp 1.234.567');
+  });
+
+  it('shows an unknown currency as its code, never a wrong symbol', () => {
+    expect(formatMoney('12.5', 'USD')).toBe('USD 12.50');
+    expect(formatMoney('1234.56', 'eur')).toBe('EUR 1,234.56');
+    expect(formatMoney('-1234.567', 'USD', { cents: false })).toBe('-USD 1,235');
+  });
+
+  it('treats a missing currency as AUD and a missing value as a dash', () => {
+    expect(formatMoney('5', undefined)).toBe('$5.00');
+    expect(formatMoney(null, 'IDR')).toBe('—');
+    expect(formatMoney(undefined, 'USD')).toBe('—');
+  });
+});
+
+describe('currencySymbol / currencyDecimals', () => {
+  it('gives the input prefix', () => {
+    expect(currencySymbol('AUD')).toBe('$');
+    expect(currencySymbol('IDR')).toBe('Rp');
+    expect(currencySymbol('USD')).toBe('USD');
+    expect(currencySymbol(undefined)).toBe('$');
+  });
+
+  it('says how many decimals an input should prefill', () => {
+    expect(currencyDecimals('AUD')).toBe(2);
+    expect(currencyDecimals('IDR')).toBe(0);
+    expect(currencyDecimals('USD')).toBe(2);
   });
 });

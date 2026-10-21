@@ -683,6 +683,12 @@ export interface WorkspaceSummary {
   role: MemberRole;
   memberCount: number;
   abn: string | null;
+  /**
+   * ISO 4217 code every workspace-level total is shown in (`tenants.base_currency`,
+   * set by the installed tax rules). A server that predates it omits the field, so
+   * clients default to AUD, which is what every such workspace was.
+   */
+  baseCurrency: string;
 }
 
 export interface Member {
