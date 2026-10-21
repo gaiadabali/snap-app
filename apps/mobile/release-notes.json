@@ -1,8 +1,8 @@
 [
   {
-    "id": "amounts-in-your-currency",
+    "id": "yourtal-sign-in-credits-and-your-currency",
     "date": "2026-10-21",
-    "notes": "Amounts now show in your workspace's own currency, so an Indonesian workspace reads in Rupiah (Rp) instead of dollars. Each receipt keeps the currency it was issued in, and the amount fields you type into show the matching symbol. Scan credit prices are still in Australian dollars, because that is what Snap Apps charges."
+    "notes": "You can now sign in or create an account with YourTal, and link YourTal so receipts scanned with bought credits earn points. Each scan uses one credit, free ones first, and a scan we cannot read gives its credit back. Amounts now show in your workspace’s own currency, so an Indonesian workspace reads in Rupiah (Rp). Credit prices stay in Australian dollars, because that is what Snap Apps charges."
   },
   {
     "id": "password-reset-and-sign-out-everywhere",
