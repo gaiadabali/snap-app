@@ -1,6 +1,25 @@
-import sharp from 'sharp';
-
 import type { PageImage } from './provider.js';
+
+/**
+ * sharp, loaded on first use rather than imported at the top. It is a native
+ * module: if its binary were missing from the server image, a top-level import
+ * would stop the worker at boot and every scan with it. Loaded lazily, a
+ * failure only means pages go to the model unchanged, as they did before.
+ */
+let sharpModule: Promise<typeof import('sharp').default | null> | null = null;
+function loadSharp(): Promise<typeof import('sharp').default | null> {
+  sharpModule ??= import('sharp').then(
+    (m) => m.default,
+    (error: unknown) => {
+      console.warn(
+        'sharp could not be loaded; pages go to the model unchanged — ' +
+          (error instanceof Error ? error.message : String(error)),
+      );
+      return null;
+    },
+  );
+  return sharpModule;
+}
 
 /**
  * The model-sized copy of a page.
@@ -45,6 +64,8 @@ export async function toModelImage(page: PageImage): Promise<{ page: PageImage; 
   });
 
   if (!page.mimeType.startsWith('image/')) return untouched(null);
+  const sharp = await loadSharp();
+  if (!sharp) return untouched(null);
 
   try {
     const meta = await sharp(page.bytes).metadata();
