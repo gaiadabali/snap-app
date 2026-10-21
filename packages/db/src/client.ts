@@ -31,6 +31,25 @@ export async function completeJob(db: Db, jobId: string): Promise<void> {
 }
 
 /**
+ * Heartbeat: pushes a claimed job's lock forward so a LIVE worker's slow job
+ * is never mistaken for a dead worker's.
+ *
+ * `claimJobs` treats a lock older than its timeout as abandoned. With a
+ * heartbeat the timeout can be short (about a minute, so a job stranded by a
+ * killed worker is picked up quickly) without a long statement being claimed a
+ * second time. Guarded by `locked_by`: a worker whose lock was already taken
+ * over must not extend someone else's claim. Returns false when it no longer
+ * holds the job.
+ */
+export async function renewJobLock(db: Db, jobId: string, workerId: string): Promise<boolean> {
+  const res = await db.execute(sql`
+    update jobs set locked_at = now()
+     where id = ${jobId} and locked_by = ${workerId} and completed_at is null
+  `);
+  return (res.rowCount ?? 0) > 0;
+}
+
+/**
  * Releases a failed job for another attempt, backing off exponentially.
  *
  * The backoff matters: a provider outage otherwise becomes a hot loop that

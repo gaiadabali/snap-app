@@ -106,6 +106,29 @@ const schema = z.object({
   EXTRACTION_MODEL: z.string().default('gemma4:31b'),
 
   /**
+   * Wall-clock limit for ONE model call in the receipt path, and for the
+   * escalation walk as a whole.
+   *
+   * Extraction used to have no limit at all: `fetch` waits up to undici's 300 s
+   * default per model, the chain has four, and the worker handles one job at a
+   * time, so one hung provider held every scan behind it for minutes (a
+   * founder scan on 2026-10-21 took 4 minutes; the phone gives up at 90 s).
+   * A timeout is a failure of THAT model, so escalation walks on to the next.
+   */
+  EXTRACTION_CALL_TIMEOUT_MS: z.coerce.number().int().positive().default(45_000),
+  /**
+   * Model time one job may spend in total across the whole chain. Once spent
+   * the walk stops instead of starting another model, and the job is released
+   * for a later attempt like any other failure.
+   */
+  EXTRACTION_TOTAL_BUDGET_MS: z.coerce.number().int().positive().default(120_000),
+  /**
+   * The same limit for one statement chunk call. Longer than a receipt's: a
+   * chunk is a page of rows, up to 4000 output tokens of JSON.
+   */
+  STATEMENT_CALL_TIMEOUT_MS: z.coerce.number().int().positive().default(120_000),
+
+  /**
    * Per-tenant DAILY budget on extraction jobs admitted at intake.
    *
    * The second half of the statement-extraction cost caps (plan Task 10,

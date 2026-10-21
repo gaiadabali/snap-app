@@ -102,3 +102,54 @@ describe('OpenRouterStatementProvider', () => {
     expect(provider.name).toBe('openrouter');
   });
 });
+
+/** A fetch that only the abort signal ends, like a provider that hangs. */
+function stubHangingFetch() {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(
+      (_url: string, init: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          init.signal!.addEventListener('abort', () => reject(init.signal!.reason));
+        }),
+    ),
+  );
+}
+
+describe('per-call timeout (group 1.29)', () => {
+  it('fails a hung receipt call with a message naming the model and the limit', async () => {
+    stubHangingFetch();
+    const provider = new OpenRouterProvider('google/gemma-4-31b-it', undefined, 'sk-or-test', 50);
+    const started = Date.now();
+    const err = await provider.extract({ bytes: Buffer.from('x'), mimeType: 'image/jpeg' }).catch((e: Error) => e);
+    expect(Date.now() - started).toBeLessThan(2_000);
+    expect(String(err)).toMatch(/google\/gemma-4-31b-it timed out after 0 s/);
+  });
+
+  it('passes an abort signal to fetch on both receipt and statement calls', async () => {
+    const fetchMock = stubFetch(EXTRACTION_JSON);
+    await new OpenRouterProvider('m', undefined, 'k').extract({ bytes: Buffer.from('x'), mimeType: 'image/jpeg' });
+    expect((fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1].signal).toBeInstanceOf(AbortSignal);
+
+    const stmt = stubFetch(JSON.stringify({ lines: [], notes: { legible: true } }));
+    await new OpenRouterStatementProvider('m', 'k').extractChunk(['x'], { from: 1, to: 1 }, 1, 'day_first', 'AUD');
+    expect((stmt.mock.calls[0] as unknown as [string, RequestInit])[1].signal).toBeInstanceOf(AbortSignal);
+  });
+
+  it('cuts a hung statement chunk call too', async () => {
+    stubHangingFetch();
+    const provider = new OpenRouterStatementProvider('z-ai/glm-5.3', 'k', 50);
+    const err = await provider
+      .extractChunk(['x'], { from: 1, to: 1 }, 1, 'day_first', 'AUD')
+      .catch((e: Error) => e);
+    expect(String(err)).toMatch(/z-ai\/glm-5.3 timed out after/);
+  });
+
+  it('does not mistake an ordinary upstream error for a timeout', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('x', { status: 500 })));
+    const provider = new OpenRouterProvider('m', undefined, 'k', 5_000);
+    const err = await provider.extract({ bytes: Buffer.from('x'), mimeType: 'image/jpeg' }).catch((e: Error) => e);
+    expect(String(err)).toMatch(/returned 500/);
+    expect(String(err)).not.toMatch(/timed out/);
+  });
+});

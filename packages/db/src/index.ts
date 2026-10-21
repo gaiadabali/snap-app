@@ -26,6 +26,7 @@ export {
   claimJobs,
   completeJob,
   failJob,
+  renewJobLock,
   type Db,
   type Tx,
 } from './client';
