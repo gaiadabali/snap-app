@@ -14,7 +14,7 @@ const STATUS: YourtalLinkStatus = {
   region: null,
   linkedAt: null,
   brokenReason: null,
-  receipts: { pending: 0, rewarded: 0, refused: 0, skippedDuplicate: 0, skippedFree: 0 },
+  receipts: { pending: 0, rewarded: 0, refused: 0, pausedRefused: 0, skippedDuplicate: 0, skippedFree: 0 },
   pointsReported: 0,
 };
 
@@ -78,7 +78,7 @@ describe('YourtalLinkView: linked', () => {
     state: 'linked',
     region: 'AU',
     linkedAt: '2026-10-20T03:00:00.000Z',
-    receipts: { pending: 2, rewarded: 12, refused: 0, skippedDuplicate: 3, skippedFree: 4 },
+    receipts: { pending: 2, rewarded: 12, refused: 0, pausedRefused: 0, skippedDuplicate: 3, skippedFree: 4 },
     pointsReported: 120,
   };
 
@@ -108,6 +108,29 @@ describe('YourtalLinkView: linked', () => {
     expect(text(html({ status: linked }))).not.toContain('Not paid by YourTal');
     const refused = { ...linked, receipts: { ...linked.receipts!, refused: 4 } };
     expect(text(html({ status: refused }))).toMatch(/Not paid by YourTal 4/);
+  });
+
+  it('shows the paused notice at the top, and the paused row, when receipt points are paused', () => {
+    const paused = {
+      ...linked,
+      receipts: { ...linked.receipts!, refused: 5, pausedRefused: 3 },
+      receiptPoints: { state: 'paused' as const },
+    };
+    const t = text(html({ status: paused }));
+    expect(t).toContain('Receipt points are paused.');
+    expect(t).toContain("Receipts you scan now won't earn YourTal points. They start again once Snap Apps tops up.");
+    expect(t.indexOf('Receipt points are paused.')).toBeLessThan(t.indexOf('Linked to YourTal'));
+    expect(t).toMatch(/Paused while points were topped up 3/);
+    // The paused ones are not shown twice: the other refusals keep their own row.
+    expect(t).toMatch(/Not paid by YourTal 2/);
+  });
+
+  it('shows nothing new when receipt points are earning, unknown or not reported', () => {
+    for (const receiptPoints of [{ state: 'earning' as const, pointsPerReceipt: 1 }, { state: 'unknown' as const }, undefined]) {
+      const t = text(html({ status: { ...linked, receiptPoints } }));
+      expect(t).not.toContain('Receipt points are paused');
+      expect(t).not.toContain('Paused while points were topped up');
+    }
   });
 
   it('asks before unlinking, and the confirm step says what happens', () => {

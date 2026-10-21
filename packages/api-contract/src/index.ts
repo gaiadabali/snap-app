@@ -1653,8 +1653,18 @@ export interface YourtalLinkStatus {
     pending: number;
     /** YourTal granted points for them. */
     rewarded: number;
-    /** YourTal's ledger refused them (the daily limit, or funding). */
+    /**
+     * YourTal's ledger refused them (the daily limit, or funding). Includes
+     * the `pausedRefused` ones.
+     */
     refused: number;
+    /**
+     * Refused because Snap Apps' receipt package was used up when they were
+     * reported (YourTal `allocation_exhausted`). Final: a receipt refused
+     * while paused never earns, even after points are topped up. Also counted
+     * in `refused`.
+     */
+    pausedRefused: number;
     /**
      * Not reported: each looked like another photo of a receipt already
      * reported from this account (same supplier, date and amount in the
@@ -1669,6 +1679,18 @@ export interface YourtalLinkStatus {
     skippedFree: number;
   };
   pointsReported: number;
+  /**
+   * Whether receipts earn right now. Present only for a linked account in a
+   * region that earns. `paused`: Snap Apps' receipt package at YourTal is used
+   * up, so receipts scanned now will not earn (group F127). `unknown`: YourTal
+   * could not be asked; show nothing. Never carries how many points remain:
+   * that is YourTal's business data about Snap Apps' package.
+   */
+  receiptPoints?: {
+    state: 'earning' | 'paused' | 'unknown';
+    /** Points one receipt earns, when YourTal said. */
+    pointsPerReceipt?: number;
+  };
 }
 
 /** `POST /v1/yourtal/link`. The code from YourTal's Me → Linked apps. */

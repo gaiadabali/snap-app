@@ -100,7 +100,11 @@ describeIfDb('the YourTal link over HTTP', () => {
 
     const linked = await call('POST', FAY, { code });
     expect(linked.statusCode).toBe(200);
-    expect(linked.json()).toMatchObject({ state: 'linked', region: 'ID' });
+    expect(linked.json()).toMatchObject({
+      state: 'linked',
+      region: 'ID',
+      receiptPoints: { state: 'earning', pointsPerReceipt: 10 },
+    });
 
     const unlinked = await call('DELETE', FAY);
     expect(unlinked.statusCode).toBe(200);
@@ -110,10 +114,13 @@ describeIfDb('the YourTal link over HTTP', () => {
     const calls = fake.requests.slice(before);
     expect(calls.map((r) => r.path)).toEqual([
       '/api/partners/links',
+      // The link answer carries whether receipts earn (2.10.c), read signed like the rest.
+      '/api/partners/receipts/status',
       `/api/partners/links/${fake.linkFor('yt-fay')!.linkId}/revoke`,
     ]);
     expect(calls.every((r) => r.signatureValid && r.idempotencyKey)).toBe(true);
-    expect(calls[1]!.raw).toBe('{}');
+    expect(calls[1]!.raw).toBe('{"region":"ID"}');
+    expect(calls[2]!.raw).toBe('{}');
   });
 
   it('answers a teen with teen_consent_not_allowed', async () => {

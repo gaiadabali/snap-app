@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+
 import { config, yourtalApiUrl, yourtalPartnerSecret } from '../config.js';
 import { partnerAuthorization } from './signing.js';
 
@@ -53,7 +55,12 @@ export class YourtalPartnerClient {
    * `idempotencyKey`. Retrying a request means calling this again with the
    * SAME body text and the SAME key.
    */
-  async post(path: string, rawBody: string, idempotencyKey: string): Promise<PartnerResponse> {
+  async post(
+    path: string,
+    rawBody: string,
+    idempotencyKey: string,
+    options: { timeoutMs?: number } = {},
+  ): Promise<PartnerResponse> {
     const url = `${this.settings.baseUrl.replace(/\/+$/, '')}${path}`;
     let response: Response;
     try {
@@ -68,7 +75,7 @@ export class YourtalPartnerClient {
         // A redirect would turn this POST into a GET to somewhere else and
         // still look like an answer. Treat it as the fault it is.
         redirect: 'error',
-        signal: AbortSignal.timeout(this.settings.timeoutMs ?? DEFAULT_TIMEOUT_MS),
+        signal: AbortSignal.timeout(options.timeoutMs ?? this.settings.timeoutMs ?? DEFAULT_TIMEOUT_MS),
       });
     } catch (error) {
       return { kind: 'network', error: describe(error) };
@@ -99,6 +106,40 @@ export class YourtalPartnerClient {
   }
 }
 
+/**
+ * What YourTal's `POST /api/partners/receipts/status` says about whether a
+ * receipt would earn now (F127: SnapApp's receipt package is used up or not).
+ * `remainingPoints` is YourTal's business data about Snap Apps' package: it is
+ * read here and deliberately NOT carried any further.
+ */
+export interface ReceiptStatusAnswer {
+  earning: boolean;
+  pointsPerReceipt: number | null;
+}
+
+/** A shorter fuse than a report's: a user's page waits on this, at most once per cache fill. */
+const RECEIPT_STATUS_TIMEOUT_MS = 3_000;
+
+/**
+ * Signed exactly as every other partner call (raw body, the same headers, a
+ * fresh Idempotency-Key). Returns `null` for anything but a well-formed 200:
+ * the caller treats that as "unknown", never as an error.
+ */
+export async function receiptStatus(
+  client: YourtalPartnerClient,
+  region: 'AU' | 'ID',
+): Promise<ReceiptStatusAnswer | null> {
+  const response = await client.post(YOURTAL_PATHS.receiptStatus, JSON.stringify({ region }), randomUUID(), {
+    timeoutMs: RECEIPT_STATUS_TIMEOUT_MS,
+  });
+  if (response.kind !== 'ok' || typeof response.body.earning !== 'boolean') return null;
+  const per = response.body.pointsPerReceipt;
+  return {
+    earning: response.body.earning,
+    pointsPerReceipt: typeof per === 'number' && Number.isInteger(per) && per >= 0 ? per : null,
+  };
+}
+
 function describe(error: unknown): string {
   if (error instanceof Error) {
     const cause = (error as { cause?: { code?: string } }).cause;
@@ -125,4 +166,5 @@ export const YOURTAL_PATHS = {
   links: '/api/partners/links',
   revoke: (linkId: string) => `/api/partners/links/${encodeURIComponent(linkId)}/revoke`,
   actions: '/api/partners/actions',
+  receiptStatus: '/api/partners/receipts/status',
 } as const;

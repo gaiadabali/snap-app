@@ -8,6 +8,7 @@ import {
   cleanLinkCode,
   linkErrorMessage,
   linkedOn,
+  otherRefused,
   type LinkContext,
 } from '@/lib/yourtal-link';
 import { Text } from '@/theme/text';
@@ -151,6 +152,11 @@ export function YourtalLinkPanel(props: YourtalLinkPanelProps) {
     const since = linkedOn(status.linkedAt);
     return (
       <View style={{ gap: space.xl }}>
+        {status.receiptPoints?.state === 'paused' ? (
+          <Notice tone="warn" icon="alert">
+            {`${LINK_COPY.pausedTitle} ${LINK_COPY.pausedBody}`}
+          </Notice>
+        ) : null}
         <Card tone="good">
           <View style={{ gap: space.xs }}>
             <Body strong>{LINK_COPY.linkedTitle}</Body>
@@ -176,12 +182,22 @@ export function YourtalLinkPanel(props: YourtalLinkPanelProps) {
               value={status.receipts.skippedFree.toLocaleString('en-AU')}
               hint={LINK_COPY.freeHint}
             />
-            {status.receipts.refused > 0 ? (
+            {status.receipts.pausedRefused > 0 ? (
+              <>
+                <Divider />
+                <StatRow
+                  label={LINK_COPY.rowPaused}
+                  value={status.receipts.pausedRefused.toLocaleString('en-AU')}
+                  hint={LINK_COPY.pausedHint}
+                />
+              </>
+            ) : null}
+            {otherRefused(status.receipts) > 0 ? (
               <>
                 <Divider />
                 <StatRow
                   label={LINK_COPY.rowRefused}
-                  value={status.receipts.refused.toLocaleString('en-AU')}
+                  value={otherRefused(status.receipts).toLocaleString('en-AU')}
                   hint={LINK_COPY.refusedHint}
                 />
               </>

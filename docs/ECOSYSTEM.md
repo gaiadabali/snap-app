@@ -311,6 +311,18 @@ the screens are 2.6. YourTal's contract is its partner guide
    back-fill earlier scans.
 4. **`evidence` is the capture id only** (lead's call: minimum data). Nothing
    about the receipt's contents or the person goes to YourTal.
+5. **Receipt points can pause (group 2.10.c, founder decision F127).** The points
+   Snap Apps pays for receipts come from a receipt package it buys in YourTal
+   Studio at 3c a point. When the package is used up, YourTal answers the report
+   `409 allocation_exhausted` and the receipt is `refused` (final: it never earns,
+   even after a top-up), and the app says receipt points are "paused". Buying
+   another package resumes earning for receipts scanned from then on. The app
+   learns of a pause from a signed read, `POST /api/partners/receipts/status`,
+   cached for 5 minutes in the API process (failure shows nothing), or at once
+   from the user's own latest `allocation_exhausted` refusal; it is exposed as
+   `receiptPoints.state` on `GET /v1/yourtal/link`. How many points remain is
+   YourTal's data about Snap Apps' package and never reaches users. Refused while
+   paused is counted in `receipts.pausedRefused` (also inside `refused`).
 
 ### Local points are retired (founder, 2026-10-20; built in group plan 2.6)
 

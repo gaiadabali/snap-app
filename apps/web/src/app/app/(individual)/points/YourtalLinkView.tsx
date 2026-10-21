@@ -6,6 +6,7 @@ import {
   cleanLinkCode,
   linkErrorMessage,
   linkedOn,
+  otherRefused,
   type LinkContext,
 } from '@/lib/yourtal-link';
 
@@ -56,6 +57,19 @@ function StatRow({ label, value, hint }: { label: string; value: string; hint?: 
         <dd className="font-mono text-[15px] tabular text-[var(--color-ink)]">{value}</dd>
       </div>
       {hint ? <p className="text-[13px] text-[var(--color-ink-muted)]">{hint}</p> : null}
+    </div>
+  );
+}
+
+/** Receipts scanned now will not earn: Snap Apps' receipt package at YourTal is used up. */
+function PausedNotice() {
+  return (
+    <div
+      role="status"
+      className="max-w-[480px] rounded-[var(--radius-md)] border border-[var(--color-warn)] p-4 text-[14px] text-[var(--color-ink)]"
+    >
+      <p className="font-semibold">{LINK_COPY.pausedTitle}</p>
+      <p className="mt-1 text-[var(--color-ink-muted)]">{LINK_COPY.pausedBody}</p>
     </div>
   );
 }
@@ -155,6 +169,7 @@ export function YourtalLinkView(props: YourtalLinkViewProps) {
     const since = linkedOn(status.linkedAt);
     return (
       <div className="flex flex-col gap-6">
+        {status.receiptPoints?.state === 'paused' ? <PausedNotice /> : null}
         <Card tone="accent" className="max-w-[480px]">
           <h2 className="text-[17px] font-semibold text-[var(--color-ink)]">{LINK_COPY.linkedTitle}</h2>
           {since ? <p className="mt-1 text-[13px] text-[var(--color-ink-muted)]">{`Since ${since}`}</p> : null}
@@ -175,10 +190,17 @@ export function YourtalLinkView(props: YourtalLinkViewProps) {
               value={status.receipts.skippedFree.toLocaleString('en-AU')}
               hint={LINK_COPY.freeHint}
             />
-            {status.receipts.refused > 0 ? (
+            {status.receipts.pausedRefused > 0 ? (
+              <StatRow
+                label={LINK_COPY.rowPaused}
+                value={status.receipts.pausedRefused.toLocaleString('en-AU')}
+                hint={LINK_COPY.pausedHint}
+              />
+            ) : null}
+            {otherRefused(status.receipts) > 0 ? (
               <StatRow
                 label={LINK_COPY.rowRefused}
-                value={status.receipts.refused.toLocaleString('en-AU')}
+                value={otherRefused(status.receipts).toLocaleString('en-AU')}
                 hint={LINK_COPY.refusedHint}
               />
             ) : null}

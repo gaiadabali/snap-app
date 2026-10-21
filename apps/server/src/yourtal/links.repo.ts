@@ -143,7 +143,10 @@ export async function isLinkLive(userId: string, linkRowId: string, db: Db = get
 export interface ReceiptReportCounts {
   pending: number;
   rewarded: number;
+  /** Every ledger refusal, `pausedRefused` ones included. */
   refused: number;
+  /** Refused with `allocation_exhausted`: receipts scanned while points were paused. Also in `refused`. */
+  pausedRefused: number;
   skippedDuplicate: number;
   /** Scans on a free credit, or none: never sent (group plan 2.5.f). */
   skippedFree: number;
@@ -162,6 +165,7 @@ export async function receiptReportCounts(userId: string, db: Db = getDb()): Pro
       pending: string;
       rewarded: string;
       refused: string;
+      paused_refused: string;
       skipped_duplicate: string;
       skipped_free: string;
       points: string;
@@ -169,6 +173,7 @@ export async function receiptReportCounts(userId: string, db: Db = getDb()): Pro
       select count(*) filter (where status = 'pending')                                as pending,
              count(*) filter (where status in ('sent', 'duplicate') and granted)       as rewarded,
              count(*) filter (where status = 'refused')                                as refused,
+             count(*) filter (where status = 'refused' and last_code = 'allocation_exhausted') as paused_refused,
              count(*) filter (where status = 'skipped_duplicate')                      as skipped_duplicate,
              count(*) filter (where status = 'skipped_free')                           as skipped_free,
              coalesce(sum(points) filter (where status in ('sent', 'duplicate') and granted), 0) as points
@@ -180,9 +185,33 @@ export async function receiptReportCounts(userId: string, db: Db = getDb()): Pro
       pending: Number(r?.pending ?? 0),
       rewarded: Number(r?.rewarded ?? 0),
       refused: Number(r?.refused ?? 0),
+      pausedRefused: Number(r?.paused_refused ?? 0),
       skippedDuplicate: Number(r?.skipped_duplicate ?? 0),
       skippedFree: Number(r?.skipped_free ?? 0),
       pointsReported: Number(r?.points ?? 0),
     };
+  });
+}
+
+/**
+ * Whether the user's most recent word from YourTal's ledger was "paused":
+ * the latest `allocation_exhausted` refusal, and whether anything has been paid
+ * since. Returns that refusal's time (epoch ms) or null when the latest
+ * outcome is not a pause. Lets the status show "paused" on the first refusal,
+ * before the cached status read expires.
+ */
+export async function lastPausedRefusalAt(userId: string, db: Db = getDb()): Promise<number | null> {
+  return asUser(db, userId, async (tx) => {
+    const rows = await tx.execute<{ refused_at: string | null; paid_at: string | null }>(sql`
+      select extract(epoch from max(finished_at) filter (where status = 'refused' and last_code = 'allocation_exhausted')) * 1000 as refused_at,
+             extract(epoch from max(finished_at) filter (where status in ('sent', 'duplicate') and granted))                    * 1000 as paid_at
+        from yourtal_outbox
+       where user_id = current_user_id()
+    `);
+    const r = rows.rows[0];
+    if (!r || r.refused_at === null) return null;
+    const refused = Number(r.refused_at);
+    if (r.paid_at !== null && Number(r.paid_at) >= refused) return null;
+    return refused;
   });
 }

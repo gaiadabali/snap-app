@@ -58,6 +58,11 @@ export interface FakeYourtal {
   /** externalRef -> linkId that was paid for it. */
   paid: Map<string, string>;
   inject(...answers: Canned[]): void;
+  /**
+   * Receipt package used up (F127): actions answer 409 `allocation_exhausted`
+   * and the receipt status says `earning: false`. Off by default.
+   */
+  setPaused(paused: boolean): void;
   /** Runs after the signature check and before the answer: lets a test interleave a race. */
   onRequest: ((path: string) => Promise<void>) | null;
   close(): Promise<void>;
@@ -86,6 +91,7 @@ export async function startFakeYourtal(options: { partnerId?: string; secret?: s
   const canned: Canned[] = [];
   const requests: RecordedRequest[] = [];
   let codeCounter = 0;
+  let paused = false;
 
   function handle(path: string, raw: string): { status: number; body: unknown } {
     let body: Record<string, unknown>;
@@ -124,6 +130,16 @@ export async function startFakeYourtal(options: { partnerId?: string; secret?: s
       const link = byLinkId.get(body.linkId);
       if (!link) return { status: 400, body: { code: 'unknown_link', message: 'no such link' } };
       if (link.revokedAt) return { status: 403, body: { code: 'link_revoked', message: 'link again' } };
+      if (paused) {
+        return {
+          status: 409,
+          body: {
+            code: 'allocation_exhausted',
+            message: 'receipt points are paused: the receipt package is used up',
+            linkId: link.linkId,
+          },
+        };
+      }
       const earlier = paid.get(body.externalRef);
       if (earlier) {
         const same = earlier === link.linkId;
@@ -134,6 +150,20 @@ export async function startFakeYourtal(options: { partnerId?: string; secret?: s
       }
       paid.set(body.externalRef, link.linkId);
       return { status: 200, body: { granted: true, points: POINTS[link.user.region], linkId: link.linkId, duplicate: false } };
+    }
+
+    if (path === '/api/partners/receipts/status') {
+      const region = body.region;
+      if (region !== 'AU' && region !== 'ID') return { status: 400, body: { code: 'validation', message: 'region' } };
+      return {
+        status: 200,
+        body: {
+          region,
+          earning: !paused,
+          pointsPerReceipt: region === 'AU' ? 1 : 10,
+          remainingPoints: paused ? 0 : 412,
+        },
+      };
     }
 
     return { status: 404, body: { code: 'not_found', message: path } };
@@ -212,6 +242,9 @@ export async function startFakeYourtal(options: { partnerId?: string; secret?: s
     },
     inject(...answers) {
       canned.push(...answers);
+    },
+    setPaused(value) {
+      paused = value;
     },
     onRequest: null,
     close: () => new Promise<void>((resolve) => server.close(() => resolve())),
