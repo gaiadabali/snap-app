@@ -37,7 +37,7 @@ export const requireSession = cache(
     try {
       const session = await api<{
         user: AuthUser;
-        workspaces: Array<{ id: string; name: string; kind: 'business' | 'personal'; role: string }>;
+        workspaces: Array<{ id: string; name: string; kind: 'business' | 'personal'; role: string; baseCurrency?: string }>;
       }>('/v1/auth/session');
       // The session endpoint answers with the same fields as `/v1/workspaces`
       // (a member count is not one of them), which is enough for every place
@@ -49,6 +49,7 @@ export const requireSession = cache(
         role: w.role as WorkspaceSummary['role'],
         memberCount: 0,
         abn: null,
+        baseCurrency: w.baseCurrency ?? 'AUD',
       }));
       return { user: session.user, workspaces, impersonation };
     } catch (error) {

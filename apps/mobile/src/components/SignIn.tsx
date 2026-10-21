@@ -301,7 +301,7 @@ export function SignIn({
               void run('register', async () => {
                 // Remembered BEFORE the session exists, because creating it
                 // swaps this whole tree out for onboarding.
-                if (country) await rememberCountry(country.rulesId);
+                if (country) await rememberCountry(country.rulesId, country.currency);
                 return api().register(address, password, name.trim());
               })
             }

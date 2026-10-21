@@ -7,7 +7,8 @@ import { IS_DEMO, api, type DocumentView, type Overview, type SalesSummary } fro
 import { GradientHero, HeroBody, HeroFigure, HeroLabel, Raised } from '@/components/rich';
 import { Chip, Figure, Label, Screen, Small } from '@/components/ui';
 import { UpdateNotice } from '@/components/UpdateNotice';
-import { formatAud, space, usePalette } from '@/theme';
+import { space, usePalette } from '@/theme';
+import { useMoney } from '@/lib/use-money';
 import { WorkspaceSwitch } from '@/workspace';
 
 import { Action, AttentionRow, LatestReceipts, StatCard, greeting, sumMoney } from './shared';
@@ -21,6 +22,7 @@ import { Action, AttentionRow, LatestReceipts, StatCard, greeting, sumMoney } fr
  * have I spent, what is unresolved, who owes me — and gets out of the way.
  */
 export default function BusinessHome() {
+  const money = useMoney();
   const p = usePalette();
   const insets = useSafeAreaInsets();
   const [docs, setDocs] = useState<DocumentView[] | null>(null);
@@ -101,10 +103,10 @@ export default function BusinessHome() {
           <GradientHero>
             <View style={{ gap: space.xs }}>
               <HeroLabel>Captured this quarter</HeroLabel>
-              <HeroFigure>{formatAud(quarterTotal)}</HeroFigure>
+              <HeroFigure>{money.fmt(quarterTotal)}</HeroFigure>
               <HeroBody>
                 {quarterDocs.length} receipt{quarterDocs.length === 1 ? '' : 's'} ·{' '}
-                {formatAud(overview?.bas.gstClaimable ?? '0')} GST to claim
+                {money.fmt(overview?.bas.gstClaimable ?? '0')} GST to claim
               </HeroBody>
             </View>
           </GradientHero>
@@ -140,7 +142,7 @@ export default function BusinessHome() {
                   icon="alert"
                   title="GST credits at risk"
                   detail={`${overview?.bas.atRiskCount ?? 0} missing a valid tax invoice`}
-                  value={formatAud(atRisk)}
+                  value={money.fmt(atRisk)}
                   tone="risk"
                   href="/tax"
                 />
@@ -153,10 +155,10 @@ export default function BusinessHome() {
         <View style={{ flexDirection: 'row', paddingHorizontal: space.lg, gap: space.sm }}>
           <StatCard
             label={overdue > 0 ? 'Overdue' : 'Owed to you'}
-            value={formatAud(overdue > 0 ? sales?.overdue : sales?.outstanding, { cents: false })}
+            value={money.fmt(overdue > 0 ? sales?.overdue : sales?.outstanding, { cents: false })}
             hint={
               overdue > 0
-                ? `${formatAud(sales?.outstanding, { cents: false })} outstanding`
+                ? `${money.fmt(sales?.outstanding, { cents: false })} outstanding`
                 : 'Across open invoices'
             }
             tone={overdue > 0 ? 'risk' : 'ink'}
@@ -164,7 +166,7 @@ export default function BusinessHome() {
           />
           <StatCard
             label="Deductions"
-            value={formatAud(String(overview?.deductions.estimateTotal ?? 0), { cents: false })}
+            value={money.fmt(String(overview?.deductions.estimateTotal ?? 0), { cents: false })}
             hint={`Estimate · FY${overview?.ratesFy ?? ''}`}
             tone="accent"
             href="/tax"

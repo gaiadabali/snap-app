@@ -560,7 +560,7 @@ export class HttpApi implements SnapApi {
     await this.listWorkspaces();
     const workspace =
       this.workspaces.find((w) => w.id === joined.id) ??
-      ({ id: joined.id, name: joined.name, kind: joined.kind, role: joined.role, memberCount: 1, abn: null } as WorkspaceSummary);
+      ({ id: joined.id, name: joined.name, kind: joined.kind, role: joined.role, memberCount: 1, abn: null, baseCurrency: 'AUD' } as WorkspaceSummary);
     return { workspace, role: joined.role };
   }
 

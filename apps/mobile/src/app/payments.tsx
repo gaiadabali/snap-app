@@ -8,7 +8,8 @@ import { AddButton, Avatar, Choice, Empty, Field, Loading, Sheet } from '@/compo
 import { GradientHero, HeroBody, HeroFigure, HeroLabel, Raised } from '@/components/rich';
 import { Body, Chip, Divider, Figure, Label, Screen, Small } from '@/components/ui';
 import { BUSINESS_FEATURES_ENABLED } from '@/config';
-import { formatAud, formatShortDate, space, usePalette } from '@/theme';
+import { formatShortDate, space, usePalette } from '@/theme';
+import { useMoney } from '@/lib/use-money';
 
 /**
  * Money received, recorded against an invoice.
@@ -27,6 +28,7 @@ const METHODS: Array<{ value: PaymentMethod; label: string }> = [
 ];
 
 export default function PaymentsScreen() {
+  const money = useMoney();
   // Business-only. Personal-only hides this from every nav path; this covers
   // a direct URL on the web build, where a route always resolves.
   if (!BUSINESS_FEATURES_ENABLED) return <Redirect href="/" />;
@@ -60,7 +62,7 @@ export default function PaymentsScreen() {
   function openFor(invoice: Invoice) {
     setInvoiceId(invoice.id);
     // Pre-filled with the full amount due, which is what most payments are.
-    setAmount(Number(invoice.amountDue).toFixed(2));
+    setAmount(Number(invoice.amountDue).toFixed(money.decimals));
     setReference('');
     setError(null);
     setAdding(true);
@@ -95,7 +97,7 @@ export default function PaymentsScreen() {
             <GradientHero>
               <View style={{ gap: space.xs }}>
                 <HeroLabel>Received</HeroLabel>
-                <HeroFigure>{formatAud(received.toFixed(4))}</HeroFigure>
+                <HeroFigure>{money.fmt(received.toFixed(4))}</HeroFigure>
                 <HeroBody>
                   {payments.length} payment{payments.length === 1 ? '' : 's'} ·{' '}
                   {outstanding.length} invoice{outstanding.length === 1 ? '' : 's'} still open
@@ -132,7 +134,7 @@ export default function PaymentsScreen() {
                             {i.status === 'overdue' ? <Chip tone="risk">Overdue</Chip> : null}
                           </View>
                         </View>
-                        <Figure size="h2">{formatAud(i.amountDue)}</Figure>
+                        <Figure size="h2">{money.fmt(i.amountDue)}</Figure>
                         <Small style={{ fontSize: 16 }}>›</Small>
                       </Pressable>
                     </View>
@@ -181,7 +183,7 @@ export default function PaymentsScreen() {
                           </Small>
                         </View>
                         <View style={{ alignItems: 'flex-end' }}>
-                          <Figure size="h2">{formatAud(x.amount)}</Figure>
+                          <Figure size="h2">{money.fmt(x.amount)}</Figure>
                           <Small>{formatShortDate(x.date)}</Small>
                         </View>
                       </View>
@@ -211,7 +213,7 @@ export default function PaymentsScreen() {
             onChange={(id) => {
               setInvoiceId(id);
               const inv = invoices.find((i) => i.id === id);
-              if (inv) setAmount(Number(inv.amountDue).toFixed(2));
+              if (inv) setAmount(Number(inv.amountDue).toFixed(money.decimals));
             }}
             options={outstanding.map((i) => ({ value: i.id, label: i.number }))}
           />
@@ -221,8 +223,8 @@ export default function PaymentsScreen() {
           value={amount}
           onChangeText={setAmount}
           keyboardType="decimal-pad"
-          prefix="$"
-          hint={chosen ? `${formatAud(chosen.amountDue)} outstanding` : undefined}
+          prefix={money.symbol}
+          hint={chosen ? `${money.fmt(chosen.amountDue)} outstanding` : undefined}
         />
         <Choice label="Method" value={method} onChange={setMethod} options={METHODS} />
         <Field

@@ -5,7 +5,7 @@ import { Platform } from 'react-native';
 
 import type { DocumentView, Invoice, TaxPackFile } from '@/api';
 
-import { formatAbn, formatAud, formatShortDate } from './format';
+import { formatAbn, formatMoney, formatShortDate } from './format';
 
 /**
  * Getting data out of the app.
@@ -139,14 +139,17 @@ export async function exportLinesCsv(docs: DocumentView[], label: string): Promi
 export async function shareInvoicePdf(
   invoice: Invoice,
   business: { name: string; abn: string | null },
+  /** The workspace's currency: an invoice has none of its own. */
+  currency: string,
 ): Promise<void> {
+  const fmt = (v: string) => formatMoney(v, currency);
   const rows = invoice.lines
     .map(
       (l) => `<tr>
         <td>${escapeHtml(l.description)}</td>
         <td class="n">${l.quantity} ${escapeHtml(l.unit)}</td>
-        <td class="n">${formatAud(l.unitPrice)}</td>
-        <td class="n">${formatAud(l.netAmount)}</td>
+        <td class="n">${fmt(l.unitPrice)}</td>
+        <td class="n">${fmt(l.netAmount)}</td>
       </tr>`,
     )
     .join('');
@@ -191,13 +194,13 @@ export async function shareInvoicePdf(
     </table>
 
     <div class="totals">
-      <div><span>Subtotal</span><span>${formatAud(invoice.netAmount)}</span></div>
-      <div><span>GST 10%</span><span>${formatAud(invoice.gstAmount)}</span></div>
-      <div class="grand"><span>Total</span><span>${formatAud(invoice.totalAmount)}</span></div>
+      <div><span>Subtotal</span><span>${fmt(invoice.netAmount)}</span></div>
+      <div><span>GST 10%</span><span>${fmt(invoice.gstAmount)}</span></div>
+      <div class="grand"><span>Total</span><span>${fmt(invoice.totalAmount)}</span></div>
       ${
         Number(invoice.amountPaid) > 0
-          ? `<div><span>Paid</span><span>${formatAud(invoice.amountPaid)}</span></div>
-             <div style="font-weight:700"><span>Due</span><span>${formatAud(invoice.amountDue)}</span></div>`
+          ? `<div><span>Paid</span><span>${fmt(invoice.amountPaid)}</span></div>
+             <div style="font-weight:700"><span>Due</span><span>${fmt(invoice.amountDue)}</span></div>`
           : ''
       }
     </div>

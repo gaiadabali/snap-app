@@ -15,7 +15,8 @@ import {
   type Period,
 } from '@/components/SearchBar';
 import { exportDocumentsCsv, exportLinesCsv } from '@/lib/share';
-import { formatAud, space, usePalette } from '@/theme';
+import { formatMoney, space, usePalette } from '@/theme';
+import { useMoney } from '@/lib/use-money';
 import { WorkspaceSwitch, useWorkspace } from '@/workspace';
 
 /**
@@ -50,6 +51,7 @@ function sumMoney(values: string[]): string {
 }
 
 export default function ReceiptsScreen() {
+  const money = useMoney();
   const p = usePalette();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -159,7 +161,7 @@ export default function ReceiptsScreen() {
               style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' }}
             >
               <Small>{all.length === 1 ? '1 receipt' : `${all.length} receipts`}</Small>
-              <Figure size="h2">{formatAud(total)}</Figure>
+              <Figure size="h2">{money.fmt(total)}</Figure>
             </View>
 
             {byCategory.length > 1 ? <CategoryBar parts={byCategory} /> : null}
@@ -186,7 +188,7 @@ export default function ReceiptsScreen() {
             }}
           >
             <Small style={{ fontWeight: '600' }}>{section.title}</Small>
-            <Small>{formatAud(section.total)}</Small>
+            <Small>{money.fmt(section.total)}</Small>
           </View>
         )}
         ListEmptyComponent={
@@ -233,7 +235,7 @@ export default function ReceiptsScreen() {
                   accessibilityRole="button"
                   // What the row shows, in the order it shows it — a bare
                   // "button" told a screen reader nothing.
-                  accessibilityLabel={`${item.supplierName}, ${formatAud(item.payableAmount)}, ${item.category}${
+                  accessibilityLabel={`${item.supplierName}, ${formatMoney(item.payableAmount, item.currency)}, ${item.category}${
                     isBusiness && item.reviewStatus === 'needs_review' ? ', needs checking' : ''
                   }`}
                   onPress={() => router.push(`/document/${item.id}`)}
@@ -264,7 +266,7 @@ export default function ReceiptsScreen() {
                   {isBusiness && item.reviewStatus === 'needs_review' ? (
                     <Chip tone="warn">Check</Chip>
                   ) : null}
-                  <Figure size="h2">{formatAud(item.payableAmount)}</Figure>
+                  <Figure size="h2">{formatMoney(item.payableAmount, item.currency)}</Figure>
                 </Pressable>
               </View>
             ))}

@@ -7,9 +7,11 @@ import { api, type Invoice } from '@/api';
 import { GradientHero, HeroBody, HeroFigure, HeroLabel, Raised } from '@/components/rich';
 import { Body, Button, Chip, Divider, Figure, Label, Screen, Small } from '@/components/ui';
 import { BUSINESS_FEATURES_ENABLED } from '@/config';
-import { formatAud, formatShortDate, space, usePalette } from '@/theme';
+import { formatShortDate, space, usePalette } from '@/theme';
+import { useMoney } from '@/lib/use-money';
 
 export default function InvoiceScreen() {
+  const money = useMoney();
   // Business-only. Personal-only hides this from every nav path; this covers
   // a direct URL on the web build, where a route always resolves.
   if (!BUSINESS_FEATURES_ENABLED) return <Redirect href="/" />;
@@ -44,7 +46,7 @@ export default function InvoiceScreen() {
             <HeroLabel>
               {paid ? 'Paid in full' : overdue ? 'Overdue' : inv.kind === 'estimate' ? 'Estimate' : 'Amount due'}
             </HeroLabel>
-            <HeroFigure>{formatAud(paid ? inv.totalAmount : inv.amountDue)}</HeroFigure>
+            <HeroFigure>{money.fmt(paid ? inv.totalAmount : inv.amountDue)}</HeroFigure>
             <HeroBody>
               {inv.number} · {inv.partyName}
               {!paid ? ` · due ${formatShortDate(inv.dueDate)}` : ''}
@@ -70,26 +72,26 @@ export default function InvoiceScreen() {
                   <Body strong style={{ flexShrink: 1 }}>
                     {l.description}
                   </Body>
-                  <Figure>{formatAud(l.netAmount)}</Figure>
+                  <Figure>{money.fmt(l.netAmount)}</Figure>
                 </View>
                 <Small>
-                  {l.quantity} {l.unit} × {formatAud(l.unitPrice)} · GST {formatAud(l.gstAmount)}
+                  {l.quantity} {l.unit} × {money.fmt(l.unitPrice)} · GST {money.fmt(l.gstAmount)}
                 </Small>
               </View>
             ))}
             <Divider />
-            <Row label="Subtotal (ex GST)" value={formatAud(inv.netAmount)} />
+            <Row label="Subtotal (ex GST)" value={money.fmt(inv.netAmount)} />
             <Row
               label="GST"
-              value={formatAud(inv.gstAmount)}
+              value={money.fmt(inv.gstAmount)}
               hint="10% added to the ex-GST price — the inverse of a purchase receipt, where GST is 1/11 of the total"
             />
-            <Row label="Total" value={formatAud(inv.totalAmount)} strong />
+            <Row label="Total" value={money.fmt(inv.totalAmount)} strong />
             {Number(inv.amountPaid) > 0 ? (
-              <Row label="Paid" value={`−${formatAud(inv.amountPaid)}`} tone="accent" />
+              <Row label="Paid" value={`−${money.fmt(inv.amountPaid)}`} tone="accent" />
             ) : null}
             {!paid ? (
-              <Row label="Due" value={formatAud(inv.amountDue)} tone={overdue ? 'risk' : 'ink'} strong />
+              <Row label="Due" value={money.fmt(inv.amountDue)} tone={overdue ? 'risk' : 'ink'} strong />
             ) : null}
           </View>
         </Raised>
@@ -99,8 +101,8 @@ export default function InvoiceScreen() {
           <View style={{ gap: space.sm }}>
             <Label>On your BAS</Label>
             <Body>
-              This {inv.kind} contributes {formatAud(inv.totalAmount)} to <Body strong>G1</Body> and{' '}
-              {formatAud(inv.gstAmount)} to <Body strong>1A</Body> — GST you have collected and owe
+              This {inv.kind} contributes {money.fmt(inv.totalAmount)} to <Body strong>G1</Body> and{' '}
+              {money.fmt(inv.gstAmount)} to <Body strong>1A</Body> — GST you have collected and owe
               the ATO.
             </Body>
             <Small>
@@ -160,7 +162,7 @@ export default function InvoiceScreen() {
             void shareInvoicePdf(inv, {
               name: 'K. Marsh Transport',
               abn: '51824753556',
-            });
+            }, money.currency);
           }}
         />
 </ScrollView>

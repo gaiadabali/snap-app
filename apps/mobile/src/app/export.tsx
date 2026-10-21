@@ -18,7 +18,8 @@ import {
   Small,
 } from '@/components/ui';
 import { exportDocumentsCsv, exportLinesCsv } from '@/lib/share';
-import { formatAud, numeric, shadow, space, type, usePalette, useTheme } from '@/theme';
+import { numeric, shadow, space, type, usePalette, useTheme } from '@/theme';
+import { useMoney } from '@/lib/use-money';
 
 /**
  * Getting everything out, for a period you choose.
@@ -32,6 +33,7 @@ import { formatAud, numeric, shadow, space, type, usePalette, useTheme } from '@
  * where a year of their finances goes.
  */
 export default function ExportScreen() {
+  const money = useMoney();
   const p = usePalette();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -115,7 +117,7 @@ export default function ExportScreen() {
                   ? '1 receipt'
                   : `${selected.length} receipts`}
             </Body>
-            <Text style={[type.h2, numeric, { color: p.ink }]}>{formatAud(total)}</Text>
+            <Text style={[type.h2, numeric, { color: p.ink }]}>{money.fmt(total)}</Text>
           </View>
           <Small>
             A CSV of the fields, plus a line-item CSV if you want the detail. The original photos
