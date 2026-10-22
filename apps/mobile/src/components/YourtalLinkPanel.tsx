@@ -8,6 +8,7 @@ import {
   cleanLinkCode,
   linkErrorMessage,
   linkedOn,
+  identityNotice,
   otherRefused,
   type LinkContext,
 } from '@/lib/yourtal-link';
@@ -150,8 +151,19 @@ export function YourtalLinkPanel(props: YourtalLinkPanelProps) {
 
   if (status.state === 'linked') {
     const since = linkedOn(status.linkedAt);
+    const identity = identityNotice(status.identityCheck);
     return (
       <View style={{ gap: space.xl }}>
+        {identity.lines.length > 0 ? (
+          <View style={{ gap: space.sm }}>
+            <Notice tone="warn" icon="alert">
+              {identity.lines.join('\n')}
+            </Notice>
+            {identity.showLink ? (
+              <LinkText label={LINK_COPY.identityVerifyEmailLink} onPress={() => props.onOpenUrl(links.getCode)} />
+            ) : null}
+          </View>
+        ) : null}
         {status.receiptPoints?.state === 'paused' ? (
           <Notice tone="warn" icon="alert">
             {`${LINK_COPY.pausedTitle} ${LINK_COPY.pausedBody}`}
@@ -189,6 +201,16 @@ export function YourtalLinkPanel(props: YourtalLinkPanelProps) {
                   label={LINK_COPY.rowPaused}
                   value={status.receipts.pausedRefused.toLocaleString('en-AU')}
                   hint={LINK_COPY.pausedHint}
+                />
+              </>
+            ) : null}
+            {status.receipts.identityRefused > 0 ? (
+              <>
+                <Divider />
+                <StatRow
+                  label={LINK_COPY.rowIdentity}
+                  value={status.receipts.identityRefused.toLocaleString('en-AU')}
+                  hint={LINK_COPY.identityHint}
                 />
               </>
             ) : null}

@@ -140,6 +140,10 @@ describe('outbox classification and backoff', () => {
     for (const code of ['velocity_capped', 'insufficient_available', 'solvency_blocked', 'allocation_exhausted']) {
       expect(err(409, code)).toMatchObject({ final: true, outcome: { status: 'refused', code } });
     }
+    expect(
+      classifyActionResponse({ kind: 'error', status: 403, code: 'identity_check_required', message: null, retryAfterSeconds: null, missing: ['verify_email'] }),
+    ).toMatchObject({ final: true, outcome: { status: 'refused', code: 'identity_check_required', missing: ['verify_email'] } });
+    expect(err(403, 'identity_check_required')).toMatchObject({ final: true, outcome: { status: 'refused', missing: [] } });
     expect(err(503, 'persistence_unavailable')).toMatchObject({ final: false, pauseBatch: true });
     expect(err(502, null)).toMatchObject({ final: false });
     expect(err(429, null, 30)).toMatchObject({ final: false, retryAfterSeconds: 30, pauseBatch: true });

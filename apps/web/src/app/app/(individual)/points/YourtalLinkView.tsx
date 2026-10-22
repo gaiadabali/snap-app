@@ -6,6 +6,7 @@ import {
   cleanLinkCode,
   linkErrorMessage,
   linkedOn,
+  identityNotice,
   otherRefused,
   type LinkContext,
 } from '@/lib/yourtal-link';
@@ -70,6 +71,23 @@ function PausedNotice() {
     >
       <p className="font-semibold">{LINK_COPY.pausedTitle}</p>
       <p className="mt-1 text-[var(--color-ink-muted)]">{LINK_COPY.pausedBody}</p>
+    </div>
+  );
+}
+
+/** The person has not passed YourTal's identity check: receipts scanned now won't earn. */
+function IdentityNotice({ check, meHref }: { check: YourtalLinkStatus['identityCheck']; meHref: string }) {
+  const { lines, showLink } = identityNotice(check);
+  if (lines.length === 0) return null;
+  return (
+    <div
+      role="status"
+      className="flex max-w-[480px] flex-col gap-1 rounded-[var(--radius-md)] border border-[var(--color-warn)] p-4 text-[14px] text-[var(--color-ink)]"
+    >
+      {lines.map((line) => (
+        <p key={line}>{line}</p>
+      ))}
+      {showLink ? <External href={meHref}>{LINK_COPY.identityVerifyEmailLink}</External> : null}
     </div>
   );
 }
@@ -169,6 +187,7 @@ export function YourtalLinkView(props: YourtalLinkViewProps) {
     const since = linkedOn(status.linkedAt);
     return (
       <div className="flex flex-col gap-6">
+        <IdentityNotice check={status.identityCheck} meHref={links.getCode} />
         {status.receiptPoints?.state === 'paused' ? <PausedNotice /> : null}
         <Card tone="accent" className="max-w-[480px]">
           <h2 className="text-[17px] font-semibold text-[var(--color-ink)]">{LINK_COPY.linkedTitle}</h2>
@@ -195,6 +214,13 @@ export function YourtalLinkView(props: YourtalLinkViewProps) {
                 label={LINK_COPY.rowPaused}
                 value={status.receipts.pausedRefused.toLocaleString('en-AU')}
                 hint={LINK_COPY.pausedHint}
+              />
+            ) : null}
+            {status.receipts.identityRefused > 0 ? (
+              <StatRow
+                label={LINK_COPY.rowIdentity}
+                value={status.receipts.identityRefused.toLocaleString('en-AU')}
+                hint={LINK_COPY.identityHint}
               />
             ) : null}
             {otherRefused(status.receipts) > 0 ? (
