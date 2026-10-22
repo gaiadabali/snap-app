@@ -1,4 +1,4 @@
-import { boolean, integer, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { boolean, char, integer, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 
 import { citext } from '../types';
 
@@ -100,4 +100,61 @@ export const yourtalSignInReviews = pgTable('yourtal_sign_in_reviews', {
   resolvedAt: timestamp('resolved_at', { withTimezone: true }),
   resolvedBy: uuid('resolved_by'),
   resolution: text('resolution'),
+});
+
+/**
+ * A YourTal voucher redeemed for scan credits (migration 0041, group task 2.8,
+ * yourtal docs/28 §5 S1). TENANT-scoped: the credits go to the workspace the
+ * person redeems in. One row per attempt; never deleted.
+ *
+ * Enforced in the SQL, not declared here:
+ *   - unique: `merchant_order_ref`, the three keys, `authorization_id`,
+ *     `receipt_id`, `grant_id`; `code_sha256` while the status is in progress
+ *     or `granted` (`yourtal_voucher_redemptions_one_live_per_code`);
+ *   - a BEFORE INSERT OR UPDATE trigger: identity columns and keys never
+ *     change, `authorization_id` / `receipt_id` / `grant_id` are write-once,
+ *     status moves only along the docs/28 machine, and `grant_id` must name a
+ *     `yourtal_voucher` grant in the same tenant for exactly `credits`;
+ *   - a deferred constraint trigger on `usage_grants`: a `yourtal_voucher`
+ *     grant commits only with exactly one `granted` redemption naming it.
+ *
+ * `app_rw` may INSERT only a fresh `authorizing` row and UPDATE only the
+ * progress columns; nobody but the owner deletes.
+ */
+export const yourtalVoucherRedemptions = pgTable('yourtal_voucher_redemptions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id'),
+  tenantId: uuid('tenant_id').notNull(),
+  linkRowId: uuid('link_row_id'),
+  /** SHA-256 of the normalised code, lowercase hex. Never the code. */
+  codeSha256: char('code_sha256', { length: 64 }).notNull(),
+  /** Face value in cents. */
+  faceMinor: integer('face_minor').notNull(),
+  /** Always 'AUD'. */
+  currency: text('currency').notNull().default('AUD'),
+  credits: integer('credits').notNull(),
+  merchantOrderRef: text('merchant_order_ref').notNull(),
+  authorizeKey: uuid('authorize_key').notNull().defaultRandom(),
+  captureKey: uuid('capture_key').notNull().defaultRandom(),
+  voidKey: uuid('void_key').notNull().defaultRandom(),
+  authorizationId: text('authorization_id'),
+  holdExpiresAt: timestamp('hold_expires_at', { withTimezone: true }),
+  captureSentAt: timestamp('capture_sent_at', { withTimezone: true }),
+  receiptId: text('receipt_id'),
+  grantId: uuid('grant_id'),
+  /**
+   * 'authorizing' | 'authorized' | 'capturing' | 'captured' | 'voiding' |
+   * 'needs_review', or final: 'granted' | 'voided' | 'expired' | 'refused' |
+   * 'abandoned' | 'failed'.
+   */
+  status: text('status').notNull().default('authorizing'),
+  attempts: integer('attempts').notNull().default(0),
+  nextAttemptAt: timestamp('next_attempt_at', { withTimezone: true }).notNull().defaultNow(),
+  lockedAt: timestamp('locked_at', { withTimezone: true }),
+  lockedBy: text('locked_by'),
+  lastHttpStatus: integer('last_http_status'),
+  lastCode: text('last_code'),
+  lastError: text('last_error'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  finishedAt: timestamp('finished_at', { withTimezone: true }),
 });
