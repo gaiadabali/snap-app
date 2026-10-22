@@ -63,6 +63,12 @@ export interface FakeYourtal {
    * and the receipt status says `earning: false`. Off by default.
    */
   setPaused(paused: boolean): void;
+  /**
+   * YourTal's identity check (5.9.c): while set, actions answer
+   * `403 identity_check_required` with this `missing` list, as documented.
+   * `null` turns it off. Off by default.
+   */
+  setIdentityCheck(missing: string[] | null): void;
   /** Runs after the signature check and before the answer: lets a test interleave a race. */
   onRequest: ((path: string) => Promise<void>) | null;
   close(): Promise<void>;
@@ -92,6 +98,7 @@ export async function startFakeYourtal(options: { partnerId?: string; secret?: s
   const requests: RecordedRequest[] = [];
   let codeCounter = 0;
   let paused = false;
+  let identityMissing: string[] | null = null;
 
   function handle(path: string, raw: string): { status: number; body: unknown } {
     let body: Record<string, unknown>;
@@ -130,6 +137,17 @@ export async function startFakeYourtal(options: { partnerId?: string; secret?: s
       const link = byLinkId.get(body.linkId);
       if (!link) return { status: 400, body: { code: 'unknown_link', message: 'no such link' } };
       if (link.revokedAt) return { status: 403, body: { code: 'link_revoked', message: 'link again' } };
+      if (identityMissing) {
+        return {
+          status: 403,
+          body: {
+            code: 'identity_check_required',
+            message: 'Verify your email, or use a permanent email address, to earn points.',
+            linkId: link.linkId,
+            missing: identityMissing,
+          },
+        };
+      }
       if (paused) {
         return {
           status: 409,
@@ -245,6 +263,9 @@ export async function startFakeYourtal(options: { partnerId?: string; secret?: s
     },
     setPaused(value) {
       paused = value;
+    },
+    setIdentityCheck(missing) {
+      identityMissing = missing;
     },
     onRequest: null,
     close: () => new Promise<void>((resolve) => server.close(() => resolve())),

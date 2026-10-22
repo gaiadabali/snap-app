@@ -147,6 +147,8 @@ export interface ReceiptReportCounts {
   refused: number;
   /** Refused with `allocation_exhausted`: receipts scanned while points were paused. Also in `refused`. */
   pausedRefused: number;
+  /** Refused with `identity_check_required`: never earned, even later. Also in `refused`. */
+  identityRefused: number;
   skippedDuplicate: number;
   /** Scans on a free credit, or none: never sent (group plan 2.5.f). */
   skippedFree: number;
@@ -166,6 +168,7 @@ export async function receiptReportCounts(userId: string, db: Db = getDb()): Pro
       rewarded: string;
       refused: string;
       paused_refused: string;
+      identity_refused: string;
       skipped_duplicate: string;
       skipped_free: string;
       points: string;
@@ -174,6 +177,7 @@ export async function receiptReportCounts(userId: string, db: Db = getDb()): Pro
              count(*) filter (where status in ('sent', 'duplicate') and granted)       as rewarded,
              count(*) filter (where status = 'refused')                                as refused,
              count(*) filter (where status = 'refused' and last_code = 'allocation_exhausted') as paused_refused,
+             count(*) filter (where status = 'refused' and last_code = 'identity_check_required') as identity_refused,
              count(*) filter (where status = 'skipped_duplicate')                      as skipped_duplicate,
              count(*) filter (where status = 'skipped_free')                           as skipped_free,
              coalesce(sum(points) filter (where status in ('sent', 'duplicate') and granted), 0) as points
@@ -186,6 +190,7 @@ export async function receiptReportCounts(userId: string, db: Db = getDb()): Pro
       rewarded: Number(r?.rewarded ?? 0),
       refused: Number(r?.refused ?? 0),
       pausedRefused: Number(r?.paused_refused ?? 0),
+      identityRefused: Number(r?.identity_refused ?? 0),
       skippedDuplicate: Number(r?.skipped_duplicate ?? 0),
       skippedFree: Number(r?.skipped_free ?? 0),
       pointsReported: Number(r?.points ?? 0),
@@ -213,5 +218,29 @@ export async function lastPausedRefusalAt(userId: string, db: Db = getDb()): Pro
     const refused = Number(r.refused_at);
     if (r.paid_at !== null && Number(r.paid_at) >= refused) return null;
     return refused;
+  });
+}
+
+/**
+ * The user's latest `identity_check_required` refusal and what it said was
+ * missing, or null when they have been paid since (a receipt scanned after they
+ * passed the check earned, so the notice clears). The refused receipts stay
+ * refused: see `classifyActionResponse`.
+ */
+export async function latestIdentityRefusal(userId: string, db: Db = getDb()): Promise<string[] | null> {
+  return asUser(db, userId, async (tx) => {
+    const rows = await tx.execute<{ missing: string[] | null; refused_at: string; paid_at: string | null }>(sql`
+      select (select identity_missing from yourtal_outbox
+               where user_id = current_user_id() and status = 'refused' and last_code = 'identity_check_required'
+               order by finished_at desc limit 1) as missing,
+             extract(epoch from max(finished_at) filter (where status = 'refused' and last_code = 'identity_check_required')) * 1000 as refused_at,
+             extract(epoch from max(finished_at) filter (where status in ('sent', 'duplicate') and granted))                    * 1000 as paid_at
+        from yourtal_outbox
+       where user_id = current_user_id()
+    `);
+    const r = rows.rows[0];
+    if (!r || r.refused_at === null) return null;
+    if (r.paid_at !== null && Number(r.paid_at) >= Number(r.refused_at)) return null;
+    return r.missing ?? [];
   });
 }

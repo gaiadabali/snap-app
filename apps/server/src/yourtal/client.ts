@@ -26,6 +26,8 @@ export type PartnerResponse =
       message: string | null;
       /** From a 429's body. */
       retryAfterSeconds: number | null;
+      /** From an `identity_check_required` body: what the person still has to do. */
+      missing?: string[];
     }
   | { kind: 'network'; error: string };
 
@@ -102,6 +104,7 @@ export class YourtalPartnerClient {
         typeof body.retryAfterSeconds === 'number' && Number.isFinite(body.retryAfterSeconds)
           ? Math.max(0, body.retryAfterSeconds)
           : null,
+      ...(Array.isArray(body.missing) ? { missing: body.missing.filter((m): m is string => typeof m === 'string').slice(0, 10) } : {}),
     };
   }
 }
