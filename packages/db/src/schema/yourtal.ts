@@ -56,6 +56,8 @@ export const yourtalOutbox = pgTable('yourtal_outbox', {
   duplicateOfCaptureId: uuid('duplicate_of_capture_id'),
   granted: boolean('granted'),
   points: integer('points'),
+  /** `identity_check_required` only (group 5.9.c): what YourTal said the person still has to do. */
+  identityMissing: text('identity_missing').array(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   finishedAt: timestamp('finished_at', { withTimezone: true }),
 });
