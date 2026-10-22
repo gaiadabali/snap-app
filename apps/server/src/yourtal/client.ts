@@ -140,6 +140,45 @@ export async function receiptStatus(
   };
 }
 
+/**
+ * What YourTal's `POST /api/partners/vouchers/owner` says about a voucher
+ * code (by SHA-256) for a linked user.
+ */
+export type VoucherOwnerAnswer =
+  | { held: false }
+  | { held: true; status: string; faceValueMinor: number; currency: string; expiresAt: string };
+
+const VOUCHER_OWNER_TIMEOUT_MS = 5_000;
+
+/**
+ * Signed like every other partner call. Returns `null` for anything but a
+ * well-formed 200 (the caller treats that as "unknown"). Never logs the hash.
+ */
+export async function voucherOwner(
+  client: YourtalPartnerClient,
+  input: { linkId: string; codeSha256: string },
+): Promise<VoucherOwnerAnswer | null> {
+  const response = await client.post(
+    YOURTAL_PATHS.voucherOwner,
+    JSON.stringify({ linkId: input.linkId, codeSha256: input.codeSha256 }),
+    randomUUID(),
+    { timeoutMs: VOUCHER_OWNER_TIMEOUT_MS },
+  );
+  if (response.kind !== 'ok' || typeof response.body.held !== 'boolean') return null;
+  if (!response.body.held) return { held: false };
+  const { status, faceValueMinor, currency, expiresAt } = response.body;
+  if (
+    typeof status !== 'string' ||
+    typeof faceValueMinor !== 'number' ||
+    !Number.isInteger(faceValueMinor) ||
+    typeof currency !== 'string' ||
+    typeof expiresAt !== 'string'
+  ) {
+    return null;
+  }
+  return { held: true, status, faceValueMinor, currency, expiresAt };
+}
+
 function describe(error: unknown): string {
   if (error instanceof Error) {
     const cause = (error as { cause?: { code?: string } }).cause;
@@ -167,4 +206,5 @@ export const YOURTAL_PATHS = {
   revoke: (linkId: string) => `/api/partners/links/${encodeURIComponent(linkId)}/revoke`,
   actions: '/api/partners/actions',
   receiptStatus: '/api/partners/receipts/status',
+  voucherOwner: '/api/partners/vouchers/owner',
 } as const;

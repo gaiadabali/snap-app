@@ -492,6 +492,41 @@ export function yourtalReceiptRefKey(): string | undefined {
   return value && value.length >= RECEIPT_REF_KEY_MIN_LENGTH ? value : undefined;
 }
 
+/** The merchant key id YourTal issues: `mc_` and a UUID. */
+const MERCHANT_KEY_ID = /^mc_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const MERCHANT_SECRET_HEX = /^[0-9a-f]{64}$/i;
+let merchantCredentialWarned = false;
+
+/**
+ * The voucher (merchant API) credential: `YOURTAL_MERCHANT_KEY_ID`
+ * (`mc_<uuid>`) and `YOURTAL_MERCHANT_SECRET` (64 hex = 32 raw bytes), each from
+ * the environment first, else the line of that name in `YOURTAL_ENV_FILE`.
+ * Undefined when either is absent or malformed. A malformed value logs ONE
+ * warning per process, naming the setting and never its value.
+ */
+export function yourtalMerchantCredential(): { keyId: string; secret: Buffer } | undefined {
+  const keyId = process.env.YOURTAL_MERCHANT_KEY_ID?.trim() || yourtalFileSetting('YOURTAL_MERCHANT_KEY_ID');
+  const secretHex = process.env.YOURTAL_MERCHANT_SECRET?.trim() || yourtalFileSetting('YOURTAL_MERCHANT_SECRET');
+  if (!keyId && !secretHex) return undefined;
+  if (keyId && secretHex && MERCHANT_KEY_ID.test(keyId) && MERCHANT_SECRET_HEX.test(secretHex)) {
+    return { keyId, secret: Buffer.from(secretHex, 'hex') };
+  }
+  if (!merchantCredentialWarned) {
+    merchantCredentialWarned = true;
+    const bad = [
+      !keyId || !MERCHANT_KEY_ID.test(keyId) ? 'YOURTAL_MERCHANT_KEY_ID (want mc_<uuid>)' : null,
+      !secretHex || !MERCHANT_SECRET_HEX.test(secretHex) ? 'YOURTAL_MERCHANT_SECRET (want 64 hex characters)' : null,
+    ].filter(Boolean);
+    console.warn(`YourTal merchant credential ignored: missing or malformed ${bad.join(' and ')}`);
+  }
+  return undefined;
+}
+
+/** True when the partner link AND the merchant credential are both present. */
+export function isYourtalVoucherConfigured(): boolean {
+  return isYourtalPartnerConfigured() && yourtalMerchantCredential() !== undefined;
+}
+
 /** True only when both the partner id and the partner secret are present. */
 export function isYourtalPartnerConfigured(): boolean {
   return Boolean(config().YOURTAL_PARTNER_ID) && Boolean(yourtalPartnerSecret());
