@@ -1,11 +1,12 @@
 import { useCameraPermissions } from 'expo-camera';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { Text, TextInput } from '@/theme/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, type Session } from '@/api';
-import { takePendingCountry } from '@/lib/pending-country';
+import { currencyDecimals, formatMoney } from '@/lib/format';
+import { peekPendingCurrency, takePendingCountry } from '@/lib/pending-country';
 import { Icon, type IconName } from '@/components/Icon';
 import { GradientHero } from '@/components/rich';
 import {
@@ -85,6 +86,11 @@ export function Onboarding({
   const [drafts, setDrafts] = useState<Draft[]>([{ name: '', amount: '' }]);
   const [permission, requestPermission] = useCameraPermissions();
   const [focus, setFocus] = useState<string | null>(null);
+  // The workspace does not exist yet, so its currency is the one picked at sign-up.
+  const [currency, setCurrency] = useState<string>('AUD');
+  useEffect(() => {
+    void peekPendingCurrency().then((c) => c && setCurrency(c));
+  }, []);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -313,7 +319,7 @@ export function Onboarding({
                     onBlur={() => setFocus(null)}
                     value={d.amount}
                     onChangeText={(v) => setDrafts(patch(drafts, i, { amount: v.replace(/[^\d.]/g, '') }))}
-                    placeholder="900"
+                    placeholder={currencyDecimals(currency) === 0 ? '1000000' : '900'}
                     placeholderTextColor={p.inkFaint}
                     keyboardType="decimal-pad"
                     style={{ flex: 1, minWidth: 0, ...type.figure, ...numeric, color: p.ink }}
@@ -346,7 +352,7 @@ export function Onboarding({
             <Small>
               {named.length === 0
                 ? 'Skip this if you would rather see what you actually spend first.'
-                : `${named.length} ${named.length === 1 ? 'budget' : 'budgets'}, ${formatTotal(monthly)} a month.`}
+                : `${named.length} ${named.length === 1 ? 'budget' : 'budgets'}, ${formatMoney(String(monthly), currency, { cents: false })} a month.`}
             </Small>
           </View>
         ) : null}
@@ -420,8 +426,4 @@ function isUsable(d: Draft): boolean {
 
 function patch(list: Draft[], i: number, change: Partial<Draft>): Draft[] {
   return list.map((d, j) => (j === i ? { ...d, ...change } : d));
-}
-
-function formatTotal(n: number): string {
-  return `$${n.toLocaleString('en-AU', { maximumFractionDigits: 0 })}`;
 }

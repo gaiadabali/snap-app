@@ -106,6 +106,29 @@ const schema = z.object({
   EXTRACTION_MODEL: z.string().default('gemma4:31b'),
 
   /**
+   * Wall-clock limit for ONE model call in the receipt path, and for the
+   * escalation walk as a whole.
+   *
+   * Extraction used to have no limit at all: `fetch` waits up to undici's 300 s
+   * default per model, the chain has four, and the worker handles one job at a
+   * time, so one hung provider held every scan behind it for minutes (a
+   * founder scan on 2026-10-21 took 4 minutes; the phone gives up at 90 s).
+   * A timeout is a failure of THAT model, so escalation walks on to the next.
+   */
+  EXTRACTION_CALL_TIMEOUT_MS: z.coerce.number().int().positive().default(45_000),
+  /**
+   * Model time one job may spend in total across the whole chain. Once spent
+   * the walk stops instead of starting another model, and the job is released
+   * for a later attempt like any other failure.
+   */
+  EXTRACTION_TOTAL_BUDGET_MS: z.coerce.number().int().positive().default(120_000),
+  /**
+   * The same limit for one statement chunk call. Longer than a receipt's: a
+   * chunk is a page of rows, up to 4000 output tokens of JSON.
+   */
+  STATEMENT_CALL_TIMEOUT_MS: z.coerce.number().int().positive().default(120_000),
+
+  /**
    * Per-tenant DAILY budget on extraction jobs admitted at intake.
    *
    * The second half of the statement-extraction cost caps (plan Task 10,
@@ -467,6 +490,41 @@ export const RECEIPT_REF_KEY_MIN_LENGTH = 32;
 export function yourtalReceiptRefKey(): string | undefined {
   const value = process.env.YOURTAL_RECEIPT_REF_KEY?.trim() || yourtalFileSetting('YOURTAL_RECEIPT_REF_KEY');
   return value && value.length >= RECEIPT_REF_KEY_MIN_LENGTH ? value : undefined;
+}
+
+/** The merchant key id YourTal issues: `mc_` and a UUID. */
+const MERCHANT_KEY_ID = /^mc_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const MERCHANT_SECRET_HEX = /^[0-9a-f]{64}$/i;
+let merchantCredentialWarned = false;
+
+/**
+ * The voucher (merchant API) credential: `YOURTAL_MERCHANT_KEY_ID`
+ * (`mc_<uuid>`) and `YOURTAL_MERCHANT_SECRET` (64 hex = 32 raw bytes), each from
+ * the environment first, else the line of that name in `YOURTAL_ENV_FILE`.
+ * Undefined when either is absent or malformed. A malformed value logs ONE
+ * warning per process, naming the setting and never its value.
+ */
+export function yourtalMerchantCredential(): { keyId: string; secret: Buffer } | undefined {
+  const keyId = process.env.YOURTAL_MERCHANT_KEY_ID?.trim() || yourtalFileSetting('YOURTAL_MERCHANT_KEY_ID');
+  const secretHex = process.env.YOURTAL_MERCHANT_SECRET?.trim() || yourtalFileSetting('YOURTAL_MERCHANT_SECRET');
+  if (!keyId && !secretHex) return undefined;
+  if (keyId && secretHex && MERCHANT_KEY_ID.test(keyId) && MERCHANT_SECRET_HEX.test(secretHex)) {
+    return { keyId, secret: Buffer.from(secretHex, 'hex') };
+  }
+  if (!merchantCredentialWarned) {
+    merchantCredentialWarned = true;
+    const bad = [
+      !keyId || !MERCHANT_KEY_ID.test(keyId) ? 'YOURTAL_MERCHANT_KEY_ID (want mc_<uuid>)' : null,
+      !secretHex || !MERCHANT_SECRET_HEX.test(secretHex) ? 'YOURTAL_MERCHANT_SECRET (want 64 hex characters)' : null,
+    ].filter(Boolean);
+    console.warn(`YourTal merchant credential ignored: missing or malformed ${bad.join(' and ')}`);
+  }
+  return undefined;
+}
+
+/** True when the partner link AND the merchant credential are both present. */
+export function isYourtalVoucherConfigured(): boolean {
+  return isYourtalPartnerConfigured() && yourtalMerchantCredential() !== undefined;
 }
 
 /** True only when both the partner id and the partner secret are present. */

@@ -9,11 +9,13 @@ import { AddButton, Choice, Field, Sheet } from '@/components/form';
 import { GradientHero, HeroBody, HeroFigure, HeroLabel, Raised } from '@/components/rich';
 import { Body, Chip, Figure, Label, Screen, Small } from '@/components/ui';
 import { BUSINESS_FEATURES_ENABLED } from '@/config';
-import { formatAud, radius, space, usePalette } from '@/theme';
+import { radius, space, usePalette } from '@/theme';
+import { useMoney } from '@/lib/use-money';
 
 const blank = { name: '', sku: '', unit: 'ea', sellPrice: '', costPrice: '', stock: '' };
 
 export default function ItemsScreen() {
+  const money = useMoney();
   // Business-only. Personal-only hides this from every nav path; this covers
   // a direct URL on the web build, where a route always resolves.
   if (!BUSINESS_FEATURES_ENABLED) return <Redirect href="/" />;
@@ -71,7 +73,7 @@ export default function ItemsScreen() {
             <GradientHero tone={lowCount > 0 ? 'risk' : 'brand'}>
               <View style={{ gap: space.xs }}>
                 <HeroLabel>Stock on hand, at cost</HeroLabel>
-                <HeroFigure>{formatAud(stockValue.toFixed(2))}</HeroFigure>
+                <HeroFigure>{money.fmt(stockValue.toFixed(2))}</HeroFigure>
                 <HeroBody>
                   {all.length} items · {stocked.length} stocked
                   {lowCount > 0 ? ` · ${lowCount} low or out` : ''}
@@ -129,8 +131,8 @@ export default function ItemsScreen() {
                 </View>
 
                 <View style={{ alignItems: 'flex-end', gap: 2 }}>
-                  <Figure size="h2">{formatAud(item.sellPrice)}</Figure>
-                  <Small>cost {formatAud(item.costPrice)}</Small>
+                  <Figure size="h2">{money.fmt(item.sellPrice)}</Figure>
+                  <Small>cost {money.fmt(item.costPrice)}</Small>
                 </View>
               </View>
             </Raised>
@@ -182,7 +184,7 @@ export default function ItemsScreen() {
               value={draft.sellPrice}
               onChangeText={(sellPrice) => setDraft({ ...draft, sellPrice })}
               keyboardType="decimal-pad"
-              prefix="$"
+              prefix={money.symbol}
               hint="Excluding GST"
             />
           </View>
@@ -192,7 +194,7 @@ export default function ItemsScreen() {
               value={draft.costPrice}
               onChangeText={(costPrice) => setDraft({ ...draft, costPrice })}
               keyboardType="decimal-pad"
-              prefix="$"
+              prefix={money.symbol}
             />
           </View>
         </View>

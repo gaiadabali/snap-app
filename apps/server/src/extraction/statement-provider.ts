@@ -2,11 +2,13 @@ import { statementChunkPrompt, STATEMENT_PROMPT_VERSION } from './statement-prom
 import {
   asField,
   decimal,
+  DEFAULT_CALL_TIMEOUT_MS,
   OPENROUTER_BASE_URL,
   readOllamaCloudKey,
   readOpenRouterKey,
   str,
   TruncatedOutputError,
+  withCallTimeout,
 } from './provider.js';
 import { maskCardLast4 } from './types.js';
 import type { StatementChunkExtraction } from './statement-types.js';
@@ -140,6 +142,8 @@ export class OllamaCloudStatementProvider implements StatementChunkProvider {
      * the receipt path).
      */
     private readonly maxTokens = 4000,
+    /** One chunk call's time limit; see `withCallTimeout` in provider.ts. */
+    private readonly timeoutMs: number = DEFAULT_CALL_TIMEOUT_MS,
   ) {}
 
   async extractChunk(
@@ -164,31 +168,34 @@ export class OllamaCloudStatementProvider implements StatementChunkProvider {
       pageTexts.map((t, i) => `[page ${pageRange.from + i}]\n${t}`).join('\n\n');
 
     const started = Date.now();
-    const response = await fetch(`${this.baseUrl}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${this.apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: this.model,
-        messages: [{ role: 'user', content: body }],
-        temperature: 0,
-        max_tokens: this.maxTokens,
-      }),
+    const data = await withCallTimeout(`${this.model}`, this.timeoutMs, async (signal) => {
+      const response = await fetch(`${this.baseUrl}/chat/completions`, {
+        method: 'POST',
+        signal,
+        headers: {
+          Authorization: `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: this.model,
+          messages: [{ role: 'user', content: body }],
+          temperature: 0,
+          max_tokens: this.maxTokens,
+        }),
+      });
+
+      if (!response.ok) {
+        const detail = await response.text().catch(() => '');
+        throw new Error(
+          `${this.name} ${this.model} returned ${response.status}: ${detail.slice(0, 300)}`,
+        );
+      }
+
+      return (await response.json()) as {
+        choices?: Array<{ message?: { content?: string }; finish_reason?: string }>;
+        usage?: { prompt_tokens?: number; completion_tokens?: number };
+      };
     });
-
-    if (!response.ok) {
-      const detail = await response.text().catch(() => '');
-      throw new Error(
-        `${this.name} ${this.model} returned ${response.status}: ${detail.slice(0, 300)}`,
-      );
-    }
-
-    const data = (await response.json()) as {
-      choices?: Array<{ message?: { content?: string }; finish_reason?: string }>;
-      usage?: { prompt_tokens?: number; completion_tokens?: number };
-    };
     const raw = data.choices?.[0]?.message?.content ?? '';
     if (!raw) throw new Error(`${this.name} returned an empty response for pages ${pageRange.from}-${pageRange.to}.`);
 
@@ -220,7 +227,7 @@ export class OllamaCloudStatementProvider implements StatementChunkProvider {
 export class OpenRouterStatementProvider extends OllamaCloudStatementProvider {
   override readonly name: string = 'openrouter';
 
-  constructor(model: string, apiKey = readOpenRouterKey()) {
-    super(model, apiKey, OPENROUTER_BASE_URL);
+  constructor(model: string, apiKey = readOpenRouterKey(), timeoutMs: number = DEFAULT_CALL_TIMEOUT_MS) {
+    super(model, apiKey, OPENROUTER_BASE_URL, undefined, timeoutMs);
   }
 }

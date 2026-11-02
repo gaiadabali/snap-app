@@ -203,6 +203,13 @@ export async function runExtraction(
    * or empty means no report exists, which the gate treats as ungrounded.
    */
   grounding?: GroundingEvidence,
+  /**
+   * What the model is shown, when that is not the stored pages: the smaller
+   * in-memory copies from `model-image.ts`. Identity (`sha256`, `byteSize`)
+   * is still taken from `image`, the stored bytes, so a run's recorded input
+   * stays the document on file and not a derivative of it.
+   */
+  forModel?: PageImage | PageImage[],
 ): Promise<{ ok: true; run: ExtractionRun } | { ok: false; failure: RunFailure }> {
   const pages = Array.isArray(image) ? image : [image];
   const started = Date.now();
@@ -213,7 +220,7 @@ export async function runExtraction(
 
   let provided: ProviderResult;
   try {
-    provided = await provider.extract(image);
+    provided = await provider.extract(forModel ?? image);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     return {

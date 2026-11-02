@@ -8,7 +8,8 @@ import { IS_DEMO, api, type PersonalSummary } from '@/api';
 import { AddButton, Field, Sheet } from '@/components/form';
 import { GradientHero, Raised } from '@/components/rich';
 import { Body, Figure, Screen, ScreenHeader, SectionHeader, Small } from '@/components/ui';
-import { formatAud, numeric, space, type, usePalette, useTheme } from '@/theme';
+import { numeric, space, type, usePalette, useTheme } from '@/theme';
+import { useMoney } from '@/lib/use-money';
 
 /**
  * Budgets: what each category is allowed per month.
@@ -19,6 +20,7 @@ import { formatAud, numeric, space, type, usePalette, useTheme } from '@/theme';
  * sits on the same row as the control.
  */
 export default function BudgetsScreen() {
+  const money = useMoney();
   const p = usePalette();
   const insets = useSafeAreaInsets();
   const [summary, setSummary] = useState<PersonalSummary | null>(null);
@@ -95,11 +97,11 @@ export default function BudgetsScreen() {
                 <View style={{ flexDirection: 'row', gap: space.lg }}>
                   <HeroStat
                     label="spent"
-                    value={formatAud(summary.spentThisMonth, { cents: false })}
+                    value={money.fmt(summary.spentThisMonth, { cents: false })}
                   />
                   <HeroStat
                     label="budgeted"
-                    value={formatAud(summary.budgetTotal, { cents: false })}
+                    value={money.fmt(summary.budgetTotal, { cents: false })}
                   />
                 </View>
                 <View
@@ -127,7 +129,7 @@ export default function BudgetsScreen() {
                   />
                   <HeroStat
                     label="safe to spend a day"
-                    value={formatAud(summary.safeToSpendPerDay)}
+                    value={money.fmt(summary.safeToSpendPerDay)}
                   />
                 </View>
               </View>
@@ -163,7 +165,7 @@ export default function BudgetsScreen() {
                           glyph="−"
                         />
                         <Figure size="h2" style={{ minWidth: 74, textAlign: 'center' }}>
-                          {formatAud(c.budget, { cents: false })}
+                          {money.fmt(c.budget, { cents: false })}
                         </Figure>
                         <Stepper
                           onPress={() => void nudge(c.category, c.budget ?? '0', 10)}
@@ -199,15 +201,15 @@ export default function BudgetsScreen() {
                           marginTop: -space.xs,
                         }}
                       >
-                        <Small numberOfLines={1}>{formatAud(c.spent)} spent</Small>
+                        <Small numberOfLines={1}>{money.fmt(c.spent)} spent</Small>
                         <Small
                           numberOfLines={1}
                           style={isOver ? { color: p.risk, fontWeight: '600' } : undefined}
                         >
                           {c.budget
                             ? isOver
-                              ? `${formatAud(String(Number(c.spent) - Number(c.budget)))} over`
-                              : `${formatAud(String(Number(c.budget) - Number(c.spent)))} left`
+                              ? `${money.fmt(String(Number(c.spent) - Number(c.budget)))} over`
+                              : `${money.fmt(String(Number(c.budget) - Number(c.spent)))} left`
                             : 'No budget set'}
                         </Small>
                       </View>
@@ -255,7 +257,7 @@ export default function BudgetsScreen() {
           value={amount}
           onChangeText={setAmount}
           keyboardType="decimal-pad"
-          prefix="$"
+          prefix={money.symbol}
           hint="Adjust it later with the + and − buttons"
         />
       </Sheet>

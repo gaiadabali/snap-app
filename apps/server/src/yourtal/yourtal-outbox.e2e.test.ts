@@ -149,7 +149,7 @@ describeIfDb('the YourTal outbox (2.5)', () => {
   async function outboxFor(captureId: string) {
     const rows = await admin.query(
       `select id, user_id, status, attempts, external_ref, idempotency_key, body, points, granted,
-              last_http_status, last_code, next_attempt_at > now() as later
+              last_http_status, last_code, identity_missing, next_attempt_at > now() as later
          from yourtal_outbox where capture_id = $1`,
       [captureId],
     );
@@ -896,5 +896,72 @@ describeIfDb('the YourTal outbox (2.5)', () => {
     it('says unknown when the partner link has no credentials', async () => {
       expect((await controllerWith(null).status(franUser)).receiptPoints).toEqual({ state: 'unknown' });
     });
+
+  // Group 5.9.c: YourTal's identity check refuses a receipt with a 403.
+  describe('identity check required', () => {
+    let idController: YourtalLinkController;
+    beforeAll(() => {
+      idController = controllerWith(client);
+    });
+    afterAll(() => fake.setIdentityCheck(null));
+
+    const scanFran = async (payable: string) => {
+      const { captureId } = await photographedCapture(FRAN, undefined, TENANT2);
+      await scanIn(TENANT2, captureId, payable, {});
+      return captureId;
+    };
+
+    it('shows nothing before any refusal', async () => {
+      const status = await idController.status(franUser);
+      expect(status.identityCheck).toEqual({ required: false, missing: [] });
+      expect(status.receipts.identityRefused).toBe(0);
+    });
+
+    it('records the 403 as a final refusal with `missing`, and never retries it', async () => {
+      fake.setIdentityCheck(['verify_email', 'use_permanent_email']);
+      const captureId = await scanFran('51.15');
+      const sentBefore = fake.requests.filter((r) => r.path === '/api/partners/actions').length;
+      expect(await drain()).toMatchObject({ claimed: 1, refused: 1, retried: 0, failed: 0 });
+      expect((await outboxFor(captureId))[0]).toMatchObject({
+        status: 'refused',
+        last_code: 'identity_check_required',
+        last_http_status: 403,
+        attempts: 1,
+        identity_missing: ['verify_email', 'use_permanent_email'],
+      });
+
+      // Passing the check later does not revive it, and nothing is resent.
+      fake.setIdentityCheck(null);
+      expect(await drain()).toMatchObject({ claimed: 0 });
+      expect(fake.requests.filter((r) => r.path === '/api/partners/actions').length).toBe(sentBefore + 1);
+      expect((await outboxFor(captureId))[0]).toMatchObject({ status: 'refused', attempts: 1 });
+    });
+
+    it('shows identityCheck and identityRefused in the status', async () => {
+      const status = await idController.status(franUser);
+      expect(status.identityCheck).toEqual({ required: true, missing: ['verify_email', 'use_permanent_email'] });
+      expect(status.receipts.identityRefused).toBe(1);
+      expect(status.receipts.refused).toBeGreaterThanOrEqual(1);
+    });
+
+    it('follows the most recent refusal', async () => {
+      fake.setIdentityCheck(['verify_email']);
+      await scanFran('52.15');
+      expect(await drain()).toMatchObject({ refused: 1 });
+      const status = await idController.status(franUser);
+      expect(status.identityCheck).toEqual({ required: true, missing: ['verify_email'] });
+      expect(status.receipts.identityRefused).toBe(2);
+    });
+
+    it('clears once a later receipt is paid; the refused ones stay refused and counted', async () => {
+      fake.setIdentityCheck(null);
+      const captureId = await scanFran('53.15');
+      expect(await drain()).toMatchObject({ sent: 1 });
+      expect((await outboxFor(captureId))[0]).toMatchObject({ status: 'sent', granted: true });
+      const status = await idController.status(franUser);
+      expect(status.identityCheck).toEqual({ required: false, missing: [] });
+      expect(status.receipts.identityRefused).toBe(2);
+    });
+  });
   });
 });

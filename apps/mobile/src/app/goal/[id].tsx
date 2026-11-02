@@ -18,7 +18,8 @@ import {
   SectionHeader,
   Small,
 } from '@/components/ui';
-import { formatAud, numeric, radius, space, type, usePalette } from '@/theme';
+import { numeric, radius, space, type, usePalette } from '@/theme';
+import { useMoney } from '@/lib/use-money';
 
 /**
  * One savings goal, and every payment into it.
@@ -32,6 +33,7 @@ import { formatAud, numeric, radius, space, type, usePalette } from '@/theme';
  * two numbers that might drift.
  */
 export default function GoalDetailScreen() {
+  const money = useMoney();
   const p = usePalette();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -55,7 +57,7 @@ export default function GoalDetailScreen() {
   function confirmRemove(c: GoalContribution) {
     Alert.alert(
       'Remove this payment?',
-      `${formatAud(c.amount)} comes back out of the total.`,
+      `${money.fmt(c.amount)} comes back out of the total.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -115,13 +117,13 @@ export default function GoalDetailScreen() {
               <View style={{ flexDirection: 'row', gap: space.lg }}>
                 <View style={{ flex: 1, gap: 2 }}>
                   <Text style={[type.h2, numeric, { color: '#FFFFFF' }]}>
-                    {formatAud(goal.saved, { cents: false })}
+                    {money.fmt(goal.saved, { cents: false })}
                   </Text>
                   <Text style={[type.small, { color: 'rgba(255,255,255,0.95)' }]}>saved</Text>
                 </View>
                 <View style={{ flex: 1, gap: 2 }}>
                   <Text style={[type.h2, numeric, { color: '#FFFFFF' }]}>
-                    {formatAud(goal.target, { cents: false })}
+                    {money.fmt(goal.target, { cents: false })}
                   </Text>
                   <Text style={[type.small, { color: 'rgba(255,255,255,0.95)' }]}>target</Text>
                 </View>
@@ -150,9 +152,9 @@ export default function GoalDetailScreen() {
                 {Math.round(pct * 100)}% ·{' '}
                 {goal.done
                   ? 'fully funded'
-                  : `${formatAud(String(short), { cents: false })} to go`}
+                  : `${money.fmt(String(short), { cents: false })} to go`}
                 {goal.perMonth && !goal.done
-                  ? ` · ${formatAud(goal.perMonth, { cents: false })} a month`
+                  ? ` · ${money.fmt(goal.perMonth, { cents: false })} a month`
                   : ''}
               </Text>
             </GradientHero>
@@ -193,13 +195,13 @@ export default function GoalDetailScreen() {
                       </Small>
                     </View>
                     <Text style={[type.bodyStrong, numeric, { color: p.ink }]}>
-                      {formatAud(c.amount)}
+                      {money.fmt(c.amount)}
                     </Text>
                     <IconButton
                       name="close"
                       size={17}
                       color={p.inkFaint}
-                      label={`Remove this payment of ${formatAud(c.amount)}`}
+                      label={`Remove this payment of ${money.fmt(c.amount)}`}
                       onPress={() => confirmRemove(c)}
                     />
                   </View>
@@ -215,7 +217,7 @@ export default function GoalDetailScreen() {
               {ledger.length > 0 ? (
                 <Small>
                   {ledger.length} payment{ledger.length === 1 ? '' : 's'}, adding to{' '}
-                  {formatAud(goal.saved)}.
+                  {money.fmt(goal.saved)}.
                 </Small>
               ) : null}
             </View>

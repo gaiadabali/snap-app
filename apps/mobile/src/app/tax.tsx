@@ -18,7 +18,8 @@ import {
   Small,
 } from '@/components/ui';
 import { GradientHero, HeroBody, HeroFigure, HeroLabel, Tile } from '@/components/rich';
-import { formatAud, space, usePalette } from '@/theme';
+import { space, usePalette } from '@/theme';
+import { useMoney } from '@/lib/use-money';
 
 /**
  * Tax & BAS — a module, not the front door.
@@ -33,6 +34,7 @@ import { formatAud, space, usePalette } from '@/theme';
  * the question: how much can I not claim, and why.
  */
 export default function TaxScreen() {
+  const money = useMoney();
   // Business-only. Personal-only hides this from every nav path; this covers
   // a direct URL on the web build, where a route always resolves.
   if (!BUSINESS_FEATURES_ENABLED) return <Redirect href="/" />;
@@ -109,7 +111,7 @@ export default function TaxScreen() {
           <GradientHero tone={atRisk > 0 ? 'risk' : 'brand'}>
             <View style={{ gap: space.sm }}>
               <HeroLabel>{atRisk > 0 ? 'GST credits at risk' : 'All credits supported'}</HeroLabel>
-              <HeroFigure>{formatAud(bas.gstAtRisk)}</HeroFigure>
+              <HeroFigure>{money.fmt(bas.gstAtRisk)}</HeroFigure>
               <HeroBody>
                 {atRisk > 0
                   ? `${bas.atRiskCount} documents would fail an ATO check. You cannot claim a GST credit without a valid tax invoice.`
@@ -123,16 +125,16 @@ export default function TaxScreen() {
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.md }}>
           <Tile
             label="Claimable · 1B"
-            value={formatAud(bas.gstClaimable)}
+            value={money.fmt(bas.gstClaimable)}
             tone="accent"
             hint="Backed by valid tax invoices"
           />
-          <Tile label="Purchases" value={formatAud(bas.purchasesInclusive)} hint="Including GST" />
+          <Tile label="Purchases" value={money.fmt(bas.purchasesInclusive)} hint="Including GST" />
           <Tile
             wide
             label="Estimated deductions"
-            value={formatAud(String(deductions.estimateTotal), { cents: false })}
-            hint={`Typical for a ${data.profileLabel.toLowerCase()}: ${formatAud(String(benchLow), { cents: false })}–${formatAud(String(benchHigh), { cents: false })}`}
+            value={money.fmt(String(deductions.estimateTotal), { cents: false })}
+            hint={`Typical for a ${data.profileLabel.toLowerCase()}: ${money.fmt(String(benchLow), { cents: false })}–${money.fmt(String(benchHigh), { cents: false })}`}
           />
         </View>
 
@@ -151,16 +153,16 @@ export default function TaxScreen() {
             </View>
             <Small>{bas.periodLabel}</Small>
             <Divider />
-            <Row label="Purchases (incl GST)" value={formatAud(bas.purchasesInclusive)} />
+            <Row label="Purchases (incl GST)" value={money.fmt(bas.purchasesInclusive)} />
             <Row
               label="GST on purchases · 1B"
-              value={formatAud(bas.gstClaimable)}
+              value={money.fmt(bas.gstClaimable)}
               tone="accent"
               hint="Claimable — supported by valid tax invoices"
             />
             <Row
               label="Unclaimable GST"
-              value={formatAud(bas.gstAtRisk)}
+              value={money.fmt(bas.gstAtRisk)}
               tone="risk"
               hint="Excluded from 1B until the invoices are fixed"
             />
@@ -175,7 +177,7 @@ export default function TaxScreen() {
             <Label>Estimated deductions this year</Label>
             <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: space.sm }}>
               <Figure size="display" tone="accent">
-                {formatAud(String(deductions.estimateTotal), { cents: false })}
+                {money.fmt(String(deductions.estimateTotal), { cents: false })}
               </Figure>
             </View>
             <RangeBar
@@ -186,8 +188,8 @@ export default function TaxScreen() {
             />
             <Small>
               Typical for a {data.profileLabel.toLowerCase()}:{' '}
-              {formatAud(String(benchLow), { cents: false })}–
-              {formatAud(String(benchHigh), { cents: false })}. Your estimate sits{' '}
+              {money.fmt(String(benchLow), { cents: false })}–
+              {money.fmt(String(benchHigh), { cents: false })}. Your estimate sits{' '}
               {deductions.estimateTotal >= benchLow && deductions.estimateTotal <= benchHigh
                 ? 'inside'
                 : deductions.estimateTotal < benchLow
@@ -203,7 +205,7 @@ export default function TaxScreen() {
                 <Row
                   key={code}
                   label={`${code} · ${labelNames[code] ?? code}`}
-                  value={formatAud(String(value), { cents: false })}
+                  value={money.fmt(String(value), { cents: false })}
                 />
               ))}
           </View>
@@ -220,25 +222,25 @@ export default function TaxScreen() {
             <Divider />
             <Row
               label="Cents-per-km ceiling"
-              value={formatAud(String(deductions.caps.centsPerKmCeiling))}
+              value={money.fmt(String(deductions.caps.centsPerKmCeiling))}
               hint="5,000 work km is the legal maximum"
             />
             <Row
               label="Max vehicle decline / year"
-              value={formatAud(String(deductions.caps.maxCarDeclinePerYear))}
-              hint={`Car limit ${formatAud(String(deductions.caps.carCostLimit), { cents: false })} over 8 years`}
+              value={money.fmt(String(deductions.caps.maxCarDeclinePerYear))}
+              hint={`Car limit ${money.fmt(String(deductions.caps.carCostLimit), { cents: false })} over 8 years`}
             />
             <Row
               label="Meals — reasonable daily total"
-              value={formatAud(String(deductions.caps.mealDailyLimit))}
+              value={money.fmt(String(deductions.caps.mealDailyLimit))}
             />
             <Row
               label="Overtime meal, no receipt"
-              value={formatAud(String(deductions.caps.overtimeMealNoReceiptMax))}
+              value={money.fmt(String(deductions.caps.overtimeMealNoReceiptMax))}
             />
             <Row
               label="Home laundry"
-              value={`${formatAud(String(deductions.caps.homeLaundryPerWeek))} / week`}
+              value={`${money.fmt(String(deductions.caps.homeLaundryPerWeek))} / week`}
             />
           </View>
         </Card>

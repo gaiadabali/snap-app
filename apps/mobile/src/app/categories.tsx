@@ -7,7 +7,8 @@ import { api, type CategorySetting } from '@/api';
 import { AddButton, Empty, Field, Loading, Sheet } from '@/components/form';
 import { CategoryIcon, Raised } from '@/components/rich';
 import { Body, Chip, Divider, Figure, Screen, SectionHeader, Small } from '@/components/ui';
-import { formatAud, space, usePalette } from '@/theme';
+import { space, usePalette } from '@/theme';
+import { useMoney } from '@/lib/use-money';
 import { WorkspaceSwitch, useWorkspace } from '@/workspace';
 
 /**
@@ -28,6 +29,7 @@ import { WorkspaceSwitch, useWorkspace } from '@/workspace';
  * is its answer.
  */
 export default function CategoriesScreen() {
+  const money = useMoney();
   const p = usePalette();
   const insets = useSafeAreaInsets();
   const { workspace, isBusiness } = useWorkspace();
@@ -166,7 +168,7 @@ export default function CategoriesScreen() {
             value={budget}
             onChangeText={setBudget}
             keyboardType="decimal-pad"
-            prefix="$"
+            prefix={money.symbol}
             hint="Optional — you can set it later on the budgets screen"
           />
         ) : null}
@@ -184,6 +186,7 @@ function CategoryRow({
   first: boolean;
   onToggle: (rows: CategorySetting[]) => void;
 }) {
+  const money = useMoney();
   const p = usePalette();
   const [busy, setBusy] = useState(false);
 
@@ -209,10 +212,10 @@ function CategoryRow({
               {row.documentCount} receipt{row.documentCount === 1 ? '' : 's'}
             </Small>
             {row.taxLabel ? <Chip>{row.taxLabel}</Chip> : null}
-            {row.monthlyBudget ? <Small>{formatAud(row.monthlyBudget, { cents: false })}/mo</Small> : null}
+            {row.monthlyBudget ? <Small>{money.fmt(row.monthlyBudget, { cents: false })}/mo</Small> : null}
           </View>
         </View>
-        <Figure size="h2">{formatAud(row.totalSpend, { cents: false })}</Figure>
+        <Figure size="h2">{money.fmt(row.totalSpend, { cents: false })}</Figure>
       </View>
 
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.lg }}>

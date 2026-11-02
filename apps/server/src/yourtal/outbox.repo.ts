@@ -268,6 +268,13 @@ export interface ReportOutcome {
   error?: string | null;
   granted?: boolean | null;
   points?: number | null;
+  /** `identity_check_required` only: what the person still has to do. */
+  missing?: string[] | null;
+}
+
+/** A Postgres array literal, bound as one text parameter (drizzle would expand a JS array into a row list). */
+function pgTextArray(items: string[]): string {
+  return `{${items.map((i) => `"${i.replace(/(["\\])/g, '\\$1')}"`).join(',')}}`;
 }
 
 /** A final outcome. */
@@ -281,7 +288,8 @@ export async function finishReport(db: Db, id: string, workerId: string, outcome
            last_code = ${outcome.code ?? null},
            last_error = ${outcome.error?.slice(0, 1000) ?? null},
            granted = ${outcome.granted ?? null},
-           points = ${outcome.points ?? null}
+           points = ${outcome.points ?? null},
+           identity_missing = ${outcome.missing ? pgTextArray(outcome.missing) : null}::text[]
      where id = ${id} and locked_by = ${workerId} and status = 'pending'
   `);
 }

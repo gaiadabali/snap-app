@@ -7,7 +7,7 @@ import { Icon, type IconName } from '@/components/Icon';
 import { CategoryIcon, Raised, radius } from '@/components/rich';
 import { Body, Chip, Divider, Figure, Label, SectionHeader, Small } from '@/components/ui';
 import type { DocumentView } from '@/api';
-import { formatAud, shadow, space, usePalette, useTheme } from '@/theme';
+import { formatMoney, shadow, space, usePalette, useTheme } from '@/theme';
 
 /**
  * The pieces both home screens are built from.
@@ -197,7 +197,7 @@ export function LatestReceipts({ docs }: { docs: DocumentView[] }) {
                   accessibilityRole="button"
                   // What the row shows, in the order it shows it — a bare
                   // "button" told a screen reader nothing.
-                  accessibilityLabel={`${d.supplierName}, ${formatAud(d.payableAmount)}, ${d.category}${
+                  accessibilityLabel={`${d.supplierName}, ${formatMoney(d.payableAmount, d.currency)}, ${d.category}${
                     d.reviewStatus === 'needs_review' ? ', needs checking' : ''
                   }`}
                   onPress={() => router.push(`/document/${d.id}`)}
@@ -218,7 +218,7 @@ export function LatestReceipts({ docs }: { docs: DocumentView[] }) {
                     <Small numberOfLines={1}>{d.category}</Small>
                   </View>
                   {d.reviewStatus === 'needs_review' ? <Chip tone="warn">Check</Chip> : null}
-                  <Figure size="h2">{formatAud(d.payableAmount)}</Figure>
+                  <Figure size="h2">{formatMoney(d.payableAmount, d.currency)}</Figure>
                 </Pressable>
               </Animated.View>
             </View>

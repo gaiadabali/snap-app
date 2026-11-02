@@ -16,10 +16,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
  * silently inherit the first one's country.
  */
 const KEY = 'snap.pendingTaxRulesId';
+/** Its currency, kept so onboarding can show amounts in it before the workspace exists. */
+const CURRENCY_KEY = 'snap.pendingCurrency';
 
-export async function rememberCountry(rulesId: string): Promise<void> {
+export async function rememberCountry(rulesId: string, currency?: string): Promise<void> {
   try {
     await AsyncStorage.setItem(KEY, rulesId);
+    if (currency) await AsyncStorage.setItem(CURRENCY_KEY, currency);
   } catch {
     /* Losing it means onboarding installs no engine, which is a real and
        recoverable state — Settings can install one. Never fail signup. */
@@ -30,7 +33,17 @@ export async function takePendingCountry(): Promise<string | null> {
   try {
     const v = await AsyncStorage.getItem(KEY);
     if (v) await AsyncStorage.removeItem(KEY);
+    await AsyncStorage.removeItem(CURRENCY_KEY);
     return v;
+  } catch {
+    return null;
+  }
+}
+
+/** The currency of the country picked at registration, without spending it. Null when none. */
+export async function peekPendingCurrency(): Promise<string | null> {
+  try {
+    return await AsyncStorage.getItem(CURRENCY_KEY);
   } catch {
     return null;
   }

@@ -14,7 +14,8 @@ import { Card, Chip, Divider, Figure, Screen, SectionHeader, Small } from '@/com
 import { UpdateNotice } from '@/components/UpdateNotice';
 import { pointsSummary } from '@/lib/yourtal-link';
 import { useSession } from '@/session';
-import { control, formatAud, numeric, radius, space, type, usePalette, useTheme } from '@/theme';
+import { control, numeric, radius, space, type, usePalette, useTheme } from '@/theme';
+import { useMoney } from '@/lib/use-money';
 
 import { Action, LatestReceipts, greeting } from './shared';
 
@@ -41,6 +42,7 @@ import { Action, LatestReceipts, greeting } from './shared';
  *     where the question is "am I over?" instead.
  */
 export default function PersonalHome() {
+  const money = useMoney();
   const p = usePalette();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -221,11 +223,11 @@ export default function PersonalHome() {
                 {over ? 'Over budget this month' : `Left to spend in ${summary?.monthLabel ?? 'this month'}`}
               </HeroLabel>
               <Text style={[type.hero, numeric, { color: '#FFFFFF' }]}>
-                {formatAud(over ? `-${summary?.remaining.replace('-', '')}` : summary?.remaining)}
+                {money.fmt(over ? `-${summary?.remaining.replace('-', '')}` : summary?.remaining)}
               </Text>
               <HeroBody>
                 {summary?.daysLeftInMonth ?? 0} day{summary?.daysLeftInMonth === 1 ? '' : 's'} left ·{' '}
-                {formatAud(summary?.safeToSpendPerDay)} a day
+                {money.fmt(summary?.safeToSpendPerDay)} a day
               </HeroBody>
 
               {/* Budget used against month elapsed. The pale marker is where
@@ -331,7 +333,7 @@ export default function PersonalHome() {
                 <CategoryRing
                   parts={summary.byCategory}
                   centreLabel={summary.monthLabel}
-                  centreValue={formatAud(summary.spentThisMonth, { cents: false })}
+                  centreValue={money.fmt(summary.spentThisMonth, { cents: false })}
                 />
                 <RingLegend parts={summary.byCategory} limit={6} />
               </>

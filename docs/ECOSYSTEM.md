@@ -323,6 +323,16 @@ the screens are 2.6. YourTal's contract is its partner guide
    `receiptPoints.state` on `GET /v1/yourtal/link`. How many points remain is
    YourTal's data about Snap Apps' package and never reaches users. Refused while
    paused is counted in `receipts.pausedRefused` (also inside `refused`).
+6. **YourTal's identity check can refuse a receipt (group 5.9.c).** When the person's
+   YourTal sign-in email is not verified (`verify_email`) or is a disposable address
+   (`use_permanent_email`), YourTal answers the report `403 identity_check_required`
+   with a `missing` list. The receipt is `refused`, final: never resent, and it never
+   earns, even after the person passes the check (YourTal does not record the
+   refusal, so the finality lives here). `GET /v1/yourtal/link` gains
+   `identityCheck: { required, missing }`, from the user's latest such refusal until
+   a later receipt is paid, and `receipts.identityRefused` (also inside `refused`).
+   The screens tell the person what to do: verify the email in YourTal's Me page, or
+   use a permanent email (YourTal has no change-email flow yet, so no link).
 
 ### Local points are retired (founder, 2026-10-20; built in group plan 2.6)
 

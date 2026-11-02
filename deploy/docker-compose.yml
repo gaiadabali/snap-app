@@ -201,7 +201,23 @@ services:
   worker:
     build: *server-build
     image: ${SERVER_IMAGE:-snap-server}:${IMAGE_TAG:-local}
-    command: ["worker"]
+    # The image's ENTRYPOINT is `pnpm`, so `command: ["worker"]` ran
+    # pnpm -> tsx -> node, and a SIGTERM from `docker stop` stopped at pnpm:
+    # node never heard it, never "finished the current job then stopped", and
+    # was SIGKILLed after 10 s. A job it had claimed stayed locked, and the
+    # scan sat stranded through every redeploy (seven on 2026-10-21; group
+    # plan 1.29). Now node itself is PID 2 under a tiny init (`init: true`,
+    # tini), with tsx registered as a loader (`--import tsx`, the same thing
+    # `tsx scripts/worker.ts` does, minus its wrapper process), so the signal
+    # arrives at `runForever`'s handler.
+    init: true
+    entrypoint: ["node", "--import", "tsx"]
+    command: ["scripts/worker.ts"]
+    # Long enough to finish a receipt (the model-call limits add up to ~2 min
+    # at the very worst, typically under 30 s) and let a shadow pass wind down.
+    # A statement can run longer; its lock then goes stale without the
+    # heartbeat and the job is re-claimed within ~90 s.
+    stop_grace_period: 90s
     restart: unless-stopped
     env_file: .env
     environment:

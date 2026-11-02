@@ -698,6 +698,12 @@ export interface WorkspaceSummary {
   role: MemberRole;
   memberCount: number;
   abn: string | null;
+  /**
+   * ISO 4217 code every workspace-level total is shown in (`tenants.base_currency`,
+   * set by the installed tax rules). A server that predates it omits the field, so
+   * clients default to AUD, which is what every such workspace was.
+   */
+  baseCurrency: string;
 }
 
 export interface Member {
@@ -1689,6 +1695,12 @@ export interface YourtalLinkStatus {
      */
     pausedRefused: number;
     /**
+     * Refused because the person had not passed YourTal's identity check
+     * (`identity_check_required`). Final: such a receipt never earns, even
+     * after they pass the check. Also counted in `refused`.
+     */
+    identityRefused: number;
+    /**
      * Not reported: each looked like another photo of a receipt already
      * reported from this account (same supplier, date and amount in the
      * workspace), so it would not earn again.
@@ -1713,6 +1725,17 @@ export interface YourtalLinkStatus {
     state: 'earning' | 'paused' | 'unknown';
     /** Points one receipt earns, when YourTal said. */
     pointsPerReceipt?: number;
+  };
+  /**
+   * YourTal's identity check (group 5.9.c). `required` is true while the
+   * person's most recent receipt was refused for it and no later receipt has
+   * been paid. `missing` is what YourTal said: `verify_email` (verify the
+   * email in YourTal) and/or `use_permanent_email` (a disposable address; YourTal
+   * has no change-email flow yet). Empty when not required.
+   */
+  identityCheck: {
+    required: boolean;
+    missing: string[];
   };
 }
 

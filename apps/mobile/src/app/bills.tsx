@@ -8,7 +8,8 @@ import { Empty, Field, Loading, Sheet, StatRow } from '@/components/form';
 import { CategoryIcon, GradientHero, HeroBody, HeroFigure, HeroLabel, Raised } from '@/components/rich';
 import { Body, Button, Chip, Divider, Figure, Label, Screen, Small } from '@/components/ui';
 import { BUSINESS_FEATURES_ENABLED } from '@/config';
-import { formatAud, formatShortDate, space, usePalette } from '@/theme';
+import { formatShortDate, space, usePalette } from '@/theme';
+import { useMoney } from '@/lib/use-money';
 
 /**
  * Bills: money you owe, and when.
@@ -36,6 +37,7 @@ function dueCopy(bill: Bill): { text: string; tone: 'risk' | 'warn' | 'muted' } 
 }
 
 export default function BillsScreen() {
+  const money = useMoney();
   // Business-only. Personal-only hides this from every nav path; this covers
   // a direct URL on the web build, where a route always resolves.
   if (!BUSINESS_FEATURES_ENABLED) return <Redirect href="/" />;
@@ -67,14 +69,14 @@ export default function BillsScreen() {
   function pay(bill: Bill) {
     Alert.alert(
       bill.supplierName,
-      `${formatAud(bill.amountDue)} outstanding on ${bill.reference}. Recording a payment does not move any money.`,
+      `${money.fmt(bill.amountDue)} outstanding on ${bill.reference}. Recording a payment does not move any money.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Part payment',
           onPress: () => {
             setPaying(bill);
-            setAmount(Number(bill.amountDue).toFixed(2));
+            setAmount(Number(bill.amountDue).toFixed(money.decimals));
             setError(null);
           },
         },
@@ -120,10 +122,10 @@ export default function BillsScreen() {
             <GradientHero tone={overdueTotal > 0 ? 'risk' : 'brand'}>
               <View style={{ gap: space.xs }}>
                 <HeroLabel>{overdueTotal > 0 ? 'Overdue to suppliers' : 'Owed to suppliers'}</HeroLabel>
-                <HeroFigure>{formatAud(overdueTotal > 0 ? overdueTotal.toFixed(4) : owed.toFixed(4))}</HeroFigure>
+                <HeroFigure>{money.fmt(overdueTotal > 0 ? overdueTotal.toFixed(4) : owed.toFixed(4))}</HeroFigure>
                 <HeroBody>
                   {open.length} unpaid bill{open.length === 1 ? '' : 's'}
-                  {overdueTotal > 0 ? ` · ${formatAud(owed.toFixed(4))} in total` : ''}
+                  {overdueTotal > 0 ? ` · ${money.fmt(owed.toFixed(4))} in total` : ''}
                 </HeroBody>
               </View>
             </GradientHero>
@@ -134,7 +136,7 @@ export default function BillsScreen() {
                   { label: 'Overdue', value: String(overdue.length), hint: 'Past their due date' },
                   {
                     label: 'GST on unpaid',
-                    value: formatAud(gstOnUnpaid.toFixed(4), { cents: false }),
+                    value: money.fmt(gstOnUnpaid.toFixed(4), { cents: false }),
                     hint: 'Claimable once paid, on cash basis',
                   },
                 ]}
@@ -195,9 +197,9 @@ export default function BillsScreen() {
                               </View>
                             </View>
                             <View style={{ alignItems: 'flex-end', gap: 4 }}>
-                              <Figure size="h2">{formatAud(b.amountDue || b.totalAmount)}</Figure>
+                              <Figure size="h2">{money.fmt(b.amountDue || b.totalAmount)}</Figure>
                               {Number(b.amountPaid) > 0 && b.status !== 'paid' ? (
-                                <Small>{formatAud(b.amountPaid)} paid</Small>
+                                <Small>{money.fmt(b.amountPaid)} paid</Small>
                               ) : null}
                               {b.status === 'paid' ? (
                                 <Chip tone="accent">Paid</Chip>
@@ -249,9 +251,9 @@ export default function BillsScreen() {
           value={amount}
           onChangeText={setAmount}
           keyboardType="decimal-pad"
-          prefix="$"
+          prefix={money.symbol}
           autoFocus
-          hint={paying ? `${formatAud(paying.amountDue)} outstanding` : undefined}
+          hint={paying ? `${money.fmt(paying.amountDue)} outstanding` : undefined}
         />
       </Sheet>
     </Screen>

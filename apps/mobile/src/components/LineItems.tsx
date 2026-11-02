@@ -7,7 +7,8 @@ import { AddButton, Choice, Field, Sheet } from '@/components/form';
 import { Raised } from '@/components/rich';
 import { Icon } from '@/components/Icon';
 import { Body, ConfidenceDots, Divider, Figure, SectionHeader, Small } from '@/components/ui';
-import { formatAud, space, usePalette } from '@/theme';
+import { space, usePalette } from '@/theme';
+import { useMoney } from '@/lib/use-money';
 
 /**
  * The lines off the receipt, correctable by hand.
@@ -31,11 +32,11 @@ type Draft = {
 
 const blank: Draft = { description: '', quantity: '1', amount: '', gstFree: false };
 
-function toDraft(line: DocumentLine): Draft {
+function toDraft(line: DocumentLine, decimals: number): Draft {
   return {
     description: line.description,
     quantity: String(line.quantity),
-    amount: Number(line.amount).toFixed(2),
+    amount: Number(line.amount).toFixed(decimals),
     gstFree: line.gstFree,
   };
 }
@@ -43,15 +44,19 @@ function toDraft(line: DocumentLine): Draft {
 export function LineItems({
   lines,
   category,
+  currency,
   editable,
   onChange,
 }: {
   lines: DocumentLine[];
   category: string;
+  /** The document's own currency; the workspace's when omitted. */
+  currency?: string;
   editable: boolean;
   /** Called with the complete new set of lines. */
   onChange: (lines: DocumentLine[]) => void | Promise<void>;
 }) {
+  const money = useMoney(currency);
   const p = usePalette();
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [adding, setAdding] = useState(false);
@@ -113,11 +118,11 @@ export function LineItems({
               {i > 0 ? <Divider style={{ marginHorizontal: space.lg }} /> : null}
               <Pressable
                 accessibilityRole={editable ? 'button' : 'text'}
-                accessibilityLabel={`${l.description}, ${formatAud(l.amount)}`}
+                accessibilityLabel={`${l.description}, ${money.fmt(l.amount)}`}
                 onPress={
                   editable
                     ? () => {
-                        setDraft(toDraft(l));
+                        setDraft(toDraft(l, money.decimals));
                         setEditingIndex(i);
                       }
                     : undefined
@@ -137,7 +142,7 @@ export function LineItems({
                   </Body>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
                     <Small>
-                      {l.quantity > 1 ? `${l.quantity} × ${formatAud(l.unitPrice)}` : 'Qty 1'}
+                      {l.quantity > 1 ? `${l.quantity} × ${money.fmt(l.unitPrice)}` : 'Qty 1'}
                     </Small>
                     {l.gstFree ? (
                       <Small muted={false} style={{ color: p.accentText, fontWeight: '600' }}>
@@ -147,7 +152,7 @@ export function LineItems({
                     <ConfidenceDots value={l.confidence} />
                   </View>
                 </View>
-                <Figure size="h2">{formatAud(l.amount)}</Figure>
+                <Figure size="h2">{money.fmt(l.amount)}</Figure>
                 {editable ? <Icon name="chevronRight" size={17} color={p.inkFaint} /> : null}
               </Pressable>
             </View>
@@ -187,7 +192,7 @@ export function LineItems({
           void existing;
         }}
       >
-        <LineFields draft={draft} setDraft={setDraft} />
+        <LineFields draft={draft} setDraft={setDraft} symbol={money.symbol} />
         <Pressable
           accessibilityRole="button"
           onPress={() => {
@@ -216,7 +221,7 @@ export function LineItems({
         }}
         onSubmit={() => commit([...lines, build(draft, lines.length + 1, 1)])}
       >
-        <LineFields draft={draft} setDraft={setDraft} />
+        <LineFields draft={draft} setDraft={setDraft} symbol={money.symbol} />
       </Sheet>
     </View>
   );
@@ -225,9 +230,11 @@ export function LineItems({
 function LineFields({
   draft,
   setDraft,
+  symbol,
 }: {
   draft: Draft;
   setDraft: (d: Draft) => void;
+  symbol: string;
 }) {
   return (
     <>
@@ -253,7 +260,7 @@ function LineFields({
             value={draft.amount}
             onChangeText={(amount) => setDraft({ ...draft, amount })}
             keyboardType="decimal-pad"
-            prefix="$"
+            prefix={symbol}
             hint="Including GST, as printed"
           />
         </View>

@@ -8,7 +8,8 @@ import { Empty, Field, Loading, Sheet, StatRow } from '@/components/form';
 import { Raised } from '@/components/rich';
 import { Body, Button, Chip, Divider, Figure, Label, Screen, Small } from '@/components/ui';
 import { BUSINESS_FEATURES_ENABLED } from '@/config';
-import { formatAud, formatShortDate, space, usePalette } from '@/theme';
+import { formatShortDate, space, usePalette } from '@/theme';
+import { useMoney } from '@/lib/use-money';
 
 /**
  * Stock take: count what is actually on the shelf.
@@ -19,6 +20,7 @@ import { formatAud, formatShortDate, space, usePalette } from '@/theme';
  * the information a stock take exists to produce.
  */
 export default function StockTakeScreen() {
+  const money = useMoney();
   // Business-only. Personal-only hides this from every nav path; this covers
   // a direct URL on the web build, where a route always resolves.
   if (!BUSINESS_FEATURES_ENABLED) return <Redirect href="/" />;
@@ -79,7 +81,7 @@ export default function StockTakeScreen() {
                 stats={[
                   {
                     label: 'Stock at cost',
-                    value: formatAud(value.toFixed(4), { cents: false }),
+                    value: money.fmt(value.toFixed(4), { cents: false }),
                     hint: `${stocked.length} stocked items`,
                   },
                   {

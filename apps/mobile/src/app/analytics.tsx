@@ -8,7 +8,8 @@ import { api, type AnalyticsRange, type AnalyticsSummary } from '@/api';
 import { BarSeries, CategoryBars, CategoryRing, RingLegend } from '@/components/charts';
 import { Raised, Tile } from '@/components/rich';
 import { Body, Divider, Figure, Label, Screen, SectionHeader, Small } from '@/components/ui';
-import { formatAud, formatShortDate, shadow, space, type, usePalette, useTheme } from '@/theme';
+import { formatShortDate, shadow, space, type, usePalette, useTheme } from '@/theme';
+import { useMoney } from '@/lib/use-money';
 import { WorkspaceSwitch, useWorkspace } from '@/workspace';
 
 /**
@@ -31,6 +32,7 @@ const RANGES: Array<{ key: AnalyticsRange; label: string }> = [
 ];
 
 export default function AnalyticsScreen() {
+  const money = useMoney();
   const p = usePalette();
   const insets = useSafeAreaInsets();
   const { workspace, isBusiness } = useWorkspace();
@@ -79,7 +81,7 @@ export default function AnalyticsScreen() {
             <Raised style={{ gap: space.md }}>
               <View style={{ gap: 2 }}>
                 <Label>{point ? point.label : data.rangeLabel}</Label>
-                <Figure size="display">{formatAud(point ? point.value : data.total)}</Figure>
+                <Figure size="display">{money.fmt(point ? point.value : data.total)}</Figure>
                 {point ? (
                   <Small>
                     {point.partial ? 'Still in progress · ' : ''}Tap the bar again to clear
@@ -91,7 +93,7 @@ export default function AnalyticsScreen() {
                     <Small muted={false} style={{ color: up ? p.risk : p.accent, fontWeight: '700' }}>
                       {up ? '▲' : '▼'} {Math.abs(Math.round(change * 100))}%
                     </Small>
-                    {`  vs ${formatAud(data.previousTotal, { cents: false })} the period before`}
+                    {`  vs ${money.fmt(data.previousTotal, { cents: false })} the period before`}
                   </Small>
                 )}
               </View>
@@ -103,7 +105,7 @@ export default function AnalyticsScreen() {
               <View style={{ flexDirection: 'row', gap: space.lg }}>
                 <View style={{ flex: 1, gap: 2 }}>
                   <Label>Average</Label>
-                  <Figure size="h2">{formatAud(data.average, { cents: false })}</Figure>
+                  <Figure size="h2">{money.fmt(data.average, { cents: false })}</Figure>
                   <Small>per {range === 'month' ? 'week' : 'month'}</Small>
                 </View>
                 <View style={{ flex: 1, gap: 2 }}>
@@ -122,7 +124,7 @@ export default function AnalyticsScreen() {
                   <CategoryRing
                     parts={data.byCategory}
                     centreLabel="Total"
-                    centreValue={formatAud(data.total, { cents: false })}
+                    centreValue={money.fmt(data.total, { cents: false })}
                   />
                   <RingLegend parts={data.byCategory} />
                 </View>
@@ -158,7 +160,7 @@ export default function AnalyticsScreen() {
                           {m.count} visit{m.count === 1 ? '' : 's'}
                         </Small>
                       </View>
-                      <Figure size="h2">{formatAud(m.total)}</Figure>
+                      <Figure size="h2">{money.fmt(m.total)}</Figure>
                     </View>
                   </View>
                 ))}
@@ -174,7 +176,7 @@ export default function AnalyticsScreen() {
                   <Body strong numberOfLines={1} style={{ flex: 1 }}>
                     {data.largest.name}
                   </Body>
-                  <Figure size="h1">{formatAud(data.largest.amount)}</Figure>
+                  <Figure size="h1">{money.fmt(data.largest.amount)}</Figure>
                 </View>
                 <Small>{formatShortDate(data.largest.date)}</Small>
               </Raised>
@@ -187,13 +189,13 @@ export default function AnalyticsScreen() {
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
                   <Tile
                     label="Claimable"
-                    value={formatAud(data.gstClaimable)}
+                    value={money.fmt(data.gstClaimable)}
                     hint="Backed by a valid tax invoice"
                     tone="accent"
                   />
                   <Tile
                     label="At risk"
-                    value={formatAud(data.gstAtRisk)}
+                    value={money.fmt(data.gstAtRisk)}
                     hint="Missing something the ATO requires"
                     tone={Number(data.gstAtRisk) > 0 ? 'risk' : 'default'}
                   />

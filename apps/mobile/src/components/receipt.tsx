@@ -7,7 +7,8 @@ import { Icon } from '@/components/Icon';
 import type { DocumentView } from '@/api';
 import { Raised } from '@/components/rich';
 import { Body, Chip, SectionHeader, Small } from '@/components/ui';
-import { formatAbn, formatAud, formatShortDate, numeric, radius, space, type, usePalette } from '@/theme';
+import { formatAbn, formatShortDate, numeric, radius, space, type, usePalette } from '@/theme';
+import { useMoney } from '@/lib/use-money';
 
 /**
  * The original document, as proof.
@@ -26,6 +27,7 @@ import { formatAbn, formatAud, formatShortDate, numeric, radius, space, type, us
  */
 
 function Paper({ doc }: { doc: DocumentView }) {
+  const money = useMoney(doc.currency);
   const p = usePalette();
   const mono = {
     fontFamily: 'monospace' as const,
@@ -57,18 +59,18 @@ function Paper({ doc }: { doc: DocumentView }) {
             {l.description}
             {l.gstFree ? ' *' : ''}
           </Text>
-          <Text style={mono}>{formatAud(l.amount)}</Text>
+          <Text style={mono}>{money.fmt(l.amount)}</Text>
         </View>
       ))}
       <Text style={mono}>{'-'.repeat(34)}</Text>
 
       <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
         <Text style={[mono, { fontWeight: '700' }]}>TOTAL</Text>
-        <Text style={[mono, { fontWeight: '700' }]}>{formatAud(doc.payableAmount)}</Text>
+        <Text style={[mono, { fontWeight: '700' }]}>{money.fmt(doc.payableAmount)}</Text>
       </View>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
         <Text style={mono}>GST included</Text>
-        <Text style={mono}>{formatAud(doc.taxAmount)}</Text>
+        <Text style={mono}>{money.fmt(doc.taxAmount)}</Text>
       </View>
       {doc.lines.some((l) => l.gstFree) ? (
         <Text style={[mono, { marginTop: 6 }]}>* GST-free item</Text>
@@ -385,6 +387,7 @@ function ModalButton({
 
 /** The one-line verdict on whether the lines and the total agree. */
 export function BalanceNote({ doc }: { doc: DocumentView }) {
+  const money = useMoney(doc.currency);
   const p = usePalette();
   const sum = doc.lines.reduce((a, l) => a + Number(l.amount), 0);
   const difference = Number(doc.payableAmount) - sum;
@@ -405,13 +408,13 @@ export function BalanceNote({ doc }: { doc: DocumentView }) {
       <Icon name={balanced ? 'check' : 'alert'} size={16} color={balanced ? p.good : p.warn} />
       <Body style={{ flex: 1, color: balanced ? p.goodInk : p.warnInk }}>
         {balanced
-          ? `${doc.lines.length} line${doc.lines.length === 1 ? '' : 's'} adding to ${formatAud(doc.payableAmount)}`
-          : `Lines are ${formatAud(Math.abs(difference).toFixed(4))} ${
+          ? `${doc.lines.length} line${doc.lines.length === 1 ? '' : 's'} adding to ${money.fmt(doc.payableAmount)}`
+          : `Lines are ${money.fmt(Math.abs(difference).toFixed(4))} ${
               difference > 0 ? 'short of' : 'over'
-            } the ${formatAud(doc.payableAmount)} total`}
+            } the ${money.fmt(doc.payableAmount)} total`}
       </Body>
       <Text style={[type.small, numeric, { color: balanced ? p.goodInk : p.warnInk, fontWeight: '700' }]}>
-        {formatAud(sum.toFixed(4))}
+        {money.fmt(sum.toFixed(4))}
       </Text>
     </View>
   );

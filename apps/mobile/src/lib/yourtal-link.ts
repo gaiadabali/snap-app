@@ -135,6 +135,12 @@ export const LINK_COPY = {
   pausedBody: "Receipts you scan now won't earn YourTal points. They start again once Snap Apps tops up.",
   rowPaused: 'Paused while points were topped up',
   pausedHint: "These were scanned while receipt points were paused. They won't earn later.",
+  identityVerifyEmail: 'Verify your email in YourTal to earn points for receipts.',
+  identityVerifyEmailLink: 'Open YourTal to verify',
+  identityPermanentEmail: 'Use a permanent email address in YourTal to earn points.',
+  identityNoChange: "YourTal can't change an email address yet.",
+  rowIdentity: 'Not earned: YourTal identity check',
+  identityHint: "These receipts won't earn later.",
   refusedHint: "YourTal's daily limit or funding stopped these.",
 } as const;
 
@@ -159,9 +165,27 @@ export function pointsSummary(
 }
 
 /**
- * Refusals other than the paused ones: the server's `refused` counts the
- * paused receipts too, and they have their own row.
+ * Refusals other than the paused and identity-check ones: the server's
+ * `refused` counts those too, and they have their own rows.
  */
-export function otherRefused(receipts: { refused: number; pausedRefused?: number }): number {
-  return Math.max(0, receipts.refused - (receipts.pausedRefused ?? 0));
+export function otherRefused(receipts: { refused: number; pausedRefused?: number; identityRefused?: number }): number {
+  return Math.max(0, receipts.refused - (receipts.pausedRefused ?? 0) - (receipts.identityRefused ?? 0));
+}
+
+/**
+ * What the person must do about YourTal's identity check (5.9.c), from
+ * `identityCheck.missing`: sentences, and whether to offer the link to
+ * YourTal's Me page (only for `verify_email`: YourTal has no change-email
+ * flow yet, so `use_permanent_email` gets no link). Empty when not required.
+ */
+export function identityNotice(
+  check: { required: boolean; missing: string[] } | undefined,
+): { lines: string[]; showLink: boolean } {
+  if (!check?.required) return { lines: [], showLink: false };
+  const lines: string[] = [];
+  const verify = check.missing.includes('verify_email');
+  const permanent = check.missing.includes('use_permanent_email');
+  if (verify) lines.push(LINK_COPY.identityVerifyEmail);
+  if (permanent) lines.push(LINK_COPY.identityPermanentEmail, LINK_COPY.identityNoChange);
+  return { lines, showLink: verify };
 }

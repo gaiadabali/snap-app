@@ -8,9 +8,11 @@ import { AddButton, Field, Sheet } from '@/components/form';
 import { GradientHero, HeroBody, HeroFigure, HeroLabel, Raised } from '@/components/rich';
 import { Body, Chip, Figure, Label, Screen, Small } from '@/components/ui';
 import { BUSINESS_FEATURES_ENABLED } from '@/config';
-import { formatAbn, formatAud, space, usePalette } from '@/theme';
+import { formatAbn, space, usePalette } from '@/theme';
+import { useMoney } from '@/lib/use-money';
 
 export default function PartiesScreen() {
+  const money = useMoney();
   // Business-only. Personal-only hides this from every nav path; this covers
   // a direct URL on the web build, where a route always resolves.
   if (!BUSINESS_FEATURES_ENABLED) return <Redirect href="/" />;
@@ -54,7 +56,7 @@ export default function PartiesScreen() {
               <View style={{ gap: space.xs }}>
                 <HeroLabel>{kind === 'customer' ? 'Owed by customers' : 'Suppliers on file'}</HeroLabel>
                 <HeroFigure>
-                  {kind === 'customer' ? formatAud(owed.toFixed(2)) : String(all.length)}
+                  {kind === 'customer' ? money.fmt(owed.toFixed(2)) : String(all.length)}
                 </HeroFigure>
                 <HeroBody>
                   {all.length} {kind}
@@ -111,7 +113,7 @@ export default function PartiesScreen() {
               <View style={{ alignItems: 'flex-end', gap: 2 }}>
                 {Number(item.openBalance) > 0 ? (
                   <>
-                    <Figure size="h2">{formatAud(item.openBalance)}</Figure>
+                    <Figure size="h2">{money.fmt(item.openBalance)}</Figure>
                     <Small>outstanding</Small>
                   </>
                 ) : (

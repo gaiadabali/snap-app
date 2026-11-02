@@ -1,4 +1,6 @@
-import { claimJobs, completeJob, failJob } from '@snap/db';
+import { randomUUID } from 'node:crypto';
+
+import { claimJobs, completeJob, failJob, renewJobLock } from '@snap/db';
 import type { TaxRules } from '@snap/tax-rules';
 import { sql } from 'drizzle-orm';
 
@@ -17,8 +19,10 @@ import {
   type PageImage,
 } from './extraction/provider.js';
 import { extractionPromptFor } from './extraction/prompt.js';
+import { toModelImages } from './extraction/model-image.js';
 import { runExtraction } from './extraction/run.js';
 import { runShadowOcr } from './extraction/shadow.js';
+import type { Extraction } from './extraction/types.js';
 import {
   OllamaCloudStatementProvider,
   OpenRouterStatementProvider,
@@ -99,7 +103,7 @@ function requireWorkerUser(): string {
   return raw;
 }
 
-function providerFor(model: string, rules: TaxRules | null): ExtractionProvider {
+function providerFor(model: string, rules: TaxRules | null, timeoutMs: number): ExtractionProvider {
   // The prompt is part of the jurisdiction, not a constant. A workspace with
   // no rule set gets the Australian prompt, which is what it has always got.
   const prompt = rules
@@ -126,9 +130,9 @@ function providerFor(model: string, rules: TaxRules | null): ExtractionProvider 
     case 'bedrock':
       return new BedrockClaudeProvider(model);
     case 'openrouter':
-      return new OpenRouterProvider(openRouterModelId(model), prompt);
+      return new OpenRouterProvider(openRouterModelId(model), prompt, undefined, timeoutMs);
     default:
-      return new OllamaCloudProvider(model, undefined, undefined, prompt);
+      return new OllamaCloudProvider(model, undefined, undefined, prompt, timeoutMs);
   }
 }
 
@@ -152,9 +156,9 @@ function statementProviderFor(model: string): StatementChunkProvider {
     throw new Error('bedrock-claude is not wired up yet for statement reading either — see provider.ts.');
   }
   if (config().EXTRACTION_PROVIDER === 'openrouter') {
-    return new OpenRouterStatementProvider(openRouterModelId(model));
+    return new OpenRouterStatementProvider(openRouterModelId(model), undefined, config().STATEMENT_CALL_TIMEOUT_MS);
   }
-  return new OllamaCloudStatementProvider(model);
+  return new OllamaCloudStatementProvider(model, undefined, undefined, undefined, config().STATEMENT_CALL_TIMEOUT_MS);
 }
 
 type Job = { id: string; tenantId: string | null; payload: unknown; attempts?: number; maxAttempts?: number };
@@ -375,8 +379,10 @@ async function handle(job: Job): Promise<HandleOutcome> {
     throw new Error(lastStatementError);
   }
 
-  // Every stored page, in page order. Never a normalised derivative: the
-  // model reads what the ATO would accept as the record.
+  // Every stored page, in page order. The stored bytes are the record the ATO
+  // would accept and are never modified; the model is sent a smaller
+  // in-memory copy of each image below (`toModelImages`), the shadow OCR keeps
+  // reading these stored pages.
   //
   // Read as the worker, not as a superuser: the worker enters the job's
   // tenant through `withWorkerTenant` (bound to its database role, not to a
@@ -474,8 +480,39 @@ async function handle(job: Job): Promise<HandleOutcome> {
   // temperature 0 returns the same thing again. Only a different reader
   // changes the answer.
   let lastError = 'no models tried';
+  // Every failed model's reason, kept so a later success can say what the
+  // earlier models tripped on. Console only: storing them is plan 7.2.b, and
+  // a redeploy used to take the logs, and the reasons, with it.
+  const earlierFailures: string[] = [];
+
+  // What the model is shown: a smaller copy of each image, made once per job
+  // and shared by every model in the chain. The stored pages stay as they are.
+  const modelCopy = await toModelImages(pages);
+  console.log(`job ${job.id}: model images — ${modelCopy.summary}`);
+
+  const walkStarted = Date.now();
+  const callLimitMs = config().EXTRACTION_CALL_TIMEOUT_MS;
+  const budgetMs = config().EXTRACTION_TOTAL_BUDGET_MS;
   for (const spec of models) {
-    const outcome = await runExtraction(providerFor(spec.id, taxRules), pages, new Date(), taxRules, storedGrounding);
+    // The whole walk has a budget too, or four slow models still add up to
+    // minutes. A call is cut to the time left, and no call is started with
+    // under 10 s left: it could not finish a reading anyway.
+    const remainingMs = budgetMs - (Date.now() - walkStarted);
+    if (earlierFailures.length > 0 && remainingMs < 10_000) {
+      lastError =
+        `${earlierFailures[earlierFailures.length - 1]} ` +
+        `(model time budget of ${Math.round(budgetMs / 1000)} s spent, not trying ${spec.id})`;
+      console.warn(`job ${job.id}: ${lastError}`);
+      break;
+    }
+    const outcome = await runExtraction(
+      providerFor(spec.id, taxRules, Math.min(callLimitMs, Math.max(remainingMs, 10_000))),
+      pages,
+      new Date(),
+      taxRules,
+      storedGrounding,
+      modelCopy.pages,
+    );
 
     if (outcome.ok) {
       const { run } = outcome;
@@ -502,19 +539,24 @@ async function handle(job: Job): Promise<HandleOutcome> {
           ` (${run.result.findings.length} findings, ${run.meta.latencyMs} ms)`,
       );
 
+      if (earlierFailures.length > 0) {
+        console.warn(
+          `job ${job.id}: ${spec.id} succeeded after ${earlierFailures.length} earlier failure(s): ` +
+            earlierFailures.join(' | '),
+        );
+      }
+
       // Phase 1b, shadow only (docs/contracts/phase1b-shadow-stage.md §3):
-      // runs the OCR stage over the same `capture_pages` just read above and
-      // records what it produced, then grounds the model's own extraction
-      // fields against it (docs/contracts/phase1c-grounding.md §3). Passed as
-      // `run.result.extraction` — the model's raw output — and NOT re-read
-      // from `documents`/`parties` afterwards: see `shadow.ts`'s
-      // `fieldsToGround` for why that distinction matters. Awaited so a
-      // short-lived `runOnce` process does not exit mid-attempt, but it is
-      // its own safety boundary — see `shadow.ts`'s header — so it can never
-      // fail this job or touch the extraction result just saved. A no-op,
-      // with zero cost beyond the config read, whenever `DOCAI_SIDECAR_URL`
-      // is unset.
-      await runShadowOcr(WORKER, job.tenantId, captureId, run.result.extraction, pageRows);
+      // the OCR stage records what it read and grounds the model's own
+      // extraction fields against it (docs/contracts/phase1c-grounding.md §3).
+      // It takes 8 to 36 s on a CPU, and it used to run right here, so the
+      // NEXT scan waited behind it. It is now its own `shadow_ocr` job, run by
+      // a separate loop (`runShadowOnce`); this only queues it. The payload is
+      // `run.result.extraction` — the model's raw output, NOT re-read from
+      // `documents`/`parties` afterwards: see `shadow.ts`'s `fieldsToGround`.
+      // A failure to queue is logged and swallowed, as the stage itself can
+      // never fail this job (see `shadow.ts`'s header).
+      await enqueueShadowOcr(job.tenantId, captureId, run.result.extraction);
 
       // OD-12 (docs/ON-DEVICE.md §11 Stage 2): compares whatever device
       // reading has already arrived for this capture against the model's own
@@ -526,6 +568,7 @@ async function handle(job: Job): Promise<HandleOutcome> {
     }
 
     lastError = `${spec.id}: ${outcome.failure.error}`;
+    earlierFailures.push(lastError.slice(0, 300));
 
     // Truncation ends the walk. Escalating spends a model call to reproduce
     // our own output cap, three more times, and the last one is the most
@@ -551,6 +594,40 @@ async function handle(job: Job): Promise<HandleOutcome> {
   throw new Error(lastError);
 }
 
+const SHADOW_JOB_KIND = 'shadow_ocr';
+
+/** Queues the shadow OCR pass for a capture just extracted. Never throws. */
+async function enqueueShadowOcr(tenantId: string, captureId: string, extraction: Extraction): Promise<void> {
+  try {
+    await enterTenantAsWorker(WORKER, tenantId, async (tx) => {
+      await tx.execute(sql`
+        insert into jobs (id, tenant_id, kind, payload, max_attempts)
+        values (${randomUUID()}, ${tenantId}, ${SHADOW_JOB_KIND},
+                ${JSON.stringify({ captureId, extraction })}::jsonb, 2)
+      `);
+    });
+  } catch (error) {
+    console.warn(
+      `capture ${captureId}: could not queue the shadow OCR pass, skipping it — ` +
+        (error instanceof Error ? error.message : String(error)),
+    );
+  }
+}
+
+/**
+ * Runs one queued shadow pass. `runShadowOcr` never throws and no-ops without
+ * `DOCAI_SIDECAR_URL`; the only thing that can fail here is reading the pages.
+ */
+async function handleShadow(job: Job): Promise<void> {
+  const payload = job.payload as { captureId?: string; extraction?: Extraction } | null;
+  if (!payload?.captureId || !payload.extraction || !job.tenantId) {
+    console.error(`job ${job.id}: malformed shadow_ocr payload; skipping`);
+    return;
+  }
+  const pageRows = await listCapturePages(WORKER, job.tenantId, payload.captureId);
+  await runShadowOcr(WORKER, job.tenantId, payload.captureId, payload.extraction, pageRows);
+}
+
 /**
  * Gives the scan's credit back when its capture ended for good with no
  * document (group plan 7.1.c, founder decision 0.11.c). `refundScanCredit`
@@ -572,11 +649,40 @@ async function refundUnread(job: Job, reason: RefundReason): Promise<void> {
   }
 }
 
+/**
+ * How long a claim stands without a heartbeat before another worker may take
+ * the job. Short, so a job stranded by a killed worker is picked up within
+ * about a minute (it used to be ten); safe because a live worker renews its
+ * lock every `HEARTBEAT_MS`, so a slow job is never taken twice.
+ */
+export const JOB_LOCK_TIMEOUT_S = 90;
+export const HEARTBEAT_MS = 20_000;
+
+/** Renews a job's lock every `everyMs` while `fn` runs, and stops when it ends. */
+export async function withHeartbeat<T>(
+  jobId: string,
+  workerId: string,
+  fn: () => Promise<T>,
+  everyMs = HEARTBEAT_MS,
+): Promise<T> {
+  const timer = setInterval(() => {
+    renewJobLock(getDb(), jobId, workerId).catch((error) => {
+      console.warn(`job ${jobId}: heartbeat failed:`, error instanceof Error ? error.message : error);
+    });
+  }, everyMs);
+  try {
+    return await fn();
+  } finally {
+    clearInterval(timer);
+  }
+}
+
 export async function runOnce(limit = 1): Promise<number> {
-  const jobs = await claimJobs(getDb(), 'extract', `worker-${process.pid}`, limit);
+  const workerId = `worker-${process.pid}`;
+  const jobs = await claimJobs(getDb(), 'extract', workerId, limit, JOB_LOCK_TIMEOUT_S);
   for (const job of jobs) {
     try {
-      const outcome = await handle(job);
+      const outcome = await withHeartbeat(job.id, workerId, () => handle(job));
       if (outcome === 'not_extracted') await refundUnread(job, 'not_extracted');
       // Claiming is not completing. A job left claimed is a job that either
       // never runs again or runs twice, depending on the lock timeout.
@@ -604,6 +710,27 @@ export async function runOnce(limit = 1): Promise<number> {
   return jobs.length;
 }
 
+/**
+ * Runs queued shadow OCR passes, one at a time, beside the extraction loop and
+ * never inside it: the pass is CPU work in the docai sidecar, so a scan
+ * arriving while one runs is extracted at once instead of waiting behind it.
+ */
+export async function runShadowOnce(): Promise<number> {
+  const workerId = `worker-${process.pid}-shadow`;
+  const jobs = await claimJobs(getDb(), SHADOW_JOB_KIND, workerId, 1, JOB_LOCK_TIMEOUT_S);
+  for (const job of jobs) {
+    try {
+      await withHeartbeat(job.id, workerId, () => handleShadow(job));
+      await completeJob(getDb(), job.id);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      await failJob(getDb(), job.id, message);
+      console.error(`job ${job.id} (shadow_ocr) failed: ${message}`);
+    }
+  }
+  return jobs.length;
+}
+
 /** Polls until stopped. Long enough between empty polls not to spin. */
 export async function runForever(intervalMs = 2000): Promise<void> {
   let stopping = false;
@@ -623,6 +750,17 @@ export async function runForever(intervalMs = 2000): Promise<void> {
     console.error('yourtal outbox loop stopped:', error instanceof Error ? error.message : error);
   });
 
+  const shadow = (async () => {
+    while (!stopping) {
+      try {
+        if ((await runShadowOnce()) === 0) await new Promise((r) => setTimeout(r, intervalMs));
+      } catch (error) {
+        console.error('shadow job failed:', error instanceof Error ? error.message : error);
+        await new Promise((r) => setTimeout(r, intervalMs));
+      }
+    }
+  })();
+
   while (!stopping) {
     try {
       const done = await runOnce(1);
@@ -634,4 +772,9 @@ export async function runForever(intervalMs = 2000): Promise<void> {
     }
   }
   await outbox;
+  // A shadow pass can run up to DOCAI_SHADOW_TIMEOUT_MS, longer than the stop
+  // grace. Give it a short while, then leave: its lock goes stale once the
+  // heartbeat stops and it is re-queued, which is harmless (a rerun rewrites
+  // the same layout and grounding).
+  await Promise.race([shadow, new Promise((r) => setTimeout(r, 30_000))]);
 }

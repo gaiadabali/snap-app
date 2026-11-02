@@ -14,8 +14,9 @@ const STATUS: YourtalLinkStatus = {
   region: null,
   linkedAt: null,
   brokenReason: null,
-  receipts: { pending: 0, rewarded: 0, refused: 0, pausedRefused: 0, skippedDuplicate: 0, skippedFree: 0 },
+  receipts: { pending: 0, rewarded: 0, refused: 0, pausedRefused: 0, identityRefused: 0, skippedDuplicate: 0, skippedFree: 0 },
   pointsReported: 0,
+  identityCheck: { required: false, missing: [] },
 };
 
 function html(over: Partial<YourtalLinkViewProps> & { status?: Partial<YourtalLinkStatus> } = {}): string {
@@ -78,7 +79,7 @@ describe('YourtalLinkView: linked', () => {
     state: 'linked',
     region: 'AU',
     linkedAt: '2026-10-20T03:00:00.000Z',
-    receipts: { pending: 2, rewarded: 12, refused: 0, pausedRefused: 0, skippedDuplicate: 3, skippedFree: 4 },
+    receipts: { pending: 2, rewarded: 12, refused: 0, pausedRefused: 0, identityRefused: 0, skippedDuplicate: 3, skippedFree: 4 },
     pointsReported: 120,
   };
 
@@ -130,6 +131,51 @@ describe('YourtalLinkView: linked', () => {
       const t = text(html({ status: { ...linked, receiptPoints } }));
       expect(t).not.toContain('Receipt points are paused');
       expect(t).not.toContain('Paused while points were topped up');
+    }
+  });
+
+  it('shows the identity notice first, with the link to YourTal, for verify_email', () => {
+    const s = {
+      ...linked,
+      receipts: { ...linked.receipts!, refused: 2, identityRefused: 2 },
+      receiptPoints: { state: 'paused' as const },
+      identityCheck: { required: true, missing: ['verify_email'] },
+    };
+    const t = text(html({ status: s }));
+    expect(t).toContain('Verify your email in YourTal to earn points for receipts.');
+    expect(t).not.toContain('permanent email');
+    expect(t.indexOf('Verify your email in YourTal')).toBeLessThan(t.indexOf('Receipt points are paused.'));
+    expect(t.indexOf('Verify your email in YourTal')).toBeLessThan(t.indexOf('Linked to YourTal'));
+    expect(t).toContain('Open YourTal to verify');
+    expect(t).toMatch(/Not earned: YourTal identity check 2/);
+    expect(t).toContain("These receipts won't earn later.");
+    // Counted in their own row, not again as "Not paid by YourTal".
+    expect(t).not.toContain('Not paid by YourTal');
+  });
+
+  it('says to use a permanent email, with no link, for use_permanent_email', () => {
+    const s = { ...linked, identityCheck: { required: true, missing: ['use_permanent_email'] } };
+    const t = text(html({ status: s }));
+    expect(t).toContain('Use a permanent email address in YourTal to earn points.');
+    expect(t).toContain("YourTal can't change an email address yet.");
+    expect(t).not.toContain('Verify your email');
+    expect(t).not.toContain('Open YourTal to verify');
+  });
+
+  it('shows both lines when both are missing', () => {
+    const s = { ...linked, identityCheck: { required: true, missing: ['verify_email', 'use_permanent_email'] } };
+    const t = text(html({ status: s }));
+    expect(t).toContain('Verify your email in YourTal to earn points for receipts.');
+    expect(t).toContain('Use a permanent email address in YourTal to earn points.');
+    expect(t).toContain('Open YourTal to verify');
+  });
+
+  it('shows no identity notice or row when the check is not required', () => {
+    for (const identityCheck of [{ required: false, missing: [] }, undefined]) {
+      const t = text(html({ status: { ...linked, identityCheck } as Partial<YourtalLinkStatus> }));
+      expect(t).not.toContain('Verify your email');
+      expect(t).not.toContain('permanent email');
+      expect(t).not.toContain('Not earned: YourTal identity check');
     }
   });
 

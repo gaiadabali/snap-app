@@ -52,6 +52,7 @@ const FALLBACK: WorkspaceSummary = {
   role: 'owner',
   memberCount: 1,
   abn: null,
+  baseCurrency: 'AUD',
 };
 
 const WorkspaceContext = createContext<Ctx>({

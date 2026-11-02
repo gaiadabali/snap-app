@@ -26,6 +26,7 @@ import {
  *   200                                   final  sent / duplicate (duplicate is success)
  *   403 link_revoked, 400 unknown_link    final  link_broken: the link is marked broken,
  *                                                 and the rest queued under it cancelled
+ *   403 identity_check_required          final  refused, `missing` kept (see below)
  *   409 velocity_capped, insufficient_available, solvency_blocked, allocation_exhausted
  *                                         final  refused, logged
  *   network error, timeout, 5xx, 408      retry  same key, same bytes
@@ -106,6 +107,19 @@ export function classifyActionResponse(response: PartnerResponse): Disposition {
       final: true,
       outcome: { status: 'link_broken', ...last },
       brokenReason: code as 'link_revoked' | 'unknown_link',
+    };
+  }
+  if (status === 403 && code === 'identity_check_required') {
+    // FINAL, and never earned. The person has not passed YourTal's identity
+    // check (`verify_email` and/or `use_permanent_email`). YourTal paid nothing
+    // and does not record the refusal, so the finality lives HERE: this
+    // receipt's row stays `refused`, its report is never resent, and it does
+    // not earn even after the person passes the check (YourTal F126/F127: points
+    // are earned at the moment of the receipt, not retroactively). Only receipts
+    // scanned after they pass can earn.
+    return {
+      final: true,
+      outcome: { status: 'refused', ...last, missing: response.missing ?? [] },
     };
   }
   if (status === 409 && code !== null && LEDGER_REFUSALS.has(code)) {

@@ -32,7 +32,8 @@ import {
   SectionHeader,
   Small,
 } from '@/components/ui';
-import { formatAbn, formatAud, formatShortDate, radius, space, usePalette } from '@/theme';
+import { formatAbn, formatShortDate, radius, space, usePalette } from '@/theme';
+import { useMoney } from '@/lib/use-money';
 
 /** Plain-English explanation of each ATO failure, plus the fix. */
 const FAILURE_COPY: Record<string, { title: string; detail: string; fix: string }> = {
@@ -79,6 +80,8 @@ export default function DocumentScreen() {
 
 
   const [doc, setDoc] = useState<DocumentView | null>(null);
+  // The record carries its own currency; the workspace's is only the fallback while it loads.
+  const money = useMoney(doc?.currency);
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState<null | 'abn'>(null);
   const [draft, setDraft] = useState('');
@@ -332,6 +335,7 @@ export default function DocumentScreen() {
         <LineItems
           lines={doc.lines}
           category={doc.category}
+          currency={doc.currency}
           editable={canEdit && doc.reviewStatus !== 'reviewed'}
           onChange={async (lines: DocumentLine[]) => {
             const next = await api().updateLines(current.id, lines);
@@ -346,16 +350,16 @@ export default function DocumentScreen() {
           <View style={{ gap: space.md }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
               <Label>Total incl GST</Label>
-              <Figure size="h1">{formatAud(doc.payableAmount)}</Figure>
+              <Figure size="h1">{money.fmt(doc.payableAmount)}</Figure>
               {/* The most expensive number on the screen, and the one §6.3
                   calls the most expensive to get wrong. */}
             </View>
             <Divider />
-            <Field label="Excluding GST" value={formatAud(doc.taxExclusiveAmount)} />
+            <Field label="Excluding GST" value={money.fmt(doc.taxExclusiveAmount)} />
             {transitions ? (
               <ProvisionalNotice transition={transitions['header.payable_amount']} />
             ) : null}
-            <Field label="GST" value={formatAud(doc.taxAmount)} hint="Exactly 1/11 of the taxable amount" />
+            <Field label="GST" value={money.fmt(doc.taxAmount)} hint="Exactly 1/11 of the taxable amount" />
             {transitions ? (
               <ProvisionalNotice transition={transitions['header.tax_amount']} />
             ) : null}
@@ -375,11 +379,11 @@ export default function DocumentScreen() {
                   <Field
                     key={s.categoryCode}
                     label={s.categoryCode === 'Z' ? 'GST-free' : 'Taxable'}
-                    value={formatAud(s.inclusiveAmount)}
+                    value={money.fmt(s.inclusiveAmount)}
                     hint={
                       s.categoryCode === 'Z'
                         ? 'Fresh food and other GST-free items. No GST to claim on this portion.'
-                        : `Carries ${formatAud(s.taxAmount)} of GST`
+                        : `Carries ${money.fmt(s.taxAmount)} of GST`
                     }
                   />
                 ))}
@@ -387,7 +391,7 @@ export default function DocumentScreen() {
             ) : doc.gstFreeAmount ? (
               <Field
                 label="GST-free portion"
-                value={formatAud(doc.gstFreeAmount)}
+                value={money.fmt(doc.gstFreeAmount)}
                 hint="Fresh food and other GST-free items, separated from the taxable total"
               />
             ) : null}
@@ -406,7 +410,7 @@ export default function DocumentScreen() {
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Label style={{ color: p.risk }}>GST credit at risk</Label>
                 <Figure size="h2" tone="risk">
-                  {formatAud(doc.taxAmount)}
+                  {money.fmt(doc.taxAmount)}
                 </Figure>
               </View>
               {doc.belowTaxInvoiceThreshold ? (
@@ -441,7 +445,7 @@ export default function DocumentScreen() {
         ) : (
           <Notice tone="good" icon="check">
             <Text style={{ fontWeight: '700' }}>Valid tax invoice{'\n'}</Text>
-            Meets the ATO requirements, so the {formatAud(doc.taxAmount)} GST credit is claimable at
+            Meets the ATO requirements, so the {money.fmt(doc.taxAmount)} GST credit is claimable at
             label 1B.
           </Notice>
         )}

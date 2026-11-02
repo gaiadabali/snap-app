@@ -108,4 +108,4 @@ export function usePalette(): Palette {
 
 /* Formatters live in src/lib/format.ts (pure, testable) and are re-exported
    here so screens can keep importing everything display-related from '@/theme'. */
-export { formatAbn, formatAud, formatShortDate } from '@/lib/format';
+export { currencyDecimals, currencySymbol, formatAbn, formatAud, formatMoney, formatShortDate } from '@/lib/format';

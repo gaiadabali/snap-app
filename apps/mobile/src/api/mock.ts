@@ -340,8 +340,9 @@ const seedYourtalLink = (): YourtalLinkStatus => ({
   region: null,
   linkedAt: null,
   brokenReason: null,
-  receipts: { pending: 0, rewarded: 0, refused: 0, pausedRefused: 0, skippedDuplicate: 0, skippedFree: 0 },
+  receipts: { pending: 0, rewarded: 0, refused: 0, pausedRefused: 0, identityRefused: 0, skippedDuplicate: 0, skippedFree: 0 },
   pointsReported: 0,
+  identityCheck: { required: false, missing: [] },
 });
 let yourtalLink: YourtalLinkStatus = seedYourtalLink();
 
@@ -1391,6 +1392,8 @@ export class MockApi implements SnapApi {
         role: members.find((m) => m.workspaceId === w.id && m.userId === WHO)?.role ?? w.role,
         memberCount: members.filter((m) => m.workspaceId === w.id).length,
         abn: w.abn,
+        // The demo workspaces are all Australian.
+        baseCurrency: 'AUD',
       }));
   }
 
@@ -1412,7 +1415,7 @@ export class MockApi implements SnapApi {
         lastActiveAt: todayIso(),
       },
     ];
-    return { id, name, kind, role: 'owner', memberCount: 1, abn: null };
+    return { id, name, kind, role: 'owner', memberCount: 1, abn: null, baseCurrency: 'AUD' };
   }
 
   async getPermissions(workspaceId: string): Promise<Permissions> {
@@ -1872,7 +1875,7 @@ export class MockApi implements SnapApi {
     }
     const count = members.filter((m) => m.workspaceId === workspace.id).length;
     return {
-      workspace: { ...workspace, memberCount: count, role: 'member' },
+      workspace: { ...workspace, memberCount: count, role: 'member', baseCurrency: 'AUD' },
       role: 'member',
     };
   }

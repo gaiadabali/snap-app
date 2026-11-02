@@ -31,6 +31,7 @@ import {
   insertLink,
   latestLink,
   lastPausedRefusalAt,
+  latestIdentityRefusal,
   liveLink,
   markLinkRevoked,
   receiptReportCounts,
@@ -206,7 +207,11 @@ export class YourtalLinkController {
   }
 
   private async statusFor(userId: string): Promise<YourtalLinkStatus> {
-    const [link, counts] = await Promise.all([latestLink(userId), receiptReportCounts(userId)]);
+    const [link, counts, identityMissing] = await Promise.all([
+      latestLink(userId),
+      receiptReportCounts(userId),
+      latestIdentityRefusal(userId),
+    ]);
     const live = link && !link.revoked_at && !link.broken_at ? link : null;
     const broken = !live && link?.broken_at && !link.revoked_at ? link : null;
     const shown = live ?? broken;
@@ -222,11 +227,13 @@ export class YourtalLinkController {
         rewarded: counts.rewarded,
         refused: counts.refused,
         pausedRefused: counts.pausedRefused,
+        identityRefused: counts.identityRefused,
         skippedDuplicate: counts.skippedDuplicate,
         skippedFree: counts.skippedFree,
       },
       pointsReported: counts.pointsReported,
       ...(receiptPoints ? { receiptPoints } : {}),
+      identityCheck: { required: identityMissing !== null, missing: identityMissing ?? [] },
     };
   }
 
