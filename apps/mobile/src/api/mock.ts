@@ -1756,6 +1756,8 @@ export class MockApi implements SnapApi {
             workspace === 'business'
               ? (rows[0]?.engineRowId.split('.')[0] ?? null)
               : null,
+          engineRowId: null,
+          privateUsePercent: null,
           monthlyBudget: budgets.find((b) => b.category === name)?.monthly ?? null,
           documentCount: rows.length,
           totalSpend: sumDecimal(rows.map((d) => d.payableAmount)),
