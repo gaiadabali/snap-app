@@ -3,6 +3,7 @@ import { createServer, type IncomingMessage, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 
 import { verifyPartnerAuthorization } from '../yourtal/signing.js';
+import { FakeVoucherStore } from './fake-yourtal-vouchers.js';
 
 /**
  * A fake YourTal partner API, in-process, for tests (group plan 2.5.d).
@@ -18,6 +19,11 @@ import { verifyPartnerAuthorization } from '../yourtal/signing.js';
  *   - a link code works once; one YourTal user has one link per partner;
  *     teens are refused; a revoked link answers 403 link_revoked; a receipt
  *     pays once per externalRef.
+ *
+ * The ownership read `POST /api/partners/vouchers/owner` (group plan 2.8) answers
+ * from the voucher store shared with `fake-yourtal-vouchers.ts`: `held: true`
+ * only when the injected voucher's `ownerId` is the link's YourTal user and its
+ * listing is bound to this partner; otherwise the identical `{linkId, held:false}`.
  *
  * `inject` queues canned answers ahead of the normal logic, to simulate an
  * outage, a 429 or a ledger refusal on the next N calls.
@@ -57,6 +63,8 @@ export interface FakeYourtal {
   linkFor(yourtalUserId: string): { linkId: string; revoked: boolean } | undefined;
   /** externalRef -> linkId that was paid for it. */
   paid: Map<string, string>;
+  /** The voucher store behind the ownership read (pass the same one to `startFakeYourtalVouchers`). */
+  vouchers: FakeVoucherStore;
   inject(...answers: Canned[]): void;
   /**
    * Receipt package used up (F127): actions answer 409 `allocation_exhausted`
@@ -79,9 +87,10 @@ function readRaw(req: IncomingMessage): Promise<string> {
   });
 }
 
-export async function startFakeYourtal(options: { partnerId?: string; secret?: string } = {}): Promise<FakeYourtal> {
+export async function startFakeYourtal(options: { partnerId?: string; secret?: string; vouchers?: FakeVoucherStore } = {}): Promise<FakeYourtal> {
   const partnerId = options.partnerId ?? 'snap-app';
   const secret = options.secret ?? 'example-secret-not-real';
+  const vouchers = options.vouchers ?? new FakeVoucherStore();
 
   const codes = new Map<string, { user: FakeYourtalUser; used: boolean }>();
   const links = new Map<string, { linkId: string; user: FakeYourtalUser; revokedAt: string | null }>(); // by yourtal user id
@@ -152,6 +161,30 @@ export async function startFakeYourtal(options: { partnerId?: string; secret?: s
       return { status: 200, body: { granted: true, points: POINTS[link.user.region], linkId: link.linkId, duplicate: false } };
     }
 
+    if (path === '/api/partners/vouchers/owner') {
+      if (typeof body.linkId !== 'string' || typeof body.codeSha256 !== 'string' || !/^[0-9a-f]{64}$/.test(body.codeSha256)) {
+        return { status: 400, body: { code: 'validation', message: 'bad body' } };
+      }
+      const link = byLinkId.get(body.linkId);
+      if (!link) return { status: 400, body: { code: 'unknown_link', message: 'no such link' } };
+      if (link.revokedAt) return { status: 403, body: { code: 'link_revoked', message: 'link again' } };
+      const held = vouchers.holding(body.codeSha256);
+      if (!held || held.ownerId !== link.user.id || held.redeemPartnerId !== partnerId) {
+        return { status: 200, body: { linkId: link.linkId, held: false } };
+      }
+      return {
+        status: 200,
+        body: {
+          linkId: link.linkId,
+          held: true,
+          status: held.status,
+          faceValueMinor: held.faceMinor,
+          currency: held.currency,
+          expiresAt: held.expiresAt.toISOString(),
+        },
+      };
+    }
+
     if (path === '/api/partners/receipts/status') {
       const region = body.region;
       if (region !== 'AU' && region !== 'ID') return { status: 400, body: { code: 'validation', message: 'region' } };
@@ -218,6 +251,7 @@ export async function startFakeYourtal(options: { partnerId?: string; secret?: s
     secret,
     requests,
     paid,
+    vouchers,
     issueCode(user) {
       codeCounter += 1;
       // The real alphabet (no I, O, 0, 1); deterministic, not random-looking.
