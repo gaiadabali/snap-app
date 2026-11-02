@@ -22,7 +22,8 @@ import type {
   TaxPack,
 } from '@snap/api-contract';
 import { OCCUPATION_GROUPS, PROFILES } from '@snap/tax-engine';
-import { IsBoolean, IsIn, IsOptional, IsString } from 'class-validator';
+import { ATO_LABELS } from '@snap/api-contract/deduction-bundle';
+import { IsBoolean, IsIn, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 
 import {
   CurrentUser,
@@ -35,6 +36,8 @@ import {
 import { ValidBody } from '../common/valid-body.decorator.js';
 import { readPlan, readTenant, updateTenant } from '../repo.js';
 import { abnIsValid } from '../extraction/validators.js';
+import { occupationAllowed, occupationProblem } from './occupation.js';
+import { isAtoLabel } from './deduction-categories.js';
 import {
   createCategory,
   deleteCategory,
@@ -42,7 +45,7 @@ import {
   listConnections,
   readTaxPack,
   revokeConnection,
-  setCategoryActive,
+  updateCategory,
 } from './settings.repo.js';
 import { assembleTaxPack } from '../export/pack.js';
 import { issueDownloadToken } from '../tokens.js';
@@ -57,13 +60,21 @@ export class BusinessSettingsDto {
   @IsOptional() @IsString() occupationProfileId?: string | null;
 }
 
-export class CategoryActiveDto {
-  @IsBoolean() active!: boolean;
+/**
+ * `PATCH /v1/settings/categories/:name`. Every field is optional, at least one
+ * is required. `taxLabel: null` clears the mapping; the server picks the item
+ * (FTR item id) for a label, so the client never sends one.
+ */
+export class UpdateCategoryDto {
+  @IsOptional() @IsBoolean() active?: boolean;
+  @IsOptional() @IsIn([...ATO_LABELS]) taxLabel?: string | null;
+  @IsOptional() @IsInt() @Min(0) @Max(99) privateUsePercent?: number | null;
 }
 
 export class NewCategoryDto {
   @IsString() name!: string;
-  @IsOptional() @IsString() taxLabel?: string | null;
+  @IsOptional() @IsIn([...ATO_LABELS]) taxLabel?: string | null;
+  @IsOptional() @IsInt() @Min(0) @Max(99) privateUsePercent?: number | null;
 }
 
 /**
@@ -140,15 +151,8 @@ export class SettingsController {
     if (body.gstRegistered === true && tenant.kind === 'personal') {
       throw new BadRequestException('A household is not registered for GST.');
     }
-    if (
-      body.occupationProfileId != null &&
-      body.occupationProfileId !== '' &&
-      !PROFILES[body.occupationProfileId]
-    ) {
-      throw new BadRequestException(
-        `Unknown occupation. Expected one of: ${Object.keys(PROFILES).join(', ')}.`,
-      );
-    }
+    const occupationIssue = occupationProblem(tenant.kind, body.occupationProfileId);
+    if (occupationIssue) throw new BadRequestException(occupationIssue);
 
     await updateTenant(user.userId, tenantId, {
       name: body.name,
@@ -167,18 +171,29 @@ export class SettingsController {
   @ApiOperation({
     summary: 'The occupations an account can choose',
     description:
-      'Served rather than shipped in the app, so a rate year that adds a profile does not need a store release.',
+      'Served rather than shipped in the app, so a rate year that adds a profile does not need a store release. A personal workspace is not offered the sole trader.',
   })
-  occupations(): Array<{ group: string; profiles: Array<{ id: string; label: string }> }> {
-    return OCCUPATION_GROUPS.map((g) => ({
-      group: g.label,
-      // '--' is a spacer in the source data, and a group can name a profile
-      // that has no worksheet of its own (FIFO maps onto a base profile), so
-      // both are filtered rather than rendered as an empty row.
-      profiles: g.ids
-        .filter((id: string) => PROFILES[id] !== undefined)
-        .map((id: string) => ({ id, label: PROFILES[id]!.label })),
-    }));
+  async occupations(
+    @CurrentUser() user: AuthUser,
+    @WorkspaceId() tenantId: string,
+  ): Promise<Array<{ group: string; profiles: Array<{ id: string; label: string }> }>> {
+    const tenant = await readTenant(user.userId, tenantId);
+    if (!tenant) throw new NotFoundException('No such workspace.');
+    return (
+      OCCUPATION_GROUPS.map((g) => ({
+        group: g.label,
+        // '--' is a spacer in the source data, and a group can name a profile
+        // that has no worksheet of its own (FIFO maps onto a base profile), so
+        // both are filtered rather than rendered as an empty row. A personal
+        // workspace is also not offered the sole trader (`sole`): it is scoped
+        // to employee deductions and rentals.
+        profiles: g.ids
+          .filter((id: string) => PROFILES[id] !== undefined && occupationAllowed(tenant.kind, id))
+          .map((id: string) => ({ id, label: PROFILES[id]!.label })),
+      }))
+        // A group left with nothing to offer is not shown as an empty heading.
+        .filter((g) => g.profiles.length > 0)
+    );
   }
 
   @Get('settings/categories')
@@ -189,8 +204,11 @@ export class SettingsController {
   ): Promise<CategorySetting[]> {
     const rows = await listCategories(user.userId, tenantId);
     return rows.map((r) => ({
+      id: r.id,
       name: r.name,
       taxLabel: r.tax_label,
+      engineRowId: r.engine_row_id,
+      privateUsePercent: r.private_use_percent,
       monthlyBudget: r.monthly_budget,
       documentCount: r.document_count,
       totalSpend: r.total_spend,
@@ -209,23 +227,40 @@ export class SettingsController {
   ): Promise<CategorySetting[]> {
     const name = body.name.trim();
     if (name === '') throw new BadRequestException('A category needs a name.');
-    await createCategory(user.userId, tenantId, name, body.taxLabel?.trim() || null);
+    await createCategory(user.userId, tenantId, name, {
+      ...(body.taxLabel !== undefined ? { taxLabel: body.taxLabel } : {}),
+      ...(body.privateUsePercent !== undefined ? { privateUsePercent: body.privateUsePercent } : {}),
+    });
     return this.categories(user, tenantId);
   }
 
   @Patch('settings/categories/:name')
   @ApiOperation({
-    summary: 'Retire or restore a category',
+    summary: 'Retire or restore a category, or change its tax label and private share',
     description:
-      'Retiring stops it being offered for new documents and changes nothing about the ones that already carry it. Categories are never deleted: they are referenced by records with a five-year retention obligation.',
+      'Retiring stops it being offered for new documents and changes nothing about the ones that already carry it. Categories are never deleted: they are referenced by records with a five-year retention obligation. `taxLabel` (an ATO label, or null to clear) sets the Free Tax Returns item to the default item of that label unless the label is unchanged; `privateUsePercent` is the default private share, 0-99 or null.',
   })
   async toggleCategory(
     @CurrentUser() user: AuthUser,
     @WorkspaceId() tenantId: string,
     @Param('name') name: string,
-    @ValidBody(CategoryActiveDto) body: CategoryActiveDto,
+    @ValidBody(UpdateCategoryDto) body: UpdateCategoryDto,
   ): Promise<CategorySetting[]> {
-    const found = await setCategoryActive(user.userId, tenantId, name, body.active);
+    if (
+      body.active === undefined &&
+      body.taxLabel === undefined &&
+      body.privateUsePercent === undefined
+    ) {
+      throw new BadRequestException('Send active, taxLabel or privateUsePercent.');
+    }
+    if (body.taxLabel != null && !isAtoLabel(body.taxLabel)) {
+      throw new BadRequestException(`taxLabel must be one of ${ATO_LABELS.join(', ')}.`);
+    }
+    const found = await updateCategory(user.userId, tenantId, name, {
+      ...(body.active !== undefined ? { active: body.active } : {}),
+      ...(body.taxLabel !== undefined ? { taxLabel: body.taxLabel } : {}),
+      ...(body.privateUsePercent !== undefined ? { privateUsePercent: body.privateUsePercent } : {}),
+    });
     if (!found) throw new NotFoundException(`No category called ${name}.`);
     return this.categories(user, tenantId);
   }

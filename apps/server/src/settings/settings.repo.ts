@@ -4,6 +4,12 @@ import { withTenantAs, type Tx } from '@snap/db';
 import { sql } from 'drizzle-orm';
 
 import { getDb } from '../db.js';
+import {
+  PERSONAL_DEDUCTION_CATEGORIES,
+  defaultItemFor,
+  isAtoLabel,
+  isValidMapping,
+} from './deduction-categories.js';
 
 /**
  * Categories, and the defaults a new workspace starts with.
@@ -73,12 +79,30 @@ export async function seedDefaultCategories(
         on conflict (tenant_id, name) do nothing
       `);
     }
+    // A personal workspace also starts with the work and rental categories that
+    // feed a deduction bundle (docs/DEDUCTIONS.md). Migration 0040 backfills the
+    // same list into workspaces that existed before it.
+    if (kind === 'personal') {
+      for (const row of PERSONAL_DEDUCTION_CATEGORIES) {
+        if (!isValidMapping(row.label, row.itemId)) {
+          throw new Error(`Seed category "${row.name}" maps to ${row.label}/${row.itemId}, which is not an FTR item.`);
+        }
+        await t.execute(sql`
+          insert into categories (id, tenant_id, name, ato_deduction_code, engine_row_id, active)
+          values (${randomUUID()}, ${tenantId}, ${row.name}, ${row.label}, ${row.itemId}, ${row.active})
+          on conflict (tenant_id, name) do nothing
+        `);
+      }
+    }
   });
 }
 
 export type CategoryRow = {
+  id: string;
   name: string;
   tax_label: string | null;
+  engine_row_id: string | null;
+  private_use_percent: number | null;
   monthly_budget: string | null;
   document_count: number;
   total_spend: string;
@@ -92,7 +116,9 @@ export type CategoryRow = {
  *
  * The counts come from `document_lines`, not from documents: a single Bunnings
  * docket can legitimately span two categories, and counting it once against
- * whichever one happened to be first would misstate both.
+ * whichever one happened to be first would misstate both. A line's category is
+ * its own `category_id`, else its document's (`documents.category_id`, 0040:
+ * the whole-receipt category a person or the supplier memory chose).
  *
  * `deletable` is computed here rather than from `document_count`, because
  * `document_count` deliberately excludes rejected and deleted documents (it is
@@ -107,8 +133,11 @@ export async function listCategories(
 ): Promise<CategoryRow[]> {
   return tx(getDb(), userId, tenantId, async (t) => {
     const rows = await t.execute<CategoryRow>(sql`
-      select c.name,
+      select c.id,
+             c.name,
              c.ato_deduction_code as tax_label,
+             c.engine_row_id,
+             c.private_use_percent::int as private_use_percent,
              b.monthly::text      as monthly_budget,
              coalesce(u.document_count, 0)::int  as document_count,
              -- Cast through the money domain, not straight to text: a bare 0
@@ -119,23 +148,25 @@ export async function listCategories(
              (
                b.category is null
                and coalesce(refs.document_lines, 0) = 0
+               and coalesce(refs.documents, 0) = 0
                and coalesce(refs.transaction_splits, 0) = 0
                and coalesce(refs.child_categories, 0) = 0
              ) as deletable
         from categories c
         left join budgets b on b.tenant_id = c.tenant_id and b.category = c.name
         left join (
-          select l.category_id,
+          select coalesce(l.category_id, d.category_id) as category_id,
                  count(distinct l.document_id) as document_count,
                  sum(l.line_net_amount)        as total_spend
             from document_lines l
             join documents d on d.id = l.document_id
            where d.deleted_at is null and d.review_status <> 'rejected'
-           group by l.category_id
+           group by coalesce(l.category_id, d.category_id)
         ) u on u.category_id = c.id
         left join lateral (
           select
             (select count(*) from document_lines dl where dl.category_id = c.id) as document_lines,
+            (select count(*) from documents dd where dd.category_id = c.id) as documents,
             (select count(*) from transaction_splits ts where ts.category_id = c.id) as transaction_splits,
             (select count(*) from categories ch where ch.parent_id = c.id) as child_categories
         ) refs on true
@@ -148,6 +179,7 @@ export async function listCategories(
 /** What is holding onto a category, in the terms the refusal message uses. */
 export type CategoryUsage = {
   documentLines: number;
+  documents: number;
   transactionSplits: number;
   childCategories: number;
   hasBudget: boolean;
@@ -158,6 +190,9 @@ function describeUsage(usage: CategoryUsage): string[] {
   const parts: string[] = [];
   if (usage.documentLines > 0) {
     parts.push(`${usage.documentLines} receipt line${usage.documentLines === 1 ? '' : 's'}`);
+  }
+  if (usage.documents > 0) {
+    parts.push(`${usage.documents} receipt${usage.documents === 1 ? '' : 's'} filed under it`);
   }
   if (usage.transactionSplits > 0) {
     parts.push(
@@ -208,12 +243,14 @@ export async function deleteCategory(
 
     const usageRows = await t.execute<{
       document_lines: number;
+      documents: number;
       transaction_splits: number;
       child_categories: number;
       has_budget: boolean;
     }>(sql`
       select
         (select count(*)::int from document_lines where category_id = ${cat.id}) as document_lines,
+        (select count(*)::int from documents where category_id = ${cat.id}) as documents,
         (select count(*)::int from transaction_splits where category_id = ${cat.id}) as transaction_splits,
         (select count(*)::int from categories where parent_id = ${cat.id}) as child_categories,
         exists(select 1 from budgets where tenant_id = ${tenantId} and category = ${name}) as has_budget
@@ -221,6 +258,7 @@ export async function deleteCategory(
     const row = usageRows.rows[0]!;
     const reasons = describeUsage({
       documentLines: row.document_lines,
+      documents: row.documents,
       transactionSplits: row.transaction_splits,
       childCategories: row.child_categories,
       hasBudget: row.has_budget,
@@ -232,40 +270,107 @@ export async function deleteCategory(
   });
 }
 
-/** Retires or restores a category. Never deletes one. */
-export async function setCategoryActive(
+export type CategoryPatch = {
+  active?: boolean;
+  /** A label from `ATO_LABELS`; null clears the mapping (label and item). */
+  taxLabel?: string | null;
+  /** Whole percent 0-99; null clears it. */
+  privateUsePercent?: number | null;
+};
+
+/**
+ * Changes a category: retire or restore it, give it (or take away) a tax
+ * label, set its default private share. Never deletes one. `undefined` leaves a
+ * field alone.
+ *
+ * A label is stored with the item it feeds. Setting a label, or changing it,
+ * gives the label's default item (`DEFAULT_ITEM_FOR_LABEL`); setting the SAME
+ * label on a category that already has an item keeps that item, so a seeded
+ * "Work car: fuel" stays on `fuelReceiptTotal`. A legacy business category
+ * with a label and no item gets the default item the first time its label is
+ * written.
+ *
+ * Returns false when no category has that name.
+ */
+export async function updateCategory(
   userId: string,
   tenantId: string,
   name: string,
-  active: boolean,
+  patch: CategoryPatch,
 ): Promise<boolean> {
-  return tx(getDb(), userId, tenantId, async (t) => {
-    const rows = await t.execute<{ name: string }>(sql`
-      update categories set active = ${active}
-       where tenant_id = ${tenantId} and name = ${name}
-       returning name
-    `);
-    return rows.rows.length > 0;
-  });
+  return tx(getDb(), userId, tenantId, (t) => applyCategoryPatch(t, tenantId, name, patch));
+}
+
+async function applyCategoryPatch(
+  t: Tx,
+  tenantId: string,
+  name: string,
+  patch: CategoryPatch,
+): Promise<boolean> {
+  const found = await t.execute<{
+    id: string;
+    ato_deduction_code: string | null;
+    engine_row_id: string | null;
+  }>(sql`
+    select id, ato_deduction_code, engine_row_id
+      from categories where tenant_id = ${tenantId} and name = ${name}
+       for update
+  `);
+  const cur = found.rows[0];
+  if (!cur) return false;
+
+  const labelGiven = patch.taxLabel !== undefined;
+  let label = cur.ato_deduction_code;
+  let item = cur.engine_row_id;
+  if (labelGiven) {
+    if (patch.taxLabel === null) {
+      label = null;
+      item = null;
+    } else if (isAtoLabel(patch.taxLabel)) {
+      if (patch.taxLabel !== cur.ato_deduction_code || item === null) {
+        item = defaultItemFor(patch.taxLabel);
+      }
+      label = patch.taxLabel;
+    } else {
+      throw new Error(`Not an ATO label: ${patch.taxLabel}`);
+    }
+  }
+
+  await t.execute(sql`
+    update categories set
+      active = coalesce(${patch.active ?? null}::boolean, active),
+      ato_deduction_code = ${label},
+      engine_row_id = ${item},
+      private_use_percent = case when ${patch.privateUsePercent !== undefined}
+        then ${patch.privateUsePercent ?? null}::smallint else private_use_percent end
+     where tenant_id = ${tenantId} and id = ${cur.id}
+  `);
+  return true;
 }
 
 export async function createCategory(
   userId: string,
   tenantId: string,
   name: string,
-  taxLabel: string | null,
+  mapping: { taxLabel?: string | null; privateUsePercent?: number | null } = {},
 ): Promise<void> {
   await tx(getDb(), userId, tenantId, async (t) => {
     // A name that already exists comes back as a live category rather than an
     // error: to the user, adding "Fuel" when a retired "Fuel" exists means
-    // they want to use it again.
+    // they want to use it again. It keeps what it had unless the request names
+    // a label or a private share; adding a name again never CLEARS a label.
     await t.execute(sql`
-      insert into categories (id, tenant_id, name, ato_deduction_code)
-      values (${randomUUID()}, ${tenantId}, ${name}, ${taxLabel})
-      on conflict (tenant_id, name)
-        do update set active = true,
-                      ato_deduction_code = coalesce(${taxLabel}, categories.ato_deduction_code)
+      insert into categories (id, tenant_id, name)
+      values (${randomUUID()}, ${tenantId}, ${name})
+      on conflict (tenant_id, name) do nothing
     `);
+    await applyCategoryPatch(t, tenantId, name, {
+      active: true,
+      ...(mapping.taxLabel ? { taxLabel: mapping.taxLabel } : {}),
+      ...(mapping.privateUsePercent !== undefined
+        ? { privateUsePercent: mapping.privateUsePercent }
+        : {}),
+    });
   });
 }
 

@@ -21,6 +21,7 @@ import {
   WorkspaceId,
   type AuthUser,
 } from '../common/auth.guard.js';
+import { CATEGORY_PATHS, resolveCategoryEdit } from '../documents/category-edit.js';
 import { consumptionTaxFromRules, toWire } from '../documents/documents.controller.js';
 import { expectedGst } from '../extraction/validators.js';
 import {
@@ -113,11 +114,8 @@ function flattenEdits(edits: Record<string, string | number | null>): {
 } {
   const patch: Record<string, string | null> = {};
   for (const [path, value] of Object.entries(edits ?? {})) {
-    if (path === 'header.category') {
-      throw new BadRequestException(
-        'Category cannot be saved yet: it is not stored on the server. Correct the other fields and leave the category alone.',
-      );
-    }
+    // Settled separately by `resolveCategoryEdit` (a database lookup).
+    if ((CATEGORY_PATHS as readonly string[]).includes(path)) continue;
     const column = (EDITABLE_PATHS as Record<string, string | undefined>)[path];
     if (!column) {
       throw new BadRequestException(
@@ -185,6 +183,7 @@ export class CaptureDocumentController {
     }
 
     const edit = flattenEdits(body.edits);
+    const categoryEdit = await resolveCategoryEdit(user.userId, tenantId, body.edits, before.document);
 
     // Correcting the total re-derives the tax exactly as `PATCH
     // /v1/documents/:id` does: tax is a function of the taxable part, never
@@ -219,12 +218,16 @@ export class CaptureDocumentController {
         payableAmount: edit.payableAmount,
         taxAmount,
         taxExclusiveAmount,
+        ...(categoryEdit ? { categoryId: categoryEdit.categoryId } : {}),
       },
       body.version,
     );
 
     if (!outcome.ok) {
       if (outcome.reason === 'missing') throw new NotFoundException('No such document.');
+      if (outcome.reason === 'bad_category') {
+        throw new BadRequestException('That category does not exist in this workspace.');
+      }
       // A genuine optimistic-concurrency conflict — NOT the retryable 409
       // above. Thrown as a plain string body (no `error` code) precisely so
       // the outbox does NOT mistake it for `document_not_ready` and retry it

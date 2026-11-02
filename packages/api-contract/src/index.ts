@@ -176,7 +176,14 @@ export interface DocumentDetail extends DocumentSummary {
 
 /** `PATCH /v1/documents/:id` — editing a document is not the same as posting it. */
 export interface UpdateDocumentRequest {
-  /** Field path -> new value, e.g. `{"supplier.abn": "51824753556"}`. */
+  /**
+   * Field path -> new value, e.g. `{"supplier.abn": "51824753556"}`.
+   *
+   * Category: `header.category_id` takes a category id of this workspace (or
+   * null to clear it). The older `header.category` takes a category NAME, kept
+   * so installed phones can still save; it is a no-op when the name is the
+   * receipt's current category.
+   */
   edits: Record<string, string | number | null>;
   /** Confirming locks the edited fields against later re-extraction. */
   confirm?: boolean;
@@ -373,8 +380,16 @@ export interface DocumentView {
   }>;
   isTaxInvoice: boolean;
   docType: 'tax_invoice' | 'receipt';
+  /** The category's name, or 'Uncategorised' when the receipt has none. */
   category: string;
+  /** The category's Free Tax Returns item id, or 'unassigned' when it has none. */
   engineRowId: string;
+  /** The receipt's category id (a workspace category), or null. Set it with the edit path `header.category_id`. */
+  categoryId: string | null;
+  /** Who chose the category: a person, or the supplier memory (a later edit overrides it). null with no category. */
+  categorySource: 'user' | 'supplier' | null;
+  /** The category's ATO label (an `ATO_LABELS` value such as 'D5'), or null. */
+  taxLabel: string | null;
   reviewStatus: ReviewState;
   confidenceOverall: number;
   note: string | null;
@@ -993,8 +1008,16 @@ export interface ConsumptionTaxReport {
 
 export interface CategorySetting {
   name: string;
-  /** Deduction label this maps to, e.g. D1. null in the personal workspace. */
+  /**
+   * The ATO label this category feeds (one of `ATO_LABELS`, e.g. 'D5'), or
+   * null when it has none. Personal workspaces carry labelled work and rental
+   * categories since group 4.2.
+   */
   taxLabel: string | null;
+  /** The Free Tax Returns item id inside `taxLabel` (`ITEM_IDS[taxLabel]`), or null. */
+  engineRowId: string | null;
+  /** Default private share for receipts in this category, whole percent 0-99, or null. */
+  privateUsePercent: number | null;
   monthlyBudget: string | null;
   documentCount: number;
   totalSpend: string;
