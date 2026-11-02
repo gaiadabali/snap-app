@@ -80,7 +80,7 @@ export async function seedDefaultCategories(
       `);
     }
     // A personal workspace also starts with the work and rental categories that
-    // feed a deduction bundle (docs/DEDUCTIONS.md). Migration 0040 backfills the
+    // feed a deduction bundle (docs/DEDUCTIONS.md). Migration 0042 backfills the
     // same list into workspaces that existed before it.
     if (kind === 'personal') {
       for (const row of PERSONAL_DEDUCTION_CATEGORIES) {

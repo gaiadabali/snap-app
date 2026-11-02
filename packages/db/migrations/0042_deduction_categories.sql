@@ -1,5 +1,5 @@
 -- ---------------------------------------------------------------------------
--- 0040 — Deduction categories (group plan 4.2)
+-- 0042 — Deduction categories (group plan 4.2)
 --
 -- A receipt can now sit in a category, and a category can say which ATO label
 -- and which Free Tax Returns item it feeds, so a personal workspace's receipts

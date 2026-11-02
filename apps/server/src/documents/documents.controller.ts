@@ -261,7 +261,7 @@ export function toWire(
     taxSubtotals,
     isTaxInvoice: document.is_tax_invoice,
     docType: document.is_tax_invoice ? ('tax_invoice' as const) : ('receipt' as const),
-    // The receipt's own category (0040): chosen by a person or copied from the
+    // The receipt's own category (0042): chosen by a person or copied from the
     // supplier's last receipt, never guessed. Without one the deduction row is
     // unset rather than invented, because a wrong category is a wrong deduction.
     category: document.category_name ?? UNCATEGORISED,

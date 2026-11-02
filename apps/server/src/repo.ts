@@ -655,7 +655,7 @@ export type DocumentRow = {
   version: number;
   workspace_kind: string;
   tenant_id: string;
-  /** The whole receipt's category (0040), with what the category maps to. */
+  /** The whole receipt's category (0042), with what the category maps to. */
   category_id: string | null;
   category_name: string | null;
   category_source: 'user' | 'supplier' | null;

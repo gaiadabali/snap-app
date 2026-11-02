@@ -7,7 +7,7 @@ import { ATO_LABELS, ITEM_IDS, type AtoLabel } from '@snap/api-contract/deductio
  * Returns item id (`engine_row_id`) from the deduction bundle spec. This is the
  * ONE place the server decides which pairs exist: the seeder, the custom
  * category endpoints and the tests all read it. The migration
- * `0040_deduction_categories.sql` backfills the same rows into existing
+ * `0042_deduction_categories.sql` backfills the same rows into existing
  * personal workspaces; `deduction-categories.test.ts` runs that SQL and
  * compares it with `PERSONAL_DEDUCTION_CATEGORIES`.
  */

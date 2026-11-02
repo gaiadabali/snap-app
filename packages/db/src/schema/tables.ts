@@ -430,9 +430,9 @@ export const documents = pgTable('documents', {
   confirmedAt: timestamp('confirmed_at', { withTimezone: true }),
   /** 'shared' | 'private'. Private items still count toward household totals. */
   visibility: text('visibility').notNull().default('shared'),
-  /** The whole receipt's category (0040). A line's own `category_id` wins where set. */
+  /** The whole receipt's category (0042). A line's own `category_id` wins where set. */
   categoryId: uuid('category_id'),
-  /** 'user' | 'supplier' (0040). A machine never overwrites 'user'. */
+  /** 'user' | 'supplier' (0042). A machine never overwrites 'user'. */
   categorySource: text('category_source'),
   /** Optimistic concurrency: bumped by a trigger on every real change. */
   version: integer('version').notNull().default(1),
@@ -510,7 +510,7 @@ export const categories = pgTable('categories', {
   /** `@snap/tax-engine` target row: 'D1.logbook.fuel', 'D3.laundry', … */
   engineRowId: text('engine_row_id'),
   atoDeductionCode: text('ato_deduction_code'),
-  /** Default private share (whole percent, 0-99) of a receipt in this category (0040). */
+  /** Default private share (whole percent, 0-99) of a receipt in this category (0042). */
   privateUsePercent: smallint('private_use_percent'),
   /**
    * False retires the category: it stops being offered for new documents and
