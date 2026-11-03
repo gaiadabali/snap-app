@@ -81,7 +81,7 @@ describe('Sign in with YourTal settings', () => {
     expect(s?.mobile).toEqual({
       kind: 'mobile',
       clientId: 'snapapp-staging-mobile',
-      redirectUri: 'au.com.snapapps.app:/oauth/yourtal',
+      redirectUri: 'https://snap-apps.gaiada.com/oauth/yourtal',
     });
   });
 

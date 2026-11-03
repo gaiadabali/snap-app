@@ -13,7 +13,7 @@ import {
   type SignInDeps,
 } from './yourtal-signin';
 
-const REDIRECT = 'au.com.snapapps.app:/oauth/yourtal';
+const REDIRECT = 'https://snap-apps.gaiada.com/oauth/yourtal';
 
 describe('parseReturnUrl', () => {
   it('reads code, state and iss', () => {
@@ -72,11 +72,12 @@ describe('isYourtalReturn', () => {
     REDIRECT,
     `${REDIRECT}?code=c&state=s`,
     'au.com.snapapps.app://oauth/yourtal?code=c',
+    'https://snap-apps.gaiada.com/oauth/yourtal?code=c&state=s',
     '/oauth/yourtal?code=c',
     'oauth/yourtal',
   ])('%s is the redirect', (p) => expect(isYourtalReturn(p)).toBe(true));
 
-  it.each(['/', '/join/abc', 'snapapps://join/abc', '/oauth/yourtalx', '/x/oauth/yourtal'])('%s is not', (p) =>
+  it.each(['/', '/join/abc', 'snapapps://join/abc', '/oauth/yourtalx', '/x/oauth/yourtal', 'https://snap-apps.gaiada.com/x/oauth/yourtal'])('%s is not', (p) =>
     expect(isYourtalReturn(p)).toBe(false),
   );
 });
@@ -148,14 +149,14 @@ function deps(over: Record<string, Fn> = {}) {
 const returning = (url: string) => vi.fn(async () => ({ type: 'success', url }));
 
 describe('runYourtalSignIn', () => {
-  it('start, then the system browser at the private-use redirect, then finish with the flow id', async () => {
+  it('start, then the system browser at the https App Link redirect, then finish with the flow id', async () => {
     const d = deps();
     const result = await runYourtalSignIn(d);
 
     expect(result).toEqual({ kind: 'signed-in', session: { user: 'kira' } });
     expect(d.start).toHaveBeenCalledWith({ signUp: false, locale: undefined });
     expect(d.openBrowser).toHaveBeenCalledWith('https://id.yourtal.test/authorize?state=SECRET', YOURTAL_REDIRECT_URI);
-    expect(YOURTAL_REDIRECT_URI).toBe('au.com.snapapps.app:/oauth/yourtal');
+    expect(YOURTAL_REDIRECT_URI).toBe('https://snap-apps.gaiada.com/oauth/yourtal');
     expect(d.finish).toHaveBeenCalledWith({
       flowId: 'flow-1',
       code: 'CODE',

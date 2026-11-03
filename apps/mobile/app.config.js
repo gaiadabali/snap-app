@@ -45,7 +45,21 @@ module.exports = ({ config }) => {
   return {
     ...config,
     version,
-    android: { ...config.android, versionCode },
+    android: {
+      ...config.android,
+      versionCode,
+      // Sign in with YourTal returns here (3.3.e). Android verifies it against
+      // https://<host>/.well-known/assetlinks.json. Keep in step with
+      // YOURTAL_REDIRECT_URI in src/lib/yourtal-signin.ts.
+      intentFilters: [
+        {
+          action: 'VIEW',
+          autoVerify: true,
+          data: [{ scheme: 'https', host: 'snap-apps.gaiada.com', pathPrefix: '/oauth/yourtal' }],
+          category: ['BROWSABLE', 'DEFAULT'],
+        },
+      ],
+    },
     extra: { ...config.extra, versionCode },
   };
 };

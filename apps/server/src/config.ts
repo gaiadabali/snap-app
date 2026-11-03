@@ -248,7 +248,7 @@ const schema = z.object({
    *   YOURTAL_OIDC_WEB_CLIENT_ID       snapapp-staging-web (private_key_jwt)
    *   YOURTAL_OIDC_MOBILE_CLIENT_ID    snapapp-staging-mobile (public, PKCE)
    *   YOURTAL_OIDC_WEB_REDIRECT_URI    default <WEB_PUBLIC_URL>/auth/yourtal/callback
-   *   YOURTAL_OIDC_MOBILE_REDIRECT_URI default au.com.snapapps.app:/oauth/yourtal
+   *   YOURTAL_OIDC_MOBILE_REDIRECT_URI default https://snap-apps.gaiada.com/oauth/yourtal
    *   YOURTAL_OIDC_KEY_FILE            in-container path of the web client's
    *                                    PRIVATE key (host:
    *                                    /etc/snap-apps/secrets/yourtal-oidc-web.jwk,
