@@ -454,8 +454,8 @@ BEGIN
 
   -- Fail closed on spill-over. Foreign keys between workspace tables are on
   -- the id alone, and a foreign key check ignores RLS, so a row in another
-  -- workspace CAN point at one of ours; the deletes below would then cascade
-  -- into (or null a column of) that workspace. Every such edge is read from
+  -- workspace CAN point at one of ours, or one of ours at theirs; the deletes
+  -- below would then reach that workspace. Every such edge is read from
   -- the catalogue, so a later table is covered without editing this.
   FOR e IN
     SELECT c.conname, c.conrelid::regclass AS child, a.attname AS col,
@@ -469,13 +469,20 @@ BEGIN
        AND EXISTS (SELECT 1 FROM pg_attribute x WHERE x.attrelid = c.confrelid AND x.attname = 'tenant_id' AND NOT x.attisdropped)
      ORDER BY c.conname
   LOOP
+    -- Both directions. In: another workspace's row would cascade away or be
+    -- nulled. Out: deleting ours fires triggers on the other workspace's row
+    -- (0030's goal recompute rewrites its `saved`). `<>` on the way out, not
+    -- IS DISTINCT FROM: every workspace points at the global tax codes
+    -- (tenant_id NULL), and those are nobody's.
     EXECUTE format(
-      'SELECT EXISTS (SELECT 1 FROM %s ch JOIN %s pa ON ch.%I = pa.%I
-                       WHERE pa.tenant_id = $1 AND ch.tenant_id IS DISTINCT FROM $1)',
+      'SELECT EXISTS (SELECT 1 FROM %1$s ch JOIN %2$s pa ON ch.%3$I = pa.%4$I
+                       WHERE pa.tenant_id = $1 AND ch.tenant_id IS DISTINCT FROM $1)
+           OR EXISTS (SELECT 1 FROM %1$s ch JOIN %2$s pa ON ch.%3$I = pa.%4$I
+                       WHERE ch.tenant_id = $1 AND pa.tenant_id <> $1)',
       e.child, e.parent, e.col, e.pcol)
       INTO v_hit USING p_tenant_id;
     IF v_hit THEN
-      RAISE EXCEPTION 'erase_workspace %: a row in another workspace references it (%), refusing to erase',
+      RAISE EXCEPTION 'erase_workspace %: it and another workspace reference each other (%), refusing to erase',
         p_tenant_id, e.conname
         USING ERRCODE = 'integrity_constraint_violation';
     END IF;

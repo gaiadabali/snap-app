@@ -186,6 +186,11 @@ describeIfDb('erase_person (migration 0043)', () => {
         WHERE p.invoice_id = i.id AND p.tenant_id <> i.tenant_id AND p.tenant_id = ANY($1)`,
       [Object.values(WS)],
     );
+    await c.query(
+      `DELETE FROM goal_contributions x USING goals g
+        WHERE x.goal_id = g.id AND x.tenant_id <> g.tenant_id AND x.tenant_id = ANY($1)`,
+      [Object.values(WS)],
+    );
     for (const u of Object.values(USERS)) await c.query('SELECT erase_person($1)', [u]);
     for (const w of Object.values(WS)) await c.query('SELECT erase_workspace($1)', [w]);
     await c.query(`DELETE FROM jobs WHERE kind = 'storage_purge' AND payload->>'tenantId' = ANY($1)`, [
@@ -289,6 +294,32 @@ describeIfDb('erase_person (migration 0043)', () => {
     await c.query('ROLLBACK').catch(() => undefined);
     await cleanup();
     await c.end();
+  });
+
+  it('the spill guard sees every foreign key into workspace data, bar two pinned exceptions', async () => {
+    // erase_workspace checks single-column FKs between two tables that both
+    // have tenant_id. Any other FK that lands on workspace data is a shape it
+    // would skip: a composite FK, a second FK to tenants, a table without
+    // tenant_id pointing at workspace rows. Each must be reviewed and added here.
+    const { rows } = await c.query<{ fk: string }>(
+      `SELECT c.conrelid::regclass || '.' || a.attname || ' -> ' || c.confrelid::regclass
+              || CASE WHEN cardinality(c.conkey) > 1 THEN ' (composite)' ELSE '' END AS fk
+         FROM pg_constraint c JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = c.conkey[1]
+        WHERE c.contype = 'f' AND c.connamespace = 'public'::regnamespace
+          AND (cardinality(c.conkey) > 1
+               OR c.confrelid = 'public.tenants'::regclass
+               OR EXISTS (SELECT 1 FROM pg_attribute x WHERE x.attrelid = c.confrelid AND x.attname = 'tenant_id' AND NOT x.attisdropped))
+          AND NOT (cardinality(c.conkey) = 1 AND c.confrelid <> 'public.tenants'::regclass
+                   AND EXISTS (SELECT 1 FROM pg_attribute x WHERE x.attrelid = c.conrelid AND x.attname = 'tenant_id' AND NOT x.attisdropped))
+          AND NOT (cardinality(c.conkey) = 1 AND c.confrelid = 'public.tenants'::regclass AND a.attname = 'tenant_id')
+        ORDER BY 1`,
+    );
+    expect(rows.map((r) => r.fk)).toEqual([
+      // Staff rows; the evidence of each impersonation is in audit_log.
+      'impersonation_sessions.subject_tenant_id -> tenants',
+      // No tenant_id: a delivery belongs to its endpoint's workspace.
+      'webhook_deliveries.endpoint_id -> webhook_endpoints',
+    ]);
   });
 
   it('the seed reaches nearly every table, so the comparisons below mean something', async () => {
@@ -460,7 +491,27 @@ describeIfDb('erase_person (migration 0043)', () => {
     run.check();
   });
 
-  it('refuses to erase a workspace another workspace points into, and changes nothing', async () => {
+  it('refuses to erase a workspace that points into another (out), and changes nothing', async () => {
+    // X's goal contribution naming Y's goal: deleting it would make 0030's
+    // trigger rewrite Y's goal.saved.
+    await c.query(
+      `INSERT INTO goal_contributions (id, tenant_id, goal_id, amount, occurred_on)
+       SELECT gen_random_uuid(), $1, g.id, 5, '2026-08-20' FROM goals g WHERE g.tenant_id = $2 LIMIT 1`,
+      [WS.WX, WS.WY],
+    );
+    const before = await snapshot();
+    await expect(erase(USERS.P)).rejects.toMatchObject({
+      code: '23000',
+      message: expect.stringContaining('goal_contributions_goal_id_fkey'),
+    });
+    expect(await snapshot()).toEqual(before);
+    await c.query(
+      `DELETE FROM goal_contributions x USING goals g WHERE x.goal_id = g.id AND x.tenant_id = $1 AND g.tenant_id = $2`,
+      [WS.WX, WS.WY],
+    );
+  });
+
+  it('refuses to erase a workspace another workspace points into (in), and changes nothing', async () => {
     // Y's payment against X's invoice: a foreign key check ignores RLS, so
     // this row can exist. Erasing X would cascade into Y.
     await c.query(
@@ -475,7 +526,8 @@ describeIfDb('erase_person (migration 0043)', () => {
     });
     expect(await snapshot()).toEqual(before);
 
-    // Once the stray row is gone, the erasure goes through.
+    // Once the stray row is gone, the erasure goes through, global tax codes
+    // and all (the seed's categories and splits name one).
     await c.query(
       `DELETE FROM payments p USING invoices i WHERE p.invoice_id = i.id AND i.tenant_id = $1 AND p.tenant_id = $2`,
       [WS.WX, WS.WY],

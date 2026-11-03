@@ -31,6 +31,7 @@ DECLARE
   item      uuid := gen_random_uuid();
   inv       uuid := gen_random_uuid();
   hook      uuid := gen_random_uuid();
+  gtax      uuid;
   link      uuid;
 BEGIN
   INSERT INTO accounts (id, tenant_id, code, name, account_type) VALUES
@@ -41,7 +42,12 @@ BEGIN
   INSERT INTO tax_codes (id, tenant_id, code, name, rate) VALUES (tax, t, 'GST-' || tag, 'GST', 0.1);
   INSERT INTO categories (id, tenant_id, name, default_account_id, default_tax_code_id) VALUES
     (cat, t, 'Vehicle ' || tag, acc_exp, tax);
-  INSERT INTO categories (id, tenant_id, name, parent_id) VALUES (cat_child, t, 'Fuel ' || tag, cat);
+  -- The child category and the bank split use a GLOBAL tax code (tenant_id
+  -- NULL), as real workspaces do: erasure must not mistake it for another
+  -- workspace's row.
+  SELECT g.id INTO gtax FROM tax_codes g WHERE g.tenant_id IS NULL AND g.country = 'AU' ORDER BY g.code LIMIT 1;
+  IF gtax IS NULL THEN RAISE EXCEPTION 'seed: no global AU tax code'; END IF;
+  INSERT INTO categories (id, tenant_id, name, parent_id, default_tax_code_id) VALUES (cat_child, t, 'Fuel ' || tag, cat, gtax);
   INSERT INTO parties (id, tenant_id, legal_name, name_normalised) VALUES (party, t, 'Shell', 'shell ' || tag);
 
   -- A receipt: capture, page, extraction run, layout, grounding, document.
@@ -70,7 +76,7 @@ BEGIN
     (txn, t, '2026-08-01', 'posted', now(), u, 'scan', doc, party);
   INSERT INTO transaction_splits (id, tenant_id, transaction_id, line_number, account_id, amount, tax_code_id, document_line_id) VALUES
     (gen_random_uuid(), t, txn, 1, acc_exp, 11, tax, line),
-    (gen_random_uuid(), t, txn, 2, acc_asset, -11, NULL, NULL);
+    (gen_random_uuid(), t, txn, 2, acc_asset, -11, gtax, NULL);
   INSERT INTO event_observations (id, tenant_id, transaction_id, kind, document_id, confirmed_by) VALUES
     (gen_random_uuid(), t, txn, 'document', doc, u);
   INSERT INTO review_tasks (id, tenant_id, reason, document_id, transaction_id, resolved_by) VALUES
