@@ -1946,20 +1946,6 @@ export class MockApi implements SnapApi {
         included: true,
       },
       {
-        label: 'BAS worksheet',
-        detail: 'G1, G10, G11, 1A and 1B with their workings',
-        count: 1,
-        bytes: 48_000,
-        included: true,
-      },
-      {
-        label: 'Deduction worksheet',
-        detail: `Every claim at ${DEMO.rates.determination} rates`,
-        count: 1,
-        bytes: 62_000,
-        included: true,
-      },
-      {
         label: 'Mileage log',
         detail: `${trips.filter((t) => t.workRelated).length} work trips`,
         count: trips.filter((t) => t.workRelated).length,

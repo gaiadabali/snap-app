@@ -26,7 +26,7 @@ export function TaxPackClient({
           <div>
             <h3 className="text-[15px] font-semibold text-[var(--color-ink)]">{pack.periodLabel}</h3>
             <p className="text-[13px] text-[var(--color-ink-muted)]">
-              {pack.fromDate} to {pack.toDate} · {bytesToMb(pack.totalBytes)} of original images and worksheets
+              {pack.fromDate} to {pack.toDate} · {bytesToMb(pack.totalBytes)} of original images and records
             </p>
           </div>
           <Button
