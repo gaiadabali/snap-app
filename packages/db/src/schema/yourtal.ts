@@ -121,7 +121,8 @@ export const yourtalSignInReviews = pgTable('yourtal_sign_in_reviews', {
  *     grant commits only with exactly one `granted` redemption naming it.
  *
  * `app_rw` may INSERT only a fresh `authorizing` row and UPDATE only the
- * progress columns; nobody but the owner deletes.
+ * progress columns; nobody but the owner deletes, and `erase_workspace` (0043)
+ * when the workspace itself is erased.
  */
 export const yourtalVoucherRedemptions = pgTable('yourtal_voucher_redemptions', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -159,4 +160,14 @@ export const yourtalVoucherRedemptions = pgTable('yourtal_voucher_redemptions', 
   lastError: text('last_error'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   finishedAt: timestamp('finished_at', { withTimezone: true }),
+});
+
+/**
+ * YourTal `sub`s whose account YourTal deleted (migration 0043, docs/29 §4.3).
+ * Sign-in refuses them for ever. Reached only through app_identity's
+ * functions; the application roles hold no grant and no policy here.
+ */
+export const yourtalErasedSubjects = pgTable('yourtal_erased_subjects', {
+  sub: text('sub').primaryKey(),
+  erasedAt: timestamp('erased_at', { withTimezone: true }).notNull().defaultNow(),
 });
