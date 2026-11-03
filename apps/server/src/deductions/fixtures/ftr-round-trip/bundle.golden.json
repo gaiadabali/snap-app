@@ -1,0 +1,163 @@
+{
+  "schemaVersion": 1,
+  "financialYear": "2025-26",
+  "generatedAt": "2026-07-14T03:21:09.000Z",
+  "source": {
+    "app": "snapapp",
+    "appVersion": "0.1.0"
+  },
+  "lines": [
+    {
+      "label": "D1",
+      "itemId": "fuelReceiptTotal",
+      "description": "Fuel",
+      "amount": "140.55",
+      "gstInclusive": true,
+      "receiptCount": 3,
+      "receiptRefs": [
+        "9fdcf034e1d2379acd60522727f2323b3e7de65f2e6ea136d770879c68e38456",
+        "b473d43f99ef462ff8bdcd2c771f742fa867ddd7e251d68e9a9cd2cdbeb5e40e",
+        "f14c11e5fbdab24a954c337ac4bb5182fb817b8d13a4262fbeadf000fc64ec89"
+      ]
+    },
+    {
+      "label": "D1",
+      "itemId": "rego",
+      "description": "Registration",
+      "amount": "680.00",
+      "gstInclusive": true,
+      "receiptCount": 1,
+      "receiptRefs": [
+        "cffad3c057047f4286d15a2e2e8593524c67e556dcfc8819f34030de89c3f391"
+      ]
+    },
+    {
+      "label": "D1",
+      "itemId": "towBar",
+      "description": "Heavy-duty tow bar",
+      "amount": "840.00",
+      "gstInclusive": true,
+      "receiptCount": 1,
+      "receiptRefs": [
+        "e07f2e6fc0aa99405349cd61e73ff53e00f586da38f25d0f7c05b8ea36aef3e7"
+      ]
+    },
+    {
+      "label": "D10",
+      "itemId": "bookkeeping",
+      "description": "Bookkeeping",
+      "amount": "165.00",
+      "gstInclusive": true,
+      "receiptCount": 1,
+      "receiptRefs": [
+        "7f738359192b23f9d78bb7b9d06b6959beafc09197e7e4cfe0cebc0640a8ba9f"
+      ]
+    },
+    {
+      "label": "D2",
+      "itemId": "parking",
+      "description": "Parking",
+      "amount": "14.18",
+      "gstInclusive": true,
+      "receiptCount": 1,
+      "receiptRefs": [
+        "4fd7762e2748f557836278c7897dcb197106261f582e3ca1f5c484503afa9fb1"
+      ]
+    },
+    {
+      "label": "D2",
+      "itemId": "tollsTotal",
+      "description": "Tolls",
+      "amount": "43.35",
+      "gstInclusive": true,
+      "receiptCount": 3,
+      "receiptRefs": [
+        "448000bb0bddc5f31b0fe7d9a46d131fb01bf0cc40dc882158ba4d848491cf5d",
+        "b25ff505748ccfb34af5772772b31a3a8445478c2ae155c15e95a06c2b77a906",
+        "dff59fd7a4abf413b4a177fb270341148a38c3f4c5e593c8e51e94b3bdd16b95"
+      ]
+    },
+    {
+      "label": "D3",
+      "itemId": "boots",
+      "description": "Boots",
+      "amount": "257.08",
+      "gstInclusive": true,
+      "receiptCount": 2,
+      "receiptRefs": [
+        "79ed496f39ee2b6a9221a246fe553a168072e6630bca3af7f4a2c6ea9c799867",
+        "a94969be9811b62a693fad412316fd69084495cd047218bba809940ee46b0dee"
+      ]
+    },
+    {
+      "label": "D3",
+      "itemId": "washPowder",
+      "description": "Washing powder",
+      "amount": "6.79",
+      "gstInclusive": true,
+      "receiptCount": 1,
+      "receiptRefs": [
+        "66f0ecafc1841be968ceb68894e79f293ed416c47a367b7eac21a1d30ac0f7eb"
+      ]
+    },
+    {
+      "label": "D4",
+      "itemId": "fees",
+      "description": "Course fees",
+      "amount": "450.00",
+      "gstInclusive": true,
+      "receiptCount": 1,
+      "receiptRefs": [
+        "58cd9bdc32a5e5714813775a8bde14ebc61fde60174e0c32bd698b57baacd5d6"
+      ]
+    },
+    {
+      "label": "D5",
+      "itemId": "phoneDevices",
+      "description": "Mobile phone and devices",
+      "amount": "404.98",
+      "gstInclusive": true,
+      "receiptCount": 1,
+      "receiptRefs": [
+        "ffc4d04ea6cbdcc91ca805d031afd3e04c975f49d29e9a81736e8da2e3bda74c"
+      ]
+    },
+    {
+      "label": "D5",
+      "itemId": "stationery",
+      "description": "Stationery",
+      "amount": "18.50",
+      "gstInclusive": true,
+      "receiptCount": 1,
+      "receiptRefs": [
+        "2d9e02d00b3a04435cc27e1d7a3044f955b8aa77f139d112b04cbe083a92464f"
+      ]
+    },
+    {
+      "label": "D5",
+      "itemId": "tools",
+      "description": "Tools",
+      "amount": "17.25",
+      "gstInclusive": true,
+      "receiptCount": 4,
+      "receiptRefs": [
+        "1d7985f5f4323ffcd3cb6204683dd99d13186df7eacd19263546a97f6de4d042",
+        "530761b99c22480cb24549635013b3e503cfb80f3ff3413cf2dbad3f3baf40d5",
+        "de14a540fa5cc9eeb33a0c0886875a5742e9522aef7f2f2527b026646c4feefb",
+        "e56918d9f56fd7e6cdd59ca8eda9bef85bf07b9131db8ce4eb4f84f3f9e008ae"
+      ]
+    },
+    {
+      "label": "D5",
+      "itemId": "union",
+      "description": "Union and association fees",
+      "amount": "200.00",
+      "gstInclusive": true,
+      "receiptCount": 1,
+      "receiptRefs": [
+        "2d9e02d00b3a04435cc27e1d7a3044f955b8aa77f139d112b04cbe083a92464f"
+      ]
+    }
+  ],
+  "occupation": "tradie"
+}
