@@ -25,8 +25,8 @@ import { claimDueRedemptions, moveRedemption, releaseRedemption, type Redemption
  * Retries back off 15 s, doubling, to 15 min. It never sends an authorize.
  */
 export const REDEMPTION_DRAIN = {
-  batchSize: 5,
-  /** Over a whole batch's worst case (a few 8 s calls per row). */
+  /** Small, so a batch's worst case (about five 8 s calls per row, 80 s) stays far under the lease. */
+  batchSize: 2,
   lockSeconds: 300,
   baseSeconds: 15,
   capSeconds: 900,

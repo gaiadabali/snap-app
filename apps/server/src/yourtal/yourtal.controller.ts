@@ -17,12 +17,14 @@ import { IsString, Length } from 'class-validator';
 
 import { RateLimiter } from '../auth/rate-limit.js';
 import {
+  CurrentImpersonation,
   CurrentSession,
   CurrentUser,
   SessionGuard,
   VerifiedEmailGuard,
   type AuthUser,
   type CurrentSessionInfo,
+  type ProductImpersonation,
 } from '../common/auth.guard.js';
 import { ValidBody } from '../common/valid-body.decorator.js';
 import { isYourtalPartnerConfigured, isYourtalVoucherConfigured } from '../config.js';
@@ -99,8 +101,11 @@ export class YourtalLinkController {
   async status(
     @CurrentUser() user: AuthUser,
     @Headers('x-workspace-id') workspaceId?: string,
+    @CurrentImpersonation() impersonation?: ProductImpersonation,
   ): Promise<YourtalLinkStatus> {
-    return this.statusFor(user.userId, workspaceId);
+    // Staff acting as a user are scoped to one workspace (as MembershipGuard does): any other is ignored.
+    const workspace = impersonation && workspaceId !== impersonation.subjectTenantId ? undefined : workspaceId;
+    return this.statusFor(user.userId, workspace);
   }
 
   @Post('link')

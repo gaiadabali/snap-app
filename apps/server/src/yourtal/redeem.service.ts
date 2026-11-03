@@ -207,6 +207,14 @@ async function resolveByLookup(row: RedemptionRow, m: Mover): Promise<Redemption
 
   const b = r.body;
   const authorizationId = str(b.authorization_id);
+  // One authorization per order: another id is an anomaly to stop on, not to act on.
+  if (row.authorization_id && authorizationId && authorizationId !== row.authorization_id) {
+    m.log.error(`voucher redemption ${row.id}: the order lookup names another authorization; stopped for a person`);
+    const mismatch: RedemptionPatch = { last_code: 'authorization_mismatch', last_error: null };
+    if (row.status === 'capturing') return moveRedemption(m.enter, row.id, m.holder, from, 'needs_review', mismatch);
+    await noteRedemption(m.enter, row.id, m.holder, mismatch);
+    return null;
+  }
   const known: RedemptionPatch = row.authorization_id || !authorizationId ? {} : { authorization_id: authorizationId };
   switch (b.state) {
     case 'held':

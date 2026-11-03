@@ -173,11 +173,17 @@ export class YourtalVouchersController {
       row = authorized.row;
       mismatch = authorized.outcome === 'mismatch';
       if (authorized.outcome === 'held' || mismatch) row = await advanceRedemption(row, mover, 'request');
-    } finally {
-      // Due for the drain at once unless only an authorize is outstanding (looked up after 30 s).
-      const delay = row.status === 'authorizing' ? REDEMPTION_TIMING.authorizeLookupAfterSeconds : 0;
-      await releaseRedemption(enter, row.id, holder, delay);
+    } catch (error) {
+      // The row exists and money may be moving: the drain finishes it, so an
+      // unfinished row is answered 202 pending below, never a 500.
+      this.logger.error(`voucher redemption ${row.id}: request pass failed at ${row.status} (${error instanceof Error ? error.message : String(error)}); the drain finishes it`);
     }
+    // Due for the drain at once unless only an authorize is outstanding (looked up after 30 s).
+    // If this fails too, the lease lapses and the drain takes the row over.
+    const delay = row.status === 'authorizing' ? REDEMPTION_TIMING.authorizeLookupAfterSeconds : 0;
+    await releaseRedemption(enter, row.id, holder, delay).catch((error) =>
+      this.logger.error(`voucher redemption ${row.id}: could not release (${error instanceof Error ? error.message : String(error)})`),
+    );
 
     if (row.status === 'granted') return { state: 'granted', redemption: publicRedemption(row) };
     if (mismatch) throw refuse(HttpStatus.CONFLICT, 'not_a_scans_voucher', "That voucher isn't a SnapApp scans voucher. Nothing was taken.");

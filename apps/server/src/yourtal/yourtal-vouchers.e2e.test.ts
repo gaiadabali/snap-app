@@ -21,12 +21,13 @@ import {
 } from '../test-support/fake-yourtal-vouchers.js';
 import { openSessions } from '../test-support/sessions.js';
 import { openWorkerDb, type WorkerDb } from '../test-support/worker-db.js';
+import { enterTenantAsWorker } from '../tenant-entry.js';
 import { provisionTenant, wipeTenant } from '../test-support/tenant.js';
 import { YourtalPartnerClient } from './client.js';
 import { YourtalMerchantClient } from './merchant-client.js';
 import { advanceRedemption, authorizeOnce, SCANS_VOUCHER, type Mover } from './redeem.service.js';
 import { drainVoucherRedemptions } from './redemption-drain.js';
-import { grantRedemption, insertRedemption, releaseRedemption, type Enter, type RedemptionRow } from './redemptions.repo.js';
+import { claimDueRedemptions, grantRedemption, insertRedemption, moveRedemption, noteRedemption, releaseRedemption, type Enter, type RedemptionRow } from './redemptions.repo.js';
 import { parseVoucherCode } from './voucher-code.js';
 import { YourtalVouchersController } from './vouchers.controller.js';
 import { YourtalLinkController } from './yourtal.controller.js';
@@ -439,6 +440,74 @@ describeIfDb('redeeming a YourTal scans voucher (2.8 S4)', () => {
     expect(both.map((r) => r.status).sort()).toEqual(['expired', 'granted']);
     expect(new Set(both.map((r) => r.merchant_order_ref)).size).toBe(2);
     expect(routes().filter((r) => r === 'authorize')).toHaveLength(2);
+  });
+
+  it('lease takeover: once another holder has claimed the row, the old holder moves nothing and sends nothing', async () => {
+    const code = voucher();
+    const parsed = parseVoucherCode(code) as { canonical: string; sha256: string };
+    const link = await admin.query<{ id: string }>(`select id from yourtal_links where user_id = $1 and revoked_at is null`, [ANA]);
+    const enter: Enter = (fn) => withTenantAs(getDb(), ANA, TENANT, fn);
+    const row = (await insertRedemption(enter, {
+      linkRowId: link.rows[0]!.id,
+      codeSha256: parsed.sha256,
+      ...SCANS_VOUCHER,
+      holder: 'holder-a',
+      dueInSeconds: 0,
+    })) as RedemptionRow;
+    const a: Mover = { client: merchant, enter, holder: 'holder-a', now: fakeNow, log: quiet };
+    const held = (await authorizeOnce(row, parsed.canonical, a)).row;
+    expect(held.status).toBe('authorized');
+
+    // A stalls past the lease; B takes the row over.
+    await admin.query(`update yourtal_voucher_redemptions set locked_at = now() - interval '301 seconds' where id = $1`, [row.id]);
+    const claimed = await claimDueRedemptions(worker.db, 'holder-b', 5, 300);
+    expect(claimed.map((r) => r.id)).toEqual([row.id]);
+
+    // A wakes up: every write is refused by the fence, so nothing is sent.
+    expect(await advanceRedemption(held, a, 'request')).toEqual(held);
+    expect(await moveRedemption(enter, row.id, 'holder-a', ['authorized'], 'voiding')).toBeNull();
+    await noteRedemption(enter, row.id, 'holder-a', { last_code: 'from_a' });
+    await releaseRedemption(enter, row.id, 'holder-a', 0);
+    const after = await admin.query(`select status, locked_by, last_code from yourtal_voucher_redemptions where id = $1`, [row.id]);
+    expect(after.rows[0]).toEqual({ status: 'authorized', locked_by: 'holder-b', last_code: null });
+    expect(routes()).toEqual(['authorize']);
+
+    // B finishes it: one capture, one grant.
+    const b: Mover = {
+      client: merchant,
+      enter: (fn) => enterTenantAsWorker(worker.actor, TENANT, fn),
+      holder: 'holder-b',
+      now: fakeNow,
+      log: quiet,
+    };
+    expect((await advanceRedemption(claimed[0]!, b, 'drain')).status).toBe('granted');
+    expect(routes()).toEqual(['authorize', 'capture']);
+  });
+
+  it('a lookup naming another authorization stops the row for a person', async () => {
+    const code = voucher();
+    merchant = merchantClient(async (url, init) => {
+      const response = await fetch(url, init);
+      if (!String(url).endsWith('/lookup') || !response.ok) return response;
+      const body = (await response.json()) as Record<string, unknown>;
+      return new Response(JSON.stringify({ ...body, authorization_id: randomUUID() }), { status: 200, headers: response.headers });
+    });
+    merchantFake.failNext('capture', 500);
+    expect((await controller.run(ana, TENANT, code)).state).toBe('pending');
+    expect(routes()).toEqual(['authorize', 'capture', 'lookup']);
+    expect((await rows(code)).at(-1)).toMatchObject({ status: 'needs_review', last_code: 'authorization_mismatch' });
+    // A person decides: the drain leaves it alone, and the hold is not voided.
+    await due();
+    expect(await drain()).toMatchObject({ claimed: 0 });
+    expect(merchantFake.voucher(code)!.status).toBe('held');
+  });
+
+  it('under impersonation, the status lists only the impersonated workspace\'s redemptions', async () => {
+    const as = (subjectTenantId: string) => ({ sessionId: 's', staffUserId: BEN, subjectUserId: ANA, subjectTenantId });
+    const own = await linkController.status(ana, TENANT, as(TENANT));
+    expect(own.vouchers!.redemptions.length).toBeGreaterThan(0);
+    const other = await linkController.status(ana, TENANT, as('b7a40000-0000-4000-8000-0000000000ff'));
+    expect(other.vouchers!.redemptions).toEqual([]);
   });
 
   it('a revoked link is marked broken and refused', async () => {
