@@ -74,9 +74,9 @@ export function linkErrorMessage(
 }
 
 /** Where the person goes in YourTal. `origin` has no trailing slash. */
-export function yourtalLinks(origin: string): { getCode: string; wallet: string } {
+export function yourtalLinks(origin: string): { getCode: string; wallet: string; passkey: string } {
   const base = origin.replace(/\/+$/, '');
-  return { getCode: `${base}/me`, wallet: `${base}/wallet` };
+  return { getCode: `${base}/me`, wallet: `${base}/wallet`, passkey: `${base}/passkey` };
 }
 
 /** The code as typed: pasted codes arrive with spaces and line breaks around them. */
@@ -138,6 +138,8 @@ export const LINK_COPY = {
   identityVerifyEmail: 'Verify your email in YourTal to earn points for receipts.',
   identityVerifyEmailLink: 'Open YourTal to verify',
   identityPermanentEmail: 'Use a permanent email address in YourTal to earn points.',
+  identityAddPasskey: 'Add a passkey in YourTal to earn points.',
+  identityAddPasskeyLink: 'Open YourTal to add a passkey',
   identityNoChange: "YourTal can't change an email address yet.",
   rowIdentity: 'Not earned: YourTal identity check',
   identityHint: "These receipts won't earn later.",
@@ -176,16 +178,19 @@ export function otherRefused(receipts: { refused: number; pausedRefused?: number
  * What the person must do about YourTal's identity check (5.9.c), from
  * `identityCheck.missing`: sentences, and whether to offer the link to
  * YourTal's Me page (only for `verify_email`: YourTal has no change-email
- * flow yet, so `use_permanent_email` gets no link). Empty when not required.
+ * flow yet, so `use_permanent_email` gets no link) and to its passkey page
+ * (`add_passkey`). Empty when not required.
  */
 export function identityNotice(
   check: { required: boolean; missing: string[] } | undefined,
-): { lines: string[]; showLink: boolean } {
-  if (!check?.required) return { lines: [], showLink: false };
+): { lines: string[]; showLink: boolean; showPasskeyLink: boolean } {
+  if (!check?.required) return { lines: [], showLink: false, showPasskeyLink: false };
   const lines: string[] = [];
   const verify = check.missing.includes('verify_email');
   const permanent = check.missing.includes('use_permanent_email');
+  const passkey = check.missing.includes('add_passkey');
   if (verify) lines.push(LINK_COPY.identityVerifyEmail);
   if (permanent) lines.push(LINK_COPY.identityPermanentEmail, LINK_COPY.identityNoChange);
-  return { lines, showLink: verify };
+  if (passkey) lines.push(LINK_COPY.identityAddPasskey);
+  return { lines, showLink: verify, showPasskeyLink: passkey };
 }

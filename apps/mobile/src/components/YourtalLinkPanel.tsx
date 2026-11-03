@@ -24,7 +24,7 @@ export type LinkLoad =
 export interface YourtalLinkPanelProps {
   load: LinkLoad;
   /** Absolute YourTal URLs, built from `YOURTAL_WEB_URL`. */
-  links: { getCode: string; wallet: string };
+  links: { getCode: string; wallet: string; passkey: string };
   code: string;
   onCodeChange: (code: string) => void;
   onLink: (code: string) => void;
@@ -161,6 +161,9 @@ export function YourtalLinkPanel(props: YourtalLinkPanelProps) {
             </Notice>
             {identity.showLink ? (
               <LinkText label={LINK_COPY.identityVerifyEmailLink} onPress={() => props.onOpenUrl(links.getCode)} />
+            ) : null}
+            {identity.showPasskeyLink ? (
+              <LinkText label={LINK_COPY.identityAddPasskeyLink} onPress={() => props.onOpenUrl(links.passkey)} />
             ) : null}
           </View>
         ) : null}
