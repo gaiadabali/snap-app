@@ -57,6 +57,7 @@ import type {
   AlertItem,
   PrivacySettings,
   YourtalLinkStatus,
+  RedeemYourtalVoucherResult,
   Recurring,
   SalesSummary,
   Session,
@@ -101,9 +102,12 @@ type AuthResponse = { token: string; user: AuthUser; workspaces: WorkspaceSummar
 export class ApiError extends Error {
   readonly status: number;
   readonly code: string | null;
+  /** `already_redeemed` only: when the voucher's scans were added (ISO). */
+  readonly redeemedAt: string | null;
 
-  constructor(status: number, message: string, code: string | null) {
+  constructor(status: number, message: string, code: string | null, redeemedAt: string | null = null) {
     super(message);
+    this.redeemedAt = redeemedAt;
     this.name = 'ApiError';
     this.status = status;
     this.code = code;
@@ -211,8 +215,10 @@ export class HttpApi implements SnapApi {
     if (!response.ok) {
       let message = `Something went wrong (${response.status}).`;
       let code: string | null = null;
+      let redeemedAt: string | null = null;
       try {
-        const problem = (await response.json()) as { message?: string; error?: string };
+        const problem = (await response.json()) as { message?: string; error?: string; redeemedAt?: string };
+        if (typeof problem.redeemedAt === 'string') redeemedAt = problem.redeemedAt;
         if (typeof problem.message === 'string') message = problem.message;
         if (typeof problem.error === 'string') code = problem.error;
       } catch {
@@ -225,7 +231,7 @@ export class HttpApi implements SnapApi {
         this.workspaces = [];
         endSession(sentToken);
       }
-      throw new ApiError(response.status, message, code);
+      throw new ApiError(response.status, message, code, redeemedAt);
     }
 
     // A response of any kind proves there is a connection, which is the one
@@ -1186,8 +1192,16 @@ export class HttpApi implements SnapApi {
     );
   }
 
-  getYourtalLink(): Promise<YourtalLinkStatus> {
-    return this.get<YourtalLinkStatus>('/v1/yourtal/link', null);
+  /** The link is the person's, so no workspace header, unless the voucher history (per workspace) is wanted. */
+  getYourtalLink(withVouchers = false): Promise<YourtalLinkStatus> {
+    return this.get<YourtalLinkStatus>('/v1/yourtal/link', withVouchers ? undefined : null);
+  }
+
+  redeemYourtalVoucher(code: string): Promise<RedeemYourtalVoucherResult> {
+    return this.request<RedeemYourtalVoucherResult>('POST', '/v1/yourtal/vouchers/redeem', {
+      body: { code },
+      queue: false,
+    });
   }
 
   linkYourtal(code: string): Promise<YourtalLinkStatus> {

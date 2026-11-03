@@ -7,6 +7,7 @@ import { YourtalLinkPanel } from '@/components/YourtalLinkPanel';
 import { useYourtalLink } from '@/components/useYourtalLink';
 import { Screen, ScreenHeader, Small } from '@/components/ui';
 import { YOURTAL_WEB_URL } from '@/config';
+import { useWorkspace } from '@/workspace';
 import { LINK_COPY, yourtalLinks } from '@/lib/yourtal-link';
 import { space } from '@/theme';
 
@@ -29,7 +30,9 @@ export default function PointsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const yt = useYourtalLink();
+  const { workspaceName } = useWorkspace();
   const [code, setCode] = useState('');
+  const [voucherCode, setVoucherCode] = useState('');
   const [confirming, setConfirming] = useState(false);
 
   if (yt.load.kind === 'ready' && !yt.load.status.available) return <Redirect href="/" />;
@@ -75,6 +78,19 @@ export default function PointsScreen() {
           onConfirmUnlink={async () => {
             // Stay on the confirm step when it fails, so the error shows under it and Unlink can be tried again.
             if (await yt.unlink()) setConfirming(false);
+          }}
+          voucher={{
+            workspaceName,
+            code: voucherCode,
+            onCodeChange: (v) => {
+              setVoucherCode(v);
+              if (yt.outcome?.kind === 'error') yt.clearOutcome();
+            },
+            onSubmit: async (c) => {
+              if (await yt.redeem(c)) setVoucherCode('');
+            },
+            busy: yt.voucherBusy,
+            outcome: yt.outcome,
           }}
           onRetry={yt.retry}
           onOpenUrl={(url) => void Linking.openURL(url)}

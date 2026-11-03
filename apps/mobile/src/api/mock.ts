@@ -54,6 +54,8 @@ import type {
   PersonalSummary,
   PlanUsage,
   YourtalLinkStatus,
+  YourtalVoucherRedemption,
+  RedeemYourtalVoucherResult,
   Recurring,
   SalesSummary,
   Session,
@@ -346,6 +348,8 @@ const seedYourtalLink = (): YourtalLinkStatus => ({
   identityCheck: { required: false, missing: [] },
 });
 let yourtalLink: YourtalLinkStatus = seedYourtalLink();
+/** Voucher history for the demo workspace; not persisted, like the link. */
+let voucherRedemptions: YourtalVoucherRedemption[] = [];
 
 /**
  * Hydration, run once before the first read.
@@ -483,6 +487,7 @@ export async function resetDemoData(): Promise<void> {
   creditBalance = 7;
   creditPurchases = seedCreditPurchases();
   yourtalLink = seedYourtalLink();
+  voucherRedemptions = [];
   WHO = 'usr_kate';
   signedIn = false;
 }
@@ -2048,7 +2053,52 @@ export class MockApi implements SnapApi {
 
   async getYourtalLink(): Promise<YourtalLinkStatus> {
     await settle(140);
-    return yourtalLink;
+    const linked = yourtalLink.state === 'linked';
+    // A pending demo voucher finishes the next time the status is read, as the server's worker would.
+    voucherRedemptions = voucherRedemptions.map((r) => {
+      if (r.state !== 'pending') return r;
+      creditBalance += r.credits;
+      return { ...r, state: 'granted', grantedAt: new Date().toISOString() };
+    });
+    return {
+      ...yourtalLink,
+      vouchers: linked
+        ? { available: true, redemptions: voucherRedemptions }
+        : { available: false, reason: 'not_linked', redemptions: [] },
+    };
+  }
+
+  /**
+   * Demo codes (17 symbols once dashes and spaces go): starts NOPE, USED, BUSY,
+   * DOWN, LIMIT or SLOW answer that way (not_your_voucher, already_redeemed,
+   * voucher_busy, yourtal_unavailable, rate_limited, pending); any other
+   * valid-length code adds 50 scans.
+   */
+  async redeemYourtalVoucher(code: string): Promise<RedeemYourtalVoucherResult> {
+    await settle(500);
+    const clean = code.replace(/[-\s]/g, '').toUpperCase();
+    if (yourtalLink.state !== 'linked') throw new ApiError(409, 'Link YourTal to this account first.', 'not_linked');
+    if (clean.length !== 17) throw new ApiError(400, "That code isn't right.", 'invalid_voucher_code');
+    const fail = (status: number, error: string) => {
+      throw new ApiError(status, error, error, error === 'already_redeemed' ? '2026-10-30T02:00:00.000Z' : null);
+    };
+    if (clean.startsWith('NOPE')) fail(409, 'not_your_voucher');
+    if (clean.startsWith('USED')) fail(409, 'already_redeemed');
+    if (clean.startsWith('BUSY')) fail(409, 'voucher_busy');
+    if (clean.startsWith('DOWN')) fail(503, 'yourtal_unavailable');
+    if (clean.startsWith('LIMIT')) fail(429, 'rate_limited');
+    const now = new Date().toISOString();
+    const slow = clean.startsWith('SLOW');
+    const redemption: YourtalVoucherRedemption = {
+      id: `demo-voucher-${voucherRedemptions.length + 1}`,
+      state: slow ? 'pending' : 'granted',
+      credits: 50,
+      createdAt: now,
+      grantedAt: slow ? null : now,
+    };
+    voucherRedemptions = [redemption, ...voucherRedemptions];
+    if (!slow) creditBalance += 50;
+    return { state: redemption.state === 'granted' ? 'granted' : 'pending', redemption };
   }
 
   async linkYourtal(code: string): Promise<YourtalLinkStatus> {

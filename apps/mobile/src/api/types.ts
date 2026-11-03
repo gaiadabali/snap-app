@@ -106,6 +106,7 @@ import type {
   AlertItem,
   PrivacySettings,
   YourtalLinkStatus,
+  RedeemYourtalVoucherResult,
 } from '@snap/api-contract';
 
 /**
@@ -402,7 +403,14 @@ export interface SnapApi {
    * the account is linked and what YourTal said it paid. `available: false`
    * means the feature is off: show nothing.
    */
-  getYourtalLink(): Promise<YourtalLinkStatus>;
+  getYourtalLink(withVouchers?: boolean): Promise<YourtalLinkStatus>;
+  /**
+   * `POST /v1/yourtal/vouchers/redeem` into the ACTIVE workspace (200 granted,
+   * 202 pending). Throws `ApiError` with `code` (and `redeemedAt` for
+   * `already_redeemed`). Never queued offline: a code replayed later is a
+   * wrong message.
+   */
+  redeemYourtalVoucher(code: string): Promise<RedeemYourtalVoucherResult>;
   /**
    * `GET /v1/auth/yourtal`: is Sign in with YourTal on for the phone app?
    * Public. Any failure reads as "not available": the buttons stay hidden.
