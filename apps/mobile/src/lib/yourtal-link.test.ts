@@ -8,6 +8,7 @@ import {
   linkedOn,
   pointsSummary,
   yourtalLinks,
+  identityNotice,
 } from './yourtal-link';
 
 describe('linkErrorMessage', () => {
@@ -56,6 +57,7 @@ describe('yourtalLinks', () => {
     expect(yourtalLinks('https://yourtal.gaiada.com')).toEqual({
       getCode: 'https://yourtal.gaiada.com/me',
       wallet: 'https://yourtal.gaiada.com/wallet',
+      passkey: 'https://yourtal.gaiada.com/passkey',
     });
     expect(yourtalLinks('https://yourtal.example//').wallet).toBe('https://yourtal.example/wallet');
   });
@@ -95,5 +97,26 @@ describe('pointsSummary', () => {
   it('invites linking when unlinked, and relinking when the link ended', () => {
     expect(pointsSummary(base)?.value).toBe('Link');
     expect(pointsSummary({ ...base, state: 'broken' })?.value).toBe('Ended');
+  });
+});
+
+describe('identityNotice', () => {
+  it('is empty when the check is not required', () => {
+    expect(identityNotice(undefined)).toEqual({ lines: [], showLink: false, showPasskeyLink: false });
+    expect(identityNotice({ required: false, missing: ['add_passkey'] }).lines).toEqual([]);
+  });
+
+  it('asks to add a passkey, with a link to the passkey page and the earn-points wording', () => {
+    const n = identityNotice({ required: true, missing: ['add_passkey'] });
+    expect(n.lines).toEqual(['Add a passkey in YourTal to earn points.']);
+    expect(n).toMatchObject({ showLink: false, showPasskeyLink: true });
+    expect(n.lines.join(' ')).not.toMatch(/money|income|cash|\$/i);
+  });
+
+  it('lists each missing step, and links to the Me page only for verify_email', () => {
+    const n = identityNotice({ required: true, missing: ['verify_email', 'use_permanent_email', 'add_passkey'] });
+    expect(n.lines).toHaveLength(4);
+    expect(n).toMatchObject({ showLink: true, showPasskeyLink: true });
+    expect(identityNotice({ required: true, missing: ['use_permanent_email'] }).showPasskeyLink).toBe(false);
   });
 });

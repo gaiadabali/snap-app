@@ -17,7 +17,7 @@ export type LinkLoad = { kind: 'error' } | { kind: 'ready'; status: YourtalLinkS
 export interface YourtalLinkViewProps {
   load: LinkLoad;
   /** Absolute YourTal URLs, built from `YOURTAL_WEB_URL`. */
-  links: { getCode: string; wallet: string };
+  links: { getCode: string; wallet: string; passkey: string };
   /** Where "Try again" goes: this page, so the server reads the status again. */
   retryHref: string;
   /** Where "Confirm your email" goes: the existing email-confirmation page. */
@@ -76,8 +76,16 @@ function PausedNotice() {
 }
 
 /** The person has not passed YourTal's identity check: receipts scanned now won't earn. */
-function IdentityNotice({ check, meHref }: { check: YourtalLinkStatus['identityCheck']; meHref: string }) {
-  const { lines, showLink } = identityNotice(check);
+function IdentityNotice({
+  check,
+  meHref,
+  passkeyHref,
+}: {
+  check: YourtalLinkStatus['identityCheck'];
+  meHref: string;
+  passkeyHref: string;
+}) {
+  const { lines, showLink, showPasskeyLink } = identityNotice(check);
   if (lines.length === 0) return null;
   return (
     <div
@@ -88,6 +96,7 @@ function IdentityNotice({ check, meHref }: { check: YourtalLinkStatus['identityC
         <p key={line}>{line}</p>
       ))}
       {showLink ? <External href={meHref}>{LINK_COPY.identityVerifyEmailLink}</External> : null}
+      {showPasskeyLink ? <External href={passkeyHref}>{LINK_COPY.identityAddPasskeyLink}</External> : null}
     </div>
   );
 }
@@ -187,7 +196,7 @@ export function YourtalLinkView(props: YourtalLinkViewProps) {
     const since = linkedOn(status.linkedAt);
     return (
       <div className="flex flex-col gap-6">
-        <IdentityNotice check={status.identityCheck} meHref={links.getCode} />
+        <IdentityNotice check={status.identityCheck} meHref={links.getCode} passkeyHref={links.passkey} />
         {status.receiptPoints?.state === 'paused' ? <PausedNotice /> : null}
         <Card tone="accent" className="max-w-[480px]">
           <h2 className="text-[17px] font-semibold text-[var(--color-ink)]">{LINK_COPY.linkedTitle}</h2>

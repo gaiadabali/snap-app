@@ -23,7 +23,7 @@ function html(over: Partial<YourtalLinkViewProps> & { status?: Partial<YourtalLi
   const { status, ...rest } = over;
   const props: YourtalLinkViewProps = {
     load: { kind: 'ready', status: { ...STATUS, ...status } },
-    links: { getCode: 'https://yt.test/me', wallet: 'https://yt.test/wallet' },
+    links: { getCode: 'https://yt.test/me', wallet: 'https://yt.test/wallet', passkey: 'https://yt.test/passkey' },
     retryHref: '/app/points',
     verifyEmailHref: '/verify-email',
     code: '',
@@ -160,6 +160,17 @@ describe('YourtalLinkView: linked', () => {
     expect(t).toContain("YourTal can't change an email address yet.");
     expect(t).not.toContain('Verify your email');
     expect(t).not.toContain('Open YourTal to verify');
+  });
+
+  it('asks for a passkey, linking to YourTal\'s passkey page', () => {
+    const s = { ...linked, identityCheck: { required: true, missing: ['add_passkey'] } };
+    const markup = html({ status: s });
+    const t = text(markup);
+    expect(t).toContain('Add a passkey in YourTal to earn points.');
+    expect(t).toContain('Open YourTal to add a passkey');
+    expect(t).not.toContain('Verify your email');
+    expect(t).not.toContain('Open YourTal to verify');
+    expect(markup).toContain('href="https://yt.test/passkey"');
   });
 
   it('shows both lines when both are missing', () => {

@@ -103,7 +103,7 @@ const SIGNIN_MESSAGES: Record<SignInErrorCode, string> = {
   staff_strong_auth_required:
     'Staff accounts must sign in to YourTal with a passkey or an authenticator code. Set one up in YourTal, then try again.',
   staff_reauth_required:
-    'For your security, staff must have signed in to YourTal in the last 12 hours. Sign out of YourTal, sign in there again, then come back.',
+    'For your security, staff must have signed in to YourTal in the last 12 hours. Sign in again to continue.',
   account_review:
     'We could not match this YourTal account to a Snap Apps account automatically. We have flagged it for a person to check.',
   try_again: 'Something went wrong on our side. Try again in a moment.',
@@ -145,12 +145,16 @@ export function deniedMessage(error: string, description: string | null): string
   return null;
 }
 
+/** True when staff must sign in to YourTal afresh: the screen offers "Sign in again" (`freshSignIn`). */
+export const isStaffReauth = (code: string | null | undefined): boolean => code === 'staff_reauth_required';
+
 /** True when the server refused an old sign-in route because the account moved to YourTal. */
 export const isUseYourtal = (code: string | null | undefined): boolean => code === 'use_yourtal';
 
 export const SIGNIN_COPY = {
   signIn: 'Sign in with YourTal',
   createAccount: 'Create account with YourTal',
+  signInAgain: 'Sign in again',
   opening: 'Opening YourTal…',
   useYourtalTitle: 'This account now signs in with YourTal',
   useYourtalBody: 'Use the button below. Your receipts and budgets are all still here.',
@@ -166,7 +170,7 @@ export type SignInAttempt<S> =
 export type BrowserResult = { type: 'success'; url: string } | { type: string; url?: undefined };
 
 export interface SignInDeps<S> {
-  start(input: { signUp: boolean; locale?: 'en-AU' | 'id-ID' }): Promise<{ url: string; flowId: string }>;
+  start(input: { signUp: boolean; freshSignIn?: boolean; locale?: 'en-AU' | 'id-ID' }): Promise<{ url: string; flowId: string }>;
   openBrowser(url: string, redirectUri: string): Promise<BrowserResult>;
   finish(input: { flowId: string; code: string; state: string; iss: string }): Promise<S>;
 }
@@ -177,7 +181,7 @@ export interface SignInDeps<S> {
  */
 export async function runYourtalSignIn<S>(
   deps: SignInDeps<S>,
-  options: { signUp?: boolean; locale?: 'en-AU' | 'id-ID' } = {},
+  options: { signUp?: boolean; freshSignIn?: boolean; locale?: 'en-AU' | 'id-ID' } = {},
 ): Promise<SignInAttempt<S>> {
   const codeOf = (e: unknown): string | null =>
     e && typeof e === 'object' && 'code' in e && typeof (e as { code: unknown }).code === 'string'
@@ -191,7 +195,11 @@ export async function runYourtalSignIn<S>(
 
   let started: { url: string; flowId: string };
   try {
-    started = await deps.start({ signUp: options.signUp === true, locale: options.locale });
+    started = await deps.start({
+      signUp: options.signUp === true,
+      ...(options.freshSignIn ? { freshSignIn: true } : {}),
+      locale: options.locale,
+    });
   } catch (e) {
     return fail(codeOf(e));
   }

@@ -187,6 +187,15 @@ describeIfDb('Sign in with YourTal — real database, real provider', () => {
     expect(redirect.searchParams.get('code')).toBeTruthy();
   });
 
+  it('asks for prompt=login only when the start request says freshSignIn', async () => {
+    const plain = new URL((await controller.start({ client: 'web' }, caller())).url).searchParams;
+    expect(plain.has('prompt')).toBe(false);
+    expect(plain.has('max_age')).toBe(false);
+    const fresh = new URL((await controller.start({ client: 'web', freshSignIn: true }, caller())).url).searchParams;
+    expect(fresh.get('prompt')).toBe('login');
+    expect(fresh.has('max_age')).toBe(false);
+  });
+
   it('creates a new account, keyed on the sub, and opens a working session', async () => {
     const who = person('new');
     const result = await signIn(who, { returnTo: '/app/receipts?x=1' });

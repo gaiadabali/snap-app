@@ -1736,8 +1736,8 @@ export interface YourtalLinkStatus {
    * YourTal's identity check (group 5.9.c). `required` is true while the
    * person's most recent receipt was refused for it and no later receipt has
    * been paid. `missing` is what YourTal said: `verify_email` (verify the
-   * email in YourTal) and/or `use_permanent_email` (a disposable address; YourTal
-   * has no change-email flow yet). Empty when not required.
+   * email in YourTal), `use_permanent_email` (a disposable address; YourTal
+   * has no change-email flow yet) and/or `add_passkey` (add a passkey in YourTal). Empty when not required.
    */
   identityCheck: {
     required: boolean;

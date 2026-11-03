@@ -1149,13 +1149,19 @@ export class HttpApi implements SnapApi {
 
   startYourtalSignIn(input: {
     signUp: boolean;
+    freshSignIn?: boolean;
     locale?: 'en-AU' | 'id-ID';
   }): Promise<{ url: string; flowId: string }> {
     return this.request<{ url: string; flowId: string; expiresAt: string }>(
       'POST',
       '/v1/auth/yourtal/start',
       {
-        body: { client: 'mobile', signUp: input.signUp, ...(input.locale ? { locale: input.locale } : {}) },
+        body: {
+          client: 'mobile',
+          signUp: input.signUp,
+          ...(input.freshSignIn ? { freshSignIn: true } : {}),
+          ...(input.locale ? { locale: input.locale } : {}),
+        },
         auth: false,
         workspaceId: null,
         queue: false,

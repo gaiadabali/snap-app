@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
   deniedMessage,
+  isStaffReauth,
   isUseYourtal,
   isYourtalReturn,
   parseReturnUrl,
@@ -193,6 +194,22 @@ describe('runYourtalSignIn', () => {
     const d = deps();
     await runYourtalSignIn(d, { signUp: true, locale: 'id-ID' });
     expect(d.start).toHaveBeenCalledWith({ signUp: true, locale: 'id-ID' });
+  });
+
+  it('asks YourTal for a fresh sign-in only when told to', async () => {
+    const d = deps();
+    await runYourtalSignIn(d, { freshSignIn: true });
+    expect(d.start).toHaveBeenCalledWith({ signUp: false, freshSignIn: true, locale: undefined });
+    const plain = deps();
+    await runYourtalSignIn(plain);
+    expect(plain.start.mock.calls[0]![0]).not.toHaveProperty('freshSignIn');
+  });
+
+  it('recognises the refusal that offers "Sign in again"', () => {
+    expect(isStaffReauth('staff_reauth_required')).toBe(true);
+    expect(isStaffReauth('staff_strong_auth_required')).toBe(false);
+    expect(isStaffReauth(null)).toBe(false);
+    expect(SIGNIN_COPY.signInAgain).toBe('Sign in again');
   });
 
   it.each(['cancel', 'dismiss', 'locked'])('a browser that ends with "%s" returns quietly, with no finish', async (type) => {

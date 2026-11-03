@@ -96,6 +96,17 @@ describe('Sign in with YourTal against the API client', () => {
     expect(calls[0]).toMatchObject({ method: 'POST', body: { client: 'mobile', signUp: true }, auth: null });
   });
 
+  it('start sends freshSignIn only when asked', async () => {
+    serve({
+      '/v1/auth/yourtal/start': () => json(200, { url: 'https://id.test/a?state=s', flowId: 'f1', expiresAt: 'x' }),
+    });
+    const http = new HttpApi(BASE);
+    await http.startYourtalSignIn({ signUp: false, freshSignIn: true });
+    await http.startYourtalSignIn({ signUp: false });
+    expect(calls[0]!.body).toEqual({ client: 'mobile', signUp: false, freshSignIn: true });
+    expect(calls[1]!.body).toEqual({ client: 'mobile', signUp: false });
+  });
+
   it('start, browser, finish: stores the SnapApp session in SecureStore and picks the first workspace', async () => {
     serve({
       '/v1/auth/yourtal/start': () => json(200, { url: 'https://id.test/a?state=s', flowId: 'f1', expiresAt: 'x' }),

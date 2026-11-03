@@ -26,7 +26,7 @@ export function YourtalLinkClient({
 }: {
   /** What the server read for this render. */
   initial: LinkLoad;
-  links: { getCode: string; wallet: string };
+  links: { getCode: string; wallet: string; passkey: string };
   retryHref: string;
   verifyEmailHref: string;
   onLink: (code: string) => Promise<YourtalActionResult>;
