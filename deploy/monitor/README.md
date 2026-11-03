@@ -101,6 +101,7 @@ Actions: email on failed workflows) so the email arrives where it is read.
 | Newest base backup under 8 days old | the Sunday `pg_basebackup` can fail while nightly dumps succeed, which silently ends point-in-time recovery. |
 | Vault token renewed under 13 h ago | `renew-token.sh` runs every 12 h; its log's last line must say `renewed`. A token that stops renewing takes every provider key down while Vault still shows unsealed. Only checked where a Vault container exists. |
 | Disk ≤ 90% on `/` | the same incident: the disk filled to 100% and took co-hosted sites down. |
+| YourTal voucher redemptions | money moves through `yourtal_voucher_redemptions`; flags any `needs_review`, a `captured` row with no grant for 15 min, any unfinished row over 1 h old, any unfinished `authorization_mismatch`. Counts only, via `docker exec snap-postgres psql` as postgres in a read-only session (the table has forced RLS). `VOUCHER_CHECK=off` skips. Test: `test/voucher-monitor.test.ts`. |
 | Vault unsealed | a restarted Vault comes back SEALED and nothing unseals it (deploy/vault/README.md) — every provider key fails until a human with two Shamir shares acts. |
 
 ## Restore drill log

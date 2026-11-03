@@ -442,6 +442,39 @@ and a test proves a queued write survives a sync cycle without duplicating.
 
 ---
 
+## YourTal merchant voucher API (group plan 2.8, S2 to S4)
+
+SnapApp is a MERCHANT of YourTal's voucher service, as Snap App Pty Ltd, so a
+voucher bought with YourTal points can be redeemed for scans. It is not one of
+the six lanes above and has no simulator switch in `ENV`: the settings are
+absent (feature off) or present. Tests run against `fake-yourtal-vouchers.ts`,
+which copies the Go service's behaviour (stored and replayed answers, 15-minute
+holds, single use, throttling).
+
+- **Calls** (`apps/server/src/yourtal/merchant-client.ts`), all `POST` to the
+  YourTal API: `/v1/vouchers/authorize`, `/capture`, `/void`, `/lookup`. Every
+  one carries an `Idempotency-Key` that is written to the redemption row before
+  its first send and reused on every retry; every answer is final for its key.
+  Plus the partner read `POST /api/partners/vouchers/owner {linkId, codeSha256}`
+  (does the linked wallet hold this code), signed with the partner secret.
+- **Signer** (`merchant-signing.ts`): header `X-YourTal-Signature: t=<unix>,k=<key id>,v1=<hex>`,
+  HMAC-SHA256 with the 32 raw bytes of the merchant secret, over the same bytes
+  that are sent (`redirect: 'error'`, 8 s timeout, a 5 minute replay window on
+  YourTal's side). It ports `packages/sdk-merchant/src/signing.ts` in the
+  yourtal repo.
+- **Keys** live on the host in `/etc/snap-apps/secrets/yourtal.env`, mounted
+  single-file into api and worker (see docs/DEPLOY.md, "YourTal scans voucher").
+  `YOURTAL_MERCHANT_KEY_ID` (`mc_<uuid>`) and `YOURTAL_MERCHANT_SECRET` (64 hex).
+  Never in `.env`, an image, a log, or this repo.
+- **State and money**: table `yourtal_voucher_redemptions` (migration 0041); the
+  worker drain finishes unknown outcomes (a lost answer is resolved by the order
+  lookup, `captured` is only ever followed by the grant, never a second capture
+  or a void). Credits land as a `usage_grants` row with source
+  `yourtal_voucher`; they are free credits, so they earn no YourTal points.
+- **Watched by** `deploy/monitor/alert.sh --inbox` (docs/DEPLOY.md).
+
+---
+
 ## What this queue does not do
 
 - **It does not simulate approval.** Where a vendor must approve (Xero
