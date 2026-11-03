@@ -398,6 +398,10 @@ const docs = SEEDS.map((s, i) => {
     docType: isTaxInvoice ? ('tax_invoice' as const) : ('receipt' as const),
     category: s.category,
     engineRowId: s.engineRow,
+    // Demo receipts are not filed in a workspace category (group 4.2).
+    categoryId: null,
+    categorySource: null,
+    taxLabel: null,
     reviewStatus: isTaxInvoice ? ('auto_accepted' as const) : ('needs_review' as const),
     confidenceOverall: s.confidence,
     note: s.note ?? null,
@@ -569,6 +573,10 @@ function generate(
           docType: business ? ('tax_invoice' as const) : ('receipt' as const),
           category: t.category,
           engineRowId: t.engineRow ?? 'personal',
+          // Demo receipts are not filed in a workspace category (group 4.2).
+          categoryId: null,
+          categorySource: null,
+          taxLabel: null,
           reviewStatus: 'auto_accepted' as const,
           confidenceOverall: 0.96,
           note: null,
@@ -653,6 +661,10 @@ const subscriptionDocs: GenDoc[] = [];
         docType: 'receipt' as const,
         category: sub.category,
         engineRowId: 'personal',
+        // Demo receipts are not filed in a workspace category (group 4.2).
+        categoryId: null,
+        categorySource: null,
+        taxLabel: null,
         reviewStatus: 'auto_accepted' as const,
         confidenceOverall: 0.98,
         note: null,

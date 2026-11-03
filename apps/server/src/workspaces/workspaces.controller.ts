@@ -31,6 +31,7 @@ import { grantSignupBonusIfFirst } from '../credits/credits.repo.js';
 import { getDb } from '../db.js';
 import { listMembers, listWorkspacesFor, updateTenant } from '../repo.js';
 import { seedDefaultCategories } from '../settings/settings.repo.js';
+import { occupationProblem } from '../settings/occupation.js';
 import { setBudget } from '../business/business.repo.js';
 import { abnIsValid } from '../extraction/validators.js';
 import { installRulesFor } from '../taxrules/taxrules.repo.js';
@@ -181,6 +182,12 @@ export class WorkspacesController {
         'That ABN fails the ATO checksum — it is not a real ABN. Check for a transposed digit.',
       );
     }
+
+    // Checked before anything is created, so a refused occupation does not
+    // leave a half-set-up workspace behind. A personal workspace may not pick
+    // the sole trader (docs/DEDUCTIONS.md).
+    const occupationIssue = occupationProblem(body.kind, body.occupationProfileId);
+    if (occupationIssue) throw new BadRequestException(occupationIssue);
 
     const created = await this.create(user, {
       name,

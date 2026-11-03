@@ -62,6 +62,7 @@ import { get as readObject } from '../storage.js';
 import { issueImageToken } from '../tokens.js';
 import { gstFreeAmount, taxSubtotalsFromLines } from '../extraction/tax-subtotals';
 import { deviceAgreementFindings } from './device-agreement.js';
+import { CATEGORY_PATHS, UNCATEGORISED, resolveCategoryEdit } from './category-edit.js';
 
 /* ── DTOs ────────────────────────────────────────────────────────────────── */
 
@@ -105,7 +106,11 @@ export class UpdateDocumentDto {
   @IsOptional() @IsInt() @Min(1) version?: number;
 }
 
-/** The paths a correction may carry, and which column each one settles. */
+/**
+ * The paths a correction may carry, and which column each one settles.
+ * `header.category_id` and `header.category` (a name, for installed phones) are
+ * also accepted: see `category-edit.ts`.
+ */
 const EDITABLE_PATHS = {
   'supplier.name': 'supplierName',
   'supplier.abn': 'supplierAbn',
@@ -131,15 +136,10 @@ function flattenEdits(edits: Record<string, string | number | null>): {
 } {
   const patch: Record<string, string | null> = {};
   for (const [path, value] of Object.entries(edits)) {
-    if (path === 'header.category') {
-      // The app offers category chips; the server has nowhere to put one —
-      // `documents` has no category column, and `toWire` returns a constant.
-      // Refused explicitly rather than swallowed, so the gap is visible
-      // instead of looking like data loss.
-      throw new BadRequestException(
-        'Category cannot be saved yet: it is not stored on the server. Correct the other fields and leave the category alone.',
-      );
-    }
+    // The category paths are settled separately (`resolveCategoryEdit`): they
+    // need a database lookup, and a receipt's category is not a column of the
+    // flat patch. Skipped here, not ignored: the caller handles them.
+    if ((CATEGORY_PATHS as readonly string[]).includes(path)) continue;
     const column = (EDITABLE_PATHS as Record<string, string | undefined>)[path];
     if (!column) {
       throw new BadRequestException(
@@ -261,10 +261,14 @@ export function toWire(
     taxSubtotals,
     isTaxInvoice: document.is_tax_invoice,
     docType: document.is_tax_invoice ? ('tax_invoice' as const) : ('receipt' as const),
-    // Categorisation is a later phase; until then the deduction row is unset
-    // rather than guessed, because a wrong category is a wrong deduction.
-    category: 'Uncategorised',
-    engineRowId: 'unassigned',
+    // The receipt's own category (0042): chosen by a person or copied from the
+    // supplier's last receipt, never guessed. Without one the deduction row is
+    // unset rather than invented, because a wrong category is a wrong deduction.
+    category: document.category_name ?? UNCATEGORISED,
+    engineRowId: document.category_engine_row_id ?? 'unassigned',
+    categoryId: document.category_id ?? null,
+    categorySource: document.category_id ? (document.category_source ?? null) : null,
+    taxLabel: document.category_tax_label ?? null,
     reviewStatus: document.review_status as 'auto_accepted' | 'needs_review' | 'reviewed' | 'rejected',
     confidenceOverall: Number(document.confidence_overall ?? 1),
     note: null,
@@ -460,6 +464,7 @@ export class DocumentsController {
     // columns. One translation, at the boundary, rather than a second
     // vocabulary leaking through the handler.
     const edit = flattenEdits(body.edits);
+    const categoryEdit = await resolveCategoryEdit(user.userId, tenantId, body.edits, before.document);
 
     // The workspace's tax rule set, or null for Australia. Resolved before the
     // re-derivation below, because the divisor is the jurisdiction: 1/11 in
@@ -526,12 +531,16 @@ export class DocumentsController {
         // Visibility has its own endpoint; a correction never changes who
         // can see a document.
         atoCompliance: { failures: verdict.complianceFailures, findings: verdict.findings },
+        ...(categoryEdit ? { categoryId: categoryEdit.categoryId } : {}),
       },
       body.version,
     );
 
     if (!outcome.ok) {
       if (outcome.reason === 'missing') throw new NotFoundException('No such document.');
+      if (outcome.reason === 'bad_category') {
+        throw new BadRequestException('That category does not exist in this workspace.');
+      }
       throw new ConflictException(
         'Someone else changed this document while you were editing it. Reload and try again.',
       );

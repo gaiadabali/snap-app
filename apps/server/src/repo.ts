@@ -655,6 +655,12 @@ export type DocumentRow = {
   version: number;
   workspace_kind: string;
   tenant_id: string;
+  /** The whole receipt's category (0042), with what the category maps to. */
+  category_id: string | null;
+  category_name: string | null;
+  category_source: 'user' | 'supplier' | null;
+  category_tax_label: string | null;
+  category_engine_row_id: string | null;
 };
 
 const DOCUMENT_COLUMNS = sql`
@@ -678,7 +684,12 @@ const DOCUMENT_COLUMNS = sql`
   d.visibility,
   d.version,
   t.kind::text as workspace_kind,
-  d.tenant_id
+  d.tenant_id,
+  d.category_id,
+  cat.name as category_name,
+  d.category_source,
+  cat.ato_deduction_code as category_tax_label,
+  cat.engine_row_id as category_engine_row_id
 `;
 
 export async function listDocuments(
@@ -693,6 +704,7 @@ export async function listDocuments(
         join tenants t on t.id = d.tenant_id
         left join parties p on p.id = d.supplier_id
         left join users u on u.id = d.created_by
+        left join categories cat on cat.id = d.category_id and cat.tenant_id = d.tenant_id
        where d.deleted_at is null
          and d.review_status <> 'rejected'
          and (${filter} = 'all'
@@ -717,6 +729,7 @@ export async function getDocument(
         join tenants t on t.id = d.tenant_id
         left join parties p on p.id = d.supplier_id
         left join users u on u.id = d.created_by
+        left join categories cat on cat.id = d.category_id and cat.tenant_id = d.tenant_id
        where d.id = ${documentId} and d.deleted_at is null
        limit 1
     `);
@@ -1064,9 +1077,17 @@ export async function updateDocument(
     reviewStatus?: 'needs_review' | 'reviewed' | 'rejected';
     visibility?: 'shared' | 'private';
     atoCompliance?: unknown;
+    /**
+     * The whole receipt's category. undefined leaves it alone, null clears it,
+     * an id files the receipt there and records that a PERSON chose it
+     * (`category_source = 'user'`, which a machine never overwrites).
+     */
+    categoryId?: string | null;
   },
   expectedVersion?: number,
-): Promise<{ ok: true; version: number } | { ok: false; reason: 'conflict' | 'missing' }> {
+): Promise<
+  { ok: true; version: number } | { ok: false; reason: 'conflict' | 'missing' | 'bad_category' }
+> {
   return withTenantAs(getDb(), userId, tenantId, async (tx) => {
     const current = await tx.execute<{ version: number; supplier_id: string | null }>(sql`
       select version, supplier_id from documents where id = ${documentId} limit 1
@@ -1075,6 +1096,14 @@ export async function updateDocument(
     if (!row) return { ok: false as const, reason: 'missing' as const };
     if (expectedVersion != null && row.version !== expectedVersion) {
       return { ok: false as const, reason: 'conflict' as const };
+    }
+    if (patch.categoryId) {
+      // Same workspace only. RLS already hides another workspace's categories
+      // from this transaction; the explicit tenant test is the second lock.
+      const cat = await tx.execute(sql`
+        select 1 from categories where id = ${patch.categoryId} and tenant_id = ${tenantId}
+      `);
+      if (cat.rows.length === 0) return { ok: false as const, reason: 'bad_category' as const };
     }
 
     // The supplier lives in `parties`, so a name or ABN correction updates the
@@ -1116,6 +1145,7 @@ export async function updateDocument(
     if (patch.supplierName != null || patch.supplierAbn !== undefined) {
       touched.push('header.supplier');
     }
+    if (patch.categoryId !== undefined) touched.push('header.category_id');
 
     const next = await tx.execute<{ version: number }>(sql`
       update documents set
@@ -1136,6 +1166,11 @@ export async function updateDocument(
         is_tax_invoice       = coalesce(${patch.isTaxInvoice ?? null}::boolean, is_tax_invoice),
         review_status        = coalesce(${patch.reviewStatus ?? null}::review_status, review_status),
         visibility           = coalesce(${patch.visibility ?? null}, visibility),
+        category_id          = case when ${patch.categoryId !== undefined}
+                                 then ${patch.categoryId ?? null}::uuid else category_id end,
+        category_source      = case when ${patch.categoryId !== undefined}
+                                 then 'user'
+                                 else category_source end,
         ato_compliance       = coalesce(${patch.atoCompliance == null ? null : JSON.stringify(patch.atoCompliance)}::jsonb, ato_compliance),
         reviewed_by          = case when ${patch.reviewStatus ?? null} = 'reviewed' then ${userId}::uuid else reviewed_by end,
         reviewed_at          = case when ${patch.reviewStatus ?? null} = 'reviewed' then now() else reviewed_at end,
@@ -1147,6 +1182,92 @@ export async function updateDocument(
     `);
     return { ok: true as const, version: next.rows[0]?.version ?? row.version + 1 };
   });
+}
+
+/**
+ * A category of this workspace, active or not, by id or by exact name
+ * (case-insensitive). Null when there is none: another workspace's category is
+ * invisible here (RLS) and is checked against the tenant again regardless.
+ */
+export async function findWorkspaceCategory(
+  userId: string,
+  tenantId: string,
+  by: { id: string } | { name: string },
+): Promise<{ id: string; name: string } | null> {
+  return withTenantAs(getDb(), userId, tenantId, async (tx) => {
+    const rows =
+      'id' in by
+        ? await tx.execute<{ id: string; name: string }>(sql`
+            select id, name from categories
+             where tenant_id = ${tenantId} and id::text = ${by.id} limit 1
+          `)
+        : await tx.execute<{ id: string; name: string }>(sql`
+            select id, name from categories
+             where tenant_id = ${tenantId} and lower(name) = lower(${by.name})
+             order by (name = ${by.name}) desc, name limit 1
+          `);
+    return rows.rows[0] ?? null;
+  });
+}
+
+/**
+ * Supplier memory, the first automatic sorting (docs/DEDUCTIONS.md).
+ *
+ * When a document has no category, take the category of the most recent OTHER
+ * document in the same workspace that a PERSON filed (`category_source =
+ * 'user'`) and whose supplier is the same. Same supplier means: the same ABN
+ * when both have one, otherwise the same normalised name (lowercase, punctuation
+ * removed, whitespace collapsed, never empty). The copy is marked
+ * `category_source = 'supplier'`, so a later person's edit replaces it and a
+ * re-extraction never touches a person's choice. A person who cleared the
+ * category left `category_source = 'user'` with no category: that is a choice
+ * too, so only `category_source IS NULL` is filled.
+ *
+ * A category the user has retired is not copied: it is no longer offered.
+ * Runs inside the extraction transaction, as the worker. Returns the category
+ * id it applied, or null.
+ */
+export async function applySupplierMemory(
+  tx: Tx,
+  tenantId: string,
+  documentId: string,
+): Promise<string | null> {
+  const found = await tx.execute<{ category_id: string }>(sql`
+    with cur as (
+      select d.id, p.abn as abn,
+             nullif(trim(regexp_replace(lower(coalesce(p.name_normalised, '')), '[^a-z0-9]+', ' ', 'g')), '') as name_key
+        from documents d
+        join parties p on p.id = d.supplier_id
+       where d.id = ${documentId} and d.tenant_id = ${tenantId} and d.category_id is null
+          and d.category_source is null
+    )
+    select o.category_id
+      from cur
+      join documents o on o.tenant_id = ${tenantId}
+                      and o.id <> cur.id
+                      and o.deleted_at is null
+                      and o.review_status <> 'rejected'
+                      and o.category_source = 'user'
+                      and o.category_id is not null
+      join parties op on op.id = o.supplier_id
+      join categories c on c.id = o.category_id and c.tenant_id = ${tenantId} and c.active
+     where case
+             when cur.abn is not null and op.abn is not null then cur.abn = op.abn
+             else cur.name_key is not null
+                  and nullif(trim(regexp_replace(lower(op.name_normalised), '[^a-z0-9]+', ' ', 'g')), '') = cur.name_key
+           end
+     order by o.updated_at desc, o.created_at desc
+     limit 1
+  `);
+  const categoryId = found.rows[0]?.category_id ?? null;
+  if (!categoryId) return null;
+  // `and category_id is null`: never overwrite a category that arrived since.
+  await tx.execute(sql`
+    update documents set category_id = ${categoryId}, category_source = 'supplier'
+     where id = ${documentId} and tenant_id = ${tenantId} and category_id is null
+       and category_source is null
+  `);
+  return categoryId;
 }
 
 /** Replaces a document's lines as a set. They only mean anything together. */
@@ -1614,6 +1735,11 @@ export async function saveExtraction(
         )
       `);
     }
+
+    // Supplier memory: a document with no category takes the category a person
+    // gave the last receipt from this supplier. Only fills an EMPTY category, so
+    // a re-extraction never replaces a person's choice (or an earlier copy).
+    await applySupplierMemory(tx, tenantId, documentId);
 
     // R5e: the business-key fingerprint, over the values the row actually
     // ended up with (a `keep()`d field included) — computed AFTER the
