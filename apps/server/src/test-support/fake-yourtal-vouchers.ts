@@ -25,9 +25,11 @@ import { parseVoucherCode } from '../yourtal/voucher-code.js';
  *     402 `authorization_refused`; only unknown codes and other merchants'
  *     codes count as failed attempts, and 20 of them in 5 minutes throttle the
  *     merchant (429 `too_many_failed_attempts`);
- *   - a hold lasts 15 minutes; a voucher has one live hold; an order reference
- *     authorizes once; capture and void need a live hold; a captured
- *     single-use voucher is redeemed; an expired hold releases its voucher;
+ *   - a hold lasts 15 minutes; a voucher has one hold (409 `voucher_already_held`,
+ *     also after the hold's time ran out until the sweeper runs: call
+ *     `store.sweep()` like YourTal's 1-minute sweeper); an order reference
+ *     authorizes once; capture and void need a live hold (checked at use); a
+ *     captured single-use voucher is redeemed;
  *   - `lookup` resolves an order reference to its authorization.
  *
  * The request log never carries a voucher code or a body.
@@ -47,8 +49,8 @@ export interface FakeVoucherInput {
   ownerId?: string;
   /** Defaults to a year after injection. */
   expiresAt?: Date;
-  /** What the capture does to the value. Defaults to `single_use`. */
-  policy?: 'single_use' | 'balance_carrying';
+  /** What the capture does to the value. Defaults to `single_use_forfeit`. */
+  policy?: 'single_use_forfeit' | 'balance_carrying';
   /** The partner the listing is bound to (the ownership read). Defaults to `snap-app`. */
   redeemPartnerId?: string;
 }
@@ -96,7 +98,7 @@ interface StoredVoucher {
   currency: string;
   status: FakeVoucherStatus;
   expiresAt: Date;
-  policy: 'single_use' | 'balance_carrying';
+  policy: 'single_use_forfeit' | 'balance_carrying';
 }
 
 interface StoredAuthorization extends FakeAuthorization {
@@ -156,8 +158,9 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 export class FakeVoucherStore {
   readonly merchantId: string;
   private offsetMs = 0;
+  private readonly frozenAt: number | undefined;
   readonly clock: FakeClock = {
-    now: () => new Date(Date.now() + this.offsetMs),
+    now: () => new Date((this.frozenAt ?? Date.now()) + this.offsetMs),
     advance: (ms) => {
       this.offsetMs += ms;
     },
@@ -166,8 +169,10 @@ export class FakeVoucherStore {
   private authorizations = new Map<string, StoredAuthorization>();
   private attempts: Array<{ merchantId: string; outcome: string; at: number }> = [];
 
-  constructor(options: { merchantId?: string } = {}) {
+  /** `freeze`: the clock starts at this instant and moves only with `advance`. */
+  constructor(options: { merchantId?: string; freeze?: Date } = {}) {
     this.merchantId = options.merchantId ?? randomUUID();
+    this.frozenAt = options.freeze?.getTime();
   }
 
   inject(voucher: FakeVoucherInput): void {
@@ -183,7 +188,7 @@ export class FakeVoucherStore {
       currency: voucher.currency,
       status: voucher.status,
       expiresAt: voucher.expiresAt ?? new Date(this.clock.now().getTime() + 365 * 24 * 60 * 60_000),
-      policy: voucher.policy ?? 'single_use',
+      policy: voucher.policy ?? 'single_use_forfeit',
     });
   }
 
@@ -202,7 +207,6 @@ export class FakeVoucherStore {
   }
 
   stateByHash(hash: string): FakeVoucherState | undefined {
-    this.sweep();
     const voucher = this.vouchers.get(hash);
     if (!voucher) return undefined;
     return {
@@ -216,7 +220,6 @@ export class FakeVoucherStore {
 
   /** What the ownership read needs, or `undefined` for an unknown hash. */
   holding(hash: string): { ownerId: string | undefined; redeemPartnerId: string; status: FakeVoucherStatus; faceMinor: number; currency: string; expiresAt: Date } | undefined {
-    this.sweep();
     const voucher = this.vouchers.get(hash);
     if (!voucher) return undefined;
     return {
@@ -234,7 +237,7 @@ export class FakeVoucherStore {
     return voucher.status;
   }
 
-  /** The sweeper, run before every read: expired holds release their voucher. */
+  /** YourTal's sweeper (every minute there): expired holds expire and release their voucher. Tests call it; nothing else does. */
   sweep(): void {
     const now = this.clock.now();
     for (const auth of this.authorizations.values()) {
@@ -251,7 +254,6 @@ export class FakeVoucherStore {
   }
 
   authorize(merchantId: string, body: Record<string, unknown>): Answer {
-    this.sweep();
     const amount = typeof body.amount === 'number' ? body.amount : 0;
     const currency = typeof body.currency === 'string' ? body.currency : '';
     const orderRef = typeof body.merchant_order_ref === 'string' ? body.merchant_order_ref : '';
@@ -285,7 +287,7 @@ export class FakeVoucherStore {
         existing.orderTotalMinor === orderTotal &&
         hash !== undefined &&
         existing.voucherHash === hash;
-      if (!same || existing.state !== 'held') {
+      if (!same || existing.state !== 'held' || existing.expiresAt <= this.clock.now()) {
         return err(409, 'invalid_request_error', 'duplicate_order', 'redeem: this merchant order was already authorized');
       }
       const voucher = this.vouchers.get(existing.voucherHash)!;
@@ -309,6 +311,11 @@ export class FakeVoucherStore {
         'currency_mismatch',
         `redeem: the request's currency does not match this voucher's: ${voucher.currency}`,
       );
+    }
+    // Held until the sweeper runs, even when the hold's time is up (the real code: 409, not a refusal).
+    if (voucher.status === 'held') {
+      this.record(merchantId, 'already_held');
+      return err(409, 'invalid_request_error', 'voucher_already_held', 'redeem: this voucher already has a live authorization');
     }
     if (
       this.effectiveStatus(voucher) !== 'active' ||
@@ -358,7 +365,6 @@ export class FakeVoucherStore {
   }
 
   capture(merchantId: string, body: Record<string, unknown>): Answer {
-    this.sweep();
     const auth = this.liveHold(merchantId, body.authorization_id);
     if (!auth) return noLiveHold();
     const final = typeof body.final_amount === 'number' ? body.final_amount : 0;
@@ -389,7 +395,6 @@ export class FakeVoucherStore {
   }
 
   void(merchantId: string, body: Record<string, unknown>): Answer {
-    this.sweep();
     const auth = this.liveHold(merchantId, body.authorization_id);
     if (!auth) return noLiveHold();
     auth.state = 'voided';
@@ -399,15 +404,18 @@ export class FakeVoucherStore {
   }
 
   lookup(merchantId: string, body: Record<string, unknown>): Answer {
-    this.sweep();
     const orderRef = typeof body.merchant_order_ref === 'string' ? body.merchant_order_ref : '';
+    if (!orderRef.trim()) {
+      return err(400, 'invalid_request_error', 'merchant_order_ref_required', 'merchant_order_ref is required');
+    }
     const auth = [...this.authorizations.values()].find((a) => a.merchantId === merchantId && a.orderRef === orderRef);
     if (!auth) {
       return err(404, 'invalid_request_error', 'order_not_found', 'no authorization for this merchant order');
     }
     const result: Record<string, unknown> = {
       authorization_id: auth.id,
-      state: auth.state,
+      // As the real SQL: a held hold past its time reads expired before the sweeper has run.
+      state: auth.state === 'held' && auth.expiresAt <= this.clock.now() ? 'expired' : auth.state,
       amount_authorized: auth.amountMinor,
       expires_at: isoSeconds(auth.expiresAt),
     };
@@ -418,6 +426,21 @@ export class FakeVoucherStore {
     return { status: 200, body: result };
   }
 }
+
+/**
+ * The real service's codes, for a test to inject: 409 `api_error`/`retry`
+ * (authorize, capture, void), 403 `permission_error`/`redemption_disabled`
+ * (authorize, capture), 409 `invalid_request_error`/`voucher_already_held`.
+ */
+export interface InjectedFailure {
+  status: number;
+  code?: string;
+  type?: string;
+}
+
+export const RETRY_FAILURE: InjectedFailure = { status: 409, type: 'api_error', code: 'retry' };
+export const REDEMPTION_DISABLED_FAILURE: InjectedFailure = { status: 403, type: 'permission_error', code: 'redemption_disabled' };
+export const ALREADY_HELD_FAILURE: InjectedFailure = { status: 409, type: 'invalid_request_error', code: 'voucher_already_held' };
 
 export interface FakeYourtalVouchers {
   url: string;
@@ -437,7 +460,7 @@ export interface FakeYourtalVouchers {
    * with `applyFirst` it is, so the caller sees a 5xx for something that
    * happened.
    */
-  failNext(route: VoucherRoute, status?: number, options?: { applyFirst?: boolean }): void;
+  failNext(route: VoucherRoute, failure?: number | InjectedFailure, options?: { applyFirst?: boolean }): void;
   /** The next request on `route` does its work and stores its answer, then the connection drops: a lost answer. */
   hangNext(route: VoucherRoute): void;
   /** The next request on `route` claims its key and stays open (in progress) until `releaseStalled()`. */
@@ -464,7 +487,7 @@ const ROUTES: Record<string, VoucherRoute> = {
 };
 
 type Control =
-  | { kind: 'fail'; status: number; applyFirst: boolean }
+  | { kind: 'fail'; failure: InjectedFailure; applyFirst: boolean }
   | { kind: 'hang' }
   | { kind: 'stall' };
 
@@ -476,11 +499,11 @@ interface StoredKey {
 }
 
 export async function startFakeYourtalVouchers(
-  options: { keyId?: string; secret?: Uint8Array; store?: FakeVoucherStore } = {},
+  options: { keyId?: string; secret?: Uint8Array; store?: FakeVoucherStore; freeze?: Date } = {},
 ): Promise<FakeYourtalVouchers> {
   const keyId = options.keyId ?? 'mc_00000000-0000-4000-8000-000000000001';
   const secret = options.secret ?? Buffer.alloc(32, 9);
-  const store = options.store ?? new FakeVoucherStore();
+  const store = options.store ?? new FakeVoucherStore({ freeze: options.freeze });
   const merchantId = store.merchantId;
 
   const keys = new Map<string, StoredKey>(); // `${merchantId}:${key}`
@@ -534,6 +557,7 @@ export async function startFakeYourtalVouchers(
         pathAndQuery: req.url ?? '',
         idempotencyKey: key ?? '',
         body: raw,
+        now: store.clock.now(),
       });
       if (!verified.ok) {
         return send(err(401, 'authentication_error', 'invalid_signature', 'invalid or missing merchant signature'));
@@ -596,12 +620,13 @@ export async function startFakeYourtalVouchers(
       let answer: Answer;
       if (control?.kind === 'fail') {
         if (control.applyFirst) run(route, raw);
+        const { status, code, type } = control.failure;
         answer =
-          control.status >= 500
-            ? control.status === 500
+          code || type
+            ? err(status, type ?? 'api_error', code ?? 'injected_failure', 'injected failure')
+            : status === 500
               ? internalError()
-              : err(control.status, 'api_error', 'unavailable', 'injected failure')
-            : err(control.status, 'api_error', 'injected_failure', 'injected failure');
+              : err(status, 'api_error', status >= 500 ? 'unavailable' : 'injected_failure', 'injected failure');
       } else {
         answer = run(route, raw);
       }
@@ -634,8 +659,9 @@ export async function startFakeYourtalVouchers(
     requests,
     inject: (voucher) => store.inject(voucher),
     voucher: (code) => store.state(code),
-    failNext(route, status = 500, failOptions = {}) {
-      controls.push({ route, control: { kind: 'fail', status, applyFirst: failOptions.applyFirst ?? false } });
+    failNext(route, failure = 500, failOptions = {}) {
+      const injected = typeof failure === 'number' ? { status: failure } : failure;
+      controls.push({ route, control: { kind: 'fail', failure: injected, applyFirst: failOptions.applyFirst ?? false } });
     },
     hangNext(route) {
       controls.push({ route, control: { kind: 'hang' } });

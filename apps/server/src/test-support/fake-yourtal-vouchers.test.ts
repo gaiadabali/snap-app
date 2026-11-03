@@ -5,7 +5,11 @@ import { YourtalMerchantClient, type MerchantResult } from '../yourtal/merchant-
 import { parseVoucherCode } from '../yourtal/voucher-code.js';
 import { startFakeYourtal, type FakeYourtal } from './fake-yourtal.js';
 import {
+  ALREADY_HELD_FAILURE,
   FAILURE_THRESHOLD,
+  HOLD_MS,
+  REDEMPTION_DISABLED_FAILURE,
+  RETRY_FAILURE,
   FakeVoucherStore,
   startFakeYourtalVouchers,
   testVoucherCode,
@@ -25,7 +29,7 @@ function merchant(over: { keyId?: string; secret?: Uint8Array } = {}) {
     baseUrl: fake.url,
     keyId: over.keyId ?? fake.keyId,
     secret: over.secret ?? Buffer.alloc(32, 9),
-  });
+  }, fetch, () => fake.clock.now());
 }
 
 function authorize(over: { code?: string; amountMinor?: number; ref?: string; currency?: string; key?: string } = {}) {
@@ -229,20 +233,26 @@ describe('authorize, capture, void', () => {
     fake.clock.advance(15 * 60_000 - 1000);
     expect(fake.voucher(CODE)!.status).toBe('held');
     fake.clock.advance(1000);
-    expect(fake.voucher(CODE)).toMatchObject({ status: 'active' });
-    expect(fake.voucher(CODE)!.authorizations[0]!.state).toBe('expired');
+    // Not swept yet: the voucher still reads held, but at-use checks and lookup see the hold is over.
+    expect(fake.voucher(CODE)).toMatchObject({ status: 'held' });
     expect(errorOf(await client.capture({ authorizationId: id, finalAmountMinor: 500 }, key()))).toMatchObject({
       status: 404,
     });
     expect(errorOf(await client.void({ authorizationId: id }, key()))).toMatchObject({ status: 404 });
     expect(ok(await client.lookup({ merchantOrderRef: 'snap-1' }, key())).state).toBe('expired');
+    fake.store.sweep();
+    expect(fake.voucher(CODE)).toMatchObject({ status: 'active' });
+    expect(fake.voucher(CODE)!.authorizations[0]!.state).toBe('expired');
     // The voucher can be held again under a new order.
     expect(ok(await authorize({ ref: 'snap-2' })).authorization_id).toBeTruthy();
   });
 
   it('refuses a second hold on a held voucher, one authorization per order, and a retry of the same order replays the hold', async () => {
     const first = ok(await authorize({ ref: 'snap-1' }));
-    expect(errorOf(await authorize({ ref: 'snap-2' }))).toMatchObject({ status: 402, code: 'authorization_refused' });
+    expect(errorOf(await authorize({ ref: 'snap-2' }))).toMatchObject({
+      status: 409,
+      code: 'voucher_already_held',
+    });
     const retry = ok(await authorize({ ref: 'snap-1' }));
     expect(retry.authorization_id).toBe(first.authorization_id);
     expect(errorOf(await authorize({ ref: 'snap-1', amountMinor: 400 }))).toMatchObject({
@@ -446,5 +456,80 @@ describe('the ownership read in fake-yourtal', () => {
       key(),
     );
     expect(bad).toMatchObject({ kind: 'error', status: 400 });
+  });
+});
+
+describe('hold expiry and the sweeper', () => {
+  it('an expired hold still blocks a second authorize (409) until the sweeper runs, then a new order works', async () => {
+    ok(await authorize({ ref: 'snap-1' }));
+    fake.clock.advance(HOLD_MS + 1000);
+    expect(errorOf(await authorize({ ref: 'snap-2' }))).toMatchObject({ status: 409, code: 'voucher_already_held' });
+    fake.store.sweep();
+    expect(ok(await authorize({ ref: 'snap-2' })).authorization_id).toBeTruthy();
+  });
+});
+
+describe('injected failures with the real codes', () => {
+  it('a capture refused with 409 retry leaves the hold live, so a void succeeds', async () => {
+    const id = ok(await authorize()).authorization_id as string;
+    fake.failNext('capture', RETRY_FAILURE);
+    expect(errorOf(await client.capture({ authorizationId: id, finalAmountMinor: 500 }, key()))).toMatchObject({
+      status: 409,
+      code: 'retry',
+    });
+    expect(fake.voucher(CODE)).toMatchObject({ status: 'held' });
+    expect(ok(await client.void({ authorizationId: id }, key())).voided).toBe(true);
+  });
+
+  it('answers the other injected codes as given', async () => {
+    fake.failNext('authorize', REDEMPTION_DISABLED_FAILURE);
+    expect(errorOf(await authorize())).toMatchObject({ status: 403, code: 'redemption_disabled' });
+    fake.failNext('authorize', ALREADY_HELD_FAILURE);
+    expect(errorOf(await authorize({ ref: 'snap-2' }))).toMatchObject({ status: 409, code: 'voucher_already_held' });
+  });
+});
+
+describe('clock and request details', () => {
+  it('signatures are checked against the fake clock after advance', async () => {
+    const { signMerchantRequest } = await import('../yourtal/merchant-signing.js');
+    const idem = 'sig-clock';
+    const send = (at: Date) => {
+      const body = JSON.stringify({ merchant_order_ref: 'snap-1' });
+      return fetch(`${fake.url}/v1/vouchers/lookup`, {
+        method: 'POST',
+        headers: {
+          'Idempotency-Key': idem,
+          'X-YourTal-Signature': signMerchantRequest({
+            secret: Buffer.alloc(32, 9),
+            keyId: fake.keyId,
+            method: 'POST',
+            pathAndQuery: '/v1/vouchers/lookup',
+            idempotencyKey: idem,
+            body,
+            timestamp: at,
+          }),
+        },
+        body,
+      });
+    };
+    fake.clock.advance(60 * 60_000);
+    // Signed with the real clock, an hour behind the fake one: outside the window.
+    expect((await send(new Date())).status).toBe(401);
+    expect((await send(fake.clock.now())).status).toBe(404);
+  });
+
+  it('a frozen clock starts where it is told and moves only with advance', () => {
+    const at = new Date('2030-01-01T00:00:00Z');
+    const store = new FakeVoucherStore({ freeze: at });
+    expect(store.clock.now()).toEqual(at);
+    store.clock.advance(1000);
+    expect(store.clock.now().getTime()).toBe(at.getTime() + 1000);
+  });
+
+  it('lookup with a blank order reference is 400 merchant_order_ref_required', async () => {
+    expect(errorOf(await client.lookup({ merchantOrderRef: '   ' }, key()))).toMatchObject({
+      status: 400,
+      code: 'merchant_order_ref_required',
+    });
   });
 });
