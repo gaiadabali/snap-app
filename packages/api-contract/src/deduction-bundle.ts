@@ -144,11 +144,14 @@ function checkLine(line: unknown, at: string, add: Add): void {
   const refs = line.receiptRefs;
   if (!Array.isArray(refs)) add(`${at}.receiptRefs`, 'expected an array', true);
   else {
-    refs.forEach((r, i) => {
-      if (typeof r !== 'string') add(`${at}.receiptRefs.${i}`, 'expected a string', true);
-      else if (!RECEIPT_REF_PATTERN.test(r)) add(`${at}.receiptRefs.${i}`, 'expected a lowercase hex SHA-256');
-    });
+    // Length first: a huge array is refused before any element is looked at (FTR's H1 fix).
     if (refs.length > MAX_RECEIPT_REFS_PER_LINE) add(`${at}.receiptRefs`, `at most ${MAX_RECEIPT_REFS_PER_LINE} references`);
+    else {
+      refs.forEach((r, i) => {
+        if (typeof r !== 'string') add(`${at}.receiptRefs.${i}`, 'expected a string', true);
+        else if (!RECEIPT_REF_PATTERN.test(r)) add(`${at}.receiptRefs.${i}`, 'expected a lowercase hex SHA-256');
+      });
+    }
   }
   const allowed = ['label', 'itemId', 'description', 'amount', 'gstInclusive', 'privateUsePercent', 'receiptCount', 'receiptRefs'];
   const extra = Object.keys(line).filter((k) => !allowed.includes(k));
@@ -198,8 +201,9 @@ export function validateDeductionBundle(value: unknown): BundleResult {
   const lines = value.lines;
   if (!Array.isArray(lines)) add('lines', 'expected an array', true);
   else {
-    lines.forEach((l, i) => checkLine(l, `lines.${i}`, add));
-    if (lines.length > MAX_LINES) add('lines', `at most ${MAX_LINES} lines`);
+    // Length first, as above: no per-line work on an oversize array.
+    if (lines.length > MAX_LINES) add('lines', `at most ${MAX_LINES} lines`, true); // fatal: elements were not checked, so the cross-field rule must not read them
+    else lines.forEach((l, i) => checkLine(l, `lines.${i}`, add));
   }
 
   const allowed = ['schemaVersion', 'financialYear', 'generatedAt', 'source', 'occupation', 'workKilometres', 'lines'];

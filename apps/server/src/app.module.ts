@@ -32,6 +32,7 @@ import {
 import { ReconciliationController } from './reconciliation/reconciliation.controller.js';
 import { SettingsController } from './settings/settings.controller.js';
 import { StatementsController } from './statements/statements.controller.js';
+import { DeductionBundleController } from './deductions/deduction-bundle.controller.js';
 import { SummariesController } from './summaries/summaries.controller.js';
 import { TransactionsController } from './transactions/transactions.controller.js';
 import { WorkspacesController } from './workspaces/workspaces.controller.js';
@@ -109,6 +110,7 @@ export class HealthController {
     DocumentsController,
     BusinessController,
     SummariesController,
+    DeductionBundleController,
     SettingsController,
     DownloadsController,
     ReleasesController,

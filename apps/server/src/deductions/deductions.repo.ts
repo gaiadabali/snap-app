@@ -41,15 +41,17 @@ export async function deductionTotals(
       source: string;
       currency: string;
       cents: string;
+      receipt_ref: string | null;
     }>(sql`
       with amounts as (
         select d.id as document_id, coalesce(l.category_id, d.category_id) as category_id,
-               d.category_source, d.currency::text as currency, l.line_net_amount as amount
+               d.category_source, d.currency::text as currency, l.line_net_amount as amount,
+               d.capture_id
           from documents d
           join document_lines l on l.document_id = d.id
          where d.tenant_id = ${tenantId} and ${docFilter}
         union all
-        select d.id, d.category_id, d.category_source, d.currency::text, d.payable_amount
+        select d.id, d.category_id, d.category_source, d.currency::text, d.payable_amount, d.capture_id
           from documents d
          where d.tenant_id = ${tenantId} and ${docFilter}
            and not exists (select 1 from document_lines l where l.document_id = d.id)
@@ -57,7 +59,13 @@ export async function deductionTotals(
       select a.document_id, c.ato_deduction_code as label, c.engine_row_id as item_id,
              c.private_use_percent::int as private_use_percent, a.category_source as source,
              a.currency,
-             round(coalesce(a.amount, 0) * 100)::bigint::text as cents
+             round(coalesce(a.amount, 0) * 100)::bigint::text as cents,
+             -- The stored original, never a re-encoded image: page 1's hash is the hash of
+             -- the uploaded bytes; a capture with no page rows falls back to its own hash
+             -- (which equals page 1's for a single page).
+             encode(coalesce(
+               (select p.sha256 from capture_pages p where p.capture_id = a.capture_id and p.page_number = 1),
+               (select k.original_sha256 from captures k where k.id = a.capture_id)), 'hex') as receipt_ref
         from amounts a
         join categories c on c.id = a.category_id and c.tenant_id = ${tenantId}
         join tenants tn on tn.id = c.tenant_id
@@ -79,6 +87,7 @@ export async function deductionTotals(
       source: r.source === 'user' ? 'user' : 'supplier',
       amountCents: BigInt(r.cents),
       currency: r.currency,
+      receiptRef: r.receipt_ref,
     }));
     return foldTotals(fyLabel(fyStart), lines, Number(km.rows[0]?.km ?? 0));
   });

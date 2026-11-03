@@ -140,9 +140,9 @@ describeIfDb('deduction totals', () => {
     // tools: 10.01 at 50% -> 1001 cents -> 501 (half up), plus 0.50 at the document's 0% -> 50
     // washPowder: the 20.00 line (0%) plus the line-less 33.30 receipt
     expect(t.items).toEqual([
-      { label: 'D3', itemId: 'washPowder', receiptCount: 2, workCents: 5330n },
-      { label: 'D5', itemId: 'licences', receiptCount: 1, workCents: 500n },
-      { label: 'D5', itemId: 'tools', receiptCount: 1, workCents: 551n },
+      { label: 'D3', itemId: 'washPowder', receiptCount: 2, workCents: 5330n, receiptRefs: expect.any(Array) },
+      { label: 'D5', itemId: 'licences', receiptCount: 1, workCents: 500n, receiptRefs: expect.any(Array) },
+      { label: 'D5', itemId: 'tools', receiptCount: 1, workCents: 551n, receiptRefs: expect.any(Array) },
     ]);
     expect(t.totalCents).toBe(6381n);
     expect(t.toReview).toEqual({ receiptCount: 2, amountCents: 4700n, foreignCurrencyCount: 1 });
