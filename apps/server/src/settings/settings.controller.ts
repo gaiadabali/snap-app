@@ -33,6 +33,7 @@ import {
   WorkspaceId,
   type AuthUser,
 } from '../common/auth.guard.js';
+import { requireOwnerOrAdmin } from '../common/roles.js';
 import { ValidBody } from '../common/valid-body.decorator.js';
 import { readPlan, readTenant, updateTenant } from '../repo.js';
 import { abnIsValid } from '../extraction/validators.js';
@@ -125,6 +126,7 @@ export class SettingsController {
     @WorkspaceId() tenantId: string,
     @ValidBody(BusinessSettingsDto) body: BusinessSettingsDto,
   ): Promise<BusinessSettings> {
+    await requireOwnerOrAdmin(user.userId, tenantId);
     const tenant = await readTenant(user.userId, tenantId);
     if (!tenant) throw new NotFoundException('No such workspace.');
 
@@ -225,6 +227,7 @@ export class SettingsController {
     @WorkspaceId() tenantId: string,
     @ValidBody(NewCategoryDto) body: NewCategoryDto,
   ): Promise<CategorySetting[]> {
+    await requireOwnerOrAdmin(user.userId, tenantId);
     const name = body.name.trim();
     if (name === '') throw new BadRequestException('A category needs a name.');
     await createCategory(user.userId, tenantId, name, {
@@ -246,6 +249,7 @@ export class SettingsController {
     @Param('name') name: string,
     @ValidBody(UpdateCategoryDto) body: UpdateCategoryDto,
   ): Promise<CategorySetting[]> {
+    await requireOwnerOrAdmin(user.userId, tenantId);
     if (
       body.active === undefined &&
       body.taxLabel === undefined &&
@@ -276,6 +280,7 @@ export class SettingsController {
     @WorkspaceId() tenantId: string,
     @Param('name') name: string,
   ): Promise<CategorySetting[]> {
+    await requireOwnerOrAdmin(user.userId, tenantId);
     const result = await deleteCategory(user.userId, tenantId, name);
     if (result.outcome === 'not_found') throw new NotFoundException(`No category called ${name}.`);
     if (result.outcome === 'in_use') {

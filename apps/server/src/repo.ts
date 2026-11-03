@@ -1169,7 +1169,7 @@ export async function updateDocument(
         category_id          = case when ${patch.categoryId !== undefined}
                                  then ${patch.categoryId ?? null}::uuid else category_id end,
         category_source      = case when ${patch.categoryId !== undefined}
-                                 then (case when ${patch.categoryId ?? null}::uuid is null then null else 'user' end)
+                                 then 'user'
                                  else category_source end,
         ato_compliance       = coalesce(${patch.atoCompliance == null ? null : JSON.stringify(patch.atoCompliance)}::jsonb, ato_compliance),
         reviewed_by          = case when ${patch.reviewStatus ?? null} = 'reviewed' then ${userId}::uuid else reviewed_by end,
@@ -1219,7 +1219,9 @@ export async function findWorkspaceCategory(
  * when both have one, otherwise the same normalised name (lowercase, punctuation
  * removed, whitespace collapsed, never empty). The copy is marked
  * `category_source = 'supplier'`, so a later person's edit replaces it and a
- * re-extraction never touches a person's choice.
+ * re-extraction never touches a person's choice. A person who cleared the
+ * category left `category_source = 'user'` with no category: that is a choice
+ * too, so only `category_source IS NULL` is filled.
  *
  * A category the user has retired is not copied: it is no longer offered.
  * Runs inside the extraction transaction, as the worker. Returns the category
@@ -1237,6 +1239,7 @@ export async function applySupplierMemory(
         from documents d
         join parties p on p.id = d.supplier_id
        where d.id = ${documentId} and d.tenant_id = ${tenantId} and d.category_id is null
+          and d.category_source is null
     )
     select o.category_id
       from cur
@@ -1262,6 +1265,7 @@ export async function applySupplierMemory(
   await tx.execute(sql`
     update documents set category_id = ${categoryId}, category_source = 'supplier'
      where id = ${documentId} and tenant_id = ${tenantId} and category_id is null
+       and category_source is null
   `);
   return categoryId;
 }

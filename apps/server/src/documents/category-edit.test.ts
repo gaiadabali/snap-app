@@ -1,6 +1,5 @@
 import { randomUUID } from 'node:crypto';
 
-import { BadRequestException } from '@nestjs/common';
 import { sql } from 'drizzle-orm';
 import type { Client } from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -60,9 +59,8 @@ describeIfDb('resolveCategoryEdit: header.category by name (installed phones)', 
     expect(await run('Travel', { category_id: null, category_name: null })).toEqual({ categoryId: TRAVEL });
   });
 
-  it('an unknown name is a 400', async () => {
-    await expect(run('No Such Category', { category_id: null, category_name: null })).rejects.toBeInstanceOf(
-      BadRequestException,
-    );
+  it('an unknown name is a no-op, so the other edits still save', async () => {
+    expect(await run('No Such Category', { category_id: null, category_name: null })).toBeNull();
+    expect(await run('Tolls', { category_id: TRAVEL, category_name: 'Travel' })).toBeNull();
   });
 });

@@ -1,5 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 
+import { requireNotReadonly } from '../common/roles.js';
 import { findWorkspaceCategory } from '../repo.js';
 
 /**
@@ -14,8 +15,9 @@ import { findWorkspaceCategory } from '../repo.js';
  *                         with the receipt's current category name, so a save
  *                         of any other field carried it. Equal to the current
  *                         name (or "Uncategorised" while there is none) it is a
- *                         no-op, so those phones can save again. Anything else
- *                         must name a category of the workspace, or it is a 400.
+ *                         no-op, so those phones can save again. A name
+ *                         that is not a category of the workspace is ignored
+ *                         (no change), so the rest of the save goes through.
  *                         "Uncategorised" on a filed receipt takes it out of
  *                         its category, the same as the id path with null.
  *
@@ -35,7 +37,7 @@ export type CategoryEdit = { categoryId: string | null } | null;
 
 const norm = (v: string): string => v.trim().toLowerCase();
 
-export async function resolveCategoryEdit(
+async function resolveEdit(
   userId: string,
   tenantId: string,
   edits: Record<string, string | number | null>,
@@ -72,15 +74,25 @@ export async function resolveCategoryEdit(
       return hasCategory ? { categoryId: null } : null;
     }
     const found = await findWorkspaceCategory(userId, tenantId, { name });
-    if (!found) {
-      throw new BadRequestException(
-        `There is no category called "${name}" in this workspace. Choose one of your categories, or leave the category alone.`,
-      );
-    }
+    // Not one of this workspace's categories (an installed phone's chips are
+    // hardcoded): leave the category alone so the other edits still save.
+    if (!found) return null;
     // Already there, under a different capitalisation: still nothing to do.
     if (found.id === current.category_id) return null;
     return { categoryId: found.id };
   }
 
   return null;
+}
+
+/** Resolves the category edit; a real change (not a no-op) is refused for a read-only member. */
+export async function resolveCategoryEdit(
+  userId: string,
+  tenantId: string,
+  edits: Record<string, string | number | null>,
+  current: CurrentCategory,
+): Promise<CategoryEdit> {
+  const edit = await resolveEdit(userId, tenantId, edits, current);
+  if (edit) await requireNotReadonly(userId, tenantId);
+  return edit;
 }
