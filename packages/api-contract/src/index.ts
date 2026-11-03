@@ -513,6 +513,12 @@ export interface DeductionSummary {
   estimateTotal: number;
   byLabel: Record<string, number>;
   caps: Record<string, number>;
+  /** Financial year the estimate covers, `2025-26`. */
+  financialYear?: string;
+  /** Work-related trip kilometres in that year, whole km (the D1 cents-per-km input). */
+  workKilometres?: number;
+  /** Supplier-filed receipts not yet confirmed by a person; not in the estimate. */
+  toReview?: { count: number; total: number; foreignCurrencyCount: number };
 }
 
 export interface Overview {
