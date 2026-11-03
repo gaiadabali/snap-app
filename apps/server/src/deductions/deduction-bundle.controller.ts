@@ -21,18 +21,29 @@ import {
   WorkspaceId,
   type AuthUser,
 } from '../common/auth.guard.js';
+import { requireOwnerOrAdmin } from '../common/roles.js';
 import { readTenant } from '../repo.js';
 import { sydneyToday } from '../summaries/summaries.controller.js';
 import { buildDeductionBundle } from './deduction-bundle.js';
-import { fyStartYear } from './deduction-totals.js';
+import { fyLabel, fyStartYear } from './deduction-totals.js';
 import { deductionTotals } from './deductions.repo.js';
 
 // Per person: a bundle is a query over a year of receipts.
 const exportPerUser = new RateLimiter(20, 60_000);
 
 /** `2025-26` -> 2025 (the year it starts), or null when it is not a financial year we hold rates for. */
-export function parseFy(fy: string | undefined): number | null {
-  if (fy === undefined) return fyStartYear(sydneyToday());
+/**
+ * The year a person means by "this year's deductions": the newest year we hold rates for
+ * that has already started (today 2025-26), not the calendar's current one.
+ */
+export function defaultFyStart(today: string): number {
+  const starts = KNOWN_FYS.map((end) => end - 1);
+  const open = starts.filter((s) => s <= fyStartYear(today));
+  return open.length ? Math.max(...open) : Math.min(...starts);
+}
+
+export function parseFy(fy: string | undefined, today: string = sydneyToday()): number | null {
+  if (fy === undefined) return defaultFyStart(today);
   const m = FINANCIAL_YEAR_PATTERN.exec(fy);
   if (!m || !isFinancialYear(fy)) return null;
   const start = Number(m[1]);
@@ -44,11 +55,17 @@ export function parseFy(fy: string | undefined): number | null {
 @Controller('v1')
 @UseGuards(SessionGuard, MembershipGuard)
 export class DeductionBundleController {
+  @Get('deduction-bundle/year')
+  @ApiOperation({ summary: 'The financial year the export covers when `fy` is left out, like 2025-26' })
+  year(): { financialYear: string } {
+    return { financialYear: fyLabel(defaultFyStart(sydneyToday())) };
+  }
+
   @Get('deduction-bundle')
   @ApiOperation({
     summary: 'Deductions for one financial year, as a file for Free Tax Returns',
     description:
-      'Deduction bundle v1 for the signed-in person\'s PERSONAL workspace. `fy` is `2025-26`; it defaults to the current year. Amounts are the work share per receipt line (private use already applied). Sent as an attachment.',
+      'Deduction bundle v1 for the signed-in person\'s PERSONAL workspace. `fy` is `2025-26`; it defaults to the newest year we hold rates for that has started. Amounts are the work share per receipt line (private use already applied). Sent as an attachment.',
   })
   async bundle(
     @CurrentUser() user: AuthUser,
@@ -70,11 +87,14 @@ export class DeductionBundleController {
     if (tenant?.kind !== 'personal') {
       throw new ForbiddenException('Deductions are exported from a personal workspace.');
     }
+    // Handing a year of receipts to another service is an owner or manager action.
+    await requireOwnerOrAdmin(user.userId, tenantId);
     const totals = await deductionTotals(user.userId, tenantId, start);
     const bundle = buildDeductionBundle(totals, {
       generatedAt: new Date(),
       occupation: tenant.occupation_profile_id,
     });
+    reply.header('Cache-Control', 'private, no-store');
     reply.header(
       'Content-Disposition',
       `attachment; filename="snap-deductions-${bundle.financialYear}.json"`,

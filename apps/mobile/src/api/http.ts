@@ -1088,6 +1088,11 @@ export class HttpApi implements SnapApi {
     return this.get<DeductionBundle>('/v1/deduction-bundle', await this.idForKind('personal'));
   }
 
+  async getDeductionYear(): Promise<string> {
+    const r = await this.get<{ financialYear: string }>('/v1/deduction-bundle/year', await this.idForKind('personal'));
+    return r.financialYear;
+  }
+
   async prepareTaxPack(): Promise<TaxPackFile> {
     const file = await this.request<TaxPackFile>('POST', '/v1/tax-pack', { body: {} });
     // The server returns a relative URL so it works behind any host or tunnel.

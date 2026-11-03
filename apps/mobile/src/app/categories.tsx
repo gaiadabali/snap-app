@@ -41,6 +41,7 @@ export default function CategoriesScreen() {
   const [budget, setBudget] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
+  const [ftrYear, setFtrYear] = useState<string | null>(null);
 
   async function sendToFtr() {
     setSending(true);
@@ -55,6 +56,7 @@ export default function CategoriesScreen() {
 
   const load = useCallback(async () => {
     setRows(await api().listCategorySettings(workspace));
+    if (workspace === 'personal') setFtrYear(await api().getDeductionYear().catch(() => null));
   }, [workspace]);
 
   useFocusEffect(
@@ -152,7 +154,7 @@ export default function CategoriesScreen() {
               </View>
             ) : null}
 
-            {!isBusiness ? <SendToFtrCard busy={sending} onSend={() => void sendToFtr()} /> : null}
+            {!isBusiness && ftrYear ? <SendToFtrCard financialYear={ftrYear} busy={sending} onSend={() => void sendToFtr()} /> : null}
           </>
         )}
       </ScrollView>

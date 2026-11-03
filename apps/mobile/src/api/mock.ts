@@ -1888,6 +1888,10 @@ export class MockApi implements SnapApi {
     throw new Error('The demo has no real receipts to send. Sign in to your own account to try this.');
   }
 
+  async getDeductionYear(): Promise<string> {
+    return '2025-26';
+  }
+
   async prepareTaxPack(): Promise<TaxPackFile> {
     // Long on purpose: the real one zips a financial year of photographs, and
     // a progress state that finishes instantly teaches the wrong expectation.

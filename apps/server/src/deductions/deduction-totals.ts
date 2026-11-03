@@ -21,6 +21,22 @@ export function workShareCents(amountCents: bigint, privateUsePercent: number | 
   return n / 100n - (n % 100n < 0n ? 1n : 0n);
 }
 
+/**
+ * The receipt's reference: SHA-256 hex of the file as stored, never of anything derived.
+ * A photographed page's own hash (computed over the uploaded bytes) when the capture is
+ * not a PDF; otherwise the hash in the original's storage key (`.../xx/<sha256>`).
+ * Null when neither is available: the receipt still counts, without a ref.
+ */
+export function receiptRefOf(
+  pageSha: string | null,
+  mime: string | null,
+  storageKey: string | null,
+): string | null {
+  if (pageSha && mime !== 'application/pdf') return pageSha;
+  const m = /\/([0-9a-f]{2})\/([0-9a-f]{64})$/.exec(storageKey ?? '');
+  return m && m[2]!.startsWith(m[1]!) ? m[2]! : null;
+}
+
 /** Australian financial year (1 Jul to 30 Jun) as its start year: 30 Jun 2026 is 2025, 1 Jul 2026 is 2026. */
 export function fyStartYear(isoDate: string): number {
   const y = Number(isoDate.slice(0, 4));

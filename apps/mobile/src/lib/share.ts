@@ -50,8 +50,13 @@ async function shareText(name: string, contents: string, mime: string): Promise<
   if (file.exists) file.delete();
   file.create();
   file.write(contents);
-  if (await Sharing.isAvailableAsync()) {
-    await Sharing.shareAsync(file.uri, { mimeType: mime, dialogTitle: name });
+  try {
+    if (await Sharing.isAvailableAsync()) {
+      await Sharing.shareAsync(file.uri, { mimeType: mime, dialogTitle: name });
+    }
+  } finally {
+    // A copy of the person's records should not stay in the app's cache once it has been shared.
+    if (file.exists) file.delete();
   }
 }
 

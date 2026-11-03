@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto';
 
 import { validateDeductionBundle, validateDeductionBundleJson } from '@snap/api-contract/deduction-bundle';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { Client } from 'pg';
 
 import { closeDb } from '../db.js';
@@ -19,6 +19,7 @@ const BIZ = 'd0d0d0d0-0000-4000-8000-0000000000e3';
 const OWNER = 'd0d0d0d0-0000-4000-8000-0000000000e4';
 const OTHER_OWNER = 'd0d0d0d0-0000-4000-8000-0000000000e5';
 const BIZ_OWNER = 'd0d0d0d0-0000-4000-8000-0000000000e6';
+const MEMBER = 'd0d0d0d0-0000-4000-8000-0000000000e7';
 
 const sha = (s: string) => createHash('sha256').update(s).digest('hex');
 const user = (id: string) => ({ userId: id, email: `${id}@x.test`, displayName: 'x', initials: 'X' }) as never;
@@ -32,7 +33,7 @@ describeIfDb('deduction bundle endpoint', () => {
   const get = (u: string, t: string, fy?: string) => controller.bundle(user(u), t, reply, fy);
 
   /** A receipt whose original is the bytes `original`, optionally multi-page (page 1 first). */
-  async function addDoc(tenant: string, o: { original: string; cat: string; payable: string; date?: string; source?: string; pages?: string[] }) {
+  async function addDoc(tenant: string, o: { original: string; cat: string; payable: string; date?: string; source?: string; pages?: string[]; pdf?: 'keyed' | 'unkeyed' }) {
     const capture = randomUUID();
     const id = randomUUID();
     const owner = tenant === OTHER ? OTHER_OWNER : tenant === BIZ ? BIZ_OWNER : OWNER;
@@ -40,14 +41,18 @@ describeIfDb('deduction bundle endpoint', () => {
       `insert into captures (id, tenant_id, uploaded_by, original_storage_key, original_mime_type,
                              original_byte_size, original_sha256, status)
        values ($1,$2,$3,$4,'image/png',1, decode($5,'hex'),'received')`,
-      [capture, tenant, owner, `${tenant}/o/${capture}`, sha(o.original)],
+      [capture, tenant, owner,
+       o.pdf === 'keyed' ? `${tenant}/originals/${sha(o.original).slice(0, 2)}/${sha(o.original)}` : `${tenant}/o/${capture}`,
+       sha(o.original)],
     );
+    if (o.pdf) await admin.query(`update captures set original_mime_type = 'application/pdf' where id = $1`, [capture]);
     let n = 1;
-    for (const page of o.pages ?? []) {
+    // A PDF's pages are renders: their hashes must never become the receipt's ref.
+    for (const page of o.pdf ? [`render-of-${o.original}`] : o.pages ?? [o.original]) {
       await admin.query(
-        `insert into capture_pages (id, tenant_id, capture_id, page_number, storage_key, mime_type, byte_size, sha256)
-         values ($1,$2,$3,$4,$5,'image/png',1,decode($6,'hex'))`,
-        [randomUUID(), tenant, capture, n++, `${tenant}/pages/${randomUUID()}`, sha(page)],
+        `insert into capture_pages (id, tenant_id, capture_id, page_number, storage_key, mime_type, byte_size, sha256, source)
+         values ($1,$2,$3,$4,$5,'image/png',1,decode($6,'hex'),$7)`,
+        [randomUUID(), tenant, capture, n++, `${tenant}/pages/${randomUUID()}`, sha(page), o.pdf ? 'pdf_render' : 'capture'],
       );
     }
     await admin.query(
@@ -90,6 +95,9 @@ describeIfDb('deduction bundle endpoint', () => {
     // Tools: a two-page receipt cites page 1's bytes, not the combined capture hash.
     await addDoc(TENANT, { original: 'combined-hash', pages: ['tools-page-1', 'tools-page-2'], cat: cat.tools, payable: '12.34' });
     await addDoc(TENANT, { original: 'laundry-1', cat: cat.laundry, payable: '20.00' });
+    // PDFs: the ref is the hash in the original's storage key; with none, no ref (still counted).
+    await addDoc(TENANT, { original: 'pdf-keyed', pdf: 'keyed', cat: cat.laundry, payable: '1.00' });
+    await addDoc(TENANT, { original: 'pdf-unkeyed', pdf: 'unkeyed', cat: cat.laundry, payable: '2.00' });
     // Not exported: supplier-filed, another year.
     await addDoc(TENANT, { original: 'supplier', cat: cat.tools, payable: '40.00', source: 'supplier' });
     await addDoc(TENANT, { original: 'old-year', cat: cat.tools, payable: '94.00', date: '2024-09-01' });
@@ -111,7 +119,7 @@ describeIfDb('deduction bundle endpoint', () => {
     }
     await admin.query('delete from trips where tenant_id = $1', [TENANT]);
     await admin.query('delete from capture_pages where tenant_id = $1', [TENANT]);
-    await wipeTenant(admin, TENANT, [OWNER]);
+    await wipeTenant(admin, TENANT, [OWNER, MEMBER]);
     await admin.query('delete from users where id = any($1)', [[OTHER_OWNER, BIZ_OWNER]]);
     await admin.end();
     await closeDb();
@@ -128,14 +136,36 @@ describeIfDb('deduction bundle endpoint', () => {
       occupation: 'teacher',
       workKilometres: 11,
       lines: [
-        { label: 'D3', itemId: 'washPowder', description: 'Wash powder (D3)', amount: '20.00', gstInclusive: true, receiptCount: 1, receiptRefs: [sha('laundry-1')] },
+        { label: 'D3', itemId: 'washPowder', description: 'Washing powder', amount: '23.00', gstInclusive: true, receiptCount: 3, receiptRefs: [sha('laundry-1'), sha('pdf-keyed')].sort() },
         // 53999 + 6 cents, each receipt rounded on its own
-        { label: 'D5', itemId: 'phoneDevices', description: 'Phone devices (D5)', amount: '540.05', gstInclusive: true, receiptCount: 2, receiptRefs: [sha('phone-1'), sha('phone-2')].sort() },
-        { label: 'D5', itemId: 'tools', description: 'Tools (D5)', amount: '12.34', gstInclusive: true, receiptCount: 1, receiptRefs: [sha('tools-page-1')] },
+        { label: 'D5', itemId: 'phoneDevices', description: 'Mobile phone and devices', amount: '540.05', gstInclusive: true, receiptCount: 2, receiptRefs: [sha('phone-1'), sha('phone-2')].sort() },
+        { label: 'D5', itemId: 'tools', description: 'Tools', amount: '12.34', gstInclusive: true, receiptCount: 1, receiptRefs: [sha('tools-page-1')] },
       ],
     });
     for (const l of b.lines) expect(l).not.toHaveProperty('privateUsePercent');
     expect(headers['Content-Disposition']).toBe('attachment; filename="snap-deductions-2025-26.json"');
+  });
+
+  it('no fy means the newest started year, 2025-26, not the calendar\u2019s 2026-27', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-11-03T00:00:00Z'));
+    try {
+      expect(controller.year()).toEqual({ financialYear: '2025-26' });
+      expect((await get(OWNER, TENANT)).financialYear).toBe('2025-26');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('is not cached', async () => {
+    await get(OWNER, TENANT, '2025-26');
+    expect(headers['Cache-Control']).toBe('private, no-store');
+  });
+
+  it('is an owner or manager action: a plain member gets 403', async () => {
+    await admin.query(`insert into users (id, subject, email, display_name) values ($1,'test|db-member','m@db.test','M') on conflict do nothing`, [MEMBER]);
+    await admin.query(`insert into memberships (tenant_id, user_id, role) values ($1,$2,'member') on conflict do nothing`, [TENANT, MEMBER]);
+    await expect(get(MEMBER, TENANT, '2025-26')).rejects.toMatchObject({ status: 403 });
   });
 
   it('the file passes the validator after a JSON round trip', async () => {

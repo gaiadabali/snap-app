@@ -36,7 +36,7 @@ describe('buildDeductionBundle', () => {
       occupation: 'teacher',
       workKilometres: 21,
       lines: [{
-        label: 'D5', itemId: 'tools', description: 'Tools (D5)', amount: '5.51', gstInclusive: true,
+        label: 'D5', itemId: 'tools', description: 'Tools', amount: '5.51', gstInclusive: true,
         receiptCount: 2, receiptRefs: [hash(2), hash(1)],
       }],
     });
@@ -90,5 +90,42 @@ describe('parseFy', () => {
     expect(parseFy('2025-26')).toBe(2025);
     expect(typeof parseFy(undefined)).toBe('number');
     for (const bad of ['2025-27', '2025/26', '2024-25', '2099-00', '', '2025', 'x', '2025-26 ']) expect(parseFy(bad)).toBeNull();
+  });
+});
+
+import { receiptRefOf } from './deduction-totals.js';
+import { itemDescription } from './deduction-item-labels.js';
+import { defaultFyStart } from './deduction-bundle.controller.js';
+
+describe('receiptRefOf', () => {
+  const h = 'ab' + '0'.repeat(62);
+  it('uses a photographed page, never a PDF render', () => {
+    expect(receiptRefOf(h, 'image/jpeg', null)).toBe(h);
+    expect(receiptRefOf(h, 'application/pdf', `t/originals/ab/${h}`)).toBe(h);
+    expect(receiptRefOf(h, 'application/pdf', 't/o/x')).toBeNull();
+    expect(receiptRefOf(null, 'application/pdf', `t/originals/cd/${h}`)).toBeNull(); // prefix must match
+    expect(receiptRefOf(null, 'image/png', 't/o/x')).toBeNull();
+  });
+});
+
+describe('item descriptions', () => {
+  it('uses the catalogue label for every item, within the limit', () => {
+    expect(itemDescription('D1', 'repairsPartsDIY1')).toBe('Repairs — parts only (you did the work)');
+    expect(itemDescription('D9', 'd9')).toBe('Gifts and donations');
+    for (const [label, ids] of Object.entries(ITEM_IDS)) {
+      for (const id of ids) {
+        const d = itemDescription(label, id);
+        expect(d.length).toBeGreaterThan(0);
+        expect(d.length).toBeLessThanOrEqual(200);
+      }
+    }
+  });
+});
+
+describe('defaultFyStart', () => {
+  it('is the newest started year we hold: 2025-26 in Nov 2026', () => {
+    expect(defaultFyStart('2026-11-03')).toBe(2025);
+    expect(defaultFyStart('2026-06-30')).toBe(2025);
+    expect(defaultFyStart('2020-01-01')).toBe(2025);
   });
 });

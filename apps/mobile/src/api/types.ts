@@ -372,6 +372,8 @@ export interface SnapApi {
   prepareTaxPack(): Promise<TaxPackFile>;
   /** `GET /v1/deduction-bundle` — this year's deductions for Free Tax Returns, from the PERSONAL workspace. */
   getDeductionBundle(): Promise<DeductionBundle>;
+  /** `GET /v1/deduction-bundle/year` — the year the file covers, like `2025-26`. */
+  getDeductionYear(): Promise<string>;
 
   // ── Credits & points (D27) ──
   /** `GET /v1/credit-packs` — the catalogue, active packs only. */

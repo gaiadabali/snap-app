@@ -13,6 +13,7 @@ import {
   type OccupationId,
 } from '@snap/api-contract/deduction-bundle';
 
+import { itemDescription } from './deduction-item-labels.js';
 import type { DeductionTotals } from './deduction-totals.js';
 
 /** Reported as `source.appVersion`. Keep in step with apps/server/package.json. */
@@ -24,12 +25,6 @@ const MAX_CENTS = 99_999_999_999n;
 /** Whole cents -> the bundle's amount string, e.g. 12345n -> "123.45". Callers pass 1..MAX_CENTS. */
 export function centsToAmount(cents: bigint): string {
   return `${cents / 100n}.${String(cents % 100n).padStart(2, '0')}`;
-}
-
-/** `phoneDevices` -> `Phone devices`: item text only, never a merchant or a user-typed name. */
-function itemText(itemId: string): string {
-  const words = itemId.replace(/([a-z0-9])([A-Z])/g, '$1 $2').toLowerCase();
-  return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
 /**
@@ -57,7 +52,7 @@ export function buildDeductionBundle(
     lines.push({
       label: it.label,
       itemId: it.itemId,
-      description: `${itemText(it.itemId)} (${it.label})`,
+      description: itemDescription(it.label, it.itemId),
       amount: centsToAmount(it.workCents > MAX_CENTS ? MAX_CENTS : it.workCents),
       gstInclusive: true,
       receiptCount: Math.min(Math.max(it.receiptCount, it.receiptRefs.length), MAX_RECEIPT_COUNT),
