@@ -328,6 +328,8 @@ describe("the worker's door is opened only by the worker", () => {
       'repo.ts',
       'tenant-entry.ts',
       'worker.ts',
+      // The voucher redemption drain (2.8 S4): run only by worker.ts, with its actor.
+      'yourtal/redemption-drain.ts',
     ]);
   });
 });

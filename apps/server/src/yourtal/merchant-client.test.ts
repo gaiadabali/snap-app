@@ -240,7 +240,7 @@ describe('voucherOwner (partner call)', () => {
     });
   });
 
-  it('is null for a malformed answer, an error status or a dead network', async () => {
+  it('is null for a malformed answer, an error status or a dead network; says when the link is gone', async () => {
     respond = (_req, res) => {
       res.setHeader('Content-Type', 'application/json');
       res.end(JSON.stringify({ held: true, status: 'active' }));
@@ -250,6 +250,11 @@ describe('voucherOwner (partner call)', () => {
       res.statusCode = 403;
       res.setHeader('Content-Type', 'application/json');
       res.end(JSON.stringify({ code: 'link_revoked' }));
+    };
+    expect(await voucherOwner(partner(), { linkId: LINK_ID, codeSha256: SHA })).toEqual({ linkGone: 'link_revoked' });
+    respond = (_req, res) => {
+      res.statusCode = 503;
+      res.end('down');
     };
     expect(await voucherOwner(partner(), { linkId: LINK_ID, codeSha256: SHA })).toBeNull();
     const dead = new YourtalPartnerClient({ baseUrl: 'http://127.0.0.1:1', partnerId: PARTNER, secret: PARTNER_SECRET });

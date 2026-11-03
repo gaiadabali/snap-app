@@ -2,6 +2,7 @@ import {
   Controller,
   Delete,
   Get,
+  Headers,
   HttpCode,
   HttpException,
   HttpStatus,
@@ -11,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { YourtalLinkStatus } from '@snap/api-contract';
+import { NotAMemberError, withTenantAs } from '@snap/db';
 import { IsString, Length } from 'class-validator';
 
 import { RateLimiter } from '../auth/rate-limit.js';
@@ -23,10 +25,14 @@ import {
   type CurrentSessionInfo,
 } from '../common/auth.guard.js';
 import { ValidBody } from '../common/valid-body.decorator.js';
-import { isYourtalPartnerConfigured } from '../config.js';
+import { isYourtalPartnerConfigured, isYourtalVoucherConfigured } from '../config.js';
+import { getDb } from '../db.js';
+import { listMembers } from '../repo.js';
 import { yourtalPartnerClient, type YourtalPartnerClient } from './client.js';
 import { exchangeLinkCode, normaliseLinkCode, revokeLinkAtYourtal } from './link.service.js';
 import { receiptStatusCache, type ReceiptStatusCache } from './receipt-status.js';
+import { publicRedemption } from './redeem.service.js';
+import { listRedemptions } from './redemptions.repo.js';
 import {
   insertLink,
   latestLink,
@@ -86,9 +92,15 @@ export class YourtalLinkController {
   receiptStatus: ReceiptStatusCache = receiptStatusCache;
 
   @Get('link')
-  @ApiOperation({ summary: 'Whether this account is linked to YourTal, and how its receipts have fared' })
-  async status(@CurrentUser() user: AuthUser): Promise<YourtalLinkStatus> {
-    return this.statusFor(user.userId);
+  @ApiOperation({
+    summary: 'Whether this account is linked to YourTal, and how its receipts have fared',
+    description: 'With an X-Workspace-Id header, `vouchers` also lists that workspace\'s voucher redemptions.',
+  })
+  async status(
+    @CurrentUser() user: AuthUser,
+    @Headers('x-workspace-id') workspaceId?: string,
+  ): Promise<YourtalLinkStatus> {
+    return this.statusFor(user.userId, workspaceId);
   }
 
   @Post('link')
@@ -206,7 +218,7 @@ export class YourtalLinkController {
     return this.statusFor(user.userId);
   }
 
-  private async statusFor(userId: string): Promise<YourtalLinkStatus> {
+  private async statusFor(userId: string, workspaceId?: string): Promise<YourtalLinkStatus> {
     const [link, counts, identityMissing] = await Promise.all([
       latestLink(userId),
       receiptReportCounts(userId),
@@ -234,7 +246,40 @@ export class YourtalLinkController {
       pointsReported: counts.pointsReported,
       ...(receiptPoints ? { receiptPoints } : {}),
       identityCheck: { required: identityMissing !== null, missing: identityMissing ?? [] },
+      vouchers: await this.vouchersFor(userId, live?.region ?? null, workspaceId),
     };
+  }
+
+  /** The scans voucher (group 2.8): may this person redeem here, and what has this workspace redeemed. */
+  private async vouchersFor(
+    userId: string,
+    region: 'AU' | 'ID' | null,
+    workspaceId: string | undefined,
+  ): Promise<NonNullable<YourtalLinkStatus['vouchers']>> {
+    let role: string | undefined;
+    let redemptions: NonNullable<YourtalLinkStatus['vouchers']>['redemptions'] = [];
+    if (workspaceId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(workspaceId)) {
+      try {
+        const [members, rows] = await Promise.all([
+          listMembers(userId, workspaceId),
+          listRedemptions((fn) => withTenantAs(getDb(), userId, workspaceId, fn)),
+        ]);
+        role = members.find((m) => m.user_id === userId)?.role;
+        redemptions = rows.map(publicRedemption);
+      } catch (error) {
+        if (!(error instanceof NotAMemberError)) throw error;
+      }
+    }
+    const reason = !isYourtalVoucherConfigured()
+      ? 'not_configured'
+      : region === null
+        ? 'not_linked'
+        : region !== 'AU'
+          ? 'region'
+          : workspaceId && role !== 'owner' && role !== 'admin'
+            ? 'role'
+            : undefined;
+    return { available: reason === undefined, ...(reason ? { reason } : {}), redemptions };
   }
 
   /**

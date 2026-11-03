@@ -1743,6 +1743,67 @@ export interface YourtalLinkStatus {
     required: boolean;
     missing: string[];
   };
+  /**
+   * The SnapApp scans voucher (group 2.8): show "Use a YourTal voucher" only
+   * when `available`. `redemptions` are the workspace's in the request's
+   * `X-Workspace-Id` header (empty without one), newest first, at most 20.
+   * Absent from servers older than the voucher.
+   */
+  vouchers?: {
+    available: boolean;
+    /**
+     * Why not, when not available: `not_configured` (this server has no
+     * voucher credential), `not_linked` (no live link), `region` (only AU
+     * links redeem), `role` (only an owner or admin of the workspace).
+     */
+    reason?: 'not_configured' | 'not_linked' | 'region' | 'role';
+    redemptions: YourtalVoucherRedemption[];
+  };
+}
+
+/**
+ * One attempt to redeem a YourTal scans voucher in a workspace. `pending`:
+ * YourTal's answer is not in yet and the server finishes it (usually within a
+ * minute); `granted`: the credits exist; `failed`: nothing was taken and no
+ * credits were added.
+ */
+export interface YourtalVoucherRedemption {
+  id: string;
+  state: 'pending' | 'granted' | 'failed';
+  /** Scan credits this voucher adds (50). */
+  credits: number;
+  createdAt: IsoDateTime;
+  grantedAt: IsoDateTime | null;
+}
+
+/** `POST /v1/yourtal/vouchers/redeem`, with the `X-Workspace-Id` header. */
+export interface RedeemYourtalVoucherRequest {
+  /** As typed: `XXXX-XXXX-XXXX-XXXX-X`, any case, hyphens and spaces ignored. */
+  code: string;
+}
+
+/**
+ * The answer to a redemption: `200` with `state: 'granted'` (the credits are
+ * in the workspace), or `202` with `state: 'pending'` (an answer from YourTal
+ * was lost or is slow; the server finishes it and the redemption shows in
+ * `YourtalLinkStatus.vouchers.redemptions`; never retry with another code).
+ *
+ * Refusals carry `{ error, message }`, where `error` is one of:
+ * `invalid_voucher_code` (400: a typo, never sent to YourTal),
+ * `email_unverified` (403), `owner_or_admin_only` (403), `not_linked` (409),
+ * `region_not_supported` (409: only AU links), `link_broken` (409: YourTal
+ * ended the link; link again), `not_your_voucher` (409: not a scans voucher in
+ * the YourTal wallet linked to this account), `already_redeemed` (409, with
+ * `redeemedAt`: this workspace already got its credits), `voucher_used`,
+ * `voucher_expired`, `voucher_busy` (409: in use elsewhere right now; try
+ * again in 15 minutes), `not_a_scans_voucher` (409), `voucher_refused` (409:
+ * YourTal would not authorize it), `rate_limited` (429: 5 tries per 15
+ * minutes), `yourtal_not_configured` (503), `yourtal_unavailable` (503:
+ * nothing was taken; try again in a minute).
+ */
+export interface RedeemYourtalVoucherResult {
+  state: 'granted' | 'pending';
+  redemption: YourtalVoucherRedemption;
 }
 
 /** `POST /v1/yourtal/link`. The code from YourTal's Me → Linked apps. */

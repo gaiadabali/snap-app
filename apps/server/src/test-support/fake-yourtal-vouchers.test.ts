@@ -405,7 +405,7 @@ describe('the ownership read in fake-yourtal', () => {
   it('answers held with the facts for the linked holder', async () => {
     const answer = await voucherOwner(partnerClient, { linkId, codeSha256: sha(CODE) });
     expect(answer).toMatchObject({ held: true, status: 'active', faceValueMinor: 500, currency: 'AUD' });
-    expect(answer && answer.held && Number.isNaN(Date.parse(answer.expiresAt))).toBe(false);
+    expect(answer && 'held' in answer && answer.held && Number.isNaN(Date.parse(answer.expiresAt))).toBe(false);
   });
 
   it('shows the live status: held while a hold is open, redeemed after the capture', async () => {

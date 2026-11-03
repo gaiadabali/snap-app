@@ -94,6 +94,8 @@ describeIfDb('the YourTal link endpoints (2.4)', () => {
       receipts: { pending: 0, rewarded: 0, refused: 0, pausedRefused: 0, identityRefused: 0, skippedDuplicate: 0, skippedFree: 0 },
       pointsReported: 0,
       identityCheck: { required: false, missing: [] },
+      // No merchant credential in this suite: the scans voucher is off.
+      vouchers: { available: false, reason: 'not_configured', redemptions: [] },
     });
   });
 
