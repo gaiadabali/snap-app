@@ -5,7 +5,9 @@
 
 /**
  * CROSS-APP ROUNDING CONTRACT (group plan decision D-1), shared with Free Tax
- * Returns' bundle importer, which re-totals the same lines the same way.
+ * Returns' bundle importer. The 4.4 bundle carries these WORK-SHARE amounts
+ * (this function applied per receipt line) and omits privateUsePercent, so
+ * FTR's totals equal the ones computed here.
  *
  * The work share of ONE line is `halfUp(amountCents × (100 − p), 100)` in
  * integer cents, p = the category's private-use percent (null or 0 = no
@@ -38,6 +40,8 @@ export interface DeductionSourceLine {
   source: 'user' | 'supplier';
   /** The amount as printed (GST included), whole cents. */
   amountCents: bigint;
+  /** ISO code of the document; only AUD is ever summed. */
+  currency: string;
 }
 
 export interface DeductionItemTotal {
@@ -54,7 +58,12 @@ export interface DeductionTotals {
   items: DeductionItemTotal[];
   totalCents: bigint;
   /** Supplier-filed receipts, not counted above, waiting for a person to confirm. */
-  toReview: { receiptCount: number; amountCents: bigint };
+  toReview: {
+    receiptCount: number;
+    amountCents: bigint;
+    /** Categorised receipts in a foreign currency: counted only, never summed. */
+    foreignCurrencyCount: number;
+  };
   /** Work-related trips in the year, whole km (the sum is rounded half up, not each trip). */
   workKilometres: number;
 }
@@ -66,9 +75,14 @@ export function foldTotals(
 ): DeductionTotals {
   const byItem = new Map<string, DeductionItemTotal & { docs: Set<string> }>();
   const reviewDocs = new Set<string>();
+  const foreignDocs = new Set<string>();
   let reviewCents = 0n;
   let totalCents = 0n;
   for (const l of lines) {
+    if (l.currency !== 'AUD') {
+      foreignDocs.add(l.documentId);
+      continue;
+    }
     if (l.source !== 'user') {
       reviewDocs.add(l.documentId);
       reviewCents += l.amountCents;
@@ -89,7 +103,8 @@ export function foldTotals(
     financialYear,
     items,
     totalCents,
-    toReview: { receiptCount: reviewDocs.size, amountCents: reviewCents },
+    toReview: { receiptCount: reviewDocs.size, amountCents: reviewCents,
+      foreignCurrencyCount: foreignDocs.size },
     workKilometres,
   };
 }

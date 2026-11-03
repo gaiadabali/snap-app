@@ -30,7 +30,7 @@ import { listBudgets, listInvoices, listTrips } from '../business/business.repo.
 import { consumptionTaxFor, toWire } from '../documents/documents.controller.js';
 import { listDocuments, readPlan, readTenant, type PlanRow } from '../repo.js';
 import { deductionTotals } from '../deductions/deductions.repo.js';
-import { fyStartYear, type DeductionTotals } from '../deductions/deduction-totals.js';
+import { foldTotals, fyLabel, fyStartYear, type DeductionTotals } from '../deductions/deduction-totals.js';
 import { add, ZERO } from '@snap/api-contract/money';
 
 /**
@@ -72,12 +72,18 @@ export class SummariesController {
     @CurrentUser() user: AuthUser,
     @WorkspaceId() tenantId: string,
   ): Promise<Overview> {
-    const [tenant, plan, documents, totals] = await Promise.all([
+    const [tenant, plan, documents] = await Promise.all([
       readTenant(user.userId, tenantId),
       readPlan(user.userId, tenantId),
       this.views(user, tenantId),
-      deductionTotals(user.userId, tenantId, fyStartYear(new Date().toLocaleDateString('en-CA', { timeZone: 'Australia/Sydney' }))),
     ]);
+
+    // A business workspace has no personal deductions: skip the queries.
+    const fy = fyStartYear(sydneyToday());
+    const totals =
+      tenant?.kind === 'personal'
+        ? await deductionTotals(user.userId, tenantId, fy)
+        : foldTotals(fyLabel(fy), [], 0);
 
     const quarter = documents.filter((d) => d.issueDate >= startOfQuarter());
     const atRisk = quarter.filter((d) => !d.isTaxInvoice);
@@ -120,6 +126,7 @@ export class SummariesController {
         toReview: {
           count: totals.toReview.receiptCount,
           total: Number(totals.toReview.amountCents) / 100,
+          foreignCurrencyCount: totals.toReview.foreignCurrencyCount,
         },
         // The caps are not estimates — they are this financial year's published
         // limits, and the screen shows them whether or not anything has been
@@ -293,6 +300,9 @@ function byLabel(t: DeductionTotals): Record<string, number> {
   for (const i of t.items) cents.set(i.label, (cents.get(i.label) ?? 0n) + i.workCents);
   return Object.fromEntries([...cents].map(([k, v]) => [k, Number(v) / 100]));
 }
+
+export const sydneyToday = (): string =>
+  new Date().toLocaleDateString('en-CA', { timeZone: 'Australia/Sydney' });
 
 const sum = (values: Array<string | null>): string =>
   values.reduce<string>((acc, v) => add(acc, v ?? ZERO), ZERO);

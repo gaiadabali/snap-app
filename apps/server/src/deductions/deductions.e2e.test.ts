@@ -4,8 +4,9 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { Client } from 'pg';
 
 import { closeDb } from '../db.js';
-import { SummariesController } from '../summaries/summaries.controller.js';
+import { SummariesController, sydneyToday } from '../summaries/summaries.controller.js';
 import { provisionTenant, wipeTenant } from '../test-support/tenant.js';
+import { fyStartYear } from './deduction-totals.js';
 import { deductionTotals } from './deductions.repo.js';
 
 /** Deduction totals and the overview estimate against real Postgres as snap_app. */
@@ -28,7 +29,7 @@ describeIfDb('deduction totals', () => {
 
   async function addDoc(tenant: string, o: {
     date?: string | null; cat?: string | null; source?: string | null; payable?: string;
-    status?: string; deleted?: boolean; lines?: Array<{ amount: string; cat?: string | null }>;
+    status?: string; deleted?: boolean; currency?: string; docType?: string; lines?: Array<{ amount: string; cat?: string | null }>;
   }) {
     const capture = randomUUID();
     const id = randomUUID();
@@ -41,10 +42,10 @@ describeIfDb('deduction totals', () => {
     );
     await admin.query(
       `insert into documents (id, tenant_id, capture_id, issue_date, payable_amount, category_id, category_source,
-                              review_status, deleted_at)
-       values ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+                              review_status, deleted_at, currency, doc_type)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
       [id, tenant, capture, o.date === undefined ? '2025-09-01' : o.date, o.payable ?? '0', o.cat ?? null,
-       o.source === undefined ? (o.cat ? 'user' : null) : o.source, o.status ?? 'reviewed', o.deleted ? new Date() : null],
+       o.source === undefined ? (o.cat ? 'user' : null) : o.source, o.status ?? 'reviewed', o.deleted ? new Date() : null, o.currency ?? 'AUD', o.docType ?? 'receipt'],
     );
     let n = 1;
     for (const l of o.lines ?? []) {
@@ -106,8 +107,12 @@ describeIfDb('deduction totals', () => {
   });
 
   it('totals per label and item with the D-1 rule, coalesce, and exclusions', async () => {
-    // lines: own category wins over the document's; the second line falls back to the document's
-    await addDoc(TENANT, { cat: cat.tools, lines: [{ amount: '10.01', cat: cat.tools50 }, { amount: '20.00' }] });
+    // Lines: own category wins; a line with none falls back to the document's. Lines
+    // go to two different items, and payable (30.51) must NOT be counted on top.
+    await addDoc(TENANT, {
+      cat: cat.tools, payable: '30.51',
+      lines: [{ amount: '10.01', cat: cat.tools50 }, { amount: '20.00', cat: cat.laundry }, { amount: '0.50' }],
+    });
     // no lines: payable once, under the document's category
     await addDoc(TENANT, { cat: cat.laundry, payable: '33.30' });
     // retired category still counts
@@ -119,31 +124,37 @@ describeIfDb('deduction totals', () => {
     await addDoc(TENANT, { cat: cat.tools, payable: '96.00', deleted: true });
     await addDoc(TENANT, { cat: cat.tools, payable: '95.00', date: null });
     await addDoc(TENANT, { cat: cat.tools, payable: '94.00', date: '2024-09-01' });
-    // supplier-filed: to review, not counted
+    // supplier-filed, and category set with no source: to review, not counted
     await addDoc(TENANT, { cat: cat.tools, payable: '40.00', source: 'supplier' });
+    await addDoc(TENANT, { cat: cat.tools, payable: '7.00', source: null });
+    // foreign currency: counted, never summed; credit notes and statements: out
+    await addDoc(TENANT, { cat: cat.tools, payable: '500.00', currency: 'USD' });
+    await addDoc(TENANT, { cat: cat.tools, payable: '91.00', docType: 'credit_note' });
+    await addDoc(TENANT, { cat: cat.tools, payable: '92.00', docType: 'statement' });
     // other tenants never leak in
     await addDoc(OTHER, { cat: otherCat, payable: '1000.00' });
     await addDoc(BIZ, { cat: bizCat, payable: '1000.00' });
 
     const t = await deductionTotals(OWNER, TENANT, 2025);
     expect(t.financialYear).toBe('2025-26');
-    // tools: 10.01 at 50% -> 1001 cents -> 501 (half up), plus 20.00 at the document's 0% -> 2000
+    // tools: 10.01 at 50% -> 1001 cents -> 501 (half up), plus 0.50 at the document's 0% -> 50
+    // washPowder: the 20.00 line (0%) plus the line-less 33.30 receipt
     expect(t.items).toEqual([
-      { label: 'D3', itemId: 'washPowder', receiptCount: 1, workCents: 3330n },
+      { label: 'D3', itemId: 'washPowder', receiptCount: 2, workCents: 5330n },
       { label: 'D5', itemId: 'licences', receiptCount: 1, workCents: 500n },
-      { label: 'D5', itemId: 'tools', receiptCount: 1, workCents: 2501n },
+      { label: 'D5', itemId: 'tools', receiptCount: 1, workCents: 551n },
     ]);
-    expect(t.totalCents).toBe(6331n);
-    expect(t.toReview).toEqual({ receiptCount: 1, amountCents: 4000n });
+    expect(t.totalCents).toBe(6381n);
+    expect(t.toReview).toEqual({ receiptCount: 2, amountCents: 4700n, foreignCurrencyCount: 1 });
   });
 
   it('puts 30 Jun and 1 Jul in different years', async () => {
+    const y25 = (await deductionTotals(OWNER, TENANT, 2025)).totalCents;
+    const y26 = (await deductionTotals(OWNER, TENANT, 2026)).totalCents;
     await addDoc(TENANT, { cat: cat.laundry, payable: '1.00', date: '2026-06-30' });
     await addDoc(TENANT, { cat: cat.laundry, payable: '2.00', date: '2026-07-01' });
-    const before = (await deductionTotals(OWNER, TENANT, 2025)).totalCents;
-    const after = await deductionTotals(OWNER, TENANT, 2026);
-    expect(after.totalCents).toBe(200n);
-    expect(before).toBe(6331n + 100n);
+    expect((await deductionTotals(OWNER, TENANT, 2025)).totalCents - y25).toBe(100n);
+    expect((await deductionTotals(OWNER, TENANT, 2026)).totalCents - y26).toBe(200n);
   });
 
   it('sums work trips into whole km for the year', async () => {
@@ -168,15 +179,17 @@ describeIfDb('deduction totals', () => {
   });
 
   it('the overview returns the real estimate', async () => {
-    const fy = Number(new Date().toLocaleDateString('en-CA', { timeZone: 'Australia/Sydney' }).slice(5, 7)) >= 7
-      ? new Date().getFullYear() : new Date().getFullYear() - 1;
+    const fy = fyStartYear(sydneyToday());
+    const before = await deductionTotals(OWNER, TENANT, fy);
     await addDoc(TENANT, { cat: cat.tools, payable: '12.34', date: `${fy}-07-15` });
     const o = await new SummariesController().overview(
       { userId: OWNER, email: 'o@dt.test', displayName: 'Owner', initials: 'O' } as never,
       TENANT,
     );
-    expect(o.deductions.estimateTotal).toBeGreaterThanOrEqual(12.34);
-    expect(o.deductions.byLabel.D5).toBeGreaterThanOrEqual(12.34);
+    const d5 = before.items.filter((i) => i.label === 'D5').reduce((a, i) => a + i.workCents, 0n) + 1234n;
+    expect(o.deductions.estimateTotal).toBe(Number(before.totalCents + 1234n) / 100);
+    expect(o.deductions.byLabel.D5).toBe(Number(d5) / 100);
     expect(o.deductions.financialYear).toBe(`${fy}-${String((fy + 1) % 100).padStart(2, '0')}`);
+    expect(o.deductions.toReview?.foreignCurrencyCount).toBe(before.toReview.foreignCurrencyCount);
   });
 });

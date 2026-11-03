@@ -32,13 +32,18 @@ describe('financial year', () => {
 
 describe('foldTotals', () => {
   const line = (documentId: string, cents: bigint, p: number | null, source: 'user' | 'supplier' = 'user') => ({
-    documentId, label: 'D5', itemId: 'tools', privateUsePercent: p, source, amountCents: cents,
+    documentId, label: 'D5', itemId: 'tools', privateUsePercent: p, source, amountCents: cents, currency: 'AUD',
+  });
+  it('never sums a foreign currency', () => {
+    const t = foldTotals('2025-26', [{ ...line('a', 9999n, null), currency: 'USD' }], 0);
+    expect(t.totalCents).toBe(0n);
+    expect(t.toReview).toEqual({ receiptCount: 0, amountCents: 0n, foreignCurrencyCount: 1 });
   });
   it('rounds per line, then sums; supplier lines go to review', () => {
     const t = foldTotals('2025-26', [line('a', 1n, 50), line('a', 1n, 50), line('b', 100n, null), line('c', 500n, 0, 'supplier')], 12);
     expect(t.totalCents).toBe(102n); // 1 + 1 + 100, not halfUp(2 * 0.5) = 1
     expect(t.items).toEqual([{ label: 'D5', itemId: 'tools', receiptCount: 2, workCents: 102n }]);
-    expect(t.toReview).toEqual({ receiptCount: 1, amountCents: 500n });
+    expect(t.toReview).toEqual({ receiptCount: 1, amountCents: 500n, foreignCurrencyCount: 0 });
     expect(t.workKilometres).toBe(12);
   });
 });

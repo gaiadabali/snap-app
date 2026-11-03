@@ -518,7 +518,7 @@ export interface DeductionSummary {
   /** Work-related trip kilometres in that year, whole km (the D1 cents-per-km input). */
   workKilometres?: number;
   /** Supplier-filed receipts not yet confirmed by a person; not in the estimate. */
-  toReview?: { count: number; total: number };
+  toReview?: { count: number; total: number; foreignCurrencyCount: number };
 }
 
 export interface Overview {
