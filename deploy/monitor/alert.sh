@@ -29,6 +29,8 @@
 #   - the last offsite run succeeded under 26 hours ago
 #   - the newest weekly base backup is under 8 days old
 #   - disk free on / above 90%
+#   - no stuck YourTal voucher redemption (needs_review, captured with no grant,
+#     unfinished over 1 h, authorization_mismatch); VOUCHER_CHECK=off skips
 #   - Vault is not sealed
 #   - Vault's app token was renewed under 13 hours ago
 #
@@ -239,6 +241,40 @@ if [ "${1:-}" = "--inbox" ]; then
     record FAILED "disk: / is ${use}% full"
   else
     record OK "disk: / is ${use}% full"
+  fi
+
+  # 2b. YourTal scans vouchers (plan 2.8, S7). Money is moving through
+  # yourtal_voucher_redemptions: a row that stops is a customer who paid points
+  # and got no scans, or a capture with no credits. authorized, voiding and
+  # authorizing have NO edge to needs_review, so only this check catches them
+  # stuck. Flags: any needs_review; any captured row with no grant for 15 min
+  # (the drain grants in seconds; 15 min is its backoff cap, so a row mid-retry
+  # does not flap); any unfinished row older than 1 h; any unfinished row whose
+  # last_code is authorization_mismatch. Reads counts only (no ids, no code
+  # hashes), read-only session, as postgres (superuser: the table has forced
+  # RLS, which app roles cannot see across workspaces). VOUCHER_CHECK=off skips.
+  if [ "${VOUCHER_CHECK:-on}" != off ]; then
+    pg_ctr="${SNAP_PG_CONTAINER:-snap-postgres}"
+    v_nr=""
+    vrow=$(docker exec -i -e PGOPTIONS='-c default_transaction_read_only=on' "$pg_ctr" \
+      psql -U postgres -d snapapps -X -At -F ' ' -v ON_ERROR_STOP=1 2>&1 <<'SQL'
+SELECT
+  count(*) FILTER (WHERE status = 'needs_review'),
+  count(*) FILTER (WHERE status = 'captured' AND grant_id IS NULL AND created_at < now() - interval '15 minutes'),
+  count(*) FILTER (WHERE status NOT IN ('granted','voided','expired','refused','abandoned','failed') AND created_at < now() - interval '1 hour'),
+  count(*) FILTER (WHERE status NOT IN ('granted','voided','expired','refused','abandoned','failed') AND last_code = 'authorization_mismatch')
+FROM yourtal_voucher_redemptions;
+SQL
+    ) && read -r v_nr v_cap v_old v_mis <<< "$vrow"
+    case "${v_nr:-x}${v_cap:-x}${v_old:-x}${v_mis:-x}" in
+      *[!0-9]*) record FAILED "vouchers: query failed: $(printf '%s' "$vrow" | head -n 1 | cut -c1-150)" ;;
+      *)
+        if [ "$v_nr" -gt 0 ] || [ "$v_cap" -gt 0 ] || [ "$v_old" -gt 0 ] || [ "$v_mis" -gt 0 ]; then
+          record FAILED "vouchers: needs_review=$v_nr captured_no_grant=$v_cap unfinished_over_1h=$v_old authorization_mismatch=$v_mis (docs/DEPLOY.md, voucher runbook)"
+        else
+          record OK "vouchers: no stuck redemptions"
+        fi ;;
+    esac
   fi
 
   # 3. Vault sealed state: a sealed Vault is an outage of every provider key.

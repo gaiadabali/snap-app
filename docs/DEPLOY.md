@@ -562,6 +562,72 @@ DIRECTORY at that path, which then blocks the real file. Check it took:
 `GET /v1/yourtal/link` answers `"available": true`, and the worker's log has
 no `yourtal outbox: partner link off` line after its `worker up`.
 
+### YourTal scans voucher: merchant settings, turning it on, rollback (group plan 2.8)
+
+A person buys "50 SnapApp scans" in YourTal for 200 points and types the code
+into SnapApp. SnapApp redeems it through YourTal's merchant voucher API and adds
+50 credits to the workspace, exactly once (design: yourtal `docs/28`). It is off
+until BOTH merchant settings exist, and it needs the partner link above.
+
+**The two settings** go in the same file as the partner secret,
+`/etc/snap-apps/secrets/yourtal.env` (0600, owned 1001:1001, mounted as
+`/run/secrets/yourtal.env`; first matching line wins). Placeholders only here:
+
+```
+YOURTAL_MERCHANT_KEY_ID=mc_<uuid>
+YOURTAL_MERCHANT_SECRET=<64 hex characters = 32 raw bytes>
+```
+
+Both come from a YourTal Studio credential for Snap App Pty Ltd (Studio,
+Developers; the secret is shown once). A malformed value turns the feature off
+with one log line, it does not stop the server. The code is never stored, only
+its SHA-256.
+
+**Turning it on (step L2).** Only after YourTal has T3 (order lookup), T4
+(ownership read) and T7 (listing seed) live. Add the two lines (append with a
+silent prompt, as for the partner secret), then recreate `api` and `worker`
+through `deploy.sh` (never a bare `docker compose up`). Check:
+`GET /v1/yourtal/link` with an `X-Workspace-Id` header answers
+`vouchers.available: true`, and the worker log has no `voucher redemptions: merchant credential off` line.
+
+**Rotating.** Edit the two lines in place in that file (rewrite the same file,
+do not `mv` a new one over it: a single-file bind mount keeps pointing at the
+old inode), then recreate `api` and `worker`. Studio keeps the old key valid for
+24 h. A rotation in flight is safe: every retry reuses its stored
+Idempotency-Key.
+
+**Rollback (turn it off).**
+
+1. First check nothing is mid-flight (the monitor's `vouchers:` line, or
+   `SELECT status, count(*) FROM yourtal_voucher_redemptions GROUP BY 1` as
+   postgres on the box). The worker drain runs only while the credential is
+   present: with it removed, an `authorized` hold lapses in 15 minutes (nothing
+   taken), but a `captured` row never gets its credits until the settings come
+   back. Wait for those to reach `granted`, or leave the feature on.
+2. Delete the two lines (or blank them), recreate `api` and `worker`. The
+   endpoint answers unavailable, the cards hide, nothing else changes. Granted
+   credits stay (they are ordinary `usage_grants`). Do not drop table
+   `yourtal_voucher_redemptions` or migration 0041: it is the money record.
+
+**Watching it.** `deploy/monitor/alert.sh --inbox` (the 10-minute root cron)
+reads the table as postgres through `docker exec` (read-only session, counts
+only) and alerts on: any `needs_review` row; a `captured` row with no grant for
+15 minutes; any unfinished row (not granted, voided, expired, refused,
+abandoned or failed) older than 1 hour; any unfinished row whose `last_code` is
+`authorization_mismatch`. `authorizing`, `authorized` and `voiding` rows have
+no way to `needs_review`, so this check is the only thing that sees them stuck.
+`VOUCHER_CHECK=off` in the cron environment skips it. Nothing to install: the
+cron line is unchanged, the next deploy pulls the script.
+
+**When it alerts.** List the rows (as postgres, never print `code_sha256`):
+`SELECT id, status, attempts, last_http_status, last_code, created_at FROM yourtal_voucher_redemptions WHERE status NOT IN ('granted','voided','expired','refused','abandoned','failed') ORDER BY created_at;`
+YourTal down or erroring: the drain retries every 15 minutes and it clears by
+itself once YourTal answers. `authorization_mismatch`: YourTal answered an
+order lookup with a different authorization than ours; do not capture or void by
+hand, read the YourTal side (Studio, the order ref `snap-<id>`) and decide.
+`needs_review` rows resolve only by a person (the 0041 machine allows
+`captured`, `granted`, `voided` or `expired` from there).
+
 `bootstrap.sh` was deliberately **not** run here either: helios is also a
 shared host (nginx on 80/443 for many sites, its own Postgres on 5432, MinIO on
 9000), and bootstrap's `ufw` reset would cut them. Deploy with `SKIP_CADDY=1`

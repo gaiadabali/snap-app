@@ -334,6 +334,19 @@ the screens are 2.6. YourTal's contract is its partner guide
    The screens tell the person what to do: verify the email in YourTal's Me page, or
    use a permanent email (YourTal has no change-email flow yet, so no link).
 
+### Voucher credits (group plan 2.8)
+
+A third way to get credits: a "50 SnapApp scans" voucher bought in YourTal for
+200 points and redeemed in SnapApp through YourTal's merchant voucher API.
+Redemption adds a `usage_grants` row (50 scans, source `yourtal_voucher`) to the
+workspace the person redeems in (owner or admin only), exactly once, with no
+`credit_purchases` row. It is a free grant for D33's purposes: spending order
+and the "only a paid purchase earns points" rule are unchanged, so voucher scans
+earn no YourTal points. YourTal owes Snap App A$5 per redemption through its
+weekly statement. It is off unless the merchant credential is installed, and
+only a YourTal account linked to the SnapApp account can use a code. See
+docs/INTEGRATIONS.md and docs/DEPLOY.md.
+
 ### Local points are retired (founder, 2026-10-20; built in group plan 2.6)
 
 YourTal points are the only points with value, so Snap Apps keeps no points of
