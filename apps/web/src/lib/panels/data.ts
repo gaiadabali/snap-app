@@ -117,7 +117,9 @@ export const getCreditBalance = (workspaceId: string) => api<CreditBalance>('/v1
 export const listCreditPurchases = (workspaceId: string) =>
   api<CreditPurchase[]>('/v1/credits/purchases', { workspaceId });
 
-export const getYourtalLink = () => api<YourtalLinkStatus>('/v1/yourtal/link');
+/** `workspaceId` only adds that workspace's voucher history (`vouchers.redemptions`). */
+export const getYourtalLink = (workspaceId?: string) =>
+  api<YourtalLinkStatus>('/v1/yourtal/link', workspaceId ? { workspaceId } : undefined);
 
 /* ── The ledger — not part of the mobile seam, called directly ───────────── */
 

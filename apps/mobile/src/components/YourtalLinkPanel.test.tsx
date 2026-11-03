@@ -257,3 +257,13 @@ describe('YourtalLinkPanel: every error code is shown', () => {
     expect(t).toContain('Could not link YourTal. Check your connection and try again.');
   });
 });
+
+describe('YourtalLinkPanel: voucher', () => {
+  const voucher = { workspaceName: 'Personal', code: '', onCodeChange: noop, onSubmit: noop, busy: false, outcome: null };
+  const vouchers = { available: true, redemptions: [] };
+  it('shows the voucher panel only for a linked account the server offers it to', () => {
+    expect(text(html({ voucher, status: { state: 'linked', vouchers } }))).toContain('Use a YourTal voucher');
+    expect(text(html({ voucher, status: { state: 'linked' } }))).not.toContain('Use a YourTal voucher');
+    expect(text(html({ voucher, status: { state: 'unlinked', vouchers } }))).not.toContain('Use a YourTal voucher');
+  });
+});

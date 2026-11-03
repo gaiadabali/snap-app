@@ -262,4 +262,12 @@ describe('YourtalLinkView: every error code is shown', () => {
     const t = text(html({ error: { context: 'link', code: null } }));
     expect(t).toContain('Could not link YourTal. Check your connection and try again.');
   });
+
+  it('shows the voucher card only for a linked account the server offers it to', () => {
+    const voucher = { workspaceName: 'Personal', code: '', onCodeChange: noop, onSubmit: noop, busy: false, outcome: null };
+    const vouchers = { available: true, redemptions: [] };
+    expect(html({ voucher, status: { state: 'linked', vouchers } })).toContain('Use a YourTal voucher');
+    expect(html({ voucher, status: { state: 'linked' } })).not.toContain('Use a YourTal voucher');
+    expect(html({ voucher, status: { state: 'unlinked', vouchers } })).not.toContain('Use a YourTal voucher');
+  });
 });

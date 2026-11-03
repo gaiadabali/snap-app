@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import type { YourtalLinkStatus } from '@snap/api-contract';
+import type { RedeemYourtalVoucherResult, YourtalLinkStatus } from '@snap/api-contract';
 
 import { api, ApiError, newIdempotencyKey } from '@/lib/api/server';
 
@@ -52,5 +52,47 @@ export async function unlinkYourtal(path: string): Promise<YourtalActionResult> 
     return { ok: true, status };
   } catch (error) {
     return { ok: false, code: codeOf(error) };
+  }
+}
+
+/**
+ * Redeem a YourTal scans voucher in a workspace (`POST /v1/yourtal/vouchers/redeem`),
+ * then read the link status again for that workspace so the history is current.
+ * Not idempotency-keyed: the server dedupes by the code itself.
+ */
+export type VoucherActionResult =
+  | { ok: true; result: RedeemYourtalVoucherResult; status: YourtalLinkStatus | null }
+  | { ok: false; code: string | null; redeemedAt: string | null };
+
+export async function redeemYourtalVoucher(
+  path: string,
+  workspaceId: string,
+  code: string,
+): Promise<VoucherActionResult> {
+  try {
+    const result = await api<RedeemYourtalVoucherResult>('/v1/yourtal/vouchers/redeem', {
+      method: 'POST',
+      body: { code },
+      workspaceId,
+    });
+    const status = await refreshYourtalLink(workspaceId);
+    revalidatePath(path);
+    return { ok: true, result, status };
+  } catch (error) {
+    const body = error instanceof ApiError ? error.body : null;
+    const redeemedAt =
+      typeof body === 'object' && body !== null && typeof (body as { redeemedAt?: unknown }).redeemedAt === 'string'
+        ? (body as { redeemedAt: string }).redeemedAt
+        : null;
+    return { ok: false, code: codeOf(error), redeemedAt };
+  }
+}
+
+/** The link status with this workspace's voucher history; null when the read fails (a poll just tries again). */
+export async function refreshYourtalLink(workspaceId: string): Promise<YourtalLinkStatus | null> {
+  try {
+    return await api<YourtalLinkStatus>('/v1/yourtal/link', { workspaceId });
+  } catch {
+    return null;
   }
 }

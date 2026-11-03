@@ -2,6 +2,7 @@ import type { YourtalLinkStatus } from '@snap/api-contract';
 import { Pressable, View } from 'react-native';
 
 import { Field, Loading } from '@/components/form';
+import { YourtalVoucherPanel, type YourtalVoucherPanelProps } from '@/components/YourtalVoucherPanel';
 import { Body, Button, Card, Divider, Notice, SectionHeader, Small } from '@/components/ui';
 import {
   LINK_COPY,
@@ -41,6 +42,8 @@ export interface YourtalLinkPanelProps {
   onOpenUrl: (url: string) => void;
   /** Goes to the existing email-confirmation flow (Settings). */
   onConfirmEmail: () => void;
+  /** The voucher panel's state; it shows only when the server has `vouchers`. */
+  voucher?: Omit<YourtalVoucherPanelProps, 'vouchers'>;
 }
 
 /** A tappable line of text that leaves the screen. */
@@ -178,6 +181,10 @@ export function YourtalLinkPanel(props: YourtalLinkPanelProps) {
             {since ? <Small>{`Since ${since}`}</Small> : null}
           </View>
         </Card>
+
+        {status.vouchers && props.voucher ? (
+          <YourtalVoucherPanel vouchers={status.vouchers} {...props.voucher} />
+        ) : null}
 
         <View style={{ gap: space.md }}>
           <SectionHeader title="Your receipts" />

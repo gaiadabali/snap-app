@@ -1,6 +1,7 @@
 import type { YourtalLinkStatus } from '@snap/api-contract';
 
 import { Button, ButtonLink, Card, Field, Input } from '@/design/primitives';
+import { YourtalVoucherCard, type YourtalVoucherCardProps } from './YourtalVoucherCard';
 import {
   LINK_COPY,
   cleanLinkCode,
@@ -34,6 +35,8 @@ export interface YourtalLinkViewProps {
   onAskUnlink: () => void;
   onCancelUnlink: () => void;
   onConfirmUnlink: () => void;
+  /** The voucher card's state; the card shows only when the server has `vouchers`. */
+  voucher?: Omit<YourtalVoucherCardProps, 'vouchers'>;
 }
 
 /** A link that leaves for YourTal. */
@@ -202,6 +205,10 @@ export function YourtalLinkView(props: YourtalLinkViewProps) {
           <h2 className="text-[17px] font-semibold text-[var(--color-ink)]">{LINK_COPY.linkedTitle}</h2>
           {since ? <p className="mt-1 text-[13px] text-[var(--color-ink-muted)]">{`Since ${since}`}</p> : null}
         </Card>
+
+        {status.vouchers && props.voucher ? (
+          <YourtalVoucherCard vouchers={status.vouchers} {...props.voucher} />
+        ) : null}
 
         <section className="flex max-w-[480px] flex-col gap-3">
           <h2 className="text-[15px] font-semibold text-[var(--color-ink)]">Your receipts</h2>
