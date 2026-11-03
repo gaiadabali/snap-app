@@ -415,6 +415,7 @@ export interface SnapApi {
    */
   startYourtalSignIn(input: {
     signUp: boolean;
+    freshSignIn?: boolean;
     locale?: 'en-AU' | 'id-ID';
   }): Promise<{ url: string; flowId: string }>;
   /**

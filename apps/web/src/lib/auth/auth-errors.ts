@@ -46,7 +46,7 @@ export const AUTH_ERRORS = {
   },
   staff_reauth_required: {
     message:
-      'Snap Apps staff must have signed in to YourTal in the last 12 hours. Sign in to YourTal again, then come back.',
+      'Snap Apps staff must have signed in to YourTal in the last 12 hours. Sign in again to continue.',
   },
   account_review: {
     message:

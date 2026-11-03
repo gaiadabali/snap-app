@@ -156,6 +156,21 @@ describe('YourTal start route', () => {
   });
 });
 
+describe('YourTal start route: fresh sign-in', () => {
+  const started = { url: 'https://yt.test/auth?x=1', flowId: 'f1', expiresAt: '2026-11-03T00:00:00Z' };
+  const bodyOf = () => (apiMock.mock.calls[0]![1] as { body: Record<string, unknown> }).body;
+
+  it('asks the API for freshSignIn only when ?fresh=1', async () => {
+    apiMock.mockResolvedValue(started);
+    const { GET } = await import('./yourtal/route');
+    await GET(req('/auth/yourtal?fresh=1&returnTo=%2Fapp'));
+    expect(bodyOf()).toMatchObject({ client: 'web', returnTo: '/app', signUp: false, freshSignIn: true });
+    apiMock.mockClear();
+    await GET(req('/auth/yourtal?returnTo=%2Fapp'));
+    expect(bodyOf()).not.toHaveProperty('freshSignIn');
+  });
+});
+
 describe('YourTal callback route', () => {
   const cb = (query: string) =>
     req(`/auth/yourtal/callback?${query}`, { headers: { cookie: 'snap_yt_flow=flow1' } });

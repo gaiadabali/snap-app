@@ -116,7 +116,7 @@ export type StartedAuthorization = {
  */
 export async function startAuthorization(
   kind: YourTalClientKind,
-  options: { signUp: boolean; locale: string },
+  options: { signUp: boolean; locale: string; freshSignIn?: boolean },
 ): Promise<StartedAuthorization> {
   const { issuer, client } = clientOrRefuse(kind);
   let config: oidc.Configuration;
@@ -142,6 +142,10 @@ export async function startAuthorization(
   // OpenID Connect "Initiating User Registration": YourTal opens its sign-up
   // form instead of sign-in (docs/26 §1.7).
   if (options.signUp) parameters.prompt = 'create';
+  // A staff member whose YourTal sign-in is over 12 h old asks for a new one
+  // (YourTal docs/26 §1.4). `prompt=login` only forces a fresh sign-in, not a
+  // factor: the hwk/mfa and 12 h checks stay ours. Sign-up wins; never both.
+  else if (options.freshSignIn) parameters.prompt = 'login';
 
   return { url: oidc.buildAuthorizationUrl(config, parameters).href, state, nonce, codeVerifier };
 }

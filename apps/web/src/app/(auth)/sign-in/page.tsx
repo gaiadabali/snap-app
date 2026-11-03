@@ -26,6 +26,7 @@ export default async function SignInPage({
         notice={authNotice(params.error)}
         sent={params.sent === '1'}
         yourtalEnabled={yourtalEnabled}
+        signInAgain={params.error === 'staff_reauth_required'}
       />
       <p className="auth-switch">
         New here?{' '}

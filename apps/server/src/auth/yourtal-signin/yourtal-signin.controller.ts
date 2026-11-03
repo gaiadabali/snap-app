@@ -28,6 +28,11 @@ export class YourTalStartDto {
   @IsBoolean()
   signUp?: boolean;
 
+  /** Ask YourTal for a fresh sign-in (`prompt=login`), e.g. after `staff_reauth_required`. */
+  @IsOptional()
+  @IsBoolean()
+  freshSignIn?: boolean;
+
   /** `ui_locales` for YourTal's screens. */
   @IsOptional()
   @IsIn(['en-AU', 'id-ID'])
@@ -111,7 +116,7 @@ export class YourTalSignInController {
     summary: 'Start Sign in with YourTal',
     description:
       'Returns YourTal’s authorization URL (state, nonce, PKCE S256, scopes openid email profile account, ' +
-      'ui_locales, and prompt=create when signUp) and a flow id that finish needs within 10 minutes. ' +
+      'ui_locales, prompt=create when signUp, prompt=login when freshSignIn) and a flow id that finish needs within 10 minutes. ' +
       '501 not_configured when this client is off.',
   })
   async start(
@@ -130,6 +135,7 @@ export class YourTalSignInController {
     const started = await startAuthorization(body.client, {
       signUp: body.signUp === true,
       locale: body.locale ?? 'en-AU',
+      freshSignIn: body.freshSignIn === true,
     });
     const flow = await openFlow({
       client: body.client,

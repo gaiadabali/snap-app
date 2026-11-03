@@ -4,7 +4,7 @@ import { View } from 'react-native';
 
 import { api, type Session } from '@/api';
 import { Button } from '@/components/ui';
-import { runYourtalSignIn, SIGNIN_COPY } from '@/lib/yourtal-signin';
+import { isStaffReauth, runYourtalSignIn, SIGNIN_COPY } from '@/lib/yourtal-signin';
 import { space } from '@/theme';
 
 /**
@@ -31,7 +31,9 @@ export function YourtalSignInButtons({
   onFailure: (message: string, code: string | null) => void;
 }) {
   const [available, setAvailable] = useState(false);
-  const [busy, setBusy] = useState<'signIn' | 'signUp' | null>(null);
+  const [busy, setBusy] = useState<Kind | null>(null);
+  // Set by a `staff_reauth_required` refusal, kept through a cancelled retry: offers "Sign in again" (prompt=login at YourTal).
+  const [reauth, setReauth] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -45,7 +47,7 @@ export function YourtalSignInButtons({
   }, []);
 
   const go = useCallback(
-    async (kind: 'signIn' | 'signUp') => {
+    async (kind: Kind) => {
       if (busy) return;
       setBusy(kind);
       try {
@@ -55,10 +57,13 @@ export function YourtalSignInButtons({
             openBrowser: (url, redirect) => WebBrowser.openAuthSessionAsync(url, redirect),
             finish: (input) => api().finishYourtalSignIn(input),
           },
-          { signUp: kind === 'signUp' },
+          { signUp: kind === 'signUp', freshSignIn: kind === 'fresh' },
         );
         if (result.kind === 'signed-in') onSignedIn(result.session);
-        else if (result.kind === 'failed') onFailure(result.message, result.code);
+        else if (result.kind === 'failed') {
+          setReauth(isStaffReauth(result.code));
+          onFailure(result.message, result.code);
+        }
         // 'quiet': cancelled or dismissed. Back on the sign-in screen, no message.
       } finally {
         setBusy(null);
@@ -68,6 +73,23 @@ export function YourtalSignInButtons({
   );
 
   if (!available) return null;
+  return <YourtalSignInButtonsView mode={mode} busy={busy} reauth={reauth} onGo={(kind) => void go(kind)} />;
+}
+
+export type Kind = 'signIn' | 'signUp' | 'fresh';
+
+/** The buttons themselves, with no state of their own (`YourtalSignInButtons.test.tsx`). */
+export function YourtalSignInButtonsView({
+  mode,
+  busy,
+  reauth,
+  onGo,
+}: {
+  mode: 'both' | 'signIn' | 'signUp';
+  busy: Kind | null;
+  reauth: boolean;
+  onGo: (kind: Kind) => void;
+}) {
   return (
     <View style={{ gap: space.md }}>
       {mode !== 'signUp' ? (
@@ -76,7 +98,7 @@ export function YourtalSignInButtons({
           tone="outline"
           busy={busy === 'signIn'}
           disabled={busy !== null}
-          onPress={() => void go('signIn')}
+          onPress={() => onGo('signIn')}
         />
       ) : null}
       {mode !== 'signIn' ? (
@@ -85,7 +107,15 @@ export function YourtalSignInButtons({
           tone="outline"
           busy={busy === 'signUp'}
           disabled={busy !== null}
-          onPress={() => void go('signUp')}
+          onPress={() => onGo('signUp')}
+        />
+      ) : null}
+      {reauth ? (
+        <Button
+          label={busy === 'fresh' ? SIGNIN_COPY.opening : SIGNIN_COPY.signInAgain}
+          busy={busy === 'fresh'}
+          disabled={busy !== null}
+          onPress={() => onGo('fresh')}
         />
       ) : null}
     </View>

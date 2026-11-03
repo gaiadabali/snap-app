@@ -156,6 +156,10 @@ A linked person is never looked up by email to sign them in again.
 **Staff** (`platform_staff`, not revoked) must arrive with `amr` containing
 `hwk` or `mfa` (`staff_strong_auth_required`) and an `auth_time` within the
 last 12 hours (`staff_reauth_required`), checked before anything is written.
+Both clients then offer "Sign in again", which restarts with `freshSignIn: true`
+on `POST /v1/auth/yourtal/start`; the server adds `prompt=login` (never
+`max_age`, and never on an ordinary sign-in), so YourTal asks for a new sign-in.
+That asks for no factor: the `hwk`/`mfa` and 12 h checks above still run.
 
 **SnapApp's own doors are closed in SQL for a linked account.**
 `identity_session_open`, through which every SnapApp sign-in method (and any

@@ -23,6 +23,7 @@ export function AuthMethods({
   notice,
   sent,
   yourtalEnabled = false,
+  signInAgain = false,
 }: {
   mode: 'sign-in' | 'register';
   returnTo: string;
@@ -31,6 +32,8 @@ export function AuthMethods({
   sent?: boolean;
   /** `GET /v1/auth/yourtal` said the web client is configured. The page fetches it; false hides the button. */
   yourtalEnabled?: boolean;
+  /** The refusal was `staff_reauth_required`: offer a YourTal sign-in that must be fresh (`fresh=1`). */
+  signInAgain?: boolean;
 }) {
   const heading = mode === 'sign-in' ? 'Sign in' : 'Create your account';
   const lede =
@@ -55,6 +58,15 @@ export function AuthMethods({
             {notice.message}
           </div>
         )
+      ) : null}
+
+      {signInAgain && yourtalEnabled ? (
+        <a
+          href={`/auth/yourtal?fresh=1&returnTo=${encodeURIComponent(returnTo)}`}
+          className="btn btn-primary btn-lg w-full"
+        >
+          Sign in again
+        </a>
       ) : null}
 
       {sent ? (
