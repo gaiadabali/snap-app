@@ -3,7 +3,7 @@ import type { YourtalLinkStatus } from '@snap/api-contract';
 
 import { Empty, SectionTitle } from '@/design/primitives';
 import { getYourtalLink } from '@/lib/panels/data';
-import { linkYourtal, unlinkYourtal } from '@/lib/panels/yourtal-actions';
+import { linkYourtal, redeemYourtalVoucher, refreshYourtalLink, unlinkYourtal } from '@/lib/panels/yourtal-actions';
 import { loadWorkspace } from '@/lib/panels/workspace';
 import { config } from '@/lib/config';
 import { LINK_COPY, yourtalLinks } from '@/lib/yourtal-link';
@@ -35,7 +35,7 @@ export default async function PointsPage() {
 
   let status: YourtalLinkStatus | null = null;
   try {
-    status = await getYourtalLink();
+    status = await getYourtalLink(workspace.id);
   } catch {
     // Shown as an error with a retry below, never as "not linked".
   }
@@ -56,6 +56,9 @@ export default async function PointsPage() {
         verifyEmailHref="/verify-email"
         onLink={linkYourtal.bind(null, PATH)}
         onUnlink={unlinkYourtal.bind(null, PATH)}
+        workspaceName={workspace.name}
+        onRedeem={redeemYourtalVoucher.bind(null, PATH, workspace.id)}
+        onRefresh={refreshYourtalLink.bind(null, workspace.id)}
       />
     </div>
   );
