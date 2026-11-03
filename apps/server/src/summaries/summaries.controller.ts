@@ -29,6 +29,8 @@ import {
 import { listBudgets, listInvoices, listTrips } from '../business/business.repo.js';
 import { consumptionTaxFor, toWire } from '../documents/documents.controller.js';
 import { listDocuments, readPlan, readTenant, type PlanRow } from '../repo.js';
+import { deductionTotals } from '../deductions/deductions.repo.js';
+import { fyStartYear, type DeductionTotals } from '../deductions/deduction-totals.js';
 import { add, ZERO } from '@snap/api-contract/money';
 
 /**
@@ -70,10 +72,11 @@ export class SummariesController {
     @CurrentUser() user: AuthUser,
     @WorkspaceId() tenantId: string,
   ): Promise<Overview> {
-    const [tenant, plan, documents] = await Promise.all([
+    const [tenant, plan, documents, totals] = await Promise.all([
       readTenant(user.userId, tenantId),
       readPlan(user.userId, tenantId),
       this.views(user, tenantId),
+      deductionTotals(user.userId, tenantId, fyStartYear(new Date().toLocaleDateString('en-CA', { timeZone: 'Australia/Sydney' }))),
     ]);
 
     const quarter = documents.filter((d) => d.issueDate >= startOfQuarter());
@@ -107,11 +110,17 @@ export class SummariesController {
         note: 'GST on a purchase is 1/11 of the GST-inclusive amount, not 10% of it.',
       },
       deductions: {
-        // Categorisation is a later phase, so the ESTIMATE is zero rather than
-        // a plausible-looking guess: an invented deduction total is the one
-        // number in this app a user might actually file.
-        estimateTotal: 0,
-        byLabel: {},
+        // Derived from receipts a person has confirmed, per line, work share
+        // only (see deduction-totals.ts). Cents to dollars happens here, once,
+        // for the wire's number type; nothing is summed as a float.
+        estimateTotal: Number(totals.totalCents) / 100,
+        byLabel: byLabel(totals),
+        financialYear: totals.financialYear,
+        workKilometres: totals.workKilometres,
+        toReview: {
+          count: totals.toReview.receiptCount,
+          total: Number(totals.toReview.amountCents) / 100,
+        },
         // The caps are not estimates — they are this financial year's published
         // limits, and the screen shows them whether or not anything has been
         // categorised yet. Taken from the rate set rather than restated here,
@@ -278,6 +287,12 @@ export function entitlementFrom(plan: PlanRow): Entitlement {
   };
 }
 
+
+function byLabel(t: DeductionTotals): Record<string, number> {
+  const cents = new Map<string, bigint>();
+  for (const i of t.items) cents.set(i.label, (cents.get(i.label) ?? 0n) + i.workCents);
+  return Object.fromEntries([...cents].map(([k, v]) => [k, Number(v) / 100]));
+}
 
 const sum = (values: Array<string | null>): string =>
   values.reduce<string>((acc, v) => add(acc, v ?? ZERO), ZERO);
