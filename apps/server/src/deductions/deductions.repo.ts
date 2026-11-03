@@ -2,7 +2,7 @@ import { withTenantAs } from '@snap/db';
 import { sql } from 'drizzle-orm';
 
 import { getDb } from '../db.js';
-import { fyLabel, foldTotals, type DeductionSourceLine, type DeductionTotals } from './deduction-totals.js';
+import { fyLabel, foldTotals, receiptRefOf, type DeductionSourceLine, type DeductionTotals } from './deduction-totals.js';
 
 /**
  * Deduction totals for a PERSONAL workspace and one Australian financial year
@@ -41,15 +41,19 @@ export async function deductionTotals(
       source: string;
       currency: string;
       cents: string;
+      page_sha: string | null;
+      mime: string | null;
+      storage_key: string | null;
     }>(sql`
       with amounts as (
         select d.id as document_id, coalesce(l.category_id, d.category_id) as category_id,
-               d.category_source, d.currency::text as currency, l.line_net_amount as amount
+               d.category_source, d.currency::text as currency, l.line_net_amount as amount,
+               d.capture_id
           from documents d
           join document_lines l on l.document_id = d.id
          where d.tenant_id = ${tenantId} and ${docFilter}
         union all
-        select d.id, d.category_id, d.category_source, d.currency::text, d.payable_amount
+        select d.id, d.category_id, d.category_source, d.currency::text, d.payable_amount, d.capture_id
           from documents d
          where d.tenant_id = ${tenantId} and ${docFilter}
            and not exists (select 1 from document_lines l where l.document_id = d.id)
@@ -57,8 +61,14 @@ export async function deductionTotals(
       select a.document_id, c.ato_deduction_code as label, c.engine_row_id as item_id,
              c.private_use_percent::int as private_use_percent, a.category_source as source,
              a.currency,
-             round(coalesce(a.amount, 0) * 100)::bigint::text as cents
+             round(coalesce(a.amount, 0) * 100)::bigint::text as cents,
+             -- The stored original, never a re-encoded image (see receiptRefOf).
+             -- Page 1 only counts when it is a photographed page (a PDF's pages are renders).
+             (select encode(p.sha256, 'hex') from capture_pages p
+               where p.capture_id = a.capture_id and p.page_number = 1 and p.source = 'capture') as page_sha,
+             k.original_mime_type as mime, k.original_storage_key as storage_key
         from amounts a
+        left join captures k on k.id = a.capture_id
         join categories c on c.id = a.category_id and c.tenant_id = ${tenantId}
         join tenants tn on tn.id = c.tenant_id
        where tn.kind = 'personal'
@@ -79,6 +89,7 @@ export async function deductionTotals(
       source: r.source === 'user' ? 'user' : 'supplier',
       amountCents: BigInt(r.cents),
       currency: r.currency,
+      receiptRef: receiptRefOf(r.page_sha, r.mime, r.storage_key),
     }));
     return foldTotals(fyLabel(fyStart), lines, Number(km.rows[0]?.km ?? 0));
   });

@@ -1,10 +1,12 @@
 import { HouseAd } from '@/components/ads';
 import { Empty, SectionTitle } from '@/design/primitives';
 import { listCategorySettings } from '@/lib/panels/data';
+import { api } from '@/lib/api/server';
 import { createCategory, setBudget, setCategoryActive } from '@/lib/panels/category-actions';
 import { getPermissions } from '@/lib/panels/permissions';
 import { loadWorkspace } from '@/lib/panels/workspace';
 import { CategoriesTable } from './CategoriesTable';
+import { SendToFtr } from './SendToFtr';
 
 export const metadata = { title: 'Categories & budgets' };
 
@@ -17,6 +19,11 @@ export default async function CategoriesPage() {
     listCategorySettings(workspace.id),
     getPermissions(workspace.id),
   ]);
+
+  // Named from the server, which decides the year the export covers.
+  const ftrYear = await api<{ financialYear: string }>('/v1/deduction-bundle/year', { workspaceId: workspace.id })
+    .then((r) => r.financialYear)
+    .catch(() => null);
 
   return (
     <div className="flex flex-col gap-6">
@@ -32,6 +39,8 @@ export default async function CategoriesPage() {
         onSetBudget={setBudget.bind(null, workspace.id, path)}
         onCreate={createCategory.bind(null, workspace.id, path)}
       />
+
+      {ftrYear ? <SendToFtr financialYear={ftrYear} /> : null}
 
       <HouseAd placement="individual-categories" />
     </div>

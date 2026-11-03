@@ -20,6 +20,7 @@ import {
   startOfQuarter,
 } from '@/lib/analytics';
 
+import type { DeductionBundle } from '@snap/api-contract/deduction-bundle';
 import type {
   AnalyticsRange,
   AuthUser,
@@ -1882,6 +1883,15 @@ export class MockApi implements SnapApi {
     };
   }
 
+  async getDeductionBundle(): Promise<DeductionBundle> {
+    // The demo has no real receipts, and an empty file would only look like a bug.
+    throw new Error('The demo has no real receipts to send. Sign in to your own account to try this.');
+  }
+
+  async getDeductionYear(): Promise<string> {
+    return '2025-26';
+  }
+
   async prepareTaxPack(): Promise<TaxPackFile> {
     // Long on purpose: the real one zips a financial year of photographs, and
     // a progress state that finishes instantly teaches the wrong expectation.
@@ -1937,20 +1947,6 @@ export class MockApi implements SnapApi {
         detail: 'GST credits at risk, with the reason for each',
         count: atRisk.length,
         bytes: atRisk.length * 9_000,
-        included: true,
-      },
-      {
-        label: 'BAS worksheet',
-        detail: 'G1, G10, G11, 1A and 1B with their workings',
-        count: 1,
-        bytes: 48_000,
-        included: true,
-      },
-      {
-        label: 'Deduction worksheet',
-        detail: `Every claim at ${DEMO.rates.determination} rates`,
-        count: 1,
-        bytes: 62_000,
         included: true,
       },
       {

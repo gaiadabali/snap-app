@@ -96,6 +96,8 @@ export const READ_METHODS = [
   'getPlanUsage',
   'listConnections',
   'getTaxPack',
+  'getDeductionBundle',
+  'getDeductionYear',
   'listCreditPacks',
   'getCreditBalance',
   'listCreditPurchases',

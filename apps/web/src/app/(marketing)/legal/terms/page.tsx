@@ -23,7 +23,7 @@ export default function TermsOfServicePage() {
         <p>
           Snap Apps captures photographs of receipts and tax invoices, extracts and validates the data
           on them, and — once you confirm a document — posts it as a transaction to a double-entry
-          ledger. It produces BAS worksheets, an unclaimable-GST report, and a tax pack export from
+          ledger. It produces GST figures for your BAS, an unclaimable-GST report, and a tax pack export from
           that ledger, and can sync posted transactions to Xero if you connect it.
         </p>
       </section>

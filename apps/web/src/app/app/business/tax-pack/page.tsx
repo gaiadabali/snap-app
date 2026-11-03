@@ -17,7 +17,7 @@ export default async function TaxPackPage() {
       <SectionTitle
         as="h1"
         title="Tax pack"
-        lede="A ZIP of every original image this financial year, a BAS worksheet and a CSV summary — what an accountant actually asks for at year end."
+        lede="A ZIP of every original image this financial year, a CSV index and your trip log — what an accountant actually asks for at year end."
       />
       <TaxPackClient pack={pack} onPrepare={prepareTaxPack.bind(null, workspace.id)} />
     </div>

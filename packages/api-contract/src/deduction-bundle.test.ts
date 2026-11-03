@@ -157,3 +157,21 @@ describe('validateDeductionBundle', () => {
     expect(typePaths).toEqual(['schemaVersion']);
   });
 });
+
+describe('oversize arrays are refused before their elements are read', () => {
+  it('lines past the cap: one issue, no per-element work', () => {
+    const r = validateDeductionBundle({
+      schemaVersion: 1, financialYear: '2025-26', generatedAt: '2026-07-14T03:21:09Z',
+      source: { app: 'snapapp', appVersion: '1.0.0' }, lines: Array.from({ length: 5000 }, () => 'junk'),
+    });
+    expect(r).toEqual({ ok: false, errors: [{ path: 'lines', message: 'at most 500 lines' }] });
+  });
+  it('receiptRefs past the cap: one issue', () => {
+    const line = { label: 'D5', itemId: 'tools', description: 'x', amount: '1.00', gstInclusive: true, receiptCount: 10_000, receiptRefs: Array.from({ length: 5000 }, () => 7) };
+    const r = validateDeductionBundle({
+      schemaVersion: 1, financialYear: '2025-26', generatedAt: '2026-07-14T03:21:09Z',
+      source: { app: 'snapapp', appVersion: '1.0.0' }, lines: [line],
+    });
+    expect(r).toEqual({ ok: false, errors: [{ path: 'lines.0.receiptRefs', message: 'at most 20 references' }] });
+  });
+});
