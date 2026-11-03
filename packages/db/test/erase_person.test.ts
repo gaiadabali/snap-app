@@ -10,22 +10,21 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
  *
  * erase_person destroys data, so this proves both halves: what must go is
  * gone, and nothing else changed. Every workspace is filled with a row in
- * nearly every tenant table (erase_person.seed.sql). The comparisons are of
- * whole rows (to_jsonb) across EVERY table in the schema, not row counts:
+ * nearly every tenant table (erase_person.seed.sql).
  *
- *   - A alone runs a personal and a business workspace: both erased, nothing
- *     anywhere mentions them or A, and one storage_purge job each;
- *   - A is a member of B's workspace: it keeps every row, and the only change
- *     is A's attribution becoming NULL (plus documents.version, bumped by its
- *     trigger);
- *   - U, unrelated: every row mentioning U or U's workspace is byte-identical;
- *   - a second call returns nothing and changes nothing anywhere;
- *   - D, only owner, with two admins: the earlier admin becomes owner;
- *   - F, only owner, with only a bookkeeper: the workspace is erased and the
- *     bookkeeper is named for the email;
- *   - an erased `sub` cannot sign in, and a new `sub` with the same email
- *     gets a new, empty account;
- *   - only the worker may call erase_person; nobody may call erase_workspace.
+ * Every scenario goes through `compare`: the WHOLE database (every row of
+ * every table, as to_jsonb) after the erasure must equal the database before
+ * it, with only the expected changes applied: rows of erased workspaces and
+ * the person's own rows gone, the person's ids NULL where a row survives, one
+ * storage_purge job per erased workspace, and the rows the scenario names
+ * itself (a promoted owner). Anything else that moved fails.
+ *
+ * Scenarios: A alone in a personal and a business workspace and a member of
+ * B's; a second call; D, only owner, with two admins (handover); F, only
+ * owner, with only a bookkeeper (erased); S, staff, who revoked another staff
+ * member and an AI key; C2, a co-owner; J, a sole admin with no owner; and a
+ * workspace another workspace points into (refused). Plus the grants and the
+ * sign-in refusal.
  */
 
 const url = process.env.DATABASE_URL;
@@ -34,16 +33,26 @@ const describeIfDb = url ? describe : describe.skip;
 const SEED = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'erase_person.seed.sql'), 'utf8');
 
 const id = (n: number) => `e7a5e000-0000-4000-8000-${n.toString(16).padStart(12, '0')}`;
-const USERS = { A: id(1), B: id(2), U: id(3), D: id(4), E: id(5), E2: id(6), H: id(7), F: id(8), G: id(9) };
-const WS = { PA: id(0xa1), WA: id(0xa2), WB: id(0xb1), WU: id(0xc1), WD: id(0xd1), WF: id(0xf1) };
+const USERS = {
+  A: id(1), B: id(2), U: id(3), D: id(4), E: id(5), E2: id(6), H: id(7), F: id(8), G: id(9),
+  S: id(10), R: id(11), C1: id(12), C2: id(13), J: id(14), K: id(15), P: id(16), Q: id(17),
+};
+const WS = {
+  PA: id(0xa1), WA: id(0xa2), WB: id(0xb1), WU: id(0xc1), WD: id(0xd1), WF: id(0xf1),
+  WCO: id(0xe1), WAD: id(0xe2), WX: id(0xe3), WY: id(0xe4),
+};
 const email = (who: string) => `erase-${who.toLowerCase()}@example.com`;
 const SUB_A = 'erase-test-sub-a';
 
 type Snapshot = Map<string, string[]>;
+type Row = Record<string, unknown>;
+type Result = { workspace_id: string; outcome: string; notify_emails: string[] };
 
 describeIfDb('erase_person (migration 0043)', () => {
   let c: Client;
   let tables: string[];
+  /** Per table, the columns whose FK to users is ON DELETE CASCADE. */
+  const cascade = new Map<string, string[]>();
 
   async function owner() {
     await c.query('RESET ROLE');
@@ -62,10 +71,10 @@ describeIfDb('erase_person (migration 0043)', () => {
   const mentions = (rows: string[] | undefined, ids: string[]) =>
     (rows ?? []).filter((r) => ids.some((i) => r.includes(i)));
 
-  async function erase(userId: string, role = 'app_worker') {
+  async function erase(userId: string, role = 'app_worker'): Promise<Result[]> {
     await c.query(`SET ROLE ${role}`);
     try {
-      const { rows } = await c.query<{ workspace_id: string; outcome: string; notify_emails: string[] }>(
+      const { rows } = await c.query<Result>(
         'SELECT workspace_id, outcome, notify_emails FROM erase_person($1) ORDER BY workspace_id',
         [userId],
       );
@@ -73,6 +82,72 @@ describeIfDb('erase_person (migration 0043)', () => {
     } finally {
       await owner();
     }
+  }
+
+  const ids = async (sql: string, params: unknown[]) =>
+    (await c.query<{ id: string }>(sql, params)).rows.map((r) => r.id);
+
+  /**
+   * Erases `who` between two snapshots and returns a check that the whole
+   * database changed only as expected. `erased`: the workspaces that must be
+   * gone. `changed`: rows the caller checks itself (left out on both sides).
+   */
+  async function eraseAndCompare(
+    who: string,
+    o: { erased?: string[]; changed?: (table: string, row: Row) => boolean } = {},
+  ) {
+    const erased = o.erased ?? [];
+    const changed = o.changed ?? (() => false);
+    // Rows mentioning these go: the erased workspaces, their webhook
+    // endpoints (deliveries carry only the endpoint), the person's staff row
+    // (capabilities carry only the staff id).
+    const deleted = [
+      ...erased,
+      ...(await ids('SELECT id::text AS id FROM webhook_endpoints WHERE tenant_id = ANY($1)', [erased])),
+      ...(await ids('SELECT id::text AS id FROM platform_staff WHERE user_id = $1', [who])),
+    ];
+    // Ids that become NULL where a row survives: the person, and their
+    // YourTal links (a voucher redemption keeps its row, link_row_id NULL).
+    const gone = [who, ...(await ids('SELECT id::text AS id FROM yourtal_links WHERE user_id = $1', [who]))];
+    const mail = (await c.query<{ e: string }>('SELECT lower(email::text) AS e FROM users WHERE id = $1', [who]))
+      .rows[0]?.e;
+
+    const isDeleted = (t: string, r: Row, text: string) =>
+      deleted.some((i) => text.includes(i)) ||
+      (t === 'users' && r.id === who) ||
+      (cascade.get(t) ?? []).some((col) => r[col] === who) ||
+      (t === 'mail_deliveries' && String(r.recipient).toLowerCase() === mail) ||
+      (t === 'invitations' && r.accepted_by === who);
+
+    const before = await snapshot();
+    const result = await erase(who);
+    const after = await snapshot();
+
+    function check() {
+      const purges: Row[] = [];
+      for (const t of tables) {
+        const expected = (before.get(t) ?? [])
+          .map((text) => ({ text, r: JSON.parse(text) as Row }))
+          .filter(({ text, r }) => !isDeleted(t, r, text) && !changed(t, r))
+          .map(({ r }) => normalise(t, r, gone))
+          .sort();
+        const actual = (after.get(t) ?? [])
+          .map((text) => JSON.parse(text) as Row)
+          .filter((r) => {
+            const payload = r.payload as { tenantId?: string } | undefined;
+            const purge = t === 'jobs' && r.kind === 'storage_purge' && erased.includes(payload?.tenantId ?? '');
+            if (purge) purges.push(r);
+            return !purge && !changed(t, r);
+          })
+          .map((r) => normalise(t, r))
+          .sort();
+        expect(actual, `table ${t}`).toEqual(expected);
+      }
+      // One purge job per erased workspace, with no tenant (it would cascade).
+      expect(purges.map((j) => (j.payload as { tenantId: string }).tenantId).sort()).toEqual([...erased].sort());
+      for (const j of purges) expect(j.tenant_id).toBeNull();
+    }
+    return { result, before, after, check };
   }
 
   async function user(who: keyof typeof USERS, subject = `test|erase-${who}`) {
@@ -93,17 +168,30 @@ describeIfDb('erase_person (migration 0043)', () => {
     ]);
   }
 
-  async function workspace(ws: keyof typeof WS, kind: 'personal' | 'business') {
+  async function workspace(ws: keyof typeof WS, kind: 'personal' | 'business' = 'business') {
     await c.query(`INSERT INTO tenants (id, name, kind) VALUES ($1, $2, $3)`, [WS[ws], `Erase ${ws}`, kind]);
+  }
+
+  async function seed(ws: keyof typeof WS, who: keyof typeof USERS) {
+    await c.query('BEGIN');
+    await c.query('SELECT pg_temp.seed_workspace($1, $2, $3)', [WS[ws], USERS[who], `${ws}-${who}`]);
+    await c.query('COMMIT');
   }
 
   async function cleanup() {
     await owner();
+    // The cross-workspace payment the refusal test plants.
+    await c.query(
+      `DELETE FROM payments p USING invoices i
+        WHERE p.invoice_id = i.id AND p.tenant_id <> i.tenant_id AND p.tenant_id = ANY($1)`,
+      [Object.values(WS)],
+    );
     for (const u of Object.values(USERS)) await c.query('SELECT erase_person($1)', [u]);
     for (const w of Object.values(WS)) await c.query('SELECT erase_workspace($1)', [w]);
     await c.query(`DELETE FROM jobs WHERE kind = 'storage_purge' AND payload->>'tenantId' = ANY($1)`, [
       Object.values(WS),
     ]);
+    await c.query(`DELETE FROM ai_provider_configs WHERE label LIKE 'erase-test-%'`);
     await c.query(`DELETE FROM users WHERE subject LIKE 'yourtal|erase-test-%'`);
     await c.query(`DELETE FROM yourtal_erased_subjects WHERE sub LIKE 'erase-test-%'`);
   }
@@ -118,40 +206,82 @@ describeIfDb('erase_person (migration 0043)', () => {
         ORDER BY 1`,
     );
     tables = rows.map((r) => r.t);
+    const fks = await c.query<{ t: string; col: string }>(
+      `SELECT quote_ident(f.conrelid::regclass::text) AS t, a.attname AS col
+         FROM pg_constraint f JOIN pg_attribute a ON a.attrelid = f.conrelid AND a.attnum = f.conkey[1]
+        WHERE f.contype = 'f' AND f.confrelid = 'public.users'::regclass AND f.confdeltype = 'c'`,
+    );
+    for (const { t, col } of fks.rows) cascade.set(t, [...(cascade.get(t) ?? []), col]);
     await cleanup();
 
     await user('A', `yourtal|${SUB_A}`);
-    for (const who of ['B', 'U', 'D', 'E', 'E2', 'H', 'F', 'G'] as const) await user(who);
+    for (const who of Object.keys(USERS).filter((k) => k !== 'A') as (keyof typeof USERS)[]) await user(who);
 
     await workspace('PA', 'personal');
     await member('PA', 'A', 'owner', '2026-01-01');
-    await workspace('WA', 'business');
+    await workspace('WA');
     await member('WA', 'A', 'owner', '2026-01-01');
-    await workspace('WB', 'business');
+    await workspace('WB');
     await member('WB', 'B', 'owner', '2026-01-01');
     await member('WB', 'A', 'member', '2026-02-01');
-    await workspace('WU', 'business');
+    await workspace('WU');
     await member('WU', 'U', 'owner', '2026-01-01');
-    await workspace('WD', 'business');
+    await workspace('WD');
     await member('WD', 'D', 'owner', '2026-01-01');
     await member('WD', 'E2', 'admin', '2026-03-01');
     await member('WD', 'E', 'admin', '2026-02-01');
     await member('WD', 'H', 'bookkeeper', '2026-01-15');
-    await workspace('WF', 'business');
+    await workspace('WF');
     await member('WF', 'F', 'owner', '2026-01-01');
     await member('WF', 'G', 'bookkeeper', '2026-02-01');
+    await workspace('WCO');
+    await member('WCO', 'C1', 'owner', '2026-01-01');
+    await member('WCO', 'C2', 'owner', '2026-02-01');
+    await workspace('WAD');
+    await member('WAD', 'J', 'admin', '2026-01-01');
+    await member('WAD', 'K', 'member', '2026-02-01');
+    await workspace('WX');
+    await member('WX', 'P', 'owner', '2026-01-01');
+    await workspace('WY');
+    await member('WY', 'Q', 'owner', '2026-01-01');
 
     // Seeded after the memberships: the voucher fixture needs the person's link.
     for (const [ws, who] of [
       ['PA', 'A'], ['WA', 'A'], ['WB', 'B'], ['WB', 'A'], ['WU', 'U'], ['WD', 'D'], ['WD', 'E'], ['WF', 'F'],
+      ['WCO', 'C1'], ['WCO', 'C2'], ['WAD', 'J'], ['WX', 'P'], ['WY', 'Q'],
     ] as const) {
-      await c.query('BEGIN');
-      await c.query('SELECT pg_temp.seed_workspace($1, $2, $3)', [WS[ws], USERS[who], `${ws}-${who}`]);
-      await c.query('COMMIT');
+      await seed(ws, who);
     }
-    for (const who of ['A', 'B', 'U', 'D', 'F'] as const) {
+    for (const who of ['A', 'B', 'U', 'D', 'F', 'S', 'C2', 'J'] as const) {
       await c.query('SELECT pg_temp.seed_person($1, $2)', [USERS[who], who]);
     }
+    // A has accepted an invitation to B's workspace.
+    await c.query(
+      `INSERT INTO invitations (id, tenant_id, email, role, token_hash, expires_at, invited_by, accepted_by, accepted_at)
+       VALUES (gen_random_uuid(), $1, $2, 'member', digest('erase-inv-a', 'sha256'), now() + interval '1 day', $3, $4, now())`,
+      [WS.WB, email('A'), USERS.B, USERS.A],
+    );
+
+    // S is staff, revoked R's staff access and an AI key, and set a setting.
+    await c.query(`INSERT INTO platform_staff (id, user_id, role) VALUES (gen_random_uuid(), $1, 'super_admin')`, [USERS.S]);
+    await c.query(
+      `INSERT INTO platform_staff_capabilities (staff_id, capability, granted_by)
+       SELECT id, 'manage_staff', $1 FROM platform_staff WHERE user_id = $1`,
+      [USERS.S],
+    );
+    await c.query(
+      `INSERT INTO platform_staff (id, user_id, role, created_by, revoked_at, revoked_by)
+       VALUES (gen_random_uuid(), $1, 'support', $2, now(), $2)`,
+      [USERS.R, USERS.S],
+    );
+    await c.query(
+      `WITH cfg AS (
+         INSERT INTO ai_provider_configs (provider, label, created_by) VALUES ('openrouter', 'erase-test-cfg', $1) RETURNING id)
+       INSERT INTO ai_provider_keys (provider_config_id, key_prefix, key_last4, ciphertext, wrapped_dek, kms_key_id,
+                                     created_by, revoked_at, revoked_by)
+       SELECT id, 'sk', 'abcd', '\\x01', '\\x02', 'kms', $1, now(), $1 FROM cfg`,
+      [USERS.S],
+    );
   });
 
   afterAll(async () => {
@@ -163,17 +293,20 @@ describeIfDb('erase_person (migration 0043)', () => {
 
   it('the seed reaches nearly every table, so the comparisons below mean something', async () => {
     const snap = await snapshot();
-    const touched = tables.filter((t) => mentions(snap.get(t), [...Object.values(WS), USERS.A]).length > 0);
-    // Not reached: the admin plane, firms, global catalogues (plans, credit
-    // packs), sign-in internals, rate limits, audit_log (kept by design) and
-    // webhook_deliveries (keyed by endpoint; checked by endpoint id below).
-    expect(touched.length).toBeGreaterThanOrEqual(51);
+    const touched = tables.filter((t) => mentions(snap.get(t), [...Object.values(WS), ...Object.values(USERS)]).length > 0);
+    // Not reached: firms, global catalogues (plans, credit packs), sign-in
+    // internals, rate limits, audit_log (kept by design) and webhook
+    // deliveries (keyed by endpoint; compare() follows the endpoint ids).
+    expect(touched.length).toBeGreaterThanOrEqual(55);
   });
 
-  it('only the worker may erase; nobody may call erase_workspace directly', async () => {
+  it('only the worker may erase or record an erased sub; nobody may call erase_workspace directly', async () => {
     for (const role of ['app_rw', 'app_readonly']) {
       await c.query(`SET ROLE ${role}`);
       await expect(c.query('SELECT * FROM erase_person($1)', [USERS.A])).rejects.toMatchObject({ code: '42501' });
+      await expect(c.query('SELECT identity_yourtal_subject_erase($1)', [SUB_A])).rejects.toMatchObject({
+        code: '42501',
+      });
       await owner();
     }
     await c.query('SET ROLE app_worker');
@@ -183,32 +316,36 @@ describeIfDb('erase_person (migration 0043)', () => {
     expect(rows).toHaveLength(1);
   });
 
-  it('YourTal events: revokes only sessions opened before the cut-off, then records the sub as erased', async () => {
+  it('YourTal events: the API revokes only sessions opened before the cut-off; the worker records the sub', async () => {
     await c.query(
       `INSERT INTO user_sessions (user_id, token_hash, created_at, expires_at, idle_timeout_seconds) VALUES
          ($1, digest('erase-old', 'sha256'), now() - interval '1 hour', now() + interval '1 day', 3600),
          ($1, digest('erase-new', 'sha256'), now() + interval '1 minute', now() + interval '1 day', 3600)`,
       [USERS.A],
     );
-    await c.query('SET ROLE app_rw');
-    const revoked = await c.query<{ n: number }>(
-      `SELECT identity_yourtal_sessions_revoke($1, now()) AS n`,
-      [SUB_A],
+    await c.query(
+      `INSERT INTO yourtal_sign_in_reviews (kind, yourtal_sub, email, user_id) VALUES ('second_sub', $1, $2, $3)`,
+      [SUB_A, email('A'), USERS.B],
     );
+    await c.query('SET ROLE app_rw');
+    const revoked = await c.query<{ n: number }>(`SELECT identity_yourtal_sessions_revoke($1, now()) AS n`, [SUB_A]);
+    await c.query('SET ROLE app_worker');
     const erasedUser = await c.query<{ u: string | null }>(`SELECT identity_yourtal_subject_erase($1) AS u`, [SUB_A]);
     const again = await c.query<{ u: string | null }>(`SELECT identity_yourtal_subject_erase($1) AS u`, [SUB_A]);
     await owner();
 
     // seed_person's session and the hour-old one; not the newer one.
     expect(revoked.rows[0]!.n).toBe(2);
-    const { rows } = await c.query<{ hash: string; reason: string | null }>(
-      `SELECT encode(token_hash, 'hex') AS hash, revoked_reason AS reason FROM user_sessions WHERE user_id = $1
-        ORDER BY created_at`,
+    const { rows } = await c.query<{ reason: string | null }>(
+      `SELECT revoked_reason AS reason FROM user_sessions WHERE user_id = $1 ORDER BY created_at`,
       [USERS.A],
     );
     expect(rows.map((r) => r.reason)).toEqual(['yourtal_event', 'yourtal_event', null]);
     expect(erasedUser.rows[0]!.u).toBe(USERS.A);
     expect(again.rows[0]!.u).toBe(USERS.A);
+    // The review case the erased sub raised (it holds their email) is gone.
+    const reviews = await c.query('SELECT 1 FROM yourtal_sign_in_reviews WHERE yourtal_sub = $1', [SUB_A]);
+    expect(reviews.rows).toHaveLength(0);
   });
 
   it('an erased sub cannot sign in, not even to its own account', async () => {
@@ -222,98 +359,39 @@ describeIfDb('erase_person (migration 0043)', () => {
   });
 
   describe('A: alone in two workspaces, a member of B’s', () => {
-    let before: Snapshot;
-    let after: Snapshot;
-    let result: Awaited<ReturnType<typeof erase>>;
-    let gone: string[];
-    let erasedIds: string[];
+    let run: Awaited<ReturnType<typeof eraseAndCompare>>;
 
     beforeAll(async () => {
-      const hooks = await c.query<{ id: string }>('SELECT id::text FROM webhook_endpoints WHERE tenant_id = ANY($1)', [
-        [WS.PA, WS.WA],
-      ]);
-      erasedIds = [USERS.A, WS.PA, WS.WA, ...hooks.rows.map((r) => r.id)];
-      // A's own ids: the user, and the YourTal links that cascade with it
-      // (a voucher redemption keeps its row with link_row_id NULL).
-      const links = await c.query<{ id: string }>('SELECT id::text FROM yourtal_links WHERE user_id = $1', [USERS.A]);
-      gone = [USERS.A, ...links.rows.map((r) => r.id)];
-      before = await snapshot();
-      result = await erase(USERS.A);
-      after = await snapshot();
+      run = await eraseAndCompare(USERS.A, { erased: [WS.PA, WS.WA] });
     });
 
     it('erases both workspaces A runs alone and says so', () => {
-      expect(result).toEqual(
-        [
-          { workspace_id: WS.PA, outcome: 'erased', notify_emails: [] },
-          { workspace_id: WS.WA, outcome: 'erased', notify_emails: [] },
-        ].sort((x, y) => x.workspace_id.localeCompare(y.workspace_id)),
-      );
+      expect(run.result).toEqual([
+        { workspace_id: WS.PA, outcome: 'erased', notify_emails: [] },
+        { workspace_id: WS.WA, outcome: 'erased', notify_emails: [] },
+      ]);
     });
 
-    it('leaves nothing anywhere that mentions A or A’s workspaces, except one storage_purge job each', () => {
-      const left = tables.flatMap((t) => mentions(after.get(t), erasedIds).map((r) => `${t} ${r}`));
-      expect(mentions(before.get('webhook_deliveries'), erasedIds)).toHaveLength(2);
-      expect(left).toHaveLength(2);
-      for (const ws of [WS.PA, WS.WA]) {
-        const job = left.find((r) => r.includes(ws))!;
-        expect(job.startsWith('jobs ')).toBe(true);
-        const row = JSON.parse(job.slice('jobs '.length));
-        expect(row).toMatchObject({ kind: 'storage_purge', tenant_id: null, payload: { tenantId: ws } });
-      }
-      // The seed really had them: receipts, documents, transactions,
-      // statements and a voucher redemption in each.
+    it('changes nothing else anywhere: B’s workspace keeps every row with A’s attribution NULL, U is untouched', () => {
+      run.check();
+    });
+
+    it('the comparison had something to compare: A’s data in both workspaces and in B’s, A’s mail and invitation', () => {
       for (const t of ['captures', 'documents', 'transactions', 'statements', 'yourtal_voucher_redemptions']) {
-        expect(mentions(before.get(t), [WS.PA]).length, t).toBeGreaterThan(0);
-        expect(mentions(before.get(t), [WS.WA]).length, t).toBeGreaterThan(0);
+        for (const ws of [WS.PA, WS.WA]) expect(mentions(run.before.get(t), [ws]).length, t).toBeGreaterThan(0);
       }
-    });
-
-    it('deletes the mail sent to A, and only that', () => {
-      const mail = (s: Snapshot, who: string) =>
-        (s.get('mail_deliveries') ?? []).filter((r) => r.toLowerCase().includes(email(who)));
-      expect(mail(before, 'A')).toHaveLength(1);
-      expect(mail(after, 'A')).toHaveLength(0);
-      expect(mail(after, 'B')).toEqual(mail(before, 'B'));
-    });
-
-    it('keeps every row of B’s workspace; only A’s attribution becomes NULL', () => {
-      const changed: string[] = [];
-      for (const t of tables) {
-        const b = mentions(before.get(t), [WS.WB]);
-        const a = mentions(after.get(t), [WS.WB]);
-        // What each before-row should look like now: A's id gone to null.
-        const expected = b
-          .filter((r) => !(t === 'memberships' && r.includes(USERS.A)))
-          .map((r) => normalise(t, JSON.parse(r), gone))
-          .sort();
-        const actual = a.map((r) => normalise(t, JSON.parse(r))).sort();
-        expect(actual, t).toEqual(expected);
-        if (b.some((r) => r.includes(USERS.A))) changed.push(t);
+      for (const t of ['captures', 'documents', 'transactions', 'review_tasks', 'document_field_corrections',
+        'accounting_connections', 'invitations']) {
+        expect(mentions(mentions(run.before.get(t), [WS.WB]), [USERS.A]).length, t).toBeGreaterThan(0);
       }
-      // A's receipt, review and posting in B's workspace were really there.
-      expect(changed).toEqual(
-        expect.arrayContaining([
-          'captures',
-          'documents',
-          'transactions',
-          'review_tasks',
-          'document_field_corrections',
-          'accounting_connections',
-        ]),
-      );
-    });
-
-    it('does not touch an unrelated person or their workspace', async () => {
-      const { rows } = await c.query<{ id: string }>('SELECT id::text FROM webhook_endpoints WHERE tenant_id = $1', [WS.WU]);
-      const ids = [USERS.U, WS.WU, ...rows.map((r) => r.id)];
-      for (const t of tables) expect(mentions(after.get(t), ids), t).toEqual(mentions(before.get(t), ids));
+      expect((run.before.get('mail_deliveries') ?? []).filter((r) => r.toLowerCase().includes(email('A')))).toHaveLength(1);
+      expect(tables.flatMap((t) => mentions(run.after.get(t), [USERS.A]))).toEqual([]);
     });
 
     it('a second call is a no-op', async () => {
       const again = await erase(USERS.A);
       expect(again).toEqual([]);
-      expect(await snapshot()).toEqual(after);
+      expect(await snapshot()).toEqual(run.after);
     });
 
     it('the same person registering again gets a new, empty account', async () => {
@@ -329,11 +407,11 @@ describeIfDb('erase_person (migration 0043)', () => {
     });
   });
 
-  it('D, only owner with two admins: the earlier admin becomes owner and the workspace stays', async () => {
-    const before = await snapshot();
-    const result = await erase(USERS.D);
-    expect(result).toEqual([{ workspace_id: WS.WD, outcome: 'handed_over', notify_emails: [email('E')] }]);
-
+  it('D, only owner with two admins: the earlier admin becomes owner; nothing else changes', async () => {
+    const promoted = (t: string, r: Row) => t === 'memberships' && r.tenant_id === WS.WD && r.user_id === USERS.E;
+    const run = await eraseAndCompare(USERS.D, { changed: promoted });
+    expect(run.result).toEqual([{ workspace_id: WS.WD, outcome: 'handed_over', notify_emails: [email('E')] }]);
+    run.check();
     const { rows } = await c.query<{ user_id: string; role: string }>(
       'SELECT user_id, role FROM memberships WHERE tenant_id = $1 ORDER BY role, user_id',
       [WS.WD],
@@ -343,23 +421,68 @@ describeIfDb('erase_person (migration 0043)', () => {
       { user_id: USERS.H, role: 'bookkeeper' },
       { user_id: USERS.E, role: 'owner' },
     ]);
-    // Every other row of the workspace is still there.
-    const after = await snapshot();
-    for (const t of tables.filter((x) => x !== 'memberships')) {
-      expect(mentions(after.get(t), [WS.WD]).length, t).toBe(mentions(before.get(t), [WS.WD]).length);
-    }
-    expect(tables.flatMap((t) => mentions(after.get(t), [USERS.D]))).toEqual([]);
   });
 
-  it('F, only owner with only a bookkeeper: the workspace is erased and the bookkeeper is named', async () => {
-    const result = await erase(USERS.F);
-    expect(result).toEqual([{ workspace_id: WS.WF, outcome: 'erased', notify_emails: [email('G')] }]);
-    const after = await snapshot();
-    const left = tables.flatMap((t) => mentions(after.get(t), [WS.WF]).map((r) => `${t} ${r}`));
-    expect(left).toHaveLength(1);
-    expect(left[0]).toMatch(/^jobs .*"storage_purge"/);
+  it('F, only owner with only a bookkeeper: the workspace is erased and the bookkeeper named; nothing else changes', async () => {
+    const run = await eraseAndCompare(USERS.F, { erased: [WS.WF] });
+    expect(run.result).toEqual([{ workspace_id: WS.WF, outcome: 'erased', notify_emails: [email('G')] }]);
+    run.check();
     const g = await c.query('SELECT 1 FROM users WHERE id = $1', [USERS.G]);
     expect(g.rows).toHaveLength(1);
+  });
+
+  it('S, staff who revoked another staff member and an AI key, can be erased; the revocations keep their time', async () => {
+    const run = await eraseAndCompare(USERS.S);
+    expect(run.result).toEqual([]);
+    run.check();
+    const staff = await c.query('SELECT revoked_at, revoked_by FROM platform_staff WHERE user_id = $1', [USERS.R]);
+    expect(staff.rows[0].revoked_at).not.toBeNull();
+    expect(staff.rows[0].revoked_by).toBeNull();
+    const key = await c.query(
+      `SELECT k.revoked_at, k.revoked_by FROM ai_provider_keys k
+         JOIN ai_provider_configs g ON g.id = k.provider_config_id WHERE g.label = 'erase-test-cfg'`,
+    );
+    expect(key.rows[0].revoked_at).not.toBeNull();
+    expect(key.rows[0].revoked_by).toBeNull();
+  });
+
+  it('C2, a co-owner: the workspace stays with C1, and only C2’s membership and attribution go', async () => {
+    const run = await eraseAndCompare(USERS.C2);
+    expect(run.result).toEqual([]);
+    run.check();
+    const m = await c.query('SELECT user_id, role FROM memberships WHERE tenant_id = $1', [WS.WCO]);
+    expect(m.rows).toEqual([{ user_id: USERS.C1, role: 'owner' }]);
+  });
+
+  it('J, a sole admin with no owner: the workspace is erased and the member named', async () => {
+    const run = await eraseAndCompare(USERS.J, { erased: [WS.WAD] });
+    expect(run.result).toEqual([{ workspace_id: WS.WAD, outcome: 'erased', notify_emails: [email('K')] }]);
+    run.check();
+  });
+
+  it('refuses to erase a workspace another workspace points into, and changes nothing', async () => {
+    // Y's payment against X's invoice: a foreign key check ignores RLS, so
+    // this row can exist. Erasing X would cascade into Y.
+    await c.query(
+      `INSERT INTO payments (id, tenant_id, invoice_id, paid_on, amount)
+       SELECT gen_random_uuid(), $2, i.id, '2026-08-10', 1 FROM invoices i WHERE i.tenant_id = $1 LIMIT 1`,
+      [WS.WX, WS.WY],
+    );
+    const before = await snapshot();
+    await expect(erase(USERS.P)).rejects.toMatchObject({
+      code: '23000',
+      message: expect.stringContaining('payments_invoice_id_fkey'),
+    });
+    expect(await snapshot()).toEqual(before);
+
+    // Once the stray row is gone, the erasure goes through.
+    await c.query(
+      `DELETE FROM payments p USING invoices i WHERE p.invoice_id = i.id AND i.tenant_id = $1 AND p.tenant_id = $2`,
+      [WS.WX, WS.WY],
+    );
+    const run = await eraseAndCompare(USERS.P, { erased: [WS.WX] });
+    expect(run.result).toEqual([{ workspace_id: WS.WX, outcome: 'erased', notify_emails: [] }]);
+    run.check();
   });
 });
 
@@ -367,10 +490,10 @@ describeIfDb('erase_person (migration 0043)', () => {
  * A row as it should compare: `gone` (the erased person's ids) replaced by
  * null wherever one appears as a whole value. Left out: documents.version and
  * goals.updated_at, which their triggers bump when an attribution is nulled
- * (goals.saved is still compared).
+ * (goals.saved and every other column are still compared).
  */
-function normalise(table: string, row: Record<string, unknown>, gone: string[] = []): string {
-  const out: Record<string, unknown> = {};
+function normalise(table: string, row: Row, gone: string[] = []): string {
+  const out: Row = {};
   for (const [k, v] of Object.entries(row)) {
     if (table === 'documents' && k === 'version') continue;
     if (table === 'goals' && k === 'updated_at') continue;

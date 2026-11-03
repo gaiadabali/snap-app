@@ -37,8 +37,13 @@
 -- WHO MAY CALL IT. erase_person is SECURITY DEFINER, owned by a new
 -- `app_erasure` role in the 0015/0021 idiom (NOLOGIN, BYPASSRLS, never a
 -- superuser, granted only what these functions touch), and executable ONLY
--- by `app_worker`: S2's job runs it. The API (`app_rw`) cannot.
--- erase_workspace is internal (no grant), for erase_person and later S3.
+-- by `app_worker`: S2's job runs it. The API (`app_rw`) cannot. So is
+-- identity_yourtal_subject_erase: an erased `sub` can never sign in again,
+-- so only the worker, after verifying YourTal's signature, records one.
+-- erase_workspace is internal (no grant), for erase_person and later S3. It
+-- refuses (fails closed) if any row in ANOTHER workspace references a row of
+-- the one being erased: id-only foreign keys would otherwise let the cascade
+-- spill into that workspace.
 --
 -- ADD-ONLY, with these deliberate changes to existing objects:
 --   - six FKs to users re-created ON DELETE SET NULL (they had no rule, so
@@ -46,9 +51,18 @@
 --     columns are already nullable. Re-creating them fires
 --     `documents_bump_version` when reviewed_by is nulled, which is harmless;
 --   - 0036's `user_sessions_reason` CHECK widened by one reason;
+--   - 0021's two `*_revoked_consistency` CHECKs loosened to "revoked_by only
+--     with revoked_at": revoked_by is ON DELETE SET NULL, so the old
+--     "both or neither" made any staff member who had revoked someone, or
+--     an AI key, impossible to delete;
 --   - the BODY of 0039's `identity_yourtal_sign_in` (same signature, owner and
 --     grants): an erased `sub` is refused before rule 1.
 -- ---------------------------------------------------------------------------
+
+-- Re-creating the FKs below takes ACCESS EXCLUSIVE on users and six tables
+-- until COMMIT. Fail the deploy (the poller retries) rather than queue every
+-- request behind a long transaction.
+SET LOCAL lock_timeout = '5s';
 
 -- ── yourtal_erased_subjects ──────────────────────────────────────────────────
 --
@@ -96,6 +110,17 @@ ALTER TABLE accounting_connections
   ADD  CONSTRAINT accounting_connections_connected_by_fkey
        FOREIGN KEY (connected_by) REFERENCES users (id) ON DELETE SET NULL;
 
+-- ── SET NULL must not break a CHECK ─────────────────────────────────────────
+-- A revocation keeps its time when the person who made it is erased.
+ALTER TABLE platform_staff
+  DROP CONSTRAINT IF EXISTS platform_staff_revoked_consistency,
+  ADD  CONSTRAINT platform_staff_revoked_consistency
+       CHECK (revoked_by IS NULL OR revoked_at IS NOT NULL);
+ALTER TABLE ai_provider_keys
+  DROP CONSTRAINT IF EXISTS ai_provider_keys_revoked_consistency,
+  ADD  CONSTRAINT ai_provider_keys_revoked_consistency
+       CHECK (revoked_by IS NULL OR revoked_at IS NOT NULL);
+
 -- ── A new reason a session ends ──────────────────────────────────────────────
 -- YourTal's account-deleted / access-ended events (S2).
 ALTER TABLE user_sessions DROP CONSTRAINT IF EXISTS user_sessions_reason;
@@ -120,8 +145,10 @@ COMMENT ON ROLE app_erasure IS
   'Owns erase_person / erase_workspace (0043). NOLOGIN: a privilege set, never an account. BYPASSRLS because erasure spans tenants. Granted only the tables those functions touch; cascades run as the table owner.';
 
 GRANT USAGE ON SCHEMA public TO app_erasure;
--- FOR UPDATE needs UPDATE: the user and workspace rows are locked first.
-GRANT SELECT, UPDATE, DELETE ON users, tenants TO app_erasure;
+-- FOR UPDATE needs UPDATE on one column: the user and workspace rows are
+-- locked first. Nothing updates them.
+GRANT SELECT, DELETE ON users, tenants TO app_erasure;
+GRANT UPDATE (id)    ON users, tenants TO app_erasure;
 GRANT SELECT, UPDATE         ON memberships  TO app_erasure;
 GRANT SELECT, DELETE ON goals, event_observations, match_candidates, review_tasks,
                         transactions, statements, yourtal_voucher_redemptions,
@@ -132,6 +159,33 @@ GRANT SELECT, DELETE ON goals, event_observations, match_candidates, review_task
 GRANT UPDATE ON goals TO app_erasure;
 GRANT SELECT ON goal_contributions TO app_erasure;
 GRANT INSERT ON jobs TO app_erasure;
+-- An invitation the person accepted holds their email in a shared workspace.
+GRANT SELECT, DELETE ON invitations TO app_erasure;
+
+-- erase_workspace's spill-over guard reads both ends of every id-only FK
+-- between workspace tables (read only). A table added later without this
+-- grant makes the guard fail, closed.
+DO $$
+DECLARE
+  t regclass;
+BEGIN
+  FOR t IN
+    SELECT DISTINCT x.rel FROM (
+      SELECT c.conrelid AS child, c.confrelid AS parent
+        FROM pg_constraint c
+       WHERE c.contype = 'f' AND c.connamespace = 'public'::regnamespace
+         AND cardinality(c.conkey) = 1 AND c.confrelid <> 'public.tenants'::regclass
+    ) e
+    CROSS JOIN LATERAL (VALUES (e.child::regclass), (e.parent::regclass)) x(rel)
+    WHERE EXISTS (SELECT 1 FROM pg_attribute a WHERE a.attrelid = e.child  AND a.attname = 'tenant_id' AND NOT a.attisdropped)
+      AND EXISTS (SELECT 1 FROM pg_attribute a WHERE a.attrelid = e.parent AND a.attname = 'tenant_id' AND NOT a.attisdropped)
+  LOOP
+    EXECUTE format('GRANT SELECT ON %s TO app_erasure', t);
+  END LOOP;
+END $$;
+
+-- subject_erase drops the review rows about the erased `sub`.
+GRANT DELETE ON yourtal_sign_in_reviews TO app_identity;
 
 -- ── Sign in with YourTal: refuse an erased `sub` ─────────────────────────────
 -- 0039's function, unchanged but for step 0.
@@ -319,14 +373,16 @@ $fn$;
 COMMENT ON FUNCTION identity_yourtal_sign_in(text, citext, boolean, text, boolean, boolean) IS
   'Sign in with YourTal: the account for a verified ID token. An erased sub (yourtal_erased_subjects, 0043) is refused. Else by sub; else a one-time link of a never-linked legacy account with the same verified email (closing its password, sessions and mailed links); else a new account. A second sub for a linked email goes to yourtal_sign_in_reviews. See 0039.';
 
--- ── YourTal events: the receiver's two calls (S2) ────────────────────────────
+-- ── YourTal events (S2) ──────────────────────────────────────────────────────
 --
 -- Both take the `sub`, the only key YourTal's events carry. Neither takes a
 -- user id: 0036 declined to give the API a way to sign anybody out by id,
 -- and a `sub` is a pairwise secret the API cannot list.
 
--- account-deleted: record the `sub` as erased (sign-in refuses it from now
--- on) and return the account it named, for the erase job. Idempotent.
+-- account-deleted, in the WORKER's job after it re-verifies the event: record
+-- the `sub` as erased (sign-in refuses it from now on) and return the account
+-- it named, for erase_person. Idempotent. Not the API's: one bug there would
+-- lock a person out for good.
 CREATE OR REPLACE FUNCTION identity_yourtal_subject_erase(p_sub text)
 RETURNS uuid
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $fn$
@@ -340,6 +396,8 @@ BEGIN
   -- (and its session is revoked by the caller) or sees the `sub` erased.
   PERFORM pg_advisory_xact_lock(hashtextextended('yourtal-sub:' || p_sub, 0));
   INSERT INTO yourtal_erased_subjects (sub) VALUES (p_sub) ON CONFLICT (sub) DO NOTHING;
+  -- Review cases this `sub` raised hold its email; the person is gone.
+  DELETE FROM yourtal_sign_in_reviews r WHERE r.yourtal_sub = p_sub;
   SELECT u.id INTO v_user FROM users u WHERE u.subject = 'yourtal|' || p_sub;
   RETURN v_user;
 END;
@@ -385,11 +443,43 @@ COMMENT ON FUNCTION identity_yourtal_sessions_revoke(text, timestamptz) IS
 CREATE OR REPLACE FUNCTION erase_workspace(p_tenant_id uuid)
 RETURNS boolean
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $fn$
+DECLARE
+  e      record;
+  v_hit  boolean;
 BEGIN
   PERFORM 1 FROM tenants t WHERE t.id = p_tenant_id FOR UPDATE;
   IF NOT FOUND THEN
     RETURN false;
   END IF;
+
+  -- Fail closed on spill-over. Foreign keys between workspace tables are on
+  -- the id alone, and a foreign key check ignores RLS, so a row in another
+  -- workspace CAN point at one of ours; the deletes below would then cascade
+  -- into (or null a column of) that workspace. Every such edge is read from
+  -- the catalogue, so a later table is covered without editing this.
+  FOR e IN
+    SELECT c.conname, c.conrelid::regclass AS child, a.attname AS col,
+           c.confrelid::regclass AS parent, pa.attname AS pcol
+      FROM pg_constraint c
+      JOIN pg_attribute a  ON a.attrelid  = c.conrelid  AND a.attnum  = c.conkey[1]
+      JOIN pg_attribute pa ON pa.attrelid = c.confrelid AND pa.attnum = c.confkey[1]
+     WHERE c.contype = 'f' AND c.connamespace = 'public'::regnamespace
+       AND cardinality(c.conkey) = 1 AND c.confrelid <> 'public.tenants'::regclass
+       AND EXISTS (SELECT 1 FROM pg_attribute x WHERE x.attrelid = c.conrelid  AND x.attname = 'tenant_id' AND NOT x.attisdropped)
+       AND EXISTS (SELECT 1 FROM pg_attribute x WHERE x.attrelid = c.confrelid AND x.attname = 'tenant_id' AND NOT x.attisdropped)
+     ORDER BY c.conname
+  LOOP
+    EXECUTE format(
+      'SELECT EXISTS (SELECT 1 FROM %s ch JOIN %s pa ON ch.%I = pa.%I
+                       WHERE pa.tenant_id = $1 AND ch.tenant_id IS DISTINCT FROM $1)',
+      e.child, e.parent, e.col, e.pcol)
+      INTO v_hit USING p_tenant_id;
+    IF v_hit THEN
+      RAISE EXCEPTION 'erase_workspace %: a row in another workspace references it (%), refusing to erase',
+        p_tenant_id, e.conname
+        USING ERRCODE = 'integrity_constraint_violation';
+    END IF;
+  END LOOP;
 
   -- Leaves first. Goals take their contributions (RESTRICT on statement
   -- lines, 0033).
@@ -493,6 +583,9 @@ BEGIN
   IF v_email IS NOT NULL THEN
     DELETE FROM mail_deliveries d WHERE lower(d.recipient) = lower(v_email::text);
   END IF;
+  -- Invitations the person accepted carry their email into shared workspaces.
+  -- Pending ones someone else typed are that workspace's own data.
+  DELETE FROM invitations i WHERE i.accepted_by = p_user_id;
 
   -- Sessions, links, outbox, memberships, staff row and points ledger
   -- cascade; attribution in shared workspaces becomes NULL.
@@ -515,9 +608,11 @@ ALTER FUNCTION identity_yourtal_sessions_revoke(text, timestamptz) OWNER TO app_
 ALTER FUNCTION erase_workspace(uuid)                               OWNER TO app_erasure;
 ALTER FUNCTION erase_person(uuid)                                  OWNER TO app_erasure;
 
--- The events endpoint is in the API.
-GRANT EXECUTE ON FUNCTION identity_yourtal_subject_erase(text)                TO app_rw;
+-- The endpoint (API) ends sessions at once: reversible, the 5-minute clock.
+-- Recording a `sub` as erased is irreversible: the worker's, after it
+-- re-verifies the event. app_worker is a member of app_rw, not the reverse.
 GRANT EXECUTE ON FUNCTION identity_yourtal_sessions_revoke(text, timestamptz) TO app_rw;
+GRANT EXECUTE ON FUNCTION identity_yourtal_subject_erase(text)                TO app_worker;
 -- The erase job is the worker's. erase_workspace: no grant (internal).
 GRANT EXECUTE ON FUNCTION erase_person(uuid) TO app_worker;
 
@@ -547,6 +642,22 @@ BEGIN
     RAISE EXCEPTION 'foreign keys to users with no delete rule: %', bad;
   END IF;
 
+  -- ...and deleting one never breaks a CHECK: a CHECK that names a SET NULL
+  -- column referencing users must hold when that column is NULL, i.e. read
+  -- "col IS NULL OR ...".
+  SELECT string_agg(c.conrelid::regclass || '.' || c.conname, ', ') INTO bad
+    FROM pg_constraint c
+   WHERE c.contype = 'c' AND EXISTS (
+     SELECT 1 FROM pg_constraint f
+       JOIN pg_attribute a ON a.attrelid = f.conrelid AND a.attnum = ANY (f.conkey)
+      WHERE f.contype = 'f' AND f.confrelid = 'public.users'::regclass AND f.confdeltype = 'n'
+        AND f.conrelid = c.conrelid
+        AND pg_get_constraintdef(c.oid) ~ ('\m' || a.attname || '\M')
+        AND pg_get_constraintdef(c.oid) NOT LIKE 'CHECK (((' || a.attname || ' IS NULL) OR %');
+  IF bad IS NOT NULL THEN
+    RAISE EXCEPTION 'CHECKs that a user deletion (SET NULL) would violate: %', bad;
+  END IF;
+
   IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'app_erasure' AND (rolsuper OR rolcanlogin)) THEN
     RAISE EXCEPTION 'app_erasure must be NOLOGIN and not a superuser';
   END IF;
@@ -558,5 +669,16 @@ BEGIN
   END IF;
   IF has_function_privilege('app_worker', 'erase_workspace(uuid)', 'EXECUTE') THEN
     RAISE EXCEPTION 'erase_workspace is internal';
+  END IF;
+  IF has_function_privilege('app_rw', 'identity_yourtal_subject_erase(text)', 'EXECUTE')
+     OR has_function_privilege('app_readonly', 'identity_yourtal_subject_erase(text)', 'EXECUTE')
+     OR NOT has_function_privilege('app_worker', 'identity_yourtal_subject_erase(text)', 'EXECUTE') THEN
+    RAISE EXCEPTION 'identity_yourtal_subject_erase must be executable by app_worker only';
+  END IF;
+  IF NOT has_function_privilege('app_rw', 'identity_yourtal_sessions_revoke(text, timestamptz)', 'EXECUTE') THEN
+    RAISE EXCEPTION 'the events endpoint (app_rw) must be able to revoke sessions';
+  END IF;
+  IF has_table_privilege('app_erasure', 'users', 'UPDATE') OR has_table_privilege('app_erasure', 'tenants', 'UPDATE') THEN
+    RAISE EXCEPTION 'app_erasure needs UPDATE (id) only on users and tenants, for FOR UPDATE';
   END IF;
 END $$;
