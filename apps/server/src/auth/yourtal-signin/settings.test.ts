@@ -85,6 +85,20 @@ describe('Sign in with YourTal settings', () => {
     });
   });
 
+  it('switches the phone redirect to the App Link only when the env names it', async () => {
+    vi.stubEnv('YOURTAL_OIDC_ISSUER', 'https://yourtal.gaiada.com/oidc');
+    vi.stubEnv('YOURTAL_OIDC_MOBILE_CLIENT_ID', 'snapapp-staging-mobile');
+    vi.stubEnv('YOURTAL_OIDC_MOBILE_REDIRECT_URI', 'https://snap-apps.gaiada.com/oauth/yourtal');
+    const { settings } = await load();
+    expect(settings.yourtalSignInSettings()?.mobile?.redirectUri).toBe('https://snap-apps.gaiada.com/oauth/yourtal');
+  });
+
+  it('refuses any other phone redirect at boot', async () => {
+    vi.stubEnv('YOURTAL_OIDC_MOBILE_REDIRECT_URI', 'https://evil.example/cb');
+    const { settings } = await load();
+    expect(() => settings.yourtalSignInSettings()).toThrow(/YOURTAL_OIDC_MOBILE_REDIRECT_URI/);
+  });
+
   it('derives the website redirect URI from WEB_PUBLIC_URL (docs/26 §1.9)', async () => {
     vi.stubEnv('YOURTAL_OIDC_ISSUER', 'https://yourtal.gaiada.com/oidc');
     vi.stubEnv('YOURTAL_OIDC_WEB_CLIENT_ID', 'snapapp-staging-web');

@@ -31,7 +31,10 @@ export type YourTalSignInSettings = {
   mobile?: YourTalClientSettings;
 };
 
-/** The phone app's redirect: a reverse-DNS private-use scheme (RFC 8252 §7.1, docs/26 §1.9). */
+/**
+ * The phone app's default redirect: a private-use scheme (RFC 8252 §7.1). Builds from 3.3.e
+ * also take the verified https App Link, selected by YOURTAL_OIDC_MOBILE_REDIRECT_URI.
+ */
 export const DEFAULT_MOBILE_REDIRECT_URI = 'au.com.snapapps.app:/oauth/yourtal';
 
 /** The scopes every sign-in asks for (docs/26 §1.4): `account` is required, for region and age band. */

@@ -6,7 +6,7 @@
  *   1. `start` asks SnapApp's server for YourTal's authorization URL and a
  *      flow id (the server keeps `state`, `nonce` and the PKCE verifier).
  *   2. The URL opens in the SYSTEM browser (never a WebView). YourTal returns
- *      to the private-use redirect with `code`, `state` and `iss`.
+ *      to the redirect with `code`, `state` and `iss`.
  *   3. `finish` hands those and the flow id to the server, which redeems the
  *      code and answers with SnapApp's own session.
  *
@@ -15,8 +15,23 @@
  * leakage in the phone app").
  */
 
-/** Must equal the server's DEFAULT_MOBILE_REDIRECT_URI and YourTal's registration. */
+/**
+ * The fallback redirect (the private-use scheme). The server decides the real one
+ * and puts it in the authorization URL's `redirect_uri` (see `redirectFor`): the
+ * old scheme by default, or the verified https App Link (`app.config.js`,
+ * 3.3.e) once YOURTAL_OIDC_MOBILE_REDIRECT_URI is set. Both are accepted on return.
+ */
 export const YOURTAL_REDIRECT_URI = 'au.com.snapapps.app:/oauth/yourtal';
+
+/** The `redirect_uri` the server put in the authorization URL, else the old scheme. */
+export function redirectFor(authUrl: string): string {
+  const m = /[?&]redirect_uri=([^&#]*)/.exec(authUrl);
+  try {
+    return m ? decodeURIComponent(m[1]!) : YOURTAL_REDIRECT_URI;
+  } catch {
+    return YOURTAL_REDIRECT_URI;
+  }
+}
 
 /** What the redirect carried: a result to finish with, or why there is none. */
 export type ReturnParse =
@@ -30,8 +45,7 @@ export type ReturnParse =
  * `error` wins over `code` (YourTal sends `error=access_denied` and may add
  * `error_description`). A result with a missing `code`, `state` or `iss` is
  * `invalid`: the server would refuse it anyway, and this saves the trip.
- * Parsed by hand: the private-use URL has one slash and Hermes' `URL` is not
- * guaranteed to keep a query on such a scheme.
+ * Parsed by hand: Hermes' `URL` is not guaranteed to keep a query on every scheme.
  */
 export function parseReturnUrl(url: string): ReturnParse {
   const q = url.indexOf('?');
@@ -184,7 +198,7 @@ export async function runYourtalSignIn<S>(
 
   let result: BrowserResult;
   try {
-    result = await deps.openBrowser(started.url, YOURTAL_REDIRECT_URI);
+    result = await deps.openBrowser(started.url, redirectFor(started.url));
   } catch {
     return fail('yourtal_failed');
   }
@@ -213,5 +227,5 @@ export async function runYourtalSignIn<S>(
 
 /** True for the redirect however the platform spells it (`/oauth/yourtal?…`, a full URL, one or two slashes). */
 export function isYourtalReturn(path: string): boolean {
-  return /^(?:[a-z][a-z0-9+.-]*:\/{0,2})?\/?oauth\/yourtal(?:[/?#]|$)/i.test(path);
+  return /^(?:[a-z][a-z0-9+.-]*:\/{0,2}(?:[^/?#]+\/)?)?\/?oauth\/yourtal(?:[/?#]|$)/i.test(path);
 }

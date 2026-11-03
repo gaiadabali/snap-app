@@ -10,10 +10,12 @@ import {
   SIGNIN_ERROR_CODES,
   signInErrorMessage,
   YOURTAL_REDIRECT_URI,
+  redirectFor,
   type SignInDeps,
 } from './yourtal-signin';
 
 const REDIRECT = 'au.com.snapapps.app:/oauth/yourtal';
+const LINK = 'https://snap-apps.gaiada.com/oauth/yourtal';
 
 describe('parseReturnUrl', () => {
   it('reads code, state and iss', () => {
@@ -67,16 +69,30 @@ describe('parseReturnUrl', () => {
   });
 });
 
+describe('redirectFor and both return URLs', () => {
+  it('uses the server-chosen redirect_uri, else the old scheme', () => {
+    expect(redirectFor(`https://id.test/authorize?x=1&redirect_uri=${encodeURIComponent(LINK)}&state=s`)).toBe(LINK);
+    expect(redirectFor(`https://id.test/authorize?redirect_uri=${encodeURIComponent(REDIRECT)}`)).toBe(REDIRECT);
+    expect(redirectFor('https://id.test/authorize?state=s')).toBe(REDIRECT);
+  });
+  it('parses a return on either', () => {
+    for (const base of [REDIRECT, LINK]) {
+      expect(parseReturnUrl(`${base}?code=c&state=s&iss=i`)).toEqual({ kind: 'code', code: 'c', state: 's', iss: 'i' });
+    }
+  });
+});
+
 describe('isYourtalReturn', () => {
   it.each([
     REDIRECT,
     `${REDIRECT}?code=c&state=s`,
     'au.com.snapapps.app://oauth/yourtal?code=c',
+    'https://snap-apps.gaiada.com/oauth/yourtal?code=c&state=s',
     '/oauth/yourtal?code=c',
     'oauth/yourtal',
   ])('%s is the redirect', (p) => expect(isYourtalReturn(p)).toBe(true));
 
-  it.each(['/', '/join/abc', 'snapapps://join/abc', '/oauth/yourtalx', '/x/oauth/yourtal'])('%s is not', (p) =>
+  it.each(['/', '/join/abc', 'snapapps://join/abc', '/oauth/yourtalx', '/x/oauth/yourtal', 'https://snap-apps.gaiada.com/x/oauth/yourtal'])('%s is not', (p) =>
     expect(isYourtalReturn(p)).toBe(false),
   );
 });
@@ -148,7 +164,14 @@ function deps(over: Record<string, Fn> = {}) {
 const returning = (url: string) => vi.fn(async () => ({ type: 'success', url }));
 
 describe('runYourtalSignIn', () => {
-  it('start, then the system browser at the private-use redirect, then finish with the flow id', async () => {
+  it('opens the browser at the redirect_uri the server put in the URL', async () => {
+    const url = `https://id.yourtal.test/authorize?redirect_uri=${encodeURIComponent(LINK)}&state=SECRET`;
+    const d = deps({ start: vi.fn(async () => ({ url, flowId: 'flow-1' })), openBrowser: returning(`${LINK}?code=C&state=s&iss=i`) });
+    expect(await runYourtalSignIn(d)).toMatchObject({ kind: 'signed-in' });
+    expect(d.openBrowser).toHaveBeenCalledWith(url, LINK);
+  });
+
+  it('start, then the system browser at the fallback (old scheme) redirect, then finish with the flow id', async () => {
     const d = deps();
     const result = await runYourtalSignIn(d);
 

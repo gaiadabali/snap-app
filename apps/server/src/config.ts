@@ -279,7 +279,14 @@ const schema = z.object({
   YOURTAL_OIDC_MOBILE_REDIRECT_URI: z
     .string()
     .optional()
-    .transform((v) => (v ?? '').trim() || undefined),
+    .transform((v) => (v ?? '').trim() || undefined)
+    .pipe(
+      z
+        .enum(['au.com.snapapps.app:/oauth/yourtal', 'https://snap-apps.gaiada.com/oauth/yourtal'], {
+          message: 'YOURTAL_OIDC_MOBILE_REDIRECT_URI must be the old scheme or the https App Link (docs/AUTH.md)',
+        })
+        .optional(),
+    ),
   YOURTAL_OIDC_KEY_FILE: z
     .string()
     .optional()
