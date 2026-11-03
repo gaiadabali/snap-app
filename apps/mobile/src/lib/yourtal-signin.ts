@@ -16,11 +16,22 @@
  */
 
 /**
- * A verified Android App Link, not a private-use scheme another app could claim
- * (RFC 8252 §8.6). Must equal the server's DEFAULT_MOBILE_REDIRECT_URI, YourTal's
- * registration and the host in `app.config.js`.
+ * The fallback redirect (the private-use scheme). The server decides the real one
+ * and puts it in the authorization URL's `redirect_uri` (see `redirectFor`): the
+ * old scheme by default, or the verified https App Link (`app.config.js`,
+ * 3.3.e) once YOURTAL_OIDC_MOBILE_REDIRECT_URI is set. Both are accepted on return.
  */
-export const YOURTAL_REDIRECT_URI = 'https://snap-apps.gaiada.com/oauth/yourtal';
+export const YOURTAL_REDIRECT_URI = 'au.com.snapapps.app:/oauth/yourtal';
+
+/** The `redirect_uri` the server put in the authorization URL, else the old scheme. */
+export function redirectFor(authUrl: string): string {
+  const m = /[?&]redirect_uri=([^&#]*)/.exec(authUrl);
+  try {
+    return m ? decodeURIComponent(m[1]!) : YOURTAL_REDIRECT_URI;
+  } catch {
+    return YOURTAL_REDIRECT_URI;
+  }
+}
 
 /** What the redirect carried: a result to finish with, or why there is none. */
 export type ReturnParse =
@@ -187,7 +198,7 @@ export async function runYourtalSignIn<S>(
 
   let result: BrowserResult;
   try {
-    result = await deps.openBrowser(started.url, YOURTAL_REDIRECT_URI);
+    result = await deps.openBrowser(started.url, redirectFor(started.url));
   } catch {
     return fail('yourtal_failed');
   }

@@ -10,10 +10,12 @@ import {
   SIGNIN_ERROR_CODES,
   signInErrorMessage,
   YOURTAL_REDIRECT_URI,
+  redirectFor,
   type SignInDeps,
 } from './yourtal-signin';
 
-const REDIRECT = 'https://snap-apps.gaiada.com/oauth/yourtal';
+const REDIRECT = 'au.com.snapapps.app:/oauth/yourtal';
+const LINK = 'https://snap-apps.gaiada.com/oauth/yourtal';
 
 describe('parseReturnUrl', () => {
   it('reads code, state and iss', () => {
@@ -64,6 +66,19 @@ describe('parseReturnUrl', () => {
     ['nothing', ''],
   ])('%s is invalid', (_name, url) => {
     expect(parseReturnUrl(url)).toEqual({ kind: 'invalid' });
+  });
+});
+
+describe('redirectFor and both return URLs', () => {
+  it('uses the server-chosen redirect_uri, else the old scheme', () => {
+    expect(redirectFor(`https://id.test/authorize?x=1&redirect_uri=${encodeURIComponent(LINK)}&state=s`)).toBe(LINK);
+    expect(redirectFor(`https://id.test/authorize?redirect_uri=${encodeURIComponent(REDIRECT)}`)).toBe(REDIRECT);
+    expect(redirectFor('https://id.test/authorize?state=s')).toBe(REDIRECT);
+  });
+  it('parses a return on either', () => {
+    for (const base of [REDIRECT, LINK]) {
+      expect(parseReturnUrl(`${base}?code=c&state=s&iss=i`)).toEqual({ kind: 'code', code: 'c', state: 's', iss: 'i' });
+    }
   });
 });
 
@@ -156,7 +171,7 @@ describe('runYourtalSignIn', () => {
     expect(result).toEqual({ kind: 'signed-in', session: { user: 'kira' } });
     expect(d.start).toHaveBeenCalledWith({ signUp: false, locale: undefined });
     expect(d.openBrowser).toHaveBeenCalledWith('https://id.yourtal.test/authorize?state=SECRET', YOURTAL_REDIRECT_URI);
-    expect(YOURTAL_REDIRECT_URI).toBe('https://snap-apps.gaiada.com/oauth/yourtal');
+    expect(YOURTAL_REDIRECT_URI).toBe('au.com.snapapps.app:/oauth/yourtal');
     expect(d.finish).toHaveBeenCalledWith({
       flowId: 'flow-1',
       code: 'CODE',

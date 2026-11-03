@@ -31,8 +31,11 @@ export type YourTalSignInSettings = {
   mobile?: YourTalClientSettings;
 };
 
-/** The phone app's redirect: a verified Android App Link, not a claimable scheme (RFC 8252 §7.2, §8.6). */
-export const DEFAULT_MOBILE_REDIRECT_URI = 'https://snap-apps.gaiada.com/oauth/yourtal';
+/**
+ * The phone app's default redirect: a private-use scheme (RFC 8252 §7.1). Builds from 3.3.e
+ * also take the verified https App Link, selected by YOURTAL_OIDC_MOBILE_REDIRECT_URI.
+ */
+export const DEFAULT_MOBILE_REDIRECT_URI = 'au.com.snapapps.app:/oauth/yourtal';
 
 /** The scopes every sign-in asks for (docs/26 §1.4): `account` is required, for region and age band. */
 export const YOURTAL_SCOPES = 'openid email profile account';

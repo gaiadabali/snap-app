@@ -1,7 +1,7 @@
 import { isYourtalReturn } from '@/lib/yourtal-signin';
 
 /**
- * Keeps the Sign in with YourTal redirect (`https://snap-apps.gaiada.com/oauth/yourtal`)
+ * Keeps the Sign in with YourTal redirect (the old scheme or the https App Link)
  * from being treated as a screen.
  *
  * `openAuthSessionAsync` hands that URL to the sign-in code that is waiting for
