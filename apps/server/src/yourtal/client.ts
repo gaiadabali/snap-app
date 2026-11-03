@@ -154,19 +154,23 @@ export type VoucherOwnerAnswer =
 const VOUCHER_OWNER_TIMEOUT_MS = 5_000;
 
 /**
- * Signed like every other partner call. Returns `null` for anything but a
- * well-formed 200 (the caller treats that as "unknown"). Never logs the hash.
+ * Signed like every other partner call. `linkGone` when YourTal says the link
+ * is over (403 `link_revoked`, 400 `unknown_link`); `null` for anything else
+ * but a well-formed 200 (the caller treats that as "unknown"). Never logs the hash.
  */
 export async function voucherOwner(
   client: YourtalPartnerClient,
   input: { linkId: string; codeSha256: string },
-): Promise<VoucherOwnerAnswer | null> {
+): Promise<VoucherOwnerAnswer | { linkGone: 'link_revoked' | 'unknown_link' } | null> {
   const response = await client.post(
     YOURTAL_PATHS.voucherOwner,
     JSON.stringify({ linkId: input.linkId, codeSha256: input.codeSha256 }),
     randomUUID(),
     { timeoutMs: VOUCHER_OWNER_TIMEOUT_MS },
   );
+  if (response.kind === 'error' && ((response.status === 403 && response.code === 'link_revoked') || (response.status === 400 && response.code === 'unknown_link'))) {
+    return { linkGone: response.code };
+  }
   if (response.kind !== 'ok' || typeof response.body.held !== 'boolean') return null;
   if (!response.body.held) return { held: false };
   const { status, faceValueMinor, currency, expiresAt } = response.body;

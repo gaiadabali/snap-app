@@ -34,6 +34,7 @@ import { rulesFor } from './taxrules/taxrules.repo.js';
 import { get as readObject } from './storage.js';
 import { enterTenantAsWorker, workerActor } from './tenant-entry.js';
 import { runYourtalOutboxLoop } from './yourtal/outbox.js';
+import { runVoucherRedemptionLoop } from './yourtal/redemption-drain.js';
 
 /**
  * The extraction worker.
@@ -750,6 +751,12 @@ export async function runForever(intervalMs = 2000): Promise<void> {
     console.error('yourtal outbox loop stopped:', error instanceof Error ? error.message : error);
   });
 
+  // Voucher redemptions a request could not finish (group plan 2.8): same
+  // rule, its own loop, so a captured voucher always ends in its credits.
+  const vouchers = runVoucherRedemptionLoop(() => stopping, WORKER).catch((error) => {
+    console.error('voucher redemption loop stopped:', error instanceof Error ? error.message : error);
+  });
+
   const shadow = (async () => {
     while (!stopping) {
       try {
@@ -772,6 +779,7 @@ export async function runForever(intervalMs = 2000): Promise<void> {
     }
   }
   await outbox;
+  await vouchers;
   // A shadow pass can run up to DOCAI_SHADOW_TIMEOUT_MS, longer than the stop
   // grace. Give it a short while, then leave: its lock goes stale once the
   // heartbeat stops and it is re-queued, which is harmless (a rerun rewrites
