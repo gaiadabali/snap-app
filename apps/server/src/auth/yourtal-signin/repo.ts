@@ -68,7 +68,9 @@ export type LinkOutcome =
   | 'email_unverified'
   | 'staff_strong_auth_required'
   | 'staff_reauth_required'
-  | 'retry';
+  | 'retry'
+  /** YourTal deleted this account (0043): its `sub` never signs in again. */
+  | 'erased';
 
 /** Find, link or create the account for a verified YourTal identity (0039's rules). */
 export async function signInWithYourTal(input: {

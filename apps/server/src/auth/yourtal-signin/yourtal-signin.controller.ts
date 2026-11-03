@@ -219,6 +219,11 @@ export class YourTalSignInController {
           throw refusal('staff_reauth_required');
         case 'retry':
           throw refusal('try_again');
+        case 'erased':
+          // Only reachable if YourTal re-issues a `sub` it told us it deleted
+          // (say, after restoring a backup): support has to look.
+          this.logger.warn(`sign-in refused: erased sub client=${flow.client}`);
+          throw refusal('account_review');
       }
     } catch (error) {
       const code = refusalCode(error);

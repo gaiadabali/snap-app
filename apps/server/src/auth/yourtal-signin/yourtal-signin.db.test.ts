@@ -139,6 +139,7 @@ describeIfDb('Sign in with YourTal — real database, real provider', () => {
   afterAll(async () => {
     if (subs.length) {
       await admin.query('DELETE FROM yourtal_sign_in_reviews WHERE yourtal_sub = ANY($1)', [subs]);
+      await admin.query('DELETE FROM yourtal_erased_subjects WHERE sub = ANY($1)', [subs]);
     }
     if (emails.length) {
       await admin.query('DELETE FROM platform_staff WHERE user_id IN (SELECT id FROM users WHERE email = ANY($1))', [emails]);
@@ -530,6 +531,24 @@ describeIfDb('Sign in with YourTal — real database, real provider', () => {
     }
     // With the real key published again, the same person signs in.
     expect((await signIn(who)).outcome).toBe('created');
+  });
+
+  it('refuses a sub YourTal said was deleted, for its old account and as a new one (0043)', async () => {
+    const known = person('erased-known');
+    const created = await signIn(known);
+    const unknown = person('erased-new');
+    for (const who of [known, unknown]) {
+      await admin.query('SELECT identity_yourtal_subject_erase($1)', [yt.subFor(who.accountId)]);
+      await expect(signIn(who)).rejects.toMatchObject({ status: 409, response: { error: 'account_review' } });
+    }
+    // Nothing was created for the new one, and nobody was flagged for review.
+    const { rows } = await admin.query('SELECT 1 FROM users WHERE email = $1', [unknown.email]);
+    expect(rows).toHaveLength(0);
+    const reviews = await admin.query('SELECT 1 FROM yourtal_sign_in_reviews WHERE yourtal_sub = ANY($1)', [
+      [known, unknown].map((p) => yt.subFor(p.accountId)),
+    ]);
+    expect(reviews.rows).toHaveLength(0);
+    expect((await userRow(created.user.userId)).subject).toBe(`yourtal|${yt.subFor(known.accountId)}`);
   });
 
   it('refuses a teen (invites are not built yet) and creates nothing', async () => {
