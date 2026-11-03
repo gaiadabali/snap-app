@@ -31,7 +31,6 @@ import { deductionTotals } from './deductions.repo.js';
 // Per person: a bundle is a query over a year of receipts.
 const exportPerUser = new RateLimiter(20, 60_000);
 
-/** `2025-26` -> 2025 (the year it starts), or null when it is not a financial year we hold rates for. */
 /**
  * The year a person means by "this year's deductions": the newest year we hold rates for
  * that has already started (today 2025-26), not the calendar's current one.
@@ -57,7 +56,8 @@ export function parseFy(fy: string | undefined, today: string = sydneyToday()): 
 export class DeductionBundleController {
   @Get('deduction-bundle/year')
   @ApiOperation({ summary: 'The financial year the export covers when `fy` is left out, like 2025-26' })
-  year(): { financialYear: string } {
+  year(@Res({ passthrough: true }) reply: { header: (k: string, v: string) => void }): { financialYear: string } {
+    reply.header('Cache-Control', 'private, no-store');
     return { financialYear: fyLabel(defaultFyStart(sydneyToday())) };
   }
 

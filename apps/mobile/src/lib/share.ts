@@ -46,19 +46,21 @@ async function shareText(name: string, contents: string, mime: string): Promise<
     URL.revokeObjectURL(url);
     return;
   }
+  // Earlier exports are cleared now, not right after sharing: on Android the receiving app
+  // may still be reading the file when the chooser closes.
+  for (const entry of Paths.cache.list()) {
+    if (entry instanceof File && EXPORT_FILE.test(entry.name)) entry.delete();
+  }
   const file = new File(Paths.cache, name);
-  if (file.exists) file.delete();
   file.create();
   file.write(contents);
-  try {
-    if (await Sharing.isAvailableAsync()) {
-      await Sharing.shareAsync(file.uri, { mimeType: mime, dialogTitle: name });
-    }
-  } finally {
-    // A copy of the person's records should not stay in the app's cache once it has been shared.
-    if (file.exists) file.delete();
+  if (await Sharing.isAvailableAsync()) {
+    await Sharing.shareAsync(file.uri, { mimeType: mime, dialogTitle: name });
   }
 }
+
+/** The names `shareText` callers use: snap-receipts-*.csv, snap-lines-*.csv, snap-deductions-*.json. */
+const EXPORT_FILE = /^snap-(?:receipts|lines|deductions)-.+\.(?:csv|json)$/;
 
 /**
  * Every document in the period, one row per document.

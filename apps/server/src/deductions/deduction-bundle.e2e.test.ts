@@ -150,7 +150,7 @@ describeIfDb('deduction bundle endpoint', () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-11-03T00:00:00Z'));
     try {
-      expect(controller.year()).toEqual({ financialYear: '2025-26' });
+      expect(controller.year(reply)).toEqual({ financialYear: '2025-26' });
       expect((await get(OWNER, TENANT)).financialYear).toBe('2025-26');
     } finally {
       vi.useRealTimers();
@@ -158,6 +158,10 @@ describeIfDb('deduction bundle endpoint', () => {
   });
 
   it('is not cached', async () => {
+    delete headers['Cache-Control'];
+    controller.year(reply);
+    expect(headers['Cache-Control']).toBe('private, no-store');
+    delete headers['Cache-Control'];
     await get(OWNER, TENANT, '2025-26');
     expect(headers['Cache-Control']).toBe('private, no-store');
   });
