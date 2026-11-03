@@ -164,7 +164,14 @@ function deps(over: Record<string, Fn> = {}) {
 const returning = (url: string) => vi.fn(async () => ({ type: 'success', url }));
 
 describe('runYourtalSignIn', () => {
-  it('start, then the system browser at the https App Link redirect, then finish with the flow id', async () => {
+  it('opens the browser at the redirect_uri the server put in the URL', async () => {
+    const url = `https://id.yourtal.test/authorize?redirect_uri=${encodeURIComponent(LINK)}&state=SECRET`;
+    const d = deps({ start: vi.fn(async () => ({ url, flowId: 'flow-1' })), openBrowser: returning(`${LINK}?code=C&state=s&iss=i`) });
+    expect(await runYourtalSignIn(d)).toMatchObject({ kind: 'signed-in' });
+    expect(d.openBrowser).toHaveBeenCalledWith(url, LINK);
+  });
+
+  it('start, then the system browser at the fallback (old scheme) redirect, then finish with the flow id', async () => {
     const d = deps();
     const result = await runYourtalSignIn(d);
 

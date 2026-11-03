@@ -55,7 +55,7 @@ module.exports = ({ config }) => {
         {
           action: 'VIEW',
           autoVerify: true,
-          data: [{ scheme: 'https', host: 'snap-apps.gaiada.com', pathPrefix: '/oauth/yourtal' }],
+          data: [{ scheme: 'https', host: 'snap-apps.gaiada.com', path: '/oauth/yourtal' }],
           category: ['BROWSABLE', 'DEFAULT'],
         },
       ],

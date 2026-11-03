@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 
 /** `no-referrer`: if the browser was sent here, the URL carries a live sign-in code. */
-export const metadata: Metadata = { title: 'Open the Snap Apps app', referrer: 'no-referrer' };
+export const metadata: Metadata = { title: 'Open the Snap Apps app', referrer: 'no-referrer', robots: { index: false } };
 
 /**
  * The phone app's sign-in return address. Android opens it in the app when the
