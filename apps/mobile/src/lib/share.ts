@@ -3,6 +3,7 @@ import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { Platform } from 'react-native';
 
+import type { DeductionBundle } from '@snap/api-contract/deduction-bundle';
 import type { DocumentView, Invoice, TaxPackFile } from '@/api';
 
 import { formatAbn, formatMoney, formatShortDate } from './format';
@@ -127,6 +128,11 @@ export async function exportLinesCsv(docs: DocumentView[], label: string): Promi
     }
   }
   await shareText(`snap-lines-${label}.csv`, csv(rows), 'text/csv');
+}
+
+/** This year's deductions as a JSON file for Free Tax Returns, through the share sheet (a download on web). */
+export async function exportDeductionBundle(bundle: DeductionBundle): Promise<void> {
+  await shareText(`snap-deductions-${bundle.financialYear}.json`, JSON.stringify(bundle, null, 2), 'application/json');
 }
 
 /**

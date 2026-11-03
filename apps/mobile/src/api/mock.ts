@@ -20,6 +20,7 @@ import {
   startOfQuarter,
 } from '@/lib/analytics';
 
+import type { DeductionBundle } from '@snap/api-contract/deduction-bundle';
 import type {
   AnalyticsRange,
   AuthUser,
@@ -1880,6 +1881,11 @@ export class MockApi implements SnapApi {
       workspace: { ...workspace, memberCount: count, role: 'member', baseCurrency: 'AUD' },
       role: 'member',
     };
+  }
+
+  async getDeductionBundle(): Promise<DeductionBundle> {
+    // The demo has no real receipts, and an empty file would only look like a bug.
+    throw new Error('The demo has no real receipts to send. Sign in to your own account to try this.');
   }
 
   async prepareTaxPack(): Promise<TaxPackFile> {

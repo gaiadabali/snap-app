@@ -5,6 +5,7 @@ import { createCategory, setBudget, setCategoryActive } from '@/lib/panels/categ
 import { getPermissions } from '@/lib/panels/permissions';
 import { loadWorkspace } from '@/lib/panels/workspace';
 import { CategoriesTable } from './CategoriesTable';
+import { SendToFtr } from './SendToFtr';
 
 export const metadata = { title: 'Categories & budgets' };
 
@@ -32,6 +33,8 @@ export default async function CategoriesPage() {
         onSetBudget={setBudget.bind(null, workspace.id, path)}
         onCreate={createCategory.bind(null, workspace.id, path)}
       />
+
+      <SendToFtr />
 
       <HouseAd placement="individual-categories" />
     </div>

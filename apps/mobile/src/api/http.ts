@@ -15,6 +15,7 @@ import {
   type OutboxEntry,
   type SendOutcome,
 } from './outbox';
+import type { DeductionBundle } from '@snap/api-contract/deduction-bundle';
 import type {
   AnalyticsRange,
   AnalyticsSummary,
@@ -1081,6 +1082,10 @@ export class HttpApi implements SnapApi {
 
   getTaxPack(): Promise<TaxPack> {
     return this.get<TaxPack>('/v1/tax-pack');
+  }
+
+  async getDeductionBundle(): Promise<DeductionBundle> {
+    return this.get<DeductionBundle>('/v1/deduction-bundle', await this.idForKind('personal'));
   }
 
   async prepareTaxPack(): Promise<TaxPackFile> {

@@ -4,6 +4,8 @@ import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, type CategorySetting } from '@/api';
+import { SendToFtrCard } from '@/components/SendToFtrCard';
+import { exportDeductionBundle } from '@/lib/share';
 import { AddButton, Empty, Field, Loading, Sheet } from '@/components/form';
 import { CategoryIcon, Raised } from '@/components/rich';
 import { Body, Chip, Divider, Figure, Screen, SectionHeader, Small } from '@/components/ui';
@@ -38,6 +40,18 @@ export default function CategoriesScreen() {
   const [name, setName] = useState('');
   const [budget, setBudget] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
+
+  async function sendToFtr() {
+    setSending(true);
+    try {
+      await exportDeductionBundle(await api().getDeductionBundle());
+    } catch (e) {
+      Alert.alert('Could not prepare the file', e instanceof Error ? e.message : 'Try again in a moment.');
+    } finally {
+      setSending(false);
+    }
+  }
 
   const load = useCallback(async () => {
     setRows(await api().listCategorySettings(workspace));
@@ -137,6 +151,8 @@ export default function CategoriesScreen() {
                 </Small>
               </View>
             ) : null}
+
+            {!isBusiness ? <SendToFtrCard busy={sending} onSend={() => void sendToFtr()} /> : null}
           </>
         )}
       </ScrollView>
