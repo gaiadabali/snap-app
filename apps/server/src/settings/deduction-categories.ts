@@ -36,8 +36,8 @@ const rental = (name: string, itemId: string): DeductionCategorySeed => ({
 /** Work and rental categories every personal workspace starts with. */
 export const PERSONAL_DEDUCTION_CATEGORIES: readonly DeductionCategorySeed[] = [
   work('Work car: fuel', 'D1', 'fuelReceiptTotal'),
-  work('Work car: servicing and repairs', 'D1', 'serviceCost1'),
-  work('Work car: rego and insurance', 'D1', 'rego'),
+  work('Work car: servicing', 'D1', 'serviceCost1'),
+  work('Work car: registration', 'D1', 'rego'),
   work('Work travel', 'D2', 'otherTravel'),
   work('Work parking and tolls', 'D2', 'tollsTotal'),
   work('Work clothing and uniforms', 'D3', 'uniforms'),
@@ -47,7 +47,7 @@ export const PERSONAL_DEDUCTION_CATEGORIES: readonly DeductionCategorySeed[] = [
   work('Work phone and internet', 'D5', 'phoneDevices'),
   work('Work software and subscriptions', 'D5', 'software'),
   work('Union and professional fees', 'D5', 'union'),
-  work('Home office', 'D5', 'homeoffice'),
+  work('Home office equipment (under $300 each)', 'D5', 'homeoffice'),
   work('Donations', 'D9', 'd9'),
   work('Tax help and tax agent', 'D10', 'lastReturnFee'),
   work('Income protection insurance', 'D12', 'd12'),

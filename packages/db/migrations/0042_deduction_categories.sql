@@ -72,8 +72,8 @@ SELECT gen_random_uuid(), t.id, v.name, v.label, v.item, v.active
   FROM tenants t
  CROSS JOIN (VALUES
   ('Work car: fuel', 'D1', 'fuelReceiptTotal', true),
-  ('Work car: servicing and repairs', 'D1', 'serviceCost1', true),
-  ('Work car: rego and insurance', 'D1', 'rego', true),
+  ('Work car: servicing', 'D1', 'serviceCost1', true),
+  ('Work car: registration', 'D1', 'rego', true),
   ('Work travel', 'D2', 'otherTravel', true),
   ('Work parking and tolls', 'D2', 'tollsTotal', true),
   ('Work clothing and uniforms', 'D3', 'uniforms', true),
@@ -83,7 +83,7 @@ SELECT gen_random_uuid(), t.id, v.name, v.label, v.item, v.active
   ('Work phone and internet', 'D5', 'phoneDevices', true),
   ('Work software and subscriptions', 'D5', 'software', true),
   ('Union and professional fees', 'D5', 'union', true),
-  ('Home office', 'D5', 'homeoffice', true),
+  ('Home office equipment (under $300 each)', 'D5', 'homeoffice', true),
   ('Donations', 'D9', 'd9', true),
   ('Tax help and tax agent', 'D10', 'lastReturnFee', true),
   ('Income protection insurance', 'D12', 'd12', true),

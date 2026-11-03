@@ -507,7 +507,7 @@ export const categories = pgTable('categories', {
   parentId: uuid('parent_id'),
   defaultAccountId: uuid('default_account_id'),
   defaultTaxCodeId: uuid('default_tax_code_id'),
-  /** `@snap/tax-engine` target row: 'D1.logbook.fuel', 'D3.laundry', … */
+  /** Free Tax Returns item id for the category's ATO label (deduction bundle ITEM_IDS), e.g. 'fuelReceiptTotal', 'rego' (0042). Older business rows may hold a tax-engine row id. */
   engineRowId: text('engine_row_id'),
   atoDeductionCode: text('ato_deduction_code'),
   /** Default private share (whole percent, 0-99) of a receipt in this category (0042). */
