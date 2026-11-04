@@ -22,7 +22,7 @@ import { config } from '../config.js';
 import { getDb } from '../db.js';
 import { listMembers } from '../repo.js';
 import { createTeenInvite, endTeenInvite, teenInvitesConfigured } from './invite-api.js';
-import { endTeenSpace, familyOf, isTeen, isTeenSpace, recordInvite, spaceOfParent } from './teens.repo.js';
+import { endTeenSpace, familyOf, isTeen, recordInvite, spaceOfParent } from './teens.repo.js';
 
 const refuse = (status: HttpStatus, error: string, message: string) => new HttpException({ error, message }, status);
 
@@ -79,7 +79,8 @@ export class FamilyController {
     if (role !== 'owner') {
       throw refuse(HttpStatus.FORBIDDEN, 'not_owner', 'Only the owner of this workspace can invite a teen to it.');
     }
-    if ((await isTeen(user.userId)) || (await isTeenSpace(user.userId, tenantId))) {
+    // A teen space's only owner is its teen.
+    if (await isTeen(user.userId)) {
       throw refuse(HttpStatus.FORBIDDEN, 'teen_space', 'A teen account can’t invite anyone.');
     }
     const parentSub = await yourtalSub(user.userId, tenantId);
