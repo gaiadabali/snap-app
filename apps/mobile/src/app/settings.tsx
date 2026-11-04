@@ -230,6 +230,8 @@ export default function SettingsScreen() {
               <Row label="Categories" value="How spending is sorted" href="/categories" />
               <Divider style={{ marginLeft: space.lg }} />
               <Row label="Credits and usage" value={`${plan.scansUsed} read this month`} href="/plan" />
+              <Divider style={{ marginLeft: space.lg }} />
+              <Row label="Family" value="Invite your teen" href="/family" />
               {isBusiness ? (
                 <>
                   <Divider style={{ marginLeft: space.lg }} />

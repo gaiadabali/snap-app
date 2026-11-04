@@ -12,7 +12,8 @@ import { CreateWorkspaceForm } from '../_shell/CreateWorkspaceForm';
 import { ImpersonationBanner } from '../_shell/ImpersonationBanner';
 import { PanelShell } from '../_shell/PanelShell';
 import { individualNavFor } from '../_shell/nav';
-import { getYourtalLink } from '@/lib/panels/data';
+import { getFamily, getYourtalLink } from '@/lib/panels/data';
+import { TeenNotice } from './family/FamilyView';
 
 export default async function IndividualLayout({ children }: { children: ReactNode }) {
   const { user, workspaces, impersonation } = await requireSession();
@@ -104,6 +105,8 @@ export default async function IndividualLayout({ children }: { children: ReactNo
   }
 
   const businessWorkspace = resolveActiveWorkspace(workspaces, 'business', activeId);
+  // In a teen's own space, always say who can see it (group 3.10). A failed read shows nothing.
+  const asTeen = await getFamily().then((f) => f.asTeen, () => null);
 
   return (
     <PanelShell
@@ -113,6 +116,7 @@ export default async function IndividualLayout({ children }: { children: ReactNo
       otherKindHref={BUSINESS_SURFACES_ENABLED && businessWorkspace ? '/app/business' : null}
       nav={nav}
     >
+      {asTeen && asTeen.workspaceId === workspace.id ? <TeenNotice parentName={asTeen.parentName} /> : null}
       <HouseAdProvider context={{ yourtalAvailable }}>{children}</HouseAdProvider>
     </PanelShell>
   );

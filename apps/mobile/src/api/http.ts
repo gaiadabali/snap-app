@@ -57,6 +57,8 @@ import type {
   AlertItem,
   PrivacySettings,
   YourtalLinkStatus,
+  FamilyStatus,
+  TeenInviteCreated,
   RedeemYourtalVoucherResult,
   Recurring,
   SalesSummary,
@@ -1209,6 +1211,22 @@ export class HttpApi implements SnapApi {
        minutes, so a copy replayed later is a dead code and a wrong message. */
     return this.request<YourtalLinkStatus>('POST', '/v1/yourtal/link', {
       body: { code },
+      workspaceId: null,
+      queue: false,
+    });
+  }
+
+  getFamily(): Promise<FamilyStatus> {
+    return this.get<FamilyStatus>('/v1/family', null);
+  }
+
+  /* Never queued offline: the link is shown once, and a replay would make a second invite. */
+  createTeenInvite(): Promise<TeenInviteCreated> {
+    return this.request<TeenInviteCreated>('POST', '/v1/family/invites', { queue: false });
+  }
+
+  async endTeenAccess(teenWorkspaceId: string): Promise<void> {
+    await this.request('POST', `/v1/family/teens/${encodeURIComponent(teenWorkspaceId)}/end`, {
       workspaceId: null,
       queue: false,
     });

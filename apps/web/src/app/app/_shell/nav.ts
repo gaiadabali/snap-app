@@ -18,6 +18,7 @@ export const INDIVIDUAL_NAV: NavItem[] = [
   { href: '/app/goals', label: 'Goals' },
   { href: '/app/plan', label: 'Plan & usage' },
   { href: '/app/credits', label: 'Credits' },
+  { href: '/app/family', label: 'Family' },
   { href: POINTS_HREF, label: 'YourTal points' },
   { href: '/app/connections', label: 'Connections' },
   { href: '/app/settings', label: 'Settings' },

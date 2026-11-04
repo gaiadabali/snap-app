@@ -5,7 +5,9 @@ import { Text } from '@/theme/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { IS_DEMO, api, type DocumentView, type PersonalSummary } from '@/api';
-import type { YourtalLinkStatus } from '@snap/api-contract';
+import type { FamilyStatus, YourtalLinkStatus } from '@snap/api-contract';
+import { TeenNotice } from '@/components/FamilyPanel';
+import { useWorkspace } from '@/workspace';
 import { CategoryRing, RingLegend } from '@/components/charts';
 import { Icon } from '@/components/Icon';
 import { EXPERIMENTAL_FEATURES_ENABLED } from '@/config';
@@ -55,6 +57,9 @@ export default function PersonalHome() {
   const [yourtal, setYourtal] = useState<YourtalLinkStatus | null>(null);
   const [unread, setUnread] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  // In a teen's own space, always say who can see it (group 3.10).
+  const [asTeen, setAsTeen] = useState<FamilyStatus['asTeen']>(null);
+  const { workspaceId } = useWorkspace();
   const points = pointsSummary(yourtal);
 
   const load = useCallback(async () => {
@@ -70,6 +75,7 @@ export default function PersonalHome() {
        for, and a points outage must not blank the month. */
     void api().getCreditBalance().then((b) => setCredits(b.creditsRemaining)).catch(() => {});
     void api().getYourtalLink().then(setYourtal).catch(() => {});
+    void api().getFamily().then((f) => setAsTeen(f.asTeen)).catch(() => {});
     // Only the bell uses this count, and the bell is hidden with the flag.
     if (EXPERIMENTAL_FEATURES_ENABLED) {
       void api()
@@ -209,6 +215,12 @@ export default function PersonalHome() {
             </Pressable>
           ) : null}
         </View>
+
+        {asTeen && asTeen.workspaceId === workspaceId ? (
+          <View style={{ paddingHorizontal: space.gutter }}>
+            <TeenNotice parentName={asTeen.parentName} />
+          </View>
+        ) : null}
 
         {/* The hero is what is LEFT, not what is spent. A tracker that leads
             with the total spent tells you about the past; this one is about

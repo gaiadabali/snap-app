@@ -54,6 +54,8 @@ import type {
   PersonalSummary,
   PlanUsage,
   YourtalLinkStatus,
+  FamilyStatus,
+  TeenInviteCreated,
   YourtalVoucherRedemption,
   RedeemYourtalVoucherResult,
   Recurring,
@@ -2049,6 +2051,20 @@ export class MockApi implements SnapApi {
 
   async finishYourtalSignIn(): Promise<Session> {
     throw new Error('Signing in with YourTal is not available in the demo.');
+  }
+
+  /** The demo has no YourTal accounts, so no teens and no invites. */
+  async getFamily(): Promise<FamilyStatus> {
+    await settle(80);
+    return { invitesAvailable: false, teens: [], pendingInvites: [], asTeen: null };
+  }
+
+  async createTeenInvite(): Promise<TeenInviteCreated> {
+    throw new ApiError(501, 'Inviting a teen isn’t available in the demo.', 'not_configured');
+  }
+
+  async endTeenAccess(): Promise<void> {
+    throw new ApiError(404, 'No such teen space.', 'not_found');
   }
 
   async getYourtalLink(): Promise<YourtalLinkStatus> {

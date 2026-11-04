@@ -31,6 +31,11 @@ export const AUTH_ERRORS = {
   yourtal_failed: { message: "We couldn't sign you in with YourTal. Please try again." },
   use_yourtal: { message: 'This account signs in with YourTal. Use the Sign in with YourTal button.' },
   teen_invite_required: { message: TEEN_INVITE },
+  teen_invite_expired: { message: 'This invite has expired or has already been used. Ask your parent for a new one.' },
+  teen_account_in_use: {
+    message:
+      "This teen account is already used with other Snap Apps workspaces, so it can't join a parent's invite. Contact Snap Apps support.",
+  },
   region_not_supported: {
     message: "Snap Apps is for YourTal accounts in Australia and Indonesia, so you can't use this account here.",
   },
