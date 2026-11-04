@@ -1473,6 +1473,27 @@ export interface AdminJobRef {
   jobId: string;
 }
 
+/** One row of `GET /v1/admin/operations/yourtal-reviews` (0046): a Sign in with YourTal case the code refused to decide. */
+export interface AdminYourtalReview {
+  id: string;
+  kind: 'second_sub' | 'email_collision' | 'unlinkable_account';
+  /** Masked, `k••••@example.com`. The YourTal `sub` is never sent. */
+  emailMasked: string | null;
+  userId: string | null;
+  otherUserId: string | null;
+  attempts: number;
+  firstSeenAt: IsoDateTime;
+  lastSeenAt: IsoDateTime;
+  resolvedAt: IsoDateTime | null;
+  resolvedBy: string | null;
+  resolution: string | null;
+}
+
+/** Request body of `POST /v1/admin/operations/yourtal-reviews/:id/resolve` */
+export interface AdminResolveYourtalReviewRequest {
+  resolution: string;
+}
+
 /** One row of `GET /v1/admin/operations/retention` */
 export interface AdminRetentionStatusRow {
   tenantId: string;

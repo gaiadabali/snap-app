@@ -19,6 +19,7 @@ import type {
   AdminUserDetail,
   AdminUserMembership,
   AdminTenantDocumentsView,
+  AdminYourtalReview,
   AdminTenantSummary,
   AdminUserSummary,
   DocumentSummary,
@@ -645,6 +646,34 @@ export async function triggerReextraction(
     );
     return rows.rows[0]!.admin_trigger_reextraction;
   });
+}
+
+/** Sign in with YourTal cases for staff (0046). The functions check `manage_operations` themselves. */
+export async function listYourtalReviews(staffUserId: string, openOnly: boolean): Promise<AdminYourtalReview[]> {
+  return callAs(staffUserId, async (tx) => {
+    const { rows } = await tx.execute<{
+      id: string; kind: AdminYourtalReview['kind']; email_masked: string | null; user_id: string | null;
+      other_user_id: string | null; attempts: number; first_seen_at: string; last_seen_at: string;
+      resolved_at: string | null; resolved_by: string | null; resolution: string | null;
+    }>(sql`select * from admin_yourtal_review_list(${openOnly})`);
+    return rows.map((r) => ({
+      id: r.id,
+      kind: r.kind,
+      emailMasked: r.email_masked,
+      userId: r.user_id,
+      otherUserId: r.other_user_id,
+      attempts: Number(r.attempts),
+      firstSeenAt: toIso(r.first_seen_at),
+      lastSeenAt: toIso(r.last_seen_at),
+      resolvedAt: toIso(r.resolved_at),
+      resolvedBy: r.resolved_by,
+      resolution: r.resolution,
+    }));
+  });
+}
+
+export async function resolveYourtalReview(staffUserId: string, id: string, resolution: string): Promise<void> {
+  await callAs(staffUserId, (tx) => tx.execute(sql`select admin_yourtal_review_resolve(${id}::uuid, ${resolution})`));
 }
 
 /* ── Impersonation ───────────────────────────────────────────────────────── */
