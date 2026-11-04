@@ -1,5 +1,6 @@
 import {
   ConflictException,
+  ForbiddenException,
   Controller,
   Get,
   HttpCode,
@@ -29,6 +30,7 @@ import {
 } from '../common/auth.guard.js';
 import { ValidBody } from '../common/valid-body.decorator.js';
 import { listMembers } from '../repo.js';
+import { isTeenSpace } from '../teens/teens.repo.js';
 import {
   CreditPurchaseNotPendingError,
   fulfilCreditPurchase,
@@ -51,6 +53,13 @@ async function requireAdmin(user: AuthUser, tenantId: string): Promise<void> {
   const role = members.find((m) => m.user_id === user.userId)?.role;
   if (role !== 'owner' && role !== 'admin') {
     throw new ConflictException('Only an owner or manager can do that.');
+  }
+  // A teen's space buys nothing: its scans spend the parent's credits (F112, 0045).
+  if (await isTeenSpace(user.userId, tenantId)) {
+    throw new ForbiddenException({
+      error: 'teen_space',
+      message: 'Your scans use credits from your parent’s account, so there is nothing to buy here.',
+    });
   }
 }
 

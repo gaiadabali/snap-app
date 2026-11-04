@@ -121,6 +121,8 @@ export default function ProfileScreen() {
             the halves instead of reading as soft light.
             Everything on it reads in white: the prototype notes that muted
             tints failed contrast here, so none are used. */}
+        {/* A teen's space has no credits or points of its own (group 3.10). */}
+        {active.teenSpace === 'teen' ? null : (
         <View style={{ gap: space.md }}>
           <View style={[{ borderRadius: radius.xxl }, scheme === 'light' ? shadow.lift : null]}>
             <LinearGradient
@@ -165,6 +167,7 @@ export default function ProfileScreen() {
               : 'Tap Credits to see how they were used.'}
           </Small>
         </View>
+        )}
 
         {/* Active space */}
         <View style={{ gap: space.md }}>

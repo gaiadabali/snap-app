@@ -27,7 +27,8 @@ export function resolveActiveWorkspace(
   const ofKind = workspaces.filter((w) => w.kind === kind);
   if (ofKind.length === 0) return null;
   const current = activeId ? ofKind.find((w) => w.id === activeId) : undefined;
-  return current ?? ofKind[0]!;
+  // With nothing chosen, one the person can write in: never their teen's, which they only view.
+  return current ?? ofKind.find((w) => w.role !== 'readonly') ?? ofKind[0]!;
 }
 
 /** Convenience for a page that just wants "the active one, whatever it is". */

@@ -24,12 +24,22 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const signUp = params.get('signUp') === '1';
   // "Sign in again" after staff_reauth_required: YourTal must ask for a new sign-in (prompt=login).
   const freshSignIn = params.get('fresh') === '1';
+  // A parent's join link (`/auth/yourtal?teenInvite=<code>`): the API checks
+  // the code's shape and hands it to YourTal, which checks the guardian.
+  const teenInvite = params.get('teenInvite') ?? undefined;
 
   let result: StartResult;
   try {
     result = await api<StartResult>('/v1/auth/yourtal/start', {
       method: 'POST',
-      body: { client: 'web', returnTo, signUp, ...(freshSignIn ? { freshSignIn } : {}), locale: 'en-AU' },
+      body: {
+        client: 'web',
+        returnTo,
+        signUp,
+        ...(freshSignIn ? { freshSignIn } : {}),
+        ...(teenInvite ? { teenInvite } : {}),
+        locale: 'en-AU',
+      },
       anonymous: true,
     });
   } catch (error) {

@@ -5,7 +5,9 @@ import { Text } from '@/theme/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { IS_DEMO, api, type DocumentView, type PersonalSummary } from '@/api';
-import type { YourtalLinkStatus } from '@snap/api-contract';
+import type { FamilyStatus, YourtalLinkStatus } from '@snap/api-contract';
+import { TeenNotice, ViewOnlyNotice } from '@/components/FamilyPanel';
+import { useWorkspace } from '@/workspace';
 import { CategoryRing, RingLegend } from '@/components/charts';
 import { Icon } from '@/components/Icon';
 import { EXPERIMENTAL_FEATURES_ENABLED } from '@/config';
@@ -55,6 +57,11 @@ export default function PersonalHome() {
   const [yourtal, setYourtal] = useState<YourtalLinkStatus | null>(null);
   const [unread, setUnread] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  // A teen's space (group 3.10): the teen is always told who can see it, and
+  // sees no credits or points; the parent is told they only view it.
+  const [asTeen, setAsTeen] = useState<FamilyStatus['asTeen']>(null);
+  const { active } = useWorkspace();
+  const teen = active.teenSpace === 'teen';
   const points = pointsSummary(yourtal);
 
   const load = useCallback(async () => {
@@ -70,6 +77,7 @@ export default function PersonalHome() {
        for, and a points outage must not blank the month. */
     void api().getCreditBalance().then((b) => setCredits(b.creditsRemaining)).catch(() => {});
     void api().getYourtalLink().then(setYourtal).catch(() => {});
+    void api().getFamily().then((f) => setAsTeen(f.asTeen)).catch(() => {});
     // Only the bell uses this count, and the bell is hidden with the flag.
     if (EXPERIMENTAL_FEATURES_ENABLED) {
       void api()
@@ -210,6 +218,16 @@ export default function PersonalHome() {
           ) : null}
         </View>
 
+        {teen ? (
+          <View style={{ paddingHorizontal: space.gutter }}>
+            <TeenNotice parentName={asTeen?.workspaceId === active.id ? asTeen.parentName : null} />
+          </View>
+        ) : active.teenSpace === 'parent' ? (
+          <View style={{ paddingHorizontal: space.gutter }}>
+            <ViewOnlyNotice spaceName={active.name} />
+          </View>
+        ) : null}
+
         {/* The hero is what is LEFT, not what is spent. A tracker that leads
             with the total spent tells you about the past; this one is about
             the rest of the month. The update notice shares its block so that,
@@ -284,6 +302,7 @@ export default function PersonalHome() {
 
         {/* What scanning costs, and what it earns. Credits lead because
             running out is the one thing that stops the app working. */}
+        {teen ? null : (
         <View style={{ paddingHorizontal: space.gutter }}>
           <Card padded={false}>
             <BalanceRow
@@ -312,6 +331,7 @@ export default function PersonalHome() {
             ) : null}
           </Card>
         </View>
+        )}
 
         <View style={{ flexDirection: 'row', paddingHorizontal: space.gutter, gap: space.md }}>
           <Action icon="receipt" label="Spending" href="/receipts" />

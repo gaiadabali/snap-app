@@ -317,6 +317,14 @@ describeIfDb('erase_person (migration 0043)', () => {
     expect(rows.map((r) => r.fk)).toEqual([
       // Staff rows; the evidence of each impersonation is in audit_log.
       'impersonation_sessions.subject_tenant_id -> tenants',
+      // Teen spaces (0045): an invite and a teen's spends reach the parent's
+      // workspace on purpose. Each cascades or is nulled when either
+      // workspace is erased, and none makes the guard refuse (0045's header).
+      'teen_invites.funding_tenant_id -> tenants',
+      'teen_space_spends.capture_id -> captures',
+      'teen_space_spends.funding_tenant_id -> tenants',
+      'teen_space_spends.grant_id -> usage_grants',
+      'teen_spaces.funding_tenant_id -> tenants',
       // No tenant_id: a delivery belongs to its endpoint's workspace.
       'webhook_deliveries.endpoint_id -> webhook_endpoints',
     ]);

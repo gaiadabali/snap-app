@@ -116,7 +116,7 @@ export type StartedAuthorization = {
  */
 export async function startAuthorization(
   kind: YourTalClientKind,
-  options: { signUp: boolean; locale: string; freshSignIn?: boolean },
+  options: { signUp: boolean; locale: string; freshSignIn?: boolean; teenInvite?: string },
 ): Promise<StartedAuthorization> {
   const { issuer, client } = clientOrRefuse(kind);
   let config: oidc.Configuration;
@@ -146,6 +146,9 @@ export async function startAuthorization(
   // (YourTal docs/26 §1.4). `prompt=login` only forces a fresh sign-in, not a
   // factor: the hwk/mfa and 12 h checks stay ours. Sign-up wins; never both.
   else if (options.freshSignIn) parameters.prompt = 'login';
+  // A teen joining by a parent's invite (docs/26 §3.3 step 3): YourTal checks
+  // the code against the teen's guardian before it shows the teen consent screen.
+  if (options.teenInvite) parameters.teen_invite = options.teenInvite;
 
   return { url: oidc.buildAuthorizationUrl(config, parameters).href, state, nonce, codeVerifier };
 }

@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation';
 import { ButtonLink, Empty, SectionTitle } from '@/design/primitives';
 import { getCreditBalance, getPlanUsage, listCreditPacks, listCreditPurchases } from '@/lib/panels/data';
 import { startCreditPurchase } from '@/lib/panels/credit-actions';
@@ -16,6 +17,8 @@ export const metadata = { title: 'Credits' };
  */
 export default async function CreditsPage() {
   const { workspace } = await loadWorkspace('personal');
+  // A teen's own space has no credits, plan or points of its own (group 3.10).
+  if (workspace?.teenSpace === 'teen') redirect('/app');
   if (!workspace) return <Empty title="No personal workspace yet" />;
 
   const path = '/app/credits';

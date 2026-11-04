@@ -1,6 +1,7 @@
 import 'server-only';
 
 import type {
+  FamilyStatus,
   AnalyticsRange,
   AnalyticsSummary,
   Bill,
@@ -118,6 +119,9 @@ export const listCreditPurchases = (workspaceId: string) =>
   api<CreditPurchase[]>('/v1/credits/purchases', { workspaceId });
 
 /** `workspaceId` only adds that workspace's voucher history (`vouchers.redemptions`). */
+/** `GET /v1/family`: the caller's teens and open invites, or, for a teen, who can see their space. */
+export const getFamily = () => api<FamilyStatus>('/v1/family');
+
 export const getYourtalLink = (workspaceId?: string) =>
   api<YourtalLinkStatus>('/v1/yourtal/link', workspaceId ? { workspaceId } : undefined);
 

@@ -710,6 +710,12 @@ export interface WorkspaceSummary {
    * clients default to AUD, which is what every such workspace was.
    */
   baseCurrency: string;
+  /**
+   * A teen's space (group 3.10): `teen` for the teen, whose space it is;
+   * `parent` for the inviting parent, who can only view it. Null or absent
+   * for every other workspace (and from a server that predates it).
+   */
+  teenSpace?: 'teen' | 'parent' | null;
 }
 
 export interface Member {
@@ -2191,4 +2197,34 @@ export interface ResetPasswordRequest {
   email: string;
   code: string;
   newPassword: string;
+}
+
+/* ── Family: teens a parent invites (group 3.10, yourtal docs/26 §3.3) ───── */
+
+/** A teen's space, seen by the parent who invited them. */
+export interface FamilyTeen {
+  /** The teen's space: switch to it to view it (read-only). */
+  workspaceId: string;
+  teenName: string | null;
+  joinedAt: IsoDateTime;
+  /** Set once the parent ended access; the space is then held, not usable. */
+  accessEndedAt: IsoDateTime | null;
+}
+
+/** `GET /v1/family`: the caller as a parent, and as a teen. */
+export interface FamilyStatus {
+  /** Whether this server can make teen invites at all. */
+  invitesAvailable: boolean;
+  teens: FamilyTeen[];
+  /** Invites made and not yet used. */
+  pendingInvites: Array<{ inviteId: string; expiresAt: IsoDateTime }>;
+  /** Set when the caller is a teen: their space, and who can see it. */
+  asTeen: { workspaceId: string; parentName: string | null } | null;
+}
+
+/** `POST /v1/family/invites`: the join link to send. Shown once; the code is not kept. */
+export interface TeenInviteCreated {
+  inviteId: string;
+  joinUrl: string;
+  expiresAt: IsoDateTime;
 }

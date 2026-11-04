@@ -8,6 +8,7 @@ import { sendAndRecord } from '../auth/mail-delivery.js';
 import { config } from '../config.js';
 import { getDb } from '../db.js';
 import { EVENT, verifySet, YOURTAL_EVENT_JOB, yourtalEventsSettings } from './events-verify.js';
+import { endTeenInvite, teenInvitesConfigured } from '../teens/invite-api.js';
 
 /**
  * The worker's half of YourTal's events (group task 3.7, ticket S2;
@@ -36,6 +37,8 @@ import { EVENT, verifySet, YOURTAL_EVENT_JOB, yourtalEventsSettings } from './ev
 
 export const STORAGE_PURGE_JOB = 'storage_purge';
 export const ERASURE_NOTICE_JOB = 'erasure_notice';
+/** YourTal's end for a teen invite, when the parent's End access could not reach it (0045). */
+export const TEEN_INVITE_END_JOB = 'teen_invite_end';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -87,10 +90,14 @@ async function handleEvent(db: Db, job: Job, log: Log): Promise<void> {
   }
 
   if (type === EVENT.accessEnded) {
-    // Sessions opened before iat were ended by the endpoint. Erasing a teen's
-    // space after 30 days is S3 (with 3.10.b); until then no teen reaches
-    // SnapApp, so this only logs.
-    const hold = body.erase_data === true ? `; erase_data (${String(body.reason)}) waits for the teen hold, S3` : '';
+    // Sessions opened before iat were ended by the endpoint. With erase_data
+    // (a teen's access ended: docs/26 §2.2) the teen's space starts its
+    // 30-day hold (0045); erasing it at the end is 3.10.f.
+    let hold = '';
+    if (body.erase_data === true) {
+      const { rows } = await db.execute<{ ended: boolean }>(sql`select teen_space_end_for_subject(${sub}) as ended`);
+      hold = `; erase_data (${String(body.reason)}): ${rows[0]?.ended ? 'teen space held for 30 days' : 'no live teen space'}`;
+    }
     log.log(`yourtal event ${jti} access-ended: sessions already ended${hold}`);
     return;
   }
@@ -151,13 +158,30 @@ async function handleNotice(db: Db, job: Job, log: Log): Promise<void> {
   log.log(`erasure_notice ${job.id}: ${sent.outcome}`);
 }
 
+async function handleTeenInviteEnd(db: Db, job: Job, log: Log): Promise<void> {
+  const { inviteId, parentSub } = (job.payload ?? {}) as { inviteId?: unknown; parentSub?: unknown };
+  if (typeof inviteId !== 'string' || !UUID.test(inviteId) || typeof parentSub !== 'string') {
+    throw new Error('teen_invite_end: bad payload');
+  }
+  const needed = await db.execute<{ needed: boolean }>(sql`select teen_invite_end_needed(${inviteId}::uuid) as needed`);
+  if (needed.rows[0]?.needed === false) {
+    log.log(`teen_invite_end ${job.id}: YourTal already confirmed; nothing to do`);
+    return;
+  }
+  if (!teenInvitesConfigured()) throw new NotNow('teen invites are not configured');
+  if ((await endTeenInvite(inviteId, parentSub)) !== 'ended') throw new Error('teen_invite_end: YourTal did not end it yet');
+  await db.execute(sql`select teen_invite_yourtal_ended_by_worker(${inviteId}::uuid)`);
+  log.log(`teen_invite_end ${job.id}: ended at YourTal`);
+}
+
 const HANDLERS: Array<[string, (db: Db, job: Job, log: Log) => Promise<void>]> = [
   [YOURTAL_EVENT_JOB, handleEvent],
   [STORAGE_PURGE_JOB, handleStoragePurge],
   [ERASURE_NOTICE_JOB, handleNotice],
+  [TEEN_INVITE_END_JOB, handleTeenInviteEnd],
 ];
 
-/** Claims and runs what is due of the three kinds, events first. Returns how many jobs ran. */
+/** Claims and runs what is due of each kind, events first. Returns how many jobs ran. */
 export async function runErasureJobsOnce(db: Db = getDb(), log: Log = console): Promise<number> {
   const workerId = `worker-${process.pid}-erasure`;
   let ran = 0;

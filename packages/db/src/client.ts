@@ -152,14 +152,18 @@ export async function withTenantAs<T>(
   return db.transaction(async (tx) => {
     await tx.execute(sql`select set_config('app.user_id', ${userId}, true)`);
 
-    const check = await tx.execute<{ ok: number }>(sql`
-      select 1 as ok
-      from memberships
-      where user_id = current_user_id()
-        and tenant_id = ${tenantId}
+    const check = await tx.execute<{ view_only: boolean }>(sql`
+      select (m.role = 'readonly'
+              and exists (select 1 from teen_spaces t where t.tenant_id = m.tenant_id)) as view_only
+      from memberships m
+      where m.user_id = current_user_id()
+        and m.tenant_id = ${tenantId}
       limit 1
     `);
     if (check.rows.length === 0) throw new NotAMemberError(userId, tenantId);
+    // A parent views their teen's space and changes nothing in it (0045):
+    // every write in this transaction fails with SQLSTATE 25006.
+    if (check.rows[0]!.view_only) await tx.execute(sql`set transaction read only`);
 
     await tx.execute(sql`select set_config('app.tenant_id', ${tenantId}, true)`);
     return fn(tx);
@@ -316,7 +320,15 @@ export async function listWorkspacesFor(
   db: Db,
   userId: string,
 ): Promise<
-  Array<{ id: string; name: string; kind: 'business' | 'personal'; role: string; baseCurrency: string }>
+  Array<{
+    id: string;
+    name: string;
+    kind: 'business' | 'personal';
+    role: string;
+    baseCurrency: string;
+    /** A teen space (0045): `teen` for its teen, `parent` for the parent who views it. */
+    teenSpace: 'teen' | 'parent' | null;
+  }>
 > {
   if (!UUID.test(userId)) throw new Error(`listWorkspacesFor: not a uuid: ${JSON.stringify(userId)}`);
   return db.transaction(async (tx) => {
@@ -327,13 +339,19 @@ export async function listWorkspacesFor(
       kind: 'business' | 'personal';
       role: string;
       baseCurrency: string;
+      teenSpace: 'teen' | 'parent' | null;
     }>(sql`
-      select t.id, t.name, t.kind, m.role, t.base_currency as "baseCurrency"
+      select t.id, t.name, t.kind, m.role, t.base_currency as "baseCurrency",
+             case when ts.teen_user_id = current_user_id() then 'teen'
+                  when ts.parent_user_id = current_user_id() then 'parent' end as "teenSpace"
       from memberships m
       join tenants t on t.id = m.tenant_id
+      left join teen_spaces ts on ts.tenant_id = t.id
       where m.user_id = current_user_id()
         and t.deleted_at is null
-      order by t.kind, t.name
+      -- A workspace the person can write in comes first: the default is never
+      -- one they can only view (a teen's space, for the parent).
+      order by (m.role = 'readonly'), t.kind, t.name
     `);
     return rows.rows;
   });
