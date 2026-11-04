@@ -26,6 +26,8 @@ import type {
   Connection,
   CreateCaptureRequest,
   CreateCaptureResponse,
+  FtrSendFinished,
+  FtrSendStarted,
   CreditBalance,
   CreditPack,
   CreditPurchase,
@@ -1096,9 +1098,27 @@ export class HttpApi implements SnapApi {
     return this.get<DeductionBundle>('/v1/deduction-bundle', await this.idForKind('personal'));
   }
 
-  async getDeductionYear(): Promise<string> {
-    const r = await this.get<{ financialYear: string }>('/v1/deduction-bundle/year', await this.idForKind('personal'));
-    return r.financialYear;
+  async getDeductionYear(): Promise<{ financialYear: string; directSend: boolean }> {
+    const r = await this.get<{ financialYear: string; directSend?: boolean }>('/v1/deduction-bundle/year', await this.idForKind('personal'));
+    return { financialYear: r.financialYear, directSend: r.directSend === true };
+  }
+
+  /* Neither is queued: the flow is single-use and lasts ten minutes. */
+  async startFtrSend(input: { financialYear: string; locale?: 'en-AU' | 'id-ID' }): Promise<{ url: string; flowId: string }> {
+    const r = await this.request<FtrSendStarted>('POST', '/v1/ftr-sends', {
+      body: { client: 'mobile', ...input },
+      workspaceId: await this.idForKind('personal'),
+      queue: false,
+    });
+    return { url: r.url, flowId: r.flowId };
+  }
+
+  async finishFtrSend(input: { flowId: string; state: string; code?: string; iss?: string; error?: string }): Promise<FtrSendFinished> {
+    return this.request<FtrSendFinished>('POST', '/v1/ftr-sends/finish', {
+      body: input,
+      workspaceId: await this.idForKind('personal'),
+      queue: false,
+    });
   }
 
   async prepareTaxPack(): Promise<TaxPackFile> {

@@ -109,6 +109,7 @@ import type {
   FamilyStatus,
   TeenInviteCreated,
   RedeemYourtalVoucherResult,
+  FtrSendFinished,
 } from '@snap/api-contract';
 
 /**
@@ -375,8 +376,16 @@ export interface SnapApi {
   prepareTaxPack(): Promise<TaxPackFile>;
   /** `GET /v1/deduction-bundle` — this year's deductions for Free Tax Returns, from the PERSONAL workspace. */
   getDeductionBundle(): Promise<DeductionBundle>;
-  /** `GET /v1/deduction-bundle/year` — the year the file covers, like `2025-26`. */
-  getDeductionYear(): Promise<string>;
+  /** `GET /v1/deduction-bundle/year` — the year the file covers, like `2025-26`, and whether it may go straight to Free Tax Returns. */
+  getDeductionYear(): Promise<{ financialYear: string; directSend: boolean }>;
+  /**
+   * `POST /v1/ftr-sends` (group 4.8.a): YourTal's authorization URL, with the `transfer`
+   * to confirm (it carries `state`, so never log it), and the flow id for `finish`.
+   * Throws `ApiError` with the server's `code`.
+   */
+  startFtrSend(input: { financialYear: string; locale?: 'en-AU' | 'id-ID' }): Promise<{ url: string; flowId: string }>;
+  /** `POST /v1/ftr-sends/finish`: with `error` (Cancel) the send is closed as cancelled. Throws `ApiError` with `code`. */
+  finishFtrSend(input: { flowId: string; state: string; code?: string; iss?: string; error?: string }): Promise<FtrSendFinished>;
 
   // ── Credits & points (D27) ──
   /** `GET /v1/credit-packs` — the catalogue, active packs only. */

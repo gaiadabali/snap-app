@@ -2,6 +2,7 @@ import type {
   CapturePageUpload,
   CreateCaptureRequest,
   CreateCaptureResponse,
+  FtrSendFinished,
   PatchCaptureDocumentRequest,
   UpdateDocumentRequest,
 } from '@snap/api-contract';
@@ -1895,8 +1896,17 @@ export class MockApi implements SnapApi {
     throw new Error('The demo has no real receipts to send. Sign in to your own account to try this.');
   }
 
-  async getDeductionYear(): Promise<string> {
-    return '2025-26';
+  async getDeductionYear(): Promise<{ financialYear: string; directSend: boolean }> {
+    // The demo has no YourTal to confirm at, so only the file is offered.
+    return { financialYear: '2025-26', directSend: false };
+  }
+
+  async startFtrSend(): Promise<{ url: string; flowId: string }> {
+    throw new Error('Sending to Free Tax Returns is not available in the demo.');
+  }
+
+  async finishFtrSend(): Promise<FtrSendFinished> {
+    throw new Error('Sending to Free Tax Returns is not available in the demo.');
   }
 
   async prepareTaxPack(): Promise<TaxPackFile> {

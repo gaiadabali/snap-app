@@ -6,11 +6,20 @@ import { createCategory, setBudget, setCategoryActive } from '@/lib/panels/categ
 import { getPermissions } from '@/lib/panels/permissions';
 import { loadWorkspace } from '@/lib/panels/workspace';
 import { CategoriesTable } from './CategoriesTable';
-import { SendToFtr } from './SendToFtr';
+import { SendToFtr, type FtrSendResult } from './SendToFtr';
 
 export const metadata = { title: 'Categories & budgets' };
 
-export default async function CategoriesPage() {
+/** The callback's `?ftr=` (a code, never text) back into what to show. */
+function ftrResult(q: { ftr?: string; fy?: string; code?: string }): FtrSendResult | undefined {
+  if (q.ftr === 'sent' && q.fy && /^\d{4}-\d{2}$/.test(q.fy)) return { status: 'sent', year: q.fy };
+  if (q.ftr === 'cancelled') return { status: 'cancelled' };
+  if (q.ftr === 'failed') return { status: 'failed', code: q.code ?? null };
+  return undefined;
+}
+
+export default async function CategoriesPage({ searchParams }: { searchParams: Promise<{ ftr?: string; fy?: string; code?: string }> }) {
+  const query = await searchParams;
   const { workspace } = await loadWorkspace('personal');
   if (!workspace) return <Empty title="No personal workspace yet" />;
 
@@ -21,9 +30,10 @@ export default async function CategoriesPage() {
   ]);
 
   // Named from the server, which decides the year the export covers.
-  const ftrYear = await api<{ financialYear: string }>('/v1/deduction-bundle/year', { workspaceId: workspace.id })
-    .then((r) => r.financialYear)
+  const ftr = await api<{ financialYear: string; directSend?: boolean }>('/v1/deduction-bundle/year', { workspaceId: workspace.id })
     .catch(() => null);
+  const ftrBase = process.env.NEXT_PUBLIC_FREE_TAX_RETURNS_URL;
+  const reviewUrl = ftrBase ? new URL('/account/import', ftrBase).toString() : undefined;
 
   return (
     <div className="flex flex-col gap-6">
@@ -40,7 +50,14 @@ export default async function CategoriesPage() {
         onCreate={createCategory.bind(null, workspace.id, path)}
       />
 
-      {ftrYear ? <SendToFtr financialYear={ftrYear} /> : null}
+      {ftr ? (
+        <SendToFtr
+          financialYear={ftr.financialYear}
+          directSend={ftr.directSend === true}
+          result={ftr.directSend ? ftrResult(query) : undefined}
+          reviewUrl={reviewUrl}
+        />
+      ) : null}
 
       <HouseAd placement="individual-categories" />
     </div>

@@ -1,13 +1,15 @@
 import { publicUrl } from '@/lib/http/public-url';
 import { NextRequest, NextResponse } from 'next/server';
-import type { AuthUser } from '@snap/api-contract';
+import type { AuthUser, FtrSendFinished } from '@snap/api-contract';
 
-import { SESSION_COOKIE, api } from '@/lib/api/server';
+import { ApiError, SESSION_COOKIE, api } from '@/lib/api/server';
 import { type AuthErrorCode, apiErrorCode } from '@/lib/auth/auth-errors';
 import { AUTH_COOKIE_OPTIONS } from '@/lib/auth/session';
 import { destinationAfterYourtalSignIn } from '@/lib/auth/yourtal-destination';
 import { yourtalErrorCode } from '@/lib/auth/yourtal-errors';
-import { YOURTAL_FLOW_COOKIE, YOURTAL_FLOW_COOKIE_PATH } from '@/lib/auth/yourtal-flow';
+import { safeReturnPath } from '@/lib/auth/safe-redirect';
+import { FTR_SEND_COOKIE, YOURTAL_FLOW_COOKIE, YOURTAL_FLOW_COOKIE_PATH } from '@/lib/auth/yourtal-flow';
+import { loadWorkspace } from '@/lib/panels/workspace';
 import { YOURTAL_MOVE_MISMATCH, YOURTAL_MOVE_PARAM } from '@/lib/yourtal-move';
 
 type WorkspaceSummary = { id: string; name: string; kind: string; role: string };
@@ -35,6 +37,9 @@ type FinishResult = {
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const params = request.nextUrl.searchParams;
   const flowId = request.cookies.get(YOURTAL_FLOW_COOKIE)?.value;
+
+  // A send to Free Tax Returns (group 4.8.a) comes back here too; its marker cookie says so.
+  if (flowId && request.cookies.get(FTR_SEND_COOKIE)?.value === '1') return finishSend(request, flowId);
 
   const providerError = params.get('error');
   if (providerError) {
@@ -90,4 +95,45 @@ function failure(code: AuthErrorCode): NextResponse {
 /** The cookie was set with a narrowed path, so it can only be deleted with the same path. */
 function clearFlowCookie(response: NextResponse): void {
   response.cookies.delete({ name: YOURTAL_FLOW_COOKIE, path: YOURTAL_FLOW_COOKIE_PATH });
+  response.cookies.delete({ name: FTR_SEND_COOKIE, path: YOURTAL_FLOW_COOKIE_PATH });
+}
+
+/**
+ * Finishes a send: the signed-in person's own session and personal workspace,
+ * the flow id from the cookie, and what YourTal returned (a code, or `error`
+ * when they pressed Cancel). Answers with a redirect back to the categories
+ * page whose `?ftr=` says what happened (a code, never text).
+ */
+async function finishSend(request: NextRequest, flowId: string): Promise<NextResponse> {
+  const params = request.nextUrl.searchParams;
+  const back = (query: Record<string, string>, returnTo?: string | null): NextResponse => {
+    const url = publicUrl(safeReturnPath(returnTo, '/app/categories'));
+    for (const [k, v] of Object.entries(query)) url.searchParams.set(k, v);
+    const response = NextResponse.redirect(url);
+    clearFlowCookie(response);
+    return response;
+  };
+
+  const state = params.get('state');
+  const error = params.get('error');
+  const code = params.get('code');
+  const iss = params.get('iss');
+  if (!state || (!error && (!code || !iss))) return back({ ftr: 'failed', code: 'invalid_flow' });
+
+  // Outside the try: no session redirects to sign-in, which throws.
+  const { workspace } = await loadWorkspace('personal');
+  if (!workspace) return back({ ftr: 'failed', code: 'not_personal' });
+  try {
+    const result = await api<FtrSendFinished>('/v1/ftr-sends/finish', {
+      method: 'POST',
+      body: { flowId, state, ...(error ? { error } : { code, iss }) },
+      workspaceId: workspace.id,
+    });
+    return result.status === 'sent'
+      ? back({ ftr: 'sent', fy: result.financialYear }, result.returnTo)
+      : back({ ftr: 'cancelled' }, result.returnTo);
+  } catch (e) {
+    const body = e instanceof ApiError ? (e.body as { error?: unknown } | undefined) : undefined;
+    return back({ ftr: 'failed', code: typeof body?.error === 'string' ? body.error : 'failed' });
+  }
 }

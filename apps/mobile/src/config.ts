@@ -15,6 +15,9 @@ export const YOURTAL_WEB_URL = (
   process.env.EXPO_PUBLIC_YOURTAL_WEB_URL || 'https://yourtal.gaiada.com'
 ).replace(/\/+$/, '');
 
+/** Where "Review them" goes after a send to Free Tax Returns: its import page. Inlined at build time. */
+export const FTR_REVIEW_URL = `${(process.env.EXPO_PUBLIC_FREE_TAX_RETURNS_URL || 'https://freetaxreturns.com.au').replace(/\/+$/, '')}/account/import`;
+
 /**
  * Whether business-workspace surfaces are shown at all.
  *
