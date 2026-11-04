@@ -12,7 +12,15 @@ describe('YourtalMovePromptView', () => {
   });
 
   it('points at the existing /auth/yourtal flow and offers Not now', () => {
-    expect(markup).toContain('href="/auth/yourtal?returnTo=/app"');
+    expect(markup).toContain('href="/auth/yourtal?returnTo=/app&amp;move=1"');
     expect(markup).toContain('Not now');
+  });
+
+  it('says nothing about a mismatch until one happened, then names the account’s own email', () => {
+    expect(markup).not.toContain('different email');
+    const refused = renderToStaticMarkup(<YourtalMovePromptView onDismiss={() => {}} mismatchEmail="me@example.com" />);
+    expect(refused).toContain(
+      'Your YourTal account uses a different email. Use the YourTal account with me@example.com, or change your SnapApp email first.',
+    );
   });
 });

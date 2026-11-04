@@ -82,6 +82,8 @@ export const yourtalSignInFlows = pgTable('yourtal_sign_in_flows', {
   consumedAt: timestamp('consumed_at', { withTimezone: true }),
   /** The teen invite this sign-in started with (0045). */
   teenInviteId: uuid('teen_invite_id'),
+  /** The signed-in account that started this flow from the move prompt (0048). */
+  moveUserId: uuid('move_user_id'),
 });
 
 /**

@@ -1159,6 +1159,8 @@ export class HttpApi implements SnapApi {
     signUp: boolean;
     freshSignIn?: boolean;
     locale?: 'en-AU' | 'id-ID';
+    /** "Keep your account" (3.6.e): the server ties the flow to this signed-in account. */
+    moveCurrentAccount?: boolean;
   }): Promise<{ url: string; flowId: string }> {
     return this.request<{ url: string; flowId: string; expiresAt: string }>(
       'POST',
@@ -1169,8 +1171,9 @@ export class HttpApi implements SnapApi {
           signUp: input.signUp,
           ...(input.freshSignIn ? { freshSignIn: true } : {}),
           ...(input.locale ? { locale: input.locale } : {}),
+          ...(input.moveCurrentAccount ? { moveCurrentAccount: true } : {}),
         },
-        auth: false,
+        auth: input.moveCurrentAccount === true,
         workspaceId: null,
         queue: false,
       },

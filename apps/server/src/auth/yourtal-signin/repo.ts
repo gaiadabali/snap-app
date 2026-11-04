@@ -59,6 +59,22 @@ export async function takeFlow(flowId: string): Promise<StoredFlow | null> {
   };
 }
 
+/** Remember which signed-in account started this flow from the move prompt (0048). */
+export async function setFlowMoveUser(flowId: string, userId: string): Promise<boolean> {
+  const { rows } = await getDb().execute<{ ok: boolean }>(sql`
+    select identity_yourtal_flow_set_move(${flowId}::uuid, ${userId}::uuid) as ok
+  `);
+  return rows[0]?.ok === true;
+}
+
+/** True when a move flow's YourTal identity would NOT resolve to the account that asked (0048). Writes nothing. */
+export async function moveMismatch(flowId: string, sub: string, email: string): Promise<boolean> {
+  const { rows } = await getDb().execute<{ mismatch: boolean }>(sql`
+    select identity_yourtal_move_mismatch(${flowId}::uuid, ${sub}, ${email}) as mismatch
+  `);
+  return rows[0]?.mismatch === true;
+}
+
 export type LinkOutcome =
   | 'signed_in'
   | 'linked'

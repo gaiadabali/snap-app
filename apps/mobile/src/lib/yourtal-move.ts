@@ -15,6 +15,10 @@ export const MOVE_COPY = {
   notNow: 'Not now',
 } as const;
 
+/** The person's own address, shown only to them in their own Settings. */
+export const moveMismatchMessage = (email: string): string =>
+  `Your YourTal account uses a different email. Use the YourTal account with ${email}, or change your SnapApp email first.`;
+
 export function showYourtalMove(input: {
   yourtalLinked: boolean | undefined;
   teenSpace: 'teen' | 'parent' | null | undefined;

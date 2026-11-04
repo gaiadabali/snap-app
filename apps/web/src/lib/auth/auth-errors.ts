@@ -30,6 +30,10 @@ export const AUTH_ERRORS = {
   not_configured: { message: "Sign-in with YourTal isn't available right now." },
   yourtal_failed: { message: "We couldn't sign you in with YourTal. Please try again." },
   use_yourtal: { message: 'This account signs in with YourTal. Use the Sign in with YourTal button.' },
+  yourtal_email_mismatch: {
+    message:
+      'Your YourTal account uses a different email. Use the YourTal account with your SnapApp email, or change your SnapApp email first.',
+  },
   teen_invite_required: { message: TEEN_INVITE },
   teen_invite_expired: { message: 'This invite has expired or has already been used. Ask your parent for a new one.' },
   teen_access_ended: {

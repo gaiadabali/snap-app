@@ -107,6 +107,17 @@ describe('Sign in with YourTal against the API client', () => {
     expect(calls[1]!.body).toEqual({ client: 'mobile', signUp: false });
   });
 
+  it('start sends moveCurrentAccount only for the move prompt (never an account id)', async () => {
+    serve({
+      '/v1/auth/yourtal/start': () => json(200, { url: 'https://id.test/a?state=s', flowId: 'f1', expiresAt: 'x' }),
+    });
+    const http = new HttpApi(BASE);
+    await http.startYourtalSignIn({ signUp: false, moveCurrentAccount: true });
+    await http.startYourtalSignIn({ signUp: false });
+    expect(calls[0]!.body).toEqual({ client: 'mobile', signUp: false, moveCurrentAccount: true });
+    expect(calls[1]!.body).toEqual({ client: 'mobile', signUp: false });
+  });
+
   it('start, browser, finish: stores the SnapApp session in SecureStore and picks the first workspace', async () => {
     serve({
       '/v1/auth/yourtal/start': () => json(200, { url: 'https://id.test/a?state=s', flowId: 'f1', expiresAt: 'x' }),

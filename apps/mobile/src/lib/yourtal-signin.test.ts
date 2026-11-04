@@ -205,6 +205,16 @@ describe('runYourtalSignIn', () => {
     expect(plain.start.mock.calls[0]![0]).not.toHaveProperty('freshSignIn');
   });
 
+  it('asks to keep the signed-in account only when told to, and words the mismatch refusal', async () => {
+    const d = deps();
+    await runYourtalSignIn(d, { moveCurrentAccount: true });
+    expect(d.start).toHaveBeenCalledWith({ signUp: false, moveCurrentAccount: true, locale: undefined });
+    const plain = deps();
+    await runYourtalSignIn(plain);
+    expect(plain.start.mock.calls[0]![0]).not.toHaveProperty('moveCurrentAccount');
+    expect(signInErrorMessage('yourtal_email_mismatch')).toContain('different email');
+  });
+
   it('recognises the refusal that offers "Sign in again"', () => {
     expect(isStaffReauth('staff_reauth_required')).toBe(true);
     expect(isStaffReauth('staff_strong_auth_required')).toBe(false);

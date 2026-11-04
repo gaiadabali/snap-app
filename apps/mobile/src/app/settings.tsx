@@ -121,6 +121,7 @@ export default function SettingsScreen() {
                 <YourtalMovePrompt
                   yourtalLinked={session.yourtalLinked}
                   teenSpace={active.teenSpace}
+                  email={session.user.email}
                   onLinked={refresh}
                 />
               </View>
