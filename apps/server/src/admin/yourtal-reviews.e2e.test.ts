@@ -120,4 +120,14 @@ describeIfDb('admin: Sign in with YourTal review list — real HTTP', () => {
     expect(((await call('GET', '', STAFF)).json() as Array<{ id: string }>).map((r) => r.id)).not.toContain(caseId);
     expect(((await call('GET', '?all=1', STAFF)).json() as Array<{ id: string }>).map((r) => r.id)).toContain(caseId);
   });
+
+  it('GET /v1/auth/session tells a legacy account it is not linked to YourTal (3.6.e)', async () => {
+    const res = await app.inject({
+      method: 'GET',
+      url: '/v1/auth/session',
+      headers: { authorization: `Bearer ${issueSession(PLAIN)}` },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toMatchObject({ yourtalLinked: false });
+  });
 });

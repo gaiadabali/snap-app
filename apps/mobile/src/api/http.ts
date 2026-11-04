@@ -433,13 +433,13 @@ export class HttpApi implements SnapApi {
   async getSession(): Promise<Session | null> {
     if (!authToken()) return null;
     try {
-      const body = await this.request<{ user: AuthUser; workspaces: WorkspaceSummary[] }>(
+      const body = await this.request<{ user: AuthUser; workspaces: WorkspaceSummary[]; yourtalLinked?: boolean }>(
         'GET',
         '/v1/auth/session',
         { workspaceId: null },
       );
       this.workspaces = body.workspaces;
-      return { user: body.user, workspaceIds: body.workspaces.map((w) => w.id) };
+      return { user: body.user, workspaceIds: body.workspaces.map((w) => w.id), yourtalLinked: body.yourtalLinked };
     } catch (error) {
       // An expired or revoked token is "not signed in", not an error to show.
       // Anything else is a real failure and must not be swallowed into a

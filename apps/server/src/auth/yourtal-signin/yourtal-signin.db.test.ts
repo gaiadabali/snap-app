@@ -789,6 +789,7 @@ describeIfDb('Sign in with YourTal — real database, real provider', () => {
         headers: { authorization: `Bearer ${body.token}` },
       });
       expect(session.statusCode).toBe(200);
+      expect(session.json()).toMatchObject({ yourtalLinked: true });
 
       // A refusal has the { error, message } shape the website shows.
       const teen = person('http-teen', { ageBand: 'teen' });

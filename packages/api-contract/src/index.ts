@@ -1153,6 +1153,12 @@ export interface Session {
    * the one state that requires onboarding before the app is usable.
    */
   workspaceIds: string[];
+  /**
+   * Whether the account is linked to YourTal. `false` makes the clients offer
+   * "Sign in with YourTal to keep your account" (3.6.e); absent (an older
+   * server) or true shows nothing.
+   */
+  yourtalLinked?: boolean;
 }
 
 /** What a new account has to answer before it can file anything. */

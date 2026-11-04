@@ -24,7 +24,12 @@ import { getPanelImpersonation, isImpersonationEndedError, type ImpersonationBan
  * one round trip to `/v1/auth/session` per request instead of one each.
  */
 export const requireSession = cache(
-  async (): Promise<{ user: AuthUser; workspaces: WorkspaceSummary[]; impersonation: ImpersonationBannerInfo | null }> => {
+  async (): Promise<{
+    user: AuthUser;
+    workspaces: WorkspaceSummary[];
+    impersonation: ImpersonationBannerInfo | null;
+    yourtalLinked: boolean | undefined;
+  }> => {
     const impersonation = await getPanelImpersonation();
     // Under impersonation there is no ordinary bearer for the SUBJECT — the
     // impersonation token is the entire credential — so the usual "no
@@ -38,6 +43,7 @@ export const requireSession = cache(
       const session = await api<{
         user: AuthUser;
         workspaces: Array<{ id: string; name: string; kind: 'business' | 'personal'; role: string; baseCurrency?: string }>;
+        yourtalLinked?: boolean;
       }>('/v1/auth/session');
       // The session endpoint answers with the same fields as `/v1/workspaces`
       // (a member count is not one of them), which is enough for every place
@@ -51,7 +57,7 @@ export const requireSession = cache(
         abn: null,
         baseCurrency: w.baseCurrency ?? 'AUD',
       }));
-      return { user: session.user, workspaces, impersonation };
+      return { user: session.user, workspaces, impersonation, yourtalLinked: session.yourtalLinked };
     } catch (error) {
       if (isImpersonationEndedError(error)) {
         redirect('/app/impersonation-ended');
