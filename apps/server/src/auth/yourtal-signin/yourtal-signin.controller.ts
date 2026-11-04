@@ -2,7 +2,7 @@ import { timingSafeEqual } from 'node:crypto';
 
 import { Controller, Get, HttpCode, Logger, Post, Req } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
-import { IsBoolean, IsIn, IsOptional, IsString, IsUUID, Length, MaxLength } from 'class-validator';
+import { IsBoolean, IsIn, IsOptional, IsString, IsUUID, Length, Matches, MaxLength } from 'class-validator';
 
 import { ValidBody } from '../../common/valid-body.decorator.js';
 import { clientIp, type IpAwareRequest } from '../client-ip.js';
@@ -12,6 +12,8 @@ import { identityFromClaims, refusal, refusalCode, sameOriginPath } from './clai
 import { isClientConfigured, redeemCode, startAuthorization } from './oidc.js';
 import { openFlow, signInWithYourTal, takeFlow } from './repo.js';
 import { yourtalSignInSettings, type YourTalClientKind } from './settings.js';
+import { readTeenInvite, teenInvitesConfigured } from '../../teens/invite-api.js';
+import { attachInviteToFlow, inviteForSignIn, joinTeenSpace } from '../../teens/teens.repo.js';
 
 export class YourTalStartDto {
   @IsIn(['web', 'mobile'], { message: 'client must be "web" or "mobile".' })
@@ -37,6 +39,12 @@ export class YourTalStartDto {
   @IsOptional()
   @IsIn(['en-AU', 'id-ID'])
   locale?: 'en-AU' | 'id-ID';
+
+  /** The code from a parent's join link (group 3.10): sent to YourTal as `teen_invite`. */
+  @IsOptional()
+  @IsString()
+  @Matches(/^[A-Za-z0-9_-]{16,128}$/, { message: 'teenInvite is not an invite code.' })
+  teenInvite?: string;
 }
 
 export class YourTalFinishDto {
@@ -117,7 +125,8 @@ export class YourTalSignInController {
     description:
       'Returns YourTal’s authorization URL (state, nonce, PKCE S256, scopes openid email profile account, ' +
       'ui_locales, prompt=create when signUp, prompt=login when freshSignIn) and a flow id that finish needs within 10 minutes. ' +
-      '501 not_configured when this client is off.',
+      '501 not_configured when this client is off. With teenInvite (a parent’s join link), 403 teen_invite_expired ' +
+      'when the code is unknown here or past its expiry.',
   })
   async start(
     @ValidBody(YourTalStartDto) body: YourTalStartDto,
@@ -136,6 +145,7 @@ export class YourTalSignInController {
       signUp: body.signUp === true,
       locale: body.locale ?? 'en-AU',
       freshSignIn: body.freshSignIn === true,
+      ...(body.teenInvite ? { teenInvite: body.teenInvite } : {}),
     });
     const flow = await openFlow({
       client: body.client,
@@ -145,6 +155,11 @@ export class YourTalSignInController {
       returnTo,
       signUp: body.signUp === true,
     });
+    // A code this server never issued (or past its expiry) could never be
+    // matched to its invite at finish: say so now, before YourTal.
+    if (body.teenInvite && !(await attachInviteToFlow(body.teenInvite, flow.flowId))) {
+      throw refusal('teen_invite_expired');
+    }
     return { url: started.url, flowId: flow.flowId, expiresAt: flow.expiresAt.toISOString() };
   }
 
@@ -156,7 +171,7 @@ export class YourTalSignInController {
       'Takes the flow (once), checks state and iss, redeems the code, verifies the ID token, re-checks ' +
       'region and age band, then finds, links or creates the account and answers like every sign-in. ' +
       'Refusals are { error, message } with error one of invalid_flow, yourtal_failed, yourtal_unavailable, ' +
-      'region_not_supported, teen_invite_required, email_unverified, staff_strong_auth_required, ' +
+      'region_not_supported, teen_invite_required, teen_account_in_use, email_unverified, staff_strong_auth_required, ' +
         'staff_reauth_required, ' +
       'account_review, try_again, rate_limited, not_configured.',
   })
@@ -185,6 +200,18 @@ export class YourTalSignInController {
       const claims = await redeemCode(flow.client, body, flow);
       const identity = identityFromClaims(claims);
 
+      // A teen (docs/26 §3.3 step 6, and §1.5's check 4 repeated here): the
+      // invite must be ACCEPTED at YourTal by exactly this `sub`. Checked
+      // before any account is made, at every teen sign-in.
+      let teenInviteId: string | null = null;
+      if (identity.ageBand === 'teen') {
+        teenInviteId = teenInvitesConfigured() ? await inviteForSignIn(body.flowId, identity.sub) : null;
+        if (!teenInviteId) throw refusal('teen_invite_required');
+        const invite = await readTeenInvite(teenInviteId);
+        if (!invite) throw refusal('yourtal_unavailable');
+        if (invite.status !== 'accepted' || invite.teenSub !== identity.sub) throw refusal('teen_invite_required');
+      }
+
       const result = await signInWithYourTal({
         sub: identity.sub,
         email: identity.email,
@@ -198,6 +225,7 @@ export class YourTalSignInController {
         case 'signed_in':
         case 'linked':
         case 'created': {
+          if (teenInviteId) await this.teenSpaceFor(result.userId!, teenInviteId, identity);
           const session = await signedIn(result.userId!, 'yourtal');
           this.logger.log(
             `sign-in ok: ${result.outcome} client=${flow.client} user=${result.userId}` +
@@ -229,6 +257,22 @@ export class YourTalSignInController {
       const code = refusalCode(error);
       if (code && code !== 'account_review' && code !== 'staff_strong_auth_required' && code !== 'staff_reauth_required') {
         this.logger.log(`sign-in refused: ${code} client=${client}`);
+      }
+      throw error;
+    }
+  }
+
+  /** The teen's own space, made at their first sign-in; the parent gets read-only access (0045). */
+  private async teenSpaceFor(userId: string, inviteId: string, identity: { name?: string; region: 'AU' | 'ID' }) {
+    try {
+      const name = identity.name ? `${identity.name}’s space` : 'My space';
+      await joinTeenSpace(userId, { inviteId, name, region: identity.region });
+    } catch (error) {
+      const code = (error as { cause?: { code?: string }; code?: string })?.cause?.code ?? (error as { code?: string })?.code;
+      if (code === 'TS002') throw refusal('teen_invite_required');
+      if (code === 'TS003') {
+        this.logger.warn(`teen sign-in refused: account already has workspaces user=${userId}`);
+        throw refusal('teen_account_in_use');
       }
       throw error;
     }

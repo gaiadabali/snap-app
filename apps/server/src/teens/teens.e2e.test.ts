@@ -1,0 +1,369 @@
+import { randomBytes, randomUUID } from 'node:crypto';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
+import { NestFactory } from '@nestjs/core';
+import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
+import { createDb, createPool } from '@snap/db';
+import { Client, type Pool } from 'pg';
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+
+import { startFakeYourTalOidc, type FakePerson, type FakeYourTalOidc } from '../test-support/fake-yourtal-oidc.js';
+
+/**
+ * Teens join SnapApp by a parent's invite (group 3.10.a, b, c, e), end to end
+ * against a real Postgres as the application roles and a real
+ * `oidc-provider` standing in for YourTal, which also serves the invite API.
+ *
+ * Sign-ins go through the controller (each with its own caller address, so
+ * the per-IP limits never couple tests); everything a signed-in person does
+ * goes over HTTP through the real application and its guards.
+ */
+const url = process.env.DATABASE_URL;
+const describeIfDb = url ? describe : describe.skip;
+
+type SignInController = InstanceType<
+  typeof import('../auth/yourtal-signin/yourtal-signin.controller.js').YourTalSignInController
+>;
+
+describeIfDb('teen spaces — real database, real provider', () => {
+  let yt: FakeYourTalOidc;
+  let signInController: SignInController;
+  let admin: Client;
+  let app: NestFastifyApplication;
+  let keyDir: string;
+  let workerPool: Pool;
+  const subs: string[] = [];
+
+  const caller = () => ({ ip: `10.${Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 250)}` });
+
+  const person = (tag: string, extra: Partial<FakePerson> = {}): FakePerson => {
+    const p: FakePerson = {
+      accountId: randomUUID(),
+      email: `teen-${tag}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.test`,
+      name: `Person ${tag}`,
+      region: 'AU',
+      ageBand: 'adult',
+      ...extra,
+    };
+    subs.push(yt.subFor(p.accountId));
+    return p;
+  };
+
+  async function authorize(who: FakePerson, teenInvite?: string) {
+    const started = await signInController.start({ client: 'web', ...(teenInvite ? { teenInvite } : {}) }, caller());
+    yt.nextSignIn = { person: who };
+    const redirect = await yt.authorize(started.url);
+    return { flowId: started.flowId, redirect, url: started.url };
+  }
+
+  async function signIn(who: FakePerson, teenInvite?: string) {
+    const { flowId, redirect } = await authorize(who, teenInvite);
+    const code = redirect.searchParams.get('code');
+    if (!code) throw new Error(`refused at YourTal: ${redirect.search}`);
+    return signInController.finish(
+      { flowId, code, state: redirect.searchParams.get('state')!, iss: redirect.searchParams.get('iss')! },
+      caller(),
+    );
+  }
+
+  const http = (method: 'GET' | 'POST', path: string, token: string, workspaceId?: string, payload?: object) =>
+    app.getHttpAdapter().getInstance().inject({
+      method,
+      url: path,
+      headers: { authorization: `Bearer ${token}`, ...(workspaceId ? { 'x-workspace-id': workspaceId } : {}) },
+      ...(payload ? { payload } : {}),
+    });
+
+  const userIdOf = async (who: FakePerson) =>
+    (await admin.query('SELECT id FROM users WHERE subject = $1', [`yourtal|${yt.subFor(who.accountId)}`])).rows[0]?.id as
+      | string
+      | undefined;
+
+  /** The parent: signed in with YourTal, owning a personal workspace with the 10-scan signup bonus. */
+  let parent: FakePerson;
+  let parentToken: string;
+  let household: string;
+
+  async function inviteCode(): Promise<{ code: string; inviteId: string }> {
+    const made = await http('POST', '/v1/family/invites', parentToken, household);
+    expect(made.statusCode).toBe(201);
+    const body = made.json() as { inviteId: string; joinUrl: string };
+    const code = new URL(body.joinUrl).searchParams.get('teenInvite')!;
+    return { code, inviteId: body.inviteId };
+  }
+
+  beforeAll(async () => {
+    yt = await startFakeYourTalOidc();
+    keyDir = mkdtempSync(join(tmpdir(), 'snap-yt-teen-'));
+    const keyFile = join(keyDir, 'yourtal-oidc-web.jwk');
+    writeFileSync(keyFile, JSON.stringify(yt.webPrivateJwk), { mode: 0o600 });
+
+    process.env.YOURTAL_OIDC_ISSUER = yt.issuer;
+    process.env.YOURTAL_OIDC_WEB_CLIENT_ID = yt.webClientId;
+    process.env.YOURTAL_OIDC_MOBILE_CLIENT_ID = yt.mobileClientId;
+    process.env.YOURTAL_OIDC_WEB_REDIRECT_URI = yt.webRedirectUri;
+    process.env.YOURTAL_OIDC_KEY_FILE = keyFile;
+    process.env.YOURTAL_OIDC_SERVER_CLIENT_ID = yt.serverClientId;
+    process.env.YOURTAL_API_URL = yt.issuer.replace(/\/oidc$/, '');
+    process.env.WEB_PUBLIC_URL = 'https://snap-apps.test';
+
+    admin = new Client({ connectionString: process.env.ADMIN_DATABASE_URL ?? url });
+    await admin.connect();
+    signInController = new (await import('../auth/yourtal-signin/yourtal-signin.controller.js')).YourTalSignInController();
+
+    const { AppModule } = await import('../app.module.js');
+    app = await NestFactory.create<NestFastifyApplication>(AppModule, new FastifyAdapter(), { logger: false });
+    // As main.ts does: the 403s for a teen space are the filter's.
+    app.useGlobalFilters(new (await import('../common/errors.filter.js')).ErrorsFilter());
+    await app.init();
+    await app.getHttpAdapter().getInstance().ready();
+
+    const workerUrl =
+      process.env.WORKER_DATABASE_URL ?? (process.env.DATABASE_URL ?? '').replace(/:\/\/[^:]+:/, '://snap_worker:');
+    workerPool = createPool(workerUrl);
+
+    parent = person('parent', { name: 'Pat' });
+    parentToken = (await signIn(parent)).token;
+    const created = await http('POST', '/v1/workspaces', parentToken, undefined, { name: 'Pat household', kind: 'personal' });
+    expect(created.statusCode).toBe(201);
+    household = (created.json() as { id: string }).id;
+  });
+
+  afterAll(async () => {
+    const subjects = subs.map((s) => `yourtal|${s}`);
+    if (admin) {
+      const ids = (await admin.query('SELECT id FROM users WHERE subject = ANY($1)', [subjects])).rows.map((r) => r.id);
+      const tenants = (
+        await admin.query('SELECT DISTINCT tenant_id FROM memberships WHERE user_id = ANY($1::uuid[])', [ids])
+      ).rows.map((r) => r.tenant_id);
+      await admin.query('DELETE FROM teen_spaces WHERE tenant_id = ANY($1::uuid[])', [tenants]);
+      for (const table of ['credit_spends', 'jobs', 'captures']) {
+        await admin.query(`DELETE FROM ${table} WHERE tenant_id = ANY($1::uuid[])`, [tenants]);
+      }
+      await admin.query('DELETE FROM tenants WHERE id = ANY($1::uuid[])', [tenants]);
+      await admin.query('DELETE FROM users WHERE id = ANY($1::uuid[])', [ids]);
+      await admin.query('DELETE FROM yourtal_sign_in_reviews WHERE yourtal_sub = ANY($1)', [subs]);
+      await admin.end();
+    }
+    await app?.close();
+    await workerPool?.end();
+    await yt?.close();
+    if (keyDir) rmSync(keyDir, { recursive: true, force: true });
+  });
+
+  beforeEach(() => {
+    yt.enforceTeenInvites = true;
+    yt.teenInviteLimit = 10;
+  });
+
+  it('makes an invite for the parent at YourTal and answers a join link with its code', async () => {
+    const { code, inviteId } = await inviteCode();
+    const atYourTal = yt.teenInvites.get(inviteId)!;
+    expect(atYourTal.parentSub).toBe(yt.subFor(parent.accountId));
+    expect(atYourTal.code).toBe(code);
+
+    // The code is kept only as a hash; the parent sees the invite as open.
+    const { rows } = await admin.query('SELECT code_sha256 FROM teen_invites WHERE id = $1', [inviteId]);
+    expect(rows[0].code_sha256).toHaveLength(32);
+    const family = (await http('GET', '/v1/family', parentToken)).json();
+    expect(family.invitesAvailable).toBe(true);
+    expect(family.pendingInvites.map((i: { inviteId: string }) => i.inviteId)).toContain(inviteId);
+
+    // The sign-in carries it to YourTal.
+    const started = await signInController.start({ client: 'web', teenInvite: code }, caller());
+    expect(new URL(started.url).searchParams.get('teen_invite')).toBe(code);
+  });
+
+  it('refuses a code it never issued before going to YourTal', async () => {
+    await expect(
+      signInController.start({ client: 'web', teenInvite: randomBytes(16).toString('base64url') }, caller()),
+    ).rejects.toMatchObject({ response: { error: 'teen_invite_expired' } });
+  });
+
+  it('refuses a teen whose guardian is someone else, and makes nothing', async () => {
+    const stranger = person('stranger-teen', { ageBand: 'teen', guardianAccountId: randomUUID() });
+    const { code } = await inviteCode();
+    const { redirect } = await authorize(stranger, code);
+    expect(redirect.searchParams.get('error')).toBe('access_denied');
+    expect(redirect.searchParams.get('error_description')).toBe('teen_invite_required');
+    expect(await userIdOf(stranger)).toBeUndefined();
+  });
+
+  it('refuses a teen YourTal let through when the invite is not accepted by that teen (the app’s own check)', async () => {
+    yt.enforceTeenInvites = false;
+    const teen = person('unaccepted-teen', { ageBand: 'teen', guardianAccountId: parent.accountId });
+    const { code } = await inviteCode();
+    await expect(signIn(teen, code)).rejects.toMatchObject({ response: { error: 'teen_invite_required' } });
+    // Without any invite at all, too.
+    await expect(signIn(person('no-invite-teen', { ageBand: 'teen' }))).rejects.toMatchObject({
+      response: { error: 'teen_invite_required' },
+    });
+    expect(await userIdOf(teen)).toBeUndefined();
+  });
+
+  describe('the guardian’s teen', () => {
+    let teen: FakePerson;
+    let teenId: string;
+    let teenToken: string;
+    let space: string;
+
+    beforeAll(async () => {
+      yt.enforceTeenInvites = true;
+      teen = person('teen', { ageBand: 'teen', guardianAccountId: parent.accountId, name: 'Tia' });
+    });
+
+    it('joins: a space the teen owns, the parent read-only, paid from the parent’s workspace', async () => {
+      const { code, inviteId } = await inviteCode();
+      const joined = await signIn(teen, code);
+      expect(joined.outcome).toBe('created');
+      teenToken = joined.token;
+      teenId = joined.user.userId;
+      expect(joined.workspaces).toHaveLength(1);
+      space = joined.workspaces[0]!.id;
+      expect(joined.workspaces[0]).toMatchObject({ name: 'Tia’s space', kind: 'personal', role: 'owner' });
+
+      const members = await admin.query('SELECT user_id, role FROM memberships WHERE tenant_id = $1 ORDER BY role', [space]);
+      expect(members.rows).toEqual([
+        { user_id: teenId, role: 'owner' },
+        { user_id: (await userIdOf(parent))!, role: 'readonly' },
+      ]);
+      const row = (await admin.query('SELECT funding_tenant_id, invite_id FROM teen_spaces WHERE tenant_id = $1', [space])).rows[0];
+      expect(row).toEqual({ funding_tenant_id: household, invite_id: inviteId });
+      // No signup scans of its own.
+      expect((await admin.query('SELECT count(*)::int AS n FROM usage_grants WHERE tenant_id = $1', [space])).rows[0].n).toBe(0);
+    });
+
+    it('tells the teen who can see the space, and lists the teen for the parent', async () => {
+      const asTeen = (await http('GET', '/v1/family', teenToken)).json();
+      expect(asTeen.asTeen).toEqual({ workspaceId: space, parentName: 'Pat' });
+      const asParent = (await http('GET', '/v1/family', parentToken)).json();
+      expect(asParent.teens).toEqual([
+        expect.objectContaining({ workspaceId: space, teenName: 'Tia', accessEndedAt: null }),
+      ]);
+      expect(asParent.asTeen).toBeNull();
+    });
+
+    it('signs the teen in again with no code', async () => {
+      const again = await signIn(teen);
+      expect(again.outcome).toBe('signed_in');
+      expect(again.user.userId).toBe(teenId);
+      teenToken = again.token;
+    });
+
+    it('lets the parent view the space but change nothing in it', async () => {
+      const list = (await http('GET', '/v1/workspaces', parentToken)).json() as Array<{ id: string; role: string }>;
+      expect(list.find((w) => w.id === space)?.role).toBe('readonly');
+      expect((await http('GET', '/v1/goals', parentToken, space)).statusCode).toBe(200);
+      const write = await http('POST', '/v1/goals', parentToken, space, { name: 'Bike', target: '100.00' });
+      expect(write.statusCode).toBe(403);
+      expect(write.json()).toMatchObject({ error: 'view_only' });
+      // The teen can.
+      expect((await http('POST', '/v1/goals', teenToken, space, { name: 'Bike', target: '100.00' })).statusCode).toBe(201);
+    });
+
+    it('locks the teen in: no other workspace, no invitations, no purchases', async () => {
+      const own = await http('POST', '/v1/workspaces', teenToken, undefined, { name: 'Mine', kind: 'personal' });
+      expect(own.statusCode).toBe(403);
+      expect(own.json()).toMatchObject({ error: 'teen_space' });
+
+      const buy = await http('POST', '/v1/credits/purchases', teenToken, space, { packCode: 'credits_50' });
+      expect(buy.statusCode).toBe(403);
+      expect(buy.json()).toMatchObject({ error: 'teen_space' });
+
+      const link = await http('POST', '/v1/yourtal/link', teenToken, undefined, { code: 'ABCD1234' });
+      expect(link.statusCode).toBe(403);
+      expect(link.json()).toMatchObject({ error: 'teen_consent_not_allowed' });
+    });
+
+    it('spends the parent’s credit for the teen’s scan, earns no points, and refunds to the parent', async () => {
+      const { enqueueExtraction } = await import('../repo.js');
+      const { readPaidScan, refundScanCredit } = await import('../credits/spend.js');
+      const { workerActor } = await import('../tenant-entry.js');
+      const { withTenantAs } = await import('@snap/db');
+      const { getDb } = await import('../db.js');
+      const parentBalance = async () =>
+        (await admin.query(`SELECT coalesce(sum(remaining), 0)::int AS n FROM usage_grants WHERE tenant_id = $1`, [household]))
+          .rows[0].n as number;
+      const before = await parentBalance();
+      expect(before).toBe(10);
+
+      const capture = randomUUID();
+      await admin.query(
+        `INSERT INTO captures (id, tenant_id, uploaded_by, original_storage_key, original_mime_type, original_byte_size, original_sha256, status)
+         VALUES ($1, $2, $3, 'k', 'image/jpeg', 10, $4, 'received')`,
+        [capture, space, teenId, randomBytes(32)],
+      );
+      await enqueueExtraction(teenId, space, capture);
+      await enqueueExtraction(teenId, space, capture); // a retry spends nothing more
+      expect(await parentBalance()).toBe(before - 1);
+
+      // The teen's balance is the parent's.
+      expect((await http('GET', '/v1/credits', teenToken, space)).json()).toEqual({ creditsRemaining: before - 1 });
+      // Not paid, so the receipt can never earn YourTal points.
+      expect(await withTenantAs(getDb(), teenId, space, (tx) => readPaidScan(tx, capture))).toBe(false);
+
+      const worker = workerActor(teenId, createDb(workerPool));
+      expect(await refundScanCredit(worker, space, capture, 'unreadable')).toEqual({ refunded: true, creditReturned: true });
+      expect(await parentBalance()).toBe(before);
+    });
+
+    it('lets only the parent end access; then the teen is signed out and refused', async () => {
+      const stranger = person('other-adult');
+      const strangerToken = (await signIn(stranger)).token;
+      expect((await http('POST', `/v1/family/teens/${space}/end`, strangerToken)).statusCode).toBe(404);
+      expect((await http('POST', `/v1/family/teens/${space}/end`, teenToken)).statusCode).toBe(404);
+
+      const inviteId = (await admin.query('SELECT invite_id FROM teen_spaces WHERE tenant_id = $1', [space])).rows[0].invite_id;
+      const ended = await http('POST', `/v1/family/teens/${space}/end`, parentToken);
+      expect(ended.statusCode).toBe(200);
+      expect(yt.teenInvites.get(inviteId)?.status).toBe('ended');
+      expect(yt.teenInviteCalls).toContain(`POST /api/oidc-clients/teen-invites/${inviteId}/end`);
+      expect((await http('POST', `/v1/family/teens/${space}/end`, parentToken)).statusCode).toBe(200);
+
+      const held = (await admin.query('SELECT erase_after - access_ended_at AS hold FROM teen_spaces WHERE tenant_id = $1', [space]))
+        .rows[0];
+      expect(held.hold).toMatchObject({ days: 30 });
+      expect((await http('GET', '/v1/family', teenToken)).statusCode).toBe(401);
+
+      // Refused here even when YourTal lets the teen through.
+      yt.enforceTeenInvites = false;
+      await expect(signIn(teen)).rejects.toMatchObject({ response: { error: 'teen_invite_required' } });
+      const family = (await http('GET', '/v1/family', parentToken)).json();
+      expect(family.teens[0].accessEndedAt).not.toBeNull();
+    });
+  });
+
+  it('makes a new invite when YourTal answers a replay without a code', async () => {
+    const before = yt.teenInvites.size;
+    yt.replayNextCreate = true;
+    const { code, inviteId } = await inviteCode();
+    expect(code).toBeTruthy();
+    expect(yt.teenInvites.size).toBe(before + 2);
+    expect(yt.teenInvites.get(inviteId)?.code).toBe(code);
+  });
+
+  it('maps YourTal’s 403 parent_not_eligible', async () => {
+    parent.ageBand = 'teen'; // the fake reads the person it signed in
+    try {
+      const refused = await http('POST', '/v1/family/invites', parentToken, household);
+      expect(refused.statusCode).toBe(403);
+      expect(refused.json()).toMatchObject({ error: 'parent_not_eligible' });
+    } finally {
+      parent.ageBand = 'adult';
+    }
+  });
+
+  it('maps YourTal’s 429 and refuses a non-owner', async () => {
+    yt.teenInviteLimit = 0;
+    const limited = await http('POST', '/v1/family/invites', parentToken, household);
+    expect(limited.statusCode).toBe(429);
+    expect(limited.json()).toMatchObject({ error: 'too_many_invites' });
+    yt.teenInviteLimit = 10;
+
+    const other = person('not-owner');
+    const otherToken = (await signIn(other)).token;
+    expect((await http('POST', '/v1/family/invites', otherToken, household)).statusCode).toBe(403);
+  });
+});

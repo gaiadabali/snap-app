@@ -44,6 +44,7 @@ import {
   markLinkRevoked,
   receiptReportCounts,
 } from './links.repo.js';
+import { isTeen } from '../teens/teens.repo.js';
 
 export class LinkYourtalDto {
   /** The one-time code from YourTal's Me → Linked apps. */
@@ -121,6 +122,12 @@ export class YourtalLinkController {
     @CurrentSession() _session: CurrentSessionInfo,
     @ValidBody(LinkYourtalDto) body: LinkYourtalDto,
   ): Promise<YourtalLinkStatus> {
+    // A teen earns no receipt points (group 0.4.c, 3.10.c): refused here,
+    // before the code is spent, as well as by YourTal.
+    if (await isTeen(user.userId)) {
+      throw refuse(HttpStatus.FORBIDDEN, 'teen_consent_not_allowed', 'Only adult YourTal accounts can earn points for receipts.');
+    }
+
     const client = this.clientFor();
     if (!client) {
       throw refuse(HttpStatus.SERVICE_UNAVAILABLE, 'yourtal_not_configured', 'Linking YourTal is not available yet.');

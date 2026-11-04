@@ -551,7 +551,7 @@ describeIfDb('Sign in with YourTal — real database, real provider', () => {
     expect((await userRow(created.user.userId)).subject).toBe(`yourtal|${yt.subFor(known.accountId)}`);
   });
 
-  it('refuses a teen (invites are not built yet) and creates nothing', async () => {
+  it('refuses a teen with no parent invite and creates nothing', async () => {
     const teen = person('teen', { ageBand: 'teen' });
     await expect(signIn(teen)).rejects.toMatchObject({
       status: 403,

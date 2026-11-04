@@ -152,14 +152,18 @@ export async function withTenantAs<T>(
   return db.transaction(async (tx) => {
     await tx.execute(sql`select set_config('app.user_id', ${userId}, true)`);
 
-    const check = await tx.execute<{ ok: number }>(sql`
-      select 1 as ok
-      from memberships
-      where user_id = current_user_id()
-        and tenant_id = ${tenantId}
+    const check = await tx.execute<{ view_only: boolean }>(sql`
+      select (m.role = 'readonly'
+              and exists (select 1 from teen_spaces t where t.tenant_id = m.tenant_id)) as view_only
+      from memberships m
+      where m.user_id = current_user_id()
+        and m.tenant_id = ${tenantId}
       limit 1
     `);
     if (check.rows.length === 0) throw new NotAMemberError(userId, tenantId);
+    // A parent views their teen's space and changes nothing in it (0045):
+    // every write in this transaction fails with SQLSTATE 25006.
+    if (check.rows[0]!.view_only) await tx.execute(sql`set transaction read only`);
 
     await tx.execute(sql`select set_config('app.tenant_id', ${tenantId}, true)`);
     return fn(tx);

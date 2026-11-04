@@ -80,8 +80,8 @@ describe('identityFromClaims', () => {
     expect(codeOf(() => identityFromClaims({ ...adult, region: undefined }))).toBe('region_not_supported');
   });
 
-  it('refuses a teen with teen_invite_required, and an unknown age band outright', () => {
-    expect(codeOf(() => identityFromClaims({ ...adult, age_band: 'teen' }))).toBe('teen_invite_required');
+  it('passes a teen on for the invite check (3.10), and refuses an unknown age band outright', () => {
+    expect(identityFromClaims({ ...adult, age_band: 'teen' }).ageBand).toBe('teen');
     expect(codeOf(() => identityFromClaims({ ...adult, age_band: undefined }))).toBe('yourtal_failed');
     expect(codeOf(() => identityFromClaims({ ...adult, age_band: 'child' }))).toBe('yourtal_failed');
   });
