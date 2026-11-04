@@ -19,6 +19,7 @@ import { config, yourtalEventsClientId } from '../config.js';
 export const EVENT = {
   accountDeleted: 'urn:yourtal:event:account-deleted',
   accessEnded: 'urn:yourtal:event:access-ended',
+  becameAdult: 'urn:yourtal:event:became-adult',
 } as const;
 
 /** The job the worker acts from (docs/29 D2: SnapApp's inbox is `jobs`, keyed by the SET's jti). */

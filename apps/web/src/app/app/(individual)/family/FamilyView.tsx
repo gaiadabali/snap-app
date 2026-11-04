@@ -95,7 +95,7 @@ export function FamilyView(props: FamilyViewProps) {
             <h2 className="text-[17px] font-semibold text-[var(--color-ink)]">{name}</h2>
             {teen.accessEndedAt ? (
               <p className="mt-2 text-[14px] text-[var(--color-ink-muted)]">
-                Access ended on {day(teen.accessEndedAt)}. {name}’s space is kept for 30 days, then deleted.
+                Access ended on {day(teen.accessEndedAt)}. You can no longer see {name}’s space. It’s kept for 30 days, then deleted. Invite {name} again before then to bring it back.
               </p>
             ) : confirming === teen.workspaceId ? (
               <div className="mt-2 flex flex-col gap-3">
