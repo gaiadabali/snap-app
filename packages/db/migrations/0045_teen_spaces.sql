@@ -324,6 +324,20 @@ BEGIN
   RETURN true;
 END $fn$;
 
+-- YourTal's access-ended with erase_data (the guardian withdrew, the teen
+-- removed SnapApp, the inviter's account went; docs/26 §2.2): the worker
+-- starts the same hold. The events endpoint already ended the sessions.
+CREATE OR REPLACE FUNCTION teen_space_end_for_subject(p_sub text) RETURNS boolean
+LANGUAGE sql SECURITY DEFINER SET search_path = public, pg_temp AS $fn$
+  WITH ended AS (
+    UPDATE teen_spaces t SET access_ended_at = now(), erase_after = now() + interval '30 days'
+      FROM users u
+     WHERE u.id = t.teen_user_id AND u.subject = 'yourtal|' || p_sub AND t.access_ended_at IS NULL
+    RETURNING t.tenant_id
+  )
+  SELECT EXISTS (SELECT 1 FROM ended);
+$fn$;
+
 -- ── Credits: a teen's scan spends the parent's ───────────────────────────────
 
 -- Inside the teen's own tenant transaction (enqueueExtraction). Takes one
@@ -418,6 +432,7 @@ REVOKE EXECUTE ON FUNCTION teen_invite_attach_flow(bytea, uuid)                 
 REVOKE EXECUTE ON FUNCTION teen_invite_for_sign_in(uuid, text)                    FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION teen_space_join(uuid, text, text)                      FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION teen_space_end(uuid)                                   FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION teen_space_end_for_subject(text)                       FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION teen_space_take_credit(uuid)                           FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION teen_space_refund_credit(uuid)                         FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION teen_space_credits()                                   FROM PUBLIC;
@@ -429,6 +444,7 @@ ALTER FUNCTION teen_invite_attach_flow(bytea, uuid)               OWNER TO app_t
 ALTER FUNCTION teen_invite_for_sign_in(uuid, text)                OWNER TO app_teen;
 ALTER FUNCTION teen_space_join(uuid, text, text)                  OWNER TO app_teen;
 ALTER FUNCTION teen_space_end(uuid)                               OWNER TO app_teen;
+ALTER FUNCTION teen_space_end_for_subject(text)                   OWNER TO app_teen;
 ALTER FUNCTION teen_space_take_credit(uuid)                       OWNER TO app_teen;
 ALTER FUNCTION teen_space_refund_credit(uuid)                     OWNER TO app_teen;
 ALTER FUNCTION teen_space_credits()                               OWNER TO app_teen;
@@ -441,6 +457,7 @@ GRANT EXECUTE ON FUNCTION teen_space_end(uuid)                               TO 
 GRANT EXECUTE ON FUNCTION teen_space_take_credit(uuid)                       TO app_rw;
 GRANT EXECUTE ON FUNCTION teen_space_credits()                               TO app_rw;
 GRANT EXECUTE ON FUNCTION teen_space_refund_credit(uuid)                     TO app_worker;
+GRANT EXECUTE ON FUNCTION teen_space_end_for_subject(text)                   TO app_worker;
 
 -- ── Self-check ───────────────────────────────────────────────────────────────
 DO $$

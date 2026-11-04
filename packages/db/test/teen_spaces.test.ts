@@ -229,6 +229,17 @@ describeIfDb('teen spaces (migration 0045)', () => {
     expect(await failure(`SELECT teen_space_join($1, 'x', 'AU')`, [INVITE])).toMatch(/^TS002/);
   });
 
+  it("lets the worker start the hold on YourTal's access-ended, once", async () => {
+    await c.query('RESET ROLE');
+    await c.query('UPDATE teen_spaces SET access_ended_at = NULL, erase_after = NULL WHERE tenant_id = $1', [space]);
+    await as('app_rw', null, null);
+    expect(await failure(`SELECT teen_space_end_for_subject('teen-teen')`)).toMatch(/^42501/);
+    await as('app_worker', null, null);
+    expect((await c.query(`SELECT teen_space_end_for_subject('teen-teen') AS ended`)).rows[0].ended).toBe(true);
+    expect((await c.query(`SELECT teen_space_end_for_subject('teen-teen') AS ended`)).rows[0].ended).toBe(false);
+    expect((await c.query(`SELECT teen_space_end_for_subject('nobody') AS ended`)).rows[0].ended).toBe(false);
+  });
+
   it('still lets erasure delete the teen and their space', async () => {
     await c.query('RESET ROLE');
     await c.query('SET ROLE app_worker');

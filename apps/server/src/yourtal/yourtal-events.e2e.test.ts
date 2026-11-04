@@ -272,6 +272,14 @@ describeIfDb('YourTal security events (S2)', () => {
     expect(await isErased(SUB.C)).toBe(false);
   });
 
+  it('access-ended with erase_data completes for someone with no teen space, and keeps the account', async () => {
+    const c = claims(SUB.C, EV.ended, { reason: 'teen_removed', erase_data: true });
+    expect((await post(await yt.signSet(c))).statusCode).toBe(202);
+    await drain();
+    expect((await job(c.jti))?.completed_at).not.toBeNull();
+    expect(await userExists(C)).toBe(true);
+  });
+
   it('records an unknown sub as erased, and touches no one', async () => {
     const c = claims(SUB.unknown, EV.deleted);
     expect((await post(await yt.signSet(c))).statusCode).toBe(202);

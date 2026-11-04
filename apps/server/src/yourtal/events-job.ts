@@ -87,10 +87,14 @@ async function handleEvent(db: Db, job: Job, log: Log): Promise<void> {
   }
 
   if (type === EVENT.accessEnded) {
-    // Sessions opened before iat were ended by the endpoint. Erasing a teen's
-    // space after 30 days is S3 (with 3.10.b); until then no teen reaches
-    // SnapApp, so this only logs.
-    const hold = body.erase_data === true ? `; erase_data (${String(body.reason)}) waits for the teen hold, S3` : '';
+    // Sessions opened before iat were ended by the endpoint. With erase_data
+    // (a teen's access ended: docs/26 §2.2) the teen's space starts its
+    // 30-day hold (0045); erasing it at the end is 3.10.f.
+    let hold = '';
+    if (body.erase_data === true) {
+      const { rows } = await db.execute<{ ended: boolean }>(sql`select teen_space_end_for_subject(${sub}) as ended`);
+      hold = `; erase_data (${String(body.reason)}): ${rows[0]?.ended ? 'teen space held for 30 days' : 'no live teen space'}`;
+    }
     log.log(`yourtal event ${jti} access-ended: sessions already ended${hold}`);
     return;
   }
