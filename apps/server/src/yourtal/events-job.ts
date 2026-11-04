@@ -400,6 +400,22 @@ export async function runTeenHoldSweepOnce(db: Db = getDb(), log: Log = console)
   return { teenErased, failed: tried.length - teenErased };
 }
 
+/**
+ * The FTR send sweep (4.8.a, 0049): a send still open after an hour loses its
+ * bundle bytes and is closed as expired. The worker's own policy on
+ * `ftr_sends` lets it see and change exactly those rows across workspaces.
+ * Its own step, like the teen hold sweep.
+ */
+export async function runFtrSendSweepOnce(db: Db = getDb(), log: Log = console): Promise<{ expired: number }> {
+  const { rows } = await db.execute(sql`
+    update ftr_sends set bundle = null, status = 'expired', finished_at = now()
+     where status = 'started' and created_at < now() - interval '1 hour'
+    returning 1
+  `);
+  if (rows.length) log.log(`ftr send sweep: ${rows.length} open send(s) expired and their bundle bytes cleared`);
+  return { expired: rows.length };
+}
+
 /** The loop the worker runs beside extraction. */
 export async function runErasureLoop(isStopping: () => boolean, idleMs = 5_000): Promise<void> {
   let lastSweep = 0;
@@ -414,6 +430,9 @@ export async function runErasureLoop(isStopping: () => boolean, idleMs = 5_000):
         );
         await runTeenHoldSweepOnce().catch((error) =>
           console.error('teen hold sweep:', error instanceof Error ? error.message : error),
+        );
+        await runFtrSendSweepOnce().catch((error) =>
+          console.error('ftr send sweep:', error instanceof Error ? error.message : error),
         );
       }
     } catch (error) {
