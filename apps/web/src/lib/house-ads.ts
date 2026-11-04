@@ -69,6 +69,8 @@ export interface HouseAdContext {
    * Entries that send people to the link fail closed on it.
    */
   yourtalAvailable?: boolean;
+  /** A teen's own space (group 3.10, docs/26 §5): no house ads at all. */
+  noAds?: boolean;
 }
 
 export interface HouseAdEntry {
@@ -164,6 +166,7 @@ export function selectHouseAd(
   context: HouseAdContext,
   dismissedIds: ReadonlySet<string>,
 ): HouseAdEntry | null {
+  if (context.noAds) return null;
   for (const ad of HOUSE_ADS) {
     if (!ad.placements.includes(placement)) continue;
     if (dismissedIds.has(ad.id)) continue;

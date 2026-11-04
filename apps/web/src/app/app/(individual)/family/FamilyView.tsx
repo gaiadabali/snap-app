@@ -12,6 +12,8 @@ import { Button, Card, Input } from '@/design/primitives';
  */
 export type FamilyViewProps = {
   status: FamilyStatus;
+  /** The active workspace is one the person owns (its credits pay); else the invite is not offered here. */
+  canInvite: boolean;
   /** The invite just made: its link is shown once. */
   created: TeenInviteCreated | null;
   /** The teen space whose End access is being confirmed. */
@@ -61,7 +63,7 @@ export function FamilyView(props: FamilyViewProps) {
           <li>We’ll tell them that you can see it.</li>
           <li>They won’t earn YourTal points for receipts.</li>
           <li>Their scans use this workspace’s credits.</li>
-          <li>You can end their access at any time. Ending it deletes their SnapApp space.</li>
+          <li>You can end their access at any time. Ending it deletes their SnapApp space after 30 days.</li>
         </ul>
         {created ? (
           <div className="mt-4 flex flex-col gap-2">
@@ -71,6 +73,10 @@ export function FamilyView(props: FamilyViewProps) {
             </p>
             <Input readOnly value={created.joinUrl} aria-label="Invite link" />
           </div>
+        ) : status.invitesAvailable && !props.canInvite ? (
+          <p className="mt-4 text-[14px] text-[var(--color-ink-muted)]">
+            Switch to a workspace you own to invite your teen: its credits pay for their scans.
+          </p>
         ) : status.invitesAvailable ? (
           <div className="mt-4">
             <Button onClick={props.onCreate} disabled={busy}>
@@ -95,8 +101,8 @@ export function FamilyView(props: FamilyViewProps) {
               <div className="mt-2 flex flex-col gap-3">
                 <p className="text-[15px] font-semibold text-[var(--color-ink)]">End {name}’s access to SnapApp?</p>
                 <p className="text-[14px] text-[var(--color-ink-muted)]">
-                  {name} won’t be able to sign in to SnapApp, and their SnapApp space will be deleted, including their
-                  receipts. Download anything you want to keep first.
+                  {name} won’t be able to sign in to SnapApp, and their SnapApp space will be deleted after 30 days,
+                  including their receipts. Download anything you want to keep first.
                 </p>
                 <div className="flex gap-2">
                   <Button variant="danger" onClick={() => props.onConfirmEnd(teen.workspaceId)} disabled={busy}>
@@ -126,7 +132,16 @@ export function FamilyView(props: FamilyViewProps) {
   );
 }
 
-/** Always visible in a teen's own space (docs/26 §3.3). */
+/** The parent, in their teen's space: they can look, not change anything. */
+export function ViewOnlyNotice({ spaceName }: { spaceName: string }) {
+  return (
+    <p role="note" className="rounded-[var(--radius-sm)] bg-[var(--color-ground)] px-4 py-2 text-[14px] text-[var(--color-ink)]">
+      You’re viewing {spaceName}. You can see everything in it, but not change it.
+    </p>
+  );
+}
+
+/** Always visible in a teen's own space (docs/26 §3.3); "Your parent" when the name could not be read. */
 export function TeenNotice({ parentName }: { parentName: string | null }) {
   return (
     <p role="note" className="rounded-[var(--radius-sm)] bg-[var(--color-accent-soft)] px-4 py-2 text-[14px] text-[var(--color-ink)]">

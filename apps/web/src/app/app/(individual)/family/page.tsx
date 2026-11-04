@@ -28,6 +28,7 @@ export default async function FamilyPage() {
       <SectionTitle as="h1" title="Family" />
       <FamilyClient
         status={status}
+        canInvite={workspace.role === 'owner' && !workspace.teenSpace}
         onCreate={createTeenInvite.bind(null, workspace.id, PATH)}
         onEnd={endTeenAccess.bind(null, PATH)}
       />

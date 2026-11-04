@@ -12,6 +12,8 @@ import { space } from '@/theme';
  */
 export interface FamilyPanelProps {
   status: FamilyStatus;
+  /** The active workspace is one the person owns (its credits pay); else the invite is not offered here. */
+  canInvite: boolean;
   created: TeenInviteCreated | null;
   confirming: string | null;
   busy: boolean;
@@ -54,7 +56,7 @@ export function FamilyPanel(props: FamilyPanelProps) {
           <Small>• We’ll tell them that you can see it.</Small>
           <Small>• They won’t earn YourTal points for receipts.</Small>
           <Small>• Their scans use this workspace’s credits.</Small>
-          <Small>• You can end their access at any time. Ending it deletes their SnapApp space.</Small>
+          <Small>• You can end their access at any time. Ending it deletes their SnapApp space after 30 days.</Small>
           {created ? (
             <>
               <Small>
@@ -63,6 +65,8 @@ export function FamilyPanel(props: FamilyPanelProps) {
               </Small>
               <Button label="Share invite link" onPress={() => props.onShare(created.joinUrl)} />
             </>
+          ) : status.invitesAvailable && !props.canInvite ? (
+            <Small>Switch to a workspace you own to invite your teen: its credits pay for their scans.</Small>
           ) : status.invitesAvailable ? (
             <Button label="Create invite link" busy={busy} onPress={props.onCreate} />
           ) : (
@@ -85,8 +89,8 @@ export function FamilyPanel(props: FamilyPanelProps) {
                 <>
                   <Body strong>End {name}’s access to SnapApp?</Body>
                   <Small>
-                    {name} won’t be able to sign in to SnapApp, and their SnapApp space will be deleted, including their
-                    receipts. Download anything you want to keep first.
+                    {name} won’t be able to sign in to SnapApp, and their SnapApp space will be deleted after 30 days,
+                    including their receipts. Download anything you want to keep first.
                   </Small>
                   <Button label="End access" tone="risk" busy={busy} onPress={() => props.onConfirmEnd(teen.workspaceId)} />
                   <Button label="Cancel" tone="outline" disabled={busy} onPress={props.onCancelEnd} />
@@ -105,7 +109,12 @@ export function FamilyPanel(props: FamilyPanelProps) {
   );
 }
 
-/** Always visible in a teen's own space (docs/26 §3.3). */
+/** Always visible in a teen's own space (docs/26 §3.3); "Your parent" when the name could not be read. */
 export function TeenNotice({ parentName }: { parentName: string | null }) {
   return <Notice icon="users">{parentName ?? 'Your parent'} can see this space.</Notice>;
+}
+
+/** The parent, in their teen's space: they can look, not change anything. */
+export function ViewOnlyNotice({ spaceName }: { spaceName: string }) {
+  return <Notice icon="lock">You’re viewing {spaceName}. You can see everything in it, but not change it.</Notice>;
 }

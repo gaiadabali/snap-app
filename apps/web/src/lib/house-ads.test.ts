@@ -34,6 +34,14 @@ describe('the inventory itself', () => {
 });
 
 describe('selectHouseAd', () => {
+  it('shows nothing anywhere in a teen’s space', () => {
+    for (const ad of HOUSE_ADS) {
+      for (const placement of ad.placements) {
+        expect(selectHouseAd(placement, { noAds: true, yourtalAvailable: true }, new Set())).toBeNull();
+      }
+    }
+  });
+
   const placement: AdPlacement = 'individual-mileage';
 
   it('returns null when every eligible entry has been dismissed', () => {

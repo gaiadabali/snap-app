@@ -228,10 +228,18 @@ export default function SettingsScreen() {
             {/* Everything else */}
             <Card padded={false}>
               <Row label="Categories" value="How spending is sorted" href="/categories" />
+              {active.teenSpace === 'teen' ? null : (
+                <>
+                  <Divider style={{ marginLeft: space.lg }} />
+                  <Row label="Credits and usage" value={`${plan.scansUsed} read this month`} href="/plan" />
+                </>
+              )}
               <Divider style={{ marginLeft: space.lg }} />
-              <Row label="Credits and usage" value={`${plan.scansUsed} read this month`} href="/plan" />
-              <Divider style={{ marginLeft: space.lg }} />
-              <Row label="Family" value="Invite your teen" href="/family" />
+              <Row
+                label="Family"
+                value={active.teenSpace === 'teen' ? 'Who can see my space' : 'Invite your teen'}
+                href="/family"
+              />
               {isBusiness ? (
                 <>
                   <Divider style={{ marginLeft: space.lg }} />

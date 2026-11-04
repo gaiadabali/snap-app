@@ -13,7 +13,7 @@ import { ImpersonationBanner } from '../_shell/ImpersonationBanner';
 import { PanelShell } from '../_shell/PanelShell';
 import { individualNavFor } from '../_shell/nav';
 import { getFamily, getYourtalLink } from '@/lib/panels/data';
-import { TeenNotice } from './family/FamilyView';
+import { TeenNotice, ViewOnlyNotice } from './family/FamilyView';
 
 export default async function IndividualLayout({ children }: { children: ReactNode }) {
   const { user, workspaces, impersonation } = await requireSession();
@@ -105,8 +105,10 @@ export default async function IndividualLayout({ children }: { children: ReactNo
   }
 
   const businessWorkspace = resolveActiveWorkspace(workspaces, 'business', activeId);
-  // In a teen's own space, always say who can see it (group 3.10). A failed read shows nothing.
-  const asTeen = await getFamily().then((f) => f.asTeen, () => null);
+  // A teen's own space (group 3.10): always say who can see it, even when the
+  // name cannot be read ("Your parent"), and show no ads, credits or points.
+  const teen = workspace.teenSpace === 'teen';
+  const parentName = teen ? await getFamily().then((f) => f.asTeen?.parentName ?? null, () => null) : null;
 
   return (
     <PanelShell
@@ -114,10 +116,11 @@ export default async function IndividualLayout({ children }: { children: ReactNo
       workspace={workspace}
       sameKindWorkspaces={workspaces.filter((w) => w.kind === 'personal')}
       otherKindHref={BUSINESS_SURFACES_ENABLED && businessWorkspace ? '/app/business' : null}
-      nav={nav}
+      nav={teen ? individualNavFor(yourtalAvailable, true) : nav}
     >
-      {asTeen && asTeen.workspaceId === workspace.id ? <TeenNotice parentName={asTeen.parentName} /> : null}
-      <HouseAdProvider context={{ yourtalAvailable }}>{children}</HouseAdProvider>
+      {teen ? <TeenNotice parentName={parentName} /> : null}
+      {workspace.teenSpace === 'parent' ? <ViewOnlyNotice spaceName={workspace.name} /> : null}
+      <HouseAdProvider context={{ yourtalAvailable, noAds: teen }}>{children}</HouseAdProvider>
     </PanelShell>
   );
 }

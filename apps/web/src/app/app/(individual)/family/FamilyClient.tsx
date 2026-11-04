@@ -9,10 +9,12 @@ import { FamilyView } from './FamilyView';
 /** Owns what changes on the page; everything shown is `FamilyView`. */
 export function FamilyClient({
   status,
+  canInvite,
   onCreate,
   onEnd,
 }: {
   status: FamilyStatus;
+  canInvite: boolean;
   onCreate: () => Promise<FamilyActionResult<TeenInviteCreated>>;
   onEnd: (workspaceId: string) => Promise<FamilyActionResult<null>>;
 }) {
@@ -24,6 +26,7 @@ export function FamilyClient({
   return (
     <FamilyView
       status={status}
+      canInvite={canInvite}
       created={created}
       confirming={confirming}
       busy={busy}

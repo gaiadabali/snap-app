@@ -3,7 +3,7 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 
-import { FamilyPanel, TeenNotice, type FamilyPanelProps } from './FamilyPanel';
+import { FamilyPanel, TeenNotice, ViewOnlyNotice, type FamilyPanelProps } from './FamilyPanel';
 
 const noop = () => {};
 const STATUS: FamilyStatus = { invitesAvailable: true, teens: [], pendingInvites: [], asTeen: null };
@@ -13,6 +13,7 @@ function text(over: Partial<Omit<FamilyPanelProps, 'status'>> & { status?: Parti
   const { status, ...rest } = over;
   const props: FamilyPanelProps = {
     status: { ...STATUS, ...status },
+    canInvite: true,
     created: null,
     confirming: null,
     busy: false,
@@ -47,6 +48,12 @@ describe('FamilyPanel: a parent', () => {
     expect(t).not.toContain('Create invite link');
   });
 
+  it('sends a parent to a workspace they own to invite', () => {
+    const t = text({ canInvite: false });
+    expect(t).toContain('Switch to a workspace you own to invite your teen');
+    expect(t).not.toContain('Create invite link');
+  });
+
   it('says when invites are off, and shows a refusal', () => {
     expect(text({ status: { invitesAvailable: false } })).toContain('Inviting a teen isn’t available yet.');
     expect(text({ error: 'You can make 10 invites a day. Try again tomorrow.' })).toContain('10 invites a day');
@@ -56,7 +63,8 @@ describe('FamilyPanel: a parent', () => {
     expect(text({ status: { teens: [TEEN] } })).toContain('Tia joined SnapApp on 1 November 2026.');
     const confirm = text({ status: { teens: [TEEN] }, confirming: 'ws-teen' });
     expect(confirm).toContain('End Tia’s access to SnapApp?');
-    expect(confirm).toContain('Download anything you want to keep first.');
+    expect(confirm).toContain('will be deleted after 30 days, including their receipts. Download anything you want to keep first.');
+    expect(text()).toContain('Ending it deletes their SnapApp space after 30 days.');
     const ended = text({ status: { teens: [{ ...TEEN, accessEndedAt: '2026-11-03T01:00:00.000Z' }] } });
     expect(ended).toContain('Tia’s space is kept for 30 days, then deleted.');
     expect(ended).not.toContain('End access');
@@ -70,7 +78,14 @@ describe('FamilyPanel: a teen', () => {
     expect(t).not.toContain('Create invite link');
   });
 
-  it('the notice names the parent', () => {
+  it('the notice names the parent, or says "Your parent" when the name could not be read', () => {
     expect(renderToStaticMarkup(createElement(TeenNotice, { parentName: 'Pat' }))).toContain('Pat can see this space.');
+    expect(renderToStaticMarkup(createElement(TeenNotice, { parentName: null }))).toContain('Your parent can see this space.');
+  });
+
+  it('tells the parent they are only viewing', () => {
+    expect(renderToStaticMarkup(createElement(ViewOnlyNotice, { spaceName: 'Tia’s space' }))).toContain(
+      'You’re viewing Tia’s space. You can see everything in it, but not change it.',
+    );
   });
 });

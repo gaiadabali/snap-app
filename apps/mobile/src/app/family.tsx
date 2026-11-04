@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { FamilyStatus, TeenInviteCreated } from '@snap/api-contract';
 
 import { api } from '@/api';
+import { useWorkspace } from '@/workspace';
 import { FamilyPanel } from '@/components/FamilyPanel';
 import { Screen, ScreenHeader, Small } from '@/components/ui';
 import { space } from '@/theme';
@@ -19,6 +20,7 @@ export default function FamilyScreen() {
   const [confirming, setConfirming] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { active } = useWorkspace();
 
   const load = useCallback(() => {
     api()
@@ -59,6 +61,7 @@ export default function FamilyScreen() {
         {status ? (
           <FamilyPanel
             status={status}
+            canInvite={active.role === 'owner' && !active.teenSpace}
             created={created}
             confirming={confirming}
             busy={busy}

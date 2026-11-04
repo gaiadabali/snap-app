@@ -2,7 +2,7 @@ import type { FamilyStatus } from '@snap/api-contract';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 
-import { FamilyView, TeenNotice, type FamilyViewProps } from './FamilyView';
+import { FamilyView, TeenNotice, ViewOnlyNotice, type FamilyViewProps } from './FamilyView';
 
 const noop = () => {};
 
@@ -12,6 +12,7 @@ function text(over: Partial<Omit<FamilyViewProps, 'status'>> & { status?: Partia
   const { status, ...rest } = over;
   const props: FamilyViewProps = {
     status: { ...STATUS, ...status },
+    canInvite: true,
     created: null,
     confirming: null,
     busy: false,
@@ -46,6 +47,7 @@ describe('FamilyView: a parent', () => {
     const markup = renderToStaticMarkup(
       <FamilyView
         status={STATUS}
+        canInvite
         created={{ inviteId: 'i', joinUrl: 'https://snap.test/auth/yourtal?teenInvite=abc', expiresAt: '2026-11-11T03:00:00.000Z' }}
         confirming={null}
         busy={false}
@@ -61,6 +63,12 @@ describe('FamilyView: a parent', () => {
     expect(markup).not.toContain('Create invite link');
   });
 
+  it('sends a parent to a workspace they own to invite', () => {
+    const t = text({ canInvite: false });
+    expect(t).toContain('Switch to a workspace you own to invite your teen');
+    expect(t).not.toContain('Create invite link');
+  });
+
   it('says when invites are off, and shows a refusal', () => {
     expect(text({ status: { invitesAvailable: false } })).toContain('Inviting a teen isn’t available yet.');
     expect(text({ error: 'You can make 10 invites a day. Try again tomorrow.' })).toContain('You can make 10 invites a day');
@@ -70,7 +78,8 @@ describe('FamilyView: a parent', () => {
     expect(text({ status: { teens: [TEEN] } })).toContain('Tia joined SnapApp on 1 November 2026.');
     const confirm = text({ status: { teens: [TEEN] }, confirming: 'ws-teen' });
     expect(confirm).toContain('End Tia’s access to SnapApp?');
-    expect(confirm).toContain('their SnapApp space will be deleted, including their receipts. Download anything you want to keep first.');
+    expect(confirm).toContain('their SnapApp space will be deleted after 30 days, including their receipts. Download anything you want to keep first.');
+    expect(text()).toContain('Ending it deletes their SnapApp space after 30 days.');
     expect(confirm).toContain('Cancel');
   });
 
@@ -92,5 +101,11 @@ describe('FamilyView: a teen', () => {
   it('the notice in the space names the parent', () => {
     expect(renderToStaticMarkup(<TeenNotice parentName="Pat" />)).toContain('Pat can see this space.');
     expect(renderToStaticMarkup(<TeenNotice parentName={null} />)).toContain('Your parent can see this space.');
+  });
+
+  it('tells the parent they are only viewing', () => {
+    expect(renderToStaticMarkup(<ViewOnlyNotice spaceName="Tia’s space" />)).toContain(
+      'You’re viewing Tia’s space. You can see everything in it, but not change it.',
+    );
   });
 });
