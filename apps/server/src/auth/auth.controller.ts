@@ -39,7 +39,7 @@ import {
   verifyPassword,
 } from './passwords.js';
 import { RateLimiter } from './rate-limit.js';
-import { emailLinkedToYourTal } from './yourtal-signin/repo.js';
+import { emailLinkedToYourTal, isLinkedToYourTal } from './yourtal-signin/repo.js';
 
 export class SignInDto {
   @IsEmail({}, { message: 'That does not look like an email address.' })
@@ -294,12 +294,21 @@ export class AuthController {
 
   @Get('session')
   @UseGuards(SessionGuard)
-  @ApiOperation({ summary: 'The signed-in user and the workspaces they belong to' })
+  @ApiOperation({
+    summary: 'The signed-in user and the workspaces they belong to',
+    description: '`yourtalLinked` is false for an account not yet linked to YourTal: the clients offer to move it (3.6.e).',
+  })
   async session(@CurrentUser() user: AuthUser): Promise<{
     user: AuthUser;
     workspaces: Array<{ id: string; name: string; kind: string; role: string }>;
+    yourtalLinked: boolean | undefined;
   }> {
-    return { user, workspaces: await listWorkspacesFor(getDb(), user.userId) };
+    const [workspaces, yourtalLinked] = await Promise.all([
+      listWorkspacesFor(getDb(), user.userId),
+      // A failed read here must not take every page down: the clients show nothing for `undefined`.
+      isLinkedToYourTal(user.userId).catch(() => undefined),
+    ]);
+    return { user, workspaces, yourtalLinked };
   }
 
   /* ── Magic links (passwordless email sign-in / registration) ────────────── */

@@ -1153,6 +1153,12 @@ export interface Session {
    * the one state that requires onboarding before the app is usable.
    */
   workspaceIds: string[];
+  /**
+   * Whether the account is linked to YourTal. `false` makes the clients offer
+   * "Sign in with YourTal to keep your account" (3.6.e); absent (an older
+   * server) or true shows nothing.
+   */
+  yourtalLinked?: boolean;
 }
 
 /** What a new account has to answer before it can file anything. */
@@ -1471,6 +1477,27 @@ export interface AdminTriggerReextractionRequest {
 
 export interface AdminJobRef {
   jobId: string;
+}
+
+/** One row of `GET /v1/admin/operations/yourtal-reviews` (0046): a Sign in with YourTal case the code refused to decide. */
+export interface AdminYourtalReview {
+  id: string;
+  kind: 'second_sub' | 'email_collision' | 'unlinkable_account';
+  /** Masked, `k••••@example.com`. The YourTal `sub` is never sent. */
+  emailMasked: string | null;
+  userId: string | null;
+  otherUserId: string | null;
+  attempts: number;
+  firstSeenAt: IsoDateTime;
+  lastSeenAt: IsoDateTime;
+  resolvedAt: IsoDateTime | null;
+  resolvedBy: string | null;
+  resolution: string | null;
+}
+
+/** Request body of `POST /v1/admin/operations/yourtal-reviews/:id/resolve` */
+export interface AdminResolveYourtalReviewRequest {
+  resolution: string;
 }
 
 /** One row of `GET /v1/admin/operations/retention` */

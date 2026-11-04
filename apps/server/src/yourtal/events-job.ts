@@ -1,4 +1,4 @@
-import { rmSync } from 'node:fs';
+import { readdirSync, rmSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
 import { claimJobs, completeJob, failJob, type Db } from '@snap/db';
@@ -105,22 +105,84 @@ async function handleEvent(db: Db, job: Job, log: Log): Promise<void> {
   log.log(`yourtal event ${jti} ${type}: not a type SnapApp acts on; acknowledged`);
 }
 
-async function handleStoragePurge(db: Db, job: Job, log: Log): Promise<void> {
-  const tenantId = (job.payload as { tenantId?: unknown } | null)?.tenantId;
-  if (typeof tenantId !== 'string' || !UUID.test(tenantId)) throw new Error('storage_purge: tenantId is not a uuid');
-  const exists = await db.transaction(async (tx) => {
+/** True while the workspace row exists, as the worker sees it under RLS. */
+async function tenantExists(db: Db, tenantId: string): Promise<boolean> {
+  return db.transaction(async (tx) => {
     await tx.execute(sql`select set_config('app.tenant_id', ${tenantId}, true)`);
     const { rows } = await tx.execute<{ found: boolean }>(
       sql`select exists (select 1 from tenants where id = current_tenant_id()) as found`,
     );
     return rows[0]?.found !== false;
   });
-  if (exists) throw new Error(`storage_purge: workspace ${tenantId} still exists; refusing`);
-  const root = resolve(config().STORAGE_DIR);
+}
+
+/** Removes `{STORAGE_DIR}/{tenantId}/`. A uuid only, directly under the root; rm does not follow a symlink. */
+function removeTenantDir(tenantId: string, root = resolve(config().STORAGE_DIR)): void {
+  if (!UUID.test(tenantId)) throw new Error('storage_purge: tenantId is not a uuid');
   const dir = resolve(join(root, tenantId.toLowerCase()));
   if (resolve(dir, '..') !== root) throw new Error('storage_purge: refusing a path outside the storage root');
   rmSync(dir, { recursive: true, force: true });
+}
+
+async function handleStoragePurge(db: Db, job: Job, log: Log): Promise<void> {
+  const tenantId = (job.payload as { tenantId?: unknown } | null)?.tenantId;
+  if (typeof tenantId !== 'string' || !UUID.test(tenantId)) throw new Error('storage_purge: tenantId is not a uuid');
+  if (await tenantExists(db, tenantId)) throw new Error(`storage_purge: workspace ${tenantId} still exists; refusing`);
+  removeTenantDir(tenantId);
   log.log(`storage_purge ${job.id}: removed the files of workspace ${tenantId}`);
+}
+
+/**
+ * Housekeeping the loop runs about hourly (3.7.c):
+ *  - a `yourtal_event` (a raw SET) or `teen_invite_end` (the parent's sub) job
+ *    that is finished, or dead (attempts used up), and over 30 days old keeps
+ *    its row, which is what refuses a replayed jti, but not its payload;
+ *  - a `{tenantId}/` directory that an in-flight upload recreated after its
+ *    workspace was erased. A directory goes only when ALL hold: it is a real
+ *    directory (a symlink is left alone) with a lower-case uuid name directly
+ *    under the storage root; no workspace row exists; a `storage_purge` job
+ *    once named this id (so a wrong or restored database, with no purge
+ *    history, can never empty the storage volume); and it was last modified
+ *    over 24 hours ago.
+ * `root` is for tests.
+ */
+export async function runErasureSweepsOnce(
+  db: Db = getDb(),
+  log: Log = console,
+  root = resolve(config().STORAGE_DIR),
+): Promise<{ blanked: number; orphans: number }> {
+  const blankedRows = await db.execute(sql`
+    update jobs set payload = '{}'::jsonb
+     where kind in ('yourtal_event', 'teen_invite_end') and tenant_id is null and payload <> '{}'::jsonb
+       and ((completed_at < now() - interval '30 days')
+         or (completed_at is null and attempts >= max_attempts and created_at < now() - interval '30 days'))
+    returning 1
+  `);
+  const blanked = blankedRows.rows.length;
+
+  let orphans = 0;
+  let entries: import('node:fs').Dirent[] = [];
+  try {
+    entries = readdirSync(root, { withFileTypes: true });
+  } catch {
+    /* no storage directory yet: nothing to sweep */
+  }
+  const dayAgo = Date.now() - 24 * 60 * 60 * 1000;
+  for (const entry of entries) {
+    // Ids are stored lower-case, so a differently-cased name is not ours.
+    if (!entry.isDirectory() || !UUID.test(entry.name) || entry.name !== entry.name.toLowerCase()) continue;
+    if (statSync(join(root, entry.name)).mtimeMs > dayAgo) continue;
+    if (await tenantExists(db, entry.name)) continue;
+    const { rows } = await db.execute<{ purged: boolean }>(sql`
+      select exists (select 1 from jobs where kind = 'storage_purge' and tenant_id is null
+                      and payload ->> 'tenantId' = ${entry.name}) as purged
+    `);
+    if (rows[0]?.purged !== true) continue;
+    removeTenantDir(entry.name, root);
+    orphans += 1;
+  }
+  if (blanked || orphans) log.log(`erasure sweeps: ${blanked} payload(s) emptied, ${orphans} orphan director(ies) removed`);
+  return { blanked, orphans };
 }
 
 const NOTICE = {
@@ -226,10 +288,15 @@ export async function runErasureJobsOnce(db: Db = getDb(), log: Log = console): 
 
 /** The loop the worker runs beside extraction. */
 export async function runErasureLoop(isStopping: () => boolean, idleMs = 5_000): Promise<void> {
+  let lastSweep = 0;
   while (!isStopping()) {
     let ran = 0;
     try {
       ran = await runErasureJobsOnce();
+      if (Date.now() - lastSweep > 60 * 60 * 1000) {
+        lastSweep = Date.now();
+        await runErasureSweepsOnce();
+      }
     } catch (error) {
       console.error('erasure jobs:', error instanceof Error ? error.message : error);
     }

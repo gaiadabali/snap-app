@@ -9,6 +9,7 @@ import type {
   AdminQueueStat,
   AdminRetentionStatusRow,
   AdminSession,
+  AdminYourtalReview,
   PlatformCapability,
 } from '@snap/api-contract';
 
@@ -25,6 +26,7 @@ export type {
   AdminQueueStat,
   AdminRetentionStatusRow,
   AdminSession,
+  AdminYourtalReview,
   Gated,
   PlatformCapability,
 };
@@ -378,3 +380,25 @@ export function computeChain(capability: Capability): ComputedChain {
 //    surface's actions do not otherwise require) just to trigger a
 //    re-extraction.
 // ─────────────────────────────────────────────────────────────────────────
+
+/**
+ * Sign in with YourTal cases the code refused to decide (0046). Capability:
+ * manage_operations. The email arrives masked and the YourTal sub never does.
+ */
+export async function getYourtalReviews(all = false): Promise<Gated<AdminYourtalReview[]>> {
+  return capabilityGated(() =>
+    adminApi<AdminYourtalReview[]>(`/v1/admin/operations/yourtal-reviews${all ? '?all=1' : ''}`),
+  );
+}
+
+export async function resolveYourtalReview(
+  id: string,
+  resolution: string,
+  idempotencyKey: string,
+): Promise<{ resolved: true }> {
+  return adminApi<{ resolved: true }>(`/v1/admin/operations/yourtal-reviews/${encodeURIComponent(id)}/resolve`, {
+    method: 'POST',
+    body: { resolution },
+    idempotencyKey,
+  });
+}
