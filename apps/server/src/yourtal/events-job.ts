@@ -402,23 +402,21 @@ export async function runTeenHoldSweepOnce(db: Db = getDb(), log: Log = console)
 
 /**
  * The FTR send sweep (4.8.a, 0049): a send still open after an hour loses its
- * bundle bytes and is closed as expired. The worker's own policy on
- * `ftr_sends` lets it see and change exactly those rows across workspaces.
- * Its own step, like the teen hold sweep.
+ * bundle bytes and is closed as expired. The worker has no policy on
+ * `ftr_sends`; it calls the SECURITY DEFINER function that runs the one fixed
+ * statement. Its own step, on its own 5-minute cadence (see runErasureLoop).
  */
 export async function runFtrSendSweepOnce(db: Db = getDb(), log: Log = console): Promise<{ expired: number }> {
-  const { rows } = await db.execute(sql`
-    update ftr_sends set bundle = null, status = 'expired', finished_at = now()
-     where status = 'started' and created_at < now() - interval '1 hour'
-    returning 1
-  `);
-  if (rows.length) log.log(`ftr send sweep: ${rows.length} open send(s) expired and their bundle bytes cleared`);
-  return { expired: rows.length };
+  const { rows } = await db.execute(sql`select ftr_sends_expire_stale() as expired`);
+  const expired = Number((rows[0] as { expired: number | string }).expired);
+  if (expired) log.log(`ftr send sweep: ${expired} open send(s) expired and their bundle bytes cleared`);
+  return { expired };
 }
 
 /** The loop the worker runs beside extraction. */
 export async function runErasureLoop(isStopping: () => boolean, idleMs = 5_000): Promise<void> {
   let lastSweep = 0;
+  let lastFtrSweep = 0;
   while (!isStopping()) {
     let ran = 0;
     try {
@@ -431,6 +429,10 @@ export async function runErasureLoop(isStopping: () => boolean, idleMs = 5_000):
         await runTeenHoldSweepOnce().catch((error) =>
           console.error('teen hold sweep:', error instanceof Error ? error.message : error),
         );
+      }
+      // Its own cadence: a send's bytes live "up to an hour" (design 10), so the sweep must not wait for the hourly one.
+      if (Date.now() - lastFtrSweep > 5 * 60 * 1000) {
+        lastFtrSweep = Date.now();
         await runFtrSendSweepOnce().catch((error) =>
           console.error('ftr send sweep:', error instanceof Error ? error.message : error),
         );

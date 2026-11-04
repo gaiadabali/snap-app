@@ -169,7 +169,7 @@ describeIfDb('erasure sweeps', () => {
       (
         await admin.query(
           `insert into ftr_sends (tenant_id, user_id, financial_year, line_count, bundle_sha256, bundle, status, finished_at, created_at)
-           values ($1, $2, '2025-26', 1, repeat('b', 64), $3, $4, $5, now() - make_interval(mins => $6)) returning id`,
+           values ($1, $2, '2025-26', 1, encode(sha256(convert_to('{"k":1}', 'UTF8')), 'hex'), $3, $4, $5, now() - make_interval(mins => $6)) returning id`,
           [LIVE, USER, status === 'started' ? '{"k":1}' : null, status, status === 'started' ? null : new Date(), minutesOld],
         )
       ).rows[0].id as string;

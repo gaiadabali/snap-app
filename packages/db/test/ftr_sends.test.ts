@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+
 import { Client } from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
@@ -7,7 +9,8 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
  *
  *   - another workspace cannot see, change or insert a send; reporting cannot read the table;
  *   - `bundle` exists only while a send is `started`;
- *   - the worker, with no workspace, can expire an open send older than an hour and nothing else;
+ *   - the worker has no policy on the table: with no workspace it sees and changes nothing, and
+ *     ftr_sends_expire_stale() is its only way to expire an open send older than an hour;
  *   - erase_person (0043) takes a person's sends and the sign-in flows that point at them;
  *   - 0043's self-checks (spill guard, pinned-FK list) still pass with the new foreign keys.
  */
@@ -20,7 +23,10 @@ const WB = 'f7500000-0000-4000-8000-0000000000b0';
 const UA = 'f7500000-0000-4000-8000-0000000000a1';
 const UB = 'f7500000-0000-4000-8000-0000000000b1';
 const SUB_A = 'ftr-sends-test-a';
-const HASH = 'a'.repeat(64);
+const BUNDLE = '{"a":1}';
+// The hash of BUNDLE (a CHECK binds the bytes held to the hash), and a dummy for rows with no bytes.
+const HASH = createHash('sha256').update(BUNDLE).digest('hex');
+const sha = (text: string) => createHash('sha256').update(text, 'utf8').digest('hex');
 
 describeIfDb('ftr_sends (migration 0049)', () => {
   let c: Client;
@@ -45,7 +51,7 @@ describeIfDb('ftr_sends (migration 0049)', () => {
   const send = async (tenant: string, user: string, extra = '', cols = 'bundle') =>
     (
       await c.query(
-        `INSERT INTO ftr_sends (tenant_id, user_id, financial_year, line_count, bundle_sha256, ${cols}) VALUES ($1,$2,'2025-26',3,$3,'{"a":1}') ${extra} RETURNING id`,
+        `INSERT INTO ftr_sends (tenant_id, user_id, financial_year, line_count, bundle_sha256, ${cols}) VALUES ($1,$2,'2025-26',3,$3,'${BUNDLE}') ${extra} RETURNING id`,
         [tenant, user, HASH],
       )
     ).rows[0].id as string;
@@ -108,17 +114,65 @@ describeIfDb('ftr_sends (migration 0049)', () => {
     expect(await failure(`UPDATE ftr_sends SET status = 'sent', bundle = NULL WHERE id = $1`, [id])).toMatch(/ftr_sends_finished/);
     await c.query(`UPDATE ftr_sends SET status = 'sent', bundle = NULL, ftr_import_id = 'imp-1', finished_at = now() WHERE id = $1`, [id]);
     // Bytes cannot be put back on a closed send.
-    expect(await failure(`UPDATE ftr_sends SET bundle = '{}' WHERE id = $1`, [id])).toMatch(/ftr_sends_bundle_open_only/);
+    expect(await failure(`UPDATE ftr_sends SET bundle = '{}' WHERE id = $1`, [id])).toMatch(/closed send/);
     // An import id only on a sent send; a malformed year or hash is refused.
     const open = await send(WA, UA);
     expect(await failure(`UPDATE ftr_sends SET ftr_import_id = 'x' WHERE id = $1`, [open])).toMatch(/ftr_sends_import_when_sent/);
     expect(await failure(`UPDATE ftr_sends SET financial_year = '2025' WHERE id = $1`, [open])).toMatch(/ftr_sends_year/);
-    expect(await failure(`UPDATE ftr_sends SET bundle_sha256 = 'ABC' WHERE id = $1`, [open])).toMatch(/ftr_sends_hash/);
-    expect(await failure(`UPDATE ftr_sends SET bundle = repeat('x', 2097153) WHERE id = $1`, [open])).toMatch(/ftr_sends_bundle_open_only/);
+    expect(await failure(`UPDATE ftr_sends SET bundle_sha256 = 'ABC' WHERE id = $1`, [open])).toMatch(/ftr_sends_(bundle_)?hash/);
+    // The cap is in BYTES: 2 MiB of ASCII passes, one more byte fails, and 2 MiB of a 3-byte character (6 MiB) fails.
+    const big = (n: number, ch = 'x') => ch.repeat(n);
+    const setBundle = (id: string, text: string) =>
+      failure(`UPDATE ftr_sends SET bundle = $2, bundle_sha256 = $3 WHERE id = $1`, [id, text, sha(text)]);
+    expect(await setBundle(open, big(2097152))).toBeNull();
+    expect(await setBundle(open, big(2097153))).toMatch(/ftr_sends_bundle_open_only/);
+    expect(await setBundle(open, big(2097152, '\u20ac'))).toMatch(/ftr_sends_bundle_open_only/);
   });
 
-  it('the worker sweep expires only open sends over an hour old, in every workspace, and clears their bytes', async () => {
+  it('binds the bytes held to the hash, and a finish cannot predate the start', async () => {
+    await as('app_rw', UA, WA);
+    const open = await send(WA, UA);
+    expect(await failure(`UPDATE ftr_sends SET bundle = '{"b":2}' WHERE id = $1`, [open])).toMatch(/ftr_sends_bundle_hash/);
+    expect(await failure(`INSERT INTO ftr_sends (tenant_id, user_id, financial_year, line_count, bundle_sha256, bundle)
+                          VALUES ($1, $2, '2025-26', 1, $3, '{"b":2}')`, [WA, UA, HASH])).toMatch(/ftr_sends_bundle_hash/);
+    expect(await failure(`UPDATE ftr_sends SET status = 'failed', bundle = NULL, finished_at = created_at - interval '1 second' WHERE id = $1`, [open])).toMatch(/ftr_sends_finished_after_created/);
+    await c.query(`UPDATE ftr_sends SET status = 'failed', bundle = NULL, finished_at = now() WHERE id = $1`, [open]);
+  });
+
+  it('a closed send is final: no reopening, no change at all, for the API or the owner', async () => {
+    await as('app_rw', UA, WA);
+    const id = await send(WA, UA);
+    await c.query(`UPDATE ftr_sends SET status = 'sent', bundle = NULL, ftr_import_id = 'imp-2', finished_at = now() WHERE id = $1`, [id]);
+    expect(await failure(`UPDATE ftr_sends SET status = 'started', ftr_import_id = NULL, finished_at = NULL, bundle = '${BUNDLE}' WHERE id = $1`, [id])).toMatch(/closed send/);
+    expect(await failure(`UPDATE ftr_sends SET error = 'x' WHERE id = $1`, [id])).toMatch(/closed send/);
     await owner();
+    expect(await failure(`UPDATE ftr_sends SET line_count = 9 WHERE id = $1`, [id])).toMatch(/closed send/);
+  });
+
+  it('the worker has no policy: with no workspace it sees and changes no row, even a stale open send', async () => {
+    await owner();
+    const stale = await send(WA, UA);
+    await c.query(`UPDATE ftr_sends SET created_at = now() - interval '2 hours' WHERE id = $1`, [stale]);
+    await as('app_worker', null, null);
+    expect((await c.query('SELECT id, bundle FROM ftr_sends')).rows).toEqual([]);
+    // The forgery the first draft's policy allowed: expire AND move the row to workspace B.
+    const forged = await c.query(
+      `UPDATE ftr_sends SET status = 'expired', bundle = NULL, finished_at = now(), tenant_id = $2, user_id = $3, line_count = 999
+        WHERE id = $1 RETURNING id`,
+      [stale, WB, UB],
+    );
+    expect(forged.rows).toEqual([]);
+    expect((await c.query(`UPDATE ftr_sends SET status = 'expired', bundle = NULL, finished_at = now() WHERE id = $1 RETURNING id`, [stale])).rows).toEqual([]);
+    expect(await failure(`INSERT INTO ftr_sends (tenant_id, user_id, financial_year, line_count, bundle_sha256) VALUES ($1, $2, '2025-26', 1, $3)`, [WA, UA, HASH])).toMatch(/row-level security/);
+    await owner();
+    expect((await c.query(`SELECT tenant_id, user_id, line_count, status, bundle FROM ftr_sends WHERE id = $1`, [stale])).rows).toEqual([
+      { tenant_id: WA, user_id: UA, line_count: 3, status: 'started', bundle: BUNDLE },
+    ]);
+  });
+
+  it('ftr_sends_expire_stale() expires only open sends over an hour old, in every workspace, clears their bytes, and is the worker\'s alone', async () => {
+    await owner();
+    await c.query(`DELETE FROM ftr_sends WHERE tenant_id = ANY($1::uuid[])`, [[WA, WB]]);
     const ids = {
       oldA: await send(WA, UA),
       oldB: await send(WB, UB),
@@ -130,28 +184,23 @@ describeIfDb('ftr_sends (migration 0049)', () => {
     ]);
     await c.query(`UPDATE ftr_sends SET status = 'cancelled', bundle = NULL, finished_at = now() WHERE id = $1`, [ids.doneOld]);
 
+    // Nobody else may call it.
+    for (const role of ['app_rw', 'app_readonly'] as const) {
+      await as(role, UA, WA);
+      expect(await failure('SELECT ftr_sends_expire_stale()')).toMatch(/^42501/);
+    }
     await as('app_worker', null, null);
-    const swept = await c.query(
-      `UPDATE ftr_sends SET bundle = NULL, status = 'expired', finished_at = now()
-        WHERE status = 'started' AND created_at < now() - interval '1 hour' RETURNING id`,
-    );
-    expect(swept.rows.map((r) => r.id).sort()).toEqual([ids.oldA, ids.oldB].sort());
-    // Beyond that the worker sees no live send without a workspace.
-    expect((await c.query('SELECT id FROM ftr_sends')).rows.map((r) => r.id).sort()).toEqual([ids.oldA, ids.oldB].sort());
+    expect((await c.query('SELECT ftr_sends_expire_stale() AS n')).rows).toEqual([{ n: 2 }]);
+    // Idempotent, and the worker still sees nothing directly.
+    expect((await c.query('SELECT ftr_sends_expire_stale() AS n')).rows).toEqual([{ n: 0 }]);
+    expect((await c.query('SELECT id FROM ftr_sends')).rows).toEqual([]);
     await owner();
-    const rows = (await c.query(`SELECT id, status, bundle FROM ftr_sends WHERE id = ANY($1::uuid[])`, [Object.values(ids)])).rows;
+    const rows = (await c.query(`SELECT id, status, bundle, tenant_id FROM ftr_sends WHERE id = ANY($1::uuid[])`, [Object.values(ids)])).rows;
     const by = (id: string) => rows.find((r) => r.id === id);
-    expect(by(ids.oldA)).toMatchObject({ status: 'expired', bundle: null });
-    expect(by(ids.oldB)).toMatchObject({ status: 'expired', bundle: null });
-    expect(by(ids.fresh)).toMatchObject({ status: 'started', bundle: '{"a":1}' });
+    expect(by(ids.oldA)).toMatchObject({ status: 'expired', bundle: null, tenant_id: WA });
+    expect(by(ids.oldB)).toMatchObject({ status: 'expired', bundle: null, tenant_id: WB });
+    expect(by(ids.fresh)).toMatchObject({ status: 'started', bundle: BUNDLE });
     expect(by(ids.doneOld)).toMatchObject({ status: 'cancelled', bundle: null });
-
-    // The worker's policy cannot be used for anything else, even on a stale open send.
-    const stale = await send(WA, UA);
-    await c.query(`UPDATE ftr_sends SET created_at = now() - interval '2 hours' WHERE id = $1`, [stale]);
-    await as('app_worker', null, null);
-    expect(await failure(`UPDATE ftr_sends SET status = 'sent', bundle = NULL, finished_at = now() WHERE id = $1`, [stale])).toMatch(/row-level security/);
-    expect(await failure(`UPDATE ftr_sends SET line_count = 9 WHERE id = $1`, [stale])).toMatch(/row-level security/);
   });
 
   it('erase_person takes the person\'s sends and the sign-in flows that point at them, and no one else\'s', async () => {

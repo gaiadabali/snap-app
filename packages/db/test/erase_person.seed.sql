@@ -112,7 +112,7 @@ BEGIN
      'auth-' || tag, 'rcpt-' || tag, now());
   -- An open FTR send (0049): its bundle is tax data and must go with the person or the workspace.
   INSERT INTO ftr_sends (tenant_id, user_id, financial_year, line_count, bundle_sha256, bundle)
-    VALUES (t, u, '2025-26', 1, encode(digest(tag || 'f', 'sha256'), 'hex'), '{"k":"deduction-bundle-v1"}');
+    VALUES (t, u, '2025-26', 1, encode(digest('{"k":"deduction-bundle-v1"}', 'sha256'), 'hex'), '{"k":"deduction-bundle-v1"}');
 
   -- Sales, stock, bills, trips, budgets.
   INSERT INTO items (id, tenant_id, name) VALUES (item, t, 'Widget');

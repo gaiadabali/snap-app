@@ -3,8 +3,8 @@
 --
 -- Group task 4.8.a, ticket S1 (yourtal/docs/30-snapapp-to-ftr-direct-send.md
 -- §6). One row per "Send to Free Tax Returns" a person starts. S2 adds the
--- endpoints; this is the table, the sign-in flow's link to it, and the policy
--- the worker's hourly sweep needs.
+-- endpoints; this is the table, the sign-in flow's link to it, and the function
+-- the worker's sweep (every 5 minutes) calls.
 --
 -- THE BUNDLE IS HELD ONLY WHILE THE SEND IS OPEN. `bundle` is the exact JSON
 -- text whose SHA-256 is `bundle_sha256`: YourTal's assertion is bound to that
@@ -16,10 +16,11 @@
 -- (reporting) gets no grant on the table at all.
 --
 -- RLS: the workspace policy of 0010/0014 (tenant_isolation, FORCE) for the
--- API. The worker has no tenant context in its sweep, so it gets two narrow
--- policies (SELECT and UPDATE) on sends older than an hour; the UPDATE only
--- reaches open ones and may only leave them expired with no bundle. app_worker inherits app_rw's
--- table grants, so the policy, not a column grant, is what narrows it.
+-- API, and nothing else: the worker has NO policy on this table. Its sweep goes through ftr_sends_expire_stale(), a SECURITY DEFINER function
+-- owned by app_erasure (0043's idiom) that runs one fixed UPDATE. A policy
+-- cannot do that job: WITH CHECK sees only the new row, so a worker policy
+-- that lets it expire a send also lets it rewrite tenant_id and every other
+-- column in the same statement (found in review of the first draft).
 --
 -- ERASURE (0043). Both foreign keys cascade, so erase_person and
 -- erase_workspace need no change: the tenant's rows go with the workspace, a
@@ -27,9 +28,11 @@
 -- so a flow never outlives its send. That is a foreign key from a table with
 -- no tenant_id to one with it, which 0043's pinned-FK test lists on purpose.
 --
--- ADD-ONLY: a table, a nullable column, indexes, policies, grants.
--- Reverse: DROP TABLE ftr_sends CASCADE (drops the flow FK, not the column);
--- ALTER TABLE yourtal_sign_in_flows DROP COLUMN ftr_send_id.
+-- ADD-ONLY: a table, a nullable column, indexes, a trigger, a function, grants.
+-- Reverse: DROP FUNCTION ftr_sends_expire_stale(); DROP TABLE ftr_sends CASCADE
+-- (drops the flow FK and the trigger, not the column or its function);
+-- DROP FUNCTION ftr_sends_closed_is_final(); ALTER TABLE yourtal_sign_in_flows
+-- DROP COLUMN ftr_send_id.
 -- ---------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS ftr_sends (
@@ -57,11 +60,16 @@ CREATE TABLE IF NOT EXISTS ftr_sends (
   CONSTRAINT ftr_sends_lines CHECK (line_count >= 0),
   CONSTRAINT ftr_sends_hash CHECK (bundle_sha256 ~ '^[0-9a-f]{64}$'),
   CONSTRAINT ftr_sends_status CHECK (status IN ('started', 'sent', 'cancelled', 'failed', 'expired')),
-  /* The FTR bundle cap is 2 MB (4.6); a longer string is refused here too. */
+  /* The FTR bundle cap is 2 MB (4.6): BYTES, not characters. */
   CONSTRAINT ftr_sends_bundle_open_only CHECK (
-    bundle IS NULL OR (status = 'started' AND length(bundle) <= 2097152)
+    bundle IS NULL OR (status = 'started' AND octet_length(bundle) <= 2097152)
+  ),
+  /* The bytes held are the bytes hashed: the assertion at YourTal is bound to this hash. */
+  CONSTRAINT ftr_sends_bundle_hash CHECK (
+    bundle IS NULL OR encode(sha256(convert_to(bundle, 'UTF8')), 'hex') = bundle_sha256
   ),
   CONSTRAINT ftr_sends_finished CHECK ((status = 'started') = (finished_at IS NULL)),
+  CONSTRAINT ftr_sends_finished_after_created CHECK (finished_at IS NULL OR finished_at >= created_at),
   CONSTRAINT ftr_sends_import_when_sent CHECK (ftr_import_id IS NULL OR status = 'sent'),
   CONSTRAINT ftr_sends_error_len CHECK (error IS NULL OR length(error) <= 100)
 );
@@ -89,23 +97,62 @@ CREATE POLICY tenant_isolation ON ftr_sends
   USING (tenant_id = current_tenant_id())
   WITH CHECK (tenant_id = current_tenant_id());
 
--- The sweep (security-relevant: the only cross-tenant access to this table).
--- It may see and expire an open send older than an hour. Postgres also checks
--- an UPDATE's NEW row against the SELECT policy, so that policy must admit the
--- expired row too (no bundle by then); it admits nothing else.
-DROP POLICY IF EXISTS ftr_sends_worker_sweep_read ON ftr_sends;
-CREATE POLICY ftr_sends_worker_sweep_read ON ftr_sends
-  FOR SELECT TO app_worker
-  USING (status IN ('started', 'expired') AND created_at < now() - interval '1 hour');
+-- A closed send is final. The API (app_rw) holds UPDATE, so without this it
+-- could reopen a `sent` send with new bytes. S2 still closes with
+-- `UPDATE ... WHERE id = $1 AND status = 'started'` and checks the row count.
+CREATE OR REPLACE FUNCTION ftr_sends_closed_is_final() RETURNS trigger
+LANGUAGE plpgsql AS $fn$
+BEGIN
+  IF OLD.status <> 'started' THEN
+    RAISE EXCEPTION 'ftr_sends: a closed send (%) cannot be changed', OLD.status
+      USING ERRCODE = 'integrity_constraint_violation';
+  END IF;
+  RETURN NEW;
+END;
+$fn$;
+DROP TRIGGER IF EXISTS ftr_sends_closed_is_final ON ftr_sends;
+CREATE TRIGGER ftr_sends_closed_is_final BEFORE UPDATE ON ftr_sends
+  FOR EACH ROW EXECUTE FUNCTION ftr_sends_closed_is_final();
 
+-- The worker's sweep (SECURITY-RELEVANT: the only cross-tenant access to this
+-- table, and it is write-only for one fixed statement). The first draft gave
+-- app_worker two policies; both are dropped (this file is unmerged, the DROP
+-- covers a database that applied that draft).
+DROP POLICY IF EXISTS ftr_sends_worker_sweep_read ON ftr_sends;
 DROP POLICY IF EXISTS ftr_sends_worker_sweep ON ftr_sends;
-CREATE POLICY ftr_sends_worker_sweep ON ftr_sends
-  FOR UPDATE TO app_worker
-  USING (status = 'started' AND created_at < now() - interval '1 hour')
-  WITH CHECK (status = 'expired' AND bundle IS NULL);
+
+-- app_erasure is 0043's BYPASSRLS, NOLOGIN owner of the cross-tenant functions.
+-- Only the columns the one statement reads and writes.
+GRANT SELECT (id, status, created_at), UPDATE (bundle, status, finished_at) ON ftr_sends TO app_erasure;
+
+-- An open send older than an hour loses its bytes and is closed as expired.
+-- Idempotent; returns the number expired.
+CREATE OR REPLACE FUNCTION ftr_sends_expire_stale() RETURNS integer
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $fn$
+DECLARE
+  n integer;
+BEGIN
+  UPDATE ftr_sends SET bundle = NULL, status = 'expired', finished_at = now()
+   WHERE status = 'started' AND created_at < now() - interval '1 hour';
+  GET DIAGNOSTICS n = ROW_COUNT;
+  RETURN n;
+END;
+$fn$;
+REVOKE EXECUTE ON FUNCTION ftr_sends_expire_stale() FROM PUBLIC;
+ALTER FUNCTION ftr_sends_expire_stale() OWNER TO app_erasure;
+GRANT EXECUTE ON FUNCTION ftr_sends_expire_stale() TO app_worker;
+COMMENT ON FUNCTION ftr_sends_expire_stale() IS
+  'Expires FTR sends still open after an hour and clears their bundle bytes. Executable by app_worker only. 0049, docs/30 section 10.';
+
+-- S2 NOTE (review finding 8): app_identity can set yourtal_sign_in_flows.ftr_send_id
+-- to ANY workspace's send (a foreign-key check ignores RLS). So the send finish
+-- must load the send as app_rw under the session's tenant and match user_id to
+-- the session, never trusting flow.ftr_send_id alone; and refuse a send whose
+-- created_at is over an hour old whether or not the sweep has run.
 
 -- 0010's default ACL gives app_rw arwd on every new table: revoke, then grant
--- what is meant. Nothing deletes a send except the cascades. No reporting
+-- what is meant. app_worker inherits app_rw's grants but, with no policy and no
+-- workspace, sees and changes no row. Nothing deletes a send except the cascades. No reporting
 -- access (tax data).
 REVOKE ALL ON ftr_sends FROM app_rw, app_readonly;
 GRANT SELECT, INSERT, UPDATE ON ftr_sends TO app_rw;
