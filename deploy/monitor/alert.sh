@@ -34,6 +34,9 @@
 #     ERASURE_CHECK=off skips
 #   - no stuck YourTal voucher redemption (needs_review, captured with no grant,
 #     unfinished over 1 h, authorization_mismatch); VOUCHER_CHECK=off skips
+#   - the public sites answer 2xx/3xx (FTR health, SnapApp api ready, YourTal);
+#     UPTIME_CHECK=off skips
+#   - `nginx -t` passes, when nginx is on the host; NGINX_CHECK=off skips
 #   - Vault is not sealed
 #   - Vault's app token was renewed under 13 hours ago
 #
@@ -315,6 +318,31 @@ SQL
           record OK "vouchers: no stuck redemptions"
         fi ;;
     esac
+  fi
+
+  # 2c. The public sites answer: GET each URL, FAIL on anything but 2xx/3xx.
+  # Covers the apps that uptime.sh (snap-apps.gaiada.com only) does not.
+  # UPTIME_CHECK=off skips.
+  if [ "${UPTIME_CHECK:-on}" != off ]; then
+    for url in https://freetaxreturns.com.au/api/health https://snap-apps-api.gaiada.com/v1/ready https://yourtal.gaiada.com/; do
+      code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 10 "$url" 2>/dev/null) || code=000
+      case $code in
+        2??|3??) record OK "uptime: $url answered $code" ;;
+        *) record FAILED "uptime: $url answered $code (000 = unreachable)" ;;
+      esac
+    done
+  fi
+
+  # 2d. nginx would load its config: `nginx -t` catches a broken vhost (a missing
+  # certificate on ANOTHER project's site took every site down on a restart on
+  # 2026-11-04) before someone reloads. Skipped silently where nginx is absent.
+  # NGINX_CHECK=off skips.
+  if [ "${NGINX_CHECK:-on}" != off ] && command -v nginx >/dev/null 2>&1; then
+    if ngx=$(nginx -t 2>&1); then
+      record OK "nginx_config: nginx -t passes"
+    else
+      record FAILED "nginx_config: nginx -t failed: $(printf '%s' "$ngx" | grep -m1 -E 'emerg|error|failed' | cut -c1-200)"
+    fi
   fi
 
   # 3. Vault sealed state: a sealed Vault is an outage of every provider key.
