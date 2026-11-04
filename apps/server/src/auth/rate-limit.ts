@@ -53,6 +53,20 @@ export class RateLimiter {
   }
 
   /**
+   * True when this key has already used up the current window, WITHOUT
+   * counting this call: for limits that `consume` only on failure, so a
+   * caller that keeps succeeding is never throttled by someone else's noise.
+   */
+  async exhausted(key: string): Promise<boolean> {
+    const windowStart = new Date(Math.floor(Date.now() / this.windowMs) * this.windowMs);
+    const { rows } = await this.db().execute<{ count: number }>(sql`
+      SELECT count FROM rate_limits
+       WHERE bucket_key = ${key} AND window_start = ${windowStart.toISOString()}::timestamptz
+    `);
+    return (rows[0]?.count ?? 0) >= this.limit;
+  }
+
+  /**
    * Deletes THIS limiter's rows whose window has elapsed.
    *
    * Scoped by key prefix, and that scoping is the fix for a real defect. The

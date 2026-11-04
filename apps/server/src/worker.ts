@@ -33,6 +33,7 @@ import { importPdfStatement, StatementPageCapError } from './statements/pdf-stat
 import { rulesFor } from './taxrules/taxrules.repo.js';
 import { get as readObject } from './storage.js';
 import { enterTenantAsWorker, workerActor } from './tenant-entry.js';
+import { runErasureLoop } from './yourtal/events-job.js';
 import { runYourtalOutboxLoop } from './yourtal/outbox.js';
 import { runVoucherRedemptionLoop } from './yourtal/redemption-drain.js';
 
@@ -757,6 +758,16 @@ export async function runForever(intervalMs = 2000): Promise<void> {
     console.error('voucher redemption loop stopped:', error instanceof Error ? error.message : error);
   });
 
+  // YourTal's events and what they queue (docs/29 §6 S2): erasure, file
+  // purge and the members' notices. Its own loop, so a long erasure never
+  // holds up a scan. The worker sends mail only from here, so it installs
+  // the same transport the API does.
+  const { installMailer, selectMailer } = await import('./auth/mailer.js');
+  installMailer(await selectMailer());
+  const erasure = runErasureLoop(() => stopping).catch((error) => {
+    console.error('erasure loop stopped:', error instanceof Error ? error.message : error);
+  });
+
   const shadow = (async () => {
     while (!stopping) {
       try {
@@ -780,6 +791,7 @@ export async function runForever(intervalMs = 2000): Promise<void> {
   }
   await outbox;
   await vouchers;
+  await erasure;
   // A shadow pass can run up to DOCAI_SHADOW_TIMEOUT_MS, longer than the stop
   // grace. Give it a short while, then leave: its lock goes stale once the
   // heartbeat stops and it is re-queued, which is harmless (a rerun rewrites

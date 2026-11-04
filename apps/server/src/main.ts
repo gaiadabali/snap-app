@@ -16,6 +16,7 @@ import { sql } from 'drizzle-orm';
 
 import cors from '@fastify/cors';
 import { IdempotencyInterceptor } from './common/idempotency.interceptor.js';
+import { registerSecEventParser } from './yourtal/events.controller.js';
 
 /**
  * The API process.
@@ -155,6 +156,8 @@ export async function bootstrap(): Promise<NestFastifyApplication> {
   };
   fastify.addContentTypeParser(/^image\//, rawBody, passthrough);
   fastify.addContentTypeParser(/^application\/pdf$/, rawBody, passthrough);
+  // YourTal's Security Event Tokens (docs/29 §6 S2): text, 16 KB at most.
+  registerSecEventParser(fastify);
 
   /**
    * Keep the RAW body for the Stripe webhook, and only for it.
