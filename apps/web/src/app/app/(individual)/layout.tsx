@@ -132,7 +132,7 @@ export default async function IndividualLayout({ children }: { children: ReactNo
       otherKindHref={BUSINESS_SURFACES_ENABLED && businessWorkspace ? '/app/business' : null}
       nav={teen ? individualNavFor(yourtalAvailable, true) : nav}
     >
-      {moveYourtal ? <YourtalMovePrompt /> : null}
+      {moveYourtal ? <YourtalMovePrompt email={user.email} /> : null}
       {teen ? <TeenNotice parentName={parentName} /> : null}
       {workspace.teenSpace === 'parent' ? <ViewOnlyNotice spaceName={workspace.name} /> : null}
       <HouseAdProvider context={{ yourtalAvailable, noAds: teen }}>{children}</HouseAdProvider>

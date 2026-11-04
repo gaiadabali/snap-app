@@ -8,6 +8,14 @@
  */
 export const YOURTAL_MOVE_COOKIE = 'snap_yourtal_move_dismissed';
 
+/** `/app?yourtal_move=email_mismatch`: where the callback sends a move whose YourTal email was another one. */
+export const YOURTAL_MOVE_PARAM = 'yourtal_move';
+export const YOURTAL_MOVE_MISMATCH = 'email_mismatch';
+
+/** The person's own address, shown only to them in their own signed-in page. */
+export const moveMismatchMessage = (email: string): string =>
+  `Your YourTal account uses a different email. Use the YourTal account with ${email}, or change your SnapApp email first.`;
+
 export function showYourtalMove(input: {
   yourtalLinked: boolean | undefined;
   teenSpace: 'teen' | 'parent' | null | undefined;

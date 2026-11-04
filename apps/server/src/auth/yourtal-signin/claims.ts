@@ -44,6 +44,10 @@ export const REFUSALS = {
     HttpStatus.FORBIDDEN,
     'SnapApp is for YourTal accounts in Australia and Indonesia, so you can’t use this account here.',
   ],
+  yourtal_email_mismatch: [
+    HttpStatus.CONFLICT,
+    'Your YourTal account uses a different email. Use the YourTal account with your SnapApp email, or change your SnapApp email first.',
+  ],
   teen_invite_required: [
     HttpStatus.FORBIDDEN,
     'You need an invite from your parent. To use SnapApp with a teen account, the parent or guardian ' +

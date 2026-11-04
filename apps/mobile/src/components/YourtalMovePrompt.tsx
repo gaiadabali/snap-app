@@ -5,7 +5,7 @@ import { View } from 'react-native';
 
 import { api } from '@/api';
 import { Body, Button, Card, Notice, Small } from '@/components/ui';
-import { MOVE_COPY, showYourtalMove, YOURTAL_MOVE_KEY } from '@/lib/yourtal-move';
+import { MOVE_COPY, moveMismatchMessage, showYourtalMove, YOURTAL_MOVE_KEY } from '@/lib/yourtal-move';
 import { runYourtalSignIn } from '@/lib/yourtal-signin';
 import { space } from '@/theme';
 
@@ -45,8 +45,11 @@ export function YourtalMovePromptView({
 export function YourtalMovePrompt({
   yourtalLinked,
   teenSpace,
+  email,
   onLinked,
 }: {
+  /** The signed-in account's own address, for the "different email" sentence. */
+  email: string;
   yourtalLinked: boolean | undefined;
   teenSpace: 'teen' | 'parent' | null | undefined;
   /** The account is linked now: re-read the session. */
@@ -85,10 +88,12 @@ export function YourtalMovePrompt({
           openBrowser: (url, redirect) => WebBrowser.openAuthSessionAsync(url, redirect),
           finish: (input) => api().finishYourtalSignIn(input),
         },
-        { signUp: false, freshSignIn: false },
+        { signUp: false, freshSignIn: false, moveCurrentAccount: true },
       );
       if (result.kind === 'signed-in') await onLinked();
-      else if (result.kind === 'failed') setError(result.message);
+      else if (result.kind === 'failed') {
+        setError(result.code === 'yourtal_email_mismatch' ? moveMismatchMessage(email) : result.message);
+      }
     } finally {
       setBusy(false);
     }

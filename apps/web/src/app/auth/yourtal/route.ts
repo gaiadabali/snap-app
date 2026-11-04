@@ -27,6 +27,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   // A parent's join link (`/auth/yourtal?teenInvite=<code>`): the API checks
   // the code's shape and hands it to YourTal, which checks the guardian.
   const teenInvite = params.get('teenInvite') ?? undefined;
+  // The "keep your account" prompt (3.6.e): the API ties the flow to THIS session's account.
+  const move = params.get('move') === '1';
 
   let result: StartResult;
   try {
@@ -38,9 +40,12 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         signUp,
         ...(freshSignIn ? { freshSignIn } : {}),
         ...(teenInvite ? { teenInvite } : {}),
+        ...(move ? { moveCurrentAccount: true } : {}),
         locale: 'en-AU',
       },
-      anonymous: true,
+      // Ordinary sign-ins send no session; a move must send it.
+      anonymous: !move,
+      bypassImpersonation: move,
     });
   } catch (error) {
     // A code, never text: the page words it (see `auth-errors.ts`).

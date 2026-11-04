@@ -23,6 +23,7 @@ export const AUTH_ERRORS = {
   try_again: { message: 'Something changed while you were signing in. Please try again.' },
   link_invalid: { message: 'That sign-in link is no longer valid. Please try again.' },
   invalid_flow: { message: 'That sign-in link is no longer valid. Please try again.' },
+  session_expired: { message: 'Your session ended. Sign in again, then try once more.' },
 
   // YourTal
   yourtal_cancelled: { message: 'Sign-in with YourTal was cancelled. Nothing was shared.', quiet: true },
@@ -30,6 +31,10 @@ export const AUTH_ERRORS = {
   not_configured: { message: "Sign-in with YourTal isn't available right now." },
   yourtal_failed: { message: "We couldn't sign you in with YourTal. Please try again." },
   use_yourtal: { message: 'This account signs in with YourTal. Use the Sign in with YourTal button.' },
+  yourtal_email_mismatch: {
+    message:
+      'Your YourTal account uses a different email. Use the YourTal account with your SnapApp email, or change your SnapApp email first.',
+  },
   teen_invite_required: { message: TEEN_INVITE },
   teen_invite_expired: { message: 'This invite has expired or has already been used. Ask your parent for a new one.' },
   teen_access_ended: {

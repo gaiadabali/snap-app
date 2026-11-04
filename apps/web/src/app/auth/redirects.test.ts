@@ -171,6 +171,38 @@ describe('YourTal start route: fresh sign-in', () => {
   });
 });
 
+describe('YourTal start route: keep your account (move=1)', () => {
+  const started = { url: 'https://yt.test/auth?x=1', flowId: 'f1', expiresAt: '2026-11-03T00:00:00Z' };
+  const call = () => apiMock.mock.calls[0]! as [string, { body: Record<string, unknown>; anonymous?: boolean; bypassImpersonation?: boolean }];
+
+  it('sends the session (not anonymous) and moveCurrentAccount, and nothing like an account id', async () => {
+    apiMock.mockResolvedValue(started);
+    const { GET } = await import('./yourtal/route');
+    await GET(req('/auth/yourtal?returnTo=%2Fapp&move=1&moveUserId=evil'));
+    const [path, opts] = call();
+    expect(path).toBe('/v1/auth/yourtal/start');
+    expect(opts.anonymous).toBe(false);
+    expect(opts.bypassImpersonation).toBe(true);
+    expect(opts.body).toMatchObject({ client: 'web', moveCurrentAccount: true });
+    expect(JSON.stringify(opts.body)).not.toContain('evil');
+  });
+
+  it('an ordinary start stays anonymous and carries no move flag', async () => {
+    apiMock.mockResolvedValue(started);
+    const { GET } = await import('./yourtal/route');
+    await GET(req('/auth/yourtal?returnTo=%2Fapp'));
+    const [, opts] = call();
+    expect(opts.anonymous).toBe(true);
+    expect(opts.body).not.toHaveProperty('moveCurrentAccount');
+  });
+
+  it('a move whose session ended lands on /sign-in with the session_expired code', async () => {
+    apiMock.mockRejectedValue(new ApiErrorCtor(401, 'x', { error: 'session_expired', message: 'x' }));
+    const { GET } = await import('./yourtal/route');
+    expect(errorOf(await GET(req('/auth/yourtal?move=1')))).toBe('session_expired');
+  });
+});
+
 describe('YourTal callback route', () => {
   const cb = (query: string) =>
     req(`/auth/yourtal/callback?${query}`, { headers: { cookie: 'snap_yt_flow=flow1' } });
@@ -220,6 +252,19 @@ describe('YourTal callback route', () => {
     const { GET } = await import('./yourtal/callback/route');
     const res = await GET(cb('code=c&state=s&iss=https%3A%2F%2Fyt.test'));
     expect(res.headers.get('location')).toBe(signIn(code));
+  });
+
+  it('a move with another YourTal email goes back to /app with the flow cookie cleared, not to /sign-in', async () => {
+    apiMock.mockRejectedValue(
+      new ApiErrorCtor(409, 'x', { error: 'yourtal_email_mismatch', message: 'x' }),
+    );
+    const { GET } = await import('./yourtal/callback/route');
+    const res = await GET(cb('code=c&state=s&iss=https%3A%2F%2Fyt.test'));
+    expect(res.headers.get('location')).toBe(`${PUBLIC}/app?yourtal_move=email_mismatch`);
+    const cookie = res.headers.get('set-cookie') ?? '';
+    expect(cookie).toContain('snap_yt_flow=;');
+    expect(cookie.toLowerCase()).toMatch(/max-age=0|expires=thu, 01 jan 1970/);
+    expect(cookie).not.toContain('snap_session');
   });
 
   it('an unknown server code or non-API failure is the generic yourtal_failed', async () => {
