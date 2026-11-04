@@ -482,6 +482,17 @@ export function yourtalPartnerSecret(): string | undefined {
   return yourtalFileSetting('YOURTAL_PARTNER_SECRET');
 }
 
+/**
+ * The client id YourTal's Security Event Tokens are addressed to (their
+ * `aud`; yourtal/docs/29 §4.3), e.g. `snapapp-staging-server`:
+ * `YOURTAL_OIDC_SERVER_CLIENT_ID` in the environment, or the line of that name
+ * in `YOURTAL_ENV_FILE`. Unset, `POST /v1/yourtal/events` answers 503 and the
+ * worker leaves its jobs queued. Read per call, so the file needs no restart.
+ */
+export function yourtalEventsClientId(): string | undefined {
+  return process.env.YOURTAL_OIDC_SERVER_CLIENT_ID?.trim() || yourtalFileSetting('YOURTAL_OIDC_SERVER_CLIENT_ID');
+}
+
 /** The shortest `YOURTAL_RECEIPT_REF_KEY` taken seriously. */
 export const RECEIPT_REF_KEY_MIN_LENGTH = 32;
 

@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import type { AddressInfo } from 'node:net';
 
-import { exportJWK, generateKeyPair, type JWK } from 'jose';
+import { exportJWK, generateKeyPair, SignJWT, type JWK, type JWTPayload } from 'jose';
 import Provider, { interactionPolicy } from 'oidc-provider';
 
 /**
@@ -70,6 +70,15 @@ export type FakeYourTalOidc = {
   publishWrongJwks: boolean;
   /** Every refusal at the token endpoint, as the provider describes it ("client mismatch", ...). */
   grantErrors: string[];
+  /** The `aud` of the Security Event Tokens it sends SnapApp's server (docs/29 §4.1). */
+  serverClientId: string;
+  /**
+   * Signs a Security Event Token as YourTal's sender does (docs/29 §4.1):
+   * header `{typ: secevent+jwt, alg: RS256, kid}` with the provider's OWN
+   * signing key. `header` overrides header fields (a wrong `typ` or `kid`);
+   * `impostor` signs with a different key under the same `kid`.
+   */
+  signSet(payload: JWTPayload, options?: { header?: Record<string, unknown>; impostor?: boolean }): Promise<string>;
   /** The `sub` this provider gives an account (pairwise, same for both clients). */
   subFor(accountId: string): string;
   /** Follow an authorization URL like a browser; returns the URL YourTal redirected to. */
@@ -116,6 +125,11 @@ export async function startFakeYourTalOidc(): Promise<FakeYourTalOidc> {
     lastAuthorizationParams: null,
     publishWrongJwks: false,
     grantErrors: [],
+    serverClientId: 'snapapp-test-server',
+    signSet: (payload, options = {}) =>
+      new SignJWT(payload)
+        .setProtectedHeader({ typ: 'secevent+jwt', alg: 'RS256', kid: providerJwk.kid, ...options.header } as never)
+        .sign(options.impostor ? impostor.privateKey : signing.privateKey),
     subFor,
     authorize: (url) => followAsBrowser(url, fake),
     close: () => new Promise<void>((resolve) => server.close(() => resolve())),

@@ -1,0 +1,217 @@
+import { rmSync } from 'node:fs';
+import { join, resolve } from 'node:path';
+
+import { claimJobs, completeJob, failJob, type Db } from '@snap/db';
+import { sql } from 'drizzle-orm';
+
+import { sendAndRecord } from '../auth/mail-delivery.js';
+import { config } from '../config.js';
+import { getDb } from '../db.js';
+import { EVENT, verifySet, YOURTAL_EVENT_JOB, yourtalEventsSettings } from './events-verify.js';
+
+/**
+ * The worker's half of YourTal's events (group task 3.7, ticket S2;
+ * yourtal/docs/29 §6). Three job kinds, all with tenant_id NULL so none
+ * cascades away with a workspace it erases:
+ *
+ *   yourtal_event   the raw SET the endpoint stored. RE-VERIFIED here (the
+ *                   row is no trust boundary: app_rw can insert one). For
+ *                   `account-deleted`: identity_yourtal_subject_erase(sub),
+ *                   then erase_person on the user id THAT returns — never an
+ *                   id from the payload — with the members' notices queued in
+ *                   the same transaction (erase_person returns them once).
+ *   storage_purge   queued by erase_workspace (0043): removes {STORAGE_DIR}/
+ *                   {tenantId}/, only for a uuid, and only once that
+ *                   workspace no longer exists.
+ *   erasure_notice  one email to a member left behind; the address is
+ *                   re-checked first (its owner may have been erased since),
+ *                   and the payload is emptied once it is done.
+ *
+ * Any of these with a tenant_id is refused unread. A `yourtal_event` is not
+ * claimed while unconfigured, and a failure on our side (YourTal's keys
+ * unreachable) postpones it without spending an attempt.
+ *
+ * Logs carry the jti, type and outcome; never the token, the sub or an address.
+ */
+
+export const STORAGE_PURGE_JOB = 'storage_purge';
+export const ERASURE_NOTICE_JOB = 'erasure_notice';
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+type Job = { id: string; tenantId: string | null; payload: unknown };
+
+/** Our side failed (YourTal's keys unreachable), not the job: retry later without spending an attempt. */
+class NotNow extends Error {}
+type Log = Pick<Console, 'log' | 'warn' | 'error'>;
+
+async function handleEvent(db: Db, job: Job, log: Log): Promise<void> {
+  const settings = yourtalEventsSettings();
+  if (!settings) throw new NotNow('YourTal events are not configured');
+  const token = (job.payload as { set?: unknown } | null)?.set;
+  if (typeof token !== 'string') throw new Error('no SET in the payload');
+  const verified = await verifySet(token, settings, { maxAge: false });
+  if (!verified.ok) {
+    if (verified.status === 503) throw new NotNow(`the SET could not be re-verified: ${verified.reason}`);
+    throw new Error(`the SET failed re-verification: ${verified.err}`);
+  }
+  const { jti, sub, type, body } = verified.set;
+  if (jti !== job.id.toLowerCase()) throw new Error('the SET belongs to another job');
+
+  if (type === EVENT.accountDeleted) {
+    const outcome = await db.transaction(async (tx) => {
+      const erased = await tx.execute<{ user_id: string | null }>(
+        sql`select identity_yourtal_subject_erase(${sub}) as user_id`,
+      );
+      const userId = erased.rows[0]?.user_id;
+      if (!userId) return 'unknown sub, recorded as erased';
+      const { rows } = await tx.execute<{ workspace_id: string; outcome: 'erased' | 'handed_over'; notify_emails: string[] }>(
+        sql`select workspace_id, outcome, notify_emails from erase_person(${userId}::uuid)`,
+      );
+      let notices = 0;
+      for (const row of rows) {
+        for (const to of row.notify_emails) {
+          await tx.execute(sql`
+            insert into jobs (id, tenant_id, kind, payload, max_attempts)
+            values (gen_random_uuid(), null, ${ERASURE_NOTICE_JOB},
+                    ${JSON.stringify({ to, outcome: row.outcome })}::jsonb, 10)
+          `);
+          notices += 1;
+        }
+      }
+      const erasedCount = rows.filter((r) => r.outcome === 'erased').length;
+      return `person erased: ${erasedCount} workspace(s) erased, ${rows.length - erasedCount} handed over, ${notices} notice(s) queued`;
+    });
+    log.log(`yourtal event ${jti} account-deleted: ${outcome}`);
+    return;
+  }
+
+  if (type === EVENT.accessEnded) {
+    // Sessions opened before iat were ended by the endpoint. Erasing a teen's
+    // space after 30 days is S3 (with 3.10.b); until then no teen reaches
+    // SnapApp, so this only logs.
+    const hold = body.erase_data === true ? `; erase_data (${String(body.reason)}) waits for the teen hold, S3` : '';
+    log.log(`yourtal event ${jti} access-ended: sessions already ended${hold}`);
+    return;
+  }
+
+  log.log(`yourtal event ${jti} ${type}: not a type SnapApp acts on; acknowledged`);
+}
+
+async function handleStoragePurge(db: Db, job: Job, log: Log): Promise<void> {
+  const tenantId = (job.payload as { tenantId?: unknown } | null)?.tenantId;
+  if (typeof tenantId !== 'string' || !UUID.test(tenantId)) throw new Error('storage_purge: tenantId is not a uuid');
+  const exists = await db.transaction(async (tx) => {
+    await tx.execute(sql`select set_config('app.tenant_id', ${tenantId}, true)`);
+    const { rows } = await tx.execute<{ found: boolean }>(
+      sql`select exists (select 1 from tenants where id = current_tenant_id()) as found`,
+    );
+    return rows[0]?.found !== false;
+  });
+  if (exists) throw new Error(`storage_purge: workspace ${tenantId} still exists; refusing`);
+  const root = resolve(config().STORAGE_DIR);
+  const dir = resolve(join(root, tenantId.toLowerCase()));
+  if (resolve(dir, '..') !== root) throw new Error('storage_purge: refusing a path outside the storage root');
+  rmSync(dir, { recursive: true, force: true });
+  log.log(`storage_purge ${job.id}: removed the files of workspace ${tenantId}`);
+}
+
+const NOTICE = {
+  erased: {
+    subject: 'A SnapApp workspace you belonged to has been deleted',
+    text:
+      'Hello,\n\nThe person who ran a SnapApp workspace you belonged to has deleted their account, and no other ' +
+      'owner or admin was left. So the workspace and everything in it, including its receipts, files and ' +
+      'records, have been deleted, and SnapApp cannot restore them.\n\nYour own SnapApp account and any other ' +
+      'workspaces are unchanged.\n\nSnapApp',
+  },
+  handed_over: {
+    subject: 'You are now the owner of a SnapApp workspace',
+    text:
+      'Hello,\n\nThe only owner of a SnapApp workspace you are an admin of has deleted their account. As its ' +
+      'longest-serving admin, you are now its owner. Nothing in the workspace has been deleted.\n\nSnapApp',
+  },
+} as const;
+
+async function handleNotice(db: Db, job: Job, log: Log): Promise<void> {
+  const { to, outcome } = (job.payload ?? {}) as { to?: unknown; outcome?: unknown };
+  if (typeof to !== 'string' || (outcome !== 'erased' && outcome !== 'handed_over')) {
+    throw new Error('erasure_notice: malformed payload');
+  }
+  // The address came from erase_person; its owner may have been erased since.
+  const { rows } = await db.execute<{ live: boolean }>(
+    sql`select exists (select 1 from identity_password_lookup(${to}::citext)) as live`,
+  );
+  if (!rows[0]?.live) {
+    log.log(`erasure_notice ${job.id}: no account has this address any more; not sent`);
+    return;
+  }
+  const sent = await sendAndRecord('notification', { to, ...NOTICE[outcome] });
+  if (sent.outcome === 'transient') throw new Error('erasure_notice: transient mail failure');
+  log.log(`erasure_notice ${job.id}: ${sent.outcome}`);
+}
+
+const HANDLERS: Array<[string, (db: Db, job: Job, log: Log) => Promise<void>]> = [
+  [YOURTAL_EVENT_JOB, handleEvent],
+  [STORAGE_PURGE_JOB, handleStoragePurge],
+  [ERASURE_NOTICE_JOB, handleNotice],
+];
+
+/** Claims and runs what is due of the three kinds, events first. Returns how many jobs ran. */
+export async function runErasureJobsOnce(db: Db = getDb(), log: Log = console): Promise<number> {
+  const workerId = `worker-${process.pid}-erasure`;
+  let ran = 0;
+  for (const [kind, handle] of HANDLERS) {
+    // Unconfigured, an event job is left alone: claiming it would spend an attempt.
+    if (kind === YOURTAL_EVENT_JOB && !yourtalEventsSettings()) continue;
+    for (const job of await claimJobs(db, kind, workerId, 1)) {
+      ran += 1;
+      try {
+        // These kinds are system jobs. One with a tenant was written inside a
+        // workspace (app_rw can, under jobs_tenant), not by us: never act on it.
+        if (job.tenantId !== null) throw new Error(`a ${kind} job must have no tenant; refusing`);
+        await handle(db, job, log);
+        if (kind === ERASURE_NOTICE_JOB) {
+          // Done with the address: a completed job is kept, its recipient is not.
+          await db.execute(sql`
+            update jobs set completed_at = now(), locked_at = null, last_error = null, payload = '{}'::jsonb
+             where id = ${job.id}
+          `);
+        } else {
+          await completeJob(db, job.id);
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        if (error instanceof NotNow) {
+          // Give the attempt back and look again in a minute.
+          await db.execute(sql`
+            update jobs set attempts = greatest(attempts - 1, 0), locked_at = null, locked_by = null,
+                            last_error = ${message}, run_after = now() + interval '60 seconds'
+             where id = ${job.id}
+          `);
+          log.warn(`${kind} job ${job.id} postponed: ${message}`);
+        } else {
+          await failJob(db, job.id, message);
+          log.error(`${kind} job ${job.id} failed: ${message}`);
+        }
+      }
+    }
+  }
+  return ran;
+}
+
+/** The loop the worker runs beside extraction. */
+export async function runErasureLoop(isStopping: () => boolean, idleMs = 5_000): Promise<void> {
+  while (!isStopping()) {
+    let ran = 0;
+    try {
+      ran = await runErasureJobsOnce();
+    } catch (error) {
+      console.error('erasure jobs:', error instanceof Error ? error.message : error);
+    }
+    if (ran === 0) {
+      const until = Date.now() + idleMs;
+      while (!isStopping() && Date.now() < until) await new Promise((r) => setTimeout(r, 500));
+    }
+  }
+}
