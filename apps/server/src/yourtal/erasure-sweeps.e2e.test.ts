@@ -30,6 +30,7 @@ describeIfDb('erasure sweeps', () => {
   let storage: string;
   let outside: string;
   let sweep: (db: Db, log?: typeof quiet, root?: string) => Promise<{ blanked: number; orphans: number }>;
+  let ftrSweep: (db: Db, log?: typeof quiet) => Promise<{ expired: number }>;
   const jobIds: string[] = [];
 
   const addJob = async (kind: string, completedDaysAgo: number | null, payload: object) => {
@@ -62,7 +63,7 @@ describeIfDb('erasure sweeps', () => {
     await admin.query('update tenants set deleted_at = now() where id = $1', [SOFT]);
     pool = createPool(workerDatabaseUrl());
     db = createDb(pool);
-    ({ runErasureSweepsOnce: sweep } = await import('./events-job.js'));
+    ({ runErasureSweepsOnce: sweep, runFtrSendSweepOnce: ftrSweep } = await import('./events-job.js'));
   });
 
   afterAll(async () => {
@@ -161,6 +162,27 @@ describeIfDb('erasure sweeps', () => {
     utimesSync(fresh, when, when);
     expect((await sweep(db, quiet, storage)).orphans).toBe(1);
     expect(existsSync(fresh)).toBe(false);
+  });
+
+  it('FTR sends: an open send over an hour old loses its bundle and is expired; a fresh or closed one is left', async () => {
+    const add = async (status: string, minutesOld: number) =>
+      (
+        await admin.query(
+          `insert into ftr_sends (tenant_id, user_id, financial_year, line_count, bundle_sha256, bundle, status, finished_at, created_at)
+           values ($1, $2, '2025-26', 1, encode(sha256(convert_to('{"k":1}', 'UTF8')), 'hex'), $3, $4, $5, now() - make_interval(mins => $6)) returning id`,
+          [LIVE, USER, status === 'started' ? '{"k":1}' : null, status, status === 'started' ? null : new Date(), minutesOld],
+        )
+      ).rows[0].id as string;
+    const stale = await add('started', 90);
+    const fresh = await add('started', 30);
+    const sent = await add('sent', 300);
+    const row = async (id: string) => (await admin.query('select status, bundle from ftr_sends where id = $1', [id])).rows[0];
+
+    expect((await ftrSweep(db, quiet)).expired).toBe(1);
+    expect(await row(stale)).toEqual({ status: 'expired', bundle: null });
+    expect(await row(fresh)).toEqual({ status: 'started', bundle: '{"k":1}' });
+    expect(await row(sent)).toEqual({ status: 'sent', bundle: null });
+    expect((await ftrSweep(db, quiet)).expired).toBe(0);
   });
 
   it('is quiet when the storage directory does not exist', async () => {

@@ -296,7 +296,7 @@ describeIfDb('erase_person (migration 0043)', () => {
     await c.end();
   });
 
-  it('the spill guard sees every foreign key into workspace data, bar two pinned exceptions', async () => {
+  it('the spill guard sees every foreign key into workspace data, bar the pinned exceptions', async () => {
     // erase_workspace checks single-column FKs between two tables that both
     // have tenant_id. Any other FK that lands on workspace data is a shape it
     // would skip: a composite FK, a second FK to tenants, a table without
@@ -327,6 +327,9 @@ describeIfDb('erase_person (migration 0043)', () => {
       'teen_spaces.funding_tenant_id -> tenants',
       // No tenant_id: a delivery belongs to its endpoint's workspace.
       'webhook_deliveries.endpoint_id -> webhook_endpoints',
+      // FTR sends (0049): a sign-in flow has no tenant_id; it cascades with the
+      // send it confirms, and nothing in another workspace can point at it.
+      'yourtal_sign_in_flows.ftr_send_id -> ftr_sends',
     ]);
   });
 

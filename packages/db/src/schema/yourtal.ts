@@ -84,6 +84,30 @@ export const yourtalSignInFlows = pgTable('yourtal_sign_in_flows', {
   teenInviteId: uuid('teen_invite_id'),
   /** The signed-in account that started this flow from the move prompt (0048). */
   moveUserId: uuid('move_user_id'),
+  /** The send to Free Tax Returns this sign-in confirms (0049). */
+  ftrSendId: uuid('ftr_send_id'),
+});
+
+/**
+ * A "Send to Free Tax Returns" (migration 0049, group 4.8.a): workspace-scoped,
+ * forced RLS. `bundle` holds the exact bytes only while `status` is 'started';
+ * the worker's sweep expires a send left open over an hour.
+ */
+export const ftrSends = pgTable('ftr_sends', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: uuid('tenant_id').notNull(),
+  userId: uuid('user_id').notNull(),
+  financialYear: text('financial_year').notNull(),
+  lineCount: integer('line_count').notNull(),
+  bundleSha256: char('bundle_sha256', { length: 64 }).notNull(),
+  bundle: text('bundle'),
+  yourtalTransferId: text('yourtal_transfer_id'),
+  /** 'started' | 'sent' | 'cancelled' | 'failed' | 'expired'. */
+  status: text('status').notNull().default('started'),
+  error: text('error'),
+  ftrImportId: text('ftr_import_id'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  finishedAt: timestamp('finished_at', { withTimezone: true }),
 });
 
 /**
