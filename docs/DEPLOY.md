@@ -562,6 +562,13 @@ DIRECTORY at that path, which then blocks the real file. Check it took:
 `GET /v1/yourtal/link` answers `"available": true`, and the worker's log has
 no `yourtal outbox: partner link off` line after its `worker up`.
 
+The website client's signing key (`YOURTAL_OIDC_KEY_FILE_HOST`, mounted at
+`/run/secrets/yourtal-oidc-web.jwk`, same rules) is mounted into BOTH the api
+(Sign in with YourTal) and the worker (`teen_invite_end` jobs sign a
+client-credentials assertion with it). The worker also needs
+`YOURTAL_OIDC_ISSUER` (deploy/.env) and `YOURTAL_OIDC_SERVER_CLIENT_ID` (in
+`yourtal.env`); without the key the job stays queued.
+
 ### YourTal scans voucher: merchant settings, turning it on, rollback (group plan 2.8)
 
 A person buys "50 SnapApp scans" in YourTal for 200 points and types the code
