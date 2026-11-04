@@ -60,7 +60,8 @@ export default function PayScreen() {
   }, [params.card]);
 
   useEffect(() => {
-    if (!params.pack || charging.current) return undefined;
+    // A teen's space buys nothing (F112): no purchase request, even before the redirect below renders.
+    if (teenSpace || !params.pack || charging.current) return undefined;
     charging.current = true;
     let live = true;
 
@@ -90,7 +91,7 @@ export default function PayScreen() {
     return () => {
       live = false;
     };
-  }, [params.pack, attempt]);
+  }, [params.pack, attempt, teenSpace]);
 
   const body = {
     flex: 1,

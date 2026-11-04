@@ -141,7 +141,7 @@ export class FamilyController {
     if (!parentSub) throw new ForbiddenException({ error: 'yourtal_sign_in_required', message: 'Sign in with YourTal first.' });
     // Here first, with YourTal's end queued in the same transaction, so the
     // teen is out and YourTal is told even if this request dies right after.
-    await endTeenSpace(user.userId, workspaceId, parentSub);
+    await endTeenSpace(user.userId, workspaceId);
     // Then YourTal now, when it answers; the queued job finds nothing left to do.
     const atYourTal = await endTeenInvite(space.inviteId, parentSub);
     if (atYourTal === 'ended') await markYourtalEnded(user.userId, space.inviteId);

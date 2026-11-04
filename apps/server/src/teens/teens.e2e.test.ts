@@ -526,7 +526,7 @@ describeIfDb('teen spaces — real database, real provider', () => {
       const inviteId = (await admin.query('SELECT invite_id FROM teen_spaces WHERE tenant_id = $1', [space])).rows[0].invite_id;
       // The request's first step, then nothing: as if it died before reaching YourTal.
       const { endTeenSpace } = await import('./teens.repo.js');
-      expect(await endTeenSpace((await userIdOf(parent))!, space, yt.subFor(parent.accountId))).toBe(true);
+      expect(await endTeenSpace((await userIdOf(parent))!, space)).toBe(true);
       expect(yt.teenInvites.get(inviteId)?.status).toBe('accepted');
 
       // The parent's retry on the ended space keeps one job, not two.

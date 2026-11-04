@@ -134,11 +134,9 @@ export async function spaceOfParent(
  * again on an ended space, it only makes sure that job exists. False when
  * access had already ended.
  */
-export async function endTeenSpace(parentUserId: string, tenantId: string, parentSub: string): Promise<boolean> {
+export async function endTeenSpace(parentUserId: string, tenantId: string): Promise<boolean> {
   return asUser(getDb(), parentUserId, async (tx) => {
-    const { rows } = await tx.execute<{ ended: boolean }>(sql`
-      select teen_space_end(${tenantId}::uuid, ${parentSub}) as ended
-    `);
+    const { rows } = await tx.execute<{ ended: boolean }>(sql`select teen_space_end(${tenantId}::uuid) as ended`);
     return rows[0]?.ended === true;
   });
 }

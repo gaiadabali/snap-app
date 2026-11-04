@@ -270,10 +270,10 @@ describeIfDb('teen spaces (migration 0045)', () => {
       [TEEN, randomBytes(32)],
     );
     await as('app_rw', TEEN, null);
-    expect(await failure(`SELECT teen_space_end($1, 'parent-sub')`, [space])).toMatch(/^42501/);
+    expect(await failure(`SELECT teen_space_end($1)`, [space])).toMatch(/^42501/);
     await as('app_rw', PARENT, null);
-    expect((await c.query(`SELECT teen_space_end($1, 'parent-sub') AS ended`, [space])).rows[0].ended).toBe(true);
-    expect((await c.query(`SELECT teen_space_end($1, 'parent-sub') AS ended`, [space])).rows[0].ended).toBe(false);
+    expect((await c.query(`SELECT teen_space_end($1) AS ended`, [space])).rows[0].ended).toBe(true);
+    expect((await c.query(`SELECT teen_space_end($1) AS ended`, [space])).rows[0].ended).toBe(false);
 
     await c.query('RESET ROLE');
     const row = (
@@ -293,13 +293,22 @@ describeIfDb('teen spaces (migration 0045)', () => {
     await c.query('RESET ROLE');
     const jobs = async () =>
       (await c.query(`SELECT tenant_id, payload FROM jobs WHERE kind = 'teen_invite_end' AND completed_at IS NULL`)).rows;
-    expect(await jobs()).toEqual([{ tenant_id: null, payload: { inviteId: INVITE, parentSub: 'parent-sub' } }]);
+    // The parent's sub comes from their own user row ('yourtal|teen-parent').
+    expect(await jobs()).toEqual([{ tenant_id: null, payload: { inviteId: INVITE, parentSub: 'teen-parent' } }]);
     // A retry after the job is gone puts it back; once YourTal confirmed, nothing more is queued.
     await c.query(`DELETE FROM jobs WHERE kind = 'teen_invite_end'`);
     await as('app_rw', PARENT, null);
-    await c.query(`SELECT teen_space_end($1, 'parent-sub')`, [space]);
+    await c.query(`SELECT teen_space_end($1)`, [space]);
     await c.query('RESET ROLE');
     expect(await jobs()).toHaveLength(1);
+    // A job that used up its attempts is dead: a retry queues a fresh one beside it.
+    await c.query(`UPDATE jobs SET attempts = max_attempts WHERE kind = 'teen_invite_end'`);
+    await as('app_rw', PARENT, null);
+    await c.query(`SELECT teen_space_end($1)`, [space]);
+    await c.query('RESET ROLE');
+    expect(
+      (await c.query(`SELECT attempts < max_attempts AS live FROM jobs WHERE kind = 'teen_invite_end' ORDER BY live`)).rows,
+    ).toEqual([{ live: false }, { live: true }]);
 
     await as('app_worker', null, null);
     expect((await c.query('SELECT teen_invite_end_needed($1) AS n', [INVITE])).rows[0].n).toBe(true);
@@ -314,7 +323,7 @@ describeIfDb('teen spaces (migration 0045)', () => {
     await c.query('RESET ROLE');
     await c.query(`DELETE FROM jobs WHERE kind = 'teen_invite_end'`);
     await as('app_rw', PARENT, null);
-    await c.query(`SELECT teen_space_end($1, 'parent-sub')`, [space]);
+    await c.query(`SELECT teen_space_end($1)`, [space]);
     await c.query('RESET ROLE');
     expect(await jobs()).toEqual([]);
   });

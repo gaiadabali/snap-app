@@ -342,11 +342,13 @@ END $fn$;
 -- queued for the worker, so YourTal's invite is ended even if the request
 -- dies before the API reaches YourTal. A retry on an ended space only makes
 -- sure that job exists while YourTal has not confirmed. Returns true when
--- access ended just now.
-CREATE OR REPLACE FUNCTION teen_space_end(p_tenant uuid, p_parent_sub text) RETURNS boolean
+-- access ended just now. The parent's YourTal `sub` (for the job) is read
+-- here, from their own user row, never taken from the caller.
+CREATE OR REPLACE FUNCTION teen_space_end(p_tenant uuid) RETURNS boolean
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $fn$
 DECLARE
-  v_space teen_spaces%ROWTYPE;
+  v_space   teen_spaces%ROWTYPE;
+  v_subject text;
 BEGIN
   SELECT * INTO v_space FROM teen_spaces t
    WHERE t.tenant_id = p_tenant AND t.parent_user_id = current_user_id()
@@ -354,14 +356,19 @@ BEGIN
   IF NOT FOUND THEN
     RAISE EXCEPTION 'teen_space_end: not your teen''s space' USING ERRCODE = 'insufficient_privilege';
   END IF;
+  SELECT u.subject INTO v_subject FROM users u WHERE u.id = v_space.parent_user_id;
+  IF v_subject IS NULL OR v_subject NOT LIKE 'yourtal|%' THEN
+    RAISE EXCEPTION 'teen_space_end: the parent is not signed in with YourTal' USING ERRCODE = 'insufficient_privilege';
+  END IF;
 
+  -- A job that ran out of attempts is dead: a retry queues a fresh one.
   IF v_space.yourtal_ended_at IS NULL AND NOT EXISTS (
        SELECT 1 FROM jobs j
-        WHERE j.kind = 'teen_invite_end' AND j.completed_at IS NULL
+        WHERE j.kind = 'teen_invite_end' AND j.completed_at IS NULL AND j.attempts < j.max_attempts
           AND j.payload->>'inviteId' = v_space.invite_id::text) THEN
     INSERT INTO jobs (id, tenant_id, kind, payload, max_attempts)
     VALUES (gen_random_uuid(), NULL, 'teen_invite_end',
-            jsonb_build_object('inviteId', v_space.invite_id, 'parentSub', p_parent_sub), 20);
+            jsonb_build_object('inviteId', v_space.invite_id, 'parentSub', substr(v_subject, length('yourtal|') + 1)), 20);
   END IF;
 
   IF v_space.access_ended_at IS NOT NULL THEN
@@ -531,7 +538,7 @@ REVOKE EXECUTE ON FUNCTION teen_invite_yourtal_ended(uuid)                      
 REVOKE EXECUTE ON FUNCTION teen_invite_yourtal_ended_by_worker(uuid)              FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION teen_space_funded()                                    FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION teen_space_join(uuid, text, text)                      FROM PUBLIC;
-REVOKE EXECUTE ON FUNCTION teen_space_end(uuid, text)                                 FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION teen_space_end(uuid)                                       FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION teen_space_end_for_subject(text)                       FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION teen_space_take_credit(uuid)                           FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION teen_space_refund_credit(uuid)                         FROM PUBLIC;
@@ -548,7 +555,7 @@ ALTER FUNCTION teen_invite_yourtal_ended(uuid)                    OWNER TO app_t
 ALTER FUNCTION teen_invite_yourtal_ended_by_worker(uuid)          OWNER TO app_teen;
 ALTER FUNCTION teen_space_funded()                                OWNER TO app_teen;
 ALTER FUNCTION teen_space_join(uuid, text, text)                  OWNER TO app_teen;
-ALTER FUNCTION teen_space_end(uuid, text)                             OWNER TO app_teen;
+ALTER FUNCTION teen_space_end(uuid)                                   OWNER TO app_teen;
 ALTER FUNCTION teen_space_end_for_subject(text)                   OWNER TO app_teen;
 ALTER FUNCTION teen_space_take_credit(uuid)                       OWNER TO app_teen;
 ALTER FUNCTION teen_space_refund_credit(uuid)                     OWNER TO app_teen;
@@ -563,7 +570,7 @@ GRANT EXECUTE ON FUNCTION teen_invite_yourtal_ended_by_worker(uuid)          TO 
 GRANT EXECUTE ON FUNCTION teen_invite_end_needed(uuid)                       TO app_worker;
 GRANT EXECUTE ON FUNCTION teen_space_funded()                                TO app_rw;
 GRANT EXECUTE ON FUNCTION teen_space_join(uuid, text, text)                  TO app_rw;
-GRANT EXECUTE ON FUNCTION teen_space_end(uuid, text)                             TO app_rw;
+GRANT EXECUTE ON FUNCTION teen_space_end(uuid)                                   TO app_rw;
 GRANT EXECUTE ON FUNCTION teen_space_take_credit(uuid)                       TO app_rw;
 GRANT EXECUTE ON FUNCTION teen_space_credits()                               TO app_rw;
 GRANT EXECUTE ON FUNCTION teen_space_refund_credit(uuid)                     TO app_worker;
