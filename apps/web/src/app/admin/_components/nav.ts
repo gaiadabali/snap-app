@@ -49,6 +49,12 @@ export const PRIMARY_NAV: NavItem[] = [
     capability: 'manage_operations',
   },
   {
+    href: '/admin/operations/yourtal-reviews',
+    label: 'Sign-in reviews',
+    hint: 'YourTal account conflicts',
+    capability: 'manage_operations',
+  },
+  {
     href: '/admin/settings',
     label: 'Platform settings',
     hint: 'Flags & defaults',

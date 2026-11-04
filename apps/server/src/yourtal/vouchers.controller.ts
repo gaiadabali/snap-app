@@ -32,6 +32,7 @@ import {
   type RedemptionRow,
 } from './redemptions.repo.js';
 import { parseVoucherCode } from './voucher-code.js';
+import { isTeenSpace } from '../teens/teens.repo.js';
 
 export class RedeemYourtalVoucherDto implements RedeemYourtalVoucherRequest {
   @IsString()
@@ -98,6 +99,10 @@ export class YourtalVouchersController {
     const role = members.find((m) => m.user_id === user.userId)?.role;
     if (role !== 'owner' && role !== 'admin') {
       throw refuse(HttpStatus.FORBIDDEN, 'owner_or_admin_only', 'Only an owner or admin of this workspace can add scans to it.');
+    }
+    // A teen's space has no credits of its own (0045): refused before YourTal is asked.
+    if (await isTeenSpace(user.userId, tenantId)) {
+      throw refuse(HttpStatus.FORBIDDEN, 'teen_space', 'Your scans use credits from your parent’s account, so there is nothing to add here.');
     }
 
     const partner = this.partnerFor();

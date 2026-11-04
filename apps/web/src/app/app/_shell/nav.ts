@@ -18,13 +18,21 @@ export const INDIVIDUAL_NAV: NavItem[] = [
   { href: '/app/goals', label: 'Goals' },
   { href: '/app/plan', label: 'Plan & usage' },
   { href: '/app/credits', label: 'Credits' },
+  { href: '/app/family', label: 'Family' },
   { href: POINTS_HREF, label: 'YourTal points' },
   { href: '/app/connections', label: 'Connections' },
   { href: '/app/settings', label: 'Settings' },
 ];
 
-/** The individual nav, without the points entry when the YourTal link is off (`available: false`). */
-export function individualNavFor(yourtalAvailable: boolean): NavItem[] {
+/** What a teen's own space leaves out (group 3.10): its credits are the parent's, and teens earn no points. */
+const NOT_FOR_TEENS = new Set(['/app/plan', '/app/credits', POINTS_HREF]);
+
+/**
+ * The individual nav, without the points entry when the YourTal link is off
+ * (`available: false`), and without plan, credits and points in a teen's own space.
+ */
+export function individualNavFor(yourtalAvailable: boolean, teenSpace = false): NavItem[] {
+  if (teenSpace) return INDIVIDUAL_NAV.filter((item) => !NOT_FOR_TEENS.has(item.href));
   return yourtalAvailable ? INDIVIDUAL_NAV : INDIVIDUAL_NAV.filter((item) => item.href !== POINTS_HREF);
 }
 

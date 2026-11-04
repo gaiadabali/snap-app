@@ -4,6 +4,7 @@ import {
   BadRequestException,
   ConflictException,
   Controller,
+  ForbiddenException,
   Get,
   Headers,
   HttpException,
@@ -18,6 +19,8 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { CapturePageInput, CreateCaptureResponse, StatementBalanceCheck } from '@snap/api-contract';
+
+import { teenSpaceFunded } from '../teens/teens.repo.js';
 import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
@@ -246,6 +249,16 @@ export class CapturesController {
       mimeType: p.mimeType,
       byteSize: p.byteSize,
     }));
+
+    // A teen's space whose parent no longer owns the paying workspace (0045
+    // TS004): refused before anything is stored, so no capture is left behind.
+    if ((await teenSpaceFunded(user.userId, tenantId)) === false) {
+      throw new ForbiddenException({
+        error: 'teen_space_unfunded',
+        message:
+          'Your scans use your parent’s credits, and their workspace can’t pay for them any more. Ask your parent to invite you again.',
+      });
+    }
 
     const { capture, duplicate, pages: plan } = await createCapture(user.userId, tenantId, {
       pages: declared,

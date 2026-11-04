@@ -110,7 +110,8 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   // again. See `PersonalOnlyGate` below for the one case this creates: an
   // account whose ONLY workspace is a business.
   const list = BUSINESS_FEATURES_ENABLED ? rawList : rawList.filter((w) => w.kind === 'personal');
-  const active = list.find((w) => w.id === activeId) ?? list[0] ?? FALLBACK;
+  // With nothing chosen, a workspace the person can write in (never their teen's, which they only view).
+  const active = list.find((w) => w.id === activeId) ?? list.find((w) => w.role !== 'readonly') ?? list[0] ?? FALLBACK;
 
   // The API layer scopes every tenant request to this, via a header. Pushed
   // rather than read, because a `fetch` call is not inside a render tree and

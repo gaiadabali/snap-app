@@ -80,21 +80,23 @@ function run(out: string, rc?: number) {
 
 describe("alert.sh erasure check", () => {
   it("is OK when nothing is stuck, and asks read-only, as postgres, for counts only", () => {
-    const r = run("0 0 0");
+    const r = run("0 0 0 0");
     expect(r.line).toBe("erasure: no stuck deletion jobs");
     expect(r.argv).toContain("default_transaction_read_only=on");
     expect(r.argv).toContain("postgres");
     expect(r.sql).toMatch(/^SELECT/);
     expect(r.sql).not.toMatch(/payload|UPDATE|DELETE|INSERT/i);
-    for (const s of ["'yourtal_event'", "'storage_purge'", "'erasure_notice'", "completed_at IS NULL", "interval '24 hours'"]) {
+    for (const s of ["'yourtal_event'", "'storage_purge'", "'erasure_notice'", "completed_at IS NULL", "interval '24 hours'",
+                     "FROM teen_spaces WHERE erase_after < now() - interval '1 day'"]) {
       expect(r.sql).toContain(s);
     }
   });
 
   it.each([
-    ["1 0 0", "yourtal_event=1 storage_purge=0 erasure_notice=0"],
-    ["0 2 0", "yourtal_event=0 storage_purge=2 erasure_notice=0"],
-    ["0 0 3", "yourtal_event=0 storage_purge=0 erasure_notice=3"],
+    ["1 0 0 0", "yourtal_event=1 storage_purge=0 erasure_notice=0 teen_hold_overdue=0"],
+    ["0 2 0 0", "yourtal_event=0 storage_purge=2 erasure_notice=0 teen_hold_overdue=0"],
+    ["0 0 3 0", "yourtal_event=0 storage_purge=0 erasure_notice=3 teen_hold_overdue=0"],
+    ["0 0 0 4", "yourtal_event=0 storage_purge=0 erasure_notice=0 teen_hold_overdue=4"],
   ])("flags %s", (out, want) => {
     expect(run(out).line).toContain(`erasure: open over 24h ${want}`);
   });
@@ -102,7 +104,7 @@ describe("alert.sh erasure check", () => {
   it("flags a failed or garbled query instead of passing it", () => {
     expect(run("psql: error: connection refused", 2).line).toContain("erasure: query failed: psql: error");
     expect(run("garbage").line).toContain("query failed");
-    expect(run("0 0 0 0").line).toContain("query failed");
-    expect(run("0 0").line).toContain("query failed");
+    expect(run("0 0 0 0 0").line).toContain("query failed");
+    expect(run("0 0 0").line).toContain("query failed");
   });
 });

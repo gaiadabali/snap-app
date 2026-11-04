@@ -8,6 +8,14 @@ describe('individualNavFor', () => {
     expect(individualNavFor(true).some((i) => i.href === POINTS_HREF && i.label === 'YourTal points')).toBe(true);
   });
 
+  it('drops plan, credits and points in a teen’s own space, and keeps Family', () => {
+    const hrefs = individualNavFor(true, true).map((i) => i.href);
+    expect(hrefs).not.toContain('/app/plan');
+    expect(hrefs).not.toContain('/app/credits');
+    expect(hrefs).not.toContain(POINTS_HREF);
+    expect(hrefs).toContain('/app/family');
+  });
+
   it('drops only that entry when the link is off', () => {
     const nav = individualNavFor(false);
     expect(nav.some((i) => i.href === POINTS_HREF)).toBe(false);

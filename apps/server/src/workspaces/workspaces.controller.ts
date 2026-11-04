@@ -108,6 +108,7 @@ export class WorkspacesController {
           memberCount: members.length,
           abn: null as string | null,
           baseCurrency: w.baseCurrency,
+          teenSpace: w.teenSpace,
         };
       }),
     );

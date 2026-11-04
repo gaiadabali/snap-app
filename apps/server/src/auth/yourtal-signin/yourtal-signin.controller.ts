@@ -1,8 +1,8 @@
 import { timingSafeEqual } from 'node:crypto';
 
-import { Controller, Get, HttpCode, Logger, Post, Req } from '@nestjs/common';
+import { Controller, Get, HttpCode, Logger, Post, Req, UnauthorizedException } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
-import { IsBoolean, IsIn, IsOptional, IsString, IsUUID, Length, MaxLength } from 'class-validator';
+import { IsBoolean, IsIn, IsOptional, IsString, IsUUID, Length, Matches, MaxLength } from 'class-validator';
 
 import { ValidBody } from '../../common/valid-body.decorator.js';
 import { clientIp, type IpAwareRequest } from '../client-ip.js';
@@ -10,8 +10,20 @@ import { RateLimiter } from '../rate-limit.js';
 import { signedIn, type SignInResponse } from '../signed-in.js';
 import { identityFromClaims, refusal, refusalCode, sameOriginPath } from './claims.js';
 import { isClientConfigured, redeemCode, startAuthorization } from './oidc.js';
-import { openFlow, signInWithYourTal, takeFlow } from './repo.js';
+import { moveMismatch, openFlow, setFlowMoveUser, signInWithYourTal, takeFlow } from './repo.js';
+import { authenticateSession } from '../sessions.js';
 import { yourtalSignInSettings, type YourTalClientKind } from './settings.js';
+import { readTeenInvite, teenInvitesConfigured } from '../../teens/invite-api.js';
+import {
+  attachInviteToFlow,
+  hasCategories,
+  inviteForSignIn,
+  joinTeenSpace,
+  teenEmailTaken,
+  teenSpaceHeldForSignIn,
+} from '../../teens/teens.repo.js';
+import { seedDefaultCategories } from '../../settings/settings.repo.js';
+import { availableRules, installRulesFor } from '../../taxrules/taxrules.repo.js';
 
 export class YourTalStartDto {
   @IsIn(['web', 'mobile'], { message: 'client must be "web" or "mobile".' })
@@ -37,6 +49,21 @@ export class YourTalStartDto {
   @IsOptional()
   @IsIn(['en-AU', 'id-ID'])
   locale?: 'en-AU' | 'id-ID';
+
+  /** The code from a parent's join link (group 3.10): sent to YourTal as `teen_invite`. */
+  @IsOptional()
+  @IsString()
+  @Matches(/^[A-Za-z0-9_-]{16,128}$/, { message: 'teenInvite is not an invite code.' })
+  teenInvite?: string;
+
+  /**
+   * "Sign in with YourTal to keep your account" (3.6.e): the sign-in must end
+   * in the account whose session makes this request. A flag only: the account
+   * is read from the Authorization header, never from the body.
+   */
+  @IsOptional()
+  @IsBoolean()
+  moveCurrentAccount?: boolean;
 }
 
 export class YourTalFinishDto {
@@ -117,14 +144,26 @@ export class YourTalSignInController {
     description:
       'Returns YourTal’s authorization URL (state, nonce, PKCE S256, scopes openid email profile account, ' +
       'ui_locales, prompt=create when signUp, prompt=login when freshSignIn) and a flow id that finish needs within 10 minutes. ' +
-      '501 not_configured when this client is off.',
+      '501 not_configured when this client is off. With teenInvite (a parent’s join link), 403 teen_invite_expired ' +
+      'when the code is unknown here or past its expiry.',
   })
   async start(
     @ValidBody(YourTalStartDto) body: YourTalStartDto,
-    @Req() request: IpAwareRequest = {},
+    @Req() request: IpAwareRequest & { headers?: Record<string, string | undefined> } = {},
   ): Promise<{ url: string; flowId: string; expiresAt: string }> {
     if (!(await startPerIp.consume(`yt-start:ip:${clientIp(request)}`))) throw refusal('rate_limited');
     if (!isClientConfigured(body.client)) throw refusal('not_configured');
+
+    // The account to keep comes from the caller's own session, checked here.
+    let moveUserId: string | null = null;
+    if (body.moveCurrentAccount === true) {
+      const header = request.headers?.authorization;
+      const session = await authenticateSession(header?.startsWith('Bearer ') ? header.slice(7) : undefined);
+      if (!session) {
+        throw new UnauthorizedException({ error: 'session_expired', message: 'Your session has ended. Sign in again.' });
+      }
+      moveUserId = session.user.userId;
+    }
 
     let returnTo: string | null = null;
     if (body.returnTo !== undefined && body.returnTo !== '') {
@@ -136,6 +175,7 @@ export class YourTalSignInController {
       signUp: body.signUp === true,
       locale: body.locale ?? 'en-AU',
       freshSignIn: body.freshSignIn === true,
+      ...(body.teenInvite ? { teenInvite: body.teenInvite } : {}),
     });
     const flow = await openFlow({
       client: body.client,
@@ -145,6 +185,12 @@ export class YourTalSignInController {
       returnTo,
       signUp: body.signUp === true,
     });
+    if (moveUserId && !(await setFlowMoveUser(flow.flowId, moveUserId))) throw refusal('invalid_flow');
+    // A code this server never issued (or past its expiry) could never be
+    // matched to its invite at finish: say so now, before YourTal.
+    if (body.teenInvite && !(await attachInviteToFlow(body.teenInvite, flow.flowId))) {
+      throw refusal('teen_invite_expired');
+    }
     return { url: started.url, flowId: flow.flowId, expiresAt: flow.expiresAt.toISOString() };
   }
 
@@ -156,8 +202,8 @@ export class YourTalSignInController {
       'Takes the flow (once), checks state and iss, redeems the code, verifies the ID token, re-checks ' +
       'region and age band, then finds, links or creates the account and answers like every sign-in. ' +
       'Refusals are { error, message } with error one of invalid_flow, yourtal_failed, yourtal_unavailable, ' +
-      'region_not_supported, teen_invite_required, email_unverified, staff_strong_auth_required, ' +
-        'staff_reauth_required, ' +
+      'region_not_supported, teen_invite_required, teen_access_ended, teen_account_in_use, email_unverified, staff_strong_auth_required, ' +
+        'staff_reauth_required, yourtal_email_mismatch (a move flow whose YourTal email is not the signed-in account’s), ' +
       'account_review, try_again, rate_limited, not_configured.',
   })
   async finish(
@@ -185,6 +231,35 @@ export class YourTalSignInController {
       const claims = await redeemCode(flow.client, body, flow);
       const identity = identityFromClaims(claims);
 
+      // From the move prompt: only into the account that asked, or nothing is
+      // written (0048). Before the teen checks and before any sign-in write.
+      if (await moveMismatch(body.flowId, identity.sub, identity.email)) throw refusal('yourtal_email_mismatch');
+
+      // A teen (docs/26 §3.3 step 6, and §1.5's check 4 repeated here): the
+      // invite must be ACCEPTED at YourTal by exactly this `sub`. Checked
+      // before any account is made, at every teen sign-in.
+      let teenInviteId: string | null = null;
+      if (identity.ageBand === 'teen') {
+        teenInviteId = teenInvitesConfigured() ? await inviteForSignIn(body.flowId, identity.sub) : null;
+        if (!teenInviteId) throw refusal('teen_invite_required');
+        const invite = await readTeenInvite(teenInviteId);
+        if (!invite) throw refusal('yourtal_unavailable');
+        if (invite.status !== 'accepted' || invite.teenSub !== identity.sub) throw refusal('teen_invite_required');
+        // A teen is never linked by email (0039's rule 2 would bind, and lock,
+        // someone else's account here): refused before anything is written.
+        if (await teenEmailTaken(identity.sub, identity.email)) {
+          this.logger.warn(`teen sign-in refused: email held by an account here client=${flow.client}`);
+          throw refusal('teen_account_in_use');
+        }
+      }
+
+      // A held teen space (0047) opens only to the teen's new invite, above.
+      // Anyone else, such as a teen who turned 18 during the hold, waits for
+      // the erasure: no session into data that is being deleted.
+      if (identity.ageBand !== 'teen' && (await teenSpaceHeldForSignIn(identity.sub))) {
+        throw refusal('teen_access_ended');
+      }
+
       const result = await signInWithYourTal({
         sub: identity.sub,
         email: identity.email,
@@ -198,6 +273,7 @@ export class YourTalSignInController {
         case 'signed_in':
         case 'linked':
         case 'created': {
+          if (teenInviteId) await this.teenSpaceFor(result.userId!, body.flowId, identity);
           const session = await signedIn(result.userId!, 'yourtal');
           this.logger.log(
             `sign-in ok: ${result.outcome} client=${flow.client} user=${result.userId}` +
@@ -232,5 +308,29 @@ export class YourTalSignInController {
       }
       throw error;
     }
+  }
+
+  /** The teen's own space, made at their first sign-in; the parent gets read-only access (0045). */
+  private async teenSpaceFor(userId: string, flowId: string, identity: { name?: string; region: 'AU' | 'ID' }) {
+    let joined: { tenantId: string; created: boolean };
+    try {
+      const name = identity.name ? `${identity.name}’s space` : 'My space';
+      joined = await joinTeenSpace(userId, { flowId, name, region: identity.region });
+    } catch (error) {
+      const code = (error as { cause?: { code?: string }; code?: string })?.cause?.code ?? (error as { code?: string })?.code;
+      if (code === 'TS002') throw refusal('teen_invite_required');
+      if (code === 'TS003') {
+        this.logger.warn(`teen sign-in refused: account already has workspaces user=${userId}`);
+        throw refusal('teen_account_in_use');
+      }
+      throw error;
+    }
+    // Set up like any new personal workspace: categories, and the region's tax
+    // rules where this deployment has them (as onboarding does). Until it has
+    // categories, so a setup that failed after the join is redone next sign-in.
+    if (await hasCategories(userId, joined.tenantId)) return;
+    await seedDefaultCategories(userId, joined.tenantId, 'personal');
+    const rules = availableRules().find((r) => r.country === identity.region);
+    if (rules) await installRulesFor(userId, joined.tenantId, rules.rulesId);
   }
 }

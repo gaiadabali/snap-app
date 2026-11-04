@@ -77,11 +77,18 @@ describeIfDb('Sign in with YourTal — real database, real provider', () => {
       authTime?: number;
       returnTo?: string;
       signUp?: boolean;
+      /** The session token of an account asking to move (the prompt, 3.6.e). */
+      moveToken?: string;
     } = {},
   ) {
     const started = await controller.start(
-      { client: options.client ?? 'web', returnTo: options.returnTo, signUp: options.signUp },
-      caller(),
+      {
+        client: options.client ?? 'web',
+        returnTo: options.returnTo,
+        signUp: options.signUp,
+        ...(options.moveToken ? { moveCurrentAccount: true } : {}),
+      },
+      { ...caller(), ...(options.moveToken ? { headers: { authorization: `Bearer ${options.moveToken}` } } : {}) },
     );
     yt.nextSignIn = { person: who, amr: options.amr, authTime: options.authTime };
     const redirect = await yt.authorize(started.url);
@@ -551,7 +558,7 @@ describeIfDb('Sign in with YourTal — real database, real provider', () => {
     expect((await userRow(created.user.userId)).subject).toBe(`yourtal|${yt.subFor(known.accountId)}`);
   });
 
-  it('refuses a teen (invites are not built yet) and creates nothing', async () => {
+  it('refuses a teen with no parent invite and creates nothing', async () => {
     const teen = person('teen', { ageBand: 'teen' });
     await expect(signIn(teen)).rejects.toMatchObject({
       status: 403,
@@ -751,6 +758,130 @@ describeIfDb('Sign in with YourTal — real database, real provider', () => {
     expect(sent.map((m) => m.to)).toEqual([unlinked]);
   });
 
+  describe('"keep your account" moves (3.6.e follow-up, 0048)', () => {
+    const legacyWithSession = async (who: FakePerson) => {
+      const repo = await import('../../repo.js');
+      const { issueSession } = await import('../sessions.js');
+      const legacy = await repo.upsertUserByEmail(who.email, 'Legacy');
+      await admin.query('UPDATE users SET email_verified_at = now() WHERE id = $1', [legacy.userId]);
+      return { userId: legacy.userId, token: await issueSession(legacy.userId) };
+    };
+    const countUsers = async () => Number((await admin.query('SELECT count(*) FROM users')).rows[0].count);
+
+    it('links when the YourTal email is the account’s own', async () => {
+      const who = person('move-same');
+      const legacy = await legacyWithSession(who);
+      const result = await signIn(who, { moveToken: legacy.token });
+      expect(result.outcome).toBe('linked');
+      expect(result.user.userId).toBe(legacy.userId);
+      expect((await userRow(legacy.userId)).yourtal_linked_at).not.toBeNull();
+    });
+
+    it('refuses a different email, and creates and links nothing', async () => {
+      const mine = person('move-mine');
+      const legacy = await legacyWithSession(mine);
+      const other = person('move-other'); // another email, another YourTal account
+      const before = await countUsers();
+
+      await expect(signIn(other, { moveToken: legacy.token })).rejects.toMatchObject({
+        status: 409,
+        response: { error: 'yourtal_email_mismatch' },
+      });
+      expect(await countUsers()).toBe(before);
+      const row = await userRow(legacy.userId);
+      expect(row.subject).toBe(`dev|${mine.email}`);
+      expect(row.yourtal_linked_at).toBeNull();
+      const { rows } = await admin.query('SELECT id FROM users WHERE subject = $1', [`yourtal|${yt.subFor(other.accountId)}`]);
+      expect(rows).toEqual([]);
+      // The account still signs in the old way: nothing was closed.
+      const { authenticateSession } = await import('../sessions.js');
+      expect((await authenticateSession(legacy.token))?.user.userId).toBe(legacy.userId);
+    });
+
+    it('refuses an email that belongs to ANOTHER existing account, and links neither', async () => {
+      const repo = await import('../../repo.js');
+      const mine = person('move-a');
+      const legacy = await legacyWithSession(mine);
+      const otherEmail = freshEmail('move-b');
+      const theirs = await repo.upsertUserByEmail(otherEmail, 'Their Own');
+      await admin.query('UPDATE users SET email_verified_at = now() WHERE id = $1', [theirs.userId]);
+      const intruder = person('move-b-yt', { email: otherEmail });
+
+      await expect(signIn(intruder, { moveToken: legacy.token })).rejects.toMatchObject({
+        response: { error: 'yourtal_email_mismatch' },
+      });
+      expect((await userRow(theirs.userId)).yourtal_linked_at).toBeNull();
+      expect((await userRow(legacy.userId)).yourtal_linked_at).toBeNull();
+    });
+
+    it('refuses a sub already linked to ANOTHER account even when the email is the mover’s, and writes nothing', async () => {
+      const owner = person('move-sub-owner');
+      const linked = await signIn(owner); // account X, linked to this sub
+      const mine = person('move-sub-mover');
+      const legacy = await legacyWithSession(mine);
+      // Same YourTal account (same sub) now presenting the mover's email.
+      const sameSub = person('move-sub-again', { accountId: owner.accountId, email: mine.email });
+      const before = await countUsers();
+
+      await expect(signIn(sameSub, { moveToken: legacy.token })).rejects.toMatchObject({
+        status: 409,
+        response: { error: 'yourtal_email_mismatch' },
+      });
+      expect(await countUsers()).toBe(before);
+      expect((await userRow(legacy.userId)).yourtal_linked_at).toBeNull();
+      const x = await userRow(linked.user.userId);
+      expect(x.email).toBe(owner.email); // X's email copy was not refreshed
+    });
+
+    it('lets an already-linked account move with its own sub: it just signs in', async () => {
+      const who = person('move-linked');
+      const first = await signIn(who);
+      const again = await signIn(who, { moveToken: first.token });
+      expect(again.outcome).toBe('signed_in');
+      expect(again.user.userId).toBe(first.user.userId);
+    });
+
+    it('does nothing different for an ordinary sign-in: a new email still makes a new account', async () => {
+      const who = person('move-ordinary');
+      const result = await signIn(who);
+      expect(result.outcome).toBe('created');
+    });
+
+    it('does not accept the account id from the request body', async () => {
+      const mine = person('move-inject');
+      const legacy = await legacyWithSession(mine);
+      const attacker = person('move-inject-other');
+      const post = (body: object, headers: Record<string, string> = {}) =>
+        app.getHttpAdapter().getInstance().inject({ method: 'POST', url: '/v1/auth/yourtal/start', payload: body, headers });
+
+      // A body naming the account is refused outright (whitelist + forbidNonWhitelisted).
+      const injected = await post({ client: 'web', moveUserId: legacy.userId });
+      expect(injected.statusCode).toBe(400);
+      // The flag without a session is a 401, never an anonymous move.
+      expect((await post({ client: 'web', moveCurrentAccount: true })).statusCode).toBe(401);
+      // A flow started anonymously carries no move: a different email just signs in.
+      const started = (await post({ client: 'web' })).json() as { url: string; flowId: string };
+      const { rows } = await admin.query('SELECT move_user_id FROM yourtal_sign_in_flows WHERE id = $1', [started.flowId]);
+      expect(rows).toEqual([{ move_user_id: null }]);
+      yt.nextSignIn = { person: attacker };
+      const redirect = await yt.authorize(started.url);
+      expect((await controller.finish({
+        flowId: started.flowId,
+        code: redirect.searchParams.get('code')!,
+        state: redirect.searchParams.get('state')!,
+        iss: redirect.searchParams.get('iss')!,
+      }, caller())).outcome).toBe('created');
+
+      // With a session, the flow carries the SESSION's account.
+      const mine2 = await post({ client: 'web', moveCurrentAccount: true }, { authorization: `Bearer ${legacy.token}` });
+      expect(mine2.statusCode).toBe(200);
+      const flow = await admin.query('SELECT move_user_id FROM yourtal_sign_in_flows WHERE id = $1', [
+        (mine2.json() as { flowId: string }).flowId,
+      ]);
+      expect(flow.rows).toEqual([{ move_user_id: legacy.userId }]);
+    });
+  });
+
   describe('over HTTP, through the real application', () => {
     const post = (path: string, body: unknown) =>
       app.getHttpAdapter().getInstance().inject({ method: 'POST', url: path, payload: body as object });
@@ -789,6 +920,7 @@ describeIfDb('Sign in with YourTal — real database, real provider', () => {
         headers: { authorization: `Bearer ${body.token}` },
       });
       expect(session.statusCode).toBe(200);
+      expect(session.json()).toMatchObject({ yourtalLinked: true });
 
       // A refusal has the { error, message } shape the website shows.
       const teen = person('http-teen', { ageBand: 'teen' });

@@ -57,6 +57,8 @@ import type {
   AlertItem,
   PrivacySettings,
   YourtalLinkStatus,
+  FamilyStatus,
+  TeenInviteCreated,
   RedeemYourtalVoucherResult,
   Recurring,
   SalesSummary,
@@ -431,13 +433,13 @@ export class HttpApi implements SnapApi {
   async getSession(): Promise<Session | null> {
     if (!authToken()) return null;
     try {
-      const body = await this.request<{ user: AuthUser; workspaces: WorkspaceSummary[] }>(
+      const body = await this.request<{ user: AuthUser; workspaces: WorkspaceSummary[]; yourtalLinked?: boolean }>(
         'GET',
         '/v1/auth/session',
         { workspaceId: null },
       );
       this.workspaces = body.workspaces;
-      return { user: body.user, workspaceIds: body.workspaces.map((w) => w.id) };
+      return { user: body.user, workspaceIds: body.workspaces.map((w) => w.id), yourtalLinked: body.yourtalLinked };
     } catch (error) {
       // An expired or revoked token is "not signed in", not an error to show.
       // Anything else is a real failure and must not be swallowed into a
@@ -1157,6 +1159,8 @@ export class HttpApi implements SnapApi {
     signUp: boolean;
     freshSignIn?: boolean;
     locale?: 'en-AU' | 'id-ID';
+    /** "Keep your account" (3.6.e): the server ties the flow to this signed-in account. */
+    moveCurrentAccount?: boolean;
   }): Promise<{ url: string; flowId: string }> {
     return this.request<{ url: string; flowId: string; expiresAt: string }>(
       'POST',
@@ -1167,8 +1171,9 @@ export class HttpApi implements SnapApi {
           signUp: input.signUp,
           ...(input.freshSignIn ? { freshSignIn: true } : {}),
           ...(input.locale ? { locale: input.locale } : {}),
+          ...(input.moveCurrentAccount ? { moveCurrentAccount: true } : {}),
         },
-        auth: false,
+        auth: input.moveCurrentAccount === true,
         workspaceId: null,
         queue: false,
       },
@@ -1209,6 +1214,22 @@ export class HttpApi implements SnapApi {
        minutes, so a copy replayed later is a dead code and a wrong message. */
     return this.request<YourtalLinkStatus>('POST', '/v1/yourtal/link', {
       body: { code },
+      workspaceId: null,
+      queue: false,
+    });
+  }
+
+  getFamily(): Promise<FamilyStatus> {
+    return this.get<FamilyStatus>('/v1/family', null);
+  }
+
+  /* Never queued offline: the link is shown once, and a replay would make a second invite. */
+  createTeenInvite(): Promise<TeenInviteCreated> {
+    return this.request<TeenInviteCreated>('POST', '/v1/family/invites', { queue: false });
+  }
+
+  async endTeenAccess(teenWorkspaceId: string): Promise<void> {
+    await this.request('POST', `/v1/family/teens/${encodeURIComponent(teenWorkspaceId)}/end`, {
       workspaceId: null,
       queue: false,
     });

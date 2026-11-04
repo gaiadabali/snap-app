@@ -8,6 +8,7 @@ import { AUTH_COOKIE_OPTIONS } from '@/lib/auth/session';
 import { destinationAfterYourtalSignIn } from '@/lib/auth/yourtal-destination';
 import { yourtalErrorCode } from '@/lib/auth/yourtal-errors';
 import { YOURTAL_FLOW_COOKIE, YOURTAL_FLOW_COOKIE_PATH } from '@/lib/auth/yourtal-flow';
+import { YOURTAL_MOVE_MISMATCH, YOURTAL_MOVE_PARAM } from '@/lib/yourtal-move';
 
 type WorkspaceSummary = { id: string; name: string; kind: string; role: string };
 type FinishResult = {
@@ -55,12 +56,23 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       anonymous: true,
     });
   } catch (error) {
-    return failure(apiErrorCode(error, 'yourtal_failed'));
+    const code = apiErrorCode(error, 'yourtal_failed');
+    if (code === 'yourtal_email_mismatch') return moveMismatch();
+    return failure(code);
   }
 
   const destination = destinationAfterYourtalSignIn(result.workspaces, result.returnTo);
   const response = NextResponse.redirect(publicUrl(destination));
   response.cookies.set(SESSION_COOKIE, result.token, AUTH_COOKIE_OPTIONS);
+  clearFlowCookie(response);
+  return response;
+}
+
+/** A move (3.6.e) with another YourTal email: back to the signed-in page, whose prompt explains. */
+function moveMismatch(): NextResponse {
+  const url = publicUrl('/app');
+  url.searchParams.set(YOURTAL_MOVE_PARAM, YOURTAL_MOVE_MISMATCH);
+  const response = NextResponse.redirect(url);
   clearFlowCookie(response);
   return response;
 }

@@ -36,6 +36,7 @@ import { DeductionBundleController } from './deductions/deduction-bundle.control
 import { SummariesController } from './summaries/summaries.controller.js';
 import { TransactionsController } from './transactions/transactions.controller.js';
 import { WorkspacesController } from './workspaces/workspaces.controller.js';
+import { FamilyController } from './teens/family.controller.js';
 import { YourtalEventsController } from './yourtal/events.controller.js';
 import { YourtalLinkController } from './yourtal/yourtal.controller.js';
 import { YourtalVouchersController } from './yourtal/vouchers.controller.js';
@@ -106,6 +107,7 @@ export class HealthController {
     YourTalSignInController,
     AccountController,
     WorkspacesController,
+    FamilyController,
     CapturesController,
     DeviceReadingController,
     CaptureDocumentController,

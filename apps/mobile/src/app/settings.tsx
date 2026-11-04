@@ -8,6 +8,7 @@ import { IS_DEMO, abnIsValid, api, resetDemoData, type BusinessSettings, type Pl
 import { currentDevice, deviceReadAvailable } from '@/lib/device-read';
 import { BUILD } from '@/lib/updates';
 import { Icon } from '@/components/Icon';
+import { YourtalMovePrompt } from '@/components/YourtalMovePrompt';
 import { Avatar, Choice, Field, Loading, Sheet, Toggle } from '@/components/form';
 import { Body, Button, Card, Divider, Figure, Notice, Screen, SectionHeader, Small } from '@/components/ui';
 import { formatAbn, space, type, usePalette } from '@/theme';
@@ -117,6 +118,12 @@ export default function SettingsScreen() {
                 {session.user.emailVerified ? null : (
                   <VerifyEmailCard email={session.user.email} onCheckAgain={refresh} />
                 )}
+                <YourtalMovePrompt
+                  yourtalLinked={session.yourtalLinked}
+                  teenSpace={active.teenSpace}
+                  email={session.user.email}
+                  onLinked={refresh}
+                />
               </View>
             ) : null}
 
@@ -228,8 +235,18 @@ export default function SettingsScreen() {
             {/* Everything else */}
             <Card padded={false}>
               <Row label="Categories" value="How spending is sorted" href="/categories" />
+              {active.teenSpace === 'teen' ? null : (
+                <>
+                  <Divider style={{ marginLeft: space.lg }} />
+                  <Row label="Credits and usage" value={`${plan.scansUsed} read this month`} href="/plan" />
+                </>
+              )}
               <Divider style={{ marginLeft: space.lg }} />
-              <Row label="Credits and usage" value={`${plan.scansUsed} read this month`} href="/plan" />
+              <Row
+                label="Family"
+                value={active.teenSpace === 'teen' ? 'Who can see my space' : 'Invite your teen'}
+                href="/family"
+              />
               {isBusiness ? (
                 <>
                   <Divider style={{ marginLeft: space.lg }} />

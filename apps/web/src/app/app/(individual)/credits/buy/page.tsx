@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation';
 import Link from 'next/link';
 
 import { ArticleHero, Empty } from '@/design/primitives';
@@ -20,6 +21,8 @@ export const metadata = { title: 'Buy credits' };
  */
 export default async function BuyCreditsPage() {
   const { workspace } = await loadWorkspace('personal');
+  // A teen's own space has no credits, plan or points of its own (group 3.10).
+  if (workspace?.teenSpace === 'teen') redirect('/app');
   if (!workspace) return <Empty title="No personal workspace yet" />;
 
   const [packs, balance] = await Promise.all([

@@ -83,6 +83,30 @@ export class ErrorsFilter implements ExceptionFilter {
       return;
     }
 
+    // Teen spaces (0045): the database refuses, the person gets a 403 that says why.
+    const sqlState = (error as { cause?: { code?: unknown }; code?: unknown })?.cause?.code ?? (error as { code?: unknown })?.code;
+    if (sqlState === '25006') {
+      void reply.status(HttpStatus.FORBIDDEN).send({
+        error: 'view_only',
+        message: 'You can see this space, but not change it.',
+      });
+      return;
+    }
+    if (sqlState === 'TS004') {
+      void reply.status(HttpStatus.FORBIDDEN).send({
+        error: 'teen_space_unfunded',
+        message:
+          'Your scans use your parent’s credits, and their workspace can’t pay for them any more. Ask your parent to invite you again.',
+      });
+      return;
+    }
+    if (sqlState === 'TS001') {
+      const cause = (error as { cause?: { message?: unknown } }).cause;
+      const message = typeof cause?.message === 'string' ? cause.message : (error as Error).message;
+      void reply.status(HttpStatus.FORBIDDEN).send({ error: 'teen_space', message });
+      return;
+    }
+
     if (error instanceof HttpException) {
       const status = error.getStatus();
       const body = error.getResponse();

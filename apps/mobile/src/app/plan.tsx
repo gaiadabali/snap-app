@@ -1,4 +1,5 @@
-import { useFocusEffect, useRouter } from 'expo-router';
+import { Redirect, useFocusEffect, useRouter } from 'expo-router';
+import { useWorkspace } from '@/workspace';
 import { useCallback, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,6 +20,8 @@ import { formatShortDate, radius, space, usePalette } from '@/theme';
  * limit is enforced at the point of inviting, where it can be explained.
  */
 export default function PlanScreen() {
+  // A teen's own space has no credits or plan of its own (group 3.10).
+  const teenSpace = useWorkspace().active.teenSpace === 'teen';
   const p = usePalette();
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -44,6 +47,8 @@ export default function PlanScreen() {
   );
 
   const seatPct = plan ? Math.min(1, plan.seatsUsed / plan.seatLimit) : 0;
+
+  if (teenSpace) return <Redirect href="/" />;
 
   return (
     <Screen>

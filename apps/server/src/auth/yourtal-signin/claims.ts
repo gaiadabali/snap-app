@@ -17,7 +17,8 @@ export type YourTalIdentity = {
   /** Display only, 1–120 characters; undefined when absent or unusable. */
   name: string | undefined;
   region: 'AU' | 'ID';
-  ageBand: 'adult';
+  /** A teen signs in only through a parent's invite (group 3.10): the controller checks it with YourTal. */
+  ageBand: 'adult' | 'teen';
   /** `amr` has `hwk` (a passkey) or `mfa` (two factors): enough for staff. */
   strongAuth: boolean;
   /** `auth_time` within the last 12 hours: recent enough for staff. */
@@ -43,10 +44,28 @@ export const REFUSALS = {
     HttpStatus.FORBIDDEN,
     'SnapApp is for YourTal accounts in Australia and Indonesia, so you can’t use this account here.',
   ],
+  yourtal_email_mismatch: [
+    HttpStatus.CONFLICT,
+    'Your YourTal account uses a different email. Use the YourTal account with your SnapApp email, or change your SnapApp email first.',
+  ],
   teen_invite_required: [
     HttpStatus.FORBIDDEN,
     'You need an invite from your parent. To use SnapApp with a teen account, the parent or guardian ' +
       'who approved your YourTal account needs to invite you from their SnapApp account.',
+  ],
+  teen_invite_expired: [
+    HttpStatus.FORBIDDEN,
+    'This invite has expired or has already been used. Ask your parent for a new one.',
+  ],
+  teen_access_ended: [
+    HttpStatus.FORBIDDEN,
+    'Your access to SnapApp ended, so your SnapApp space is being deleted. You can use SnapApp again once ' +
+      'it has been deleted, within 30 days of your access ending.',
+  ],
+  teen_account_in_use: [
+    HttpStatus.CONFLICT,
+    'This teen account is already used with other SnapApp workspaces, so it can’t join a parent’s invite. ' +
+      'Contact SnapApp support and we’ll sort it out.',
   ],
   email_unverified: [
     HttpStatus.FORBIDDEN,
@@ -96,9 +115,9 @@ const MAX_NAME = 120;
 /**
  * The identity in a verified ID token, or a refusal.
  *
- * Order follows docs/26 §1.5 where it overlaps: region, then age. A teen gets
- * `teen_invite_required` for now: invites are group task 3.10, and until then
- * no teen has one.
+ * Order follows docs/26 §1.5 where it overlaps: region, then age. A teen is
+ * passed on as `teen`: the controller then checks the parent's invite with
+ * YourTal (group 3.10), and refuses `teen_invite_required` without one.
  */
 export function identityFromClaims(
   claims: Record<string, unknown>,
@@ -113,8 +132,7 @@ export function identityFromClaims(
   if (region !== 'AU' && region !== 'ID') throw refusal('region_not_supported');
 
   const ageBand = claims.age_band;
-  if (ageBand === 'teen') throw refusal('teen_invite_required');
-  if (ageBand !== 'adult') throw refusal('yourtal_failed');
+  if (ageBand !== 'adult' && ageBand !== 'teen') throw refusal('yourtal_failed');
 
   // Taken exactly as sent, never converted. The contract says YourTal sends a
   // lower-case address (§1.3). One that is not printable ASCII, or not

@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import type { YourtalLinkStatus } from '@snap/api-contract';
 
 import { Empty, SectionTitle } from '@/design/primitives';
@@ -31,6 +31,8 @@ const PATH = '/app/points';
  */
 export default async function PointsPage() {
   const { workspace } = await loadWorkspace('personal');
+  // A teen's own space has no credits, plan or points of its own (group 3.10).
+  if (workspace?.teenSpace === 'teen') redirect('/app');
   if (!workspace) return <Empty title="No personal workspace yet" />;
 
   let status: YourtalLinkStatus | null = null;

@@ -710,6 +710,12 @@ export interface WorkspaceSummary {
    * clients default to AUD, which is what every such workspace was.
    */
   baseCurrency: string;
+  /**
+   * A teen's space (group 3.10): `teen` for the teen, whose space it is;
+   * `parent` for the inviting parent, who can only view it. Null or absent
+   * for every other workspace (and from a server that predates it).
+   */
+  teenSpace?: 'teen' | 'parent' | null;
 }
 
 export interface Member {
@@ -1147,6 +1153,12 @@ export interface Session {
    * the one state that requires onboarding before the app is usable.
    */
   workspaceIds: string[];
+  /**
+   * Whether the account is linked to YourTal. `false` makes the clients offer
+   * "Sign in with YourTal to keep your account" (3.6.e); absent (an older
+   * server) or true shows nothing.
+   */
+  yourtalLinked?: boolean;
 }
 
 /** What a new account has to answer before it can file anything. */
@@ -1465,6 +1477,27 @@ export interface AdminTriggerReextractionRequest {
 
 export interface AdminJobRef {
   jobId: string;
+}
+
+/** One row of `GET /v1/admin/operations/yourtal-reviews` (0046): a Sign in with YourTal case the code refused to decide. */
+export interface AdminYourtalReview {
+  id: string;
+  kind: 'second_sub' | 'email_collision' | 'unlinkable_account';
+  /** Masked, `k••••@example.com`. The YourTal `sub` is never sent. */
+  emailMasked: string | null;
+  userId: string | null;
+  otherUserId: string | null;
+  attempts: number;
+  firstSeenAt: IsoDateTime;
+  lastSeenAt: IsoDateTime;
+  resolvedAt: IsoDateTime | null;
+  resolvedBy: string | null;
+  resolution: string | null;
+}
+
+/** Request body of `POST /v1/admin/operations/yourtal-reviews/:id/resolve` */
+export interface AdminResolveYourtalReviewRequest {
+  resolution: string;
 }
 
 /** One row of `GET /v1/admin/operations/retention` */
@@ -2191,4 +2224,34 @@ export interface ResetPasswordRequest {
   email: string;
   code: string;
   newPassword: string;
+}
+
+/* ── Family: teens a parent invites (group 3.10, yourtal docs/26 §3.3) ───── */
+
+/** A teen's space, seen by the parent who invited them. */
+export interface FamilyTeen {
+  /** The teen's space: switch to it to view it (read-only). */
+  workspaceId: string;
+  teenName: string | null;
+  joinedAt: IsoDateTime;
+  /** Set once the parent ended access; the space is then held, not usable. */
+  accessEndedAt: IsoDateTime | null;
+}
+
+/** `GET /v1/family`: the caller as a parent, and as a teen. */
+export interface FamilyStatus {
+  /** Whether this server can make teen invites at all. */
+  invitesAvailable: boolean;
+  teens: FamilyTeen[];
+  /** Invites made and not yet used. */
+  pendingInvites: Array<{ inviteId: string; expiresAt: IsoDateTime }>;
+  /** Set when the caller is a teen: their space, and who can see it. */
+  asTeen: { workspaceId: string; parentName: string | null } | null;
+}
+
+/** `POST /v1/family/invites`: the join link to send. Shown once; the code is not kept. */
+export interface TeenInviteCreated {
+  inviteId: string;
+  joinUrl: string;
+  expiresAt: IsoDateTime;
 }

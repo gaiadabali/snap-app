@@ -1,4 +1,5 @@
-import { useRouter } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
+import { useWorkspace } from '@/workspace';
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Text } from '@/theme/text';
@@ -21,6 +22,8 @@ import { numeric, radius, shadow, space, type, usePalette, useTheme } from '@/th
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 export default function UsageScreen() {
+  // A teen's own space has no credits or plan of its own (group 3.10).
+  const teenSpace = useWorkspace().active.teenSpace === 'teen';
   const p = usePalette();
   const { scheme } = useTheme();
   const router = useRouter();
@@ -94,6 +97,8 @@ export default function UsageScreen() {
 
   const unit = 'credits';
   const title = 'Credit usage';
+
+  if (teenSpace) return <Redirect href="/" />;
 
   return (
     <Screen>

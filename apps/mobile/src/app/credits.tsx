@@ -1,4 +1,5 @@
-import { useFocusEffect, useRouter } from 'expo-router';
+import { Redirect, useFocusEffect, useRouter } from 'expo-router';
+import { useWorkspace } from '@/workspace';
 import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
 import { Text } from '@/theme/text';
@@ -41,6 +42,8 @@ import { formatAud, numeric, radius, shadow, space, type, usePalette, useTheme }
  * Top up header, and the pay bar is a white surface.
  */
 export default function CreditsScreen() {
+  // A teen's own space has no credits or plan of its own (group 3.10).
+  const teenSpace = useWorkspace().active.teenSpace === 'teen';
   const p = usePalette();
   const { scheme } = useTheme();
   const router = useRouter();
@@ -82,6 +85,8 @@ export default function CreditsScreen() {
 
   const hasCards = (cards?.length ?? 0) > 0;
   const ready = EXPERIMENTAL_FEATURES_ENABLED ? !!pack && !!cardId : !!pack;
+
+  if (teenSpace) return <Redirect href="/" />;
 
   return (
     <Screen>

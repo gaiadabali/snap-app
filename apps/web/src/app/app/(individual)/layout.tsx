@@ -1,3 +1,4 @@
+import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import type { ReactNode } from 'react';
 
@@ -6,16 +7,20 @@ import { Container, Empty } from '@/design/primitives';
 import { getActiveWorkspaceId } from '@/lib/api/server';
 import { BUSINESS_SURFACES_ENABLED } from '@/lib/features';
 import { panelRootFor, resolveImpersonatedWorkspace } from '@/lib/panels/impersonation';
+import { isYourtalWebSignInAvailable } from '@/lib/auth/yourtal';
 import { requireSession } from '@/lib/panels/session';
+import { showYourtalMove, YOURTAL_MOVE_COOKIE } from '@/lib/yourtal-move';
 import { resolveActiveWorkspace } from '@/lib/panels/workspace';
 import { CreateWorkspaceForm } from '../_shell/CreateWorkspaceForm';
 import { ImpersonationBanner } from '../_shell/ImpersonationBanner';
 import { PanelShell } from '../_shell/PanelShell';
+import { YourtalMovePrompt } from '../_shell/YourtalMovePrompt';
 import { individualNavFor } from '../_shell/nav';
-import { getYourtalLink } from '@/lib/panels/data';
+import { getFamily, getYourtalLink } from '@/lib/panels/data';
+import { TeenNotice, ViewOnlyNotice } from './family/FamilyView';
 
 export default async function IndividualLayout({ children }: { children: ReactNode }) {
-  const { user, workspaces, impersonation } = await requireSession();
+  const { user, workspaces, impersonation, yourtalLinked } = await requireSession();
 
   // The YourTal points entry, and the house ad that sends people to it, are
   // offered only while the server has the link on. A failed read hides both
@@ -104,6 +109,20 @@ export default async function IndividualLayout({ children }: { children: ReactNo
   }
 
   const businessWorkspace = resolveActiveWorkspace(workspaces, 'business', activeId);
+  // A teen's own space (group 3.10): always say who can see it, even when the
+  // name cannot be read ("Your parent"), and show no ads, credits or points.
+  const teen = workspace.teenSpace === 'teen';
+  const parentName = teen ? await getFamily().then((f) => f.asTeen?.parentName ?? null, () => null) : null;
+
+  // 3.6.e: an account not yet linked to YourTal is asked to move. Not in a
+  // teen's space, not once linked, not after "Not now".
+  const moveYourtal = showYourtalMove({
+    yourtalLinked,
+    teenSpace: workspace.teenSpace,
+    impersonating: false,
+    available: yourtalLinked === false && (await isYourtalWebSignInAvailable()),
+    dismissed: (await cookies()).has(YOURTAL_MOVE_COOKIE),
+  });
 
   return (
     <PanelShell
@@ -111,9 +130,12 @@ export default async function IndividualLayout({ children }: { children: ReactNo
       workspace={workspace}
       sameKindWorkspaces={workspaces.filter((w) => w.kind === 'personal')}
       otherKindHref={BUSINESS_SURFACES_ENABLED && businessWorkspace ? '/app/business' : null}
-      nav={nav}
+      nav={teen ? individualNavFor(yourtalAvailable, true) : nav}
     >
-      <HouseAdProvider context={{ yourtalAvailable }}>{children}</HouseAdProvider>
+      {moveYourtal ? <YourtalMovePrompt email={user.email} /> : null}
+      {teen ? <TeenNotice parentName={parentName} /> : null}
+      {workspace.teenSpace === 'parent' ? <ViewOnlyNotice spaceName={workspace.name} /> : null}
+      <HouseAdProvider context={{ yourtalAvailable, noAds: teen }}>{children}</HouseAdProvider>
     </PanelShell>
   );
 }

@@ -106,6 +106,8 @@ import type {
   AlertItem,
   PrivacySettings,
   YourtalLinkStatus,
+  FamilyStatus,
+  TeenInviteCreated,
   RedeemYourtalVoucherResult,
 } from '@snap/api-contract';
 
@@ -441,6 +443,16 @@ export interface SnapApi {
   linkYourtal(code: string): Promise<YourtalLinkStatus>;
   /** `DELETE /v1/yourtal/link`. */
   unlinkYourtal(): Promise<YourtalLinkStatus>;
+
+  /**
+   * `GET /v1/family` (group 3.10): the person's teens and open invites, and,
+   * for a teen, who can see their space. USER-scoped.
+   */
+  getFamily(): Promise<FamilyStatus>;
+  /** `POST /v1/family/invites` from the ACTIVE workspace (its credits pay). Throws `ApiError` with `code`. */
+  createTeenInvite(): Promise<TeenInviteCreated>;
+  /** `POST /v1/family/teens/:id/end`: ends a teen's access. Throws `ApiError` with `code`. */
+  endTeenAccess(teenWorkspaceId: string): Promise<void>;
 
   /**
    * `GET /v1/tax-rules-catalogue` — the rule sets this deployment can install,

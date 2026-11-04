@@ -54,13 +54,16 @@ export async function listCreditPacks(userId: string, tenantId: string): Promise
  */
 export async function getCreditBalance(userId: string, tenantId: string): Promise<number> {
   return withTenantAs(getDb(), userId, tenantId, async (tx) => {
+    // A teen's space has none of its own: its scans spend the parent's (0045).
     const rows = await tx.execute<{ remaining: number }>(sql`
-      select coalesce(sum(remaining), 0)::int as remaining
-        from usage_grants
-       where tenant_id = current_tenant_id()
-         and metric = 'scans'
-         and remaining > 0
-         and (expires_at is null or expires_at > now())
+      select coalesce(teen_space_credits(), (
+        select coalesce(sum(remaining), 0)::int
+          from usage_grants
+         where tenant_id = current_tenant_id()
+           and metric = 'scans'
+           and remaining > 0
+           and (expires_at is null or expires_at > now())
+      )) as remaining
     `);
     return rows.rows[0]?.remaining ?? 0;
   });
