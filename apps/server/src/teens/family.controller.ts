@@ -22,7 +22,7 @@ import { config } from '../config.js';
 import { getDb } from '../db.js';
 import { listMembers } from '../repo.js';
 import { createTeenInvite, endTeenInvite, teenInvitesConfigured } from './invite-api.js';
-import { endTeenSpace, familyOf, isTeen, queueInviteEnd, recordInvite, spaceOfParent } from './teens.repo.js';
+import { endTeenSpace, familyOf, isTeen, markYourtalEnded, recordInvite, spaceOfParent } from './teens.repo.js';
 
 const refuse = (status: HttpStatus, error: string, message: string) => new HttpException({ error, message }, status);
 
@@ -125,8 +125,9 @@ export class FamilyController {
   @ApiOperation({
     summary: 'End your teen’s access',
     description:
-      'Ends the teen’s sessions here and starts the 30-day hold before their space is erased, then ends the invite at ' +
-      'YourTal (404 there counts as ended; a failure is retried by the worker). Idempotent. 404 for a space you did not invite.',
+      'In one transaction: ends the teen’s sessions here, starts the 30-day hold before their space is erased, and ' +
+      'queues YourTal’s end for the worker. Then ends the invite at YourTal at once when it answers (404 there counts ' +
+      'as ended). Idempotent: a repeat makes sure YourTal is still told. 404 for a space you did not invite.',
   })
   async end(
     @CurrentUser() user: AuthUser,
@@ -134,15 +135,16 @@ export class FamilyController {
   ): Promise<{ ended: true }> {
     const space = await spaceOfParent(user.userId, workspaceId);
     if (!space) throw new NotFoundException({ error: 'not_found', message: 'No such teen space.' });
-    if (space.accessEndedAt) return { ended: true };
+    if (space.yourtalEnded) return { ended: true };
 
     const parentSub = await yourtalSub(user.userId, workspaceId);
     if (!parentSub) throw new ForbiddenException({ error: 'yourtal_sign_in_required', message: 'Sign in with YourTal first.' });
-    // Here first, so the teen is out whatever YourTal answers: sessions end and
-    // sign-in refuses an ended space. Then YourTal; a failure is the worker's to retry.
-    await endTeenSpace(user.userId, workspaceId);
+    // Here first, with YourTal's end queued in the same transaction, so the
+    // teen is out and YourTal is told even if this request dies right after.
+    await endTeenSpace(user.userId, workspaceId, parentSub);
+    // Then YourTal now, when it answers; the queued job finds nothing left to do.
     const atYourTal = await endTeenInvite(space.inviteId, parentSub);
-    if (atYourTal === 'failed') await queueInviteEnd(user.userId, workspaceId, parentSub);
+    if (atYourTal === 'ended') await markYourtalEnded(user.userId, space.inviteId);
     this.logger.log(`teen access ended: space=${workspaceId} user=${user.userId} yourtal=${atYourTal}`);
     return { ended: true };
   }

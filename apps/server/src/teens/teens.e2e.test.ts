@@ -94,6 +94,21 @@ describeIfDb('teen spaces — real database, real provider', () => {
     return { code, inviteId: body.inviteId };
   }
 
+  /** Runs the worker's due `teen_invite_end` jobs until none is due. Returns what it logged. */
+  async function runTeenEndJobs(): Promise<string> {
+    const { runErasureJobsOnce } = await import('../yourtal/events-job.js');
+    const lines: string[] = [];
+    const log = { log: (m: string) => lines.push(m), warn: (m: string) => lines.push(m), error: (m: string) => lines.push(m) };
+    for (let i = 0; i < 20; i += 1) {
+      const due = await admin.query(
+        `SELECT 1 FROM jobs WHERE kind = 'teen_invite_end' AND completed_at IS NULL AND run_after <= now() AND attempts < max_attempts`,
+      );
+      if (due.rowCount === 0) break;
+      await runErasureJobsOnce(createDb(workerPool), log);
+    }
+    return lines.join('\n');
+  }
+
   beforeAll(async () => {
     yt = await startFakeYourTalOidc();
     keyDir = mkdtempSync(join(tmpdir(), 'snap-yt-teen-'));
@@ -157,7 +172,7 @@ describeIfDb('teen spaces — real database, real provider', () => {
 
   beforeEach(() => {
     yt.enforceTeenInvites = true;
-    yt.teenInviteLimit = 10;
+    yt.teenInviteLimit = 100; // this file makes more invites than one parent's daily 10
   });
 
   it('makes an invite for the parent at YourTal and answers a join link with its code', async () => {
@@ -370,6 +385,31 @@ describeIfDb('teen spaces — real database, real provider', () => {
       }
     });
 
+    it('redoes a setup that failed after the join, at the next sign-in', async () => {
+      await admin.query('DELETE FROM categories WHERE tenant_id = $1', [space]);
+      teenToken = (await signIn(teen)).token;
+      expect((await admin.query('SELECT count(*)::int AS n FROM categories WHERE tenant_id = $1', [space])).rows[0].n).toBeGreaterThan(0);
+    });
+
+    it('refuses an unfunded teen’s scan before storing anything', async () => {
+      const { CapturesController, CreateCaptureDto } = await import('../captures/captures.controller.js');
+      const body = new CreateCaptureDto();
+      body.pages = [{ sha256: randomBytes(32).toString('hex'), mimeType: 'image/jpeg', byteSize: 1024 }];
+      const teenUser = { userId: teenId, displayName: 'Tia', email: teen.email, initials: 'T', emailVerified: true };
+      const count = async () => (await admin.query('SELECT count(*)::int AS n FROM captures WHERE tenant_id = $1', [space])).rows[0].n;
+      const before = await count();
+      const parentId = (await userIdOf(parent))!;
+      await admin.query(`UPDATE memberships SET role = 'admin' WHERE tenant_id = $1 AND user_id = $2`, [household, parentId]);
+      try {
+        await expect(new CapturesController().create(teenUser, space, body)).rejects.toMatchObject({
+          response: { error: 'teen_space_unfunded' },
+        });
+        expect(await count()).toBe(before);
+      } finally {
+        await admin.query(`UPDATE memberships SET role = 'owner' WHERE tenant_id = $1 AND user_id = $2`, [household, parentId]);
+      }
+    });
+
     it('lets only the parent end access; then the teen is signed out and refused', async () => {
       const stranger = person('other-adult');
       const strangerToken = (await signIn(stranger)).token;
@@ -381,7 +421,10 @@ describeIfDb('teen spaces — real database, real provider', () => {
       expect(ended.statusCode).toBe(200);
       expect(yt.teenInvites.get(inviteId)?.status).toBe('ended');
       expect(yt.teenInviteCalls).toContain(`POST /api/oidc-clients/teen-invites/${inviteId}/end`);
-      expect((await admin.query(`SELECT count(*)::int AS n FROM jobs WHERE kind = 'teen_invite_end' AND payload->>'inviteId' = $1`, [inviteId])).rows[0].n).toBe(0);
+      // YourTal answered, so the job queued with the end finds nothing to do.
+      const calls = yt.teenInviteCalls.length;
+      expect(await runTeenEndJobs()).toContain('YourTal already confirmed; nothing to do');
+      expect(yt.teenInviteCalls.length).toBe(calls);
       expect((await http('POST', `/v1/family/teens/${space}/end`, parentToken)).statusCode).toBe(200);
 
       const held = (await admin.query('SELECT erase_after - access_ended_at AS hold FROM teen_spaces WHERE tenant_id = $1', [space]))
@@ -472,13 +515,36 @@ describeIfDb('teen spaces — real database, real provider', () => {
       const job = (await admin.query(`SELECT id, tenant_id FROM jobs WHERE kind = 'teen_invite_end' AND payload->>'inviteId' = $1`, [inviteId])).rows;
       expect(job).toHaveLength(1);
       expect(job[0].tenant_id).toBeNull();
-      const { runErasureJobsOnce } = await import('../yourtal/events-job.js');
-      await admin.query(`UPDATE jobs SET run_after = now() WHERE id = $1`, [job[0].id]);
-      const lines: string[] = [];
-      await runErasureJobsOnce(createDb(workerPool), { log: (m: string) => lines.push(m), warn: (m: string) => lines.push(m), error: (m: string) => lines.push(m) });
-      expect(lines.join('\n')).toContain('ended at YourTal');
+      expect(await runTeenEndJobs()).toContain('ended at YourTal');
       expect(yt.teenInvites.get(inviteId)?.status).toBe('ended');
       expect((await admin.query('SELECT completed_at FROM jobs WHERE id = $1', [job[0].id])).rows[0].completed_at).not.toBeNull();
+      expect((await admin.query('SELECT yourtal_ended_at FROM teen_spaces WHERE tenant_id = $1', [space])).rows[0].yourtal_ended_at).not.toBeNull();
+    });
+
+    it('still ends YourTal’s invite through the job when the request dies after the local end', async () => {
+      const { space } = await joinTeen('crash-teen');
+      const inviteId = (await admin.query('SELECT invite_id FROM teen_spaces WHERE tenant_id = $1', [space])).rows[0].invite_id;
+      // The request's first step, then nothing: as if it died before reaching YourTal.
+      const { endTeenSpace } = await import('./teens.repo.js');
+      expect(await endTeenSpace((await userIdOf(parent))!, space, yt.subFor(parent.accountId))).toBe(true);
+      expect(yt.teenInvites.get(inviteId)?.status).toBe('accepted');
+
+      // The parent's retry on the ended space keeps one job, not two.
+      await admin.query(`DELETE FROM jobs WHERE kind = 'teen_invite_end' AND payload->>'inviteId' = $1`, [inviteId]);
+      yt.inviteApiDown = true;
+      try {
+        expect((await http('POST', `/v1/family/teens/${space}/end`, parentToken)).statusCode).toBe(200);
+        expect((await http('POST', `/v1/family/teens/${space}/end`, parentToken)).statusCode).toBe(200);
+      } finally {
+        yt.inviteApiDown = false;
+      }
+      expect(
+        (await admin.query(`SELECT count(*)::int AS n FROM jobs WHERE kind = 'teen_invite_end' AND completed_at IS NULL AND payload->>'inviteId' = $1`, [inviteId]))
+          .rows[0].n,
+      ).toBe(1);
+      await admin.query(`UPDATE jobs SET run_after = now() WHERE kind = 'teen_invite_end' AND payload->>'inviteId' = $1`, [inviteId]);
+      expect(await runTeenEndJobs()).toContain('ended at YourTal');
+      expect(yt.teenInvites.get(inviteId)?.status).toBe('ended');
     });
 
     it('treats a 404 from YourTal as already ended', async () => {
@@ -486,8 +552,11 @@ describeIfDb('teen spaces — real database, real provider', () => {
       const inviteId = (await admin.query('SELECT invite_id FROM teen_spaces WHERE tenant_id = $1', [space])).rows[0].invite_id;
       yt.teenInvites.delete(inviteId);
       expect((await http('POST', `/v1/family/teens/${space}/end`, parentToken)).statusCode).toBe(200);
-      expect((await admin.query(`SELECT count(*)::int AS n FROM jobs WHERE kind = 'teen_invite_end' AND payload->>'inviteId' = $1`, [inviteId])).rows[0].n).toBe(0);
-      expect((await admin.query('SELECT access_ended_at FROM teen_spaces WHERE tenant_id = $1', [space])).rows[0].access_ended_at).not.toBeNull();
+      expect((await admin.query('SELECT access_ended_at, yourtal_ended_at FROM teen_spaces WHERE tenant_id = $1', [space])).rows[0])
+        .toEqual({ access_ended_at: expect.any(Date), yourtal_ended_at: expect.any(Date) });
+      const calls = yt.teenInviteCalls.length;
+      await runTeenEndJobs();
+      expect(yt.teenInviteCalls.length).toBe(calls);
     });
   });
 
@@ -516,7 +585,7 @@ describeIfDb('teen spaces — real database, real provider', () => {
     const limited = await http('POST', '/v1/family/invites', parentToken, household);
     expect(limited.statusCode).toBe(429);
     expect(limited.json()).toMatchObject({ error: 'too_many_invites' });
-    yt.teenInviteLimit = 10;
+    yt.teenInviteLimit = 100; // this file makes more invites than one parent's daily 10
 
     const other = person('not-owner');
     const otherToken = (await signIn(other)).token;

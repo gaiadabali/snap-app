@@ -1,4 +1,5 @@
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useWorkspace } from '@/workspace';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { ActivityIndicator, ScrollView, View } from 'react-native';
 import { Text } from '@/theme/text';
@@ -26,6 +27,8 @@ import { formatAud, numeric, space, type, usePalette } from '@/theme';
 type Phase = 'busy' | 'done' | 'failed';
 
 export default function PayScreen() {
+  // A teen's own space buys nothing: its scans spend the parent's credits (group 3.10, F112).
+  const teenSpace = useWorkspace().active.teenSpace === 'teen';
   const p = usePalette();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -118,6 +121,8 @@ export default function PayScreen() {
   }
 
   const ok = phase === 'done';
+
+  if (teenSpace) return <Redirect href="/" />;
 
   return (
     <Screen>

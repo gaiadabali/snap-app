@@ -216,6 +216,7 @@ describeIfDb('teen spaces (migration 0045)', () => {
 
     await as('app_rw', TEEN, space);
     expect((await c.query('SELECT teen_space_credits() AS n')).rows[0].n).toBe(2);
+    expect((await c.query('SELECT teen_space_funded() AS f')).rows[0].f).toBe(true);
     const took = (await c.query('SELECT * FROM teen_space_take_credit($1)', [capture])).rows[0];
     expect(took).toEqual({ teen_space: true, grant_id: GRANT });
     await c.query('SELECT * FROM teen_space_take_credit($1)', [capture]);
@@ -234,6 +235,7 @@ describeIfDb('teen spaces (migration 0045)', () => {
     await c.query(`UPDATE memberships SET role = 'admin' WHERE tenant_id = $1 AND user_id = $2`, [FUND, PARENT]);
     await as('app_rw', TEEN, space);
     expect(await failure('SELECT * FROM teen_space_take_credit($1)', [capture2])).toMatch(/^TS004/);
+    expect((await c.query('SELECT teen_space_funded() AS f')).rows[0].f).toBe(false);
     await c.query('RESET ROLE');
     await c.query(`UPDATE memberships SET role = 'owner' WHERE tenant_id = $1 AND user_id = $2`, [FUND, PARENT]);
     expect(await remaining()).toBe(1);
@@ -242,6 +244,7 @@ describeIfDb('teen spaces (migration 0045)', () => {
     await as('app_rw', PARENT, FUND);
     expect((await c.query('SELECT * FROM teen_space_take_credit(gen_random_uuid())')).rows[0].teen_space).toBe(false);
     expect((await c.query('SELECT teen_space_credits() AS n')).rows[0].n).toBeNull();
+    expect((await c.query('SELECT teen_space_funded() AS f')).rows[0].f).toBeNull();
 
     // Only the worker refunds; twice gives one credit back.
     expect(await failure('SELECT teen_space_refund_credit($1)', [capture])).toMatch(/^42501/);
@@ -267,10 +270,10 @@ describeIfDb('teen spaces (migration 0045)', () => {
       [TEEN, randomBytes(32)],
     );
     await as('app_rw', TEEN, null);
-    expect(await failure('SELECT teen_space_end($1)', [space])).toMatch(/^42501/);
+    expect(await failure(`SELECT teen_space_end($1, 'parent-sub')`, [space])).toMatch(/^42501/);
     await as('app_rw', PARENT, null);
-    expect((await c.query('SELECT teen_space_end($1) AS ended', [space])).rows[0].ended).toBe(true);
-    expect((await c.query('SELECT teen_space_end($1) AS ended', [space])).rows[0].ended).toBe(false);
+    expect((await c.query(`SELECT teen_space_end($1, 'parent-sub') AS ended`, [space])).rows[0].ended).toBe(true);
+    expect((await c.query(`SELECT teen_space_end($1, 'parent-sub') AS ended`, [space])).rows[0].ended).toBe(false);
 
     await c.query('RESET ROLE');
     const row = (
@@ -286,14 +289,34 @@ describeIfDb('teen spaces (migration 0045)', () => {
     await as('app_rw', TEEN, null);
     expect(await failure(`SELECT * FROM teen_space_join($1, 'x', 'AU')`, [FLOW])).toMatch(/^TS002/);
 
-    // The parent queues YourTal's end for the worker; nobody else can.
-    await as('app_rw', OTHER, null);
-    expect(await failure(`SELECT teen_invite_end_retry($1, 'parent-sub')`, [space])).toMatch(/^42501/);
-    await as('app_rw', PARENT, null);
-    await c.query(`SELECT teen_invite_end_retry($1, 'parent-sub')`, [space]);
+    // The end queued YourTal's end for the worker in the same transaction, once.
     await c.query('RESET ROLE');
-    const job = (await c.query(`SELECT tenant_id, payload FROM jobs WHERE kind = 'teen_invite_end'`)).rows;
-    expect(job).toEqual([{ tenant_id: null, payload: { inviteId: INVITE, parentSub: 'parent-sub' } }]);
+    const jobs = async () =>
+      (await c.query(`SELECT tenant_id, payload FROM jobs WHERE kind = 'teen_invite_end' AND completed_at IS NULL`)).rows;
+    expect(await jobs()).toEqual([{ tenant_id: null, payload: { inviteId: INVITE, parentSub: 'parent-sub' } }]);
+    // A retry after the job is gone puts it back; once YourTal confirmed, nothing more is queued.
+    await c.query(`DELETE FROM jobs WHERE kind = 'teen_invite_end'`);
+    await as('app_rw', PARENT, null);
+    await c.query(`SELECT teen_space_end($1, 'parent-sub')`, [space]);
+    await c.query('RESET ROLE');
+    expect(await jobs()).toHaveLength(1);
+
+    await as('app_worker', null, null);
+    expect((await c.query('SELECT teen_invite_end_needed($1) AS n', [INVITE])).rows[0].n).toBe(true);
+    // Nobody but the parent or the worker can record YourTal's confirmation.
+    await as('app_rw', OTHER, null);
+    await c.query('SELECT teen_invite_yourtal_ended($1)', [INVITE]);
+    expect(await failure('SELECT teen_invite_yourtal_ended_by_worker($1)', [INVITE])).toMatch(/^42501/);
+    await as('app_worker', null, null);
+    expect((await c.query('SELECT teen_invite_end_needed($1) AS n', [INVITE])).rows[0].n).toBe(true);
+    await c.query('SELECT teen_invite_yourtal_ended_by_worker($1)', [INVITE]);
+    expect((await c.query('SELECT teen_invite_end_needed($1) AS n', [INVITE])).rows[0].n).toBe(false);
+    await c.query('RESET ROLE');
+    await c.query(`DELETE FROM jobs WHERE kind = 'teen_invite_end'`);
+    await as('app_rw', PARENT, null);
+    await c.query(`SELECT teen_space_end($1, 'parent-sub')`, [space]);
+    await c.query('RESET ROLE');
+    expect(await jobs()).toEqual([]);
   });
 
   it("lets the worker start the hold on YourTal's access-ended, once", async () => {

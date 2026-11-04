@@ -95,6 +95,8 @@ CREATE TABLE IF NOT EXISTS teen_spaces (
   invite_id         uuid NOT NULL UNIQUE,
   created_at        timestamptz NOT NULL DEFAULT now(),
   access_ended_at   timestamptz,
+  /* YourTal confirmed the invite ended: the `teen_invite_end` job has nothing left to do. */
+  yourtal_ended_at  timestamptz,
   /* 3.10.f erases the space from here (access_ended_at + 30 days). */
   erase_after       timestamptz,
 
@@ -153,7 +155,7 @@ GRANT SELECT                 ON users, captures, credit_purchases TO app_teen;
 GRANT SELECT, INSERT         ON tenants, memberships TO app_teen;
 GRANT SELECT, UPDATE         ON usage_grants, user_sessions TO app_teen;
 GRANT SELECT (id, consumed_at, teen_invite_id), UPDATE (teen_invite_id) ON yourtal_sign_in_flows TO app_teen;
-GRANT INSERT                 ON jobs TO app_teen;
+GRANT SELECT, INSERT         ON jobs TO app_teen;
 
 -- ── A new reason a session ends ──────────────────────────────────────────────
 ALTER TABLE user_sessions DROP CONSTRAINT IF EXISTS user_sessions_reason;
@@ -335,7 +337,13 @@ END $fn$;
 -- ── The parent ends access ───────────────────────────────────────────────────
 -- After YourTal's end answered 200. The parent is app.user_id. Idempotent:
 -- returns false when access had already ended.
-CREATE OR REPLACE FUNCTION teen_space_end(p_tenant uuid) RETURNS boolean
+-- In ONE transaction: the teen's sessions end, the hold starts, and a
+-- `teen_invite_end` job (no tenant: it must outlive either workspace) is
+-- queued for the worker, so YourTal's invite is ended even if the request
+-- dies before the API reaches YourTal. A retry on an ended space only makes
+-- sure that job exists while YourTal has not confirmed. Returns true when
+-- access ended just now.
+CREATE OR REPLACE FUNCTION teen_space_end(p_tenant uuid, p_parent_sub text) RETURNS boolean
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $fn$
 DECLARE
   v_space teen_spaces%ROWTYPE;
@@ -346,10 +354,19 @@ BEGIN
   IF NOT FOUND THEN
     RAISE EXCEPTION 'teen_space_end: not your teen''s space' USING ERRCODE = 'insufficient_privilege';
   END IF;
+
+  IF v_space.yourtal_ended_at IS NULL AND NOT EXISTS (
+       SELECT 1 FROM jobs j
+        WHERE j.kind = 'teen_invite_end' AND j.completed_at IS NULL
+          AND j.payload->>'inviteId' = v_space.invite_id::text) THEN
+    INSERT INTO jobs (id, tenant_id, kind, payload, max_attempts)
+    VALUES (gen_random_uuid(), NULL, 'teen_invite_end',
+            jsonb_build_object('inviteId', v_space.invite_id, 'parentSub', p_parent_sub), 20);
+  END IF;
+
   IF v_space.access_ended_at IS NOT NULL THEN
     RETURN false;
   END IF;
-
   UPDATE teen_spaces t SET access_ended_at = now(), erase_after = now() + interval '30 days'
    WHERE t.tenant_id = p_tenant;
   UPDATE user_sessions s SET revoked_at = now(), revoked_reason = 'teen_access_ended'
@@ -357,23 +374,39 @@ BEGIN
   RETURN true;
 END $fn$;
 
--- When YourTal's end did not answer (the parent's access ended here first),
--- the worker retries it (`teen_invite_end` job, no tenant: it must outlive
--- either workspace). Only the inviting parent may queue it.
-CREATE OR REPLACE FUNCTION teen_invite_end_retry(p_tenant uuid, p_parent_sub text) RETURNS void
-LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $fn$
-DECLARE
-  v_invite uuid;
-BEGIN
-  SELECT t.invite_id INTO v_invite FROM teen_spaces t
-   WHERE t.tenant_id = p_tenant AND t.parent_user_id = current_user_id();
-  IF NOT FOUND THEN
-    RAISE EXCEPTION 'teen_invite_end_retry: not your teen''s space' USING ERRCODE = 'insufficient_privilege';
-  END IF;
-  INSERT INTO jobs (id, tenant_id, kind, payload, max_attempts)
-  VALUES (gen_random_uuid(), NULL, 'teen_invite_end',
-          jsonb_build_object('inviteId', v_invite, 'parentSub', p_parent_sub), 20);
-END $fn$;
+-- Whether YourTal still has to be told (the worker, before calling it). True
+-- when the space is gone too: the invite may still be live at YourTal.
+CREATE OR REPLACE FUNCTION teen_invite_end_needed(p_invite uuid) RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public, pg_temp AS $fn$
+  SELECT NOT EXISTS (SELECT 1 FROM teen_spaces t WHERE t.invite_id = p_invite AND t.yourtal_ended_at IS NOT NULL);
+$fn$;
+
+-- YourTal confirmed the end. The inviting parent (the API, inline) records it
+-- through this one; the worker through the next, which only it may call.
+CREATE OR REPLACE FUNCTION teen_invite_yourtal_ended(p_invite uuid) RETURNS void
+LANGUAGE sql SECURITY DEFINER SET search_path = public, pg_temp AS $fn$
+  UPDATE teen_spaces t SET yourtal_ended_at = now()
+   WHERE t.invite_id = p_invite AND t.access_ended_at IS NOT NULL AND t.yourtal_ended_at IS NULL
+     AND t.parent_user_id = current_user_id();
+$fn$;
+
+CREATE OR REPLACE FUNCTION teen_invite_yourtal_ended_by_worker(p_invite uuid) RETURNS void
+LANGUAGE sql SECURITY DEFINER SET search_path = public, pg_temp AS $fn$
+  UPDATE teen_spaces t SET yourtal_ended_at = now()
+   WHERE t.invite_id = p_invite AND t.access_ended_at IS NOT NULL AND t.yourtal_ended_at IS NULL;
+$fn$;
+
+-- Whether a teen's scan can be paid now (POST /v1/captures asks before it
+-- stores anything): NULL outside a teen space.
+CREATE OR REPLACE FUNCTION teen_space_funded() RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public, pg_temp AS $fn$
+  SELECT CASE WHEN t.tenant_id IS NULL THEN NULL ELSE
+    t.funding_tenant_id IS NOT NULL AND EXISTS (
+      SELECT 1 FROM memberships m
+       WHERE m.tenant_id = t.funding_tenant_id AND m.user_id = t.parent_user_id AND m.role = 'owner') END
+    FROM (SELECT current_tenant_id() AS id) c
+    LEFT JOIN teen_spaces t ON t.tenant_id = c.id;
+$fn$;
 
 -- YourTal's access-ended with erase_data (the guardian withdrew, the teen
 -- removed SnapApp, the inviter's account went; docs/26 §2.2): the worker
@@ -493,9 +526,12 @@ REVOKE EXECUTE ON FUNCTION teen_invite_record(uuid, uuid, bytea, timestamptz)   
 REVOKE EXECUTE ON FUNCTION teen_invite_attach_flow(bytea, uuid)                   FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION teen_invite_for_sign_in(uuid, text)                    FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION teen_sign_in_email_taken(text, citext)                 FROM PUBLIC;
-REVOKE EXECUTE ON FUNCTION teen_invite_end_retry(uuid, text)                      FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION teen_invite_end_needed(uuid)                          FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION teen_invite_yourtal_ended(uuid)                        FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION teen_invite_yourtal_ended_by_worker(uuid)              FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION teen_space_funded()                                    FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION teen_space_join(uuid, text, text)                      FROM PUBLIC;
-REVOKE EXECUTE ON FUNCTION teen_space_end(uuid)                                   FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION teen_space_end(uuid, text)                                 FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION teen_space_end_for_subject(text)                       FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION teen_space_take_credit(uuid)                           FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION teen_space_refund_credit(uuid)                         FROM PUBLIC;
@@ -507,9 +543,12 @@ ALTER FUNCTION teen_invite_record(uuid, uuid, bytea, timestamptz) OWNER TO app_t
 ALTER FUNCTION teen_invite_attach_flow(bytea, uuid)               OWNER TO app_teen;
 ALTER FUNCTION teen_invite_for_sign_in(uuid, text)                OWNER TO app_teen;
 ALTER FUNCTION teen_sign_in_email_taken(text, citext)             OWNER TO app_teen;
-ALTER FUNCTION teen_invite_end_retry(uuid, text)                  OWNER TO app_teen;
+ALTER FUNCTION teen_invite_end_needed(uuid)                      OWNER TO app_teen;
+ALTER FUNCTION teen_invite_yourtal_ended(uuid)                    OWNER TO app_teen;
+ALTER FUNCTION teen_invite_yourtal_ended_by_worker(uuid)          OWNER TO app_teen;
+ALTER FUNCTION teen_space_funded()                                OWNER TO app_teen;
 ALTER FUNCTION teen_space_join(uuid, text, text)                  OWNER TO app_teen;
-ALTER FUNCTION teen_space_end(uuid)                               OWNER TO app_teen;
+ALTER FUNCTION teen_space_end(uuid, text)                             OWNER TO app_teen;
 ALTER FUNCTION teen_space_end_for_subject(text)                   OWNER TO app_teen;
 ALTER FUNCTION teen_space_take_credit(uuid)                       OWNER TO app_teen;
 ALTER FUNCTION teen_space_refund_credit(uuid)                     OWNER TO app_teen;
@@ -519,9 +558,12 @@ GRANT EXECUTE ON FUNCTION teen_invite_record(uuid, uuid, bytea, timestamptz) TO 
 GRANT EXECUTE ON FUNCTION teen_invite_attach_flow(bytea, uuid)               TO app_rw;
 GRANT EXECUTE ON FUNCTION teen_invite_for_sign_in(uuid, text)                TO app_rw;
 GRANT EXECUTE ON FUNCTION teen_sign_in_email_taken(text, citext)             TO app_rw;
-GRANT EXECUTE ON FUNCTION teen_invite_end_retry(uuid, text)                  TO app_rw;
+GRANT EXECUTE ON FUNCTION teen_invite_yourtal_ended(uuid)                    TO app_rw;
+GRANT EXECUTE ON FUNCTION teen_invite_yourtal_ended_by_worker(uuid)          TO app_worker;
+GRANT EXECUTE ON FUNCTION teen_invite_end_needed(uuid)                       TO app_worker;
+GRANT EXECUTE ON FUNCTION teen_space_funded()                                TO app_rw;
 GRANT EXECUTE ON FUNCTION teen_space_join(uuid, text, text)                  TO app_rw;
-GRANT EXECUTE ON FUNCTION teen_space_end(uuid)                               TO app_rw;
+GRANT EXECUTE ON FUNCTION teen_space_end(uuid, text)                             TO app_rw;
 GRANT EXECUTE ON FUNCTION teen_space_take_credit(uuid)                       TO app_rw;
 GRANT EXECUTE ON FUNCTION teen_space_credits()                               TO app_rw;
 GRANT EXECUTE ON FUNCTION teen_space_refund_credit(uuid)                     TO app_worker;

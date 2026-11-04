@@ -30,12 +30,14 @@ export default function PointsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const yt = useYourtalLink();
-  const { workspaceName } = useWorkspace();
+  const { workspaceName, active } = useWorkspace();
   const [code, setCode] = useState('');
   const [voucherCode, setVoucherCode] = useState('');
   const [confirming, setConfirming] = useState(false);
 
   if (yt.load.kind === 'ready' && !yt.load.status.available) return <Redirect href="/" />;
+  // Teens earn no receipt points (group 0.4.c, 3.10.c).
+  if (active.teenSpace === 'teen') return <Redirect href="/" />;
 
   return (
     <Screen>

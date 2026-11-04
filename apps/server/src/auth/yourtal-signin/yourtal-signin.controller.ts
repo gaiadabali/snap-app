@@ -13,7 +13,7 @@ import { isClientConfigured, redeemCode, startAuthorization } from './oidc.js';
 import { openFlow, signInWithYourTal, takeFlow } from './repo.js';
 import { yourtalSignInSettings, type YourTalClientKind } from './settings.js';
 import { readTeenInvite, teenInvitesConfigured } from '../../teens/invite-api.js';
-import { attachInviteToFlow, inviteForSignIn, joinTeenSpace, teenEmailTaken } from '../../teens/teens.repo.js';
+import { attachInviteToFlow, hasCategories, inviteForSignIn, joinTeenSpace, teenEmailTaken } from '../../teens/teens.repo.js';
 import { seedDefaultCategories } from '../../settings/settings.repo.js';
 import { availableRules, installRulesFor } from '../../taxrules/taxrules.repo.js';
 
@@ -285,9 +285,10 @@ export class YourTalSignInController {
       }
       throw error;
     }
-    if (!joined.created) return;
-    // Set up like any new personal workspace: categories, and the region's
-    // tax rules where this deployment has them (as onboarding does).
+    // Set up like any new personal workspace: categories, and the region's tax
+    // rules where this deployment has them (as onboarding does). Until it has
+    // categories, so a setup that failed after the join is redone next sign-in.
+    if (await hasCategories(userId, joined.tenantId)) return;
     await seedDefaultCategories(userId, joined.tenantId, 'personal');
     const rules = availableRules().find((r) => r.country === identity.region);
     if (rules) await installRulesFor(userId, joined.tenantId, rules.rulesId);

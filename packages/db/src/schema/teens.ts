@@ -25,6 +25,8 @@ export const teenSpaces = pgTable('teen_spaces', {
   inviteId: uuid('invite_id').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   accessEndedAt: timestamp('access_ended_at', { withTimezone: true }),
+  /** YourTal confirmed the invite ended. */
+  yourtalEndedAt: timestamp('yourtal_ended_at', { withTimezone: true }),
   /** 3.10.f erases the space from here. */
   eraseAfter: timestamp('erase_after', { withTimezone: true }),
 });

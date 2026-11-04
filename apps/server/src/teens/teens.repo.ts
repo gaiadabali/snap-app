@@ -67,10 +67,28 @@ export async function joinTeenSpace(
   });
 }
 
-/** When YourTal's end did not answer: the worker retries it (`teen_invite_end` job). */
-export async function queueInviteEnd(parentUserId: string, tenantId: string, parentSub: string): Promise<void> {
+/** YourTal confirmed the invite ended: the queued `teen_invite_end` job has nothing left to do. */
+export async function markYourtalEnded(parentUserId: string, inviteId: string): Promise<void> {
   await asUser(getDb(), parentUserId, async (tx) => {
-    await tx.execute(sql`select teen_invite_end_retry(${tenantId}::uuid, ${parentSub})`);
+    await tx.execute(sql`select teen_invite_yourtal_ended(${inviteId}::uuid)`);
+  });
+}
+
+/** False when a teen space's scans can no longer be paid (0045 TS004); null outside a teen space. */
+export async function teenSpaceFunded(userId: string, tenantId: string): Promise<boolean | null> {
+  return withTenantAs(getDb(), userId, tenantId, async (tx) => {
+    const { rows } = await tx.execute<{ funded: boolean | null }>(sql`select teen_space_funded() as funded`);
+    return rows[0]?.funded ?? null;
+  });
+}
+
+/** Whether the space has any categories yet (setup after a join is redone until it does). */
+export async function hasCategories(userId: string, tenantId: string): Promise<boolean> {
+  return withTenantAs(getDb(), userId, tenantId, async (tx) => {
+    const { rows } = await tx.execute<{ any: boolean }>(sql`
+      select exists (select 1 from categories where tenant_id = current_tenant_id()) as any
+    `);
+    return rows[0]?.any === true;
   });
 }
 
@@ -98,22 +116,29 @@ export async function isTeenSpace(userId: string, tenantId: string): Promise<boo
 export async function spaceOfParent(
   parentUserId: string,
   tenantId: string,
-): Promise<{ inviteId: string; accessEndedAt: string | null } | null> {
+): Promise<{ inviteId: string; accessEndedAt: string | null; yourtalEnded: boolean } | null> {
   return asUser(getDb(), parentUserId, async (tx) => {
-    const { rows } = await tx.execute<{ invite_id: string; access_ended_at: string | null }>(sql`
-      select invite_id, to_json(access_ended_at)#>>'{}' as access_ended_at
+    const { rows } = await tx.execute<{ invite_id: string; access_ended_at: string | null; yourtal_ended: boolean }>(sql`
+      select invite_id, to_json(access_ended_at)#>>'{}' as access_ended_at, yourtal_ended_at is not null as yourtal_ended
         from teen_spaces
        where tenant_id = ${tenantId}::uuid and parent_user_id = current_user_id()
     `);
     const row = rows[0];
-    return row ? { inviteId: row.invite_id, accessEndedAt: row.access_ended_at } : null;
+    return row ? { inviteId: row.invite_id, accessEndedAt: row.access_ended_at, yourtalEnded: row.yourtal_ended } : null;
   });
 }
 
-/** After YourTal ended the invite: the hold starts and the teen's sessions end. False when already ended. */
-export async function endTeenSpace(parentUserId: string, tenantId: string): Promise<boolean> {
+/**
+ * Ends access here, in one transaction: the teen's sessions end, the hold
+ * starts, and a `teen_invite_end` job is queued until YourTal confirms. Run
+ * again on an ended space, it only makes sure that job exists. False when
+ * access had already ended.
+ */
+export async function endTeenSpace(parentUserId: string, tenantId: string, parentSub: string): Promise<boolean> {
   return asUser(getDb(), parentUserId, async (tx) => {
-    const { rows } = await tx.execute<{ ended: boolean }>(sql`select teen_space_end(${tenantId}::uuid) as ended`);
+    const { rows } = await tx.execute<{ ended: boolean }>(sql`
+      select teen_space_end(${tenantId}::uuid, ${parentSub}) as ended
+    `);
     return rows[0]?.ended === true;
   });
 }

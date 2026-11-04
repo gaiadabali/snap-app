@@ -158,13 +158,19 @@ async function handleNotice(db: Db, job: Job, log: Log): Promise<void> {
   log.log(`erasure_notice ${job.id}: ${sent.outcome}`);
 }
 
-async function handleTeenInviteEnd(_db: Db, job: Job, log: Log): Promise<void> {
+async function handleTeenInviteEnd(db: Db, job: Job, log: Log): Promise<void> {
   const { inviteId, parentSub } = (job.payload ?? {}) as { inviteId?: unknown; parentSub?: unknown };
   if (typeof inviteId !== 'string' || !UUID.test(inviteId) || typeof parentSub !== 'string') {
     throw new Error('teen_invite_end: bad payload');
   }
+  const needed = await db.execute<{ needed: boolean }>(sql`select teen_invite_end_needed(${inviteId}::uuid) as needed`);
+  if (needed.rows[0]?.needed === false) {
+    log.log(`teen_invite_end ${job.id}: YourTal already confirmed; nothing to do`);
+    return;
+  }
   if (!teenInvitesConfigured()) throw new NotNow('teen invites are not configured');
   if ((await endTeenInvite(inviteId, parentSub)) !== 'ended') throw new Error('teen_invite_end: YourTal did not end it yet');
+  await db.execute(sql`select teen_invite_yourtal_ended_by_worker(${inviteId}::uuid)`);
   log.log(`teen_invite_end ${job.id}: ended at YourTal`);
 }
 
