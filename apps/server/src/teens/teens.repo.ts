@@ -26,7 +26,7 @@ export async function recordInvite(
   });
 }
 
-/** At start: ties this sign-in to the invite. Null for a code this server never issued, or one past its expiry. */
+/** At start: the sign-in flow carries the invite. Null for a code this server never issued, or one past its expiry. */
 export async function attachInviteToFlow(code: string, flowId: string): Promise<string | null> {
   const { rows } = await getDb().execute<{ id: string | null }>(sql`
     select teen_invite_attach_flow(${codeHash(code)}, ${flowId}::uuid) as id
@@ -42,16 +42,35 @@ export async function inviteForSignIn(flowId: string, sub: string): Promise<stri
   return rows[0]?.id ?? null;
 }
 
-/** The teen's space, made on first use. Throws TS002 (access ended) or TS003 (already uses other workspaces). */
+/** True when a teen's `sub` is new here and an account already holds their email: never linked (0045). */
+export async function teenEmailTaken(sub: string, email: string): Promise<boolean> {
+  const { rows } = await getDb().execute<{ taken: boolean }>(sql`
+    select teen_sign_in_email_taken(${`yourtal|${sub}`}, ${email}) as taken
+  `);
+  return rows[0]?.taken === true;
+}
+
+/**
+ * The teen's space, made on first use through the flow YourTal confirmed.
+ * Throws TS002 (access ended, or no invite on the flow) or TS003 (already uses
+ * other workspaces).
+ */
 export async function joinTeenSpace(
   teenUserId: string,
-  input: { inviteId: string; name: string; region: 'AU' | 'ID' },
-): Promise<string> {
+  input: { flowId: string; name: string; region: 'AU' | 'ID' },
+): Promise<{ tenantId: string; created: boolean }> {
   return asUser(getDb(), teenUserId, async (tx) => {
-    const { rows } = await tx.execute<{ id: string }>(sql`
-      select teen_space_join(${input.inviteId}::uuid, ${input.name}, ${input.region}) as id
+    const { rows } = await tx.execute<{ tenant_id: string; created: boolean }>(sql`
+      select tenant_id, created from teen_space_join(${input.flowId}::uuid, ${input.name}, ${input.region})
     `);
-    return rows[0]!.id;
+    return { tenantId: rows[0]!.tenant_id, created: rows[0]!.created };
+  });
+}
+
+/** When YourTal's end did not answer: the worker retries it (`teen_invite_end` job). */
+export async function queueInviteEnd(parentUserId: string, tenantId: string, parentSub: string): Promise<void> {
+  await asUser(getDb(), parentUserId, async (tx) => {
+    await tx.execute(sql`select teen_invite_end_retry(${tenantId}::uuid, ${parentSub})`);
   });
 }
 

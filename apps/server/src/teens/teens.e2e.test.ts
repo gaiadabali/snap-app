@@ -142,6 +142,8 @@ describeIfDb('teen spaces — real database, real provider', () => {
       for (const table of ['credit_spends', 'jobs', 'captures']) {
         await admin.query(`DELETE FROM ${table} WHERE tenant_id = ANY($1::uuid[])`, [tenants]);
       }
+      await admin.query(`DELETE FROM jobs WHERE kind = 'teen_invite_end'`);
+      await admin.query('DELETE FROM teen_space_spends WHERE funding_tenant_id = ANY($1::uuid[])', [tenants]);
       await admin.query('DELETE FROM tenants WHERE id = ANY($1::uuid[])', [tenants]);
       await admin.query('DELETE FROM users WHERE id = ANY($1::uuid[])', [ids]);
       await admin.query('DELETE FROM yourtal_sign_in_reviews WHERE yourtal_sub = ANY($1)', [subs]);
@@ -222,7 +224,9 @@ describeIfDb('teen spaces — real database, real provider', () => {
       teenId = joined.user.userId;
       expect(joined.workspaces).toHaveLength(1);
       space = joined.workspaces[0]!.id;
-      expect(joined.workspaces[0]).toMatchObject({ name: 'Tia’s space', kind: 'personal', role: 'owner' });
+      expect(joined.workspaces[0]).toMatchObject({ name: 'Tia’s space', kind: 'personal', role: 'owner', teenSpace: 'teen' });
+      // Set up like any new personal workspace.
+      expect((await admin.query('SELECT count(*)::int AS n FROM categories WHERE tenant_id = $1', [space])).rows[0].n).toBeGreaterThan(0);
 
       const members = await admin.query('SELECT user_id, role FROM memberships WHERE tenant_id = $1 ORDER BY role', [space]);
       expect(members.rows).toEqual([
@@ -253,14 +257,44 @@ describeIfDb('teen spaces — real database, real provider', () => {
     });
 
     it('lets the parent view the space but change nothing in it', async () => {
-      const list = (await http('GET', '/v1/workspaces', parentToken)).json() as Array<{ id: string; role: string }>;
-      expect(list.find((w) => w.id === space)?.role).toBe('readonly');
+      const list = (await http('GET', '/v1/workspaces', parentToken)).json() as Array<{ id: string; role: string; teenSpace: string | null }>;
+      expect(list.find((w) => w.id === space)).toMatchObject({ role: 'readonly', teenSpace: 'parent' });
+      // The parent's own workspace comes first, so it is the default.
+      expect(list[0]).toMatchObject({ id: household, teenSpace: null });
       expect((await http('GET', '/v1/goals', parentToken, space)).statusCode).toBe(200);
       const write = await http('POST', '/v1/goals', parentToken, space, { name: 'Bike', target: '100.00' });
       expect(write.statusCode).toBe(403);
       expect(write.json()).toMatchObject({ error: 'view_only' });
       // The teen can.
       expect((await http('POST', '/v1/goals', teenToken, space, { name: 'Bike', target: '100.00' })).statusCode).toBe(201);
+    });
+
+    it('answers every GET route for the parent in the teen space without a write or a server error', async () => {
+      const { AppModule } = await import('../app.module.js');
+      const controllers = (Reflect.getMetadata('controllers', AppModule) ?? []) as Array<new () => object>;
+      const paths: string[] = [];
+      for (const ctrl of controllers) {
+        const base = String(Reflect.getMetadata('path', ctrl) ?? '').replace(/^\/|\/$/g, '');
+        for (const name of Object.getOwnPropertyNames(ctrl.prototype)) {
+          const fn = (ctrl.prototype as Record<string, unknown>)[name];
+          if (typeof fn !== 'function' || Reflect.getMetadata('method', fn) !== 0) continue; // RequestMethod.GET
+          const sub = String(Reflect.getMetadata('path', fn) ?? '').replace(/^\/|\/$/g, '');
+          paths.push(`/${[base, sub].filter(Boolean).join('/')}`.replace(/:[A-Za-z]+/g, randomUUID()));
+        }
+      }
+      expect(paths.length).toBeGreaterThan(40);
+      const bad: string[] = [];
+      let ok = 0;
+      for (const path of paths) {
+        // Serves the APK from storage, with no workspace: nothing a teen space changes.
+        if (path.startsWith('/v1/downloads/')) continue;
+        const res = await http('GET', path, parentToken, space);
+        if (res.statusCode < 300) ok += 1;
+        const error = String(res.headers['content-type'] ?? '').includes('json') ? (res.json() as { error?: string }).error : undefined;
+        if (res.statusCode >= 500 || error === 'view_only') bad.push(`${path} → ${res.statusCode} ${error ?? ''}`);
+      }
+      expect(bad, bad.join('\n')).toEqual([]);
+      expect(ok).toBeGreaterThan(20);
     });
 
     it('locks the teen in: no other workspace, no invitations, no purchases', async () => {
@@ -307,6 +341,33 @@ describeIfDb('teen spaces — real database, real provider', () => {
       const worker = workerActor(teenId, createDb(workerPool));
       expect(await refundScanCredit(worker, space, capture, 'unreadable')).toEqual({ refunded: true, creditReturned: true });
       expect(await parentBalance()).toBe(before);
+
+      // Two at once on one capture: one parent credit, one record.
+      const twin = randomUUID();
+      await admin.query(
+        `INSERT INTO captures (id, tenant_id, uploaded_by, original_storage_key, original_mime_type, original_byte_size, original_sha256, status)
+         VALUES ($1, $2, $3, 'k', 'image/jpeg', 10, $4, 'received')`,
+        [twin, space, teenId, randomBytes(32)],
+      );
+      await Promise.allSettled([enqueueExtraction(teenId, space, twin), enqueueExtraction(teenId, space, twin)]);
+      expect(await parentBalance()).toBe(before - 1);
+      expect((await admin.query('SELECT count(*)::int AS n FROM teen_space_spends WHERE capture_id = $1', [twin])).rows[0].n).toBe(1);
+
+      // Only while the parent still owns the paying workspace.
+      const parentId = (await userIdOf(parent))!;
+      await admin.query(`UPDATE memberships SET role = 'admin' WHERE tenant_id = $1 AND user_id = $2`, [household, parentId]);
+      try {
+        const third = randomUUID();
+        await admin.query(
+          `INSERT INTO captures (id, tenant_id, uploaded_by, original_storage_key, original_mime_type, original_byte_size, original_sha256, status)
+           VALUES ($1, $2, $3, 'k', 'image/jpeg', 10, $4, 'received')`,
+          [third, space, teenId, randomBytes(32)],
+        );
+        await expect(enqueueExtraction(teenId, space, third)).rejects.toMatchObject({ cause: { code: 'TS004' } });
+        expect(await parentBalance()).toBe(before - 1);
+      } finally {
+        await admin.query(`UPDATE memberships SET role = 'owner' WHERE tenant_id = $1 AND user_id = $2`, [household, parentId]);
+      }
     });
 
     it('lets only the parent end access; then the teen is signed out and refused', async () => {
@@ -320,6 +381,7 @@ describeIfDb('teen spaces — real database, real provider', () => {
       expect(ended.statusCode).toBe(200);
       expect(yt.teenInvites.get(inviteId)?.status).toBe('ended');
       expect(yt.teenInviteCalls).toContain(`POST /api/oidc-clients/teen-invites/${inviteId}/end`);
+      expect((await admin.query(`SELECT count(*)::int AS n FROM jobs WHERE kind = 'teen_invite_end' AND payload->>'inviteId' = $1`, [inviteId])).rows[0].n).toBe(0);
       expect((await http('POST', `/v1/family/teens/${space}/end`, parentToken)).statusCode).toBe(200);
 
       const held = (await admin.query('SELECT erase_after - access_ended_at AS hold FROM teen_spaces WHERE tenant_id = $1', [space]))
@@ -332,6 +394,100 @@ describeIfDb('teen spaces — real database, real provider', () => {
       await expect(signIn(teen)).rejects.toMatchObject({ response: { error: 'teen_invite_required' } });
       const family = (await http('GET', '/v1/family', parentToken)).json();
       expect(family.teens[0].accessEndedAt).not.toBeNull();
+    });
+  });
+
+  it('never links a teen by email to an account here, and writes nothing', async () => {
+    const repo = await import('../repo.js');
+    const { issueSession, authenticateSession } = await import('../auth/sessions.js');
+    for (const shape of ['with a workspace', 'with none'] as const) {
+      const teen = person(`legacy-teen-${shape === 'with none' ? 'bare' : 'ws'}`, {
+        ageBand: 'teen',
+        guardianAccountId: parent.accountId,
+      });
+      const legacy = await repo.upsertUserByEmail(teen.email, 'Old account');
+      if (shape === 'with a workspace') {
+        const ws = await http('POST', '/v1/workspaces', await issueSession(legacy.userId), undefined, { name: 'Old', kind: 'personal' });
+        expect(ws.statusCode).toBe(201);
+      }
+      const live = await issueSession(legacy.userId);
+      const before = (await admin.query('SELECT subject, password_hash, yourtal_linked_at FROM users WHERE id = $1', [legacy.userId])).rows[0];
+
+      const { code } = await inviteCode();
+      await expect(signIn(teen, code)).rejects.toMatchObject({ response: { error: 'teen_account_in_use' } });
+
+      const after = (await admin.query('SELECT subject, password_hash, yourtal_linked_at FROM users WHERE id = $1', [legacy.userId])).rows[0];
+      expect(after).toEqual(before);
+      expect(before.subject.startsWith('dev|')).toBe(true);
+      expect((await authenticateSession(live))?.user.userId).toBe(legacy.userId);
+      expect(await userIdOf(teen)).toBeUndefined();
+      await admin.query('DELETE FROM tenants WHERE id IN (SELECT tenant_id FROM memberships WHERE user_id = $1)', [legacy.userId]);
+      await admin.query('DELETE FROM users WHERE id = $1', [legacy.userId]);
+    }
+  });
+
+  it('lets the teen finish the first of two openings of one link', async () => {
+    yt.enforceTeenInvites = true;
+    const teen = person('twice-teen', { ageBand: 'teen', guardianAccountId: parent.accountId });
+    const { code } = await inviteCode();
+    const first = await signInController.start({ client: 'web', teenInvite: code }, caller());
+    await signInController.start({ client: 'web', teenInvite: code }, caller()); // opened again, never finished
+    yt.nextSignIn = { person: teen };
+    const redirect = await yt.authorize(first.url);
+    const joined = await signInController.finish(
+      {
+        flowId: first.flowId,
+        code: redirect.searchParams.get('code')!,
+        state: redirect.searchParams.get('state')!,
+        iss: redirect.searchParams.get('iss')!,
+      },
+      caller(),
+    );
+    expect(joined.outcome).toBe('created');
+    expect(joined.workspaces[0]).toMatchObject({ teenSpace: 'teen' });
+  });
+
+  describe('End access when YourTal does not answer', () => {
+    async function joinTeen(tag: string) {
+      yt.enforceTeenInvites = true;
+      const teen = person(tag, { ageBand: 'teen', guardianAccountId: parent.accountId });
+      const { code } = await inviteCode();
+      const joined = await signIn(teen, code);
+      return { teen, token: joined.token, space: joined.workspaces[0]!.id };
+    }
+
+    it('ends here at once when YourTal is down, and the worker ends it there later', async () => {
+      const { token, space } = await joinTeen('down-teen');
+      const inviteId = (await admin.query('SELECT invite_id FROM teen_spaces WHERE tenant_id = $1', [space])).rows[0].invite_id;
+      yt.inviteApiDown = true;
+      try {
+        expect((await http('POST', `/v1/family/teens/${space}/end`, parentToken)).statusCode).toBe(200);
+      } finally {
+        yt.inviteApiDown = false;
+      }
+      expect((await http('GET', '/v1/family', token)).statusCode).toBe(401);
+      expect((await admin.query('SELECT access_ended_at FROM teen_spaces WHERE tenant_id = $1', [space])).rows[0].access_ended_at).not.toBeNull();
+      expect(yt.teenInvites.get(inviteId)?.status).toBe('accepted');
+
+      const job = (await admin.query(`SELECT id, tenant_id FROM jobs WHERE kind = 'teen_invite_end' AND payload->>'inviteId' = $1`, [inviteId])).rows;
+      expect(job).toHaveLength(1);
+      expect(job[0].tenant_id).toBeNull();
+      const { runErasureJobsOnce } = await import('../yourtal/events-job.js');
+      await admin.query(`UPDATE jobs SET run_after = now() WHERE id = $1`, [job[0].id]);
+      const lines: string[] = [];
+      await runErasureJobsOnce(createDb(workerPool), { log: (m: string) => lines.push(m), warn: (m: string) => lines.push(m), error: (m: string) => lines.push(m) });
+      expect(lines.join('\n')).toContain('ended at YourTal');
+      expect(yt.teenInvites.get(inviteId)?.status).toBe('ended');
+      expect((await admin.query('SELECT completed_at FROM jobs WHERE id = $1', [job[0].id])).rows[0].completed_at).not.toBeNull();
+    });
+
+    it('treats a 404 from YourTal as already ended', async () => {
+      const { space } = await joinTeen('gone-teen');
+      const inviteId = (await admin.query('SELECT invite_id FROM teen_spaces WHERE tenant_id = $1', [space])).rows[0].invite_id;
+      yt.teenInvites.delete(inviteId);
+      expect((await http('POST', `/v1/family/teens/${space}/end`, parentToken)).statusCode).toBe(200);
+      expect((await admin.query(`SELECT count(*)::int AS n FROM jobs WHERE kind = 'teen_invite_end' AND payload->>'inviteId' = $1`, [inviteId])).rows[0].n).toBe(0);
+      expect((await admin.query('SELECT access_ended_at FROM teen_spaces WHERE tenant_id = $1', [space])).rows[0].access_ended_at).not.toBeNull();
     });
   });
 

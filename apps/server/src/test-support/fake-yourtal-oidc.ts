@@ -108,6 +108,8 @@ export type FakeYourTalOidc = {
   teenInviteCalls: string[];
   /** Answer the next create as YourTal answers a replay: 201 with no `code`. */
   replayNextCreate: boolean;
+  /** The invite API answers 503 to everything (YourTal down). */
+  inviteApiDown: boolean;
   /** Follow an authorization URL like a browser; returns the URL YourTal redirected to. */
   authorize(url: string): Promise<URL>;
   close(): Promise<void>;
@@ -158,6 +160,7 @@ export async function startFakeYourTalOidc(): Promise<FakeYourTalOidc> {
     teenInviteLimit: 10,
     teenInviteCalls: [],
     replayNextCreate: false,
+    inviteApiDown: false,
     signSet: (payload, options = {}) =>
       new SignJWT(payload)
         .setProtectedHeader({ typ: 'secevent+jwt', alg: 'RS256', kid: providerJwk.kid, ...options.header } as never)
@@ -339,6 +342,7 @@ export async function startFakeYourTalOidc(): Promise<FakeYourTalOidc> {
       res.end(JSON.stringify(body));
     };
     fake.teenInviteCalls.push(`${req.method} ${url}`);
+    if (fake.inviteApiDown) return send(503, { code: 'unavailable' });
     const bearer = req.headers.authorization?.startsWith('Bearer ') ? req.headers.authorization.slice(7) : '';
     const token = bearer ? await provider.ClientCredentials.find(bearer) : undefined;
     if (!token || token.clientId !== fake.serverClientId) return send(401, { code: 'invalid_token' });

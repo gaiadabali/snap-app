@@ -160,18 +160,22 @@ export async function readTeenInvite(inviteId: string): Promise<InviteState | nu
   return { status, teenSub: typeof teenSub === 'string' ? teenSub : null };
 }
 
-/** `POST /teen-invites/{id}/end` with `{ parentSub }`. True on 200 (ending twice is 200 too). */
-export async function endTeenInvite(inviteId: string, parentSub: string): Promise<boolean> {
+/**
+ * `POST /teen-invites/{id}/end` with `{ parentSub }`. `ended` on 200 (ending
+ * twice is 200 too) and on 404 (YourTal no longer has it: nothing left to
+ * end); `failed` otherwise, for the caller to retry later.
+ */
+export async function endTeenInvite(inviteId: string, parentSub: string): Promise<'ended' | 'failed'> {
   const key = randomUUID();
   for (let attempt = 0; attempt < 2; attempt += 1) {
     let answer: Answer;
     try {
       answer = await call('POST', `${PATH}/${encodeURIComponent(inviteId)}/end`, { parentSub }, key);
     } catch {
-      return false;
+      return 'failed';
     }
-    if (answer && answer.status === 200) return true;
-    if (answer && answer.status < 500) return false;
+    if (answer && (answer.status === 200 || answer.status === 404)) return 'ended';
+    if (answer && answer.status < 500) return 'failed';
   }
-  return false;
+  return 'failed';
 }

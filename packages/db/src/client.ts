@@ -320,7 +320,15 @@ export async function listWorkspacesFor(
   db: Db,
   userId: string,
 ): Promise<
-  Array<{ id: string; name: string; kind: 'business' | 'personal'; role: string; baseCurrency: string }>
+  Array<{
+    id: string;
+    name: string;
+    kind: 'business' | 'personal';
+    role: string;
+    baseCurrency: string;
+    /** A teen space (0045): `teen` for its teen, `parent` for the parent who views it. */
+    teenSpace: 'teen' | 'parent' | null;
+  }>
 > {
   if (!UUID.test(userId)) throw new Error(`listWorkspacesFor: not a uuid: ${JSON.stringify(userId)}`);
   return db.transaction(async (tx) => {
@@ -331,13 +339,19 @@ export async function listWorkspacesFor(
       kind: 'business' | 'personal';
       role: string;
       baseCurrency: string;
+      teenSpace: 'teen' | 'parent' | null;
     }>(sql`
-      select t.id, t.name, t.kind, m.role, t.base_currency as "baseCurrency"
+      select t.id, t.name, t.kind, m.role, t.base_currency as "baseCurrency",
+             case when ts.teen_user_id = current_user_id() then 'teen'
+                  when ts.parent_user_id = current_user_id() then 'parent' end as "teenSpace"
       from memberships m
       join tenants t on t.id = m.tenant_id
+      left join teen_spaces ts on ts.tenant_id = t.id
       where m.user_id = current_user_id()
         and t.deleted_at is null
-      order by t.kind, t.name
+      -- A workspace the person can write in comes first: the default is never
+      -- one they can only view (a teen's space, for the parent).
+      order by (m.role = 'readonly'), t.kind, t.name
     `);
     return rows.rows;
   });

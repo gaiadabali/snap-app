@@ -13,7 +13,9 @@ import { isClientConfigured, redeemCode, startAuthorization } from './oidc.js';
 import { openFlow, signInWithYourTal, takeFlow } from './repo.js';
 import { yourtalSignInSettings, type YourTalClientKind } from './settings.js';
 import { readTeenInvite, teenInvitesConfigured } from '../../teens/invite-api.js';
-import { attachInviteToFlow, inviteForSignIn, joinTeenSpace } from '../../teens/teens.repo.js';
+import { attachInviteToFlow, inviteForSignIn, joinTeenSpace, teenEmailTaken } from '../../teens/teens.repo.js';
+import { seedDefaultCategories } from '../../settings/settings.repo.js';
+import { availableRules, installRulesFor } from '../../taxrules/taxrules.repo.js';
 
 export class YourTalStartDto {
   @IsIn(['web', 'mobile'], { message: 'client must be "web" or "mobile".' })
@@ -210,6 +212,12 @@ export class YourTalSignInController {
         const invite = await readTeenInvite(teenInviteId);
         if (!invite) throw refusal('yourtal_unavailable');
         if (invite.status !== 'accepted' || invite.teenSub !== identity.sub) throw refusal('teen_invite_required');
+        // A teen is never linked by email (0039's rule 2 would bind, and lock,
+        // someone else's account here): refused before anything is written.
+        if (await teenEmailTaken(identity.sub, identity.email)) {
+          this.logger.warn(`teen sign-in refused: email held by an account here client=${flow.client}`);
+          throw refusal('teen_account_in_use');
+        }
       }
 
       const result = await signInWithYourTal({
@@ -225,7 +233,7 @@ export class YourTalSignInController {
         case 'signed_in':
         case 'linked':
         case 'created': {
-          if (teenInviteId) await this.teenSpaceFor(result.userId!, teenInviteId, identity);
+          if (teenInviteId) await this.teenSpaceFor(result.userId!, body.flowId, identity);
           const session = await signedIn(result.userId!, 'yourtal');
           this.logger.log(
             `sign-in ok: ${result.outcome} client=${flow.client} user=${result.userId}` +
@@ -263,10 +271,11 @@ export class YourTalSignInController {
   }
 
   /** The teen's own space, made at their first sign-in; the parent gets read-only access (0045). */
-  private async teenSpaceFor(userId: string, inviteId: string, identity: { name?: string; region: 'AU' | 'ID' }) {
+  private async teenSpaceFor(userId: string, flowId: string, identity: { name?: string; region: 'AU' | 'ID' }) {
+    let joined: { tenantId: string; created: boolean };
     try {
       const name = identity.name ? `${identity.name}’s space` : 'My space';
-      await joinTeenSpace(userId, { inviteId, name, region: identity.region });
+      joined = await joinTeenSpace(userId, { flowId, name, region: identity.region });
     } catch (error) {
       const code = (error as { cause?: { code?: string }; code?: string })?.cause?.code ?? (error as { code?: string })?.code;
       if (code === 'TS002') throw refusal('teen_invite_required');
@@ -276,5 +285,11 @@ export class YourTalSignInController {
       }
       throw error;
     }
+    if (!joined.created) return;
+    // Set up like any new personal workspace: categories, and the region's
+    // tax rules where this deployment has them (as onboarding does).
+    await seedDefaultCategories(userId, joined.tenantId, 'personal');
+    const rules = availableRules().find((r) => r.country === identity.region);
+    if (rules) await installRulesFor(userId, joined.tenantId, rules.rulesId);
   }
 }

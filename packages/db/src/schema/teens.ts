@@ -15,7 +15,6 @@ export const teenInvites = pgTable('teen_invites', {
   codeSha256: bytea('code_sha256').notNull(),
   expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  flowId: uuid('flow_id'),
 });
 
 export const teenSpaces = pgTable('teen_spaces', {
@@ -32,7 +31,9 @@ export const teenSpaces = pgTable('teen_spaces', {
 
 /** No tenant_id on purpose: see 0045's header. */
 export const teenSpaceSpends = pgTable('teen_space_spends', {
-  captureId: uuid('capture_id').primaryKey(),
+  id: uuid('id').primaryKey().defaultRandom(),
+  /** NULL once the teen's capture is gone; the record stays with the parent's workspace. */
+  captureId: uuid('capture_id'),
   fundingTenantId: uuid('funding_tenant_id').notNull(),
   grantId: uuid('grant_id'),
   spentAt: timestamp('spent_at', { withTimezone: true }).notNull().defaultNow(),

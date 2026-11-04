@@ -22,7 +22,7 @@ import { config } from '../config.js';
 import { getDb } from '../db.js';
 import { listMembers } from '../repo.js';
 import { createTeenInvite, endTeenInvite, teenInvitesConfigured } from './invite-api.js';
-import { endTeenSpace, familyOf, isTeen, recordInvite, spaceOfParent } from './teens.repo.js';
+import { endTeenSpace, familyOf, isTeen, queueInviteEnd, recordInvite, spaceOfParent } from './teens.repo.js';
 
 const refuse = (status: HttpStatus, error: string, message: string) => new HttpException({ error, message }, status);
 
@@ -125,8 +125,8 @@ export class FamilyController {
   @ApiOperation({
     summary: 'End your teen’s access',
     description:
-      'Ends the invite at YourTal (which tells the teen’s consent and sends access-ended), then ends the teen’s ' +
-      'sessions here and starts the 30-day hold before their space is erased. Idempotent. 404 for a space you did not invite.',
+      'Ends the teen’s sessions here and starts the 30-day hold before their space is erased, then ends the invite at ' +
+      'YourTal (404 there counts as ended; a failure is retried by the worker). Idempotent. 404 for a space you did not invite.',
   })
   async end(
     @CurrentUser() user: AuthUser,
@@ -138,13 +138,12 @@ export class FamilyController {
 
     const parentSub = await yourtalSub(user.userId, workspaceId);
     if (!parentSub) throw new ForbiddenException({ error: 'yourtal_sign_in_required', message: 'Sign in with YourTal first.' });
-    if (!(await endTeenInvite(space.inviteId, parentSub))) {
-      throw refuse(HttpStatus.SERVICE_UNAVAILABLE, 'yourtal_unavailable', 'YourTal isn’t answering right now. Please try again in a few minutes.');
-    }
-    // YourTal's access-ended event will follow once it delivers; acting on the
-    // 200 now is what the 3.9.e report asks until then.
+    // Here first, so the teen is out whatever YourTal answers: sessions end and
+    // sign-in refuses an ended space. Then YourTal; a failure is the worker's to retry.
     await endTeenSpace(user.userId, workspaceId);
-    this.logger.log(`teen access ended: space=${workspaceId} user=${user.userId}`);
+    const atYourTal = await endTeenInvite(space.inviteId, parentSub);
+    if (atYourTal === 'failed') await queueInviteEnd(user.userId, workspaceId, parentSub);
+    this.logger.log(`teen access ended: space=${workspaceId} user=${user.userId} yourtal=${atYourTal}`);
     return { ended: true };
   }
 }

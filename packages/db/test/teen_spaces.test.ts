@@ -54,6 +54,8 @@ describeIfDb('teen spaces (migration 0045)', () => {
     const tenants = [FUND, ...spaces];
     await c.query('DELETE FROM teen_spaces WHERE tenant_id = ANY($1::uuid[])', [tenants]);
     await c.query('DELETE FROM teen_invites WHERE parent_user_id = $1', [PARENT]);
+    await c.query('DELETE FROM yourtal_sign_in_flows WHERE id = $1', [FLOW]);
+    await c.query(`DELETE FROM jobs WHERE kind = 'teen_invite_end' AND payload->>'inviteId' = $1`, [INVITE]);
     await c.query('DELETE FROM credit_spends WHERE tenant_id = ANY($1::uuid[])', [tenants]);
     await c.query('DELETE FROM captures WHERE tenant_id = ANY($1::uuid[])', [tenants]);
     await c.query('DELETE FROM tenants WHERE id = ANY($1::uuid[])', [tenants]);
@@ -76,6 +78,11 @@ describeIfDb('teen spaces (migration 0045)', () => {
     await c.query(
       `INSERT INTO usage_grants (id, tenant_id, metric, amount, remaining, source) VALUES ($1, $2, 'scans', 2, 2, 'signup_bonus')`,
       [GRANT, FUND],
+    );
+    await c.query(
+      `INSERT INTO yourtal_sign_in_flows (id, client, state, nonce, code_verifier, expires_at)
+       VALUES ($1, 'web', 's', 'n', 'v', now() + interval '10 minutes')`,
+      [FLOW],
     );
   });
 
@@ -110,11 +117,28 @@ describeIfDb('teen spaces (migration 0045)', () => {
     ).toBeNull();
   });
 
+  it('says when a new teen sub would be linked by email to an account here', async () => {
+    await as('app_rw', null, null);
+    const taken = (subject: string, email: string) =>
+      c.query('SELECT teen_sign_in_email_taken($1, $2) AS taken', [subject, email]).then((r) => r.rows[0].taken);
+    expect(await taken('yourtal|new-teen', 'other@teen.test')).toBe(true);
+    expect(await taken('yourtal|new-teen', 'nobody@teen.test')).toBe(false);
+    // A known sub is found by sub, never by email.
+    expect(await taken('yourtal|teen-teen', 'other@teen.test')).toBe(false);
+  });
+
   it('makes a space the teen owns, with the parent read-only, once', async () => {
     await as('app_rw', TEEN, null);
-    space = (await c.query(`SELECT teen_space_join($1, 'Tia''s space', 'AU') AS id`, [INVITE])).rows[0].id;
+    // Only through a flow that carries the invite.
+    expect(await failure(`SELECT * FROM teen_space_join(gen_random_uuid(), 'x', 'AU')`)).toMatch(/^TS002/);
+    const first = (await c.query(`SELECT * FROM teen_space_join($1, 'Tia''s space', 'AU')`, [FLOW])).rows[0];
+    space = first.tenant_id;
+    expect(first.created).toBe(true);
     expect(space).toMatch(/^[0-9a-f-]{36}$/);
-    expect((await c.query(`SELECT teen_space_join($1, 'x', 'AU') AS id`, [INVITE])).rows[0].id).toBe(space);
+    expect((await c.query(`SELECT * FROM teen_space_join($1, 'x', 'AU')`, [FLOW])).rows[0]).toEqual({
+      tenant_id: space,
+      created: false,
+    });
 
     await c.query('RESET ROLE');
     const members = await c.query('SELECT user_id, role FROM memberships WHERE tenant_id = $1 ORDER BY role', [space]);
@@ -139,6 +163,16 @@ describeIfDb('teen spaces (migration 0045)', () => {
       /^TS001/,
     );
     expect(await failure(`SELECT workspace_create('Mine', 'personal', null)`)).toMatch(/^TS001/);
+  });
+
+  it('cannot be opened with a setting: as the app role, with any GUC set, the lock still holds', async () => {
+    await as('app_rw', TEEN, space);
+    await c.query(`SELECT set_config('snap.teen_space_write', 'on', false)`);
+    expect(await failure(`INSERT INTO memberships (tenant_id, user_id, role) VALUES ($1, $2, 'member')`, [space, OTHER])).toMatch(
+      /^TS001/,
+    );
+    expect(await failure(`SELECT workspace_create('Other', 'personal', null)`)).toMatch(/^TS001/);
+    await c.query(`SELECT set_config('snap.teen_space_write', '', false)`);
   });
 
   it('takes no grant, purchase or invitation of its own', async () => {
@@ -187,6 +221,23 @@ describeIfDb('teen spaces (migration 0045)', () => {
     await c.query('SELECT * FROM teen_space_take_credit($1)', [capture]);
     expect(await remaining()).toBe(1);
 
+    // The record outlives the capture.
+    await c.query('RESET ROLE');
+    // Only while the parent still owns the paying workspace.
+    const capture2 = (
+      await c.query(
+        `INSERT INTO captures (id, tenant_id, uploaded_by, original_storage_key, original_mime_type, original_byte_size, original_sha256)
+         VALUES (gen_random_uuid(), $1, $2, 'k', 'image/jpeg', 10, $3) RETURNING id`,
+        [space, TEEN, randomBytes(32)],
+      )
+    ).rows[0].id as string;
+    await c.query(`UPDATE memberships SET role = 'admin' WHERE tenant_id = $1 AND user_id = $2`, [FUND, PARENT]);
+    await as('app_rw', TEEN, space);
+    expect(await failure('SELECT * FROM teen_space_take_credit($1)', [capture2])).toMatch(/^TS004/);
+    await c.query('RESET ROLE');
+    await c.query(`UPDATE memberships SET role = 'owner' WHERE tenant_id = $1 AND user_id = $2`, [FUND, PARENT]);
+    expect(await remaining()).toBe(1);
+
     // Not a teen space: nothing taken.
     await as('app_rw', PARENT, FUND);
     expect((await c.query('SELECT * FROM teen_space_take_credit(gen_random_uuid())')).rows[0].teen_space).toBe(false);
@@ -198,6 +249,13 @@ describeIfDb('teen spaces (migration 0045)', () => {
     expect((await c.query('SELECT teen_space_refund_credit($1) AS ok', [capture])).rows[0].ok).toBe(true);
     expect((await c.query('SELECT teen_space_refund_credit($1) AS ok', [capture])).rows[0].ok).toBe(false);
     expect(await remaining()).toBe(2);
+
+    // The parent's money record outlives the teen's capture.
+    await owner.query('DELETE FROM credit_spends WHERE capture_id = $1', [capture]);
+    await owner.query('DELETE FROM captures WHERE id = $1', [capture]);
+    expect((await owner.query('SELECT capture_id FROM teen_space_spends WHERE funding_tenant_id = $1', [FUND])).rows).toEqual([
+      { capture_id: null },
+    ]);
     await owner.end();
   });
 
@@ -226,7 +284,16 @@ describeIfDb('teen spaces (migration 0045)', () => {
       (await c.query('SELECT teen_invite_for_sign_in(gen_random_uuid(), $1) AS id', ['yourtal|teen-teen'])).rows[0].id,
     ).toBeNull();
     await as('app_rw', TEEN, null);
-    expect(await failure(`SELECT teen_space_join($1, 'x', 'AU')`, [INVITE])).toMatch(/^TS002/);
+    expect(await failure(`SELECT * FROM teen_space_join($1, 'x', 'AU')`, [FLOW])).toMatch(/^TS002/);
+
+    // The parent queues YourTal's end for the worker; nobody else can.
+    await as('app_rw', OTHER, null);
+    expect(await failure(`SELECT teen_invite_end_retry($1, 'parent-sub')`, [space])).toMatch(/^42501/);
+    await as('app_rw', PARENT, null);
+    await c.query(`SELECT teen_invite_end_retry($1, 'parent-sub')`, [space]);
+    await c.query('RESET ROLE');
+    const job = (await c.query(`SELECT tenant_id, payload FROM jobs WHERE kind = 'teen_invite_end'`)).rows;
+    expect(job).toEqual([{ tenant_id: null, payload: { inviteId: INVITE, parentSub: 'parent-sub' } }]);
   });
 
   it("lets the worker start the hold on YourTal's access-ended, once", async () => {
@@ -238,6 +305,19 @@ describeIfDb('teen spaces (migration 0045)', () => {
     expect((await c.query(`SELECT teen_space_end_for_subject('teen-teen') AS ended`)).rows[0].ended).toBe(true);
     expect((await c.query(`SELECT teen_space_end_for_subject('teen-teen') AS ended`)).rows[0].ended).toBe(false);
     expect((await c.query(`SELECT teen_space_end_for_subject('nobody') AS ended`)).rows[0].ended).toBe(false);
+  });
+
+  it('erases a parent who has a teen space: their workspace goes, the teen keeps the space unfunded', async () => {
+    await c.query('RESET ROLE');
+    await c.query('SET ROLE app_worker');
+    const rows = (await c.query('SELECT workspace_id, outcome FROM erase_person($1)', [PARENT])).rows;
+    expect(rows).toEqual([{ workspace_id: FUND, outcome: 'erased' }]);
+    await c.query('RESET ROLE');
+    expect((await c.query('SELECT parent_user_id, funding_tenant_id FROM teen_spaces WHERE tenant_id = $1', [space])).rows).toEqual([
+      { parent_user_id: null, funding_tenant_id: null },
+    ]);
+    expect((await c.query('SELECT user_id FROM memberships WHERE tenant_id = $1', [space])).rows).toEqual([{ user_id: TEEN }]);
+    expect((await c.query('SELECT count(*)::int AS n FROM teen_space_spends WHERE funding_tenant_id = $1', [FUND])).rows[0].n).toBe(0);
   });
 
   it('still lets erasure delete the teen and their space', async () => {

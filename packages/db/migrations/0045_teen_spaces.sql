@@ -11,22 +11,32 @@
 --     anyone who runs a workspace alone);
 --   - the inviting parent is a `readonly` member (the role exists since 0002),
 --     and withTenantAs makes that member's transactions READ ONLY there;
---   - its membership is locked: nobody joins, leaves or changes role, and the
---     teen belongs to no other workspace (a trigger, below);
+--   - its membership is locked: the only rows it may ever hold are the teen
+--     as owner and the parent as readonly, nobody leaves or changes role, and
+--     the teen belongs to no other workspace (a trigger, below);
 --   - it has no credits of its own: no grant, no purchase, no invitation can
 --     be inserted for it (a trigger). Its scans spend a credit from the
 --     parent's workspace the invite was made from (`funding_tenant_id`),
---     recorded in `teen_space_spends`;
+--     recorded in `teen_space_spends`, and only while the parent still owns
+--     that workspace;
 --   - ending access (the parent) stamps `access_ended_at` and `erase_after`
 --     (30 days on, founder 2026-10-20, F111) and ends the teen's sessions.
 --     Erasing at `erase_after` is 3.10.f; nothing here deletes the space.
+--
+-- A TEEN IS NEVER LINKED BY EMAIL. `teen_sign_in_email_taken` lets the API
+-- refuse a teen whose YourTal email belongs to an account here before 0039's
+-- one-time email link could bind it to the teen.
+--
+-- THE SIGN-IN FLOW carries its invite (`yourtal_sign_in_flows.teen_invite_id`),
+-- so two openings of one link each keep it, and the space is joined through
+-- the flow that YourTal confirmed.
 --
 -- WHY `teen_space_spends` HAS NO tenant_id. A teen's scan is a capture in the
 -- teen space paid from a grant in the parent's. A row with a tenant_id that
 -- points across workspaces makes 0043's erase_workspace refuse both of them
 -- (its spill-over guard reads every id-only FK between tenant tables), so the
--- money record sits outside that rule: keyed by capture, reached only by the
--- functions below. The capture's own `credit_spends` row stays in the teen
+-- money record sits outside that rule, reached only by the functions below.
+-- It outlives the teen's capture (SET NULL) and goes with the parent's workspace. The capture's own `credit_spends` row stays in the teen
 -- space with no grant and paid = false, so the receipt never earns points.
 --
 -- WHO MAY DO WHAT. Every write goes through a SECURITY DEFINER function owned
@@ -35,7 +45,7 @@
 -- a parent the spaces and invites they made, a workspace its own row.
 --
 -- ADD-ONLY apart from one widened CHECK (user_sessions_reason gains
--- 'teen_access_ended').
+-- 'teen_access_ended') and one new nullable column on yourtal_sign_in_flows.
 -- ---------------------------------------------------------------------------
 
 -- ── The owner of the teen functions ──────────────────────────────────────────
@@ -66,14 +76,14 @@ CREATE TABLE IF NOT EXISTS teen_invites (
   code_sha256       bytea NOT NULL UNIQUE,
   expires_at        timestamptz NOT NULL,
   created_at        timestamptz NOT NULL DEFAULT now(),
-  /* The last sign-in started with this code: finish finds the invite by it. */
-  flow_id           uuid,
 
   CONSTRAINT teen_invites_code_sha256 CHECK (octet_length(code_sha256) = 32)
 );
 
 CREATE INDEX IF NOT EXISTS teen_invites_parent ON teen_invites (parent_user_id);
-CREATE INDEX IF NOT EXISTS teen_invites_flow   ON teen_invites (flow_id) WHERE flow_id IS NOT NULL;
+
+-- The invite a sign-in started with (its code was in the join link).
+ALTER TABLE yourtal_sign_in_flows ADD COLUMN IF NOT EXISTS teen_invite_id uuid;
 
 CREATE TABLE IF NOT EXISTS teen_spaces (
   tenant_id         uuid PRIMARY KEY REFERENCES tenants (id) ON DELETE CASCADE,
@@ -97,7 +107,9 @@ CREATE INDEX IF NOT EXISTS teen_spaces_erase_after ON teen_spaces (erase_after) 
 -- The credit a teen's scan took from the parent's workspace. See the header
 -- for why there is no tenant_id.
 CREATE TABLE IF NOT EXISTS teen_space_spends (
-  capture_id        uuid PRIMARY KEY REFERENCES captures (id) ON DELETE CASCADE,
+  id                uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  /* The teen's capture. NULL once it is gone: the money record outlives it. */
+  capture_id        uuid UNIQUE REFERENCES captures (id) ON DELETE SET NULL,
   funding_tenant_id uuid NOT NULL REFERENCES tenants (id) ON DELETE CASCADE,
   /* NULL when the parent had no credit left (the scan still goes ahead, as
      everywhere until 7.1.b), or once the grant is deleted. */
@@ -140,6 +152,8 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON teen_invites, teen_spaces, teen_space_sp
 GRANT SELECT                 ON users, captures, credit_purchases TO app_teen;
 GRANT SELECT, INSERT         ON tenants, memberships TO app_teen;
 GRANT SELECT, UPDATE         ON usage_grants, user_sessions TO app_teen;
+GRANT SELECT (id, consumed_at, teen_invite_id), UPDATE (teen_invite_id) ON yourtal_sign_in_flows TO app_teen;
+GRANT INSERT                 ON jobs TO app_teen;
 
 -- ── A new reason a session ends ──────────────────────────────────────────────
 ALTER TABLE user_sessions DROP CONSTRAINT IF EXISTS user_sessions_reason;
@@ -151,16 +165,11 @@ ALTER TABLE user_sessions ADD CONSTRAINT user_sessions_reason CHECK (
 
 -- ── The locks: membership, credits, invitations ──────────────────────────────
 --
--- SQLSTATE TS001; the API answers it 403 `teen_space`. The functions below
--- set `snap.teen_space_write` for the one statement that builds a space.
+-- SQLSTATE TS001; the API answers it 403 `teen_space`.
 
 CREATE OR REPLACE FUNCTION teen_space_memberships_guard() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $fn$
 BEGIN
-  IF current_setting('snap.teen_space_write', true) = 'on' THEN
-    RETURN COALESCE(NEW, OLD);
-  END IF;
-
   IF TG_OP = 'DELETE' THEN
     -- Depth 1 is a DELETE on memberships itself. A cascade from deleting the
     -- workspace or the person (erasure) runs deeper and is allowed.
@@ -170,11 +179,21 @@ BEGIN
     RETURN OLD;
   END IF;
 
-  IF EXISTS (SELECT 1 FROM teen_spaces t WHERE t.tenant_id = NEW.tenant_id)
-     OR (TG_OP = 'UPDATE' AND EXISTS (SELECT 1 FROM teen_spaces t WHERE t.tenant_id = OLD.tenant_id)) THEN
+  IF TG_OP = 'UPDATE' AND (EXISTS (SELECT 1 FROM teen_spaces t WHERE t.tenant_id IN (OLD.tenant_id, NEW.tenant_id))
+                           OR EXISTS (SELECT 1 FROM teen_spaces t WHERE t.teen_user_id = NEW.user_id)) THEN
     RAISE EXCEPTION 'The people in a teen''s space cannot be changed.' USING ERRCODE = 'TS001';
   END IF;
-  IF EXISTS (SELECT 1 FROM teen_spaces t WHERE t.teen_user_id = NEW.user_id) THEN
+
+  -- An INSERT: in a teen space, only its own two rows; and a teen nowhere else.
+  -- No setting or role opens this: the rows are read from teen_spaces itself.
+  IF EXISTS (SELECT 1 FROM teen_spaces t WHERE t.tenant_id = NEW.tenant_id)
+     AND NOT EXISTS (SELECT 1 FROM teen_spaces t
+                      WHERE t.tenant_id = NEW.tenant_id
+                        AND ((NEW.user_id = t.teen_user_id AND NEW.role = 'owner')
+                          OR (NEW.user_id = t.parent_user_id AND NEW.role = 'readonly'))) THEN
+    RAISE EXCEPTION 'The people in a teen''s space cannot be changed.' USING ERRCODE = 'TS001';
+  END IF;
+  IF EXISTS (SELECT 1 FROM teen_spaces t WHERE t.teen_user_id = NEW.user_id AND t.tenant_id <> NEW.tenant_id) THEN
     RAISE EXCEPTION 'A teen account can only use its own space.' USING ERRCODE = 'TS001';
   END IF;
   RETURN NEW;
@@ -229,31 +248,43 @@ END $fn$;
 
 -- ── The teen's sign-in ───────────────────────────────────────────────────────
 
--- At start, with no session: remember which sign-in carries this code.
+-- At start, with no session: the sign-in flow carries this code's invite.
 -- Returns the invite id, or NULL for a code this server never issued or one
 -- past its expiry. The code is 128 random bits, so there is nothing to guess.
 CREATE OR REPLACE FUNCTION teen_invite_attach_flow(p_code_sha256 bytea, p_flow_id uuid) RETURNS uuid
 LANGUAGE sql SECURITY DEFINER SET search_path = public, pg_temp AS $fn$
-  UPDATE teen_invites SET flow_id = p_flow_id
-   WHERE code_sha256 = p_code_sha256 AND expires_at > now()
-  RETURNING id;
+  UPDATE yourtal_sign_in_flows f SET teen_invite_id = i.id
+    FROM teen_invites i
+   WHERE i.code_sha256 = p_code_sha256 AND i.expires_at > now()
+     AND f.id = p_flow_id AND f.consumed_at IS NULL
+  RETURNING i.id;
 $fn$;
 
--- At finish, before any account is made: the invite to check with YourTal.
--- The teen's standing space first (later sign-ins need no code), else the
--- invite this sign-in started with. NULL means the teen has neither.
+-- At finish (the flow is taken by then), before any account is made: the
+-- invite to check with YourTal. The teen's standing space first (later
+-- sign-ins need no code), else the invite this sign-in started with.
 CREATE OR REPLACE FUNCTION teen_invite_for_sign_in(p_flow_id uuid, p_subject text) RETURNS uuid
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public, pg_temp AS $fn$
   SELECT COALESCE(
     (SELECT t.invite_id FROM teen_spaces t JOIN users u ON u.id = t.teen_user_id
       WHERE u.subject = p_subject AND t.access_ended_at IS NULL),
-    (SELECT i.id FROM teen_invites i WHERE i.flow_id = p_flow_id)
+    (SELECT f.teen_invite_id FROM yourtal_sign_in_flows f WHERE f.id = p_flow_id)
   );
 $fn$;
 
--- After YourTal confirmed the invite: the teen's space, made on first use.
--- The teen is app.user_id. Returns the space's id.
-CREATE OR REPLACE FUNCTION teen_space_join(p_invite_id uuid, p_name text, p_region text) RETURNS uuid
+-- Before any account is made: a teen whose `sub` is new here, and whose email
+-- an account here already holds. 0039 would link that account to the teen by
+-- email (and close its other doors); a teen is never linked, so the API refuses.
+CREATE OR REPLACE FUNCTION teen_sign_in_email_taken(p_subject text, p_email citext) RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public, pg_temp AS $fn$
+  SELECT NOT EXISTS (SELECT 1 FROM users u WHERE u.subject = p_subject)
+     AND EXISTS (SELECT 1 FROM users u WHERE u.email = p_email);
+$fn$;
+
+-- After YourTal confirmed the flow's invite: the teen's space, made on first
+-- use. The teen is app.user_id. `created` is true only the first time.
+CREATE OR REPLACE FUNCTION teen_space_join(p_flow_id uuid, p_name text, p_region text)
+RETURNS TABLE (tenant_id uuid, created boolean)
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $fn$
 DECLARE
   v_user  uuid := current_user_id();
@@ -270,10 +301,14 @@ BEGIN
     IF v_space.access_ended_at IS NOT NULL THEN
       RAISE EXCEPTION 'Your access to SnapApp has ended.' USING ERRCODE = 'TS002';
     END IF;
-    RETURN v_space.tenant_id;
+    RETURN QUERY SELECT v_space.tenant_id, false;
+    RETURN;
   END IF;
 
-  SELECT * INTO v_inv FROM teen_invites i WHERE i.id = p_invite_id FOR UPDATE;
+  SELECT i.* INTO v_inv FROM teen_invites i
+    JOIN yourtal_sign_in_flows f ON f.teen_invite_id = i.id
+   WHERE f.id = p_flow_id
+     FOR UPDATE OF i;
   IF NOT FOUND OR v_inv.parent_user_id = v_user THEN
     RAISE EXCEPTION 'teen_space_join: no such invite' USING ERRCODE = 'TS002';
   END IF;
@@ -286,17 +321,15 @@ BEGIN
   VALUES (v_id, p_name, 'personal',
           CASE WHEN p_region = 'ID' THEN 'ID' ELSE 'AU' END,
           CASE WHEN p_region = 'ID' THEN 'IDR' ELSE 'AUD' END);
+  -- The space's row first: the membership guard admits exactly these two.
   INSERT INTO teen_spaces (tenant_id, teen_user_id, parent_user_id, funding_tenant_id, invite_id)
   VALUES (v_id, v_user, v_inv.parent_user_id, v_inv.funding_tenant_id, v_inv.id);
-
-  PERFORM set_config('snap.teen_space_write', 'on', true);
   INSERT INTO memberships (tenant_id, user_id, role) VALUES
     (v_id, v_user, 'owner'),
     (v_id, v_inv.parent_user_id, 'readonly');
-  PERFORM set_config('snap.teen_space_write', 'off', true);
 
   DELETE FROM teen_invites i WHERE i.id = v_inv.id;
-  RETURN v_id;
+  RETURN QUERY SELECT v_id, true;
 END $fn$;
 
 -- ── The parent ends access ───────────────────────────────────────────────────
@@ -322,6 +355,24 @@ BEGIN
   UPDATE user_sessions s SET revoked_at = now(), revoked_reason = 'teen_access_ended'
    WHERE s.user_id = v_space.teen_user_id AND s.revoked_at IS NULL;
   RETURN true;
+END $fn$;
+
+-- When YourTal's end did not answer (the parent's access ended here first),
+-- the worker retries it (`teen_invite_end` job, no tenant: it must outlive
+-- either workspace). Only the inviting parent may queue it.
+CREATE OR REPLACE FUNCTION teen_invite_end_retry(p_tenant uuid, p_parent_sub text) RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $fn$
+DECLARE
+  v_invite uuid;
+BEGIN
+  SELECT t.invite_id INTO v_invite FROM teen_spaces t
+   WHERE t.tenant_id = p_tenant AND t.parent_user_id = current_user_id();
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'teen_invite_end_retry: not your teen''s space' USING ERRCODE = 'insufficient_privilege';
+  END IF;
+  INSERT INTO jobs (id, tenant_id, kind, payload, max_attempts)
+  VALUES (gen_random_uuid(), NULL, 'teen_invite_end',
+          jsonb_build_object('inviteId', v_invite, 'parentSub', p_parent_sub), 20);
 END $fn$;
 
 -- YourTal's access-ended with erase_data (the guardian withdrew, the teen
@@ -350,10 +401,11 @@ RETURNS TABLE (teen_space boolean, grant_id uuid)
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $fn$
 DECLARE
   v_tenant uuid := current_tenant_id();
+  v_space  teen_spaces%ROWTYPE;
   v_fund   uuid;
   v_grant  uuid;
 BEGIN
-  SELECT t.funding_tenant_id INTO v_fund FROM teen_spaces t WHERE t.tenant_id = v_tenant;
+  SELECT * INTO v_space FROM teen_spaces t WHERE t.tenant_id = v_tenant;
   IF NOT FOUND THEN
     RETURN QUERY SELECT false, NULL::uuid;
     RETURN;
@@ -363,9 +415,19 @@ BEGIN
   END IF;
 
   SELECT s.grant_id INTO v_grant FROM teen_space_spends s WHERE s.capture_id = p_capture;
-  IF FOUND OR v_fund IS NULL THEN
+  IF FOUND THEN
     RETURN QUERY SELECT true, v_grant;
     RETURN;
+  END IF;
+
+  -- The parent's credits, so only while the parent still owns that workspace
+  -- (F112): one handed over, left or deleted pays for nothing more.
+  v_fund := v_space.funding_tenant_id;
+  IF v_fund IS NULL OR v_space.parent_user_id IS NULL OR NOT EXISTS (
+       SELECT 1 FROM memberships m
+        WHERE m.tenant_id = v_fund AND m.user_id = v_space.parent_user_id AND m.role = 'owner') THEN
+    RAISE EXCEPTION 'Your scans use your parent''s credits, and their workspace can''t pay for them any more. Ask your parent to invite you again.'
+      USING ERRCODE = 'TS004';
   END IF;
 
   PERFORM pg_advisory_xact_lock(hashtext('credit_spend'), hashtext(v_fund::text));
@@ -430,6 +492,8 @@ REVOKE EXECUTE ON FUNCTION teen_space_refuse_insert()                           
 REVOKE EXECUTE ON FUNCTION teen_invite_record(uuid, uuid, bytea, timestamptz)     FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION teen_invite_attach_flow(bytea, uuid)                   FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION teen_invite_for_sign_in(uuid, text)                    FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION teen_sign_in_email_taken(text, citext)                 FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION teen_invite_end_retry(uuid, text)                      FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION teen_space_join(uuid, text, text)                      FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION teen_space_end(uuid)                                   FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION teen_space_end_for_subject(text)                       FROM PUBLIC;
@@ -442,6 +506,8 @@ ALTER FUNCTION teen_space_refuse_insert()                         OWNER TO app_t
 ALTER FUNCTION teen_invite_record(uuid, uuid, bytea, timestamptz) OWNER TO app_teen;
 ALTER FUNCTION teen_invite_attach_flow(bytea, uuid)               OWNER TO app_teen;
 ALTER FUNCTION teen_invite_for_sign_in(uuid, text)                OWNER TO app_teen;
+ALTER FUNCTION teen_sign_in_email_taken(text, citext)             OWNER TO app_teen;
+ALTER FUNCTION teen_invite_end_retry(uuid, text)                  OWNER TO app_teen;
 ALTER FUNCTION teen_space_join(uuid, text, text)                  OWNER TO app_teen;
 ALTER FUNCTION teen_space_end(uuid)                               OWNER TO app_teen;
 ALTER FUNCTION teen_space_end_for_subject(text)                   OWNER TO app_teen;
@@ -452,6 +518,8 @@ ALTER FUNCTION teen_space_credits()                               OWNER TO app_t
 GRANT EXECUTE ON FUNCTION teen_invite_record(uuid, uuid, bytea, timestamptz) TO app_rw;
 GRANT EXECUTE ON FUNCTION teen_invite_attach_flow(bytea, uuid)               TO app_rw;
 GRANT EXECUTE ON FUNCTION teen_invite_for_sign_in(uuid, text)                TO app_rw;
+GRANT EXECUTE ON FUNCTION teen_sign_in_email_taken(text, citext)             TO app_rw;
+GRANT EXECUTE ON FUNCTION teen_invite_end_retry(uuid, text)                  TO app_rw;
 GRANT EXECUTE ON FUNCTION teen_space_join(uuid, text, text)                  TO app_rw;
 GRANT EXECUTE ON FUNCTION teen_space_end(uuid)                               TO app_rw;
 GRANT EXECUTE ON FUNCTION teen_space_take_credit(uuid)                       TO app_rw;

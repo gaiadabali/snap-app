@@ -92,6 +92,14 @@ export class ErrorsFilter implements ExceptionFilter {
       });
       return;
     }
+    if (sqlState === 'TS004') {
+      void reply.status(HttpStatus.FORBIDDEN).send({
+        error: 'teen_space_unfunded',
+        message:
+          'Your scans use your parent’s credits, and their workspace can’t pay for them any more. Ask your parent to invite you again.',
+      });
+      return;
+    }
     if (sqlState === 'TS001') {
       const cause = (error as { cause?: { message?: unknown } }).cause;
       const message = typeof cause?.message === 'string' ? cause.message : (error as Error).message;

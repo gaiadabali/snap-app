@@ -80,15 +80,18 @@ export async function spendScanCredit(
   // A teen's space has no credits of its own: the scan takes one from the
   // parent's workspace (0045, group 3.10.e), recorded in teen_space_spends.
   // Its spend row here has no grant and is not paid, so it earns no points.
-  const teen = await tx.execute<{ teen_space: boolean }>(sql`
-    select teen_space from teen_space_take_credit(${input.captureId})
+  // Refuses (TS004, 403 teen_space_unfunded) once the parent no longer owns
+  // the workspace that pays.
+  const teen = await tx.execute<{ teen_space: boolean; grant_id: string | null }>(sql`
+    select teen_space, grant_id from teen_space_take_credit(${input.captureId})
   `);
   if (teen.rows[0]?.teen_space) {
     await tx.execute(sql`
       insert into credit_spends (tenant_id, capture_id, user_id, grant_id, grant_source, paid)
       values (current_tenant_id(), ${input.captureId}, ${input.userId}, null, null, false)
     `);
-    return { alreadySpent: false, grantId: null, grantSource: null, paid: false };
+    // The parent's grant, or null when the parent had no credit left.
+    return { alreadySpent: false, grantId: teen.rows[0].grant_id, grantSource: null, paid: false };
   }
 
   let taken: { id: string; source: string; paid: boolean } | null = null;

@@ -710,6 +710,12 @@ export interface WorkspaceSummary {
    * clients default to AUD, which is what every such workspace was.
    */
   baseCurrency: string;
+  /**
+   * A teen's space (group 3.10): `teen` for the teen, whose space it is;
+   * `parent` for the inviting parent, who can only view it. Null or absent
+   * for every other workspace (and from a server that predates it).
+   */
+  teenSpace?: 'teen' | 'parent' | null;
 }
 
 export interface Member {
