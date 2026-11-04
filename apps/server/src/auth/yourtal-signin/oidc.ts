@@ -116,7 +116,7 @@ export type StartedAuthorization = {
  */
 export async function startAuthorization(
   kind: YourTalClientKind,
-  options: { signUp: boolean; locale: string; freshSignIn?: boolean; teenInvite?: string },
+  options: { signUp: boolean; locale: string; freshSignIn?: boolean; teenInvite?: string; transfer?: string },
 ): Promise<StartedAuthorization> {
   const { issuer, client } = clientOrRefuse(kind);
   let config: oidc.Configuration;
@@ -149,6 +149,8 @@ export async function startAuthorization(
   // A teen joining by a parent's invite (docs/26 §3.3 step 3): YourTal checks
   // the code against the teen's guardian before it shows the teen consent screen.
   if (options.teenInvite) parameters.teen_invite = options.teenInvite;
+  // A send to Free Tax Returns (docs/30 §3): the transfer YourTal opened for it, to confirm on its screen.
+  if (options.transfer) parameters.transfer = options.transfer;
 
   return { url: oidc.buildAuthorizationUrl(config, parameters).href, state, nonce, codeVerifier };
 }

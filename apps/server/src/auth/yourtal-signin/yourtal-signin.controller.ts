@@ -218,7 +218,9 @@ export class YourTalSignInController {
       if (!settings) throw refusal('not_configured');
 
       // Taken BEFORE anything is compared, so a wrong state or a replay burns
-      // the flow: each flow is good for exactly one finish.
+      // the flow: each flow is good for exactly one finish. A flow that
+      // carries a send to Free Tax Returns (0050) is not taken here and is
+      // left unused: it belongs to POST /v1/ftr-sends/finish.
       const flow = await takeFlow(body.flowId);
       if (!flow) throw refusal('invalid_flow');
       client = flow.client;

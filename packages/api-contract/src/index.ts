@@ -2255,3 +2255,18 @@ export interface TeenInviteCreated {
   joinUrl: string;
   expiresAt: IsoDateTime;
 }
+
+/** `POST /v1/ftr-sends` (group 4.8.a): where to send the person to confirm at YourTal. */
+export interface FtrSendStarted {
+  /** YourTal's authorization URL, with the `transfer` to confirm. */
+  url: string;
+  /** What `finish` needs, within 10 minutes. */
+  flowId: string;
+  sendId: string;
+  expiresAt: IsoDateTime;
+}
+
+/** `POST /v1/ftr-sends/finish`: the send went through, or the person cancelled it at YourTal. */
+export type FtrSendFinished =
+  | { status: 'sent'; importId: string; financialYear: string; lineCount: number; returnTo: string | null }
+  | { status: 'cancelled'; returnTo: string | null };

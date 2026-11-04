@@ -1,18 +1,11 @@
 import { randomUUID } from 'node:crypto';
 
-import * as oidc from 'openid-client';
-
-import { config, yourtalApiUrl, yourtalEventsClientId } from '../config.js';
-import { webClientKey } from '../auth/yourtal-signin/settings.js';
+import { oidcApiCall, oidcClientConfigured, resetOidcClientApiCache, type Answer } from '../yourtal/oidc-client-api.js';
 
 /**
  * YourTal's teen invite API (yourtal docs/26 §3.3; the 3.9.e report's "What
- * SnapApp's 3.10 must do"). SnapApp's SERVER client (`snapapp-staging-server`,
- * YOURTAL_OIDC_SERVER_CLIENT_ID) gets a client-credentials token for scope
- * `teen_invites`, authenticating with `private_key_jwt` and the same key as
- * the website client (YOURTAL_OIDC_KEY_FILE), so YourTal registers that one
- * public key for both. The token lasts 10 minutes and is reused until a
- * minute before it ends.
+ * SnapApp's 3.10 must do"), scope `teen_invites`. The token and call code is
+ * yourtal/oidc-client-api.ts.
  *
  * Never logs a code or a token. A refusal comes back as a reason; YourTal
  * being down or answering something unexpected is `unavailable`.
@@ -20,91 +13,16 @@ import { webClientKey } from '../auth/yourtal-signin/settings.js';
 
 const SCOPE = 'teen_invites';
 const PATH = '/api/oidc-clients/teen-invites';
-const DISCOVERY_TTL_MS = 60 * 60 * 1000;
-const TIMEOUT_MS = 10_000;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** On when the issuer, the server client id and the key file are all set. */
-export function teenInvitesConfigured(): boolean {
-  const settings = config();
-  return Boolean(settings.YOURTAL_OIDC_ISSUER && settings.YOURTAL_OIDC_KEY_FILE && yourtalEventsClientId());
-}
-
-let discovered: { key: string; at: number; config: Promise<oidc.Configuration> } | null = null;
-let token: { key: string; value: string; expiresAt: number } | null = null;
+export const teenInvitesConfigured = oidcClientConfigured;
 
 /** Tests only. */
-export function resetTeenInviteApiCache(): void {
-  discovered = null;
-  token = null;
-}
+export const resetTeenInviteApiCache = resetOidcClientApiCache;
 
-function configuration(): Promise<oidc.Configuration> {
-  const issuer = config().YOURTAL_OIDC_ISSUER!;
-  const clientId = yourtalEventsClientId()!;
-  const key = `${issuer} ${clientId}`;
-  if (discovered && discovered.key === key && Date.now() - discovered.at < DISCOVERY_TTL_MS) return discovered.config;
-  const made = (async () => {
-    const { key: signingKey, kid } = await webClientKey();
-    const url = new URL(issuer);
-    return oidc.discovery(url, clientId, {}, oidc.PrivateKeyJwt({ key: signingKey, kid }), {
-      timeout: TIMEOUT_MS / 1000,
-      // Plain http only outside production (config.ts refuses it there).
-      execute: url.protocol === 'http:' ? [oidc.allowInsecureRequests] : [],
-    });
-  })();
-  discovered = { key, at: Date.now(), config: made };
-  made.catch(() => {
-    if (discovered?.config === made) discovered = null;
-  });
-  return made;
-}
-
-async function accessToken(): Promise<string> {
-  const key = `${config().YOURTAL_OIDC_ISSUER} ${yourtalEventsClientId()}`;
-  if (token && token.key === key && Date.now() < token.expiresAt - 60_000) return token.value;
-  const response = await oidc.clientCredentialsGrant(await configuration(), { scope: SCOPE });
-  const lifetime = (response.expires_in ?? 600) * 1000;
-  token = { key, value: response.access_token, expiresAt: Date.now() + lifetime };
-  return token.value;
-}
-
-type Answer = { status: number; body: Record<string, unknown> } | null;
-
-/** One call with the bearer token; a 401 drops the cached token and tries once more. Null when YourTal is unreachable. */
-async function call(method: 'GET' | 'POST', path: string, body?: object, idempotencyKey?: string): Promise<Answer> {
-  for (let attempt = 0; attempt < 2; attempt += 1) {
-    let response: Response;
-    try {
-      response = await fetch(`${yourtalApiUrl()}${path}`, {
-        method,
-        headers: {
-          Authorization: `Bearer ${await accessToken()}`,
-          ...(body ? { 'Content-Type': 'application/json' } : {}),
-          ...(idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {}),
-        },
-        body: body ? JSON.stringify(body) : undefined,
-        redirect: 'error',
-        signal: AbortSignal.timeout(TIMEOUT_MS),
-      });
-    } catch {
-      return null;
-    }
-    if (response.status === 401 && attempt === 0) {
-      token = null;
-      continue;
-    }
-    let parsed: unknown = null;
-    try {
-      parsed = await response.json();
-    } catch {
-      parsed = null;
-    }
-    const record = parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? (parsed as Record<string, unknown>) : {};
-    return { status: response.status, body: record };
-  }
-  return null;
-}
+const call = (method: 'GET' | 'POST', path: string, body?: object, idempotencyKey?: string): Promise<Answer> =>
+  oidcApiCall(SCOPE, method, path, body, idempotencyKey);
 
 export type CreateInviteResult =
   | { ok: true; inviteId: string; code: string; expiresAt: string }

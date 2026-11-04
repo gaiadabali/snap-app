@@ -146,3 +146,17 @@ YOURTAL_RECEIPT_REF_KEY="${KEY}"
     });
   });
 });
+
+describe('FTR_TRANSFER_URL (4.8.a)', () => {
+  it('is off when unset or blank', async () => {
+    vi.stubEnv('FTR_TRANSFER_URL', '  ');
+    expect((await load()).config().FTR_TRANSFER_URL).toBeUndefined();
+  });
+
+  it('is https in production and may be http elsewhere', async () => {
+    vi.stubEnv('FTR_TRANSFER_URL', 'http://127.0.0.1:1/api/yourtal/transfers');
+    expect((await load()).config().FTR_TRANSFER_URL).toMatch(/^http:/);
+    vi.stubEnv('NODE_ENV', 'production');
+    await expect((async () => (await load()).config())()).rejects.toThrow(/FTR_TRANSFER_URL/);
+  });
+});

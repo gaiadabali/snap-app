@@ -33,6 +33,7 @@ import { ReconciliationController } from './reconciliation/reconciliation.contro
 import { SettingsController } from './settings/settings.controller.js';
 import { StatementsController } from './statements/statements.controller.js';
 import { DeductionBundleController } from './deductions/deduction-bundle.controller.js';
+import { FtrSendController } from './deductions/ftr-send.controller.js';
 import { SummariesController } from './summaries/summaries.controller.js';
 import { TransactionsController } from './transactions/transactions.controller.js';
 import { WorkspacesController } from './workspaces/workspaces.controller.js';
@@ -115,6 +116,7 @@ export class HealthController {
     BusinessController,
     SummariesController,
     DeductionBundleController,
+    FtrSendController,
     SettingsController,
     DownloadsController,
     ReleasesController,

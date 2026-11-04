@@ -292,6 +292,17 @@ const schema = z.object({
     .optional()
     .transform((v) => (v ?? '').trim() || undefined),
 
+  /**
+   * Free Tax Returns' transfer endpoint (group 4.8.a, yourtal docs/30 §6), e.g.
+   * https://freetaxreturns.com.au/api/yourtal/transfers. Unset = direct send is
+   * off and only the file is offered. https in production.
+   */
+  FTR_TRANSFER_URL: z
+    .string()
+    .optional()
+    .transform((v) => (v ?? '').trim() || undefined)
+    .pipe(z.string().url('FTR_TRANSFER_URL must be a URL').optional()),
+
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
 
   /**
@@ -411,6 +422,9 @@ const schema = z.object({
   if (settings.NODE_ENV !== 'production') return;
   if (settings.YOURTAL_OIDC_ISSUER && !settings.YOURTAL_OIDC_ISSUER.startsWith('https://')) {
     ctx.addIssue({ code: 'custom', path: ['YOURTAL_OIDC_ISSUER'], message: 'must be https in production' });
+  }
+  if (settings.FTR_TRANSFER_URL && !settings.FTR_TRANSFER_URL.startsWith('https://')) {
+    ctx.addIssue({ code: 'custom', path: ['FTR_TRANSFER_URL'], message: 'must be https in production' });
   }
   if (settings.YOURTAL_OIDC_WEB_REDIRECT_URI && !settings.YOURTAL_OIDC_WEB_REDIRECT_URI.startsWith('https://')) {
     ctx.addIssue({ code: 'custom', path: ['YOURTAL_OIDC_WEB_REDIRECT_URI'], message: 'must be https in production' });
