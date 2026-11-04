@@ -140,7 +140,9 @@ describeIfDb('review list and erase notices (migration 0046)', () => {
       expect(audit.rows).toHaveLength(1);
       expect(audit.rows[0]!.entity_id).toBe(caseId);
       expect(audit.rows[0]!.after.kind).toBe('second_sub');
-      expect(JSON.stringify(audit.rows[0]!.after)).not.toContain('review-list.test');
+      expect(audit.rows[0]!.after).toEqual({ kind: 'second_sub', resolution_length: 'Asked the person to sign in with the linked account'.length });
+      // The free text stays out of the append-only log.
+      expect(JSON.stringify(audit.rows[0]!.after)).not.toContain('Asked');
     });
 
     it('the open-only list drops it, the full list keeps it', async () => {

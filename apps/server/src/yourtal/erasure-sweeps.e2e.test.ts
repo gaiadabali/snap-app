@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { existsSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -20,6 +20,8 @@ const quiet = { log: () => undefined, warn: () => undefined, error: () => undefi
 
 const LIVE = 'e5c00000-0000-4000-8000-000000000001';
 const USER = 'e5c00000-0000-4000-8000-0000000000a1';
+const SOFT = 'e5c00000-0000-4000-8000-000000000002';
+const SOFT_USER = 'e5c00000-0000-4000-8000-0000000000a2';
 
 describeIfDb('erasure sweeps', () => {
   let admin: Client;
@@ -27,7 +29,7 @@ describeIfDb('erasure sweeps', () => {
   let db: Db;
   let storage: string;
   let outside: string;
-  let sweep: (db: Db, log?: typeof quiet) => Promise<{ blanked: number; orphans: number }>;
+  let sweep: (db: Db, log?: typeof quiet, root?: string) => Promise<{ blanked: number; orphans: number }>;
   const jobIds: string[] = [];
 
   const addJob = async (kind: string, completedDaysAgo: number | null, payload: object) => {
@@ -40,10 +42,14 @@ describeIfDb('erasure sweeps', () => {
     );
     return id;
   };
+  const purgeJob = (tenantId: string) => addJob('storage_purge', 1, { tenantId });
   const payload = async (id: string) => (await admin.query('select payload from jobs where id = $1', [id])).rows[0].payload;
-  const dir = (name: string) => {
+  /** A tenant directory with a file in it, last modified `hoursOld` hours ago. */
+  const dir = (name: string, hoursOld = 48) => {
     mkdirSync(join(storage, name, 'originals'), { recursive: true });
     writeFileSync(join(storage, name, 'originals', 'f'), 'x');
+    const when = new Date(Date.now() - hoursOld * 3_600_000);
+    utimesSync(join(storage, name), when, when);
     return join(storage, name);
   };
 
@@ -52,6 +58,8 @@ describeIfDb('erasure sweeps', () => {
     outside = mkdtempSync(join(tmpdir(), 'erasure-sweeps-outside-'));
     process.env.STORAGE_DIR = storage;
     admin = await provisionTenant({ tenantId: LIVE, name: 'Sweeps live', users: [{ id: USER, role: 'owner' }] });
+    (await provisionTenant({ tenantId: SOFT, name: 'Sweeps soft-deleted', users: [{ id: SOFT_USER, role: 'owner', email: 'soft-sweeps@test.invalid', subject: 'test|soft-sweeps' }] })).end();
+    await admin.query('update tenants set deleted_at = now() where id = $1', [SOFT]);
     pool = createPool(workerDatabaseUrl());
     db = createDb(pool);
     ({ runErasureSweepsOnce: sweep } = await import('./events-job.js'));
@@ -60,6 +68,7 @@ describeIfDb('erasure sweeps', () => {
   afterAll(async () => {
     await admin.query('delete from jobs where id = any($1)', [jobIds]);
     await wipeTenant(admin, LIVE, [USER]);
+    await wipeTenant(admin, SOFT, [SOFT_USER]);
     await admin.end();
     await pool.end();
     rmSync(storage, { recursive: true, force: true });
@@ -73,7 +82,7 @@ describeIfDb('erasure sweeps', () => {
     const open = await addJob('yourtal_event', null, { set: 'still open' });
     const otherKind = await addJob('erasure_notice', 90, { to: 'x@y.test' });
 
-    const result = await sweep(db, quiet);
+    const result = await sweep(db, quiet, storage);
 
     expect(result.blanked).toBeGreaterThanOrEqual(2);
     expect(await payload(old)).toEqual({});
@@ -84,12 +93,33 @@ describeIfDb('erasure sweeps', () => {
     // The row itself stays: it is what refuses a replayed jti.
     expect((await admin.query('select 1 from jobs where id = $1', [old])).rowCount).toBe(1);
     // Idempotent: a second pass touches none of these.
-    expect((await sweep(db, quiet)).blanked).toBe(0);
+    expect((await sweep(db, quiet, storage)).blanked).toBe(0);
   });
 
-  it('removes only the lower-case uuid directories of workspaces that are gone', async () => {
-    const orphan = dir(randomUUID());
+  it('also empties a dead job (attempts used up) over 30 days old, but not a recent one or one still retrying', async () => {
+    const dead = async (daysOld: number, attempts: number) => {
+      const id = await addJob('teen_invite_end', null, { parentSub: 'p' });
+      await admin.query(
+        `update jobs set attempts = $2, max_attempts = 5, created_at = now() - make_interval(days => $3) where id = $1`,
+        [id, attempts, daysOld],
+      );
+      return id;
+    };
+    const old = await dead(31, 5);
+    const recent = await dead(5, 5);
+    const retrying = await dead(31, 2);
+    await sweep(db, quiet, storage);
+    expect(await payload(old)).toEqual({});
+    expect(await payload(recent)).toEqual({ parentSub: 'p' });
+    expect(await payload(retrying)).toEqual({ parentSub: 'p' });
+  });
+
+  it('removes a purged workspace\'s old directory, and only that', async () => {
+    const orphan = randomUUID();
+    const orphanDir = dir(orphan);
+    await purgeJob(orphan);
     const live = dir(LIVE);
+    await purgeJob(LIVE); // a purge job for a workspace that exists changes nothing
     const notUuid = dir('downloads');
     const uppercase = dir(randomUUID().toUpperCase()); // not a name we write: left alone
     // A symlink named like a uuid, pointing outside: neither removed nor followed.
@@ -97,10 +127,10 @@ describeIfDb('erasure sweeps', () => {
     const link = join(storage, randomUUID());
     symlinkSync(outside, link);
 
-    const result = await sweep(db, quiet);
+    const result = await sweep(db, quiet, storage);
 
     expect(result.orphans).toBe(1);
-    expect(existsSync(orphan)).toBe(false);
+    expect(existsSync(orphanDir)).toBe(false);
     expect(existsSync(uppercase)).toBe(true);
     expect(existsSync(live)).toBe(true);
     expect(existsSync(notUuid)).toBe(true);
@@ -108,13 +138,32 @@ describeIfDb('erasure sweeps', () => {
     expect(existsSync(join(outside, 'keep.txt'))).toBe(true);
   });
 
+  it('keeps a directory with no tenant and no purge job (a wrong or restored database must not empty the volume)', async () => {
+    const stray = dir(randomUUID());
+    expect((await sweep(db, quiet, storage)).orphans).toBe(0);
+    expect(existsSync(stray)).toBe(true);
+  });
+
+  it('keeps a soft-deleted workspace\'s directory, even with a purge job', async () => {
+    const soft = dir(SOFT);
+    await purgeJob(SOFT);
+    expect((await sweep(db, quiet, storage)).orphans).toBe(0);
+    expect(existsSync(soft)).toBe(true);
+  });
+
+  it('keeps a purged workspace\'s directory until it is a day old', async () => {
+    const id = randomUUID();
+    const fresh = dir(id, 1);
+    await purgeJob(id);
+    expect((await sweep(db, quiet, storage)).orphans).toBe(0);
+    expect(existsSync(fresh)).toBe(true);
+    const when = new Date(Date.now() - 25 * 3_600_000);
+    utimesSync(fresh, when, when);
+    expect((await sweep(db, quiet, storage)).orphans).toBe(1);
+    expect(existsSync(fresh)).toBe(false);
+  });
+
   it('is quiet when the storage directory does not exist', async () => {
-    const saved = process.env.STORAGE_DIR;
-    process.env.STORAGE_DIR = join(storage, 'missing');
-    try {
-      await expect(sweep(db, quiet)).resolves.toMatchObject({ orphans: 0 });
-    } finally {
-      process.env.STORAGE_DIR = saved;
-    }
+    await expect(sweep(db, quiet, join(storage, 'missing'))).resolves.toMatchObject({ orphans: 0 });
   });
 });

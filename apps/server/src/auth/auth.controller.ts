@@ -301,11 +301,12 @@ export class AuthController {
   async session(@CurrentUser() user: AuthUser): Promise<{
     user: AuthUser;
     workspaces: Array<{ id: string; name: string; kind: string; role: string }>;
-    yourtalLinked: boolean;
+    yourtalLinked: boolean | undefined;
   }> {
     const [workspaces, yourtalLinked] = await Promise.all([
       listWorkspacesFor(getDb(), user.userId),
-      isLinkedToYourTal(user.userId),
+      // A failed read here must not take every page down: the clients show nothing for `undefined`.
+      isLinkedToYourTal(user.userId).catch(() => undefined),
     ]);
     return { user, workspaces, yourtalLinked };
   }

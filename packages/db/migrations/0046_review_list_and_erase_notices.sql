@@ -17,7 +17,7 @@
 --
 -- SECURITY-RELEVANT GRANTS, all to app_identity (NOLOGIN, owns the functions):
 --   - EXECUTE on staff_has_capability (0021), for that check;
---   - INSERT on audit_log and USAGE on its sequence, for the audit row.
+--   - INSERT on audit_log and USAGE on its sequence, for the audit row (kind and the resolution's length, never its free text).
 --
 -- 3.7.c(a). erase_person also deletes the OPEN `erasure_notice` jobs addressed
 -- to the erased person's email (the worker already empties a finished one).
@@ -115,7 +115,7 @@ COMMENT ON FUNCTION erase_person(uuid) IS
 
 GRANT EXECUTE ON FUNCTION staff_has_capability(platform_capability) TO app_identity;
 GRANT INSERT ON audit_log TO app_identity;
-GRANT USAGE, SELECT ON SEQUENCE audit_log_id_seq TO app_identity;
+GRANT USAGE ON SEQUENCE audit_log_id_seq TO app_identity;
 
 CREATE OR REPLACE FUNCTION admin_yourtal_review_list(p_open_only boolean DEFAULT true)
 RETURNS TABLE (
@@ -169,7 +169,8 @@ BEGIN
 
   INSERT INTO audit_log (actor_type, actor_id, action, entity_type, entity_id, after)
   VALUES ('platform_staff', current_user_id(), 'admin_yourtal_review_resolve', 'yourtal_sign_in_review', p_id,
-          jsonb_build_object('kind', v_kind, 'resolution', v_text));
+          -- The length, not the text: the log is append-only and outlives the person erased.
+          jsonb_build_object('kind', v_kind, 'resolution_length', length(v_text)));
   RETURN true;
 END $fn$;
 

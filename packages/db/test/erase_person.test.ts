@@ -355,6 +355,40 @@ describeIfDb('erase_person (migration 0043)', () => {
     expect(rows).toHaveLength(1);
   });
 
+  it('app_erasure holds exactly these write privileges, and no column UPDATE beyond id on users and tenants', async () => {
+    // SELECT-only tables are not pinned: the spill guard's grant loop (0043) adds them as workspace
+    // tables appear. Every INSERT, UPDATE or DELETE is, so a widening needs a reviewer to edit this list.
+    const { rows } = await c.query<{ t: string; p: string }>(
+      `SELECT table_name AS t, string_agg(privilege_type, ',' ORDER BY privilege_type) AS p
+         FROM information_schema.table_privileges
+        WHERE grantee = 'app_erasure' AND privilege_type <> 'SELECT'
+        GROUP BY table_name ORDER BY table_name`,
+    );
+    expect(rows.map((r) => `${r.t}:${r.p}`)).toEqual([
+      'captures:DELETE',
+      'documents:DELETE',
+      'event_observations:DELETE',
+      'goals:DELETE,UPDATE',
+      'invitations:DELETE',
+      'jobs:DELETE,INSERT',
+      'mail_deliveries:DELETE',
+      'match_candidates:DELETE',
+      'memberships:UPDATE',
+      'review_tasks:DELETE',
+      'statements:DELETE',
+      'tenants:DELETE',
+      'transactions:DELETE',
+      'users:DELETE',
+      'yourtal_voucher_redemptions:DELETE',
+    ]);
+    const cols = await c.query<{ t: string; col: string }>(
+      `SELECT table_name AS t, column_name AS col FROM information_schema.column_privileges
+        WHERE grantee = 'app_erasure' AND privilege_type = 'UPDATE' AND table_name IN ('users', 'tenants')
+        ORDER BY 1, 2`,
+    );
+    expect(cols.rows).toEqual([{ t: 'tenants', col: 'id' }, { t: 'users', col: 'id' }]);
+  });
+
   it('YourTal events: the API revokes only sessions opened before the cut-off; the worker records the sub', async () => {
     await c.query(
       `INSERT INTO user_sessions (user_id, token_hash, created_at, expires_at, idle_timeout_seconds) VALUES
