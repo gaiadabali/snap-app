@@ -814,6 +814,33 @@ describeIfDb('Sign in with YourTal — real database, real provider', () => {
       expect((await userRow(legacy.userId)).yourtal_linked_at).toBeNull();
     });
 
+    it('refuses a sub already linked to ANOTHER account even when the email is the mover’s, and writes nothing', async () => {
+      const owner = person('move-sub-owner');
+      const linked = await signIn(owner); // account X, linked to this sub
+      const mine = person('move-sub-mover');
+      const legacy = await legacyWithSession(mine);
+      // Same YourTal account (same sub) now presenting the mover's email.
+      const sameSub = person('move-sub-again', { accountId: owner.accountId, email: mine.email });
+      const before = await countUsers();
+
+      await expect(signIn(sameSub, { moveToken: legacy.token })).rejects.toMatchObject({
+        status: 409,
+        response: { error: 'yourtal_email_mismatch' },
+      });
+      expect(await countUsers()).toBe(before);
+      expect((await userRow(legacy.userId)).yourtal_linked_at).toBeNull();
+      const x = await userRow(linked.user.userId);
+      expect(x.email).toBe(owner.email); // X's email copy was not refreshed
+    });
+
+    it('lets an already-linked account move with its own sub: it just signs in', async () => {
+      const who = person('move-linked');
+      const first = await signIn(who);
+      const again = await signIn(who, { moveToken: first.token });
+      expect(again.outcome).toBe('signed_in');
+      expect(again.user.userId).toBe(first.user.userId);
+    });
+
     it('does nothing different for an ordinary sign-in: a new email still makes a new account', async () => {
       const who = person('move-ordinary');
       const result = await signIn(who);

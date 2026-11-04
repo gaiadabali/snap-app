@@ -23,6 +23,7 @@ export const AUTH_ERRORS = {
   try_again: { message: 'Something changed while you were signing in. Please try again.' },
   link_invalid: { message: 'That sign-in link is no longer valid. Please try again.' },
   invalid_flow: { message: 'That sign-in link is no longer valid. Please try again.' },
+  session_expired: { message: 'Your session ended. Sign in again, then try once more.' },
 
   // YourTal
   yourtal_cancelled: { message: 'Sign-in with YourTal was cancelled. Nothing was shared.', quiet: true },
