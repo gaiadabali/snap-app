@@ -783,6 +783,8 @@ by `ON CONFLICT DO NOTHING`, so the open job must go first:
 
 To prevent this, YourTal should keep retired keys published for at least 72 hours.
 
+A `yourtal_event` job that has failed for good is blanked after 30 days (the hourly sweep keeps the row so its `jti` is still refused, but drops the SET). After that, resetting `attempts` cannot recover it: ask YourTal to re-deliver the event instead.
+
 ### Rules
 
 - **Never insert test rows on Helios.** No test jobs, users or events. Deletion
