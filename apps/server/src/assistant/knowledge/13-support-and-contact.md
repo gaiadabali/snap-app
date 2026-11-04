@@ -18,7 +18,7 @@ Support is best-effort, typically within 3 business days. The docs and the help 
 
 ## Account and data requests
 
-Account deletion, access to your information and corrections go through support. Security issues are reported there too.
+To delete your account, delete your YourTal account. Your Snap Apps data goes with it within 72 hours. Access to your information and corrections go through support. Security issues are reported there too.
 
 ## Frequently asked
 
@@ -29,4 +29,4 @@ Email support@snapapps.com.au or use the help centre at /support.
 At /docs: getting started, capturing receipts, reviewing corrections, confidence and flags, the ledger, and data retention.
 
 ### Can I delete my account?
-Yes, through support. Records inside the five-year retention window are closed out of active use but cannot be deleted until the window passes.
+Yes. Delete your YourTal account and your Snap Apps data, including your receipts, is deleted within 72 hours. Export your receipts first if you need a copy. A shared workspace keeps its records, with your name removed.
