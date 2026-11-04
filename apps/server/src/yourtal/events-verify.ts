@@ -84,7 +84,16 @@ async function jwksFor(issuer: string): Promise<JWTVerifyGetKey> {
 
 const bad = (err: SetError): SetResult => ({ ok: false, status: 400, err });
 
-export async function verifySet(token: string, settings: EventsSettings): Promise<SetResult> {
+/**
+ * `maxAge`: the endpoint refuses a SET older than 30 days (docs/29 §4.3). The
+ * worker passes `false`: freshness was checked on receipt, `jti == job.id`
+ * stops replays, and a job retried past day 30 must still erase.
+ */
+export async function verifySet(
+  token: string,
+  settings: EventsSettings,
+  options: { maxAge?: boolean } = {},
+): Promise<SetResult> {
   const { issuer, clientId } = settings;
   let payload: Record<string, unknown>;
   try {
@@ -95,7 +104,10 @@ export async function verifySet(token: string, settings: EventsSettings): Promis
       algorithms: ['RS256'],
     }));
   } catch (error) {
-    if (error instanceof errors.JWKSNoMatchingKey) return bad('invalid_key');
+    // No matching key, or (a token without a kid during a rotation) more than one.
+    if (error instanceof errors.JWKSNoMatchingKey || error instanceof errors.JWKSMultipleMatchingKeys) {
+      return bad('invalid_key');
+    }
     if (error instanceof errors.JWSSignatureVerificationFailed || error instanceof errors.JOSEAlgNotAllowed) {
       return bad('authentication_failed');
     }
@@ -110,8 +122,11 @@ export async function verifySet(token: string, settings: EventsSettings): Promis
   }
 
   const now = Date.now() / 1000;
-  const { iat, jti, sub_id: subId, events } = payload;
-  if (typeof iat !== 'number' || iat > now + MAX_AHEAD_S || iat < now - MAX_AGE_S) return bad('invalid_request');
+  const { aud, iat, jti, sub_id: subId, events } = payload;
+  // One receiving client (docs/29 §4.1): jose would also accept an array that contains it.
+  if (aud !== clientId) return bad('invalid_audience');
+  if (typeof iat !== 'number' || iat > now + MAX_AHEAD_S) return bad('invalid_request');
+  if (options.maxAge !== false && iat < now - MAX_AGE_S) return bad('invalid_request');
   // The jti is the job's id (docs/29 D2).
   if (typeof jti !== 'string' || !UUID.test(jti)) return bad('invalid_request');
   const sid = subId as { format?: unknown; iss?: unknown; sub?: unknown } | null | undefined;

@@ -24,7 +24,12 @@ import { EVENT, verifySet, YOURTAL_EVENT_JOB, yourtalEventsSettings } from './ev
  *                   {tenantId}/, only for a uuid, and only once that
  *                   workspace no longer exists.
  *   erasure_notice  one email to a member left behind; the address is
- *                   re-checked first (its owner may have been erased since).
+ *                   re-checked first (its owner may have been erased since),
+ *                   and the payload is emptied once it is done.
+ *
+ * Any of these with a tenant_id is refused unread. A `yourtal_event` is not
+ * claimed while unconfigured, and a failure on our side (YourTal's keys
+ * unreachable) postpones it without spending an attempt.
  *
  * Logs carry the jti, type and outcome; never the token, the sub or an address.
  */
@@ -34,17 +39,21 @@ export const ERASURE_NOTICE_JOB = 'erasure_notice';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-type Job = { id: string; payload: unknown };
+type Job = { id: string; tenantId: string | null; payload: unknown };
+
+/** Our side failed (YourTal's keys unreachable), not the job: retry later without spending an attempt. */
+class NotNow extends Error {}
 type Log = Pick<Console, 'log' | 'warn' | 'error'>;
 
 async function handleEvent(db: Db, job: Job, log: Log): Promise<void> {
   const settings = yourtalEventsSettings();
-  if (!settings) throw new Error('YourTal events are not configured (YOURTAL_OIDC_SERVER_CLIENT_ID); left queued');
+  if (!settings) throw new NotNow('YourTal events are not configured');
   const token = (job.payload as { set?: unknown } | null)?.set;
   if (typeof token !== 'string') throw new Error('no SET in the payload');
-  const verified = await verifySet(token, settings);
+  const verified = await verifySet(token, settings, { maxAge: false });
   if (!verified.ok) {
-    throw new Error(`the SET failed re-verification: ${verified.status === 400 ? verified.err : verified.reason}`);
+    if (verified.status === 503) throw new NotNow(`the SET could not be re-verified: ${verified.reason}`);
+    throw new Error(`the SET failed re-verification: ${verified.err}`);
   }
   const { jti, sub, type, body } = verified.set;
   if (jti !== job.id.toLowerCase()) throw new Error('the SET belongs to another job');
@@ -63,9 +72,9 @@ async function handleEvent(db: Db, job: Job, log: Log): Promise<void> {
       for (const row of rows) {
         for (const to of row.notify_emails) {
           await tx.execute(sql`
-            insert into jobs (id, tenant_id, kind, payload)
+            insert into jobs (id, tenant_id, kind, payload, max_attempts)
             values (gen_random_uuid(), null, ${ERASURE_NOTICE_JOB},
-                    ${JSON.stringify({ to, outcome: row.outcome })}::jsonb)
+                    ${JSON.stringify({ to, outcome: row.outcome })}::jsonb, 10)
           `);
           notices += 1;
         }
@@ -153,15 +162,38 @@ export async function runErasureJobsOnce(db: Db = getDb(), log: Log = console): 
   const workerId = `worker-${process.pid}-erasure`;
   let ran = 0;
   for (const [kind, handle] of HANDLERS) {
+    // Unconfigured, an event job is left alone: claiming it would spend an attempt.
+    if (kind === YOURTAL_EVENT_JOB && !yourtalEventsSettings()) continue;
     for (const job of await claimJobs(db, kind, workerId, 1)) {
       ran += 1;
       try {
+        // These kinds are system jobs. One with a tenant was written inside a
+        // workspace (app_rw can, under jobs_tenant), not by us: never act on it.
+        if (job.tenantId !== null) throw new Error(`a ${kind} job must have no tenant; refusing`);
         await handle(db, job, log);
-        await completeJob(db, job.id);
+        if (kind === ERASURE_NOTICE_JOB) {
+          // Done with the address: a completed job is kept, its recipient is not.
+          await db.execute(sql`
+            update jobs set completed_at = now(), locked_at = null, last_error = null, payload = '{}'::jsonb
+             where id = ${job.id}
+          `);
+        } else {
+          await completeJob(db, job.id);
+        }
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
-        await failJob(db, job.id, message);
-        log.error(`${kind} job ${job.id} failed: ${message}`);
+        if (error instanceof NotNow) {
+          // Give the attempt back and look again in a minute.
+          await db.execute(sql`
+            update jobs set attempts = greatest(attempts - 1, 0), locked_at = null, locked_by = null,
+                            last_error = ${message}, run_after = now() + interval '60 seconds'
+             where id = ${job.id}
+          `);
+          log.warn(`${kind} job ${job.id} postponed: ${message}`);
+        } else {
+          await failJob(db, job.id, message);
+          log.error(`${kind} job ${job.id} failed: ${message}`);
+        }
       }
     }
   }

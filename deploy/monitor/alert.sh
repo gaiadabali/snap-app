@@ -29,7 +29,8 @@
 #   - the last offsite run succeeded under 26 hours ago
 #   - the newest weekly base backup is under 8 days old
 #   - disk free on / above 90%
-#   - no YourTal deletion job (yourtal_event, storage_purge) open over 24 h;
+#   - no YourTal deletion job (yourtal_event, storage_purge, erasure_notice)
+#     open over 24 h;
 #     ERASURE_CHECK=off skips
 #   - no stuck YourTal voucher redemption (needs_review, captured with no grant,
 #     unfinished over 1 h, authorization_mismatch); VOUCHER_CHECK=off skips
@@ -247,8 +248,9 @@ if [ "${1:-}" = "--inbox" ]; then
 
   # 2a. YourTal deletion events (group 3.7, S2). A person who deleted their
   # YourTal account must be erased here within 72 hours (yourtal/docs/29):
-  # a `yourtal_event` job, or the `storage_purge` of an erased workspace's
-  # files, still open 24 h after it was queued has stopped (retries spent, a
+  # a `yourtal_event` job, the `storage_purge` of an erased workspace's
+  # files, or an `erasure_notice` to a member left behind, still open 24 h
+  # after it was queued has stopped (retries spent, a
   # refused SET, a cross-workspace reference the erasure refuses). Counts
   # only, read-only session, as postgres (`jobs` has forced RLS).
   # ERASURE_CHECK=off skips. Runs before the voucher check, whose test reads
@@ -260,17 +262,18 @@ if [ "${1:-}" = "--inbox" ]; then
       psql -U postgres -d snapapps -X -At -F ' ' -v ON_ERROR_STOP=1 2>&1 <<'SQL'
 SELECT
   count(*) FILTER (WHERE kind = 'yourtal_event'),
-  count(*) FILTER (WHERE kind = 'storage_purge')
+  count(*) FILTER (WHERE kind = 'storage_purge'),
+  count(*) FILTER (WHERE kind = 'erasure_notice')
 FROM jobs
-WHERE kind IN ('yourtal_event', 'storage_purge') AND completed_at IS NULL
+WHERE kind IN ('yourtal_event', 'storage_purge', 'erasure_notice') AND completed_at IS NULL
   AND created_at < now() - interval '24 hours';
 SQL
-    ) && read -r e_ev e_sp e_extra <<< "$erow"
-    case "${e_ev:-x}${e_sp:-x}${e_extra:+x}" in
+    ) && read -r e_ev e_sp e_en e_extra <<< "$erow"
+    case "${e_ev:-x}${e_sp:-x}${e_en:-x}${e_extra:+x}" in
       *[!0-9]*) record FAILED "erasure: query failed: $(printf '%s' "$erow" | head -n 1 | cut -c1-150)" ;;
       *)
-        if [ "$e_ev" -gt 0 ] || [ "$e_sp" -gt 0 ]; then
-          record FAILED "erasure: open over 24h yourtal_event=$e_ev storage_purge=$e_sp (jobs.last_error; yourtal/docs/29)"
+        if [ "$e_ev" -gt 0 ] || [ "$e_sp" -gt 0 ] || [ "$e_en" -gt 0 ]; then
+          record FAILED "erasure: open over 24h yourtal_event=$e_ev storage_purge=$e_sp erasure_notice=$e_en (jobs.last_error; yourtal/docs/29)"
         else
           record OK "erasure: no stuck deletion jobs"
         fi ;;

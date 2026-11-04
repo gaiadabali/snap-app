@@ -9,7 +9,7 @@ import { createDb, createPool, type Db } from '@snap/db';
 import { sql } from 'drizzle-orm';
 import { SignJWT, type JWTPayload } from 'jose';
 import type { Client, Pool } from 'pg';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import type { MailMessage } from '../auth/mailer.js';
 import { startFakeYourTalOidc, type FakeYourTalOidc } from '../test-support/fake-yourtal-oidc.js';
@@ -26,13 +26,14 @@ const hasDb = Boolean(process.env.DATABASE_URL);
 const describeIfDb = hasDb ? describe : describe.skip;
 
 const W_ALONE = 'e5200000-0000-4000-8000-000000000001'; // A runs it alone; M is its bookkeeper
-const W_SHARED = 'e5200000-0000-4000-8000-000000000002'; // B owns it; A and C are members
+const W_SHARED = 'e5200000-0000-4000-8000-000000000002'; // B owns it; A, C and D are members
 const A = 'e5200000-0000-4000-8000-0000000000a1';
 const B = 'e5200000-0000-4000-8000-0000000000b1';
 const C = 'e5200000-0000-4000-8000-0000000000c1';
+const D = 'e5200000-0000-4000-8000-0000000000e1';
 const M = 'e5200000-0000-4000-8000-0000000000d1';
 const run = randomUUID().slice(0, 8);
-const SUB = { A: `s2-a-${run}`, B: `s2-b-${run}`, C: `s2-c-${run}`, unknown: `s2-x-${run}` };
+const SUB = { A: `s2-a-${run}`, B: `s2-b-${run}`, C: `s2-c-${run}`, D: `s2-d-${run}`, unknown: `s2-x-${run}` };
 const EV = {
   deleted: 'urn:yourtal:event:account-deleted',
   ended: 'urn:yourtal:event:access-ended',
@@ -49,6 +50,8 @@ describeIfDb('YourTal security events (S2)', () => {
   let restoreMailer: () => void;
   let runErasureJobsOnce: (db: Db, log?: Pick<Console, 'log' | 'warn' | 'error'>) => Promise<number>;
   let issueYourTalSession: (userId: string) => Promise<string>;
+  let resetYourtalEventKeys: () => void;
+  const startedAt = new Date();
   const mail: MailMessage[] = [];
   const quiet = { log: () => undefined, warn: () => undefined, error: () => undefined };
 
@@ -102,6 +105,7 @@ describeIfDb('YourTal security events (S2)', () => {
         users: [
           { id: B, role: 'owner', subject: `yourtal|${SUB.B}`, email: `b-${run}@s2.test` },
           { id: C, role: 'member', subject: `yourtal|${SUB.C}`, email: `c-${run}@s2.test` },
+          { id: D, role: 'member', subject: `yourtal|${SUB.D}`, email: `d-${run}@s2.test` },
         ],
       })
     ).end();
@@ -112,6 +116,7 @@ describeIfDb('YourTal security events (S2)', () => {
     workerDb = createDb(workerPool);
     ({ runErasureJobsOnce } = await import('./events-job.js'));
     ({ issueYourTalSession } = await import('../auth/sessions.js'));
+    ({ resetYourtalEventKeys } = await import('./events-verify.js'));
     restoreMailer = (await import('../auth/mailer.js')).setMailerForTesting({
       send: async (m) => {
         mail.push(m);
@@ -129,12 +134,15 @@ describeIfDb('YourTal security events (S2)', () => {
   afterAll(async () => {
     await app?.close();
     if (admin) {
-      await admin.query(`delete from jobs where kind in ('yourtal_event', 'erasure_notice') and (payload::text like $1 or payload->>'set' is not null)`, [`%${run}%`]);
+      await admin.query(
+        `delete from jobs where kind in ('yourtal_event', 'erasure_notice', 'storage_purge') and tenant_id is null and created_at >= $1`,
+        [startedAt],
+      );
       await admin.query('delete from yourtal_erased_subjects where sub = any($1)', [Object.values(SUB)]);
       await admin.query(`delete from rate_limits where bucket_key like 'yourtal-events:%'`);
       await admin.query('delete from mail_deliveries where recipient like $1', [`%-${run}@s2.test`]);
       await wipeTenant(admin, W_ALONE, [A, M]);
-      await wipeTenant(admin, W_SHARED, [B, C]);
+      await wipeTenant(admin, W_SHARED, [B, C, D]);
       await admin.end();
     }
     await workerPool?.end();
@@ -174,6 +182,7 @@ describeIfDb('YourTal security events (S2)', () => {
       ['an unknown kid', yt.signSet(claims(SUB.B, EV.deleted), { header: { kid: 'nobody' } }), 'invalid_key'],
       ['another issuer', yt.signSet(claims(SUB.B, EV.deleted, {}, { iss: 'https://evil.example/oidc' })), 'invalid_issuer'],
       ['another audience', yt.signSet(claims(SUB.B, EV.deleted, {}, { aud: 'ftr-web' })), 'invalid_audience'],
+      ['an audience list', yt.signSet(claims(SUB.B, EV.deleted, {}, { aud: [yt.serverClientId, 'ftr-web'] })), 'invalid_audience'],
       ['an ID token typ', yt.signSet(claims(SUB.B, EV.deleted), { header: { typ: 'JWT' } }), 'invalid_request'],
       [
         'sub_id from another issuer',
@@ -227,12 +236,15 @@ describeIfDb('YourTal security events (S2)', () => {
     expect((await admin.query('select user_id from memberships where tenant_id = $1 order by user_id', [W_SHARED])).rows).toEqual([
       { user_id: B },
       { user_id: C },
+      { user_id: D },
     ]);
     expect(await userExists(M)).toBe(true);
     // The bookkeeper left behind is told, once.
     expect(mail.filter((m) => m.to === `m-${run}@s2.test`)).toEqual([
       expect.objectContaining({ subject: 'A SnapApp workspace you belonged to has been deleted' }),
     ]);
+    // ...and once sent, the job no longer holds the address.
+    expect((await admin.query(`select count(*)::int as n from jobs where payload::text like $1`, [`%m-${run}@%`])).rows[0].n).toBe(0);
 
     // A replay after the erasure: 202, nothing new, nothing sent.
     expect((await post(await yt.signSet(c))).statusCode).toBe(202);
@@ -304,8 +316,86 @@ describeIfDb('YourTal security events (S2)', () => {
       JSON.stringify({ to: `gone-${run}@s2.test`, outcome: 'erased' }),
     ]);
     await drain();
-    expect((await job(id))?.completed_at).not.toBeNull();
+    expect(await job(id)).toMatchObject({ completed_at: expect.any(Date), payload: {} });
     expect(mail.some((m) => m.to === `gone-${run}@s2.test`)).toBe(false);
+  });
+
+  it('refuses, unread, any of its job kinds written with a tenant id', async () => {
+    const ids = [randomUUID(), randomUUID(), randomUUID()];
+    const sentBefore = mail.length;
+    await admin.query(
+      `insert into jobs (id, tenant_id, kind, payload) values
+         ($1, $4, 'erasure_notice', $5), ($2, $4, 'storage_purge', $6), ($3, $4, 'yourtal_event', $7)`,
+      [
+        ...ids,
+        W_SHARED,
+        JSON.stringify({ to: `b-${run}@s2.test`, outcome: 'handed_over' }),
+        JSON.stringify({ tenantId: randomUUID() }),
+        JSON.stringify({ set: await yt.signSet(claims(`${SUB.unknown}-t`, EV.deleted)) }),
+      ],
+    );
+    await drain();
+    for (const id of ids) {
+      expect(await job(id)).toMatchObject({ completed_at: null, last_error: expect.stringContaining('must have no tenant') });
+    }
+    expect(mail.length).toBe(sentBefore);
+    expect(await isErased(`${SUB.unknown}-t`)).toBe(false);
+    await admin.query('delete from jobs where id = any($1)', [ids]);
+  });
+
+  it('leaves event jobs unclaimed while the worker is not configured, then runs them', async () => {
+    const c = claims(`${SUB.unknown}-u`, EV.deleted);
+    await admin.query(`insert into jobs (id, tenant_id, kind, payload, max_attempts) values ($1, null, 'yourtal_event', $2, 10)`, [
+      c.jti,
+      JSON.stringify({ set: await yt.signSet(c) }),
+    ]);
+    delete process.env.YOURTAL_OIDC_SERVER_CLIENT_ID;
+    try {
+      await runErasureJobsOnce(workerDb, quiet);
+      expect(await job(c.jti)).toMatchObject({ completed_at: null, attempts: 0, locked_at: null });
+    } finally {
+      process.env.YOURTAL_OIDC_SERVER_CLIENT_ID = yt.serverClientId;
+    }
+    await drain();
+    expect((await job(c.jti))?.completed_at).not.toBeNull();
+    expect(await isErased(`${SUB.unknown}-u`)).toBe(true);
+    await admin.query('delete from yourtal_erased_subjects where sub = $1', [`${SUB.unknown}-u`]);
+  });
+
+  it("spends no attempt while YourTal's keys cannot be fetched", async () => {
+    const c = claims(`${SUB.unknown}-k`, EV.deleted);
+    await admin.query(`insert into jobs (id, tenant_id, kind, payload, max_attempts) values ($1, null, 'yourtal_event', $2, 10)`, [
+      c.jti,
+      JSON.stringify({ set: await yt.signSet(c) }),
+    ]);
+    resetYourtalEventKeys();
+    const down = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('fetch failed'));
+    try {
+      await runErasureJobsOnce(workerDb, quiet);
+    } finally {
+      down.mockRestore();
+      resetYourtalEventKeys();
+    }
+    const after = (await admin.query(`select attempts, completed_at, locked_at, run_after > now() as later from jobs where id = $1`, [c.jti])).rows[0];
+    expect(after).toEqual({ attempts: 0, completed_at: null, locked_at: null, later: true });
+    expect(await isErased(`${SUB.unknown}-k`)).toBe(false);
+    await admin.query('delete from jobs where id = $1', [c.jti]);
+  });
+
+  it('a job whose SET is over 30 days old still verifies and erases', async () => {
+    const c = claims(SUB.D, EV.deleted, {}, { iat: Math.floor(Date.now() / 1000) - 40 * 86_400 });
+    const token = await yt.signSet(c);
+    expect((await post(token)).json()).toEqual({ err: 'invalid_request' }); // the endpoint keeps its bound
+    await admin.query(`insert into jobs (id, tenant_id, kind, payload, max_attempts) values ($1, null, 'yourtal_event', $2, 10)`, [
+      c.jti,
+      JSON.stringify({ set: token }),
+    ]);
+    await drain();
+    expect((await job(c.jti))?.completed_at).not.toBeNull();
+    expect(await userExists(D)).toBe(false);
+    expect(await isErased(SUB.D)).toBe(true);
+    expect(await userExists(B)).toBe(true);
+    await admin.query(`delete from rate_limits where bucket_key like 'yourtal-events:%'`);
   });
 
   it('storage_purge refuses a workspace that still exists, and anything but a uuid', async () => {
