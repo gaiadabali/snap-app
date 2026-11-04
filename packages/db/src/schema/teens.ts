@@ -29,6 +29,8 @@ export const teenSpaces = pgTable('teen_spaces', {
   yourtalEndedAt: timestamp('yourtal_ended_at', { withTimezone: true }),
   /** 3.10.f erases the space from here. */
   eraseAfter: timestamp('erase_after', { withTimezone: true }),
+  /** When a new invite last restored the held space (0047): an older access-ended event is ignored. */
+  restoredAt: timestamp('restored_at', { withTimezone: true }),
 });
 
 /** No tenant_id on purpose: see 0045's header. */

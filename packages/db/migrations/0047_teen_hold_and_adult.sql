@@ -25,11 +25,23 @@
 -- readonly and returns the same space (created = false). Anything else is
 -- still TS002.
 --
--- ERASURE. `teen_space_erase_due()`, owned by app_erasure (erase_workspace's
--- owner, so erase_workspace stays internal: 0043's self-check), executable
--- by app_worker only. It erases every space past erase_after through 0043's
--- erase_workspace, so the spill guard runs for each. A space the guard
--- refuses is reported and left held (retried next sweep); the rest go on.
+-- ERASURE. `teen_space_erase_next(skip)`, owned by app_erasure
+-- (erase_workspace's and erase_person's owner, so erase_workspace stays
+-- internal: 0043's self-check), executable by app_worker only. ONE space past
+-- erase_after per call, each call its own transaction: erase_workspace (so
+-- the spill guard runs), then the teen's account through erase_person (lead
+-- ruling, 3.10.f round 1), never recording the sub as erased, so a new invite
+-- can still bring the teen back. Any error is reported as `failed: ...` and
+-- that space stays held for the next sweep; the worker goes on to the next.
+--
+-- WHILE HELD: no credit is taken and the owner cannot sign in (round 1).
+-- `teen_space_take_credit` raises TS004 and `teen_space_funded` is false for
+-- a held space; `teen_space_held_for_sign_in` (app_rw) lets the API refuse a
+-- non-teen sign-in to a held account (a teen who turned 18 during the hold).
+--
+-- LATE EVENTS (docs/29 D3). `restored_at` is stamped by a restore, and
+-- `teen_space_end_for_subject(sub, iat)` ignores an access-ended whose iat is
+-- not after it, and ends only the sessions opened before iat.
 --
 -- 3.10.h TURNING 18. `teen_space_became_adult(sub)`, owned by app_teen,
 -- executable by app_worker only (the YourTal event job). For a live space it
@@ -47,21 +59,29 @@
 --     guard still decides which rows);
 --   - app_erasure gets SELECT and UPDATE (tenant_id) on teen_spaces, for the
 --     sweep's FOR UPDATE;
---   - existing held spaces lose the parent's membership (below).
+--   - existing held spaces lose the parent's membership (below);
+--   - app_erasure's teen_space_erase_next calls erase_person for the teen.
 --
 -- The parent's Family page and End access read the teen's name and their own
 -- YourTal sub through `teen_space_for_parent` (app_rw), since they are no
 -- longer a member of a held space.
 --
--- ADD-ONLY apart from four function bodies replaced (same signatures, owner
--- and grants): teen_space_memberships_guard, teen_space_join, teen_space_end
--- and teen_space_end_for_subject.
+-- ADD-ONLY apart from: one new nullable column (teen_spaces.restored_at);
+-- five function bodies replaced (same signatures, owner and grants):
+-- teen_space_memberships_guard, teen_space_join, teen_space_end,
+-- teen_space_funded and teen_space_take_credit; and
+-- teen_space_end_for_subject(text) replaced by (text, timestamptz), whose
+-- only caller is the worker, deployed with this migration.
 -- ---------------------------------------------------------------------------
 
 SET LOCAL lock_timeout = '5s';
 
 GRANT DELETE ON memberships TO app_teen;
 GRANT SELECT, UPDATE (tenant_id) ON teen_spaces TO app_erasure;
+
+-- When a held space was last brought back by a new invite. An access-ended
+-- event from before then (YourTal's iat) belongs to the old access: ignored.
+ALTER TABLE teen_spaces ADD COLUMN IF NOT EXISTS restored_at timestamptz;
 
 -- ── The guard: one more DELETE allowed ───────────────────────────────────────
 
@@ -75,7 +95,8 @@ BEGIN
     IF pg_trigger_depth() = 1 AND EXISTS (
          SELECT 1 FROM teen_spaces t
           WHERE t.tenant_id = OLD.tenant_id
-            AND NOT (t.access_ended_at IS NOT NULL AND OLD.user_id = t.parent_user_id)) THEN
+            -- COALESCE: with the parent erased (NULL), only the cascade may delete.
+            AND NOT COALESCE(t.access_ended_at IS NOT NULL AND OLD.user_id = t.parent_user_id, false)) THEN
       RAISE EXCEPTION 'Nobody can be removed from a teen''s space.' USING ERRCODE = 'TS001';
     END IF;
     RETURN OLD;
@@ -92,7 +113,8 @@ BEGIN
      AND NOT EXISTS (SELECT 1 FROM teen_spaces t
                       WHERE t.tenant_id = NEW.tenant_id
                         AND ((NEW.user_id = t.teen_user_id AND NEW.role = 'owner')
-                          OR (NEW.user_id = t.parent_user_id AND NEW.role = 'readonly'))) THEN
+                          -- The parent only while access stands: a held space is closed to them.
+                          OR (NEW.user_id = t.parent_user_id AND NEW.role = 'readonly' AND t.access_ended_at IS NULL))) THEN
     RAISE EXCEPTION 'The people in a teen''s space cannot be changed.' USING ERRCODE = 'TS001';
   END IF;
   IF EXISTS (SELECT 1 FROM teen_spaces t WHERE t.teen_user_id = NEW.user_id AND t.tenant_id <> NEW.tenant_id) THEN
@@ -120,8 +142,10 @@ LANGUAGE sql SECURITY DEFINER SET search_path = public, pg_temp AS $fn$
 $fn$;
 
 -- ── The hold (internal) ──────────────────────────────────────────────────────
--- False when access had already ended. See the header.
-CREATE OR REPLACE FUNCTION teen_space_hold(p_tenant uuid) RETURNS boolean
+-- False when access had already ended. See the header. Ends the teen's
+-- sessions opened before p_before: all of them for the parent's End
+-- ('infinity'), those before the event's iat for YourTal's (docs/29 D3).
+CREATE OR REPLACE FUNCTION teen_space_hold(p_tenant uuid, p_before timestamptz) RETURNS boolean
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $fn$
 DECLARE
   v teen_spaces%ROWTYPE;
@@ -135,7 +159,7 @@ BEGIN
   -- The guard lets this one through now that access has ended.
   DELETE FROM memberships m WHERE m.tenant_id = p_tenant AND m.user_id = v.parent_user_id;
   UPDATE user_sessions s SET revoked_at = now(), revoked_reason = 'teen_access_ended'
-   WHERE s.user_id = v.teen_user_id AND s.revoked_at IS NULL;
+   WHERE s.user_id = v.teen_user_id AND s.revoked_at IS NULL AND s.created_at < p_before;
   PERFORM teen_space_notice(v.parent_user_id, 'teen_ended_parent', v.teen_user_id, v.erase_after);
   PERFORM teen_space_notice(v.teen_user_id, 'teen_ended_teen', v.parent_user_id, v.erase_after);
   RETURN true;
@@ -169,19 +193,32 @@ BEGIN
             jsonb_build_object('inviteId', v_space.invite_id, 'parentSub', substr(v_subject, length('yourtal|') + 1)), 20);
   END IF;
 
-  RETURN teen_space_hold(p_tenant);
+  RETURN teen_space_hold(p_tenant, 'infinity');
 END $fn$;
 
 -- ── YourTal's access-ended with erase_data (0045, now with the full hold) ────
-CREATE OR REPLACE FUNCTION teen_space_end_for_subject(p_sub text) RETURNS boolean
+-- p_iat is the event's (the SET's iat, re-verified by the worker). An event
+-- from before the space was last restored ended the OLD access: a late
+-- delivery of the End that the restore undid must not hold it again. The
+-- one-argument 0045 version is dropped: it could not tell.
+DROP FUNCTION IF EXISTS teen_space_end_for_subject(text);
+CREATE OR REPLACE FUNCTION teen_space_end_for_subject(p_sub text, p_iat timestamptz) RETURNS boolean
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $fn$
 DECLARE
-  v_tenant uuid;
+  v teen_spaces%ROWTYPE;
 BEGIN
-  SELECT t.tenant_id INTO v_tenant FROM teen_spaces t JOIN users u ON u.id = t.teen_user_id
+  IF p_iat IS NULL THEN
+    RAISE EXCEPTION 'teen_space_end_for_subject: iat is required' USING ERRCODE = 'invalid_parameter_value';
+  END IF;
+  SELECT t.* INTO v FROM teen_spaces t JOIN users u ON u.id = t.teen_user_id
    WHERE u.subject = 'yourtal|' || p_sub
    FOR UPDATE OF t;
-  RETURN v_tenant IS NOT NULL AND teen_space_hold(v_tenant);
+  -- iat has whole seconds: an event in the restore's own second counts as
+  -- after it (holding again fails safe; ignoring a real end would not).
+  IF NOT FOUND OR date_trunc('second', v.restored_at) > p_iat THEN
+    RETURN false;
+  END IF;
+  RETURN teen_space_hold(v.tenant_id, p_iat);
 END $fn$;
 
 -- ── Joining, or coming back by a new invite (0045 + the restore) ─────────────
@@ -217,7 +254,7 @@ BEGIN
       RAISE EXCEPTION 'Your access to SnapApp has ended.' USING ERRCODE = 'TS002';
     END IF;
     UPDATE teen_spaces t
-       SET access_ended_at = NULL, erase_after = NULL, yourtal_ended_at = NULL,
+       SET access_ended_at = NULL, erase_after = NULL, yourtal_ended_at = NULL, restored_at = now(),
            invite_id = v_inv.id, funding_tenant_id = v_inv.funding_tenant_id
      WHERE t.tenant_id = v_space.tenant_id;
     INSERT INTO memberships (tenant_id, user_id, role)
@@ -293,52 +330,153 @@ BEGIN
   RETURN 'lifted';
 END $fn$;
 
--- ── The sweep (3.10.f) ───────────────────────────────────────────────────────
--- Erases every held space past erase_after, each in its own subtransaction,
--- through erase_workspace (and so its spill guard). A space being restored
--- right now is locked and skipped; one the guard refuses stays held and is
--- reported, and the sweep goes on to the next.
-CREATE OR REPLACE FUNCTION teen_space_erase_due() RETURNS TABLE (tenant_id uuid, outcome text)
+-- ── A held space spends nothing, and its owner cannot sign in ───────────────
+-- 0045's take_credit and funded, refusing a space whose access has ended: a
+-- teen who turned 18 during the hold could otherwise sign in as an adult and
+-- spend the parent's credits after the parent ended access. The API also
+-- refuses that sign-in (teen_space_held_for_sign_in).
+
+CREATE OR REPLACE FUNCTION teen_space_funded() RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public, pg_temp AS $fn$
+  SELECT CASE WHEN t.tenant_id IS NULL THEN NULL ELSE
+    t.access_ended_at IS NULL AND t.funding_tenant_id IS NOT NULL AND EXISTS (
+      SELECT 1 FROM memberships m
+       WHERE m.tenant_id = t.funding_tenant_id AND m.user_id = t.parent_user_id AND m.role = 'owner') END
+    FROM (SELECT current_tenant_id() AS id) c
+    LEFT JOIN teen_spaces t ON t.tenant_id = c.id;
+$fn$;
+
+CREATE OR REPLACE FUNCTION teen_space_take_credit(p_capture uuid)
+RETURNS TABLE (teen_space boolean, grant_id uuid)
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $fn$
 DECLARE
-  v_tenant uuid;
+  v_tenant uuid := current_tenant_id();
+  v_space  teen_spaces%ROWTYPE;
+  v_fund   uuid;
+  v_grant  uuid;
 BEGIN
-  FOR v_tenant IN
-    SELECT t.tenant_id FROM teen_spaces t
-     WHERE t.erase_after <= now()
-     ORDER BY t.erase_after
-     FOR UPDATE SKIP LOCKED
-  LOOP
-    BEGIN
-      PERFORM erase_workspace(v_tenant);
-      tenant_id := v_tenant; outcome := 'erased';
-    EXCEPTION WHEN integrity_constraint_violation THEN
-      tenant_id := v_tenant; outcome := 'refused: ' || SQLERRM;
-    END;
-    RETURN NEXT;
+  SELECT * INTO v_space FROM teen_spaces t WHERE t.tenant_id = v_tenant;
+  IF NOT FOUND THEN
+    RETURN QUERY SELECT false, NULL::uuid;
+    RETURN;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM captures c WHERE c.id = p_capture AND c.tenant_id = v_tenant) THEN
+    RAISE EXCEPTION 'teen_space_take_credit: not a capture of this space' USING ERRCODE = 'insufficient_privilege';
+  END IF;
+
+  SELECT s.grant_id INTO v_grant FROM teen_space_spends s WHERE s.capture_id = p_capture;
+  IF FOUND THEN
+    RETURN QUERY SELECT true, v_grant;
+    RETURN;
+  END IF;
+
+  IF v_space.access_ended_at IS NOT NULL THEN
+    RAISE EXCEPTION 'Your access to SnapApp has ended, so your parent''s credits can''t pay for scans.'
+      USING ERRCODE = 'TS004';
+  END IF;
+
+  -- The parent's credits, so only while the parent still owns that workspace
+  -- (F112): one handed over, left or deleted pays for nothing more.
+  v_fund := v_space.funding_tenant_id;
+  IF v_fund IS NULL OR v_space.parent_user_id IS NULL OR NOT EXISTS (
+       SELECT 1 FROM memberships m
+        WHERE m.tenant_id = v_fund AND m.user_id = v_space.parent_user_id AND m.role = 'owner') THEN
+    RAISE EXCEPTION 'Your scans use your parent''s credits, and their workspace can''t pay for them any more. Ask your parent to invite you again.'
+      USING ERRCODE = 'TS004';
+  END IF;
+
+  PERFORM pg_advisory_xact_lock(hashtext('credit_spend'), hashtext(v_fund::text));
+  FOR i IN 1..5 LOOP
+    UPDATE usage_grants u SET remaining = u.remaining - 1
+      FROM (SELECT g.id FROM usage_grants g
+             WHERE g.tenant_id = v_fund AND g.metric = 'scans' AND g.remaining > 0
+               AND (g.expires_at IS NULL OR g.expires_at > now())
+             ORDER BY EXISTS (SELECT 1 FROM credit_purchases cp WHERE cp.grant_id = g.id AND cp.status = 'paid'),
+                      (g.source = 'signup_bonus') DESC, g.granted_at, g.id
+             LIMIT 1) pick
+     WHERE u.id = pick.id AND u.remaining > 0
+    RETURNING u.id INTO v_grant;
+    EXIT WHEN v_grant IS NOT NULL;
+    EXIT WHEN NOT EXISTS (SELECT 1 FROM usage_grants g
+                           WHERE g.tenant_id = v_fund AND g.metric = 'scans' AND g.remaining > 0
+                             AND (g.expires_at IS NULL OR g.expires_at > now()));
   END LOOP;
+
+  INSERT INTO teen_space_spends (capture_id, funding_tenant_id, grant_id) VALUES (p_capture, v_fund, v_grant);
+  RETURN QUERY SELECT true, v_grant;
+END $fn$;
+
+-- The API, before any sign-in that is not a teen's: true when this YourTal
+-- account's teen space is held. A teen comes back only by a new invite
+-- (teen_space_join); anyone else waits for the erasure, after which the
+-- account is gone and they can start afresh.
+CREATE OR REPLACE FUNCTION teen_space_held_for_sign_in(p_subject text) RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public, pg_temp AS $fn$
+  SELECT EXISTS (SELECT 1 FROM teen_spaces t JOIN users u ON u.id = t.teen_user_id
+                  WHERE u.subject = p_subject AND t.access_ended_at IS NOT NULL);
+$fn$;
+
+-- ── The sweep (3.10.f) ───────────────────────────────────────────────────────
+-- Erases ONE held space past erase_after per call (the worker calls it until
+-- it answers nothing, each call its own transaction), skipping the ids it
+-- has already tried this run. The space goes through erase_workspace, so its
+-- spill guard runs; then the teen's account through erase_person (lead
+-- ruling: the teen consent screen promises "your SnapApp data is deleted"),
+-- WITHOUT recording the sub as erased, so a later invite can bring them back.
+-- Any error is caught here and reported as `failed: ...`: the subtransaction
+-- has rolled that space back, it stays held, and the next is tried.
+-- A space being restored right now is locked and skipped.
+CREATE OR REPLACE FUNCTION teen_space_erase_next(p_skip uuid[]) RETURNS TABLE (tenant_id uuid, outcome text)
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $fn$
+DECLARE
+  v teen_spaces%ROWTYPE;
+BEGIN
+  SELECT t.* INTO v FROM teen_spaces t
+   WHERE t.erase_after <= now() AND NOT (t.tenant_id = ANY (COALESCE(p_skip, '{}')))
+   ORDER BY t.erase_after, t.tenant_id
+   LIMIT 1
+   FOR UPDATE SKIP LOCKED;
+  IF NOT FOUND THEN
+    RETURN;
+  END IF;
+  tenant_id := v.tenant_id;
+  BEGIN
+    PERFORM erase_workspace(v.tenant_id);
+    PERFORM 1 FROM erase_person(v.teen_user_id);
+    outcome := 'erased';
+  EXCEPTION WHEN OTHERS THEN
+    outcome := 'failed: ' || SQLERRM;
+  END;
+  RETURN NEXT;
 END $fn$;
 
 -- ── Who may call these ───────────────────────────────────────────────────────
 
 REVOKE EXECUTE ON FUNCTION teen_space_notice(uuid, text, uuid, timestamptz) FROM PUBLIC;
-REVOKE EXECUTE ON FUNCTION teen_space_hold(uuid)                            FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION teen_space_hold(uuid, timestamptz)              FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION teen_space_end_for_subject(text, timestamptz)    FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION teen_space_held_for_sign_in(text)                FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION teen_space_became_adult(text)                    FROM PUBLIC;
-REVOKE EXECUTE ON FUNCTION teen_space_erase_due()                           FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION teen_space_erase_next(uuid[])                   FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION teen_space_for_parent(uuid)                      FROM PUBLIC;
 
 ALTER FUNCTION teen_space_memberships_guard()                    OWNER TO app_teen;
 ALTER FUNCTION teen_space_notice(uuid, text, uuid, timestamptz)  OWNER TO app_teen;
-ALTER FUNCTION teen_space_hold(uuid)                             OWNER TO app_teen;
+ALTER FUNCTION teen_space_hold(uuid, timestamptz)                OWNER TO app_teen;
+ALTER FUNCTION teen_space_funded()                               OWNER TO app_teen;
+ALTER FUNCTION teen_space_take_credit(uuid)                      OWNER TO app_teen;
+ALTER FUNCTION teen_space_held_for_sign_in(text)                 OWNER TO app_teen;
 ALTER FUNCTION teen_space_end(uuid)                              OWNER TO app_teen;
-ALTER FUNCTION teen_space_end_for_subject(text)                  OWNER TO app_teen;
+ALTER FUNCTION teen_space_end_for_subject(text, timestamptz)     OWNER TO app_teen;
 ALTER FUNCTION teen_space_join(uuid, text, text)                 OWNER TO app_teen;
 ALTER FUNCTION teen_space_became_adult(text)                     OWNER TO app_teen;
-ALTER FUNCTION teen_space_erase_due()                            OWNER TO app_erasure;
+ALTER FUNCTION teen_space_erase_next(uuid[])                     OWNER TO app_erasure;
 ALTER FUNCTION teen_space_for_parent(uuid)                       OWNER TO app_teen;
 
 GRANT EXECUTE ON FUNCTION teen_space_became_adult(text) TO app_worker;
-GRANT EXECUTE ON FUNCTION teen_space_erase_due()        TO app_worker;
+GRANT EXECUTE ON FUNCTION teen_space_erase_next(uuid[])            TO app_worker;
+GRANT EXECUTE ON FUNCTION teen_space_end_for_subject(text, timestamptz) TO app_worker;
+GRANT EXECUTE ON FUNCTION teen_space_held_for_sign_in(text)        TO app_rw;
 GRANT EXECUTE ON FUNCTION teen_space_for_parent(uuid)   TO app_rw;
 
 -- ── Spaces already held: the parent's view ends now too ──────────────────────
@@ -352,24 +490,29 @@ DECLARE
 BEGIN
   FOR r IN SELECT * FROM (VALUES
       ('teen_space_notice(uuid,text,uuid,timestamp with time zone)'),
-      ('teen_space_hold(uuid)'),
+      ('teen_space_hold(uuid,timestamp with time zone)'),
+      ('teen_space_end_for_subject(text,timestamp with time zone)'),
       ('teen_space_became_adult(text)'),
-      ('teen_space_erase_due()')) AS f(sig)
+      ('teen_space_erase_next(uuid[])')) AS f(sig)
   LOOP
     IF has_function_privilege('app_rw', r.sig, 'EXECUTE') OR has_function_privilege('app_readonly', r.sig, 'EXECUTE') THEN
       RAISE EXCEPTION '% must not be executable by the API roles', r.sig;
     END IF;
   END LOOP;
-  IF has_function_privilege('app_worker', 'teen_space_hold(uuid)', 'EXECUTE')
+  IF has_function_privilege('app_worker', 'teen_space_hold(uuid,timestamp with time zone)', 'EXECUTE')
      OR has_function_privilege('app_worker', 'teen_space_notice(uuid,text,uuid,timestamp with time zone)', 'EXECUTE') THEN
     RAISE EXCEPTION 'teen_space_hold and teen_space_notice are internal';
   END IF;
   IF NOT has_function_privilege('app_worker', 'teen_space_became_adult(text)', 'EXECUTE')
-     OR NOT has_function_privilege('app_worker', 'teen_space_erase_due()', 'EXECUTE') THEN
+     OR NOT has_function_privilege('app_worker', 'teen_space_erase_next(uuid[])', 'EXECUTE')
+     OR NOT has_function_privilege('app_worker', 'teen_space_end_for_subject(text,timestamp with time zone)', 'EXECUTE') THEN
     RAISE EXCEPTION 'the worker must be able to lift a teen space and run the sweep';
   END IF;
   IF has_function_privilege('app_worker', 'erase_workspace(uuid)', 'EXECUTE') THEN
     RAISE EXCEPTION 'erase_workspace is internal';
+  END IF;
+  IF has_function_privilege('app_rw', 'erase_person(uuid)', 'EXECUTE') THEN
+    RAISE EXCEPTION 'erase_person is the worker''s only';
   END IF;
   IF EXISTS (SELECT 1 FROM memberships m JOIN teen_spaces t ON t.tenant_id = m.tenant_id
               WHERE m.user_id = t.parent_user_id AND t.access_ended_at IS NOT NULL) THEN

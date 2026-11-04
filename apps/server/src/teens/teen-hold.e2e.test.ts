@@ -42,6 +42,9 @@ describeIfDb('the teen hold and turning 18 — real database, real provider', ()
   const subs: string[] = [];
   const mail: MailMessage[] = [];
   const logged: string[] = [];
+  /** What this file made, so drain() claims only its own jobs (other files share the database). */
+  const jtis: string[] = [];
+  const spaces: string[] = [];
   const log: Log = { log: (m) => logged.push(m), warn: (m) => logged.push(m), error: (m) => logged.push(m) };
 
   const caller = () => ({ ip: `10.${Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 250)}` });
@@ -83,12 +86,14 @@ describeIfDb('the teen hold and turning 18 — real database, real provider', ()
     (await admin.query('SELECT id FROM users WHERE subject = $1', [`yourtal|${yt.subFor(who.accountId)}`])).rows[0]?.id as string;
 
   /** A signed YourTal event for this person, through the real endpoint. */
-  async function event(who: FakePerson, type: string, body: object = {}) {
+  async function event(who: FakePerson, type: string, body: object = {}, iat = Math.floor(Date.now() / 1000)) {
+    const jti = randomUUID();
+    jtis.push(jti);
     const token = await yt.signSet({
       iss: yt.issuer,
       aud: yt.serverClientId,
-      iat: Math.floor(Date.now() / 1000),
-      jti: randomUUID(),
+      iat,
+      jti,
       sub_id: { format: 'iss_sub', iss: yt.issuer, sub: yt.subFor(who.accountId) },
       events: { [type]: body },
     });
@@ -101,11 +106,17 @@ describeIfDb('the teen hold and turning 18 — real database, real provider', ()
     expect(res.statusCode).toBe(202);
   }
 
-  /** The worker: every due job, until none is left. Returns what it logged. */
+  /** The worker: every due job of THIS file, until none is left. Returns what it logged. */
   async function drain(): Promise<string> {
     logged.length = 0;
-    while ((await jobs.runErasureJobsOnce(workerDb, log)) > 0) {
-      /* until nothing is due */
+    for (;;) {
+      const { rows } = await admin.query(
+        `SELECT id FROM jobs WHERE tenant_id IS NULL AND completed_at IS NULL AND created_at >= $1
+            AND (id = ANY($2::uuid[]) OR payload->>'to' LIKE 'hold-%@example.test'
+                 OR payload->>'parentSub' = $3 OR payload->>'tenantId' = ANY($4::text[]))`,
+        [startedAt, jtis, yt.subFor(parent.accountId), spaces],
+      );
+      if ((await jobs.runErasureJobsOnce(workerDb, log, rows.map((r) => r.id as string))) === 0) break;
     }
     return logged.join('\n');
   }
@@ -134,6 +145,7 @@ describeIfDb('the teen hold and turning 18 — real database, real provider', ()
     const teen = person(name.toLowerCase(), { ageBand: 'teen', guardianAccountId: parent.accountId, name });
     const joined = await signIn(teen, await inviteCode());
     expect(joined.outcome).toBe('created');
+    spaces.push(joined.workspaces[0]!.id);
     return { teen, token: joined.token, teenId: joined.user.userId, space: joined.workspaces[0]!.id };
   }
 
@@ -189,7 +201,6 @@ describeIfDb('the teen hold and turning 18 — real database, real provider', ()
     const created = await http('POST', '/v1/workspaces', parentToken, undefined, { name: 'Pat household', kind: 'personal' });
     expect(created.statusCode).toBe(201);
     household = (created.json() as { id: string }).id;
-    await drain(); // anything earlier suites left due
   });
 
   afterAll(async () => {
@@ -289,7 +300,20 @@ describeIfDb('the teen hold and turning 18 — real database, real provider', ()
       const row = (await admin.query('SELECT access_ended_at, erase_after FROM teen_spaces WHERE tenant_id = $1', [space])).rows[0];
       expect(row).toEqual({ access_ended_at: null, erase_after: null });
       // And the next sign-in needs no code.
-      expect((await signIn(teen)).workspaces.map((w) => w.id)).toEqual([space]);
+      const next = await signIn(teen);
+      expect(next.workspaces.map((w) => w.id)).toEqual([space]);
+      teenToken = next.token;
+    });
+
+    it('ignores the End that the restore undid when YourTal delivers it late', async () => {
+      mail.length = 0;
+      // YourTal's parent_ended for the first End, its iat an hour back (before the restore).
+      await event(teen, 'urn:yourtal:event:access-ended', { reason: 'parent_ended', erase_data: true }, Math.floor(Date.now() / 1000) - 3600);
+      expect(await drain()).toContain('no live teen space, or one restored since');
+      expect((await admin.query('SELECT access_ended_at FROM teen_spaces WHERE tenant_id = $1', [space])).rows[0].access_ended_at).toBeNull();
+      expect((await http('GET', '/v1/goals', teenToken, space)).statusCode).toBe(200);
+      expect((await http('GET', '/v1/goals', parentToken, space)).statusCode).toBe(200);
+      expect(mail).toEqual([]);
     });
 
     it('YourTal’s access-ended (teen removed) holds it again, and on day 31 the sweep erases it and its files', async () => {
@@ -308,10 +332,44 @@ describeIfDb('the teen hold and turning 18 — real database, real provider', ()
       expect((await admin.query('SELECT count(*)::int AS n FROM tenants WHERE id = $1', [space])).rows[0].n).toBe(0);
       await drain(); // storage_purge
       expect(existsSync(join(storage, space))).toBe(false);
-      // The teen's account stays, with nothing in it; the parent's workspace is untouched.
-      expect(await userIdOf(teen)).toBeDefined();
+      // The teen's account goes too, but not their sub: a new invite starts afresh.
+      expect(await userIdOf(teen)).toBeUndefined();
       expect((await admin.query('SELECT count(*)::int AS n FROM tenants WHERE id = $1', [household])).rows[0].n).toBe(1);
       expect((await http('GET', '/v1/family', parentToken)).json().teens).toEqual([]);
+      const fresh = await signIn(teen, await inviteCode());
+      expect(fresh.outcome).toBe('created');
+      expect(fresh.workspaces[0]!.id).not.toBe(space);
+      spaces.push(fresh.workspaces[0]!.id);
+    });
+
+    it('goes on past a space it cannot erase, and erases the rest', async () => {
+      const stuck = await joinTeen('Xan');
+      const clean = await joinTeen('Yoli');
+      for (const t of [stuck, clean]) {
+        expect((await http('POST', `/v1/family/teens/${t.space}/end`, parentToken)).statusCode).toBe(200);
+        await daysPass(t.space, 30.01);
+      }
+      // A row in the stuck space pointing into the parent's workspace: the spill guard refuses it.
+      const goal = randomUUID();
+      await admin.query(`INSERT INTO goals (id, tenant_id, name, target) VALUES ($1, $2, 'Car', 100)`, [goal, household]);
+      await admin.query(
+        `INSERT INTO goal_contributions (id, tenant_id, goal_id, amount, occurred_on) VALUES (gen_random_uuid(), $1, $2, 5, '2026-08-20')`,
+        [stuck.space, goal],
+      );
+      try {
+        logged.length = 0;
+        const swept = await jobs.runTeenHoldSweepOnce(workerDb, log);
+        expect(swept.failed).toBeGreaterThanOrEqual(1);
+        expect(logged.join('\n')).toContain(`workspace ${stuck.space} not erased: failed:`);
+        expect((await admin.query('SELECT count(*)::int AS n FROM tenants WHERE id = $1', [stuck.space])).rows[0].n).toBe(1);
+        expect((await admin.query('SELECT count(*)::int AS n FROM tenants WHERE id = $1', [clean.space])).rows[0].n).toBe(0);
+      } finally {
+        await admin.query('DELETE FROM goal_contributions WHERE tenant_id = $1', [stuck.space]);
+        await admin.query('DELETE FROM goals WHERE id = $1', [goal]);
+      }
+      await jobs.runTeenHoldSweepOnce(workerDb, log);
+      expect((await admin.query('SELECT count(*)::int AS n FROM tenants WHERE id = $1', [stuck.space])).rows[0].n).toBe(0);
+      await drain();
     });
   });
 
@@ -324,7 +382,7 @@ describeIfDb('the teen hold and turning 18 — real database, real provider', ()
 
       // The parent's view is gone; the young adult keeps their session and data.
       expect((await http('GET', '/v1/goals', parentToken, space)).statusCode).toBeGreaterThanOrEqual(400);
-      expect((await http('GET', '/v1/family', parentToken)).json().teens).toEqual([]);
+      expect(((await http('GET', '/v1/family', parentToken)).json().teens as Array<{ workspaceId: string }>).map((t) => t.workspaceId)).not.toContain(space);
       expect((await app.inject({ method: 'GET', url: '/v1/auth/session', headers: { authorization: `Bearer ${token}` } })).statusCode).toBe(200);
       const mine = (await http('GET', '/v1/workspaces', token)).json() as Array<{ id: string; role: string; teenSpace: string | null }>;
       expect(mine).toEqual([expect.objectContaining({ id: space, role: 'owner', teenSpace: null })]);
@@ -371,6 +429,16 @@ describeIfDb('the teen hold and turning 18 — real database, real provider', ()
       expect(await drain()).toContain('its erasure stands');
       expect(mail).toEqual([]);
       expect((await admin.query('SELECT access_ended_at FROM teen_spaces WHERE tenant_id = $1', [space])).rows[0].access_ended_at).not.toBeNull();
+
+      // Now 18, they cannot sign in to the space being deleted, and nothing is written.
+      teen.ageBand = 'adult';
+      const sessions = async () =>
+        (await admin.query('SELECT count(*)::int AS n FROM user_sessions WHERE user_id = (SELECT id FROM users WHERE subject = $1)', [
+          `yourtal|${yt.subFor(teen.accountId)}`,
+        ])).rows[0].n as number;
+      const before = await sessions();
+      await expect(signIn(teen)).rejects.toMatchObject({ response: { error: 'teen_access_ended' } });
+      expect(await sessions()).toBe(before);
 
       await daysPass(space, 30.01);
       await jobs.runTeenHoldSweepOnce(workerDb, log);

@@ -59,7 +59,7 @@ async function handleEvent(db: Db, job: Job, log: Log): Promise<void> {
     if (verified.status === 503) throw new NotNow(`the SET could not be re-verified: ${verified.reason}`);
     throw new Error(`the SET failed re-verification: ${verified.err}`);
   }
-  const { jti, sub, type, body } = verified.set;
+  const { jti, iat, sub, type, body } = verified.set;
   if (jti !== job.id.toLowerCase()) throw new Error('the SET belongs to another job');
 
   if (type === EVENT.accountDeleted) {
@@ -94,11 +94,14 @@ async function handleEvent(db: Db, job: Job, log: Log): Promise<void> {
     // Sessions opened before iat were ended by the endpoint. With erase_data
     // (a teen's access ended: docs/26 §2.2) the teen's space starts its
     // 30-day hold (0045, 0047): the parent's view ends, both are told, and
-    // the sweep erases it after the 30 days.
+    // the sweep erases it after the 30 days. An event from before the space
+    // was last restored by a new invite is ignored (its iat, docs/29 D3).
     let hold = '';
     if (body.erase_data === true) {
-      const { rows } = await db.execute<{ ended: boolean }>(sql`select teen_space_end_for_subject(${sub}) as ended`);
-      hold = `; erase_data (${String(body.reason)}): ${rows[0]?.ended ? 'teen space held for 30 days' : 'no live teen space'}`;
+      const { rows } = await db.execute<{ ended: boolean }>(
+        sql`select teen_space_end_for_subject(${sub}, to_timestamp(${iat})) as ended`,
+      );
+      hold = `; erase_data (${String(body.reason)}): ${rows[0]?.ended ? 'teen space held for 30 days' : 'no live teen space, or one restored since'}`;
     }
     log.log(`yourtal event ${jti} access-ended: sessions already ended${hold}`);
     return;
@@ -313,14 +316,31 @@ const HANDLERS: Array<[string, (db: Db, job: Job, log: Log) => Promise<void>]> =
   [TEEN_INVITE_END_JOB, handleTeenInviteEnd],
 ];
 
-/** Claims and runs what is due of each kind, events first. Returns how many jobs ran. */
-export async function runErasureJobsOnce(db: Db = getDb(), log: Log = console): Promise<number> {
+/** Claims one due job of `kind` among `ids` only, as claimJobs does. */
+async function claimAmong(db: Db, kind: string, workerId: string, ids: string[]): Promise<Job[]> {
+  const { rows } = await db.execute<{ id: string; tenant_id: string | null; payload: unknown }>(sql`
+    update jobs j set locked_at = now(), locked_by = ${workerId}, attempts = j.attempts + 1
+     where j.id = (select id from jobs
+                    where kind = ${kind} and id = any(${`{${ids.join(',')}}`}::uuid[]) and completed_at is null
+                      and run_after <= now() and attempts < max_attempts
+                      and (locked_at is null or locked_at < now() - interval '600 seconds')
+                    order by run_after for update skip locked limit 1)
+    returning j.id, j.tenant_id, j.payload
+  `);
+  return rows.map((r) => ({ id: r.id, tenantId: r.tenant_id, payload: r.payload }));
+}
+
+/**
+ * Claims and runs what is due of each kind, events first. Returns how many
+ * jobs ran. `only` (tests sharing a database) limits the claim to those job ids.
+ */
+export async function runErasureJobsOnce(db: Db = getDb(), log: Log = console, only?: string[]): Promise<number> {
   const workerId = `worker-${process.pid}-erasure`;
   let ran = 0;
   for (const [kind, handle] of HANDLERS) {
     // Unconfigured, an event job is left alone: claiming it would spend an attempt.
     if (kind === YOURTAL_EVENT_JOB && !yourtalEventsSettings()) continue;
-    for (const job of await claimJobs(db, kind, workerId, 1)) {
+    for (const job of only ? await claimAmong(db, kind, workerId, only) : await claimJobs(db, kind, workerId, 1)) {
       ran += 1;
       try {
         // These kinds are system jobs. One with a tenant was written inside a
@@ -357,22 +377,27 @@ export async function runErasureJobsOnce(db: Db = getDb(), log: Log = console): 
 }
 
 /**
- * The teen hold sweep (3.10.f, F111): a teen space held past its erase_after
- * is erased through erase_workspace (0047's teen_space_erase_due), spill
- * guard and all. One that is not erased stays held, is logged, and is tried
- * again next hour. Its own step, so it never holds back the sweeps above.
+ * The teen hold sweep (3.10.f, F111): each teen space held past its
+ * erase_after is erased, with the teen's account, through 0047's
+ * teen_space_erase_next, ONE per call and so one transaction each. One that
+ * fails stays held, is logged, and is tried again next hour; the rest go on.
+ * Its own step, so it never holds back the sweeps above.
  */
-export async function runTeenHoldSweepOnce(db: Db = getDb(), log: Log = console): Promise<{ teenErased: number }> {
-  const due = await db.execute<{ tenant_id: string; outcome: string }>(
-    sql`select tenant_id, outcome from teen_space_erase_due()`,
-  );
+export async function runTeenHoldSweepOnce(db: Db = getDb(), log: Log = console): Promise<{ teenErased: number; failed: number }> {
+  const tried: string[] = [];
   let teenErased = 0;
-  for (const row of due.rows) {
+  for (;;) {
+    const { rows } = await db.execute<{ tenant_id: string; outcome: string }>(
+      sql`select tenant_id, outcome from teen_space_erase_next(${`{${tried.join(',')}}`}::uuid[])`,
+    );
+    const row = rows[0];
+    if (!row) break;
+    tried.push(row.tenant_id);
     if (row.outcome === 'erased') teenErased += 1;
     else log.error(`teen hold sweep: workspace ${row.tenant_id} not erased: ${row.outcome}`);
   }
-  if (teenErased) log.log(`teen hold sweep: ${teenErased} held teen space(s) erased after 30 days`);
-  return { teenErased };
+  if (teenErased) log.log(`teen hold sweep: ${teenErased} held teen space(s) and their accounts erased after 30 days`);
+  return { teenErased, failed: tried.length - teenErased };
 }
 
 /** The loop the worker runs beside extraction. */

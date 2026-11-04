@@ -92,6 +92,14 @@ export async function hasCategories(userId: string, tenantId: string): Promise<b
   });
 }
 
+/** True when this YourTal account's teen space is held (0047): only a teen's new invite brings it back. */
+export async function teenSpaceHeldForSignIn(sub: string): Promise<boolean> {
+  const { rows } = await getDb().execute<{ held: boolean }>(sql`
+    select teen_space_held_for_sign_in(${`yourtal|${sub}`}) as held
+  `);
+  return rows[0]?.held === true;
+}
+
 /** True when this account is a teen's (it has a teen space). */
 export async function isTeen(userId: string): Promise<boolean> {
   return asUser(getDb(), userId, async (tx) => {

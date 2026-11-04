@@ -332,11 +332,11 @@ describeIfDb('teen spaces (migration 0045)', () => {
     await c.query('RESET ROLE');
     await c.query('UPDATE teen_spaces SET access_ended_at = NULL, erase_after = NULL WHERE tenant_id = $1', [space]);
     await as('app_rw', null, null);
-    expect(await failure(`SELECT teen_space_end_for_subject('teen-teen')`)).toMatch(/^42501/);
+    expect(await failure(`SELECT teen_space_end_for_subject('teen-teen', now())`)).toMatch(/^42501/);
     await as('app_worker', null, null);
-    expect((await c.query(`SELECT teen_space_end_for_subject('teen-teen') AS ended`)).rows[0].ended).toBe(true);
-    expect((await c.query(`SELECT teen_space_end_for_subject('teen-teen') AS ended`)).rows[0].ended).toBe(false);
-    expect((await c.query(`SELECT teen_space_end_for_subject('nobody') AS ended`)).rows[0].ended).toBe(false);
+    expect((await c.query(`SELECT teen_space_end_for_subject('teen-teen', now()) AS ended`)).rows[0].ended).toBe(true);
+    expect((await c.query(`SELECT teen_space_end_for_subject('teen-teen', now()) AS ended`)).rows[0].ended).toBe(false);
+    expect((await c.query(`SELECT teen_space_end_for_subject('nobody', now()) AS ended`)).rows[0].ended).toBe(false);
   });
 
   it('erases a parent who has a teen space: their workspace goes, the teen keeps the space unfunded', async () => {

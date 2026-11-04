@@ -80,6 +80,7 @@ export const SIGNIN_ERROR_CODES = [
   'yourtal_failed',
   'region_not_supported',
   'teen_invite_required',
+  'teen_access_ended',
   'email_unverified',
   'staff_strong_auth_required',
   'staff_reauth_required',
@@ -99,6 +100,7 @@ const SIGNIN_MESSAGES: Record<SignInErrorCode, string> = {
   region_not_supported: 'YourTal sign-in is only open to accounts in Australia and Indonesia for now.',
   teen_invite_required:
     'A teen YourTal account can use Snap Apps only with an invite from the parent or guardian who approved it. Ask them to invite you.',
+  teen_access_ended: 'Your access to Snap Apps ended, so your Snap Apps space is being deleted. You can use Snap Apps again once it has been deleted, within 30 days of your access ending.',
   email_unverified: 'Confirm your email address in YourTal first, then sign in here.',
   staff_strong_auth_required:
     'Staff accounts must sign in to YourTal with a passkey or an authenticator code. Set one up in YourTal, then try again.',

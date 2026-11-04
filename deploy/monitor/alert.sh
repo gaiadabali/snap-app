@@ -30,7 +30,7 @@
 #   - the newest weekly base backup is under 8 days old
 #   - disk free on / above 90%
 #   - no YourTal deletion job (yourtal_event, storage_purge, erasure_notice)
-#     open over 24 h;
+#     open over 24 h, and no held teen space over 1 day past its erase_after;
 #     ERASURE_CHECK=off skips
 #   - no stuck YourTal voucher redemption (needs_review, captured with no grant,
 #     unfinished over 1 h, authorization_mismatch); VOUCHER_CHECK=off skips
@@ -251,7 +251,9 @@ if [ "${1:-}" = "--inbox" ]; then
   # a `yourtal_event` job, the `storage_purge` of an erased workspace's
   # files, or an `erasure_notice` to a member left behind, still open 24 h
   # after it was queued has stopped (retries spent, a
-  # refused SET, a cross-workspace reference the erasure refuses). Counts
+  # refused SET, a cross-workspace reference the erasure refuses). Also a
+  # held teen space more than a day past its erase_after (3.10.f, F111): the
+  # hourly sweep logs why (`teen hold sweep: ... not erased`). Counts
   # only, read-only session, as postgres (`jobs` has forced RLS).
   # ERASURE_CHECK=off skips. Runs before the voucher check, whose test reads
   # the last `docker exec`.
@@ -263,17 +265,18 @@ if [ "${1:-}" = "--inbox" ]; then
 SELECT
   count(*) FILTER (WHERE kind = 'yourtal_event'),
   count(*) FILTER (WHERE kind = 'storage_purge'),
-  count(*) FILTER (WHERE kind = 'erasure_notice')
+  count(*) FILTER (WHERE kind = 'erasure_notice'),
+  (SELECT count(*) FROM teen_spaces WHERE erase_after < now() - interval '1 day')
 FROM jobs
 WHERE kind IN ('yourtal_event', 'storage_purge', 'erasure_notice') AND completed_at IS NULL
   AND created_at < now() - interval '24 hours';
 SQL
-    ) && read -r e_ev e_sp e_en e_extra <<< "$erow"
-    case "${e_ev:-x}${e_sp:-x}${e_en:-x}${e_extra:+x}" in
+    ) && read -r e_ev e_sp e_en e_th e_extra <<< "$erow"
+    case "${e_ev:-x}${e_sp:-x}${e_en:-x}${e_th:-x}${e_extra:+x}" in
       *[!0-9]*) record FAILED "erasure: query failed: $(printf '%s' "$erow" | head -n 1 | cut -c1-150)" ;;
       *)
-        if [ "$e_ev" -gt 0 ] || [ "$e_sp" -gt 0 ] || [ "$e_en" -gt 0 ]; then
-          record FAILED "erasure: open over 24h yourtal_event=$e_ev storage_purge=$e_sp erasure_notice=$e_en (jobs.last_error; yourtal/docs/29)"
+        if [ "$e_ev" -gt 0 ] || [ "$e_sp" -gt 0 ] || [ "$e_en" -gt 0 ] || [ "$e_th" -gt 0 ]; then
+          record FAILED "erasure: open over 24h yourtal_event=$e_ev storage_purge=$e_sp erasure_notice=$e_en teen_hold_overdue=$e_th (jobs.last_error; worker log; yourtal/docs/29)"
         else
           record OK "erasure: no stuck deletion jobs"
         fi ;;

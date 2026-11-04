@@ -130,7 +130,9 @@ Zitadel. The rule above still holds: Snap Apps is a client, never the provider.
   view it, and the teen is told so. Teens earn no receipt points.
   When access ends (the parent, the guardian or the teen), the parent's view
   ends at once and the space is kept 30 days: a new invite from the same parent
-  brings it back, and after that it is erased (F111; both are emailed the day).
+  brings it back, and after that it is erased with the teen's account, though
+  not their YourTal `sub`, so a later invite starts afresh (F111; both are
+  emailed the day). While held it spends nothing and nobody signs in to it.
   At 18 (YourTal's `became-adult`) the parent is removed and the space becomes
   an ordinary one the young adult owns; during the 30 days the erasure stands.
   Migrations 0045 and 0047.
