@@ -83,7 +83,7 @@ export function FamilyPanel(props: FamilyPanelProps) {
               <Body strong>{name}</Body>
               {teen.accessEndedAt ? (
                 <Small>
-                  Access ended on {day(teen.accessEndedAt)}. {name}’s space is kept for 30 days, then deleted.
+                  Access ended on {day(teen.accessEndedAt)}. You can no longer see {name}’s space. It’s kept for 30 days, then deleted. Invite {name} again before then to bring it back.
                 </Small>
               ) : confirming === teen.workspaceId ? (
                 <>

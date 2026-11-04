@@ -24,7 +24,8 @@ import { endTeenInvite, teenInvitesConfigured } from '../teens/invite-api.js';
  *   storage_purge   queued by erase_workspace (0043): removes {STORAGE_DIR}/
  *                   {tenantId}/, only for a uuid, and only once that
  *                   workspace no longer exists.
- *   erasure_notice  one email to a member left behind; the address is
+ *   erasure_notice  one email to a member left behind, or a teen notice
+ *                   (0047: the hold, turning 18); the address is
  *                   re-checked first (its owner may have been erased since),
  *                   and the payload is emptied once it is done.
  *
@@ -92,13 +93,31 @@ async function handleEvent(db: Db, job: Job, log: Log): Promise<void> {
   if (type === EVENT.accessEnded) {
     // Sessions opened before iat were ended by the endpoint. With erase_data
     // (a teen's access ended: docs/26 §2.2) the teen's space starts its
-    // 30-day hold (0045); erasing it at the end is 3.10.f.
+    // 30-day hold (0045, 0047): the parent's view ends, both are told, and
+    // the sweep erases it after the 30 days.
     let hold = '';
     if (body.erase_data === true) {
       const { rows } = await db.execute<{ ended: boolean }>(sql`select teen_space_end_for_subject(${sub}) as ended`);
       hold = `; erase_data (${String(body.reason)}): ${rows[0]?.ended ? 'teen space held for 30 days' : 'no live teen space'}`;
     }
     log.log(`yourtal event ${jti} access-ended: sessions already ended${hold}`);
+    return;
+  }
+
+  if (type === EVENT.becameAdult) {
+    // docs/26 §2.6: the parent's view ends (within the hour; this runs in
+    // seconds), the space becomes an ordinary one, and both are told (0047).
+    const { rows } = await db.execute<{ outcome: 'lifted' | 'held' | 'none' }>(
+      sql`select teen_space_became_adult(${sub}) as outcome`,
+    );
+    const outcome = rows[0]?.outcome;
+    const said =
+      outcome === 'lifted'
+        ? 'teen space is now their own; parent removed, notices queued'
+        : outcome === 'held'
+          ? 'teen space is held after access ended; its erasure stands'
+          : 'no teen space';
+    log.log(`yourtal event ${jti} became-adult: ${said}`);
     return;
   }
 
@@ -141,9 +160,25 @@ async function handleStoragePurge(db: Db, job: Job, log: Log): Promise<void> {
  *  - a `{tenantId}/` directory whose workspace no longer exists: an upload in
  *    flight can recreate one after its storage_purge ran. Only real
  *    directories with a uuid name directly under STORAGE_DIR; a symlink is
- *    left alone.
+ *    left alone;
+ *  - a teen space held past its erase_after (3.10.f, F111): erased through
+ *    erase_workspace (0047's teen_space_erase_due), spill guard and all. One
+ *    the guard refuses stays held, is logged, and is tried again next hour.
  */
-export async function runErasureSweepsOnce(db: Db = getDb(), log: Log = console): Promise<{ blanked: number; orphans: number }> {
+export async function runErasureSweepsOnce(
+  db: Db = getDb(),
+  log: Log = console,
+): Promise<{ blanked: number; orphans: number; teenErased: number }> {
+  const due = await db.execute<{ tenant_id: string; outcome: string }>(
+    sql`select tenant_id, outcome from teen_space_erase_due()`,
+  );
+  let teenErased = 0;
+  for (const row of due.rows) {
+    if (row.outcome === 'erased') teenErased += 1;
+    else log.error(`teen hold sweep: workspace ${row.tenant_id} not erased: ${row.outcome}`);
+  }
+  if (teenErased) log.log(`teen hold sweep: ${teenErased} held teen space(s) erased after 30 days`);
+
   const blankedRows = await db.execute(sql`
     update jobs set payload = '{}'::jsonb
      where kind in ('yourtal_event', 'teen_invite_end') and tenant_id is null
@@ -167,7 +202,7 @@ export async function runErasureSweepsOnce(db: Db = getDb(), log: Log = console)
     orphans += 1;
   }
   if (blanked || orphans) log.log(`erasure sweeps: ${blanked} payload(s) emptied, ${orphans} orphan director(ies) removed`);
-  return { blanked, orphans };
+  return { blanked, orphans, teenErased };
 }
 
 const NOTICE = {
@@ -187,9 +222,60 @@ const NOTICE = {
   },
 } as const;
 
+/** The teen notices 0047 queues (F111, docs/26 §3.3). `name` is the other person's; `date` is the erasure day. */
+function teenNotice(outcome: string, name: string | null, date: string | null): { subject: string; text: string } | null {
+  const day = date
+    ? new Date(date).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
+    : null;
+  switch (outcome) {
+    case 'teen_ended_parent': {
+      const teen = name ?? 'Your teen';
+      return {
+        subject: `${teen}’s access to SnapApp has ended`,
+        text:
+          `Hello,\n\n${teen} can no longer use SnapApp, and you can no longer see their SnapApp space.\n\n` +
+          `Their space, including their receipts, will be deleted on ${day}. If you invite ${name ?? 'them'} again ` +
+          'from Family before then, their space comes back as it was.\n\nSnapApp',
+      };
+    }
+    case 'teen_ended_teen':
+      return {
+        subject: 'Your access to SnapApp has ended',
+        text:
+          'Hello,\n\nYou can no longer sign in to SnapApp. Your SnapApp space, including your receipts, will be ' +
+          `deleted on ${day}.\n\nIf ${name ?? 'your parent'} invites you again before then, your space comes back ` +
+          'as it was.\n\nSnapApp',
+      };
+    case 'teen_adult_parent': {
+      const teen = name ?? 'Your teen';
+      return {
+        subject: `${teen} is 18 now`,
+        text:
+          `Hello,\n\n${teen} is 18 now, so you can no longer see their SnapApp space. Their scans no longer use ` +
+          'your credits.\n\nSnapApp',
+      };
+    }
+    case 'teen_adult_teen': {
+      const parent = name ?? 'Your parent';
+      return {
+        subject: 'Your SnapApp space is now just yours',
+        text:
+          `Hello,\n\nYou're 18 now, so this space is just yours. ${parent} can't see it any more, and your scans ` +
+          `no longer use ${name ? `${name}’s` : 'their'} credits.\n\nSnapApp`,
+      };
+    }
+    default:
+      return null;
+  }
+}
+
 async function handleNotice(db: Db, job: Job, log: Log): Promise<void> {
-  const { to, outcome } = (job.payload ?? {}) as { to?: unknown; outcome?: unknown };
-  if (typeof to !== 'string' || (outcome !== 'erased' && outcome !== 'handed_over')) {
+  const { to, outcome, name, date } = (job.payload ?? {}) as { to?: unknown; outcome?: unknown; name?: unknown; date?: unknown };
+  const message =
+    outcome === 'erased' || outcome === 'handed_over'
+      ? NOTICE[outcome]
+      : teenNotice(String(outcome), typeof name === 'string' ? name : null, typeof date === 'string' ? date : null);
+  if (typeof to !== 'string' || !message || (String(outcome).startsWith('teen_ended') && typeof date !== 'string')) {
     throw new Error('erasure_notice: malformed payload');
   }
   // The address came from erase_person; its owner may have been erased since.
@@ -200,7 +286,7 @@ async function handleNotice(db: Db, job: Job, log: Log): Promise<void> {
     log.log(`erasure_notice ${job.id}: no account has this address any more; not sent`);
     return;
   }
-  const sent = await sendAndRecord('notification', { to, ...NOTICE[outcome] });
+  const sent = await sendAndRecord('notification', { to, ...message });
   if (sent.outcome === 'transient') throw new Error('erasure_notice: transient mail failure');
   log.log(`erasure_notice ${job.id}: ${sent.outcome}`);
 }

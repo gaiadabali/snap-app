@@ -116,15 +116,23 @@ export async function isTeenSpace(userId: string, tenantId: string): Promise<boo
 export async function spaceOfParent(
   parentUserId: string,
   tenantId: string,
-): Promise<{ inviteId: string; accessEndedAt: string | null; yourtalEnded: boolean } | null> {
+): Promise<{ inviteId: string; accessEndedAt: string | null; yourtalEnded: boolean; parentSub: string | null } | null> {
   return asUser(getDb(), parentUserId, async (tx) => {
-    const { rows } = await tx.execute<{ invite_id: string; access_ended_at: string | null; yourtal_ended: boolean }>(sql`
-      select invite_id, to_json(access_ended_at)#>>'{}' as access_ended_at, yourtal_ended_at is not null as yourtal_ended
+    const { rows } = await tx.execute<{
+      invite_id: string;
+      access_ended_at: string | null;
+      yourtal_ended: boolean;
+      parent_sub: string | null;
+    }>(sql`
+      select invite_id, to_json(access_ended_at)#>>'{}' as access_ended_at, yourtal_ended_at is not null as yourtal_ended,
+             (select parent_sub from teen_space_for_parent(tenant_id)) as parent_sub
         from teen_spaces
        where tenant_id = ${tenantId}::uuid and parent_user_id = current_user_id()
     `);
     const row = rows[0];
-    return row ? { inviteId: row.invite_id, accessEndedAt: row.access_ended_at, yourtalEnded: row.yourtal_ended } : null;
+    return row
+      ? { inviteId: row.invite_id, accessEndedAt: row.access_ended_at, yourtalEnded: row.yourtal_ended, parentSub: row.parent_sub }
+      : null;
   });
 }
 
@@ -166,9 +174,11 @@ export async function familyOf(userId: string): Promise<FamilyRows> {
       parent_user_id: string | null;
       created_at: string;
       access_ended_at: string | null;
+      teen_name: string | null;
     }>(sql`
       select tenant_id, teen_user_id, parent_user_id, to_json(created_at)#>>'{}' as created_at,
-             to_json(access_ended_at)#>>'{}' as access_ended_at
+             to_json(access_ended_at)#>>'{}' as access_ended_at,
+             (select teen_name from teen_space_for_parent(tenant_id)) as teen_name
         from teen_spaces
        where teen_user_id = current_user_id() or parent_user_id = current_user_id()
        order by created_at
@@ -183,16 +193,11 @@ export async function familyOf(userId: string): Promise<FamilyRows> {
   });
 
   const own = spaces.find((s) => s.teen_user_id === userId) ?? null;
-  const teens = await Promise.all(
-    spaces
-      .filter((s) => s.parent_user_id === userId)
-      .map(async (s) => ({
-        workspaceId: s.tenant_id,
-        teenName: await memberName(userId, s.tenant_id, s.teen_user_id),
-        joinedAt: s.created_at,
-        accessEndedAt: s.access_ended_at,
-      })),
-  );
+  // The parent is no longer a member once access ends (0047), so the teen's
+  // name comes from teen_space_for_parent, not from inside the space.
+  const teens = spaces
+    .filter((s) => s.parent_user_id === userId)
+    .map((s) => ({ workspaceId: s.tenant_id, teenName: s.teen_name, joinedAt: s.created_at, accessEndedAt: s.access_ended_at }));
   return {
     teens,
     pendingInvites: invites.map((i) => ({ inviteId: i.id, expiresAt: i.expires_at })),
