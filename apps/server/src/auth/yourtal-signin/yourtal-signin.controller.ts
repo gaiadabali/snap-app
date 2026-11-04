@@ -13,7 +13,14 @@ import { isClientConfigured, redeemCode, startAuthorization } from './oidc.js';
 import { openFlow, signInWithYourTal, takeFlow } from './repo.js';
 import { yourtalSignInSettings, type YourTalClientKind } from './settings.js';
 import { readTeenInvite, teenInvitesConfigured } from '../../teens/invite-api.js';
-import { attachInviteToFlow, hasCategories, inviteForSignIn, joinTeenSpace, teenEmailTaken } from '../../teens/teens.repo.js';
+import {
+  attachInviteToFlow,
+  hasCategories,
+  inviteForSignIn,
+  joinTeenSpace,
+  teenEmailTaken,
+  teenSpaceHeldForSignIn,
+} from '../../teens/teens.repo.js';
 import { seedDefaultCategories } from '../../settings/settings.repo.js';
 import { availableRules, installRulesFor } from '../../taxrules/taxrules.repo.js';
 
@@ -173,7 +180,7 @@ export class YourTalSignInController {
       'Takes the flow (once), checks state and iss, redeems the code, verifies the ID token, re-checks ' +
       'region and age band, then finds, links or creates the account and answers like every sign-in. ' +
       'Refusals are { error, message } with error one of invalid_flow, yourtal_failed, yourtal_unavailable, ' +
-      'region_not_supported, teen_invite_required, teen_account_in_use, email_unverified, staff_strong_auth_required, ' +
+      'region_not_supported, teen_invite_required, teen_access_ended, teen_account_in_use, email_unverified, staff_strong_auth_required, ' +
         'staff_reauth_required, ' +
       'account_review, try_again, rate_limited, not_configured.',
   })
@@ -218,6 +225,13 @@ export class YourTalSignInController {
           this.logger.warn(`teen sign-in refused: email held by an account here client=${flow.client}`);
           throw refusal('teen_account_in_use');
         }
+      }
+
+      // A held teen space (0047) opens only to the teen's new invite, above.
+      // Anyone else, such as a teen who turned 18 during the hold, waits for
+      // the erasure: no session into data that is being deleted.
+      if (identity.ageBand !== 'teen' && (await teenSpaceHeldForSignIn(identity.sub))) {
+        throw refusal('teen_access_ended');
       }
 
       const result = await signInWithYourTal({

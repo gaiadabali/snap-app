@@ -85,7 +85,7 @@ describe('FamilyView: a parent', () => {
 
   it('shows an ended teen as held for 30 days', () => {
     const t = text({ status: { teens: [{ ...TEEN, accessEndedAt: '2026-11-03T01:00:00.000Z' }] } });
-    expect(t).toContain('Access ended on 3 November 2026. Tia’s space is kept for 30 days, then deleted.');
+    expect(t).toContain('Access ended on 3 November 2026. You can no longer see Tia’s space. It’s kept for 30 days, then deleted. Invite Tia again before then to bring it back.');
     expect(t).not.toContain('End access');
   });
 });

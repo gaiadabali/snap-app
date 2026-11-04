@@ -137,7 +137,9 @@ export class FamilyController {
     if (!space) throw new NotFoundException({ error: 'not_found', message: 'No such teen space.' });
     if (space.yourtalEnded) return { ended: true };
 
-    const parentSub = await yourtalSub(user.userId, workspaceId);
+    // Read through teen_space_for_parent: after the first end the parent is no
+    // longer a member of the space (0047), so it cannot be read from inside it.
+    const parentSub = space.parentSub;
     if (!parentSub) throw new ForbiddenException({ error: 'yourtal_sign_in_required', message: 'Sign in with YourTal first.' });
     // Here first, with YourTal's end queued in the same transaction, so the
     // teen is out and YourTal is told even if this request dies right after.

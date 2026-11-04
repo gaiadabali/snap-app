@@ -66,7 +66,7 @@ describe('FamilyPanel: a parent', () => {
     expect(confirm).toContain('will be deleted after 30 days, including their receipts. Download anything you want to keep first.');
     expect(text()).toContain('Ending it deletes their SnapApp space after 30 days.');
     const ended = text({ status: { teens: [{ ...TEEN, accessEndedAt: '2026-11-03T01:00:00.000Z' }] } });
-    expect(ended).toContain('Tia’s space is kept for 30 days, then deleted.');
+    expect(ended).toContain('You can no longer see Tia’s space. It’s kept for 30 days, then deleted. Invite Tia again before then to bring it back.');
     expect(ended).not.toContain('End access');
   });
 });

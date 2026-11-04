@@ -24,7 +24,8 @@ import { endTeenInvite, teenInvitesConfigured } from '../teens/invite-api.js';
  *   storage_purge   queued by erase_workspace (0043): removes {STORAGE_DIR}/
  *                   {tenantId}/, only for a uuid, and only once that
  *                   workspace no longer exists.
- *   erasure_notice  one email to a member left behind; the address is
+ *   erasure_notice  one email to a member left behind, or a teen notice
+ *                   (0047: the hold, turning 18); the address is
  *                   re-checked first (its owner may have been erased since),
  *                   and the payload is emptied once it is done.
  *
@@ -58,7 +59,7 @@ async function handleEvent(db: Db, job: Job, log: Log): Promise<void> {
     if (verified.status === 503) throw new NotNow(`the SET could not be re-verified: ${verified.reason}`);
     throw new Error(`the SET failed re-verification: ${verified.err}`);
   }
-  const { jti, sub, type, body } = verified.set;
+  const { jti, iat, sub, type, body } = verified.set;
   if (jti !== job.id.toLowerCase()) throw new Error('the SET belongs to another job');
 
   if (type === EVENT.accountDeleted) {
@@ -92,13 +93,34 @@ async function handleEvent(db: Db, job: Job, log: Log): Promise<void> {
   if (type === EVENT.accessEnded) {
     // Sessions opened before iat were ended by the endpoint. With erase_data
     // (a teen's access ended: docs/26 §2.2) the teen's space starts its
-    // 30-day hold (0045); erasing it at the end is 3.10.f.
+    // 30-day hold (0045, 0047): the parent's view ends, both are told, and
+    // the sweep erases it after the 30 days. An event from before the space
+    // was last restored by a new invite is ignored (its iat, docs/29 D3).
     let hold = '';
     if (body.erase_data === true) {
-      const { rows } = await db.execute<{ ended: boolean }>(sql`select teen_space_end_for_subject(${sub}) as ended`);
-      hold = `; erase_data (${String(body.reason)}): ${rows[0]?.ended ? 'teen space held for 30 days' : 'no live teen space'}`;
+      const { rows } = await db.execute<{ ended: boolean }>(
+        sql`select teen_space_end_for_subject(${sub}, to_timestamp(${iat})) as ended`,
+      );
+      hold = `; erase_data (${String(body.reason)}): ${rows[0]?.ended ? 'teen space held for 30 days' : 'no live teen space, or one restored since'}`;
     }
     log.log(`yourtal event ${jti} access-ended: sessions already ended${hold}`);
+    return;
+  }
+
+  if (type === EVENT.becameAdult) {
+    // docs/26 §2.6: the parent's view ends (within the hour; this runs in
+    // seconds), the space becomes an ordinary one, and both are told (0047).
+    const { rows } = await db.execute<{ outcome: 'lifted' | 'held' | 'none' }>(
+      sql`select teen_space_became_adult(${sub}) as outcome`,
+    );
+    const outcome = rows[0]?.outcome;
+    const said =
+      outcome === 'lifted'
+        ? 'teen space is now their own; parent removed, notices queued'
+        : outcome === 'held'
+          ? 'teen space is held after access ended; its erasure stands'
+          : 'no teen space';
+    log.log(`yourtal event ${jti} became-adult: ${said}`);
     return;
   }
 
@@ -202,9 +224,60 @@ const NOTICE = {
   },
 } as const;
 
+/** The teen notices 0047 queues (F111, docs/26 §3.3). `name` is the other person's; `date` is the erasure day. */
+function teenNotice(outcome: string, name: string | null, date: string | null): { subject: string; text: string } | null {
+  const day = date
+    ? new Date(date).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
+    : null;
+  switch (outcome) {
+    case 'teen_ended_parent': {
+      const teen = name ?? 'Your teen';
+      return {
+        subject: `${teen}’s access to SnapApp has ended`,
+        text:
+          `Hello,\n\n${teen} can no longer use SnapApp, and you can no longer see their SnapApp space.\n\n` +
+          `Their space, including their receipts, will be deleted on ${day}. If you invite ${name ?? 'them'} again ` +
+          'from Family before then, their space comes back as it was.\n\nSnapApp',
+      };
+    }
+    case 'teen_ended_teen':
+      return {
+        subject: 'Your access to SnapApp has ended',
+        text:
+          'Hello,\n\nYou can no longer sign in to SnapApp. Your SnapApp space, including your receipts, will be ' +
+          `deleted on ${day}.\n\nIf ${name ?? 'your parent'} invites you again before then, your space comes back ` +
+          'as it was.\n\nSnapApp',
+      };
+    case 'teen_adult_parent': {
+      const teen = name ?? 'Your teen';
+      return {
+        subject: `${teen} is 18 now`,
+        text:
+          `Hello,\n\n${teen} is 18 now, so you can no longer see their SnapApp space. Their scans no longer use ` +
+          'your credits.\n\nSnapApp',
+      };
+    }
+    case 'teen_adult_teen': {
+      const parent = name ?? 'Your parent';
+      return {
+        subject: 'Your SnapApp space is now just yours',
+        text:
+          `Hello,\n\nYou're 18 now, so this space is just yours. ${parent} can't see it any more, and your scans ` +
+          `no longer use ${name ? `${name}’s` : 'their'} credits.\n\nSnapApp`,
+      };
+    }
+    default:
+      return null;
+  }
+}
+
 async function handleNotice(db: Db, job: Job, log: Log): Promise<void> {
-  const { to, outcome } = (job.payload ?? {}) as { to?: unknown; outcome?: unknown };
-  if (typeof to !== 'string' || (outcome !== 'erased' && outcome !== 'handed_over')) {
+  const { to, outcome, name, date } = (job.payload ?? {}) as { to?: unknown; outcome?: unknown; name?: unknown; date?: unknown };
+  const message =
+    outcome === 'erased' || outcome === 'handed_over'
+      ? NOTICE[outcome]
+      : teenNotice(String(outcome), typeof name === 'string' ? name : null, typeof date === 'string' ? date : null);
+  if (typeof to !== 'string' || !message || (String(outcome).startsWith('teen_ended') && typeof date !== 'string')) {
     throw new Error('erasure_notice: malformed payload');
   }
   // The address came from erase_person; its owner may have been erased since.
@@ -215,7 +288,7 @@ async function handleNotice(db: Db, job: Job, log: Log): Promise<void> {
     log.log(`erasure_notice ${job.id}: no account has this address any more; not sent`);
     return;
   }
-  const sent = await sendAndRecord('notification', { to, ...NOTICE[outcome] });
+  const sent = await sendAndRecord('notification', { to, ...message });
   if (sent.outcome === 'transient') throw new Error('erasure_notice: transient mail failure');
   log.log(`erasure_notice ${job.id}: ${sent.outcome}`);
 }
@@ -243,14 +316,31 @@ const HANDLERS: Array<[string, (db: Db, job: Job, log: Log) => Promise<void>]> =
   [TEEN_INVITE_END_JOB, handleTeenInviteEnd],
 ];
 
-/** Claims and runs what is due of each kind, events first. Returns how many jobs ran. */
-export async function runErasureJobsOnce(db: Db = getDb(), log: Log = console): Promise<number> {
+/** Claims one due job of `kind` among `ids` only, as claimJobs does. */
+async function claimAmong(db: Db, kind: string, workerId: string, ids: string[]): Promise<Job[]> {
+  const { rows } = await db.execute<{ id: string; tenant_id: string | null; payload: unknown }>(sql`
+    update jobs j set locked_at = now(), locked_by = ${workerId}, attempts = j.attempts + 1
+     where j.id = (select id from jobs
+                    where kind = ${kind} and id = any(${`{${ids.join(',')}}`}::uuid[]) and completed_at is null
+                      and run_after <= now() and attempts < max_attempts
+                      and (locked_at is null or locked_at < now() - interval '600 seconds')
+                    order by run_after for update skip locked limit 1)
+    returning j.id, j.tenant_id, j.payload
+  `);
+  return rows.map((r) => ({ id: r.id, tenantId: r.tenant_id, payload: r.payload }));
+}
+
+/**
+ * Claims and runs what is due of each kind, events first. Returns how many
+ * jobs ran. `only` (tests sharing a database) limits the claim to those job ids.
+ */
+export async function runErasureJobsOnce(db: Db = getDb(), log: Log = console, only?: string[]): Promise<number> {
   const workerId = `worker-${process.pid}-erasure`;
   let ran = 0;
   for (const [kind, handle] of HANDLERS) {
     // Unconfigured, an event job is left alone: claiming it would spend an attempt.
     if (kind === YOURTAL_EVENT_JOB && !yourtalEventsSettings()) continue;
-    for (const job of await claimJobs(db, kind, workerId, 1)) {
+    for (const job of only ? await claimAmong(db, kind, workerId, only) : await claimJobs(db, kind, workerId, 1)) {
       ran += 1;
       try {
         // These kinds are system jobs. One with a tenant was written inside a
@@ -286,6 +376,30 @@ export async function runErasureJobsOnce(db: Db = getDb(), log: Log = console): 
   return ran;
 }
 
+/**
+ * The teen hold sweep (3.10.f, F111): each teen space held past its
+ * erase_after is erased, with the teen's account, through 0047's
+ * teen_space_erase_next, ONE per call and so one transaction each. One that
+ * fails stays held, is logged, and is tried again next hour; the rest go on.
+ * Its own step, so it never holds back the sweeps above.
+ */
+export async function runTeenHoldSweepOnce(db: Db = getDb(), log: Log = console): Promise<{ teenErased: number; failed: number }> {
+  const tried: string[] = [];
+  let teenErased = 0;
+  for (;;) {
+    const { rows } = await db.execute<{ tenant_id: string; outcome: string }>(
+      sql`select tenant_id, outcome from teen_space_erase_next(${`{${tried.join(',')}}`}::uuid[])`,
+    );
+    const row = rows[0];
+    if (!row) break;
+    tried.push(row.tenant_id);
+    if (row.outcome === 'erased') teenErased += 1;
+    else log.error(`teen hold sweep: workspace ${row.tenant_id} not erased: ${row.outcome}`);
+  }
+  if (teenErased) log.log(`teen hold sweep: ${teenErased} held teen space(s) and their accounts erased after 30 days`);
+  return { teenErased, failed: tried.length - teenErased };
+}
+
 /** The loop the worker runs beside extraction. */
 export async function runErasureLoop(isStopping: () => boolean, idleMs = 5_000): Promise<void> {
   let lastSweep = 0;
@@ -295,7 +409,12 @@ export async function runErasureLoop(isStopping: () => boolean, idleMs = 5_000):
       ran = await runErasureJobsOnce();
       if (Date.now() - lastSweep > 60 * 60 * 1000) {
         lastSweep = Date.now();
-        await runErasureSweepsOnce();
+        await runErasureSweepsOnce().catch((error) =>
+          console.error('erasure sweeps:', error instanceof Error ? error.message : error),
+        );
+        await runTeenHoldSweepOnce().catch((error) =>
+          console.error('teen hold sweep:', error instanceof Error ? error.message : error),
+        );
       }
     } catch (error) {
       console.error('erasure jobs:', error instanceof Error ? error.message : error);
