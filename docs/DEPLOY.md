@@ -710,3 +710,82 @@ On delphi the same three sites were CloudPanel reverse-proxy sites
 (`clpctl site:add:reverse-proxy …`, site users in
 `/etc/snap-apps/secrets/cloudpanel-sites.env`); those vhosts are inert now that
 DNS has moved, and go when delphi's copy is retired.
+
+---
+
+## 12. Account deletion (YourTal events)
+
+When a person deletes their YourTal account, YourTal sends a signed event to
+`POST /v1/yourtal/events`. Each event becomes a `yourtal_event` job, and the
+worker erases the person's SnapApp data within 72 hours (yourtal
+`docs/29-deletion-across-apps.md`, group 3.7 S2).
+
+### Setting: `YOURTAL_OIDC_SERVER_CLIENT_ID`
+
+The client id that YourTal's events are addressed to (the token audience). It is
+an identifier, not a secret, but keep the value out of this document:
+
+```
+YOURTAL_OIDC_SERVER_CLIENT_ID=<snapapp-server-client-id>
+```
+
+Put it in `/etc/snap-apps/secrets/yourtal.env` (the file the YourTal partner
+secret already lives in) or in `deploy/.env`. **The worker needs it too**, not
+only the api: the worker re-verifies each stored event. Recreate both after
+setting it. While it is unset the endpoint answers `503 not_configured`, so
+YourTal retries and nothing is erased. `YOURTAL_OIDC_ISSUER` must also be set.
+
+### Monitor check 2a
+
+`deploy/monitor/alert.sh --inbox` (every 10 minutes, from root's crontab) raises
+**erasure** when a `yourtal_event`, `storage_purge` or `erasure_notice` job is
+still open 24 hours after it was queued. The check counts only. The cause is in
+`jobs.last_error`. Do not set `ERASURE_CHECK=off` on helios to silence it.
+
+### Resetting a stuck `yourtal_event` job
+
+A `yourtal_event` job gets 10 attempts (about 5 hours) and then stays open. Once
+the cause is fixed (for example JWKS reachable again, or the spill guard
+cleared), set it back to queued. This is a write on helios, so it needs the
+owner's OK first. Run it as `postgres`, not `app_rw`, which cannot update these
+rows:
+
+```sql
+UPDATE jobs SET attempts = 0, run_after = now()
+WHERE id = '<jti>' AND kind = 'yourtal_event' AND completed_at IS NULL;
+```
+
+`<jti>` is the job id, which is the event's `jti`. Find open jobs with
+`SELECT id, attempts, last_error FROM jobs WHERE kind = 'yourtal_event' AND completed_at IS NULL;`
+(a read, run as `postgres`).
+
+### Retired key
+
+If `last_error` says `invalid_key`, the event was signed with a key YourTal has
+since dropped from its JWKS. Resetting the job will not help, because the
+signature can no longer be checked. Re-delivery with the same `jti` is swallowed
+by `ON CONFLICT DO NOTHING`, so the open job must go first:
+
+1. Delete the open job (owner's OK first):
+
+   ```sql
+   DELETE FROM jobs WHERE id = '<jti>' AND kind = 'yourtal_event' AND completed_at IS NULL;
+   ```
+
+2. Ask YourTal to re-deliver that event. It is then signed with the current key.
+
+To prevent this, YourTal should keep retired keys published for at least 72 hours.
+
+### Rules
+
+- **Never insert test rows on Helios.** No test jobs, users or events. Deletion
+  tests run in the test suite, and the staging check uses test accounts only.
+- Secrets in examples are placeholders. Real values stay in
+  `/etc/snap-apps/secrets/` on the host.
+
+### Restoring from a backup
+
+After restoring SnapApp from a backup, ask YourTal to re-deliver its
+`account-deleted` and `access-ended` events since the backup time. SnapApp keeps
+the erased subjects (`yourtal_erased_subjects`), so re-delivery is safe: an
+event for someone already erased is a no-op.
