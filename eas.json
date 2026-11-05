@@ -41,8 +41,12 @@
     "production": {
       "distribution": "store",
       "channel": "production",
+      "android": {
+        "buildType": "app-bundle"
+      },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://api.REPLACE-WITH-PRODUCTION-DOMAIN"
+        "EXPO_PUBLIC_DISTRIBUTION": "play",
+        "EXPO_PUBLIC_API_URL": "https://snap-apps-api.gaiada.com"
       }
     }
   },
