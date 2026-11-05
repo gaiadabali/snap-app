@@ -89,7 +89,7 @@ export function PanelShell({
                 {workspace.name}
               </span>
               <div className="hidden min-w-0 sm:block">
-                <WorkspaceSwitcher workspaces={sameKindWorkspaces} activeId={workspace.id} />
+                <WorkspaceSwitcher workspaces={sameKindWorkspaces} activeId={workspace.id} className="w-full" />
               </div>
             </>
           ) : (
