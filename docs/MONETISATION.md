@@ -152,8 +152,18 @@ These override the per-scan figures elsewhere in this file where they disagree
 - Only a scan paid with a **bought** credit earns YourTal points. Scans on the
   signup bonus, on a support or staff credit, or with no credit at all are
   recorded as `skipped_free` and never reported.
-- Running out does not block scanning yet. The scan is still read, and earns
-  nothing. Refusing it is 7.1.b.
+- **Out of credits (7.1.b):** a new snap is refused with `402 quota_exhausted`
+  and a `buyUrl`, before anything is stored; the app offers "Buy credits". A
+  snap already on the server when the last credit went (two at once, or a
+  phone's queued upload) is kept, not queued, and is read as soon as credits
+  arrive: when a pack is paid for, or when the phone sends it again. A CSV
+  statement is read without a model and needs no credit.
+- **One page per snap (7.1.d):** a capture declaring more than one page, or a
+  PDF with more than one, is refused with `400 one_page_per_snap`, before
+  anything is stored.
+- **`GET /v1/usage?kind=credits&month=YYYY-MM` (7.1.e)** lists the month's
+  spends, newest first: 1 per scan, 0 for one given back. Paged with `limit`
+  and `before`; `GET /v1/usage/months` lists the months. Months are UTC.
 
 ### Practice (the primary line)
 

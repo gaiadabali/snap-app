@@ -179,9 +179,9 @@ spends one credit when its capture is queued for reading, in the same
 transaction as the job, and `credit_spends` records which grant paid. Free
 credits go first (the signup bonus first), then bought ones, oldest first. A
 bought credit is a grant backed by a paid `credit_purchases` row. A scan no
-model can read gives its credit back when its last attempt fails. Running out
-does not block scanning yet (7.1.b): the scan is recorded with no credit and
-still read.
+model can read gives its credit back when its last attempt fails. With no
+credit left a new snap is refused (`402 quota_exhausted`, 7.1.b); one already
+stored waits and is read once credits arrive. One snap is one page (7.1.d).
 
 ### Pricing, and the arithmetic that has to be honest
 

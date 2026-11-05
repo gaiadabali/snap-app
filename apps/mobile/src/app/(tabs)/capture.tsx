@@ -64,20 +64,17 @@ type PageStatus = 'pending' | 'uploading' | 'done' | 'skipped' | 'failed';
  * second `createCapture` call, because that would register a second document
  * for the same paper.
  */
+/** 402 `quota_exhausted`: no scan credits left (group plan 7.1.b). */
+function isOutOfCredits(err: unknown): boolean {
+  return err instanceof ApiError && err.status === 402 && err.code === 'quota_exhausted';
+}
+
 interface PendingCapture {
   captureId: string;
   uploads: CapturePageUpload[];
   pages: TrayPage[];
 }
 
-/**
- * At most this many pages, matching the server's `MAX_CAPTURE_PAGES`
- * (`apps/server/src/captures/captures.controller.ts`). T7 raised that cap
- * from 20 to 50 so a real statement fits; this constant had drifted and
- * still said 20, which would have stopped a photographed multi-page
- * statement well short of what the server now accepts.
- */
-const MAX_PAGES = 50;
 
 function pageStatusLabel(status: PageStatus | undefined): string {
   switch (status) {
@@ -210,6 +207,8 @@ export default function CaptureScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [phase, setPhase] = useState<Phase>('framing');
   const [error, setError] = useState<string | null>(null);
+  /** The error is "out of scan credits" (7.1.b): offer the way to buy more. */
+  const [buyMore, setBuyMore] = useState(false);
   /**
    * Pages held before processing.
    *
@@ -351,40 +350,6 @@ export default function CaptureScreen() {
     return { uri: photo.uri, bytes, sha256, mimeType: 'image/jpeg' };
   }
 
-  /** Adds a page to the tray without processing anything yet. */
-  async function onAddPage() {
-    setError(null);
-    // The shutter adds one more page on top of whatever is already held, so
-    // the cap is checked here rather than after the fact — better to say so
-    // while the tray still fits under it than to have `createCapture` reject
-    // the document after every page has already been photographed.
-    if (pages.length + 1 >= MAX_PAGES) {
-      setError(`A document can hold at most ${MAX_PAGES} pages. Finish this one with the shutter.`);
-      return;
-    }
-    try {
-      setPhase('hashing');
-      const shot = await shoot();
-      setPages((prev) => [
-        ...prev,
-        {
-          uri: shot.uri,
-          sha256: shot.sha256,
-          // What was actually picked, not an assumption. A PDF uploaded as
-          // `image/jpeg` is refused by the server's content-type parser.
-          mimeType: shot.mimeType,
-          byteSize: shot.bytes.byteLength,
-          // Web only — see TrayPage.bytes for why a browser cannot re-read.
-          bytes: Platform.OS === 'web' ? shot.bytes : undefined,
-        },
-      ]);
-      setPhase('framing');
-    } catch (err) {
-      setPhase('framing');
-      setError(err instanceof Error ? err.message : 'Could not add that page.');
-    }
-  }
-
   /**
    * Uploads every page of a registered capture, then waits for extraction.
    *
@@ -395,6 +360,7 @@ export default function CaptureScreen() {
   async function uploadAndExtract(pc: PendingCapture, options: { resume: boolean } = { resume: false }) {
     setPhase('uploading');
     setError(null);
+    setBuyMore(false);
     setPending(pc);
 
     const statuses: Record<number, PageStatus> = options.resume ? { ...pageStatus } : {};
@@ -403,6 +369,7 @@ export default function CaptureScreen() {
 
     // Set when the server REFUSED the content rather than failed to receive it.
     let refusal: string | null = null;
+    let outOfCredits = false;
     for (const upload of pc.uploads) {
       if (upload.alreadyStored) {
         // These exact bytes are already held by the server — re-uploading
@@ -442,6 +409,8 @@ export default function CaptureScreen() {
         // "tap Retry" is not.
         if (err instanceof ApiError && err.status >= 400 && err.status < 500) {
           refusal = err.message;
+          // 402: stored on the server, waiting for a credit (7.1.b).
+          if (isOutOfCredits(err)) outOfCredits = true;
         }
       }
       paint();
@@ -453,6 +422,7 @@ export default function CaptureScreen() {
       // Retry resumes exactly what is missing, never a second `createCapture`
       // for the same document.
       setPhase('framing');
+      setBuyMore(outOfCredits);
       setError(
         // The server's own words when it refused the content, because retrying
         // an unmappable file just fails the same way. Only a genuine transport
@@ -534,6 +504,7 @@ export default function CaptureScreen() {
     setPending(null);
     setPageStatus({});
     setError(null);
+    setBuyMore(false);
     setQualityWarning(null);
   }
 
@@ -637,6 +608,7 @@ export default function CaptureScreen() {
 
   async function onShutter() {
     setError(null);
+    setBuyMore(false);
     // A new capture cycle starts clean; `shoot()` sets this again below if the
     // new first page also fails the gate.
     if (pages.length === 0) setQualityWarning(null);
@@ -666,6 +638,7 @@ export default function CaptureScreen() {
       await registerAndUpload(allPages);
     } catch (err) {
       setPhase('framing');
+      setBuyMore(isOutOfCredits(err));
       setError(err instanceof Error ? err.message : 'Capture failed. Please try again.');
     }
   }
@@ -758,6 +731,7 @@ export default function CaptureScreen() {
    */
   async function onPickFile() {
     setError(null);
+    setBuyMore(false);
     try {
       assertFilePickAllowed(pages.length);
     } catch (err) {
@@ -791,6 +765,7 @@ export default function CaptureScreen() {
       await registerAndUpload([filePage]);
     } catch (err) {
       setPhase('framing');
+      setBuyMore(isOutOfCredits(err));
       setError(err instanceof Error ? err.message : 'Could not add that file.');
     }
   }
@@ -978,7 +953,7 @@ export default function CaptureScreen() {
                 style={{ flexDirection: 'row', alignItems: 'flex-start', gap: space.sm }}
               >
                 <Body strong style={{ color: '#FF8A80', flex: 1 }}>
-                  Capture failed
+                  {buyMore ? 'Out of scan credits' : 'Capture failed'}
                 </Body>
                 <Pressable
                   accessibilityRole="button"
@@ -990,6 +965,10 @@ export default function CaptureScreen() {
                 </Pressable>
               </View>
               <Body style={{ color: 'rgba(255,255,255,0.85)' }}>{error}</Body>
+              {/* A teen's scans use a parent's credits: nothing to buy here. */}
+              {buyMore && active.teenSpace !== 'teen' ? (
+                <Button label="Buy credits" onPress={() => router.push('/credits')} />
+              ) : null}
             </View>
           </View>
         ) : null}
@@ -1118,12 +1097,9 @@ export default function CaptureScreen() {
               </ScrollView>
             ) : null}
 
-            {/* THREE CONTROLS, SYMMETRIC.
-                Add page and Torch are the same 56pt circle either side of the
-                shutter, so the row balances on the shutter instead of being
-                padded out by an empty spacer. Everything sits in one band at
-                the bottom, which keeps the viewfinder — the part that actually
-                needs to be seen — clear. */}
+            {/* The shutter centred between Torch and a spacer of the same width
+                (where "Add page" was before one page per snap), in one band at
+                the bottom so the viewfinder stays clear. */}
             <View
               style={{
                 flexDirection: 'row',
@@ -1133,12 +1109,8 @@ export default function CaptureScreen() {
                 maxWidth: 320,
               }}
             >
-              <SideControl
-                label="Add page"
-                icon="plus"
-                accessibilityLabel="Add another page to this document"
-                onPress={() => void onAddPage()}
-              />
+              {/* Where "Add page" was: one snap is one page (founder 0.11.b). */}
+              <View style={{ width: 76 }} />
 
               <Pressable
                 accessibilityRole="button"
@@ -1175,12 +1147,9 @@ export default function CaptureScreen() {
               />
             </View>
 
-            {pages.length > 0 ? (
-              <Small style={{ color: '#FFFFFF', textAlign: 'center' }}>
-                {pages.length} page{pages.length === 1 ? '' : 's'} held — the shutter takes the
-                last one and files them as one document.
-              </Small>
-            ) : null}
+            <Small style={{ color: '#FFFFFF', textAlign: 'center' }}>
+              One page per snap. For a statement or a long invoice, snap each page.
+            </Small>
 
             {/* T6 — the native handset route into three of D-S3's four intake
                 modes (uploaded PDF, uploaded file, CSV) that had no way in

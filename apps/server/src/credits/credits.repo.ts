@@ -4,6 +4,7 @@ import { withTenantAs } from '@snap/db';
 import { sql } from 'drizzle-orm';
 
 import { getDb } from '../db.js';
+import { creditsLeft } from './spend.js';
 
 /**
  * Credits — bought with money, or granted free at signup. Tenant-scoped,
@@ -53,20 +54,8 @@ export async function listCreditPacks(userId: string, tenantId: string): Promise
  * `CreditBalance` in `@snap/api-contract` for why these stay apart.
  */
 export async function getCreditBalance(userId: string, tenantId: string): Promise<number> {
-  return withTenantAs(getDb(), userId, tenantId, async (tx) => {
-    // A teen's space has none of its own: its scans spend the parent's (0045).
-    const rows = await tx.execute<{ remaining: number }>(sql`
-      select coalesce(teen_space_credits(), (
-        select coalesce(sum(remaining), 0)::int
-          from usage_grants
-         where tenant_id = current_tenant_id()
-           and metric = 'scans'
-           and remaining > 0
-           and (expires_at is null or expires_at > now())
-      )) as remaining
-    `);
-    return rows.rows[0]?.remaining ?? 0;
-  });
+  // A teen's space has none of its own: its scans spend the parent's (0045).
+  return withTenantAs(getDb(), userId, tenantId, async (tx) => (await creditsLeft(tx)).left);
 }
 
 export type CreditPurchaseRow = {
@@ -347,5 +336,79 @@ export async function fulfilCreditPurchaseFromProvider(
                 provider::text as provider, to_json(created_at)#>>'{}' as created_at, to_json(paid_at)#>>'{}' as paid_at
     `);
     return updated.rows[0]!;
+  });
+}
+
+export type UsageRow = {
+  id: string;
+  label: string;
+  occurred_at: string;
+  amount: number;
+  refunded: boolean;
+};
+
+/**
+ * One month of scan credits spent (7.1.e), newest first, from `credit_spends`
+ * (0039). A spend that took a credit counts 1; one given back (7.1.c), or one
+ * from before 7.1.b that found no credit, counts 0 and stays listed so the
+ * month reads true. `total` is over the whole month; `items` is one page,
+ * continued with `before` = the last item's id.
+ *
+ * ponytail: months are UTC; a workspace time zone would move scans made in
+ * the first hours of an Australian month. Teen scans paid from this
+ * workspace are not listed here (teen_space_spends is not readable by the API).
+ */
+export async function listCreditUsage(
+  userId: string,
+  tenantId: string,
+  month: string,
+  limit: number,
+  before: string | null,
+): Promise<{ total: number; items: UsageRow[]; nextBefore: string | null }> {
+  return withTenantAs(getDb(), userId, tenantId, async (tx) => {
+    const start = sql`(${`${month}-01`}::date at time zone 'UTC')`;
+    const inMonth = sql`s.spent_at >= ${start} and s.spent_at < ${start} + interval '1 month'`;
+    const total = await tx.execute<{ n: number }>(sql`
+      select count(*)::int as n from credit_spends s
+       where ${inMonth} and s.grant_source is not null and s.refunded_at is null
+    `);
+    const rows = await tx.execute<UsageRow>(sql`
+      select s.id,
+             coalesce(sup.legal_name, 'Scan') as label,
+             to_json(s.spent_at)#>>'{}' as occurred_at,
+             (s.grant_source is not null and s.refunded_at is null)::int as amount,
+             s.refunded_at is not null as refunded
+        from credit_spends s
+        left join lateral (
+          select p.legal_name from documents d join parties p on p.id = d.supplier_id
+           where d.capture_id = s.capture_id
+             -- Another member's private receipt keeps its detail (0012).
+             and (d.visibility = 'shared' or d.created_by = current_user_id())
+           limit 1
+        ) sup on true
+       where ${inMonth}
+         and (${before}::uuid is null
+              or (s.spent_at, s.id) < (select b.spent_at, b.id from credit_spends b where b.id = ${before}::uuid))
+       order by s.spent_at desc, s.id desc
+       limit ${limit + 1}
+    `);
+    const items = rows.rows.slice(0, limit);
+    return {
+      total: total.rows[0]?.n ?? 0,
+      items,
+      nextBefore: rows.rows.length > limit ? items[items.length - 1]!.id : null,
+    };
+  });
+}
+
+/** The months (`YYYY-MM`, UTC, newest first) with any scan spend in them. */
+export async function listCreditUsageMonths(userId: string, tenantId: string): Promise<string[]> {
+  return withTenantAs(getDb(), userId, tenantId, async (tx) => {
+    const rows = await tx.execute<{ month: string }>(sql`
+      select distinct to_char(spent_at at time zone 'UTC', 'YYYY-MM') as month
+        from credit_spends
+       order by month desc
+    `);
+    return rows.rows.map((r) => r.month);
   });
 }

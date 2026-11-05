@@ -250,7 +250,7 @@ export default function UsageScreen() {
                     <Text style={[type.body, { color: p.ink }]} numberOfLines={1}>
                       {it.label}
                     </Text>
-                    <Small>{day(it.occurredAt)}</Small>
+                    <Small>{it.refunded ? `${day(it.occurredAt)} · credit given back` : day(it.occurredAt)}</Small>
                   </View>
                   <Text style={[type.bodyStrong, numeric, { color: p.ink }]}>
                     {it.amount.toLocaleString('en-AU')}
@@ -286,7 +286,7 @@ export default function UsageScreen() {
         </View>
 
         <Notice tone="info" icon="info">
-          One credit is one page. A two-page invoice costs two, and a failed scan costs nothing.
+          One snap is one page and costs one credit. A scan we can’t read gives its credit back.
         </Notice>
       </ScrollView>
     </Screen>

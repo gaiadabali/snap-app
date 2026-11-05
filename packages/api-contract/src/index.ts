@@ -2119,10 +2119,12 @@ export interface UsageItem {
   label: string;
   occurredAt: IsoDate;
   /**
-   * Units moved, always POSITIVE. The sign is implied by `UsagePeriod.kind`
-   * plus the endpoint: this is a spend report, not a ledger.
+   * Units spent, never negative: this is a spend report, not a ledger. For
+   * credits, 1 per scan, or 0 when it was given back (`refunded`).
    */
   amount: number;
+  /** The scan could not be read and its credit was given back. */
+  refunded?: boolean;
 }
 
 /**
@@ -2136,8 +2138,12 @@ export interface UsagePeriod {
   /** `YYYY-MM`. */
   month: string;
   kind: UsageKind;
+  /** The whole month, not just this page of `items`. */
   total: number;
+  /** Newest first. */
   items: UsageItem[];
+  /** More items: pass as `before` for the next page. */
+  nextBefore?: string | null;
 }
 
 /**

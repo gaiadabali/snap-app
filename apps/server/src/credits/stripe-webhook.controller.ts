@@ -1,6 +1,7 @@
 import { BadRequestException, Controller, HttpCode, Logger, Post, Req } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
+import { resumeAfterCredits } from './credits.controller.js';
 import { fulfilCreditPurchaseFromProvider, CreditPurchaseNotPendingError } from './credits.repo.js';
 import { stripeWebhookSecret } from './payment-provider.js';
 import { StripeError, verifyStripeSignature } from './stripe-provider.js';
@@ -144,6 +145,7 @@ export class StripeWebhookController {
         return { received: true };
       }
       this.logger.log(`granted ${row.credits} credits for purchase ${purchaseId} (${providerRef})`);
+      await resumeAfterCredits(userId, tenantId);
     } catch (error) {
       if (error instanceof CreditPurchaseNotPendingError) {
         // refunded or failed. Not something a retry fixes.

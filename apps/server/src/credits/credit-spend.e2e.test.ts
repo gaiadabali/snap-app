@@ -6,10 +6,11 @@ import type { Client, Pool } from 'pg';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { closeDb, getDb } from '../db.js';
-import { enqueueExtraction } from '../repo.js';
+import { createCapture, enqueueExtraction, resumeHeldCaptures } from '../repo.js';
 import { provisionTenant, wipeTenant } from '../test-support/tenant.js';
 import { workerActor, type WorkerActor } from '../tenant-entry.js';
-import { refundScanCredit } from './spend.js';
+import { listCreditUsage, listCreditUsageMonths } from './credits.repo.js';
+import { QuotaExhaustedError, refundScanCredit } from './spend.js';
 
 /**
  * A scan spends one credit (group plan 7.1.a) and an unreadable scan gives it
@@ -28,7 +29,7 @@ const USER = 'c5e40000-0000-4000-8000-0000000000a1';
 const WORKER = 'c5e40000-0000-4000-8000-0000000000a2';
 const OTHER_USER = 'c5e40000-0000-4000-8000-0000000000a3';
 
-describeIfDb('scan credits: spend and give back (7.1.a, 7.1.c)', () => {
+describeIfDb('scan credits: spend, refuse, give back, list (7.1.a–e)', () => {
   let admin: Client;
   let adminOther: Client;
   let workerPool: Pool;
@@ -77,6 +78,25 @@ describeIfDb('scan credits: spend and give back (7.1.a, 7.1.c)', () => {
       [captureId],
     );
     return rows.rows;
+  }
+
+  async function jobsFor(captureId: string): Promise<number> {
+    const rows = await admin.query(
+      `select count(*)::int as n from jobs where kind = 'extract' and payload->>'captureId' = $1`,
+      [captureId],
+    );
+    return rows.rows[0].n;
+  }
+
+  /** A capture with its one page stored, as the upload leaves it. */
+  async function storedCapture(tenant = TENANT, uploader = USER): Promise<string> {
+    const id = await capture(tenant, uploader);
+    await admin.query(
+      `insert into capture_pages (id, tenant_id, capture_id, page_number, storage_key, mime_type, byte_size, sha256, source)
+       values ($1, $2, $3, 1, $4, 'image/jpeg', 1024, decode($5, 'hex'), 'capture')`,
+      [randomUUID(), tenant, id, `${tenant}/pages/${id}-1`, randomBytes(32).toString('hex')],
+    );
+    return id;
   }
 
   async function remaining(grantId: string): Promise<number> {
@@ -139,7 +159,6 @@ describeIfDb('scan credits: spend and give back (7.1.a, 7.1.c)', () => {
       [pack, 'topup_pack', true],
       [pack, 'topup_pack', true],
       [newerPack, 'topup_pack', true],
-      [null, null, false],
     ] as const;
     for (const [grantId, source, paid] of expected) {
       const captureId = await capture();
@@ -149,6 +168,15 @@ describeIfDb('scan credits: spend and give back (7.1.a, 7.1.c)', () => {
       ]);
     }
     for (const id of [pack, newerPack, staffNew, staffOld, bonus]) expect(await remaining(id)).toBe(0);
+
+    // Out of credits (7.1.b): refused, nothing spent or queued, the capture kept.
+    const held = await capture();
+    await expect(enqueueExtraction(USER, TENANT, held)).rejects.toBeInstanceOf(QuotaExhaustedError);
+    expect(await spendOf(held)).toEqual([]);
+    expect(await jobsFor(held)).toBe(0);
+    expect((await admin.query(`select status from captures where id = $1`, [held])).rows).toEqual([
+      { status: 'received' },
+    ]);
   });
 
   it('counts a grant as bought only when a paid purchase backs it', async () => {
@@ -167,11 +195,13 @@ describeIfDb('scan credits: spend and give back (7.1.a, 7.1.c)', () => {
     await enqueueExtraction(USER, TENANT, again);
     await enqueueExtraction(USER, TENANT, again);
     expect(await spendOf(again)).toHaveLength(1);
+    expect(await jobsFor(again)).toBe(1);
     expect(await remaining(pack)).toBe(9);
 
     const atOnce = await capture();
     await Promise.all([1, 2, 3, 4].map(() => enqueueExtraction(USER, TENANT, atOnce)));
     expect(await spendOf(atOnce)).toHaveLength(1);
+    expect(await jobsFor(atOnce)).toBe(1);
     expect(await remaining(pack)).toBe(8);
   });
 
@@ -182,7 +212,7 @@ describeIfDb('scan credits: spend and give back (7.1.a, 7.1.c)', () => {
     const captures: string[] = [];
     for (let i = 0; i < n; i += 1) captures.push(await capture());
 
-    await Promise.all(captures.map((id) => enqueueExtraction(USER, TENANT, id)));
+    const results = await Promise.allSettled(captures.map((id) => enqueueExtraction(USER, TENANT, id)));
 
     const spends = (
       await admin.query(
@@ -190,16 +220,109 @@ describeIfDb('scan credits: spend and give back (7.1.a, 7.1.c)', () => {
         [captures],
       )
     ).rows as Array<{ grant_id: string | null; paid: boolean }>;
-    expect(spends).toHaveLength(n);
+    expect(spends).toHaveLength(5);
     expect(spends.filter((s) => s.grant_id === a)).toHaveLength(3);
     expect(spends.filter((s) => s.grant_id === b)).toHaveLength(2);
-    expect(spends.filter((s) => s.grant_id === null)).toHaveLength(n - 5);
     expect(spends.filter((s) => s.paid)).toHaveLength(2);
     expect(await remaining(a)).toBe(0);
     expect(await remaining(b)).toBe(0);
-    // Every capture was still queued (7.1.b, refusing, is not built).
+    // The other seven were refused for want of credit (7.1.b) and not queued.
+    expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(5);
+    const refused = results.filter((r): r is PromiseRejectedResult => r.status === 'rejected');
+    expect(refused).toHaveLength(n - 5);
+    for (const r of refused) expect(r.reason).toBeInstanceOf(QuotaExhaustedError);
     const jobs = await admin.query(`select count(*)::int as n from jobs where tenant_id = $1 and kind = 'extract'`, [TENANT]);
-    expect(jobs.rows[0].n).toBe(n);
+    expect(jobs.rows[0].n).toBe(5);
+  });
+
+  it('races for the last credit: one capture gets it, the rest are held, never dropped, and resume when credits come', async () => {
+    const last = await grant('signup_bonus', 1, 1);
+    const racers: string[] = [];
+    for (let i = 0; i < 6; i += 1) racers.push(await storedCapture());
+
+    const results = await Promise.allSettled(racers.map((id) => enqueueExtraction(USER, TENANT, id)));
+    expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+    for (const r of results) {
+      if (r.status === 'rejected') expect(r.reason).toBeInstanceOf(QuotaExhaustedError);
+    }
+    expect(await remaining(last)).toBe(0);
+    const spent = (await admin.query(`select capture_id from credit_spends where capture_id = any($1)`, [racers]))
+      .rows as Array<{ capture_id: string }>;
+    expect(spent).toHaveLength(1);
+    expect(spent[0]!.capture_id).toBe(racers[results.findIndex((r) => r.status === 'fulfilled')]);
+
+    // Every capture is still there, pages and all.
+    const kept = await admin.query(
+      `select count(*)::int as n from captures c
+        where c.id = any($1) and exists (select 1 from capture_pages p where p.capture_id = c.id)`,
+      [racers],
+    );
+    expect(kept.rows[0].n).toBe(6);
+
+    // Nothing to resume with no credit; three bought credits queue the oldest three held.
+    expect(await resumeHeldCaptures(USER, TENANT)).toBe(0);
+    await grant('topup_pack', 3, 0, { bought: true });
+    expect(await resumeHeldCaptures(USER, TENANT)).toBe(3);
+    expect(await resumeHeldCaptures(USER, TENANT)).toBe(0);
+    const queued = await admin.query(
+      `select count(*)::int as n from jobs where kind = 'extract' and payload->>'captureId' = any($1)`,
+      [racers],
+    );
+    expect(queued.rows[0].n).toBe(4);
+  });
+
+  it('refuses a NEW capture at registration with no credit, storing nothing, but never a duplicate', async () => {
+    const page = { sha256: randomBytes(32).toString('hex'), mimeType: 'image/jpeg', byteSize: 1000 };
+    await expect(createCapture(USER, TENANT, { pages: [page], requireCredit: true })).rejects.toBeInstanceOf(
+      QuotaExhaustedError,
+    );
+    const none = await admin.query(`select count(*)::int as n from captures where tenant_id = $1 and received_at > now() - interval '1 minute' and original_byte_size = 1000`, [TENANT]);
+    expect(none.rows[0].n).toBe(0);
+
+    // With a credit it is admitted (registration spends nothing) ...
+    const bonus = await grant('signup_bonus', 1, 0);
+    const first = await createCapture(USER, TENANT, { pages: [page], requireCredit: true });
+    expect(first.duplicate).toBe(false);
+    expect(await remaining(bonus)).toBe(1);
+    // ... and, once the credits are gone, the same bytes are still a duplicate, not a refusal.
+    await admin.query(`update usage_grants set remaining = 0 where id = $1`, [bonus]);
+    const again = await createCapture(USER, TENANT, { pages: [page], requireCredit: true });
+    expect(again).toMatchObject({ duplicate: true, capture: { id: first.capture.id } });
+  });
+
+  it('lists a month of spends, newest first, refunds at 0, paged with before (7.1.e)', async () => {
+    const pack = await grant('topup_pack', 5, 1, { bought: true });
+    const ids: string[] = [];
+    for (let i = 0; i < 3; i += 1) {
+      const id = await capture();
+      await enqueueExtraction(USER, TENANT, id);
+      ids.push(id);
+    }
+    await refundScanCredit(worker, TENANT, ids[1]!, 'unreadable');
+    // An old spend in another month, and a historical one that found no credit.
+    await admin.query(
+      `insert into credit_spends (tenant_id, capture_id, user_id, grant_id, grant_source, paid, spent_at)
+       values ($1, $2, $3, null, null, false, '2026-01-15T10:00:00Z')`,
+      [TENANT, await capture(), USER],
+    );
+    expect(await remaining(pack)).toBe(3);
+
+    const month = new Date().toISOString().slice(0, 7);
+    const page1 = await listCreditUsage(USER, TENANT, month, 2, null);
+    expect(page1.total).toBe(2);
+    expect(page1.items.map((i) => i.amount)).toEqual([1, 0]);
+    expect(page1.items[1]).toMatchObject({ refunded: true, label: 'Scan' });
+    expect(page1.nextBefore).toBe(page1.items[1]!.id);
+    const page2 = await listCreditUsage(USER, TENANT, month, 2, page1.nextBefore);
+    expect(page2.items).toHaveLength(1);
+    expect(page2.items[0]).toMatchObject({ amount: 1, refunded: false });
+    expect(page2.nextBefore).toBeNull();
+
+    const january = await listCreditUsage(USER, TENANT, '2026-01', 100, null);
+    expect(january).toMatchObject({ total: 0, items: [{ amount: 0, refunded: false }] });
+    expect(await listCreditUsageMonths(USER, TENANT)).toEqual([month, '2026-01']);
+    // Another workspace sees none of it.
+    expect(await listCreditUsageMonths(OTHER_USER, OTHER_TENANT)).toEqual([]);
   });
 
   it('gives an unreadable scan its credit back, exactly once', async () => {
@@ -241,8 +364,13 @@ describeIfDb('scan credits: spend and give back (7.1.a, 7.1.c)', () => {
   });
 
   it('marks a spend with no credit as refunded without inventing one', async () => {
+    // Only from before 7.1.b: a scan that found no credit was still queued.
     const captureId = await capture();
-    await enqueueExtraction(USER, TENANT, captureId);
+    await admin.query(
+      `insert into credit_spends (tenant_id, capture_id, user_id, grant_id, grant_source, paid)
+       values ($1, $2, $3, null, null, false)`,
+      [TENANT, captureId, USER],
+    );
     expect(await refundScanCredit(worker, TENANT, captureId, 'unreadable')).toEqual({
       refunded: true,
       creditReturned: false,

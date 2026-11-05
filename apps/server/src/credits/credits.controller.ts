@@ -4,6 +4,7 @@ import {
   Controller,
   Get,
   HttpCode,
+  Logger,
   NotFoundException,
   Param,
   Post,
@@ -29,7 +30,7 @@ import {
   type AuthUser,
 } from '../common/auth.guard.js';
 import { ValidBody } from '../common/valid-body.decorator.js';
-import { listMembers } from '../repo.js';
+import { listMembers, resumeHeldCaptures } from '../repo.js';
 import { isTeenSpace } from '../teens/teens.repo.js';
 import {
   CreditPurchaseNotPendingError,
@@ -60,6 +61,20 @@ async function requireAdmin(user: AuthUser, tenantId: string): Promise<void> {
       error: 'teen_space',
       message: 'Your scans use credits from your parent’s account, so there is nothing to buy here.',
     });
+  }
+}
+
+/**
+ * Queues the captures held for want of credit (7.1.b) once credits arrive.
+ * Best effort: the credits are granted either way, and a capture still held
+ * is queued the next time its phone re-sends it.
+ */
+export async function resumeAfterCredits(userId: string, tenantId: string): Promise<void> {
+  try {
+    const queued = await resumeHeldCaptures(userId, tenantId);
+    if (queued > 0) new Logger('Credits').log(`queued ${queued} held capture(s) for tenant ${tenantId}`);
+  } catch (error) {
+    new Logger('Credits').error(`could not queue held captures for tenant ${tenantId}: ${String(error)}`);
   }
 }
 
@@ -227,6 +242,7 @@ export class CreditsController {
     try {
       const row = await fulfilCreditPurchase(user.userId, tenantId, id);
       if (!row) throw new NotFoundException('No such purchase.');
+      await resumeAfterCredits(user.userId, tenantId);
       return toPurchase(row);
     } catch (error) {
       if (error instanceof CreditPurchaseNotPendingError) {

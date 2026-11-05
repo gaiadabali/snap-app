@@ -9,7 +9,7 @@ const sections = [
   { id: 'before-you-shoot', label: 'Before you shoot' },
   { id: 'the-quality-gate', label: 'The on-device quality gate' },
   { id: 'faded-and-thermal', label: 'Faded and thermal receipts' },
-  { id: 'multi-page', label: 'Multi-page documents' },
+  { id: 'multi-page', label: 'One page per snap' },
   { id: 'duplicates', label: 'Duplicates' },
 ];
 
@@ -32,7 +32,7 @@ export default function CapturingReceiptsPage() {
           <li>
             Avoid glare across the total — angle the light source, don&apos;t shoot straight under it.
           </li>
-          <li>One receipt per photo, unless it&apos;s genuinely one multi-page document.</li>
+          <li>One receipt per photo, and one page per snap.</li>
         </ul>
 
         <h2 id="the-quality-gate">
@@ -56,12 +56,13 @@ export default function CapturingReceiptsPage() {
         </p>
 
         <h2 id="multi-page">
-          Multi-page documents
+          One page per snap
         </h2>
         <p>
-          A tax invoice that spans more than one page is captured as a single multi-page document
-          rather than as separate receipts — this keeps the line items and the total reconciling
-          against one supplier and one document number, instead of looking like two smaller purchases.
+          Each snap is one page and uses one credit. For a tax invoice or a statement that runs
+          over several pages, snap each page on its own, or upload each page as its own photo or
+          PDF. An upload with more than one page, including a multi-page PDF, is refused with a
+          note asking for one page per snap.
         </p>
 
         <h2 id="duplicates">

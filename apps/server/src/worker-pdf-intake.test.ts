@@ -25,7 +25,7 @@ import { provisionTenant, wipeTenant } from './test-support/tenant.js';
  * .test.ts`'s harness, mirrored here rather than imported — see that suite's
  * own header for why a real PUT is the honest level for this):
  *
- *  1. after a 3-page PDF PUT, the capture's `original_storage_key` resolves
+ *  1. after a PDF PUT, the capture's `original_storage_key` resolves
  *     through `storage.get` to EXACTLY the bytes that were uploaded;
  *  2. `classifyCapture` on that same capture says 'statement' — resolved
  *     from those bytes, not from the fall-through default.
@@ -44,7 +44,7 @@ const STATEMENT_TEXT =
   'ACME BANK — Bank Statement. Account Number: 123-456-789. ' +
   'Statement period: 1 Aug 2026 to 31 Aug 2026. Opening balance 1,204.50. Closing balance 984.12.';
 
-/** A minimal, valid 3-page PDF, each page holding real statement text —
+/** A minimal, valid PDF, each page holding real statement text —
  *  hand-assembled exactly like `statement-caps.e2e.test.ts`'s builder, so the
  *  bytes are legible to `extractPdfText` (a real text layer, past
  *  `NATIVE_TEXT_THRESHOLD`) without depending on any PDF library. */
@@ -125,6 +125,7 @@ describeIfDb('PDF intake persists its own bytes for classification (Task 9)', ()
     process.env.WORKER_DATABASE_URL = (process.env.DATABASE_URL ?? '').replace(/:\/\/[^:]+:/, '://snap_worker:');
 
     admin = await provisionTenant({
+      scanCredits: 100,
       tenantId: TENANT,
       name: 'Task 9 pdf persistence co',
       users: [
@@ -188,8 +189,9 @@ describeIfDb('PDF intake persists its own bytes for classification (Task 9)', ()
     }
   });
 
-  it('a 3-page PDF intake keeps the uploaded bytes under original_storage_key, and classifies from them', async () => {
-    const bytes = statementPdf(3);
+  // One page: a PDF of more than one is refused, one page per snap (0.11.b).
+  it('a PDF intake keeps the uploaded bytes under original_storage_key, and classifies from them', async () => {
+    const bytes = statementPdf(1);
     const sha256 = createHash('sha256').update(bytes).digest('hex');
 
     // The normal capture path: register one declared PDF page, then PUT the
@@ -210,7 +212,7 @@ describeIfDb('PDF intake persists its own bytes for classification (Task 9)', ()
     });
     expect(putRes.statusCode).toBe(200);
     expect(putRes.json().queued).toBe(true);
-    expect(putRes.json().pages).toBe(3);
+    expect(putRes.json().pages).toBe(1);
 
     // The capture row the intake produced, read back through the admin
     // connection like every suite using `test-support/tenant.ts`.

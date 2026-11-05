@@ -43,6 +43,8 @@ export interface TenantSpec {
   abn?: string;
   gstRegistered?: boolean;
   gstBasis?: 'cash' | 'accrual';
+  /** Free scan credits to start with (a support grant). A scan needs one (7.1.b). */
+  scanCredits?: number;
 }
 
 /**
@@ -157,6 +159,14 @@ export async function provisionTenant(spec: TenantSpec): Promise<Client> {
       u.id,
       u.role,
     ]);
+  }
+
+  if (spec.scanCredits) {
+    await admin.query(
+      `insert into usage_grants (id, tenant_id, metric, amount, remaining, source)
+       values ($1, $2, 'scans', $3, $3, 'support_credit')`,
+      [randomUUID(), spec.tenantId, spec.scanCredits],
+    );
   }
 
   for (const u of spec.serviceUsers ?? []) {

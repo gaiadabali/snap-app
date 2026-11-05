@@ -12,6 +12,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vites
 import { closeDb, getDb } from '../db.js';
 import type { ValidatedExtraction } from '../extraction/types.js';
 import { fulfilCreditPurchase, grantSignupBonusIfFirst, startCreditPurchase } from '../credits/credits.repo.js';
+import { QuotaExhaustedError } from '../credits/spend.js';
 import { enqueueExtraction, saveExtraction } from '../repo.js';
 import { startFakeYourtal, type FakeYourtal } from '../test-support/fake-yourtal.js';
 import { provisionTenant, wipeTenant } from '../test-support/tenant.js';
@@ -752,14 +753,25 @@ describeIfDb('the YourTal outbox (2.5)', () => {
       expect(status.pointsReported).toBe(10);
     });
 
-    it('a scan with no credit left is skipped_free too, and still extracted', async () => {
-      const { captureId } = await photographedCapture(GIA, undefined, TENANT4);
-      expect(await spendOf(captureId)).toEqual([{ has_grant: false, grant_source: null, paid: false, refunded_at: null }]);
-      // 7.1.b is not built: the scan is still queued for extraction.
+    it('a scan with no credit left is held, not queued (7.1.b); one queued that way before 7.1.b is skipped_free', async () => {
+      await expect(photographedCapture(GIA, undefined, TENANT4)).rejects.toBeInstanceOf(QuotaExhaustedError);
+      const newest = await admin.query(
+        `select id from captures where tenant_id = $1 order by received_at desc limit 1`,
+        [TENANT4],
+      );
+      const captureId = newest.rows[0].id as string;
+      expect(await spendOf(captureId)).toEqual([]);
       const jobs = await admin.query(`select count(*)::int as n from jobs where kind = 'extract' and payload->>'captureId' = $1`, [
         captureId,
       ]);
-      expect(jobs.rows[0].n).toBe(1);
+      expect(jobs.rows[0].n).toBe(0);
+
+      // Before 7.1.b the same scan was queued with a spend that took no credit.
+      await admin.query(
+        `insert into credit_spends (tenant_id, capture_id, user_id, grant_id, grant_source, paid)
+         values ($1, $2, $3, null, null, false)`,
+        [TENANT4, captureId, GIA],
+      );
 
       await scanFor(TENANT4, captureId);
       expect((await outboxFor(captureId))[0]).toMatchObject({ status: 'skipped_free', last_code: 'free_scan' });

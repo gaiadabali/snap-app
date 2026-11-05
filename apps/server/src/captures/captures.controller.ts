@@ -45,13 +45,15 @@ import {
 } from '../common/auth.guard.js';
 import { ValidBody } from '../common/valid-body.decorator.js';
 import { config } from '../config.js';
-import { demuxPdf } from '../extraction/pdf.js';
+import { QuotaExhaustedError } from '../credits/spend.js';
+import { countPdfPages, demuxPdf } from '../extraction/pdf.js';
 import {
   countExtractionsToday,
   createCapture,
   enqueueExtraction,
   finalizeCapturePages,
   getCaptureProgress,
+  isCaptureQueued,
   listCapturePages,
   markCaptureStored,
   recordCapturePage,
@@ -62,44 +64,12 @@ import { issueUploadToken, readUploadToken } from '../tokens.js';
 import { pageKey, putAtKey } from './page-storage.js';
 
 /**
- * The largest capture this endpoint admits, in PAGES — receipts and
- * statements share one cap here (`docs/STATEMENTS.md` §12, Lane T, T7).
+ * The most pages `CreateCaptureDto` will parse, as a transport bound only.
  *
- * The old cap was 20, sized for a photographed receipt or a short multi-page
- * tax invoice. `docs/STATEMENTS.md` §5.6 names the shape that does not fit
- * under it: "**A 40-page annual statement does not fit under the current
- * caps** and something has to give." That figure — 40 pages, the largest
- * statement the document says the product intends to accept — is the one
- * piece of actual evidence in this repository for where the line should sit.
- * Everything past it is a judgement call, labelled as one: 10 pages of
- * headroom above that figure (a cover page, a fees schedule, an
- * off-by-a-page recount from the client), landing on 50. Nothing here
- * measures a real institution's longest statement, so the buffer is not
- * presented as more than a guess with a stated margin.
- *
- * This one constant now bounds two different things that used to be bounded
- * (or not bounded at all) separately:
- *
- *  1. How many pages a client may DECLARE up front in `CreateCaptureDto`,
- *     below — the shape a capture built from individually photographed or
- *     scanned statement pages takes.
- *  2. How many physical pages a single uploaded PDF may DEMUX into — checked
- *     in `upload()`, after `demuxPdf`. Before this change that axis had NO
- *     cap at all: a PDF always declares exactly ONE page at capture-creation
- *     time (the "PDF must be the only page in its capture" rule a few dozen
- *     lines below), so the declared-pages cap never applied to it. A 5,000
- *     page PDF sailed through registration and was refused nowhere before
- *     hitting whatever timeout or OOM the worker met first — an unbounded,
- *     unpredictable failure mode, not a deliberate one. This is the gap T7
- *     closes; a PDF over the cap is now refused here, by name, before a
- *     single byte is written to `capture_pages`.
- *
- * Cost consequence, reported rather than silently absorbed: a capture at this
- * cap costs the extraction worker up to 2.5x what the old 20-page cap ever
- * allowed. §5.2/T2 already chunks per-page extraction to avoid
- * `TruncatedOutputError`, but nothing here changes worker-side timeouts or
- * per-page billing for the new ceiling — that is this ticket's reported
- * follow-up, not something this endpoint can absorb on its own.
+ * Since founder ruling 0.11.b (one snap is one page, charged per snap) a new
+ * capture with more than one page is refused by `create()` with
+ * `one_page_per_snap`, and a PDF with more than one page by `upload()`. This
+ * bound stays so an oversized body is still a plain validation error.
  */
 const MAX_CAPTURE_PAGES = 50;
 
@@ -134,6 +104,55 @@ async function refuseWhenExtractionBudgetSpent(usedToday: number): Promise<void>
       },
       HttpStatus.TOO_MANY_REQUESTS,
     );
+  }
+}
+
+/**
+ * Out of scan credits (group plan 7.1.b): 402 `quota_exhausted`, with where to
+ * buy more. Not the daily budget above, which shares the code but is a 429.
+ * `stored`: the capture is already on the server and waits for a credit.
+ */
+function creditsExhausted(teen: boolean, stored: boolean): HttpException {
+  const kept = stored ? ' This snap is saved and will be read as soon as there are credits again.' : '';
+  return new HttpException(
+    teen
+      ? {
+          error: 'quota_exhausted',
+          message: `Your parent’s account is out of scan credits. Ask them to buy more.${kept}`,
+        }
+      : {
+          error: 'quota_exhausted',
+          message: `You’re out of scan credits. Buy more to keep scanning.${kept}`,
+          buyUrl: `${config().WEB_PUBLIC_URL.replace(/\/+$/, '')}/app/credits/buy`,
+        },
+    HttpStatus.PAYMENT_REQUIRED,
+  );
+}
+
+/** Founder ruling 0.11.b: one snap is one page, charged per snap. */
+function onePagePerSnap(pages?: number): BadRequestException {
+  return new BadRequestException({
+    error: 'one_page_per_snap',
+    message:
+      (pages ? `That PDF has ${pages} pages. ` : '') +
+      'One page per snap: send each page as its own photo or PDF.',
+  });
+}
+
+/**
+ * Queues a stored capture once: the daily budget, then the credit (which
+ * throws 402 and leaves the capture stored, held, when there is none). A
+ * capture already queued is left alone, so a retried upload or a re-sent
+ * duplicate never queues twice, and one that was held is queued now.
+ */
+async function queueOnce(userId: string, tenantId: string, captureId: string): Promise<void> {
+  if (await isCaptureQueued(userId, tenantId, captureId)) return;
+  await refuseWhenExtractionBudgetSpent(await countExtractionsToday(userId, tenantId));
+  try {
+    await enqueueExtraction(userId, tenantId, captureId);
+  } catch (error) {
+    if (error instanceof QuotaExhaustedError) throw creditsExhausted(error.teen, true);
+    throw error;
   }
 }
 
@@ -260,10 +279,18 @@ export class CapturesController {
       });
     }
 
+    if (declared.length > 1) throw onePagePerSnap();
+
+    // A new capture needs a credit (7.1.b), refused before anything is
+    // stored. A CSV is read without a model and never spends one.
     const { capture, duplicate, pages: plan } = await createCapture(user.userId, tenantId, {
       pages: declared,
       capturedAt: body.capturedAt,
       legibilityScore: body.legibilityScore,
+      requireCredit: declared[0]!.mimeType.toLowerCase() !== 'text/csv',
+    }).catch((error: unknown) => {
+      if (error instanceof QuotaExhaustedError) throw creditsExhausted(error.teen, false);
+      throw error;
     });
 
     // The daily extraction budget — ONE counter query, after registration
@@ -320,8 +347,13 @@ export class CapturesController {
       // already exists, or is already being produced, under the original
       // capture that first captured these bytes.
       if (plan.length > 0 && plan.every((p) => p.alreadyStored)) {
-        await enqueueExtraction(user.userId, tenantId, capture.id);
+        await queueOnce(user.userId, tenantId, capture.id);
       }
+    } else if (plan.length > 0 && plan.every((p) => p.alreadyStored)) {
+      // A complete capture sent again: normally already queued (a no-op), but
+      // one held for want of credit is queued now, or refused 402 again so
+      // the phone keeps it in its queue (7.1.b).
+      await queueOnce(user.userId, tenantId, capture.id);
     }
 
     return {
@@ -489,7 +521,7 @@ export class CapturesController {
       // Idempotent by construction: a retried PUT of the same PDF hashes to
       // the same key and overwrites it with identical bytes, and
       // `markCaptureStored` sets the same value again — no corruption, no
-      // duplication, whether or not `alreadyDemuxed` (below) turns out true.
+      // duplication.
       //
       // Stated cost, not a silent one: storage roughly doubles for a PDF
       // capture — the original bytes here, plus every rasterised page below
@@ -497,33 +529,21 @@ export class CapturesController {
       // paging). That is the intended L0-original / L1-derivative split
       // `storage.ts`'s own header describes, not a regression this
       // introduces.
+      //
+      // One page per snap (founder 0.11.b): a PDF declares ONE page at
+      // registration, so only the file itself says how many it has. Counted
+      // without rendering and refused before anything is stored, so a
+      // refusal leaves nothing behind to clean up.
+      const pageCount = await countPdfPages(bytes);
+      if (pageCount === 0) {
+        throw new BadRequestException('That PDF has no pages to read.');
+      }
+      if (pageCount > 1) throw onePagePerSnap(pageCount);
+
       const original = storagePut(claim.tenantId, bytes);
       await markCaptureStored(user.userId, claim.tenantId, claim.captureId, original.key);
 
-      // Read BEFORE recording anything, so a retried PUT — the same PDF,
-      // re-sent because the first response never arrived — can tell "I
-      // already finished this" from "this is the first attempt". Without it,
-      // every retry of an already-demuxed PDF would queue another extraction
-      // for the same capture, which is exactly the "never once per page" (or
-      // per retry) rule this endpoint exists to hold.
-      const alreadyDemuxed = (await listCapturePages(user.userId, claim.tenantId, claim.captureId)).length > 0;
-
       const rendered = await demuxPdf(bytes);
-      if (rendered.length === 0) {
-        throw new BadRequestException('That PDF has no pages to read.');
-      }
-      // A PDF declares exactly ONE page at capture-creation time (the
-      // solo-PDF rule below), so `ArrayMaxSize(MAX_CAPTURE_PAGES)` on
-      // `CreateCaptureDto.pages` never sees its true page count — only the
-      // demux above reveals that. This is the check that actually stops a
-      // 5,000-page PDF, checked before ANY page is written to
-      // `capture_pages` or stored, so a refusal here leaves no partial
-      // state to clean up.
-      if (rendered.length > MAX_CAPTURE_PAGES) {
-        throw new BadRequestException(
-          `That PDF has ${rendered.length} pages, more than the ${MAX_CAPTURE_PAGES}-page cap.`,
-        );
-      }
       // In page order, for the capture-level dedup hash below.
       const pageHashes: string[] = [];
       for (let i = 0; i < rendered.length; i++) {
@@ -573,15 +593,11 @@ export class CapturesController {
         });
       }
 
-      if (!alreadyDemuxed) {
-        // Budget re-checked HERE, not only at registration: a capture whose
-        // pages finish uploading may cross the day's budget while its
-        // registration did not. The bytes are already stored (this PUT just
-        // wrote them), so nothing is lost — the capture waits, and the 429
-        // tells the client extraction did not start today.
-        await refuseWhenExtractionBudgetSpent(await countExtractionsToday(user.userId, claim.tenantId));
-        await enqueueExtraction(user.userId, claim.tenantId, claim.captureId);
-      }
+      // Budget and credit checked HERE, not only at registration: either may
+      // run out after the registration was admitted. The bytes are already
+      // stored, so nothing is lost: the capture waits (429 or 402). A retried
+      // PUT of a capture already queued queues nothing.
+      await queueOnce(user.userId, claim.tenantId, claim.captureId);
 
       return {
         sha256: original.sha256,
@@ -590,13 +606,6 @@ export class CapturesController {
         pages: rendered.length,
       };
     }
-
-    // Read BEFORE recording, for the same reason as the PDF branch above: it
-    // is what lets a retried PUT for a page that already arrived recognise
-    // that the capture was ALREADY complete, rather than re-crossing the
-    // "last page" threshold and queuing a second extraction.
-    const before = await listCapturePages(user.userId, claim.tenantId, claim.captureId);
-    const alreadyComplete = before.length >= claim.pageCount;
 
     // Written under the hash OF THE RECEIVED BYTES. The client's hash decided
     // whether to bother uploading; it never decides the identity of a record.
@@ -613,20 +622,14 @@ export class CapturesController {
       source: 'capture',
     });
 
-    // Enqueue exactly once, after the LAST declared page arrives — checked
-    // by recounting rather than trusting `claim.pageNumber === claim.pageCount`,
-    // because pages need not arrive in order. `capture_pages` is upserted per
-    // page number, so a retried page never inflates the count; `alreadyComplete`
-    // is what stops that retry from re-queuing a capture that already got there.
-    if (!alreadyComplete) {
-      const after = await listCapturePages(user.userId, claim.tenantId, claim.captureId);
-      if (after.length >= claim.pageCount) {
-        // Budget re-checked here for the same reason as the PDF branch
-        // above: the last page of a multi-page capture can cross the day's
-        // budget after its registration was admitted.
-        await refuseWhenExtractionBudgetSpent(await countExtractionsToday(user.userId, claim.tenantId));
-        await enqueueExtraction(user.userId, claim.tenantId, claim.captureId);
-      }
+    // Queued once the LAST declared page has arrived — checked by recounting
+    // rather than trusting `claim.pageNumber === claim.pageCount`, because
+    // pages need not arrive in order (a capture registered before one page per
+    // snap may still have several). `queueOnce` makes a retried page queue
+    // nothing, and a capture held for want of credit queue now.
+    const after = await listCapturePages(user.userId, claim.tenantId, claim.captureId);
+    if (after.length >= claim.pageCount) {
+      await queueOnce(user.userId, claim.tenantId, claim.captureId);
     }
 
     return { sha256, byteSize: bytes.byteLength, queued: true, pages: 1 };
