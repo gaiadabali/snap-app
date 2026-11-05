@@ -25,7 +25,7 @@ import { formatAud, numeric, space, type, usePalette } from '@/theme';
  * reads the purchase back; it never marks anything paid. The purchase id is
  * kept so a failure is reported against a real row rather than vanishing.
  */
-type Phase = 'busy' | 'done' | 'failed';
+type Phase = 'busy' | 'done' | 'waiting' | 'failed';
 
 export default function PayScreen() {
   // A teen's own space buys nothing: its scans spend the parent's credits (group 3.10, F112).
@@ -41,6 +41,37 @@ export default function PayScreen() {
   const [reason, setReason] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
 
+  /**
+   * What the server says about the purchase. Still `pending` is not a failure:
+   * the webhook may be late, so the screen waits and offers "Check again" on
+   * the SAME purchase, never a new one that could charge twice (review L4).
+   */
+  async function show(after: CreditPurchase | undefined): Promise<void> {
+    if (after) setPurchase(after);
+    if (after?.status === 'paid') {
+      const balance = await api().getCreditBalance();
+      setCredits(balance.creditsRemaining);
+      setPhase('done');
+    } else if (after?.status === 'pending') {
+      setPhase('waiting');
+    } else {
+      setReason(
+        after?.status === 'refunded'
+          ? 'This payment was refunded, so no scans were added.'
+          : 'The payment did not go through. Nothing was charged.',
+      );
+      setPhase('failed');
+    }
+  }
+
+  function checkAgain() {
+    if (!purchase) return;
+    setPhase('busy');
+    void settledPurchase(purchase.id)
+      .then(show)
+      .catch(() => setPhase('waiting'));
+  }
+
   // StrictMode double-invokes effects in development. A payment is the one
   // place where running twice is not merely wasteful, so the attempt is
   // guarded by a ref rather than trusting the effect to fire once.
@@ -52,6 +83,8 @@ export default function PayScreen() {
     charging.current = true;
     let live = true;
 
+    // Once checkout has opened, a payment may exist: never offer a new purchase.
+    let opened = false;
     void (async () => {
       setPhase('busy');
       setReason(null);
@@ -64,23 +97,17 @@ export default function PayScreen() {
           throw new Error(session.message ?? 'Card payments are not available right now. Nothing was charged.');
         }
         // No return address: resolves when the person closes the browser.
+        opened = true;
         await WebBrowser.openAuthSessionAsync(session.url, null);
         const after = await settledPurchase(started.id);
         if (!live) return;
-        if (after) setPurchase(after);
-        if (after?.status !== 'paid') {
-          setReason(
-            'We have not received a payment for this order. If you did pay, your scans appear in a minute or two.',
-          );
-          setPhase('failed');
-          return;
-        }
-        const balance = await api().getCreditBalance();
-        if (!live) return;
-        setCredits(balance.creditsRemaining);
-        setPhase('done');
+        await show(after);
       } catch (e) {
         if (!live) return;
+        if (opened) {
+          setPhase('waiting');
+          return;
+        }
         setReason(e instanceof Error ? e.message : 'The payment did not go through. Nothing was charged.');
         setPhase('failed');
       } finally {
@@ -122,6 +149,29 @@ export default function PayScreen() {
   }
 
   const ok = phase === 'done';
+
+  if (phase === 'waiting') {
+    return (
+      <Screen>
+        <View style={body}>
+          <StatusCircle bg={p.accentSoft}>
+            <Icon name="calendar" size={40} color={p.accentText} />
+          </StatusCircle>
+          <Text style={[type.h1, { color: p.ink, marginTop: space.xl }]}>Waiting for the payment</Text>
+          <Text
+            style={[type.body, { color: p.inkMuted, marginTop: space.sm, textAlign: 'center', maxWidth: 320 }]}
+          >
+            If you paid, your scans are added as soon as the payment is confirmed. If you closed checkout
+            without paying, nothing was charged.
+          </Text>
+          <View style={{ width: '100%', maxWidth: 380, gap: space.sm, marginTop: space.xl }}>
+            <Button label="Check again" onPress={checkAgain} />
+            <Button label="Back to credits" tone="outline" onPress={() => router.replace('/credits')} />
+          </View>
+        </View>
+      </Screen>
+    );
+  }
 
   if (teenSpace) return <Redirect href="/" />;
 

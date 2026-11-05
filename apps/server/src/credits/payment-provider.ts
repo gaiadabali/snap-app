@@ -67,7 +67,8 @@ export interface CheckoutRequest {
 
 export interface PaymentProvider {
   readonly id: PaymentProviderId;
-  createCheckout(request: CheckoutRequest): Promise<CheckoutSession>;
+  /** `providerRef`: the processor's session id, recorded on the purchase (one per purchase). */
+  createCheckout(request: CheckoutRequest): Promise<CheckoutSession & { providerRef?: string }>;
 }
 
 /**

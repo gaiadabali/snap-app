@@ -122,7 +122,7 @@ export class StripePaymentProvider implements PaymentProvider {
     this.apiBase = (options.apiBase ?? STRIPE_API).replace(/\/+$/, '');
   }
 
-  async createCheckout(request: CheckoutRequest): Promise<CheckoutSession> {
+  async createCheckout(request: CheckoutRequest): Promise<CheckoutSession & { providerRef?: string }> {
     const body = formEncode({
       mode: 'payment',
       success_url: this.options.successUrl,
@@ -207,7 +207,13 @@ export class StripePaymentProvider implements PaymentProvider {
       throw new StripeError('Stripe created a session with no URL to send the customer to.');
     }
 
-    return { purchaseId: request.purchaseId, provider: 'stripe', state: 'redirect', url: parsed.url };
+    return {
+      purchaseId: request.purchaseId,
+      provider: 'stripe',
+      state: 'redirect',
+      url: parsed.url,
+      providerRef: parsed.id,
+    };
   }
 }
 

@@ -33,6 +33,7 @@ import { listMembers } from '../repo.js';
 import { isTeenSpace } from '../teens/teens.repo.js';
 import {
   CreditPurchaseNotPendingError,
+  attachCheckoutSession,
   fulfilCreditPurchase,
   getCreditBalance,
   listCreditPacks,
@@ -180,7 +181,7 @@ export class CreditsController {
     // may have to start the Stripe simulator, which is an HTTP server and
     // has no address until it is listening.
     const provider = await paymentProvider();
-    return provider.createCheckout({
+    const { providerRef, ...session } = await provider.createCheckout({
       purchaseId: row.id,
       tenantId,
       // Carried into the processor's metadata so the WEBHOOK can re-enter
@@ -192,6 +193,15 @@ export class CreditsController {
       credits: row.credits,
       priceAud: row.price_aud,
     });
+    // One checkout session per purchase (review M1): a second would let the
+    // same order be paid twice. The losing session is never shown, so it
+    // cannot be paid. Clients start a new purchase for every attempt.
+    if (providerRef && !(await attachCheckoutSession(user.userId, tenantId, row.id, 'stripe', providerRef))) {
+      throw new ConflictException(
+        'This order already has a checkout open. Start a new order to pay again.',
+      );
+    }
+    return session;
   }
 
   @Post('credits/purchases/:id/fulfil')

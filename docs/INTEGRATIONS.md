@@ -319,8 +319,14 @@ Paying sends `checkout.session.completed` to this process's own webhook,
 signed and retried while the app does not answer 2xx; the first attempt is
 awaited before the browser goes on to `${WEB_PUBLIC_URL}/credits/thanks`. A
 paid page offers a refund, which sends `charge.refunded`: the webhook zeroes
-what is left of the pack's grant and marks the purchase `refunded` (migration
-0053 keeps its `paid_at`). Scans already spent stay spent. The phone app opens
+and expires what is left of the pack's grant and marks the purchase `refunded`
+(migration 0053 keeps its `paid_at`). Scans already spent stay spent. A
+purchase has ONE checkout session (`provider_ref`, set when `/checkout` opens
+it; a second is refused 409), and the completion records Stripe's PaymentIntent
+in `payment_ref`: a refund is matched to that payment, a payment through any
+other session grants nothing and is logged as a duplicate to refund, and a
+refund that overtakes its completion is recorded so the completion grants
+nothing. The phone app opens
 the same page in the system browser and reads the purchase back when it
 closes; the saved-cards stub (`/v1/wallet/cards`) is removed. Going live is
 `STRIPE_SECRET_KEY` + `STRIPE_WEBHOOK_SECRET` (6.8); the simulator then turns

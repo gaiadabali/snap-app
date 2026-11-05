@@ -13,7 +13,11 @@ import {
   listCreditPacks,
   listCreditPurchases,
   startCreditPurchase,
+  attachCheckoutSession,
+  type CreditPurchaseRow,
 } from './credits.repo.js';
+import { CreditsController } from './credits.controller.js';
+import { resetPaymentProviderForTesting, simulatedStripe } from './payment-provider.js';
 import { StripePaymentProvider } from './stripe-provider.js';
 import { StripeWebhookController } from './stripe-webhook.controller.js';
 
@@ -52,7 +56,7 @@ describeIfDb('the simulated checkout page', () => {
       ],
     });
     sim = await startStripeSimulator({
-      retryDelaysMs: [20, 20],
+      retryDelaysMs: [200, 200],
       async deliver(signed) {
         if (failNext > 0) {
           failNext -= 1;
@@ -82,26 +86,33 @@ describeIfDb('the simulated checkout page', () => {
     await admin.query('DELETE FROM usage_grants WHERE tenant_id = $1', [TENANT]);
   });
 
-  /** A pending purchase of whichever pack is first on sale, and its checkout page URL. */
+  /** A pending purchase of whichever pack is first on sale, its one checkout session attached. */
   async function checkout() {
     // The pack list is read, not named: prices and pack sizes change by migration.
     const [pack] = await listCreditPacks(OWNER, TENANT);
-    const purchase = await startCreditPurchase(OWNER, TENANT, pack!.code);
+    const purchase = (await startCreditPurchase(OWNER, TENANT, pack!.code))!;
+    const url = await openSession(purchase);
+    expect(await attachCheckoutSession(OWNER, TENANT, purchase.id, 'stripe', sim.last()!.id)).toBe(true);
+    return { purchase, url };
+  }
+
+  /** A checkout session for the purchase, NOT attached to it. */
+  async function openSession(purchase: CreditPurchaseRow) {
     const session = await new StripePaymentProvider({
       secretKey: sim.secretKey,
       apiBase: sim.apiBase,
       successUrl: 'https://snap-apps.test/credits/thanks',
       cancelUrl: 'https://snap-apps.test/app/credits',
     }).createCheckout({
-      purchaseId: purchase!.id,
+      purchaseId: purchase.id,
       tenantId: TENANT,
       userId: OWNER,
-      packCode: purchase!.pack_code,
-      credits: purchase!.credits,
-      priceAud: purchase!.price_aud,
+      packCode: purchase.pack_code,
+      credits: purchase.credits,
+      priceAud: purchase.price_aud,
     });
     if (session.state !== 'redirect' || !session.url) throw new Error('expected a redirect');
-    return { purchase: purchase!, url: session.url };
+    return session.url;
   }
 
   function submit(url: string, form: Record<string, string>) {
@@ -192,6 +203,14 @@ describeIfDb('the simulated checkout page', () => {
       purchase.id,
     ]);
     expect(rows[0].paid_at).not.toBeNull();
+
+    // A worker's give-back for an unreadable scan lands on an expired grant (review L1).
+    await admin.query(
+      `UPDATE usage_grants SET remaining = remaining + 1
+        WHERE id = (SELECT grant_id FROM credit_purchases WHERE id = $1)`,
+      [purchase.id],
+    );
+    expect(await getCreditBalance(OWNER, TENANT)).toBe(before);
   });
 
   it('retries the webhook while the app does not answer, and grants once', async () => {
@@ -206,5 +225,62 @@ describeIfDb('the simulated checkout page', () => {
       before + purchase.credits,
     );
     expect(delivered).toHaveLength(1);
+  });
+
+  it('a refund that overtakes the completion sticks: the late completion grants nothing (review H1)', async () => {
+    const before = await getCreditBalance(OWNER, TENANT);
+    const { purchase, url } = await checkout();
+    failNext = 1; // the completion's first delivery fails
+
+    await submit(url, { op: 'pay', card: '4242424242424242' });
+    await submit(url, { op: 'refund' }); // delivered at once, before the retry
+    expect(await statusOf(purchase.id)).toBe('refunded');
+
+    // The completion retry lands, 200 ms later.
+    await expect.poll(() => delivered.length, { timeout: 2000 }).toBe(2);
+    expect(JSON.parse(delivered[1]!.body).type).toBe('checkout.session.completed');
+    expect(await getCreditBalance(OWNER, TENANT)).toBe(before);
+    expect(await statusOf(purchase.id)).toBe('refunded');
+  });
+
+  it('a second session for the same purchase grants nothing, and its refund takes nothing back (review M1)', async () => {
+    const before = await getCreditBalance(OWNER, TENANT);
+    const { purchase, url } = await checkout();
+    const otherUrl = await openSession(purchase);
+    const other = sim.last()!.id;
+    // The purchase keeps its first session.
+    expect(await attachCheckoutSession(OWNER, TENANT, purchase.id, 'stripe', other)).toBe(false);
+
+    await submit(otherUrl, { op: 'pay', card: '4242424242424242' });
+    expect(await getCreditBalance(OWNER, TENANT)).toBe(before);
+    expect(await statusOf(purchase.id)).toBe('pending');
+
+    await submit(url, { op: 'pay', card: '4242424242424242' });
+    expect(await getCreditBalance(OWNER, TENANT)).toBe(before + purchase.credits);
+
+    await submit(otherUrl, { op: 'refund' });
+    expect(await getCreditBalance(OWNER, TENANT)).toBe(before + purchase.credits);
+    expect(await statusOf(purchase.id)).toBe('paid');
+  });
+
+  it('/checkout opens one session per purchase and refuses a second (review M1)', async () => {
+    // Last in the file: it starts the process's own simulator, whose secret
+    // then wins in `stripeWebhookSecret()`.
+    process.env.STRIPE_SIMULATOR = 'true';
+    try {
+      const [pack] = await listCreditPacks(OWNER, TENANT);
+      const purchase = (await startCreditPurchase(OWNER, TENANT, pack!.code))!;
+      const api = new CreditsController();
+      const user = { userId: OWNER } as Parameters<CreditsController['checkout']>[0];
+
+      const first = await api.checkout(user, TENANT, purchase.id);
+      expect(first).toMatchObject({ state: 'redirect', provider: 'stripe' });
+      expect(first).not.toHaveProperty('providerRef');
+      await expect(api.checkout(user, TENANT, purchase.id)).rejects.toThrow(/already has a checkout open/);
+    } finally {
+      delete process.env.STRIPE_SIMULATOR;
+      await (await simulatedStripe()).close();
+      resetPaymentProviderForTesting();
+    }
   });
 });

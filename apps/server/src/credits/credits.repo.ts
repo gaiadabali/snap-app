@@ -157,6 +157,17 @@ export class CreditPurchaseNotPendingError extends Error {
   }
 }
 
+/** A processor payment through a checkout session other than the purchase's own. */
+export class DuplicateCreditPaymentError extends Error {
+  constructor(
+    readonly status: string,
+    readonly ownSession: string,
+  ) {
+    super(`credit purchase (${status}) was opened with session ${ownSession}, not this one`);
+    this.name = 'DuplicateCreditPaymentError';
+  }
+}
+
 /**
  * The manual/admin fulfilment step a real payment processor's webhook will
  * eventually replace. Marks the purchase `paid`, inserts the `usage_grants`
@@ -314,21 +325,30 @@ export async function fulfilCreditPurchaseFromProvider(
   purchaseId: string,
   provider: 'stripe' | 'apple' | 'google',
   providerRef: string,
+  paymentRef: string | null = null,
 ): Promise<CreditPurchaseRow | null> {
   return withTenantAs(getDb(), userId, tenantId, async (tx) => {
-    const found = await tx.execute<CreditPurchaseRow>(sql`
+    const found = await tx.execute<CreditPurchaseRow & { provider_ref: string | null }>(sql`
       select id, pack_code, credits, price_aud::text as price_aud, status::text as status,
-             provider::text as provider, to_json(created_at)#>>'{}' as created_at, to_json(paid_at)#>>'{}' as paid_at
+             provider::text as provider, to_json(created_at)#>>'{}' as created_at, to_json(paid_at)#>>'{}' as paid_at,
+             provider_ref
         from credit_purchases
        where id = ${purchaseId} and tenant_id = current_tenant_id()
        for update
     `);
     const purchase = found.rows[0];
     if (!purchase) return null;
+    // A payment through a session this purchase did not open (or a second
+    // one): money taken that this order does not account for. Refused, not
+    // granted; someone must refund it (review M1).
+    if (purchase.provider_ref !== null && purchase.provider_ref !== providerRef) {
+      throw new DuplicateCreditPaymentError(purchase.status, purchase.provider_ref);
+    }
+    const { provider_ref: _ref, ...row } = purchase;
     // A retry. Return it unchanged — see (2) above; an error here would make
     // the processor retry indefinitely.
-    if (purchase.status === 'paid') return purchase;
-    if (purchase.status !== 'pending') throw new CreditPurchaseNotPendingError(purchase.status);
+    if (row.status === 'paid') return row;
+    if (row.status !== 'pending') throw new CreditPurchaseNotPendingError(row.status);
 
     const grantId = randomUUID();
     await tx.execute(sql`
@@ -341,7 +361,8 @@ export async function fulfilCreditPurchaseFromProvider(
              paid_at = now(),
              grant_id = ${grantId},
              provider = ${provider}::billing_provider,
-             provider_ref = ${providerRef}
+             provider_ref = ${providerRef},
+             payment_ref = ${paymentRef}
        where id = ${purchaseId} and tenant_id = current_tenant_id()
       returning id, pack_code, credits, price_aud::text as price_aud, status::text as status,
                 provider::text as provider, to_json(created_at)#>>'{}' as created_at, to_json(paid_at)#>>'{}' as paid_at
@@ -353,31 +374,46 @@ export async function fulfilCreditPurchaseFromProvider(
 /**
  * A refund at the processor takes the credits back (group task 7.5.a).
  *
- * Zeroes what is LEFT of the purchase's grant and marks it `refunded`, in one
- * transaction under the same row lock as the grant. Scans already spent stay
- * spent: a credit cannot go below zero. Idempotent like the grant: a retried
- * `charge.refunded` finds it `refunded` and changes nothing. Returns how many
- * credits were taken back, or null when there is no such purchase.
+ * Matched to the payment it refunds (`payment_ref`): a refund of some other
+ * payment takes nothing back. On a `paid` purchase it zeroes what is LEFT of
+ * the grant and expires it, so a worker's give-back for an unreadable scan
+ * cannot top a refunded pack up again; scans already spent stay spent. On a
+ * `pending` one (the refund overtook the completion) it records the refund,
+ * so the late completion finds it `refunded` and grants nothing. Idempotent
+ * under the row lock. Returns null when there is no such purchase.
  */
 export async function refundCreditPurchaseFromProvider(
   userId: string,
   tenantId: string,
   purchaseId: string,
-): Promise<{ status: string; clawedBack: number } | null> {
+  paymentRef: string,
+): Promise<{ status: string; clawedBack: number; otherPayment?: true } | null> {
   return withTenantAs(getDb(), userId, tenantId, async (tx) => {
-    const found = await tx.execute<{ status: string; grant_id: string | null }>(sql`
-      select status::text as status, grant_id
+    const found = await tx.execute<{ status: string; grant_id: string | null; payment_ref: string | null }>(sql`
+      select status::text as status, grant_id, payment_ref
         from credit_purchases
        where id = ${purchaseId} and tenant_id = current_tenant_id()
        for update
     `);
     const purchase = found.rows[0];
     if (!purchase) return null;
+
+    if (purchase.status === 'pending') {
+      await tx.execute(sql`
+        update credit_purchases
+           set status = 'refunded', paid_at = now(), payment_ref = ${paymentRef}
+         where id = ${purchaseId} and tenant_id = current_tenant_id()
+      `);
+      return { status: 'refunded', clawedBack: 0 };
+    }
+    if (purchase.payment_ref !== paymentRef) {
+      return { status: purchase.status, clawedBack: 0, otherPayment: true };
+    }
     if (purchase.status !== 'paid') return { status: purchase.status, clawedBack: 0 };
 
     const taken = await tx.execute<{ taken: number }>(sql`
       update usage_grants g
-         set remaining = 0
+         set remaining = 0, expires_at = now()
         from (select id, remaining from usage_grants where id = ${purchase.grant_id} for update) old
        where g.id = old.id and g.tenant_id = current_tenant_id()
       returning old.remaining as taken
@@ -387,5 +423,29 @@ export async function refundCreditPurchaseFromProvider(
        where id = ${purchaseId} and tenant_id = current_tenant_id()
     `);
     return { status: 'refunded', clawedBack: taken.rows[0]?.taken ?? 0 };
+  });
+}
+
+/**
+ * Ties a just-opened checkout session to its purchase: one session per
+ * purchase (review M1). False when the purchase is no longer pending or
+ * already has one; the caller then refuses and never shows the new session.
+ */
+export async function attachCheckoutSession(
+  userId: string,
+  tenantId: string,
+  purchaseId: string,
+  provider: 'stripe',
+  providerRef: string,
+): Promise<boolean> {
+  return withTenantAs(getDb(), userId, tenantId, async (tx) => {
+    const updated = await tx.execute<{ id: string }>(sql`
+      update credit_purchases
+         set provider = ${provider}::billing_provider, provider_ref = ${providerRef}
+       where id = ${purchaseId} and tenant_id = current_tenant_id()
+         and status = 'pending' and provider_ref is null
+      returning id
+    `);
+    return updated.rows.length > 0;
   });
 }
