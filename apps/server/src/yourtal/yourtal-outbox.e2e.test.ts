@@ -128,7 +128,7 @@ describeIfDb('the YourTal outbox (2.5)', () => {
   }
 
   /** Buys and fulfils a pack, so scans in `tenant` are paid with bought credits. */
-  async function buyCredits(buyer: string, tenant: string, pack = 'credits_1000'): Promise<void> {
+  async function buyCredits(buyer: string, tenant: string, pack = 'credits_250'): Promise<void> {
     const purchase = await startCreditPurchase(buyer, tenant, pack);
     await fulfilCreditPurchase(buyer, tenant, purchase!.id);
   }

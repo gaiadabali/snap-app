@@ -218,20 +218,20 @@ describe('answers the server gives itself (no model call)', () => {
 describe('model answers', () => {
   it('streams meta (with looking), filtered deltas, actions and done, and gives the model the four sections', async () => {
     const s = setup({
-      script: ['You get 10 free ', 'scans, then each is 3.7 cents. See [Pricing](/pricing).', '\n[[next: How do packs work? | Do credits expire?]]\n[[cta: start]]', { usage: true }],
+      script: ['You get 10 free ', 'scans, then each is 10 cents. See [Pricing](/pricing).', '\n[[next: How do packs work? | Do credits expire?]]\n[[cta: start]]', { usage: true }],
     });
     const { frames } = await chat(s, chatReq('How much does a scan cost?', { path: '/' }));
     expect(frames[0]?.event).toBe('meta');
     expect(frames[0]?.data).toMatchObject({ intent: 'pricing', looking: { title: 'Pricing', url: '/pricing' } });
-    expect(deltas(frames)).toBe('You get 10 free scans, then each is 3.7 cents. See [Pricing](/pricing).');
+    expect(deltas(frames)).toBe('You get 10 free scans, then each is 10 cents. See [Pricing](/pricing).');
     expect(ev(frames, 'actions')[0]?.data).toEqual({ chips: ['How do packs work?', 'Do credits expire?'], cta: 'start' });
     expect(ev(frames, 'done')[0]?.data.sources).toEqual([{ title: 'Pricing', url: '/pricing' }]);
     expect(ev(frames, 'replace')).toHaveLength(0);
 
     const system = s.calls[0]?.messages[0]?.content ?? '';
     for (const section of ['# FACTS', '# VERIFIED', '# PAGES', '# CONTEXT']) expect(system).toContain(section);
-    expect(system).toContain('3.7 cents');
-    expect(system).toContain('100 scans for $3.70');
+    expect(system).toContain('10 cents');
+    expect(system).toContain('100 scans for $10.00');
     expect(system).toContain('starts with 10 free scans');
     expect(s.answers.at(-1)).toMatchObject({ intent: 'pricing', tokensIn: 100, model: 'z-ai/glm-5.3-flash' });
   });
@@ -257,7 +257,7 @@ describe('model answers', () => {
     const s = setup({ script: ['Sure, the Pro plan ', 'is $14.99 a month and ', { hang: true }] });
     const { frames } = await chat(s, chatReq('is there a monthly plan?'));
     expect(ev(frames, 'replace')).toHaveLength(1);
-    expect(String(ev(frames, 'replace')[0]?.data.text)).toContain('3.7 cents');
+    expect(String(ev(frames, 'replace')[0]?.data.text)).toContain('10 cents');
     expect(deltas(frames)).not.toContain('14.99');
     expect(s.calls[0]?.signal?.aborted).toBe(true);
     expect(s.answers.at(-1)?.flags).toContain('price');

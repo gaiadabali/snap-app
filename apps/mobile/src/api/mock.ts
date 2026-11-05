@@ -267,34 +267,15 @@ const inactiveCategories = new Set<string>();
 const customCategories = new Set<string>();
 
 /**
- * The six catalogue packs — `docs/ECOSYSTEM.md` D27's pricing table, verbatim,
- * in the `CreditPack` shape from `@snap/api-contract` (`code`/`credits`, not
- * the `id`/`scans` this file guessed at before the server's contract landed).
- * Not generated: this is a fixed price list, not derived from any document,
- * so it lives beside the other hand-authored demo constants (`ACCOUNTS`,
- * `OCCUPATION_LABELS`) rather than in the generated fixture.
+ * The active catalogue packs, in the `CreditPack` shape from
+ * `@snap/api-contract`. MIRRORS migration 0051: 50 / 100 / 250 scans for
+ * A$5 / 10 / 25, about 10c a scan. Hand-authored beside the other demo
+ * constants, and kept in step with `credit-packs.ts` on the web.
  */
-// MIRRORS migration 0027, which reprices every pack to credits x $0.033 —
-// model cost x 3, measured in MONETISATION.md §5 at ~$0.011 a scan. The
-// migration asserts that relationship in SQL, so these are not independent
-// numbers to keep in step by hand: they are that arithmetic, written out.
-//
-// The old figures (0.15 / 0.70 / 1.30 / 2.40 / 5.50 / 10.00) survived here
-// after the repricing landed, which would have demoed prices nobody will ever
-// be charged. Caught by snap-apps-c3, who repriced the database and checked
-// what else quoted the old numbers.
-//
-// The CODES were also wrong — `pack_10` here against `credits_10` in the
-// database. A fixture may legitimately invent data, but not a different
-// identifier for the same thing: a demo that shows `pack_10` and a support
-// conversation about `credits_10` are about the same pack and do not look it.
 const CREDIT_PACKS: CreditPack[] = [
-  { code: 'credits_10', credits: 10, priceAud: '0.33', sortOrder: 10 },
-  { code: 'credits_50', credits: 50, priceAud: '1.65', sortOrder: 20 },
-  { code: 'credits_100', credits: 100, priceAud: '3.30', sortOrder: 30 },
-  { code: 'credits_200', credits: 200, priceAud: '6.60', sortOrder: 40 },
-  { code: 'credits_500', credits: 500, priceAud: '16.50', sortOrder: 50 },
-  { code: 'credits_1000', credits: 1000, priceAud: '33.00', sortOrder: 60 },
+  { code: 'credits_50', credits: 50, priceAud: '5.00', sortOrder: 20 },
+  { code: 'credits_100', credits: 100, priceAud: '10.00', sortOrder: 30 },
+  { code: 'credits_250', credits: 250, priceAud: '25.00', sortOrder: 40 },
 ];
 
 /**
@@ -321,10 +302,10 @@ const seedCreditPurchases = (): CreditPurchase[] => [
     id: 'cpu_1',
     packCode: 'credits_50',
     credits: 50,
-    // Matches CREDIT_PACKS above, which matches migration 0027. A seeded
+    // Matches CREDIT_PACKS above, which matches migration 0051. A seeded
     // purchase showing a price no pack sells for is the same demo lie as a
     // stale catalogue, one row further down.
-    priceAud: '1.65',
+    priceAud: '5.00',
     status: 'paid',
     provider: 'manual',
     createdAt: '2026-06-02T01:15:00.000Z',

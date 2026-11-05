@@ -21,18 +21,18 @@ describe('FACTS', () => {
 
   it('derives the per-scan price in integer arithmetic', () => {
     const f = factsFromPacks(PACK_ROWS);
-    expect(f.perScanMicro).toBe(37_000n);
+    expect(f.perScanMicro).toBe(100_000n);
     expect(f.perScanUniform).toBe(true);
-    expect(f.perScanText).toBe('3.7 cents');
-    expect(f.packSizesText).toBe('50, 100, 200, 500 and 1,000 scans');
-    expect(f.packs.map((p) => p.priceText)).toEqual(['$1.85', '$3.70', '$7.40', '$18.50', '$37.00']);
+    expect(f.perScanText).toBe('10 cents');
+    expect(f.packSizesText).toBe('50, 100 and 250 scans');
+    expect(f.packs.map((p) => p.priceText)).toEqual(['$5.00', '$10.00', '$25.00']);
     expect(perScan(1_000_000n, 3)).toBe(333_333n);
     expect(perScan(2_000_000n, 3)).toBe(666_667n);
   });
 
   it('allows exactly the pack prices and per-scan prices as money', () => {
     const f = factsFromPacks(PACK_ROWS);
-    for (const p of ['1.85', '3.70', '7.40', '18.50', '37.00', '0.037']) {
+    for (const p of ['5.00', '10.00', '25.00', '0.10']) {
       expect(f.allowedMoney.has(keyOf(microFromDecimal(p) ?? -1n)), p).toBe(true);
     }
     expect(f.allowedMoney.has(keyOf(microFromDecimal('0.33') ?? -1n))).toBe(false);
@@ -57,7 +57,7 @@ describe('FACTS', () => {
     const block = factsBlock(factsFromPacks(PACK_ROWS));
     expect(block).toContain(SUPPORT_EMAIL);
     expect(block).toContain('iPhone app is in development');
-    expect(block).toContain('100 scans for $3.70');
+    expect(block).toContain('100 scans for $10.00');
     expect(block).toContain('10 free scans');
   });
 });
@@ -84,7 +84,7 @@ describe('the facts cache', () => {
     t += 10 * 60_000 + 1;
     fail = true;
     const stale = await src.get();
-    expect(stale.perScanText).toBe('3.7 cents');
+    expect(stale.perScanText).toBe('10 cents');
     expect(calls).toBe(2);
     expect(errors).toHaveLength(1);
     await src.get(); // inside the retry window: no new call
