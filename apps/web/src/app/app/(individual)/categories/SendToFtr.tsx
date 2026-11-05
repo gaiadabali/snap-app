@@ -75,7 +75,7 @@ export function SendToFtr({
   }
 
   const fileButton = (
-    <button type="button" onClick={() => void send()} disabled={busy} className={buttonClasses(directSend ? 'secondary' : 'primary')}>
+    <button type="button" onClick={() => void send()} disabled={busy} className={buttonClasses(directSend ? 'secondary' : 'primary', 'md', directSend ? '!h-auto min-h-11 py-2 text-center' : '!h-auto min-h-11 py-2 text-center !bg-[var(--color-accent-strong)]')}>
       {directSend ? 'Save as a file instead' : `Send ${financialYear} to Free Tax Returns`}
     </button>
   );
@@ -122,7 +122,7 @@ export function SendToFtr({
           and nothing in your return changes until you accept it there.
         </p>
         <div className="flex flex-col gap-2 sm:flex-row">
-          <button type="button" onClick={() => void sendDirect()} disabled={busy} className={buttonClasses('primary')}>
+          <button type="button" onClick={() => void sendDirect()} disabled={busy} className={buttonClasses('primary', 'md', '!h-auto min-h-11 py-2 text-center !bg-[var(--color-accent-strong)]')}>
             Send to Free Tax Returns
           </button>
           {fileButton}

@@ -42,6 +42,7 @@
   --color-accent-deep: #0060C0;
   --color-accent-soft: #E4EEFA;
   --color-accent-ink:  #FFFFFF;
+  --color-accent-strong: var(--color-accent-deep); /* button fill that clears 4.5:1 under --color-accent-ink */
   --color-scan:        #1CA8DB;
 
   --color-risk:        #C4322A;
@@ -101,6 +102,7 @@
     --color-accent-deep: #1878D8;
     --color-accent-soft: #13243A;
     --color-accent-ink:  #05101E;
+    --color-accent-strong: var(--color-accent); /* button fill that clears 4.5:1 under --color-accent-ink */
     --color-scan:        #3FC6EE;
     --color-risk:        #F08B80;
     --color-risk-soft:   #2C1A18;
@@ -131,6 +133,7 @@
   --color-accent-deep: #1878D8;
   --color-accent-soft: #13243A;
   --color-accent-ink:  #05101E;
+  --color-accent-strong: var(--color-accent); /* button fill that clears 4.5:1 under --color-accent-ink */
   --color-scan:        #3FC6EE;
   --color-risk:        #F08B80;
   --color-risk-soft:   #2C1A18;

@@ -70,4 +70,16 @@ describe('runFtrSend', () => {
   it('a browser that throws is a failure', async () => {
     expect(await go(deps({ openBrowser: vi.fn(async () => { throw new Error('x'); }) }))).toMatchObject({ kind: 'failed' });
   });
+
+  it('a dismissed browser (no return URL) is cancelled and nothing is finished', async () => {
+    const d = deps({ openBrowser: vi.fn(async () => ({ type: 'dismiss' })) });
+    expect(await go(d)).toEqual({ kind: 'cancelled' });
+    expect(d.finish).not.toHaveBeenCalled();
+  });
+
+  it('a returned URL with an error but no state stays failed', async () => {
+    const d = deps({ openBrowser: vi.fn(async () => ({ type: 'success' as const, url: `${BACK}?error=access_denied` })) });
+    expect(await go(d)).toMatchObject({ kind: 'failed' });
+    expect(d.finish).not.toHaveBeenCalled();
+  });
 });
