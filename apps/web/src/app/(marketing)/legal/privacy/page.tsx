@@ -198,7 +198,7 @@ export default function PrivacyPolicyPage() {
           </a>
           . Deleting your account erases your receipts too, including any still inside the five-year
           period the ATO sets for business records, because that duty is the taxpayer&apos;s;
-          export what you need first. Shared workspaces keep their records with your name removed.
+          export what you need first. A workspace where someone else still owns or manages it keeps its records with your name removed.
           If you are not satisfied with how we
           handle a privacy concern, you can complain to the OAIC.
         </p>

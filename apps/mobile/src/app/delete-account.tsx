@@ -7,6 +7,7 @@ import { api } from '@/api';
 import { DELETE_WORD, DeleteAccountPanel } from '@/components/DeleteAccountPanel';
 import { Screen, ScreenHeader } from '@/components/ui';
 import { useSession } from '@/session';
+import { useWorkspace } from '@/workspace';
 import { space } from '@/theme';
 
 /** Settings → Delete account (group 8.3.a): the explanation, the typed word, then sign out. */
@@ -14,6 +15,12 @@ export default function DeleteAccountScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { session, signOut } = useSession();
+  const { workspaces } = useWorkspace();
+  const teenRole = workspaces.some((w) => w.teenSpace === 'teen')
+    ? 'teen'
+    : workspaces.some((w) => w.teenSpace === 'parent')
+      ? 'parent'
+      : null;
   const [typed, setTyped] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
@@ -49,6 +56,7 @@ export default function DeleteAccountScreen() {
           </View>
           <DeleteAccountPanel
             yourtalLinked={session?.yourtalLinked}
+            teenRole={teenRole}
             typed={typed}
             password={password}
             busy={busy}

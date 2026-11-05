@@ -87,7 +87,7 @@ describe("alert.sh erasure check", () => {
     expect(r.sql).toMatch(/^SELECT/);
     // word boundaries: the job kind account_delete is not a DELETE statement
     expect(r.sql).not.toMatch(/payload|\b(UPDATE|DELETE|INSERT)\b/i);
-    for (const s of ["'yourtal_event'", "'storage_purge'", "'erasure_notice'", "completed_at IS NULL", "interval '24 hours'",
+    for (const s of ["'yourtal_event'", "'account_delete'", "'storage_purge'", "'erasure_notice'", "completed_at IS NULL", "interval '24 hours'",
                      "FROM teen_spaces WHERE erase_after < now() - interval '1 day'"]) {
       expect(r.sql).toContain(s);
     }

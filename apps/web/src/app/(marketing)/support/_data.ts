@@ -182,7 +182,7 @@ const ALL_CATEGORIES: SupportCategory[] = [
       },
       {
         q: 'Can I delete my account?',
-        a: 'Yes. In the app, go to Settings, then Delete account. You can also ask by email: see Delete your account (/delete-account). Your receipts are deleted with the account, even inside the ATO’s five-year window, so export them first. A shared workspace keeps its records with your name removed.',
+        a: 'Yes. In the app, go to Settings, then Delete account. You can also ask by email: see Delete your account (/delete-account). Your receipts are deleted with the account, even inside the ATO’s five-year window, so export them first. A workspace where someone else still owns or manages it keeps its records with your name removed.',
       },
     ],
   },

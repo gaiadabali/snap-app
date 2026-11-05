@@ -61,8 +61,8 @@ export default function DataRetentionPage() {
           or ask by email on the{' '}
           <a href="/delete-account">delete your account</a> page. Your receipts go with it, even
           inside the five-year window, because the duty to keep them is yours as the taxpayer, not
-          Snap Apps&apos;. Export what you need first. A shared workspace keeps its records, with your
-          name removed. See{' '}
+          Snap Apps&apos;. Export what you need first. A workspace where someone else still owns or
+          manages it keeps its records, with your name removed. See{' '}
           <a href="/legal/privacy">
             Privacy Policy
           </a>{' '}

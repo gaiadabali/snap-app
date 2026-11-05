@@ -15,6 +15,8 @@ export const DELETE_WORD = 'DELETE';
 export interface DeleteAccountPanelProps {
   /** Signs in with YourTal: no SnapApp password to ask for, and YourTal needs its own line. */
   yourtalLinked: boolean | undefined;
+  /** A teen in their own space, or a parent with a teen in SnapApp: both go through the 30-day hold (F111). */
+  teenRole?: 'teen' | 'parent' | null;
   typed: string;
   password: string;
   busy: boolean;
@@ -25,7 +27,7 @@ export interface DeleteAccountPanelProps {
 }
 
 export function DeleteAccountPanel(props: DeleteAccountPanelProps) {
-  const { yourtalLinked, typed, busy, error } = props;
+  const { yourtalLinked, teenRole, typed, busy, error } = props;
   const ready = typed.trim() === DELETE_WORD;
   return (
     <View style={{ gap: space.lg }}>
@@ -35,37 +37,80 @@ export function DeleteAccountPanel(props: DeleteAccountPanelProps) {
         </View>
       ) : null}
 
-      <Card>
-        <View style={{ gap: space.sm }}>
-          <View accessibilityRole="header">
-            <Body strong>What deleting does</Body>
+      {teenRole === 'teen' ? (
+        <Card>
+          <View style={{ gap: space.sm }}>
+            <View accessibilityRole="header">
+              <Body strong>What deleting does</Body>
+            </View>
+            <Small>
+              This can’t be undone. Your access to SnapApp ends straight away and we sign you out on every device. Your
+              space, including your receipts, is deleted within 30 days, and your parent is told. Export anything you
+              want to keep first.
+            </Small>
+            <Small>
+              If your parent invites you again before then, your space comes back as it was. After 30 days it’s gone for
+              good.
+            </Small>
           </View>
-          <Small>This can’t be undone. We’ll sign you out on every device straight away, then erase:</Small>
-          <Small>• your account and your sign-in;</Small>
-          <Small>
-            • every workspace that only you run, with its receipts and their original images, invoices, ledgers,
-            statements, goals and credits. That includes receipts you may still need to keep for the ATO’s five years, so
-            export what you need first;
-          </Small>
-          <Small>• your YourTal points history in SnapApp.</Small>
-        </View>
-      </Card>
+        </Card>
+      ) : (
+        <>
+          <Card>
+            <View style={{ gap: space.sm }}>
+              <View accessibilityRole="header">
+                <Body strong>What deleting does</Body>
+              </View>
+              <Small>This can’t be undone. We’ll sign you out on every device straight away, then erase:</Small>
+              <Small>• your account and your sign-in;</Small>
+              <Small>
+                • every workspace where you are the only owner or manager, even if other people use it (they’re emailed),
+                with its receipts and their original images, invoices, ledgers, statements, goals and credits. That
+                includes receipts you may still need to keep for the ATO’s five years, so export what you need first;
+              </Small>
+              <Small>• your YourTal points history in SnapApp.</Small>
+            </View>
+          </Card>
 
-      <Card>
-        <View style={{ gap: space.sm }}>
-          <View accessibilityRole="header">
-            <Body strong>What stays</Body>
+          <Card>
+            <View style={{ gap: space.sm }}>
+              <View accessibilityRole="header">
+                <Body strong>What stays</Body>
+              </View>
+              <Small>
+                • A workspace where another owner or manager remains keeps its records, because they belong to the
+                business. Your name is removed from them, and the longest-serving manager becomes the owner if you were
+                the only one.
+              </Small>
+              <Small>• A log of what our staff did to accounts, which doesn’t contain your receipts.</Small>
+              <Small>
+                • Backup copies, until they age out: database backups up to 30 days, stored files up to 90 days and
+                off-site backup copies up to 12 months. We don’t restore a deleted account from them.
+              </Small>
+              <Small>
+                • Receipts you already sent to Free Tax Returns, and points already added in YourTal, stay with them. Ask
+                them to delete those.
+              </Small>
+            </View>
+          </Card>
+        </>
+      )}
+
+      {teenRole === 'parent' ? (
+        <Card>
+          <View style={{ gap: space.sm }}>
+            <View accessibilityRole="header">
+              <Body strong>Your teen</Body>
+            </View>
+            <Small>
+              Deleting your account ends your teen’s access to SnapApp first. Their space, including their receipts, is
+              deleted after 30 days, and we tell them.
+            </Small>
           </View>
-          <Small>
-            • Shared workspaces keep their records, because they belong to the business. Your name is removed from them.
-            If you’re the only owner, the longest-serving manager becomes the owner. If there’s no manager, the workspace
-            is deleted and its members are emailed.
-          </Small>
-          <Small>• A log of what our staff did to accounts, and backup copies until they age out.</Small>
-        </View>
-      </Card>
+        </Card>
+      ) : null}
 
-      {yourtalLinked ? (
+      {yourtalLinked && teenRole !== 'teen' ? (
         <Card>
           <View style={{ gap: space.sm }}>
             <View accessibilityRole="header">
@@ -100,7 +145,7 @@ export function DeleteAccountPanel(props: DeleteAccountPanelProps) {
         )}
         <Button label="Delete my account" tone="risk" busy={busy} disabled={!ready || busy} onPress={props.onDelete} />
         <Small>
-          Can’t sign in, or want us to do it? Email hansel@gaiada.com, or see snap-apps.gaiada.com/delete-account.
+          Can’t sign in, or want us to do it? Email hansel@gaiada.com (we handle emailed requests within 30 days), or see snap-apps.gaiada.com/delete-account.
         </Small>
       </View>
     </View>

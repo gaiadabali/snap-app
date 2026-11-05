@@ -141,13 +141,16 @@ export async function markEmailProven(userId: string): Promise<boolean> {
 }
 
 /**
- * Queue the erasure of one account (8.3.a, 0051). The worker runs `erase_person`
- * (the API cannot) and then empties the payload. Several requests queue several
- * jobs; the second finds nothing to erase.
+ * Delete the caller's account (8.3.a, 0055). One SQL function, in one
+ * transaction: it takes the user from the live session (never an argument),
+ * ends the person's teen spaces through teen_space_end (a parent's teens, or a
+ * teen's own space, which then goes through the 30-day hold instead), queues the
+ * `account_delete` job the worker erases from (parents and adults), and revokes
+ * every session. False when the session is not live.
  */
-export async function queueAccountDeletion(userId: string): Promise<void> {
-  await getDb().execute(sql`
-    insert into jobs (id, tenant_id, kind, payload, max_attempts)
-    values (gen_random_uuid(), null, 'account_delete', ${JSON.stringify({ userId })}::jsonb, 10)
+export async function requestAccountDeletion(sessionTokenHash: Buffer): Promise<boolean> {
+  const { rows } = await getDb().execute<{ ok: boolean }>(sql`
+    select identity_account_delete_request(${sessionTokenHash}) as ok
   `);
+  return rows[0]?.ok === true;
 }

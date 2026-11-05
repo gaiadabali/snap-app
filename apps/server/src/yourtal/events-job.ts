@@ -38,7 +38,7 @@ import { endTeenInvite, teenInvitesConfigured } from '../teens/invite-api.js';
 
 export const STORAGE_PURGE_JOB = 'storage_purge';
 export const ERASURE_NOTICE_JOB = 'erasure_notice';
-/** Queued by `POST /v1/auth/account/delete` (0051). */
+/** Queued by identity_account_delete_request (0055), the only writer: the API has no insert policy for it. */
 export const ACCOUNT_DELETE_JOB = 'account_delete';
 /** YourTal's end for a teen invite, when the parent's End access could not reach it (0045). */
 export const TEEN_INVITE_END_JOB = 'teen_invite_end';
@@ -71,14 +71,17 @@ async function erasePersonAndNotify(tx: Pick<Db, 'execute'>, userId: string): Pr
   return `person erased: ${erasedCount} workspace(s) erased, ${rows.length - erasedCount} handed over, ${notices} notice(s) queued`;
 }
 
-/** Someone deleted their own account in the app (8.3.a, 0051). SnapApp's side only: their YourTal account stays. */
+/** Someone deleted their own account in the app (8.3.a, 0055). SnapApp's side only: their YourTal account stays. */
 async function handleAccountDelete(db: Db, job: Job, log: Log): Promise<void> {
   const userId = (job.payload as { userId?: unknown } | null)?.userId;
   if (typeof userId !== 'string' || !UUID.test(userId)) throw new Error('account_delete: bad payload');
   const outcome = await db.transaction(async (tx) => {
     const done = await erasePersonAndNotify(tx, userId);
-    // The payload holds the user id: emptied with the erasure, as erasure_notice does with its address.
-    await tx.execute(sql`update jobs set payload = '{}'::jsonb where id = ${job.id}`);
+    // The payload holds the user id: emptied with the erasure, as erasure_notice does with its address,
+    // and finished in the same statement so a retry never meets an empty payload.
+    await tx.execute(sql`
+      update jobs set payload = '{}'::jsonb, completed_at = now(), locked_at = null, last_error = null where id = ${job.id}
+    `);
     return done;
   });
   log.log(`account_delete ${job.id}: ${outcome}`);

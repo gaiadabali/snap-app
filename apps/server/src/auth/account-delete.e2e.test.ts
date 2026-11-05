@@ -6,14 +6,14 @@ import { join } from 'node:path';
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
 import { createDb, createPool, type Db } from '@snap/db';
-import type { Client, Pool } from 'pg';
+import pg, { type Client, type Pool } from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { provisionTenant, wipeTenant } from '../test-support/tenant.js';
 import { workerDatabaseUrl } from '../test-support/worker-db.js';
 
 /**
- * Deleting your own account from the app (group task 8.3.a, migration 0051):
+ * Deleting your own account from the app (group task 8.3.a, migration 0055):
  * the API checks the caller and queues one job, ends every session at once,
  * and the worker erases through erase_person (0043). Real HTTP, real database,
  * the API as snap_app and the worker as snap_worker.
@@ -22,6 +22,14 @@ const describeIfDb = process.env.DATABASE_URL ? describe : describe.skip;
 
 const W = 'e8300000-0000-4000-8000-000000000001';
 const Y = 'e8300000-0000-4000-8000-0000000000a1';
+const W_HOME = 'e8300000-0000-4000-8000-000000000002'; // the parent's household
+const W_TEEN = 'e8300000-0000-4000-8000-000000000003'; // the teen's space
+const W_SHARED = 'e8300000-0000-4000-8000-000000000004'; // O owns it, M manages it
+const P = 'e8300000-0000-4000-8000-0000000000b1';
+const T = 'e8300000-0000-4000-8000-0000000000b2';
+const O = 'e8300000-0000-4000-8000-0000000000c1';
+const M = 'e8300000-0000-4000-8000-0000000000c2';
+const INVITE = 'e8300000-0000-4000-8000-0000000000f1';
 const run = randomBytes(4).toString('hex');
 const quiet = { log: () => undefined, warn: () => undefined, error: () => undefined };
 
@@ -53,6 +61,14 @@ describeIfDb('delete your account (8.3.a)', () => {
       id: string;
       tenant_id: string | null;
     }>;
+  const space = async () =>
+    (await admin.query(`select access_ended_at, erase_after from teen_spaces where tenant_id = $1`, [W_TEEN])).rows[0] as
+      | { access_ended_at: Date | null; erase_after: Date | null }
+      | undefined;
+  const inviteEnds = async () =>
+    (await admin.query(`select payload from jobs where kind = 'teen_invite_end' and payload->>'inviteId' = $1`, [INVITE])).rows as Array<{
+      payload: { parentSub: string };
+    }>;
   const register = async () => {
     const email = `del-${run}-${emails.length}@example.test`;
     emails.push(email);
@@ -71,6 +87,30 @@ describeIfDb('delete your account (8.3.a)', () => {
       users: [{ id: Y, role: 'owner', subject: `yourtal|del-${run}`, email: `y-${run}@example.test` }],
     });
     await admin.query(`delete from rate_limits where bucket_key like 'account-delete:%'`); // earlier runs, same fixed user
+    (await provisionTenant({
+      tenantId: W_HOME,
+      name: 'Parent home',
+      users: [{ id: P, role: 'owner', subject: `yourtal|dp-${run}`, email: `p-${run}@example.test` }],
+    })).end();
+    (await provisionTenant({
+      tenantId: W_TEEN,
+      name: 'Teen space',
+      users: [{ id: T, role: 'owner', subject: `yourtal|dt-${run}`, email: `t-${run}@example.test` }],
+    })).end();
+    // The membership guard only bites once the space exists, so the row goes in last.
+    await admin.query(`insert into memberships (tenant_id, user_id, role) values ($1, $2, 'readonly')`, [W_TEEN, P]);
+    await admin.query(
+      `insert into teen_spaces (tenant_id, teen_user_id, parent_user_id, funding_tenant_id, invite_id) values ($1, $2, $3, $4, $5)`,
+      [W_TEEN, T, P, W_HOME, INVITE],
+    );
+    (await provisionTenant({
+      tenantId: W_SHARED,
+      name: 'Shared',
+      users: [
+        { id: O, role: 'owner', subject: `yourtal|do-${run}`, email: `o-${run}@example.test` },
+        { id: M, role: 'admin', email: `m-${run}@example.test` },
+      ],
+    })).end();
     workerPool = createPool(workerDatabaseUrl());
     workerDb = createDb(workerPool);
     ({ runErasureJobsOnce } = await import('../yourtal/events-job.js'));
@@ -84,6 +124,11 @@ describeIfDb('delete your account (8.3.a)', () => {
     await app?.close();
     if (admin) {
       await admin.query(`delete from jobs where kind = 'account_delete' and tenant_id is null and payload = '{}'::jsonb and created_at > now() - interval '1 hour'`);
+      await admin.query('delete from teen_spaces where tenant_id = $1', [W_TEEN]);
+      await admin.query(`delete from jobs where kind = 'teen_invite_end' and payload->>'inviteId' = $1`, [INVITE]);
+      await wipeTenant(admin, W_TEEN, [T]);
+      await wipeTenant(admin, W_HOME, [P]);
+      await wipeTenant(admin, W_SHARED, [O, M]);
       await wipeTenant(admin, W, [Y]);
       await admin.query('delete from users where email = any($1)', [emails]);
       await admin.end();
@@ -144,6 +189,92 @@ describeIfDb('delete your account (8.3.a)', () => {
     expect((await admin.query('select 1 from tenants where id = $1', [W])).rowCount).toBe(0); // the workspace Y ran alone
     // Nothing is recorded as an erased sub: the person may sign in with YourTal again and start fresh.
     expect((await admin.query('select 1 from yourtal_erased_subjects where sub = $1', [`del-${run}`])).rowCount).toBe(0);
+  });
+
+  it('the API cannot queue a deletion itself, for anyone: only the session-bound function can', async () => {
+    const api = new pg.Client({ connectionString: process.env.DATABASE_URL });
+    await api.connect();
+    try {
+      await expect(
+        api.query(`insert into jobs (id, tenant_id, kind, payload) values (gen_random_uuid(), null, 'account_delete', $1)`, [
+          JSON.stringify({ userId: O }),
+        ]),
+      ).rejects.toThrow(/row-level security/);
+      // A token that is no live session names nobody.
+      const none = await api.query(`select identity_account_delete_request($1) as ok`, [randomBytes(32)]);
+      expect(none.rows[0].ok).toBe(false);
+      await expect(api.query(`select * from erase_person($1)`, [O])).rejects.toThrow(/permission denied/);
+      await expect(api.query(`select account_delete_queue($1)`, [O])).rejects.toThrow(/permission denied/);
+    } finally {
+      await api.end();
+    }
+    expect(await queued(O)).toHaveLength(0);
+    expect(await exists(O)).toBe(true);
+  });
+
+  it('one person deleting queues a job for that person only', async () => {
+    const { token, user } = await register();
+    expect((await del(token, { confirm: 'DELETE', password: 'a-decent-password' })).statusCode).toBe(200);
+    expect(await queued(user.userId)).toHaveLength(1);
+    expect(await queued(O)).toHaveLength(0);
+    expect(await queued(Y)).toHaveLength(0);
+    await runErasureJobsOnce(workerDb, quiet, (await queued(user.userId)).map((j) => j.id));
+  });
+
+  it('an emailed request: staff run account_delete_queue as postgres and the worker erases, as for the button', async () => {
+    const { user } = await register();
+    await admin.query('select account_delete_queue($1)', [user.userId]);
+    const jobs = await queued(user.userId);
+    expect(jobs).toHaveLength(1);
+    expect(await runErasureJobsOnce(workerDb, quiet, jobs.map((j) => j.id))).toBe(1);
+    expect(await exists(user.userId)).toBe(false);
+  });
+
+  it('an owner who leaves a manager behind hands the workspace over instead of erasing it', async () => {
+    const { issueYourTalSession } = await import('./sessions.js');
+    const token = await issueYourTalSession(O);
+    expect((await del(token, { confirm: 'DELETE' })).statusCode).toBe(200);
+    await runErasureJobsOnce(workerDb, quiet, (await queued(O)).map((j) => j.id));
+    expect(await exists(O)).toBe(false);
+    expect((await admin.query('select role from memberships where tenant_id = $1 and user_id = $2', [W_SHARED, M])).rows[0]?.role).toBe('owner');
+  });
+
+  it('a teen deleting is a withdrawal: the 30-day hold and YourTal told, not an immediate erase', async () => {
+    const { issueYourTalSession } = await import('./sessions.js');
+    const token = await issueYourTalSession(T);
+    expect((await del(token, { confirm: 'DELETE' })).statusCode).toBe(200);
+    const held = (await space())!;
+    expect(held.access_ended_at).not.toBeNull();
+    expect(Math.round((held.erase_after!.getTime() - held.access_ended_at!.getTime()) / 86_400_000)).toBe(30);
+    expect((await inviteEnds()).map((j) => j.payload.parentSub)).toEqual([`dp-${run}`]);
+    expect(await sessionStatus(token)).toBe(401);
+    expect(await queued(T)).toHaveLength(0); // the hold sweep erases the space and the account after 30 days
+    expect(await exists(T)).toBe(true);
+    expect((await admin.query('select 1 from tenants where id = $1', [W_TEEN])).rowCount).toBe(1);
+    // Back to a live space for the parent's case below.
+    await admin.query(`update teen_spaces set access_ended_at = null, erase_after = null where tenant_id = $1`, [W_TEEN]);
+    await admin.query(`delete from jobs where kind = 'teen_invite_end' and payload->>'inviteId' = $1`, [INVITE]);
+    await admin.query(`insert into memberships (tenant_id, user_id, role) values ($1, $2, 'readonly') on conflict do nothing`, [W_TEEN, P]);
+  });
+
+  it('a parent deleting ends each teen space first: held 30 days, YourTal told, then the parent is erased', async () => {
+    const { issueYourTalSession } = await import('./sessions.js');
+    const token = await issueYourTalSession(P);
+    expect((await space())!.access_ended_at).toBeNull();
+    expect((await del(token, { confirm: 'DELETE' })).statusCode).toBe(200);
+
+    const held = (await space())!;
+    expect(held.access_ended_at).not.toBeNull();
+    const days = (held.erase_after!.getTime() - held.access_ended_at!.getTime()) / 86_400_000;
+    expect(Math.round(days)).toBe(30);
+    expect((await inviteEnds()).map((j) => j.payload.parentSub)).toEqual([`dp-${run}`]);
+    expect(await sessionStatus(token)).toBe(401);
+
+    expect(await runErasureJobsOnce(workerDb, quiet, (await queued(P)).map((j) => j.id))).toBe(1);
+    expect(await exists(P)).toBe(false);
+    // The teen's space and account wait for the hold sweep; nothing erased them now.
+    expect(await exists(T)).toBe(true);
+    expect((await space())!.erase_after).not.toBeNull();
   });
 
   it('refuses a job that names a bad user id, and a tenant job of the kind', async () => {

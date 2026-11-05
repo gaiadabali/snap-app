@@ -55,8 +55,8 @@ export default function DeleteAccountPage() {
           </a>{' '}
           from the address your account uses, with the subject &ldquo;Delete my Snap Apps
           account&rdquo;. We reply to confirm it is you, then delete the account the same way the app
-          does. If you write from a different address, tell us the one on the account so we can
-          check.
+          does, and we handle emailed requests within 30 days. If you write from a different address,
+          tell us the one on the account so we can check.
         </p>
       </section>
 
@@ -67,8 +67,9 @@ export default function DeleteAccountPage() {
         <ul className="body mt-4 list-disc space-y-2 pl-6">
           <li>Your account, your sign-in and every session on every device.</li>
           <li>
-            Every workspace that only you run, with its receipts and the original images, invoices,
-            ledgers, statements, goals and credits. This includes receipts the ATO would want you to
+            Every workspace where you are the only owner or manager, even if other people use it
+            (they are emailed), with its receipts and the original images, invoices, ledgers,
+            statements, goals and credits. This includes receipts the ATO would want you to
             keep for five years: <strong>export what you need first</strong>, because we cannot get
             it back afterwards.
           </li>
@@ -82,19 +83,36 @@ export default function DeleteAccountPage() {
         </h2>
         <ul className="body mt-4 list-disc space-y-2 pl-6">
           <li>
-            <strong>Shared workspaces</strong> keep their records, because they belong to the
-            business. Your name is removed from them. If you were the only owner, the longest-serving
-            manager becomes the owner; if there is no manager, the workspace is deleted and its
-            members are emailed.
+            <strong>A workspace where another owner or manager remains</strong> keeps its records,
+            because they belong to the business. Your name is removed from them, and if you were the
+            only owner the longest-serving manager becomes the owner.
           </li>
           <li>
             A log of what our staff did to accounts (who and when, not your receipts). It is
             append-only.
           </li>
           <li>
-            Backup copies, until they age out. We do not restore an account that has been deleted.
+            <strong>Backup copies, until they age out:</strong> database backups for up to 30 days,
+            stored files for up to 90 days and off-site backup copies for up to 12 months. We do not
+            restore a deleted account from them.
+          </li>
+          <li>
+            Receipts you already sent to Free Tax Returns, and points already added in YourTal, stay
+            with them. Ask them to delete those.
           </li>
         </ul>
+      </section>
+
+      <section aria-labelledby="teens" className="mt-12">
+        <h2 id="teens" className="hd-3">
+          Parents and teens
+        </h2>
+        <p className="body mt-4">
+          If you are a parent with a teen in Snap Apps, deleting your account first ends your
+          teen&apos;s access. A teen&apos;s space is deleted 30 days after access ends, and both of
+          you are told. If you are the teen and delete your own account, the same 30 days apply: your
+          access ends now, and your space is deleted within 30 days.
+        </p>
       </section>
 
       <section aria-labelledby="yourtal" className="mt-12">

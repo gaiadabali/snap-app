@@ -20,7 +20,7 @@ Once a record's retention period has passed, an automated job removes it rather 
 
 In the app, go to Settings, then Delete account: your Snap Apps account and the workspaces only you run are deleted, including your receipts, within minutes, and your YourTal account is left alone. If you delete your YourTal account instead, your Snap Apps data is deleted too, within 72 hours. Export your receipts as a CSV first if you need a copy.
 
-A shared workspace you belong to keeps its records, with your name removed.
+A workspace you belong to where someone else still owns or manages it keeps its records, with your name removed.
 
 ## CSV export
 

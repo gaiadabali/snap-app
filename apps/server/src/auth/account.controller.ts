@@ -38,7 +38,7 @@ import {
   issuePasswordReset,
   newLinkSecret,
   passwordResetIsLive,
-  queueAccountDeletion,
+  requestAccountDeletion,
 } from './account.repo.js';
 import { clientIp, type IpAwareRequest } from './client-ip.js';
 import { hashPassword, passwordProblem, verifyPassword } from './passwords.js';
@@ -260,7 +260,9 @@ export class AccountController {
       'Body {confirm: "DELETE", password?}. The password is needed when the account has one (an account ' +
       'that signs in with YourTal has none). Queues the erasure for the worker (erase_person: workspaces ' +
       'you run alone and everything in them, your attribution elsewhere, your sign-in) and ends EVERY ' +
-      'session at once, this one included. Deletes SnapApp only, never the YourTal account. Not available ' +
+      'session at once, this one included. A parent\'s teen spaces are ended first (30-day hold, YourTal told); ' +
+      'a teen\'s own request is that same hold, and the space and account are erased after 30 days. ' +
+      'Deletes SnapApp only, never the YourTal account. Not available ' +
       'to staff acting as a user. 403 wrong_password when the password is wrong. 429 past 5 tries per account in 15 minutes.',
   })
   async deleteAccount(
@@ -279,8 +281,10 @@ export class AccountController {
         throw new ForbiddenException({ error: 'wrong_password', message: 'That password is not right.' });
       }
     }
-    await queueAccountDeletion(user.userId);
-    await revokeAllSessions(session.tokenHash);
+    // One transaction in SQL: the user comes from the session, the job is queued, every session ends.
+    if (!(await requestAccountDeletion(session.tokenHash))) {
+      throw new UnauthorizedException('Your session has ended. Sign in again.');
+    }
     return { ok: true };
   }
 

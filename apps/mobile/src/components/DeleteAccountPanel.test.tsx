@@ -28,10 +28,24 @@ describe('DeleteAccountPanel', () => {
   it('says what is deleted and what stays', () => {
     const t = text();
     expect(t).toContain('This can’t be undone');
-    expect(t).toContain('every workspace that only you run');
+    expect(t).toContain('every workspace where you are the only owner or manager');
     expect(t).toContain('export what you need first');
-    expect(t).toContain('Shared workspaces keep their records');
+    expect(t).toContain('A workspace where another owner or manager remains keeps its records');
+    expect(t).toContain('database backups up to 30 days, stored files up to 90 days and off-site backup copies up to 12 months');
+    expect(t).toContain('Free Tax Returns');
     expect(t).toContain('hansel@gaiada.com');
+    expect(t).toContain('within 30 days');
+    expect(t).not.toContain('Your teen');
+  });
+
+  it('tells a teen the space goes within 30 days, and a parent what happens to their teen', () => {
+    const teen = text({ teenRole: 'teen', yourtalLinked: true });
+    expect(teen).toContain('deleted within 30 days, and your parent is told');
+    expect(teen).not.toContain('What stays');
+    expect(teen).not.toContain('start with a new, empty account');
+    const parent = text({ teenRole: 'parent' });
+    expect(parent).toContain('ends your teen’s access to SnapApp first');
+    expect(parent).toContain('deleted after 30 days');
   });
 
   it('asks for a password only when the account is not a YourTal one, and explains YourTal only when it is', () => {
