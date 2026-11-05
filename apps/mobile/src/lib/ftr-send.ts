@@ -84,6 +84,7 @@ export async function runFtrSend(
     const done = await deps.finish({ flowId: started.flowId, state, ...(error ? { error } : { code: code!, iss: iss! }) });
     return done.status === 'sent' ? { kind: 'sent', year: done.financialYear } : { kind: 'cancelled' };
   } catch (e) {
-    return failed(codeOf(e));
+    // Cancel at YourTal's send screen comes back as `send_refused`: the same as cancelled.
+    return codeOf(e) === 'send_refused' ? { kind: 'cancelled' } : failed(codeOf(e));
   }
 }

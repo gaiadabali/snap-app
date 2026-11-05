@@ -82,4 +82,12 @@ describe('runFtrSend', () => {
     expect(await go(d)).toMatchObject({ kind: 'failed' });
     expect(d.finish).not.toHaveBeenCalled();
   });
+
+  it('a send_refused from finish (Cancel at YourTal) is cancelled', async () => {
+    const d = deps({
+      openBrowser: vi.fn(async () => ({ type: 'success' as const, url: `${BACK}?error=send_refused&state=s` })),
+      finish: vi.fn(async () => { throw apiError('send_refused'); }),
+    });
+    expect(await go(d)).toEqual({ kind: 'cancelled' });
+  });
 });

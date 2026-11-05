@@ -45,6 +45,14 @@ describe('YourTal callback for a send', () => {
     expect(where(res).searchParams.get('ftr')).toBe('cancelled');
   });
 
+  it('treats send_refused (Cancel at YourTal) as cancelled', async () => {
+    const { ApiError } = await import('@/lib/api/server');
+    apiMock.mockRejectedValue(new ApiError(409, 'x', { error: 'send_refused' }));
+    const { GET } = await import('./callback/route');
+    const res = await GET(cb('error=send_refused&state=s', SEND));
+    expect(where(res).searchParams.get('ftr')).toBe('cancelled');
+  });
+
   it('shows failed with the API error code, never its text', async () => {
     const { ApiError } = await import('@/lib/api/server');
     apiMock.mockRejectedValue(new ApiError(503, 'raw upstream text', { error: 'ftr_unavailable' }));

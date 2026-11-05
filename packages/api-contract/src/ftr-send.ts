@@ -19,7 +19,7 @@ const MESSAGES: Record<string, string> = {
   wrong_account: `You confirmed with a different YourTal account from the one you use here. ${NOT_SENT}`,
   not_allowed: `This YourTal account can't send to Free Tax Returns. ${NOT_SENT}`,
   not_approved: `The send wasn't confirmed at YourTal. ${NOT_SENT}`,
-  send_refused: `That send was already closed. Start again. ${NOT_SENT}`,
+  send_refused: NOT_SENT,
   ftr_refused: `Free Tax Returns couldn't take these deductions. ${NOT_SENT}`,
 };
 const GENERIC = `Something went wrong. ${NOT_SENT}`;

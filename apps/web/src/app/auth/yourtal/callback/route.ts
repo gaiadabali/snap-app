@@ -134,6 +134,8 @@ async function finishSend(request: NextRequest, flowId: string): Promise<NextRes
       : back({ ftr: 'cancelled' }, result.returnTo);
   } catch (e) {
     const body = e instanceof ApiError ? (e.body as { error?: unknown } | undefined) : undefined;
+    // Cancel at YourTal's send screen comes back as `send_refused`: the same as cancelled.
+    if (body?.error === 'send_refused') return back({ ftr: 'cancelled' });
     return back({ ftr: 'failed', code: typeof body?.error === 'string' ? body.error : 'failed' });
   }
 }
