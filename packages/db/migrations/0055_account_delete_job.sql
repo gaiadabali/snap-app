@@ -1,5 +1,5 @@
 -- ---------------------------------------------------------------------------
--- 0051 — The API may queue an `account_delete` job
+-- 0055 — The API may queue an `account_delete` job
 --
 -- Group task 8.3.a (yourtal/docs/29 §6: "8.3.a's in-app delete calls
 -- erase_person"). Someone deleting their own SnapApp account from the phone
