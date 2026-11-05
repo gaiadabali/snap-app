@@ -475,6 +475,25 @@ holds, single use, throttling).
 
 ---
 
+## Free Tax Returns direct send (group 4.8, S4)
+
+A person can send a year's deductions straight to Free Tax Returns (FTR), with
+YourTal confirming the send first. The setting is `FTR_TRANSFER_URL`, and it is
+off while unset (docs/DEPLOY.md, "Free Tax Returns direct send").
+
+- **Flow**: SnapApp `POST /v1/ftr-sends` stores the bundle (held up to an hour);
+  YourTal's Send screen approves it; `POST /v1/ftr-sends/finish` re-checks the
+  adult and AU claims and posts the stored bytes to FTR.
+- **Call** (`apps/server/src/deductions/ftr-client.ts`): `POST` with
+  `Authorization: Bearer` set to YourTal's assertion, `redirect: 'error'` and a
+  15 s timeout. The assertion is never decoded, logged or stored. FTR parks the
+  bundle as a pending import; nothing in the return changes until the person
+  accepts it there.
+- **Tests** run against `fake-ftr.ts`, which records what it was sent, and the
+  fake YourTal OIDC server, which gains transfers.
+
+---
+
 ## What this queue does not do
 
 - **It does not simulate approval.** Where a vendor must approve (Xero

@@ -120,6 +120,10 @@ export default function PrivacyPolicyPage() {
             images, not your whole account.
           </li>
           <li>
+            <strong>Free Tax Returns</strong>, only if you choose to send your deductions to it. We
+            send that data after YourTal confirms it is you.
+          </li>
+          <li>
             <strong>The Australian Business Register</strong>, to
             confirm a supplier&apos;s ABN and GST registration status. This is a lookup of public
             business information, not a disclosure of your own data to the Register.

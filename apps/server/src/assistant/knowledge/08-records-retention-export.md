@@ -26,6 +26,14 @@ A shared workspace you belong to keeps its records, with your name removed.
 
 Export your receipts as a CSV any time, from the Spending screen. You can take one row per receipt or one row per line item, and any spreadsheet opens the file.
 
+## Sending deductions to Free Tax Returns
+
+You can send a year's deductions straight to Free Tax Returns, instead of downloading a file. The file download is still there.
+
+What is sent: the amount of each deduction line, your occupation, your work kilometres, and a fingerprint of each receipt. What is not sent: the receipts themselves, and the names of the shops.
+
+YourTal asks you to confirm the send first, so nothing goes until you do. Nothing in your return changes until you accept the deductions in Free Tax Returns. Free Tax Returns is for adults in Australia, so the button only shows for them, on a personal workspace you own.
+
 ## Frequently asked
 
 ### How long are receipts kept?
