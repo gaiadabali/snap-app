@@ -4,12 +4,14 @@
 **Supersedes** the direct-to-consumer tiering in this file's previous revision. See §1 for why.
 
 > **SUPERSEDED IN PART — 2026-09-17.** The owner has settled a credit model:
-> ten free scans on signup, then one scan costs one credit, priced at the
-> measured model cost × 3 (§5's ~$0.011/scan → $0.033). There are no
+> ten free scans on signup, then one scan costs one credit. The price was
+> first set at model cost × 3 on a $0.011 base (Haiku and Sonnet); the founder
+> replaced it on 2026-10-20 with about 10c a scan on the measured cost, see
+> §3 and §4 (group plan 0.11.a). There are no
 > subscriptions, no seats and no minimum, so the Free / Sole Trader / Practice
 > / Practice Plus tiering below — and every MRR and per-seat figure derived
 > from it — no longer describes what is sold. Credit packs are seeded by
-> migration 0027 and the rule lives in
+> migration 0051 (0027 and 0029 are history) and the figures live in
 > `apps/web/src/app/(marketing)/pricing/credit-packs.ts`.
 >
 > What survives and is still the reason this file exists: §1's finding that
@@ -139,7 +141,7 @@ These override the per-scan figures elsewhere in this file where they disagree
   spent. There is no per-person cap.
 - **The arithmetic, per scan on an A$5 pack:** 9.09c after GST, less 0.77c for
   Stripe, about 0.5c to read and store it for five years, and 3c for the point,
-  leaves **about 4.8c (53%)**. A scan bought through Google Play Billing keeps
+  leaves **about 4.8c (53% of the ex-GST price)**. A scan bought through Google Play Billing keeps
   about 2.9c after Google's fee.
 
 **Built (group plan 7.1.a, 7.1.c and 2.5.f; migration 0039):**
@@ -183,8 +185,33 @@ gives an accountant a reason to bring their clients onto a practice plan.
 
 ## 4. Unit economics
 
-Extraction is ~$0.011/scan blended (Haiku 4.5 primary, Sonnet 5 escalation); storage ~$0.002/scan
-across the 5-year ATO retention window.
+**Measured cost of a scan (2026-10-20, group plan 0.11.a; replaces the A$0.011
+base, which assumed Claude Haiku and Sonnet).** Production reads with Gemma 4
+31B: **A$0.0005 a one-page scan** (average 1,568 tokens in, 343 out; 27 of 27
+real reads; OpenRouter's exact charge, USD to AUD 1.4314, plus its 5.5% card
+fee). Add about A$0.002 of storage for five years of retention (rounded) and one scan
+costs about **A$0.0027 all-in**. The fallback models cost more per page
+(MiniMax M3 A$0.0022, Qwen 3.5 A$0.019, Kimi K3 A$0.034) but serve few scans.
+
+**Per scan on a bought credit, A$5 pack (50 scans):**
+
+| | Per scan |
+|---|---|
+| Price, GST included | 10.00c |
+| GST (one eleventh) | −0.91c, leaves 9.09c |
+| Stripe, 1.75% + 30c over 50 scans | −0.77c |
+| Read and store (measured 0.27c, 0.5c kept as headroom) | −0.50c |
+| One YourTal point, bought at cost | −3.00c |
+| **Profit** | **about 4.8c (53% of the ex-GST price)** |
+
+The A$10 and A$25 packs keep more, because Stripe's fixed 30c is spread wider
+(0.3c and 0.12c a scan). The old $0.011 base and the A$0.037 credit are gone;
+the 10 free signup scans earn no point, so each costs about 0.27c and nothing
+else. Tests: `credit-packs.test.ts` fails if a pack's profit per scan drops
+under 4c.
+
+The practice-plan table below still uses the old per-scan AI figure; it
+describes a tier that is no longer sold (see the note at the top).
 
 ### Per client on a practice plan
 

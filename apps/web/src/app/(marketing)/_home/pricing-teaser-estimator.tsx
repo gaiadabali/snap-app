@@ -12,7 +12,7 @@ import './pricing-teaser-styles.css';
  * "What would a month cost me?" A range slider and one honest number.
  *
  * The arithmetic is integer end to end (docs/WEB.md §3.2). The price of a scan
- * is held in tenths of a cent (3.7c is 37), a month is receipts × 37 tenths,
+ * is held in tenths of a cent (10c is 100), a month is receipts × the per-scan tenths,
  * and only the final step rounds to whole cents for display. No float is ever
  * multiplied by a count.
  *
@@ -28,11 +28,11 @@ const MIN = 5;
 const MAX = 300;
 const START = 40;
 
-/** One scan, in tenths of a cent. 0.037 dollars is 37. */
+/** One scan, in tenths of a cent. 0.10 dollars is 100. */
 const TENTHS_PER_SCAN = Math.round(CREDIT_PRICE_AUD * 1000);
 
-/** The same rate as the section headline prints it: "3.7". */
-const RATE_CENTS = (CREDIT_PRICE_AUD * 100).toFixed(1);
+/** The same rate as the section headline prints it: "10". */
+const RATE_CENTS = +(CREDIT_PRICE_AUD * 100).toFixed(1);
 
 /** Receipts → a dollars string ("1.48") by whole cents, from integer tenths. */
 function monthly(receipts: number): string {

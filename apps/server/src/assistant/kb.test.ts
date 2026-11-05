@@ -47,8 +47,8 @@ describe('knowledge loader', () => {
   it('resolves the tokens from FACTS', () => {
     const how = kb.chunks.find((c) => c.heading === 'How credits work')?.text ?? '';
     expect(how).toContain('starts with 10 free scans');
-    expect(how).toContain('each scan is 3.7 cents');
-    expect(how).toContain('packs of 50, 100, 200, 500 and 1,000 scans');
+    expect(how).toContain('each scan is 10 cents');
+    expect(how).toContain('packs of 50, 100 and 250 scans');
     expect(how).not.toContain('{{');
   });
 
@@ -101,7 +101,7 @@ describe('the shipped knowledge pack', () => {
   });
 
   it.skipIf(files.length === 0)('states no money except through the resolved tokens', () => {
-    const allowed = new Set(['3.7 cents']);
+    const allowed = new Set(['10 cents']);
     for (const c of kb.chunks) {
       const stripped = [...allowed].reduce((t, a) => t.split(a).join(''), c.text);
       expect(mentionsMoney(stripped), `${c.id}: ${c.text.slice(0, 80)}`).toBe(false);

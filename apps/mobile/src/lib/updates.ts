@@ -85,6 +85,12 @@ export const BUILD = {
   versionCode: readOwnVersionCode(),
 } as const;
 
+/** True in the Play Store build: Play updates the app, so the APK card is hidden. */
+export function isPlayBuild(): boolean {
+  // Referenced literally: Metro only inlines `process.env.EXPO_PUBLIC_*`.
+  return process.env.EXPO_PUBLIC_DISTRIBUTION === 'play';
+}
+
 export type RemoteBuild = {
   version: string;
   /** Today this holds the commit; kept as it is because field installs read it. */
@@ -118,6 +124,11 @@ async function fetchManifest(apiUrl: string): Promise<Manifest | null> {
   // iOS installs through TestFlight or the App Store and never by download, so
   // there is nothing to offer there even once iOS exists.
   if (Platform.OS !== 'android') return null;
+  // The Play build is updated by Play, and Play forbids an app updating itself
+  // from elsewhere, so no APK card and no APK-backed gate. Decided at build time
+  // (eas.json production) rather than by the installer package, which would need
+  // a new native module. ponytail: a sideloaded copy of the Play AAB is not detected.
+  if (isPlayBuild()) return null;
   // No API means fixtures; there is no server to ask.
   if (!apiUrl) return null;
   // A build that does not know its own versionCode cannot tell whether it is old.
