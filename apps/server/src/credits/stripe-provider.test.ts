@@ -258,3 +258,24 @@ describe('verifying a Stripe-Signature', () => {
     );
   });
 });
+
+describe('where the simulator may start', () => {
+  const saved = { NODE_ENV: process.env.NODE_ENV, DEMO_ENV: process.env.DEMO_ENV };
+  afterEach(() => {
+    process.env.NODE_ENV = saved.NODE_ENV;
+    if (saved.DEMO_ENV === undefined) delete process.env.DEMO_ENV;
+    else process.env.DEMO_ENV = saved.DEMO_ENV;
+  });
+
+  it('refuses a production host that has not declared itself the demo host', async () => {
+    process.env.NODE_ENV = 'production';
+    delete process.env.DEMO_ENV;
+    await expect(startStripeSimulator()).rejects.toThrow(/refuses to start on a production host/);
+  });
+
+  it('starts on the demo host (production build, DEMO_ENV=staging)', async () => {
+    process.env.NODE_ENV = 'production';
+    process.env.DEMO_ENV = 'staging';
+    await sim();
+  });
+});

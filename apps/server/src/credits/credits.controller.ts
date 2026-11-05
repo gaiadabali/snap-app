@@ -150,7 +150,7 @@ export class CreditsController {
   @ApiOperation({
     summary: 'Ask what to do next about a pending purchase',
     description:
-      'Returns a descriptor rather than a URL, because no processor has been chosen and the rails do not correspond — a card processor answers with a hosted page, in-app purchase answers with a product identifier the phone redeems itself. Today every call returns state "unavailable" with a message safe to show a customer: the order is recorded, nothing has been charged. See credits/payment-provider.ts for the seam and what wiring a real one involves.',
+      'Returns a descriptor rather than a URL, because no processor has been chosen and the rails do not correspond — a card processor answers with a hosted page, in-app purchase answers with a product identifier the phone redeems itself. With Stripe (or its simulator, STRIPE_SIMULATOR=true on the demo host) it returns state "redirect" and the hosted checkout URL; with none configured, state "unavailable" and a message safe to show a customer. Credits are granted only by the signed webhook. See credits/payment-provider.ts.',
   })
   async checkout(
     @CurrentUser() user: AuthUser,

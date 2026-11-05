@@ -349,3 +349,43 @@ export async function fulfilCreditPurchaseFromProvider(
     return updated.rows[0]!;
   });
 }
+
+/**
+ * A refund at the processor takes the credits back (group task 7.5.a).
+ *
+ * Zeroes what is LEFT of the purchase's grant and marks it `refunded`, in one
+ * transaction under the same row lock as the grant. Scans already spent stay
+ * spent: a credit cannot go below zero. Idempotent like the grant: a retried
+ * `charge.refunded` finds it `refunded` and changes nothing. Returns how many
+ * credits were taken back, or null when there is no such purchase.
+ */
+export async function refundCreditPurchaseFromProvider(
+  userId: string,
+  tenantId: string,
+  purchaseId: string,
+): Promise<{ status: string; clawedBack: number } | null> {
+  return withTenantAs(getDb(), userId, tenantId, async (tx) => {
+    const found = await tx.execute<{ status: string; grant_id: string | null }>(sql`
+      select status::text as status, grant_id
+        from credit_purchases
+       where id = ${purchaseId} and tenant_id = current_tenant_id()
+       for update
+    `);
+    const purchase = found.rows[0];
+    if (!purchase) return null;
+    if (purchase.status !== 'paid') return { status: purchase.status, clawedBack: 0 };
+
+    const taken = await tx.execute<{ taken: number }>(sql`
+      update usage_grants g
+         set remaining = 0
+        from (select id, remaining from usage_grants where id = ${purchase.grant_id} for update) old
+       where g.id = old.id and g.tenant_id = current_tenant_id()
+      returning old.remaining as taken
+    `);
+    await tx.execute(sql`
+      update credit_purchases set status = 'refunded'
+       where id = ${purchaseId} and tenant_id = current_tenant_id()
+    `);
+    return { status: 'refunded', clawedBack: taken.rows[0]?.taken ?? 0 };
+  });
+}

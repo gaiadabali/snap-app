@@ -1,7 +1,11 @@
 import { BadRequestException, Controller, HttpCode, Logger, Post, Req } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
-import { fulfilCreditPurchaseFromProvider, CreditPurchaseNotPendingError } from './credits.repo.js';
+import {
+  fulfilCreditPurchaseFromProvider,
+  CreditPurchaseNotPendingError,
+  refundCreditPurchaseFromProvider,
+} from './credits.repo.js';
 import { stripeWebhookSecret } from './payment-provider.js';
 import { StripeError, verifyStripeSignature } from './stripe-provider.js';
 
@@ -97,6 +101,8 @@ export class StripeWebhookController {
       throw new BadRequestException('Signature verification failed.');
     }
 
+    if (event.type === 'charge.refunded') return this.refunded(event.data.object);
+
     if (event.type !== 'checkout.session.completed') {
       // Verified and uninteresting. 200 so Stripe stops.
       return { received: true };
@@ -155,6 +161,34 @@ export class StripeWebhookController {
       throw error;
     }
 
+    return { received: true };
+  }
+
+  /**
+   * A refund takes the credits back (group task 7.5.a). Full refunds only:
+   * a partial one is logged and left for a person, since which scans it
+   * covers is a decision, not arithmetic.
+   */
+  private async refunded(charge: Record<string, unknown>): Promise<{ received: true }> {
+    const metadata = (charge.metadata ?? {}) as Record<string, string>;
+    const { purchase_id: purchaseId, tenant_id: tenantId, user_id: userId } = metadata;
+    if (!purchaseId || !tenantId || !userId) {
+      this.logger.error(`charge.refunded ${String(charge.id)} carries no usable metadata — nothing taken back`);
+      return { received: true };
+    }
+    if (charge.refunded !== true) {
+      this.logger.error(`charge.refunded ${String(charge.id)} is a partial refund — credits left as they are`);
+      return { received: true };
+    }
+    // A database failure throws: 5xx, and Stripe retries.
+    const result = await refundCreditPurchaseFromProvider(userId, tenantId, purchaseId);
+    if (!result) {
+      this.logger.error(`charge.refunded ${String(charge.id)}: purchase ${purchaseId} does not exist`);
+    } else if (result.status !== 'refunded') {
+      this.logger.error(`charge.refunded ${String(charge.id)}: purchase ${purchaseId} is ${result.status}`);
+    } else {
+      this.logger.log(`refunded purchase ${purchaseId}: took back ${result.clawedBack} credits`);
+    }
     return { received: true };
   }
 }

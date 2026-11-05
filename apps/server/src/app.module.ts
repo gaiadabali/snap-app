@@ -27,7 +27,6 @@ import {
   AuthCodesController,
   MePreferencesController,
   UsageController,
-  WalletController,
 } from './redesign/redesign.controller.js';
 import { ReconciliationController } from './reconciliation/reconciliation.controller.js';
 import { SettingsController } from './settings/settings.controller.js';
@@ -138,7 +137,6 @@ export class HealthController {
     /* The 2026-09-19 mobile redesign. Read the file header before relying on
        any of these — they are in-process stubs, and the three auth-code
        routes deliberately refuse rather than pretend. */
-    WalletController,
     UsageController,
     AlertsController,
     MePreferencesController,

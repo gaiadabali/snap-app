@@ -152,6 +152,17 @@ export class StripePaymentProvider implements PaymentProvider {
         tenant_id: request.tenantId,
         user_id: request.userId,
       },
+      // The same three on the PaymentIntent, which Stripe copies onto its
+      // charge: a `charge.refunded` event carries the charge, not the session.
+      // ponytail: confirm the copy against live Stripe at 6.8; if absent,
+      // read the PaymentIntent by id in the refund handler instead.
+      payment_intent_data: {
+        metadata: {
+          purchase_id: request.purchaseId,
+          tenant_id: request.tenantId,
+          user_id: request.userId,
+        },
+      },
     }).join('&');
 
     let response: Response;

@@ -53,7 +53,6 @@ export const STATE_CHANGING = [
   'createItem',
   'createParty',
   'startCreditPurchase',
-  'fulfilCreditPurchase',
 ] as const;
 
 /**
@@ -65,7 +64,7 @@ export const STATE_CHANGING = [
  * in the mock's own module state), which is not part of the persisted
  * session. Listed so the set of methods stays exhaustive.
  */
-export const SIDE_EFFECT_ONLY = ['createCapture', 'uploadOriginal', 'linkYourtal', 'unlinkYourtal', 'redeemYourtalVoucher'] as const;
+export const SIDE_EFFECT_ONLY = ['createCapture', 'uploadOriginal', 'linkYourtal', 'unlinkYourtal', 'redeemYourtalVoucher', 'checkoutCreditPurchase'] as const;
 
 /** Reads. None of these may match `MUTATION`, or every list would queue a write. */
 export const READ_METHODS = [

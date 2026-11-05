@@ -31,6 +31,7 @@ import type {
   CreditBalance,
   CreditPack,
   CreditPurchase,
+  CheckoutSession,
   DocumentFilter,
   DocumentLine,
   DocumentView,
@@ -51,8 +52,6 @@ import type {
   PersonalSummary,
   PlanUsage,
   AvailableTaxRules,
-  SavedCard,
-  AddSavedCardRequest,
   UsageKind,
   UsagePeriod,
   NotificationPrefs,
@@ -1157,9 +1156,11 @@ export class HttpApi implements SnapApi {
     return this.request<CreditPurchase>('POST', '/v1/credits/purchases', { body: { packCode } });
   }
 
-  fulfilCreditPurchase(purchaseId: string): Promise<CreditPurchase> {
-    return this.request<CreditPurchase>('POST', `/v1/credits/purchases/${purchaseId}/fulfil`, {
+  checkoutCreditPurchase(purchaseId: string): Promise<CheckoutSession> {
+    // Never queued: a checkout page opened later, from the outbox, is no use.
+    return this.request<CheckoutSession>('POST', `/v1/credits/purchases/${purchaseId}/checkout`, {
       body: {},
+      queue: false,
     });
   }
 
@@ -1262,41 +1263,16 @@ export class HttpApi implements SnapApi {
     });
   }
 
-  /* ── Wallet, usage & preferences (2026-09-19 redesign) ──────────
+  /* ── Usage & preferences (2026-09-19 redesign) ──────────
      All USER-scoped: `workspaceId: null` so the client does not attach the
-     active workspace header. A person in two households has one wallet, one
-     set of notification switches and one privacy choice. */
+     active workspace header. A person in two households has one set of
+     notification switches and one privacy choice. */
 
   listAvailableTaxRules(): Promise<AvailableTaxRules[]> {
     /* `/v1/tax-rules-catalogue`, NOT `/v1/tax-rules/available` — the route
        already exists and is deliberately not workspace-scoped, because
        onboarding needs it before a workspace does. */
     return this.get<AvailableTaxRules[]>('/v1/tax-rules-catalogue', null);
-  }
-
-  listSavedCards(): Promise<SavedCard[]> {
-    return this.get<SavedCard[]>('/v1/wallet/cards', null);
-  }
-
-  addSavedCard(input: AddSavedCardRequest): Promise<SavedCard> {
-    /* Never queued for offline replay. The outbox persists bodies to disk, and
-       this one carries a PAN and a CVC — see `AddSavedCardRequest`. A card
-       added with no connection has to fail loudly and be retyped. */
-    return this.request<SavedCard>('POST', '/v1/wallet/cards', {
-      body: input,
-      workspaceId: null,
-      queue: false,
-    });
-  }
-
-  removeSavedCard(cardId: string): Promise<void> {
-    return this.request<void>('DELETE', `/v1/wallet/cards/${cardId}`, { workspaceId: null });
-  }
-
-  setDefaultCard(cardId: string): Promise<SavedCard> {
-    return this.request<SavedCard>('POST', `/v1/wallet/cards/${cardId}/default`, {
-      workspaceId: null,
-    });
   }
 
   getUsage(kind: UsageKind, month: string): Promise<UsagePeriod> {

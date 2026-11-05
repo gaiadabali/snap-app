@@ -34,6 +34,7 @@ import type {
   CreditBalance,
   CreditPack,
   CreditPurchase,
+  CheckoutSession,
   DocumentFilter,
   DocumentLine,
   DocumentView,
@@ -64,9 +65,6 @@ import type {
   Session,
   SnapApi,
   AvailableTaxRules,
-  SavedCard,
-  AddSavedCardRequest,
-  CardBrand,
   UsageKind,
   UsageItem,
   UsagePeriod,
@@ -624,32 +622,7 @@ function reprice(invoice: Invoice): Invoice {
   };
 }
 
-/* ── Wallet / preferences state (2026-09-19 redesign) ─────────────────────── */
-
-let savedCards: SavedCard[] = [
-  {
-    id: 'card_seed_4417',
-    provider: 'card',
-    brand: 'visa',
-    last4: '4417',
-    expiryMonth: 8,
-    expiryYear: 2029,
-    label: 'Visa ending 4417',
-    isDefault: true,
-    createdAt: '2026-09-02T04:10:00.000Z',
-  },
-];
-
-function brandOf(digits: string): CardBrand {
-  if (/^4/.test(digits)) return 'visa';
-  if (/^(5[1-5]|2[2-7])/.test(digits)) return 'mastercard';
-  if (/^3[47]/.test(digits)) return 'amex';
-  return 'other';
-}
-
-function labelOf(brand: CardBrand): string {
-  return { visa: 'Visa', mastercard: 'Mastercard', amex: 'Amex', other: 'Card' }[brand];
-}
+/* ── Preferences state (2026-09-19 redesign) ─────────────────────── */
 
 /** Itemised spend, mirroring the prototype's own demo months. */
 const usageByMonth: Record<UsageKind, Record<string, UsageItem[]>> = {
@@ -2015,9 +1988,8 @@ export class MockApi implements SnapApi {
     const pack = CREDIT_PACKS.find((x) => x.code === packCode);
     if (!pack) throw new Error(`No such credit pack: ${packCode}.`);
     // Mirrors the server exactly: this records INTENT only. Nothing is
-    // granted until `fulfilCreditPurchase` runs — there is no payment
-    // processor yet (Stripe is phase 6.5), so `pending` is the whole honest
-    // truth about a purchase started from this screen.
+    // granted here: the demo has no checkout, so `pending` is the whole
+    // honest truth about a purchase started from this screen.
     const purchase: CreditPurchase = {
       id: `cpu_${Date.now()}`,
       packCode: pack.code,
@@ -2032,22 +2004,15 @@ export class MockApi implements SnapApi {
     return purchase;
   }
 
-  async fulfilCreditPurchase(purchaseId: string): Promise<CreditPurchase> {
-    await settle(400);
-    const purchase = creditPurchases.find((x) => x.id === purchaseId);
-    if (!purchase) throw new Error('No such purchase.');
-    // Idempotent, exactly like the server: fulfilling an already-paid
-    // purchase returns it unchanged rather than granting the credits twice.
-    if (purchase.status === 'paid') return purchase;
-    if (purchase.status !== 'pending') {
-      throw new Error(
-        `This purchase is ${purchase.status}, not pending — it cannot be fulfilled.`,
-      );
-    }
-    const paid: CreditPurchase = { ...purchase, status: 'paid', paidAt: new Date().toISOString() };
-    creditPurchases = creditPurchases.map((x) => (x.id === purchaseId ? paid : x));
-    creditBalance += paid.credits;
-    return paid;
+  /** The demo takes no money, as a server with no processor says (`noPaymentProvider`). */
+  async checkoutCreditPurchase(purchaseId: string): Promise<CheckoutSession> {
+    await settle(200);
+    return {
+      purchaseId,
+      provider: 'none',
+      state: 'unavailable',
+      message: 'The demo takes no payments, so nothing was charged and no scans were added.',
+    };
   }
 
   /** The demo has no YourTal provider to send anyone to: the buttons stay hidden. */
@@ -2183,53 +2148,6 @@ export class MockApi implements SnapApi {
         consumptionTaxName: 'PPN', currency: 'IDR',
       },
     ];
-  }
-
-  async listSavedCards(): Promise<SavedCard[]> {
-    await settle(120);
-    return [...savedCards].sort((a, b) => Number(b.isDefault) - Number(a.isDefault));
-  }
-
-  async addSavedCard(input: AddSavedCardRequest): Promise<SavedCard> {
-    await settle(420);
-    const digits = input.number.replace(/\D/g, '');
-    if (digits.length < 12) throw new Error('That card number is too short.');
-    if (!/^\d{3,4}$/.test(input.cvc)) throw new Error('Check the security code.');
-
-    // The PAN never lands in state — only the last four, as the contract says.
-    const card: SavedCard = {
-      id: `card_${Date.now().toString(36)}`,
-      provider: input.provider,
-      brand: brandOf(digits),
-      last4: digits.slice(-4),
-      expiryMonth: input.expiryMonth,
-      expiryYear: input.expiryYear,
-      label: `${labelOf(brandOf(digits))} ending ${digits.slice(-4)}`,
-      isDefault: input.makeDefault ?? savedCards.length === 0,
-      createdAt: new Date().toISOString(),
-    };
-    savedCards = card.isDefault
-      ? [...savedCards.map((c) => ({ ...c, isDefault: false })), card]
-      : [...savedCards, card];
-    return card;
-  }
-
-  async removeSavedCard(cardId: string): Promise<void> {
-    await settle(200);
-    const gone = savedCards.find((c) => c.id === cardId);
-    savedCards = savedCards.filter((c) => c.id !== cardId);
-    // Removing the default promotes the next one, or there is no default.
-    if (gone?.isDefault && savedCards.length > 0) {
-      savedCards = savedCards.map((c, i) => ({ ...c, isDefault: i === 0 }));
-    }
-  }
-
-  async setDefaultCard(cardId: string): Promise<SavedCard> {
-    await settle(160);
-    savedCards = savedCards.map((c) => ({ ...c, isDefault: c.id === cardId }));
-    const card = savedCards.find((c) => c.id === cardId);
-    if (!card) throw new Error('That card is no longer saved.');
-    return card;
   }
 
   async getUsage(kind: UsageKind, month: string): Promise<UsagePeriod> {

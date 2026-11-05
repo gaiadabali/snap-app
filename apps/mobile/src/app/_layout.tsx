@@ -122,8 +122,6 @@ function RootChrome() {
               title with `<ScreenHeader>`, the way the prototype does, so the
               navigator's header is off for all of them. */}
           <Stack.Screen name="credits" options={{ headerShown: false }} />
-          <Stack.Screen name="wallet/add" options={{ headerShown: false }} />
-          <Stack.Screen name="wallet/card" options={{ headerShown: false }} />
           <Stack.Screen name="orders" options={{ headerShown: false }} />
           <Stack.Screen name="order/[id]" options={{ headerShown: false }} />
           <Stack.Screen

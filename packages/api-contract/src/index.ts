@@ -2048,7 +2048,7 @@ export interface TransactionRow {
   }>;
 }
 
-/* ── Wallet, usage & device preferences ──────────────────────────────
+/* ── Usage & device preferences ──────────────────────────────
  * Added 2026-09-19 for the mobile redesign ("Snap Apps Prototype.dc.html").
  *
  * Everything here is CONSUMER-side and USER-scoped unless a member says
@@ -2057,58 +2057,10 @@ export interface TransactionRow {
  *   1. No tax figure appears anywhere in this section, for the same reason it
  *      does not appear in reconciliation: a personal workspace never sees GST,
  *      and the types should make that true by construction.
- *   2. Card data is NOT held by this product. `SavedCard` is a reference to a
- *      card held by a processor, carrying only what a human needs to recognise
- *      which card they picked. See the note on `AddSavedCardRequest`.
+ *   2. Card data is never held by this product: cards are typed on the
+ *      processor's hosted checkout page (group task 7.5.d removed the
+ *      saved-cards stub that took them here).
  * ────────────────────────────────────────────────────────────────────────── */
-
-export type CardBrand = 'visa' | 'mastercard' | 'amex' | 'other';
-
-/** How a purchase is authorised. The two wallets settle on-device. */
-export type WalletProvider = 'card' | 'apple-pay' | 'google-pay';
-
-/**
- * A payment instrument the user has saved for buying credit packs.
- *
- * NOT `PaymentMethod` — that name is already taken by the invoicing side,
- * where it means how a customer paid a bill (`'bank' | 'card' | 'cash' |
- * 'other'`). The two are unrelated and must not be merged: one is a record of
- * money received, this one is a stored way to spend it.
- */
-export interface SavedCard {
-  id: string;
-  provider: WalletProvider;
-  brand: CardBrand;
-  /** Exactly four digits. The only part of the PAN that exists here. */
-  last4: string;
-  expiryMonth: number;
-  /** Four digits. */
-  expiryYear: number;
-  /** What the user called it, or a generated "Visa ending 4417". */
-  label: string;
-  isDefault: boolean;
-  createdAt: IsoDateTime;
-}
-
-/**
- * `POST /v1/wallet/cards`.
- *
- * `number` and `cvc` are accepted, used to mint a processor token, and then
- * discarded — they are never persisted and never appear in a `SavedCard`. Any
- * implementation that writes either to a database, a log or an error report is
- * a PCI incident, not a bug to be fixed later. The fields are named plainly
- * rather than hidden behind a "token" abstraction so that reviewing this is
- * possible; the discipline is in the server, not in the shape.
- */
-export interface AddSavedCardRequest {
-  provider: WalletProvider;
-  nameOnCard: string;
-  number: string;
-  expiryMonth: number;
-  expiryYear: number;
-  cvc: string;
-  makeDefault?: boolean;
-}
 
 export type UsageKind = 'credits' | 'points';
 

@@ -1,14 +1,14 @@
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useWorkspace } from '@/workspace';
+import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { ActivityIndicator, ScrollView, View } from 'react-native';
 import { Text } from '@/theme/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { api, type CreditPurchase, type SavedCard } from '@/api';
+import { api, type CreditPurchase } from '@/api';
 import { Icon } from '@/components/Icon';
 import { Button, Card, Divider, Screen, Small } from '@/components/ui';
-import { EXPERIMENTAL_FEATURES_ENABLED } from '@/config';
 import { formatAud, numeric, space, type, usePalette } from '@/theme';
 
 /**
@@ -18,11 +18,12 @@ import { formatAud, numeric, space, type, usePalette } from '@/theme';
  * moment from the user's side and a route change mid-charge invites a back
  * gesture into a half-finished purchase.
  *
- * The charge itself is two calls — `startCreditPurchase` records the intent,
- * `fulfilCreditPurchase` is the manual stand-in for a processor webhook. They
- * are separate on the server so that a real gateway can slot between them, and
- * this screen keeps the purchase id from the first so a failure after it can
- * still be reported against a real row rather than vanishing.
+ * `startCreditPurchase` records the intent, `checkoutCreditPurchase` returns
+ * the processor's hosted page, and the card is typed THERE, in the system
+ * browser, never in this app (group task 7.5.d). Credits come from the
+ * processor's signed webhook, so when the browser closes this screen only
+ * reads the purchase back; it never marks anything paid. The purchase id is
+ * kept so a failure is reported against a real row rather than vanishing.
  */
 type Phase = 'busy' | 'done' | 'failed';
 
@@ -32,11 +33,10 @@ export default function PayScreen() {
   const p = usePalette();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const params = useLocalSearchParams<{ pack?: string; card?: string }>();
+  const params = useLocalSearchParams<{ pack?: string }>();
 
   const [phase, setPhase] = useState<Phase>('busy');
   const [purchase, setPurchase] = useState<CreditPurchase | null>(null);
-  const [card, setCard] = useState<SavedCard | null>(null);
   const [credits, setCredits] = useState<number | null>(null);
   const [reason, setReason] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
@@ -45,19 +45,6 @@ export default function PayScreen() {
   // place where running twice is not merely wasteful, so the attempt is
   // guarded by a ref rather than trusting the effect to fire once.
   const charging = useRef(false);
-
-  useEffect(() => {
-    // The card is only a label, and the wallet behind it is a server stub.
-    if (!EXPERIMENTAL_FEATURES_ENABLED) return undefined;
-    let live = true;
-    void api()
-      .listSavedCards()
-      .then((cards) => live && setCard(cards.find((c) => c.id === params.card) ?? null))
-      .catch(() => {});
-    return () => {
-      live = false;
-    };
-  }, [params.card]);
 
   useEffect(() => {
     // A teen's space buys nothing (F112): no purchase request, even before the redirect below renders.
@@ -72,16 +59,29 @@ export default function PayScreen() {
         const started = await api().startCreditPurchase(params.pack as string);
         if (!live) return;
         setPurchase(started);
-        const paid = await api().fulfilCreditPurchase(started.id);
+        const session = await api().checkoutCreditPurchase(started.id);
+        if (session.state !== 'redirect' || !session.url) {
+          throw new Error(session.message ?? 'Card payments are not available right now. Nothing was charged.');
+        }
+        // No return address: resolves when the person closes the browser.
+        await WebBrowser.openAuthSessionAsync(session.url, null);
+        const after = await settledPurchase(started.id);
         if (!live) return;
-        setPurchase(paid);
+        if (after) setPurchase(after);
+        if (after?.status !== 'paid') {
+          setReason(
+            'We have not received a payment for this order. If you did pay, your scans appear in a minute or two.',
+          );
+          setPhase('failed');
+          return;
+        }
         const balance = await api().getCreditBalance();
         if (!live) return;
         setCredits(balance.creditsRemaining);
         setPhase('done');
       } catch (e) {
         if (!live) return;
-        setReason(e instanceof Error ? e.message : 'The bank did not accept that card.');
+        setReason(e instanceof Error ? e.message : 'The payment did not go through. Nothing was charged.');
         setPhase('failed');
       } finally {
         charging.current = false;
@@ -113,7 +113,7 @@ export default function PayScreen() {
           <Text
             style={[type.body, { color: p.inkMuted, marginTop: space.sm, textAlign: 'center', maxWidth: 300 }]}
           >
-            {card ? `Authorising with ${card.label}.` : 'Authorising with your bank.'}
+            Finish paying in the browser, then close it to come back here.
           </Text>
           <Small style={{ marginTop: space.lg }}>Do not close the app.</Small>
         </View>
@@ -133,21 +133,18 @@ export default function PayScreen() {
         </StatusCircle>
 
         <Text style={[type.h1, { color: p.ink, marginTop: space.xl }]}>
-          {ok ? 'Payment complete' : 'Payment declined'}
+          {ok ? 'Payment complete' : 'Payment not taken'}
         </Text>
         <Text
           style={[type.body, { color: p.inkMuted, marginTop: space.sm, textAlign: 'center', maxWidth: 320 }]}
         >
           {ok
             ? `${purchase?.credits ?? 0} scans are on your account now.`
-            : reason ?? 'The bank did not accept that card.'}
+            : reason ?? 'The payment did not go through. Nothing was charged.'}
         </Text>
 
         <Card style={{ width: '100%', maxWidth: 380, marginTop: space.xl, gap: space.md }}>
           <SummaryRow label={ok ? 'Paid' : 'Attempted'} value={formatAud(purchase?.priceAud ?? null)} />
-          {EXPERIMENTAL_FEATURES_ENABLED ? (
-            <SummaryRow label="Method" value={card?.label ?? '—'} />
-          ) : null}
           {ok ? (
             <>
               <SummaryRow label="Reference" value={(purchase?.id ?? '').slice(-10).toUpperCase()} />
@@ -155,7 +152,7 @@ export default function PayScreen() {
               <SummaryRow label="Credits now" value={String(credits ?? '—')} strong />
             </>
           ) : (
-            <SummaryRow label="Nothing charged" value="Confirmed" good />
+            <SummaryRow label="Order" value={purchase ? purchase.status : 'Not placed'} />
           )}
         </Card>
 
@@ -169,7 +166,7 @@ export default function PayScreen() {
             <>
               <Button label="Try again" onPress={() => setAttempt((n) => n + 1)} />
               <Button
-                label="Choose another method"
+                label="Back to credits"
                 tone="outline"
                 onPress={() => router.replace('/credits')}
               />
@@ -179,6 +176,19 @@ export default function PayScreen() {
       </ScrollView>
     </Screen>
   );
+}
+
+/**
+ * The purchase once the webhook has had a moment: the simulated checkout
+ * delivers it before sending the browser on, a real processor within seconds.
+ */
+async function settledPurchase(id: string): Promise<CreditPurchase | undefined> {
+  for (let i = 0; i < 5; i += 1) {
+    const found = (await api().listCreditPurchases()).find((x) => x.id === id);
+    if (found?.status !== 'pending') return found;
+    await new Promise((r) => setTimeout(r, 1000));
+  }
+  return (await api().listCreditPurchases()).find((x) => x.id === id);
 }
 
 /** The large status mark: an icon in a soft tinted circle, centred and calm. */
