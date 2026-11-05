@@ -79,6 +79,20 @@ describe('offers an update', () => {
 });
 
 describe('stays quiet', () => {
+  it('in the Play build, which Play updates (no APK card, no APK gate)', async () => {
+    const m = await load(200);
+    process.env.EXPO_PUBLIC_DISTRIBUTION = 'play';
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    try {
+      expect((await m.checkForUpdate(URL)).status).toBe('none');
+      expect((await m.checkMinimum(URL)).status).toBe('ok');
+      expect(fetchMock).not.toHaveBeenCalled();
+    } finally {
+      delete process.env.EXPO_PUBLIC_DISTRIBUTION;
+    }
+  });
+
   it('when the published build is the one already installed', async () => {
     const m = await load(218);
     respond({ available: true, build: MANIFEST });

@@ -57,12 +57,17 @@
 
     "production": {
       "//": [
-        "There is no production API yet. This points at STAGING deliberately",
-        "rather than at a hostname nobody has registered — an unresolvable URL",
-        "baked into a release build is not safer than a staging one, it is just",
-        "harder to diagnose. Change this the day a production host exists."
+        "Production and staging are the same host today (snap-apps-api.gaiada.com,",
+        "the only API there is), so this is the real production API. Change it the",
+        "day a separate production host exists.",
+        "",
+        "EXPO_PUBLIC_DISTRIBUTION=play marks the Play Store build: it never offers",
+        "an APK download (Play forbids updating outside Play). The website APK",
+        "(preview profile, build-apk.sh) leaves it unset and keeps its update card."
       ],
-      "env": { "EXPO_PUBLIC_API_URL": "https://snap-apps-api.gaiada.com" }
+      "android": { "buildType": "app-bundle" },
+      "env": {
+        "EXPO_PUBLIC_DISTRIBUTION": "play", "EXPO_PUBLIC_API_URL": "https://snap-apps-api.gaiada.com" }
     }
   },
   "submit": {

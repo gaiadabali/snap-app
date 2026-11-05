@@ -23,7 +23,7 @@ import { space, usePalette } from '@/theme';
  * claim if they are wrong.
  */
 
-type State = 'idle' | 'asking' | 'tracking' | 'denied' | 'unavailable';
+type State = 'idle' | 'notice' | 'asking' | 'tracking' | 'denied' | 'unavailable';
 
 export function TripTracker({ onSaved }: { onSaved: () => void }) {
   const p = usePalette();
@@ -47,12 +47,13 @@ export function TripTracker({ onSaved }: { onSaved: () => void }) {
   // A watcher left running after the screen closes drains the battery all day.
   useEffect(() => stopWatching, [stopWatching]);
 
-  async function start() {
+  // Play's prominent-disclosure rule: say what location is for BEFORE the OS prompt.
+  function showNotice() {
     setError(null);
-    if (Platform.OS === 'web') {
-      setState('unavailable');
-      return;
-    }
+    setState(Platform.OS === 'web' ? 'unavailable' : 'notice');
+  }
+
+  async function start() {
     setState('asking');
     try {
       const { granted } = await Location.requestForegroundPermissionsAsync();
@@ -205,11 +206,38 @@ export function TripTracker({ onSaved }: { onSaved: () => void }) {
             </Card>
           ) : null}
 
-          <Button
-            label={state === 'asking' ? 'Asking permission…' : 'Record a trip with GPS'}
-            onPress={() => void start()}
-            disabled={state === 'asking'}
-          />
+          {state === 'notice' ? (
+            <Card>
+              <View style={{ gap: space.sm }}>
+                <Label>Before we ask for your location</Label>
+                <Body>
+                  Snap Apps uses your phone&rsquo;s location to measure the distance of a work trip
+                  while you record it, so your logbook does not depend on an odometer reading.
+                </Body>
+                <Body>
+                  Location is used only while this trip screen is open. It is not tracked in the
+                  background, and only the total kilometres are saved, not where you went. Android
+                  will ask for your permission next, and you can say no and type the distance in
+                  instead.
+                </Body>
+                <View style={{ flexDirection: 'row', gap: space.sm }}>
+                  <Button
+                    label="Not now"
+                    tone="outline"
+                    onPress={() => setState('idle')}
+                    style={{ flex: 1 }}
+                  />
+                  <Button label="Continue" onPress={() => void start()} style={{ flex: 1 }} />
+                </View>
+              </View>
+            </Card>
+          ) : (
+            <Button
+              label={state === 'asking' ? 'Asking permission…' : 'Record a trip with GPS'}
+              onPress={showNotice}
+              disabled={state === 'asking'}
+            />
+          )}
         </>
       )}
 

@@ -450,3 +450,19 @@ Group plan 0.12. Nothing below is set up yet; this is what the Play work
   requires one that works.
 - **The website APK stays, for testers,** signed with the same key as the Play
   build, so a tester can move to Play later without losing data.
+
+### Play-build code (plan 8.2.b-d, 8.3.e; no signing key needed)
+
+- **Permissions.** `RECORD_AUDIO` is off (`expo-camera` `recordAudioAndroid:
+  false`) and `SYSTEM_ALERT_WINDOW` is in `android.blockedPermissions`.
+- **No self-update from Play.** The `production` EAS profile sets
+  `EXPO_PUBLIC_DISTRIBUTION=play`; `lib/updates.ts` then never fetches the APK
+  manifest, so there is no update card and no update gate. Play updates the app.
+  The website APK (preview profile, `build-apk.sh`) leaves it unset and keeps both.
+  Chosen at build time, not by installer package, to avoid a new native module.
+- **Production API host** is `https://snap-apps-api.gaiada.com`, the same host as
+  staging (the only API there is). Both `eas.json` files say so.
+- **Location notice.** `TripTracker` shows an in-app explanation (en-AU; the app
+  has no id-ID strings) before the OS location prompt.
+- `versionCode` already rises per build (`app.config.js`). The AAB itself needs the
+  signing key (plan 8.1).
