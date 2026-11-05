@@ -41,7 +41,7 @@ describeIfDb('POST /v1/ftr-sends and /finish', () => {
   const asUser = (id: string) => ({ userId: id, email: `${id}@x.test`, displayName: 'x', initials: 'X' }) as never;
 
   /** A person with a personal workspace, a YourTal `sub` and one reviewed deduction. */
-  async function fixture(o: { country?: string; role?: string; subject?: (sub: string) => string; teen?: boolean } = {}): Promise<Fixture> {
+  async function fixture(o: { kind?: 'personal' | 'business'; country?: string; role?: string; subject?: (sub: string) => string; teen?: boolean } = {}): Promise<Fixture> {
     const userId = randomUUID();
     const tenantId = randomUUID();
     const person: FakePerson = {
@@ -60,8 +60,8 @@ describeIfDb('POST /v1/ftr-sends and /finish', () => {
       person.email,
     ]);
     await admin.query(
-      `insert into tenants (id, name, kind, country, occupation_profile_id) values ($1,'Mine','personal',$2,'teacher')`,
-      [tenantId, o.country ?? 'AU'],
+      `insert into tenants (id, name, kind, country, occupation_profile_id) values ($1,'Mine',$2,$3,'teacher')`,
+      [tenantId, o.kind ?? 'personal', o.country ?? 'AU'],
     );
     await admin.query(`insert into memberships (tenant_id, user_id, role) values ($1,$2,$3)`, [tenantId, userId, o.role ?? 'owner']);
     if (o.role && o.role !== 'owner') {
@@ -298,22 +298,29 @@ describeIfDb('POST /v1/ftr-sends and /finish', () => {
     ftr.answers = [{ status: 201, body: { importId: 'imp-1' } }];
   });
 
-  it('a redirect from FTR is not followed (the assertion would travel with it)', async () => {
+  it('a redirect from FTR is not followed: the target, a server that records requests, is never called', async () => {
     const f = await fixture();
     const started = await begin(f);
     const body = await confirm(started, f.person);
+    const elsewhere = await startFakeFtr();
     ftr.calls.length = 0;
-    ftr.redirectTo = 'http://127.0.0.1:9/elsewhere';
+    ftr.redirectTo = elsewhere.url;
+    // 303, not 307: a following client then re-sends a plain GET (undici cannot replay the 307's body), so only redirect:'error' stops it.
+    ftr.redirectStatus = 303;
     try {
       expect(await refusalOf(finish(f, body))).toMatchObject({ body: { error: 'ftr_unavailable' } });
     } finally {
       ftr.redirectTo = null;
+      ftr.redirectStatus = 307;
+      await elsewhere.close();
     }
-    expect(ftr.calls).toHaveLength(2); // the original try and its one retry; never the redirect target
+    expect(ftr.calls).toHaveLength(2); // the original try and its one retry
+    expect(elsewhere.calls).toHaveLength(0); // never the redirect target, which would have got the assertion
   });
 
-  it('an ID account, an admin, a plain member, a teen space, a workspace outside Australia and a legacy subject get 403 and no transfer', async () => {
+  it('a business workspace, an admin, a plain member, a teen space, a workspace outside Australia and a legacy subject get 403 and no transfer', async () => {
     const cases: Array<[string, Fixture, string]> = [
+      ['not_personal', await fixture({ kind: 'business' }), 'not_personal'],
       ['region_not_supported', await fixture({ country: 'ID' }), 'region_not_supported'],
       ['not_owner', await fixture({ role: 'admin' }), 'not_owner'],
       ['not_owner', await fixture({ role: 'member' }), 'not_owner'],

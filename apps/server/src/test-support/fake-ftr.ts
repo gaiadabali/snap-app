@@ -14,8 +14,10 @@ export type FakeFtr = {
   calls: FtrCall[];
   /** The next answers, one per call; the last repeats. Default: 201 `{ importId: 'imp-1' }`. */
   answers: Array<{ status: number; body: Record<string, unknown> }>;
-  /** Answer a redirect to this URL instead. */
+  /** Answer a redirect to this URL instead, with `redirectStatus`. */
   redirectTo: string | null;
+  /** 307 by default; 303 makes a following client re-send as a bodiless GET (a 307 with a body fails inside undici). */
+  redirectStatus: number;
   close(): Promise<void>;
 };
 
@@ -28,6 +30,7 @@ export async function startFakeFtr(): Promise<FakeFtr> {
     calls: [],
     answers: [{ status: 201, body: { importId: 'imp-1' } }],
     redirectTo: null,
+    redirectStatus: 307,
     close: () => new Promise<void>((resolve) => server.close(() => resolve())),
   };
   server.on('request', (req: IncomingMessage, res) => {
@@ -41,7 +44,7 @@ export async function startFakeFtr(): Promise<FakeFtr> {
         body: Buffer.concat(chunks),
       });
       if (fake.redirectTo) {
-        res.statusCode = 307;
+        res.statusCode = fake.redirectStatus;
         res.setHeader('location', fake.redirectTo);
         return res.end();
       }
