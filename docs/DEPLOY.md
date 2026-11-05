@@ -647,6 +647,35 @@ back to the local image name, cannot find it, and *builds* docai from source:
 through `deploy.sh`, or pass `DOCAI_IMAGE=ghcr.io/gaiadabali/snap-docai
 IMAGE_TAG=sha-<deployed>` with `--no-deps --pull never --no-build`.
 
+### Free Tax Returns direct send: `FTR_TRANSFER_URL` (group 4.8)
+
+With this set, a person can send their year's deductions straight to Free Tax
+Returns, instead of only downloading a file. Unset, direct send is off and only
+the file is offered.
+
+Put it in `/opt/snap-apps/deploy/.env`, beside `YOURTAL_OIDC_ISSUER` and
+`YOURTAL_PARTNER_ID`. It is an address, not a secret, and `api` and `worker`
+both read that file:
+
+```
+FTR_TRANSFER_URL=https://freetaxreturns.com.au/api/yourtal/transfers
+```
+
+It must be https. Plain http is accepted only for a loopback host
+(`127.0.0.1`, `localhost`) and only outside production; the config check
+rejects anything else at start-up. Then recreate `api` and `worker` through
+`deploy.sh`. To turn it off, blank the line and recreate both.
+
+**The flow.** The person taps "Send to Free Tax Returns" in SnapApp. SnapApp
+stores that year's bundle for up to an hour. YourTal's Send screen asks them to
+confirm it is them and approve the send, and nothing goes until they do. SnapApp
+then posts the stored bundle to Free Tax Returns, which parks it as a pending
+import. The person reviews it in Free Tax Returns and accepts it there; their
+return changes only then.
+
+**Check.** `GET /v1/deduction-bundle/year` answers `"directSend": true` for an
+eligible adult in Australia on a personal workspace.
+
 ### Mobile
 
 `.github/workflows/mobile-build.yml` is the same shape, ending in an artifact
