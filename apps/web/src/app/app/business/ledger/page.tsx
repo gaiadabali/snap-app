@@ -49,7 +49,7 @@ export default async function LedgerPage({
             className={cx(
               'rounded-full px-3 py-1.5 text-[13px] font-semibold',
               s.value === chosen
-                ? 'bg-[var(--color-accent-readable)] text-[var(--color-accent-ink)]'
+                ? 'bg-[var(--color-accent-strong)] text-[var(--color-accent-ink)]'
                 : 'bg-[var(--color-surface-alt)] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]',
             )}
           >

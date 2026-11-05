@@ -46,7 +46,7 @@ function External({ href, children }: { href: string; children: string }) {
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="w-fit text-[14px] font-medium text-[var(--color-accent-readable)] underline underline-offset-2"
+      className="w-fit text-[14px] font-medium text-[var(--color-accent-strong)] underline underline-offset-2"
     >
       {children}
     </a>

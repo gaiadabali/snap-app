@@ -23,7 +23,7 @@ export default async function IndividualDocumentPage({ params }: { params: Promi
 
   return (
     <div className="flex flex-col gap-4">
-      <Link href="/app/documents" className="text-[13px] font-medium text-[var(--color-accent-readable)] hover:underline">
+      <Link href="/app/documents" className="text-[13px] font-medium text-[var(--color-accent-strong)] hover:underline">
         ← All documents
       </Link>
       <ReviewDocument

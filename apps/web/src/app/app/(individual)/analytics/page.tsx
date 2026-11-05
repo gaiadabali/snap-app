@@ -73,7 +73,7 @@ export default async function AnalyticsPage({
             className={cx(
               'rounded-full px-3 py-1.5 text-[13px] font-semibold',
               r.value === range
-                ? 'bg-[var(--color-accent-readable)] text-[var(--color-accent-ink)]'
+                ? 'bg-[var(--color-accent-strong)] text-[var(--color-accent-ink)]'
                 : 'bg-[var(--color-surface-alt)] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]',
             )}
           >

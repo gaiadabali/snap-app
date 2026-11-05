@@ -70,7 +70,7 @@ export default async function BasPage() {
         />
       ) : (
         <Card>
-          <h3 className="mb-3 text-[15px] font-semibold text-[var(--color-ink)]">The receipts behind that figure</h3>
+          <h2 className="mb-3 text-[15px] font-semibold text-[var(--color-ink)]">The receipts behind that figure</h2>
           <TableScroll label="Receipts behind the BAS figure">
             <Table>
               <Thead>
@@ -79,7 +79,7 @@ export default async function BasPage() {
                 <Th align="right">Paid</Th>
                 <Th align="right">GST at risk</Th>
                 <Th>What&apos;s missing</Th>
-                <Th></Th>
+                <Th className="relative"><span className="sr-only">Actions</span></Th>
               </Thead>
               <tbody>
                 {atRisk.map((d) => (
@@ -110,7 +110,7 @@ export default async function BasPage() {
                     <Td>
                       <Link
                         href={`/app/business/documents/${d.id}`}
-                        className="font-semibold text-[var(--color-accent-readable)] hover:underline"
+                        className="font-semibold text-[var(--color-accent-strong)] hover:underline"
                       >
                         Review &amp; fix →
                       </Link>

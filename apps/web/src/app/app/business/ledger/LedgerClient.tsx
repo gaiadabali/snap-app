@@ -38,7 +38,7 @@ export function LedgerClient({
           <Th>Memo</Th>
           <Th>Status</Th>
           <Th align="right">Splits</Th>
-          <Th></Th>
+          <Th className="relative"><span className="sr-only">Actions</span></Th>
         </Thead>
         <tbody>
           {transactions.map((t) => {

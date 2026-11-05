@@ -20,9 +20,11 @@ import { switchWorkspace } from '@/lib/panels/actions';
 export function WorkspaceSwitcher({
   workspaces,
   activeId,
+  className,
 }: {
   workspaces: Array<{ id: string; name: string }>;
   activeId: string;
+  className?: string;
 }) {
   const path = usePathname();
   const [pending, startTransition] = useTransition();
@@ -31,6 +33,7 @@ export function WorkspaceSwitcher({
   return (
     <form
       ref={formRef}
+      className="min-w-0"
       action={(formData) => {
         const id = String(formData.get('workspaceId'));
         startTransition(async () => {
@@ -44,9 +47,10 @@ export function WorkspaceSwitcher({
         disabled={pending}
         onChange={() => formRef.current?.requestSubmit()}
         className={cx(
-          'h-9 max-w-[220px] truncate rounded-[var(--radius-md)] border border-[var(--color-rule-strong)]',
+          'h-9 min-w-0 max-w-[220px] truncate rounded-[var(--radius-md)] border border-[var(--color-rule-strong)]',
           'bg-[var(--color-surface)] px-2.5 text-[13px] font-medium text-[var(--color-ink)]',
           pending && 'opacity-60',
+          className,
         )}
         aria-label="Switch workspace"
       >

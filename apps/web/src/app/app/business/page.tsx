@@ -57,7 +57,7 @@ export default async function BusinessOverviewPage() {
             tone={needsReview.length > 0 ? 'warn' : 'neutral'}
             hint={
               needsReview.length > 0 ? (
-                <Link href="/app/business/documents?status=needs_review" className="text-[var(--color-accent-readable)] hover:underline">
+                <Link href="/app/business/documents?status=needs_review" className="text-[var(--color-accent-strong)] hover:underline">
                   Review now →
                 </Link>
               ) : (
@@ -78,7 +78,7 @@ export default async function BusinessOverviewPage() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
-          <h3 className="mb-3 text-[15px] font-semibold text-[var(--color-ink)]">Entitlement</h3>
+          <h2 className="mb-3 text-[15px] font-semibold text-[var(--color-ink)]">Entitlement</h2>
           <dl className="grid grid-cols-2 gap-y-2 text-[13px]">
             <dt className="text-[var(--color-ink-muted)]">Plan</dt>
             <dd className="text-right font-medium capitalize">{overview.entitlement.planCode}</dd>
@@ -98,13 +98,13 @@ export default async function BusinessOverviewPage() {
               </Badge>
             </dd>
           </dl>
-          <Link href="/app/plan" className="mt-3 inline-block text-[13px] font-medium text-[var(--color-accent-readable)] hover:underline">
+          <Link href="/app/plan" className="mt-3 inline-block text-[13px] font-medium text-[var(--color-accent-strong)] hover:underline">
             Manage plan →
           </Link>
         </Card>
 
         <Card>
-          <h3 className="mb-3 text-[15px] font-semibold text-[var(--color-ink)]">Occupation benchmark</h3>
+          <h2 className="mb-3 text-[15px] font-semibold text-[var(--color-ink)]">Occupation benchmark</h2>
           {overview.benchmarkCommon && overview.benchmarkCommon.length > 0 ? (
             <p className="text-[13px] text-[var(--color-ink-muted)]">
               Similar businesses typically claim between{' '}

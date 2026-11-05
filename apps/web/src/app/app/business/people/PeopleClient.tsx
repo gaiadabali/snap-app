@@ -41,14 +41,14 @@ export function PeopleClient({
               <Th>Name</Th>
               <Th>Role</Th>
               <Th>Joined</Th>
-              <Th></Th>
+              <Th className="relative"><span className="sr-only">Actions</span></Th>
             </Thead>
             <tbody>
               {data.members.map((m) => (
                 <Tr key={m.userId}>
                   <Td>
                     <div className="flex items-center gap-2">
-                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--color-accent-soft)] text-[10px] font-bold text-[var(--color-accent-readable)]">
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--color-accent-soft)] text-[10px] font-bold text-[var(--color-accent-strong)]">
                         {m.initials}
                       </span>
                       {m.displayName}
@@ -113,7 +113,7 @@ export function PeopleClient({
 
       {canInvite ? (
         <Card>
-          <h3 className="mb-3 text-[15px] font-semibold text-[var(--color-ink)]">Invite someone</h3>
+          <h2 className="mb-3 text-[15px] font-semibold text-[var(--color-ink)]">Invite someone</h2>
           <form action={inviteAction} className="flex flex-wrap items-end gap-3">
             <Field label="Email"><Input type="email" name="email" required className="w-[240px]" /></Field>
             <Field label="Role">

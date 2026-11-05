@@ -58,7 +58,16 @@ export function MobileNav({ items, children }: { items: NavItem[]; children?: Re
         <div
           ref={panel}
           id="panel-mobile-nav"
-          className="absolute inset-x-0 top-full max-h-[calc(100vh-3.5rem)] overflow-y-auto border-b border-[var(--color-rule)] bg-[var(--color-ground)] p-3 shadow-lg"
+          // A link to the page you are already on is no navigation, so close on any link click.
+          onClick={(e) => {
+            if ((e.target as HTMLElement).closest('a')) setOpen(false);
+          }}
+          // Tabbing out of the panel (and not back to the button) closes it.
+          onBlur={(e) => {
+            const to = e.relatedTarget as Node | null;
+            if (to && !panel.current?.contains(to) && !button.current?.contains(to)) setOpen(false);
+          }}
+          className="absolute inset-x-0 top-full max-h-[calc(100dvh-3.5rem)] overscroll-contain overflow-y-auto border-b border-[var(--color-rule)] bg-[var(--color-ground)] p-3 shadow-lg"
         >
           <Sidebar items={items} />
           {children}

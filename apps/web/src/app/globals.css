@@ -34,7 +34,10 @@
   --color-ink-muted:   #5A6068;
   --color-ink-faint:   #858B93;
 
-  /* Identity — measured from the teaser. Do not drift from mobile. */
+  /* Identity — measured from the teaser. Do not drift from mobile.
+     Exception, 1.33: the primary Button fill and accent text use
+     --color-accent-strong (below), the deep blue in light, because white on
+     --color-accent is 4.45:1, under AA. --color-accent itself is unchanged. */
   --color-accent:      #1878D8;
   --color-accent-deep: #0060C0;
   --color-accent-soft: #E4EEFA;
@@ -427,17 +430,17 @@ body {
 
 /* Accent for TEXT and button fills, at AA contrast in both themes: the deep
    blue on light, the bright blue on dark (--color-accent itself is 4.2:1 as
-   text on a light ground). Appended here, away from the token blocks above.
-   Same values as --color-accent-strong on feat/ftr-send-ui: fold the two
-   together when that branch lands. */
+   text on a light ground). Appended here, away from the token blocks above;
+   the same token is defined on feat/ftr-send-ui, so dedupe when the second
+   branch lands. */
 :root {
-  --color-accent-readable: var(--color-accent-deep);
+  --color-accent-strong: var(--color-accent-deep);
 }
 :root[data-theme="dark"] {
-  --color-accent-readable: var(--color-accent);
+  --color-accent-strong: var(--color-accent);
 }
 :root:not([data-theme="light"]) {
   @media (prefers-color-scheme: dark) {
-    --color-accent-readable: var(--color-accent);
+    --color-accent-strong: var(--color-accent);
   }
 }

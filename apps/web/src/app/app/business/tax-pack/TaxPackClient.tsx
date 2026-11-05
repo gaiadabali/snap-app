@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import type { TaxPack, TaxPackFile } from '@snap/api-contract';
 
-import { Badge, Button, Card, Table, Td, Th, Thead, Tr } from '@/design/primitives';
+import { Badge, Button, Card, Table, TableScroll, Td, Th, Thead, Tr } from '@/design/primitives';
 
 function bytesToMb(n: number): string {
   return `${(n / (1024 * 1024)).toFixed(1)} MB`;
@@ -24,7 +24,7 @@ export function TaxPackClient({
       <Card>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h3 className="text-[15px] font-semibold text-[var(--color-ink)]">{pack.periodLabel}</h3>
+            <h2 className="text-[15px] font-semibold text-[var(--color-ink)]">{pack.periodLabel}</h2>
             <p className="text-[13px] text-[var(--color-ink-muted)]">
               {pack.fromDate} to {pack.toDate} · {bytesToMb(pack.totalBytes)} of original images and records
             </p>
@@ -56,7 +56,8 @@ export function TaxPackClient({
       </Card>
 
       <Card>
-        <h3 className="mb-3 text-[15px] font-semibold text-[var(--color-ink)]">What it contains</h3>
+        <h2 className="mb-3 text-[15px] font-semibold text-[var(--color-ink)]">What it contains</h2>
+        <TableScroll label="What the tax pack contains">
         <Table>
           <Thead>
             <Th>Section</Th>
@@ -79,6 +80,7 @@ export function TaxPackClient({
             ))}
           </tbody>
         </Table>
+        </TableScroll>
       </Card>
 
       <p className="text-[12px] text-[var(--color-ink-muted)]">{pack.retentionNote}</p>

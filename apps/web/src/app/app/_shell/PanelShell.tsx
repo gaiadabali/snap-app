@@ -38,9 +38,10 @@ export function PanelShell({
   impersonation?: ImpersonationBannerInfo | null;
   children: ReactNode;
 }) {
+  const switchable = sameKindWorkspaces.length > 1;
   const switchLink =
     !impersonation && otherKindHref ? (
-      <Link href={otherKindHref} className="text-[13px] font-semibold text-[var(--color-accent-readable)] hover:underline">
+      <Link href={otherKindHref} className="text-[13px] font-semibold text-[var(--color-accent-strong)] hover:underline">
         {workspace.kind === 'business' ? 'Switch to personal' : 'Switch to business'}
       </Link>
     ) : null;
@@ -62,6 +63,11 @@ export function PanelShell({
       >
         <Container width="full" className="flex h-14 items-center gap-2 px-4 md:gap-4">
           <MobileNav items={nav}>
+            {!impersonation && switchable ? (
+              <div className="px-3 py-2 sm:hidden">
+                <WorkspaceSwitcher workspaces={sameKindWorkspaces} activeId={workspace.id} className="w-full !max-w-none" />
+              </div>
+            ) : null}
             {switchLink ? <div className="px-3 py-2 sm:hidden">{switchLink}</div> : null}
           </MobileNav>
           <Link href="/" className="whitespace-nowrap text-[15px] font-bold text-[var(--color-ink)]">
@@ -76,8 +82,16 @@ export function PanelShell({
             // (`MembershipGuard`) — offering a switcher that the server
             // would just 403 is worse than no switcher.
             <span className="truncate text-[13px] font-medium text-[var(--color-ink-muted)]">{workspace.name}</span>
-          ) : sameKindWorkspaces.length > 1 ? (
-            <WorkspaceSwitcher workspaces={sameKindWorkspaces} activeId={workspace.id} />
+          ) : switchable ? (
+            <>
+              {/* Below sm the picker lives in the menu: a select this wide does not fit the header. */}
+              <span className="min-w-0 truncate text-[13px] font-medium text-[var(--color-ink-muted)] sm:hidden">
+                {workspace.name}
+              </span>
+              <div className="hidden min-w-0 sm:block">
+                <WorkspaceSwitcher workspaces={sameKindWorkspaces} activeId={workspace.id} />
+              </div>
+            </>
           ) : (
             <span className="truncate text-[13px] font-medium text-[var(--color-ink-muted)]">{workspace.name}</span>
           )}
@@ -85,7 +99,7 @@ export function PanelShell({
           <div className="ml-auto flex items-center gap-3">
             {switchLink ? <span className="hidden sm:inline">{switchLink}</span> : null}
             <div
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-accent-readable)] text-[12px] font-bold text-[var(--color-accent-ink)]"
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-accent-strong)] text-[12px] font-bold text-[var(--color-accent-ink)]"
               title={`${user.displayName} · ${user.email}`}
             >
               {user.initials}

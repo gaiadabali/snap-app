@@ -197,7 +197,7 @@ export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 export type ButtonSize = 'sm' | 'md' | 'lg';
 
 const BUTTON_VARIANTS: Record<ButtonVariant, string> = {
-  primary: 'bg-[var(--color-accent-readable)] text-[var(--color-accent-ink)] hover:brightness-90',
+  primary: 'bg-[var(--color-accent-strong)] text-[var(--color-accent-ink)] hover:brightness-90',
   secondary:
     'bg-transparent text-[var(--color-ink)] border border-[var(--color-rule-strong)] hover:border-[var(--color-ink)]',
   ghost: 'bg-transparent text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]',
@@ -219,7 +219,7 @@ export function buttonClasses(
   return cx(
     'inline-flex items-center justify-center gap-2 rounded-[var(--radius-sm)]',
     'font-medium tracking-[0.01em]',
-    'transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-50',
+    'transition-[color,background-color,filter] duration-150 disabled:cursor-not-allowed disabled:opacity-50',
     BUTTON_VARIANTS[variant],
     BUTTON_SIZES[size],
     className,
@@ -264,7 +264,7 @@ export function Badge({
     good: 'bg-[var(--color-good-soft)] text-[var(--color-good)]',
     warn: 'bg-[var(--color-warn-soft)] text-[var(--color-warn)]',
     risk: 'bg-[var(--color-risk-soft)] text-[var(--color-risk)]',
-    accent: 'bg-[var(--color-accent-soft)] text-[var(--color-accent-readable)]',
+    accent: 'bg-[var(--color-accent-soft)] text-[var(--color-accent-strong)]',
   } as const;
   return (
     <span className={cx('t-label inline-flex items-center rounded-[var(--radius-sm)] px-2 py-1', tones[tone])}>
@@ -458,7 +458,7 @@ export function SectionTitle({
   const Heading = as;
   return (
     <div className="max-w-[60ch]">
-      {eyebrow ? <div className="t-label text-[var(--color-accent-readable)]">{eyebrow}</div> : null}
+      {eyebrow ? <div className="t-label text-[var(--color-accent-strong)]">{eyebrow}</div> : null}
       <Heading className="mt-3 text-[26px] font-normal leading-tight tracking-[-0.02em] text-[var(--color-ink)]">
         {title}
       </Heading>
@@ -538,7 +538,7 @@ export function Switch({
 
 /**
  * A dense, tabular-numeral table shell for panels — "density is a feature in
- * the panels" (docs/WEB.md §4). Wrap in a `div.overflow-x-auto` yourself when
+ * the panels" (docs/WEB.md §4). Wrap in a `TableScroll` (below) when
  * a table may run wide; this stays a plain `<table>` so semantics (screen
  * readers, `Ctrl+F`) are never sacrificed for layout.
  */

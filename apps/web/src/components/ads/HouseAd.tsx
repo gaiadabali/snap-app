@@ -112,7 +112,7 @@ export function HouseAd({
           href={ad.href}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-medium text-[var(--color-accent-readable)] hover:underline"
+          className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-medium text-[var(--color-accent-strong)] hover:underline"
         >
           {ad.ctaLabel}
           <span aria-hidden>&rarr;</span>
@@ -120,7 +120,7 @@ export function HouseAd({
       ) : (
         <Link
           href={ad.href}
-          className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-medium text-[var(--color-accent-readable)] hover:underline"
+          className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-medium text-[var(--color-accent-strong)] hover:underline"
         >
           {ad.ctaLabel}
           <span aria-hidden>&rarr;</span>

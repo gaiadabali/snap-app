@@ -28,7 +28,7 @@ export function StockClient({
   return (
     <div className="flex flex-col gap-6">
       <Card>
-        <h3 className="mb-3 text-[15px] font-semibold text-[var(--color-ink)]">Items</h3>
+        <h2 className="mb-3 text-[15px] font-semibold text-[var(--color-ink)]">Items</h2>
         <TableScroll label="Stock items">
           <Table>
             <Thead>
@@ -96,7 +96,7 @@ export function StockClient({
 
       {canManage ? (
         <Card>
-          <h3 className="mb-3 text-[15px] font-semibold text-[var(--color-ink)]">Add an item</h3>
+          <h2 className="mb-3 text-[15px] font-semibold text-[var(--color-ink)]">Add an item</h2>
           <form action={createAction} className="flex flex-wrap items-end gap-3">
             <Field label="Name"><Input name="name" required className="w-[180px]" /></Field>
             <Field label="SKU"><Input name="sku" className="w-[120px]" /></Field>
@@ -113,7 +113,7 @@ export function StockClient({
       ) : null}
 
       <Card>
-        <h3 className="mb-3 text-[15px] font-semibold text-[var(--color-ink)]">Recent movements</h3>
+        <h2 className="mb-3 text-[15px] font-semibold text-[var(--color-ink)]">Recent movements</h2>
         {movements.length === 0 ? (
           <p className="text-[13px] text-[var(--color-ink-muted)]">Nothing recorded yet.</p>
         ) : (
