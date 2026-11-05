@@ -1903,6 +1903,21 @@ export async function saveExtractionFailure(
   });
 }
 
+/** Registry ids of the models that already have a failed run for this capture (plan 7.3.b). */
+export async function failedModelsFor(
+  worker: WorkerActor,
+  tenantId: string,
+  captureId: string,
+): Promise<Set<string>> {
+  return enterTenantAsWorker(worker, tenantId, async (tx) => {
+    const rows = await tx.execute<{ model_id: string }>(sql`
+      select distinct model_id from extraction_runs
+       where capture_id = ${captureId} and status = 'failed'
+    `);
+    return new Set(rows.rows.map((r) => r.model_id));
+  });
+}
+
 /**
  * One succeeded run per answered model call, for work that has no document row
  * of its own to carry the run: a statement's chunk calls (plan 7.2.b). Calls
@@ -1912,6 +1927,8 @@ export async function saveModelCalls(
   worker: WorkerActor,
   tenantId: string,
   captureId: string,
+  /** The registry model id, stored on every row; `c.model` may be the endpoint's own name. */
+  model: string,
   calls: readonly ModelCall[],
   promptVersion: string,
 ): Promise<void> {
@@ -1925,7 +1942,7 @@ export async function saveModelCalls(
           tier, status, started_at, finished_at, latency_ms, input_tokens, output_tokens,
           cost_micros
         ) values (
-          ${randomUUID()}, ${tenantId}, ${captureId}, ${engineFor(c.model)}, ${c.model}, ${promptVersion}, '1',
+          ${randomUUID()}, ${tenantId}, ${captureId}, ${engineFor(model)}, ${model}, ${promptVersion}, '1',
           1, 'succeeded', now(), now(), ${c.latencyMs}, ${c.inputTokens}, ${c.outputTokens},
           ${c.costMicros}
         )

@@ -46,7 +46,7 @@ describe("usdToAudMicros", () => {
 });
 
 describe("OpenRouter request", () => {
-  it("asks for usage accounting and sends the registry price ceiling", async () => {
+  it("sends the registry price ceiling, and no deprecated usage flag", async () => {
     const body = stub({
       choices: [{ message: { content: RECEIPT }, finish_reason: "stop" }],
       usage: {},
@@ -56,7 +56,7 @@ describe("OpenRouter request", () => {
       undefined,
       "k",
     ).extract(PAGE);
-    expect(body().usage).toEqual({ include: true });
+    expect(body().usage).toBeUndefined();
     expect(body().provider.max_price).toEqual({ prompt: 0.4, completion: 0.6 });
   });
 
@@ -76,7 +76,6 @@ describe("OpenRouter request", () => {
       "day_first",
       "AUD",
     );
-    expect(body().usage).toEqual({ include: true });
     expect(body().provider.max_price.prompt).toBeGreaterThan(0);
   });
 

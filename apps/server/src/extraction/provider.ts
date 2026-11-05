@@ -54,6 +54,8 @@ export class TruncatedOutputError extends Error {
 export interface ExtractionProvider {
   readonly name: string;
   readonly model: string;
+  /** One entry per call that got an answer, for the worker to record (plan 7.2). */
+  readonly modelCalls?: ModelCall[];
   /**
    * A single page, or every page of a multi-page capture, in page order.
    *
@@ -469,16 +471,15 @@ export class OpenRouterProvider extends OllamaCloudProvider {
 }
 
 /**
- * What every OpenRouter request adds: the charge in the response (plan 7.2.a)
- * and the registry's price ceiling for the model (7.3.c), so a call never lands
- * on a provider far above the price the cost figures assume.
+ * What every OpenRouter request adds: the registry's price ceiling for the
+ * model (7.3.c), so a call never lands on a provider far above the price the
+ * cost figures assume. The charge (`usage.cost`, plan 7.2.a) needs no request
+ * flag: `usage: { include: true }` is deprecated and OpenRouter now returns
+ * usage on every response.
  */
 export function openRouterExtras(openRouterId: string): Record<string, unknown> {
   const maxPrice = MODELS.find((m) => m.openrouterId === openRouterId)?.maxPrice;
-  return {
-    usage: { include: true },
-    ...(maxPrice ? { provider: { max_price: maxPrice } } : {}),
-  };
+  return maxPrice ? { provider: { max_price: maxPrice } } : {};
 }
 
 /**

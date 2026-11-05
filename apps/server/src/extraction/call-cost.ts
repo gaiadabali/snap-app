@@ -2,8 +2,9 @@
  * What one model call cost, in AUD micros (1,000,000 = A$1), the unit of
  * `extraction_runs.cost_micros`.
  *
- * OpenRouter reports the charge in USD when the request carries
- * `usage: { include: true }` (`usage.cost`). It is converted at one rate.
+ * OpenRouter reports the charge in USD on every response (`usage.cost`; the
+ * old `usage: { include: true }` request flag is deprecated). It is converted
+ * at one rate.
  * ponytail: a fixed rate, 1.4314 as measured 2026-10-20 (group plan Phase 7).
  * Excludes OpenRouter's 5.5% card fee on top-ups. Upgrade to a live rate only
  * if the AUD figure on the admin page starts to matter to the cent; override

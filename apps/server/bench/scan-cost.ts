@@ -3,8 +3,8 @@
  *
  * Repeats the 2026-10-20 measurement: every vision model in the router's chain
  * reads every document in `bench/manifest.json`, with the production prompt and
- * the production request (the same `OpenRouterProvider`, so it asks for
- * `usage: { include: true }` and sends `provider.max_price`), and the charge
+ * the production request (the same `OpenRouterProvider`, so it sends
+ * `provider.max_price`), and the charge
  * OpenRouter reports is converted to AUD at the rate in `call-cost.ts`.
  *
  * Rerun it whenever the model, the prompt or a price changes, then update
@@ -44,7 +44,7 @@ const flag = (name: string): string | undefined => {
   const i = args.indexOf(`--${name}`);
   return i >= 0 ? args[i + 1] : undefined;
 };
-const repeat = Math.max(1, Number(flag("repeat") ?? 3));
+const repeat = Math.max(1, Number(flag("repeat")) || 3);
 const only = flag("models")?.split(",");
 
 const manifest = JSON.parse(

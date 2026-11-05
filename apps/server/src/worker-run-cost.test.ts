@@ -15,6 +15,7 @@ import {
   vi,
 } from "vitest";
 
+import { chain } from "./ai/router.js";
 import { usdToAudMicros } from "./extraction/call-cost.js";
 import { provisionTenant, wipeTenant } from "./test-support/tenant.js";
 
@@ -178,7 +179,6 @@ describeIfDb("worker: what each run cost (7.2) and retries (7.3.b)", () => {
     await worker.runOnce(1);
 
     expect(bodies).toHaveLength(1);
-    expect(bodies[0]!.usage).toEqual({ include: true });
     expect(bodies[0]!.provider.max_price).toBeDefined();
     expect(await runs(captureId)).toMatchObject([
       {
@@ -238,7 +238,12 @@ describeIfDb("worker: what each run cost (7.2) and retries (7.3.b)", () => {
         (r) => r.status === "failed" && r.cost === usdToAudMicros(0.001),
       ),
     ).toBe(true);
-    expect(new Set(first.map((r) => r.model_id)).size).toBe(4);
+    // One name per model: the registry id, the same form the succeeded rows use.
+    expect(first.map((r) => r.model_id).sort()).toEqual(
+      chain("vision")
+        .map((m) => m.id)
+        .sort(),
+    );
 
     // The queue backs a failed job off; make it due, then let it retry.
     await admin.query(
@@ -250,6 +255,74 @@ describeIfDb("worker: what each run cost (7.2) and retries (7.3.b)", () => {
     expect(models).toEqual(["google/gemma-4-31b-it"]);
     expect(await runs(captureId)).toHaveLength(5);
     vi.restoreAllMocks();
+  });
+
+  it("groups a model's failed and succeeded runs under one name, as the admin per-model table does", async () => {
+    let n = 0;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        ++n <= 4 ? reply("not json at all", 0.001) : reply(RECEIPT_JSON, 0.002),
+      ),
+    );
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const captureId = await queuedCapture();
+    await worker.runOnce(1); // every model fails
+    await admin.query(
+      `update jobs set run_after = now() where tenant_id = $1 and kind = 'extract'`,
+      [TENANT],
+    );
+    await worker.runOnce(1); // the retry asks the first model, which reads it
+
+    const groups = (
+      await admin.query(
+        `select model_id, count(*)::int as runs,
+                count(*) filter (where status = 'failed')::int as failed
+           from extraction_runs where capture_id = $1 group by model_id`,
+        [captureId],
+      )
+    ).rows;
+    const gemma = groups.find((g) => g.model_id === "gemma4:31b");
+    expect(gemma).toMatchObject({ runs: 2, failed: 1 });
+    expect(groups.map((g) => g.model_id).sort()).toEqual(
+      chain("vision")
+        .map((m) => m.id)
+        .sort(),
+    );
+    vi.restoreAllMocks();
+  });
+
+  it("resumes a walk cut short: a retry tries the models that have not failed yet, not just the first", async () => {
+    // As if the worker was killed after gemma failed, mid-minimax.
+    const models: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init: RequestInit) => {
+        models.push(JSON.parse(init.body as string).model);
+        return reply(RECEIPT_JSON, 0.002);
+      }),
+    );
+    const captureId = await queuedCapture();
+    await admin.query(
+      `insert into extraction_runs (id, tenant_id, capture_id, engine, model_id, prompt_version,
+                                    schema_version, tier, status, error, started_at, finished_at)
+       values (gen_random_uuid(), $1, $2, 'ocr_llm', 'gemma4:31b', 'n/a', '1', 1, 'failed',
+               'provider: gemma4:31b: No JSON', now(), now())`,
+      [TENANT, captureId],
+    );
+    await admin.query(
+      `update jobs set attempts = 1 where tenant_id = $1 and kind = 'extract'`,
+      [TENANT],
+    ); // the claim makes it attempt 2
+    await worker.runOnce(1);
+
+    expect(models).toEqual(["minimax/minimax-m3"]);
+    const docs = await admin.query(
+      `select 1 from documents where capture_id = $1`,
+      [captureId],
+    );
+    expect(docs.rowCount).toBe(1);
   });
 
   it("records a statement chunk call per row, each with its charge, and the failed one with its reason", async () => {
