@@ -28,9 +28,9 @@ export function SendToFtr({
   reviewUrl?: string;
 }) {
   const [busy, setBusy] = useState(false);
-  // The result arrives with a redirect's first render, which screen readers often skip: move focus to it.
+  // Not a control, so no ring (globals.css rings every [tabindex]; an inline style beats it). The result arrives with a redirect's first render, which screen readers often skip: move focus to it.
   const resultRef = useRef<HTMLParagraphElement>(null);
-  useEffect(() => resultRef.current?.focus(), [result]);
+  useEffect(() => resultRef.current?.focus(), [result?.status]);
   const [error, setError] = useState<string | null>(null);
 
   async function sendDirect() {
@@ -105,7 +105,7 @@ export function SendToFtr({
     <Card>
       <div className="flex flex-col gap-3">
         {result?.status === 'sent' ? (
-          <p ref={resultRef} tabIndex={-1} role="status" className="text-[14px] font-medium">
+          <p ref={resultRef} tabIndex={-1} role="status" style={{ outline: 'none' }} className="text-[14px] font-medium">
             Sent. Your {result.year} deductions are waiting in Free Tax Returns.{' '}
             {reviewUrl ? (
               <a href={reviewUrl} className="underline">
@@ -115,10 +115,10 @@ export function SendToFtr({
           </p>
         ) : null}
         {result?.status === 'cancelled' ? (
-          <p ref={resultRef} tabIndex={-1} role="status" className="text-[14px] font-medium">Nothing was sent.</p>
+          <p ref={resultRef} tabIndex={-1} role="status" style={{ outline: 'none' }} className="text-[14px] font-medium">Nothing was sent.</p>
         ) : null}
         {result?.status === 'failed' ? (
-          <p ref={resultRef} tabIndex={-1} role="alert" className="text-[14px] text-[var(--color-risk)]">{ftrSendMessage(result.code)}</p>
+          <p ref={resultRef} tabIndex={-1} role="alert" style={{ outline: 'none' }} className="text-[14px] text-[var(--color-risk)]">{ftrSendMessage(result.code)}</p>
         ) : null}
         <p className="max-w-prose text-[14px]">
           Your {financialYear} deductions go straight to Free Tax Returns. YourTal asks you to confirm,
