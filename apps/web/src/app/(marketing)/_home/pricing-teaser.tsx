@@ -18,7 +18,7 @@ import { PricingEstimator } from './pricing-teaser-estimator';
  * so the white estimator card sits raised on it.
  */
 
-const RATE_CENTS = (CREDIT_PRICE_AUD * 100).toFixed(1);
+const RATE_CENTS = +(CREDIT_PRICE_AUD * 100).toFixed(1);
 
 export function HomePricing() {
   return (

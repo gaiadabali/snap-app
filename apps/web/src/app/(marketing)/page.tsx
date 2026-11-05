@@ -14,7 +14,7 @@ import { HomeTrust } from './_home/trust';
 export const metadata: Metadata = {
   title: { absolute: 'Snap Apps — the receipt app that reads every line' },
   description:
-    'Photograph a receipt. Snap Apps reads every line, splits GST-free from taxable, checks it is a valid tax invoice and keeps a true copy for five years. Ten scans free, then 3.7 cents a scan.',
+    'Photograph a receipt. Snap Apps reads every line, splits GST-free from taxable, checks it is a valid tax invoice and keeps a true copy for five years. Ten scans free, then 10 cents a scan.',
 };
 
 /**

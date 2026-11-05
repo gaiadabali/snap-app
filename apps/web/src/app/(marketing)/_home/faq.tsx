@@ -19,7 +19,7 @@ import { CREDIT_PACKS, CREDIT_PRICE_AUD, FREE_SCANS_AT_SIGNUP } from '../pricing
  * it is a panel, so this one is a plain left-hand list.
  */
 
-const RATE_CENTS = (CREDIT_PRICE_AUD * 100).toFixed(1);
+const RATE_CENTS = +(CREDIT_PRICE_AUD * 100).toFixed(1);
 const FIRST_PACK = CREDIT_PACKS[0];
 const LAST_PACK = CREDIT_PACKS[CREDIT_PACKS.length - 1];
 
