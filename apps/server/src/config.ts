@@ -292,6 +292,18 @@ const schema = z.object({
     .optional()
     .transform((v) => (v ?? '').trim() || undefined),
 
+  /**
+   * Free Tax Returns' transfer endpoint (group 4.8.a, yourtal docs/30 §6), e.g.
+   * https://freetaxreturns.com.au/api/yourtal/transfers. Unset = direct send is
+   * off and only the file is offered. https everywhere except a developer's
+   * machine and the tests: plain http only off production AND to a loopback host.
+   */
+  FTR_TRANSFER_URL: z
+    .string()
+    .optional()
+    .transform((v) => (v ?? '').trim() || undefined)
+    .pipe(z.string().url('FTR_TRANSFER_URL must be a URL').optional()),
+
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
 
   /**
@@ -405,6 +417,14 @@ const schema = z.object({
   ASSISTANT_PROXY_SECRET: z.string().optional(),
   ASSISTANT_LOG_TRANSCRIPTS: z.string().optional(),
 }).superRefine((settings, ctx) => {
+  // The assertion travels in this request's header: https unless it is http to this machine, outside production.
+  if (settings.FTR_TRANSFER_URL) {
+    const ftr = new URL(settings.FTR_TRANSFER_URL);
+    const loopback = ['127.0.0.1', 'localhost', '[::1]'].includes(ftr.hostname);
+    if (ftr.protocol !== 'https:' && !(ftr.protocol === 'http:' && loopback && settings.NODE_ENV !== 'production')) {
+      ctx.addIssue({ code: 'custom', path: ['FTR_TRANSFER_URL'], message: 'must be https (http only to localhost, outside production)' });
+    }
+  }
   // Sign in with YourTal over plain http is for a developer's machine and the
   // test suite's stand-in provider only. docs/26 §1.7: no staging or
   // production client has an http address.

@@ -59,6 +59,41 @@ export async function takeFlow(flowId: string): Promise<StoredFlow | null> {
   };
 }
 
+/** At the start of a send to Free Tax Returns (0050): link the open flow to its send. False for an unknown, used or expired flow. */
+export async function setFlowFtrSend(flowId: string, sendId: string): Promise<boolean> {
+  const { rows } = await getDb().execute<{ ok: boolean }>(sql`
+    select identity_yourtal_flow_set_ftr_send(${flowId}::uuid, ${sendId}::uuid) as ok
+  `);
+  return rows[0]?.ok === true;
+}
+
+/** The send finish's take (0050): once, unexpired, and only a flow that carries a send. Null otherwise, and the flow is left alone. */
+export async function takeFtrSendFlow(flowId: string): Promise<(StoredFlow & { ftrSendId: string }) | null> {
+  const { rows } = await getDb().execute<{
+    client: YourTalClientKind;
+    state: string;
+    nonce: string;
+    code_verifier: string;
+    return_to: string | null;
+    sign_up: boolean;
+    ftr_send_id: string;
+  }>(sql`
+    select client, state, nonce, code_verifier, return_to, sign_up, ftr_send_id
+      from identity_yourtal_flow_take_ftr_send(${flowId}::uuid)
+  `);
+  const row = rows[0];
+  if (!row) return null;
+  return {
+    client: row.client,
+    state: row.state,
+    nonce: row.nonce,
+    codeVerifier: row.code_verifier,
+    returnTo: row.return_to,
+    signUp: row.sign_up,
+    ftrSendId: row.ftr_send_id,
+  };
+}
+
 /** Remember which signed-in account started this flow from the move prompt (0048). */
 export async function setFlowMoveUser(flowId: string, userId: string): Promise<boolean> {
   const { rows } = await getDb().execute<{ ok: boolean }>(sql`

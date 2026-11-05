@@ -15,11 +15,13 @@ import { KNOWN_FYS } from '@snap/tax-engine';
 
 import { RateLimiter } from '../auth/rate-limit.js';
 import {
+  CurrentImpersonation,
   CurrentUser,
   MembershipGuard,
   SessionGuard,
   WorkspaceId,
   type AuthUser,
+  type ProductImpersonation,
 } from '../common/auth.guard.js';
 import { requireOwnerOrAdmin } from '../common/roles.js';
 import { readTenant } from '../repo.js';
@@ -27,6 +29,7 @@ import { sydneyToday } from '../summaries/summaries.controller.js';
 import { buildDeductionBundle } from './deduction-bundle.js';
 import { fyLabel, fyStartYear } from './deduction-totals.js';
 import { deductionTotals } from './deductions.repo.js';
+import { sendEligibility } from './ftr-send.service.js';
 
 // Per person: a bundle is a query over a year of receipts.
 const exportPerUser = new RateLimiter(20, 60_000);
@@ -55,10 +58,21 @@ export function parseFy(fy: string | undefined, today: string = sydneyToday()): 
 @UseGuards(SessionGuard, MembershipGuard)
 export class DeductionBundleController {
   @Get('deduction-bundle/year')
-  @ApiOperation({ summary: 'The financial year the export covers when `fy` is left out, like 2025-26' })
-  year(@Res({ passthrough: true }) reply: { header: (k: string, v: string) => void }): { financialYear: string } {
+  @ApiOperation({
+    summary: 'The financial year the export covers when `fy` is left out, like 2025-26',
+    description:
+      '`directSend` is true when this person may send the year straight to Free Tax Returns from this workspace ' +
+      '(POST /v1/ftr-sends); otherwise only the file is offered.',
+  })
+  async year(
+    @CurrentUser() user: AuthUser,
+    @WorkspaceId() tenantId: string,
+    @CurrentImpersonation() impersonation: ProductImpersonation | undefined,
+    @Res({ passthrough: true }) reply: { header: (k: string, v: string) => void },
+  ): Promise<{ financialYear: string; directSend: boolean }> {
     reply.header('Cache-Control', 'private, no-store');
-    return { financialYear: fyLabel(defaultFyStart(sydneyToday())) };
+    const directSend = (await sendEligibility(user, tenantId, impersonation !== undefined)).ok;
+    return { financialYear: fyLabel(defaultFyStart(sydneyToday())), directSend };
   }
 
   @Get('deduction-bundle')

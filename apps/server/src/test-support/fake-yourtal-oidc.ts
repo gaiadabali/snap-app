@@ -33,7 +33,11 @@ import Provider, { interactionPolicy } from 'oidc-provider';
  * a `teen_invite` code made by the teen's guardian, or a standing accepted
  * invite, else `access_denied` / `teen_invite_required`.
  *
- * It also serves the teen invite API (`/api/oidc-clients/teen-invites`) for
+ * It also serves the transfer API (`/api/oidc-clients/transfers`, scope
+ * `app_transfers`, docs/30 §5) for 4.8.a: a transfer is approved by whoever
+ * signs in at the screen for it (it does NOT refuse another account itself, so
+ * the app's own `sub` check can be proved), and its assertion is an opaque
+ * string. And the teen invite API (`/api/oidc-clients/teen-invites`) for
  * the server client, behind a client-credentials token with `teen_invites`.
  */
 
@@ -56,6 +60,18 @@ export type FakeTeenInvite = {
   status: 'pending' | 'accepted' | 'expired' | 'ended';
   teenSub: string | null;
   expiresAt: string;
+};
+
+export type FakeTransfer = {
+  transferId: string;
+  fromSub: string;
+  financialYear: string;
+  bundleSha256: string;
+  lineCount: number;
+  /** The `sub` of whoever pressed Send at the screen, or null. */
+  approvedBy: string | null;
+  /** The assertion handed out, once approved. */
+  assertion: string | null;
 };
 
 export type NextSignIn =
@@ -110,6 +126,14 @@ export type FakeYourTalOidc = {
   replayNextCreate: boolean;
   /** The invite API answers 503 to everything (YourTal down). */
   inviteApiDown: boolean;
+  /** Every transfer made through the transfer API, by id. */
+  transfers: Map<string, FakeTransfer>;
+  /** Every transfer API call, `METHOD path`. */
+  transferCalls: string[];
+  /** The next assertion call answers 409 with this code (YourTal: `not_allowed`). */
+  assertionRefusal: 'not_approved' | 'not_allowed' | null;
+  /** The transfer API answers 503 to everything. */
+  transferApiDown: boolean;
   /** Follow an authorization URL like a browser; returns the URL YourTal redirected to. */
   authorize(url: string): Promise<URL>;
   close(): Promise<void>;
@@ -161,6 +185,10 @@ export async function startFakeYourTalOidc(): Promise<FakeYourTalOidc> {
     teenInviteCalls: [],
     replayNextCreate: false,
     inviteApiDown: false,
+    transfers: new Map(),
+    transferCalls: [],
+    assertionRefusal: null,
+    transferApiDown: false,
     signSet: (payload, options = {}) =>
       new SignJWT(payload)
         .setProtectedHeader({ typ: 'secevent+jwt', alg: 'RS256', kid: providerJwk.kid, ...options.header } as never)
@@ -201,7 +229,7 @@ export async function startFakeYourTalOidc(): Promise<FakeYourTalOidc> {
         redirect_uris: [],
         grant_types: ['client_credentials'],
         response_types: [],
-        scope: 'teen_invites',
+        scope: 'teen_invites app_transfers',
         subject_type: 'public',
       },
     ],
@@ -209,10 +237,10 @@ export async function startFakeYourTalOidc(): Promise<FakeYourTalOidc> {
     responseTypes: ['code'],
     pkce: { required: () => true },
     subjectTypes: ['public', 'pairwise'],
-    extraParams: ['teen_invite'],
+    extraParams: ['teen_invite', 'transfer'],
     pairwiseIdentifier: async (_ctx, accountId) => subFor(accountId),
     clientAuthMethods: ['private_key_jwt', 'none'],
-    scopes: ['openid', 'email', 'profile', 'account', 'teen_invites'],
+    scopes: ['openid', 'email', 'profile', 'account', 'teen_invites', 'app_transfers'],
     claims: {
       // `amr` and `auth_time` only reach the ID token when a requested scope
       // maps to them: the library masks everything else out. docs/26 §1.3
@@ -260,6 +288,7 @@ export async function startFakeYourTalOidc(): Promise<FakeYourTalOidc> {
       const url = req.url ?? '/';
       if (url.startsWith('/oidc/interaction/')) return interaction(req, res);
       if (url.startsWith('/api/oidc-clients/teen-invites')) return inviteApi(req, res, url);
+      if (url.startsWith('/api/oidc-clients/transfers')) return transferApi(req, res, url);
       if (!url.startsWith('/oidc')) {
         res.statusCode = 404;
         return res.end();
@@ -302,6 +331,9 @@ export async function startFakeYourTalOidc(): Promise<FakeYourTalOidc> {
       }
     }
     people.set(person.accountId, person);
+    // The send screen's Send: whoever is signed in approves the transfer.
+    const transfer = fake.transfers.get(String(details.params.transfer ?? ''));
+    if (transfer) transfer.approvedBy = subFor(person.accountId);
     const grant = new provider.Grant({ accountId: person.accountId, clientId: String(details.params.client_id) });
     grant.addOIDCScope(String(details.params.scope));
     const grantId = await grant.save();
@@ -334,6 +366,52 @@ export async function startFakeYourTalOidc(): Promise<FakeYourTalOidc> {
   }
 
   const replays = new Map<string, Record<string, unknown>>();
+
+  async function transferApi(req: IncomingMessage, res: ServerResponse, url: string): Promise<void> {
+    const send = (status: number, body: Record<string, unknown>) => {
+      res.statusCode = status;
+      res.setHeader('content-type', 'application/json');
+      res.end(JSON.stringify(body));
+    };
+    fake.transferCalls.push(`${req.method} ${url}`);
+    if (fake.transferApiDown) return send(503, { code: 'unavailable' });
+    const bearer = req.headers.authorization?.startsWith('Bearer ') ? req.headers.authorization.slice(7) : '';
+    const token = bearer ? await provider.ClientCredentials.find(bearer) : undefined;
+    if (!token || token.clientId !== fake.serverClientId) return send(401, { code: 'invalid_token' });
+    if (!String(token.scope ?? '').split(' ').includes('app_transfers')) return send(403, { code: 'insufficient_scope' });
+
+    const chunks: Buffer[] = [];
+    for await (const chunk of req) chunks.push(chunk as Buffer);
+    const body = chunks.length ? (JSON.parse(Buffer.concat(chunks).toString('utf8')) as Record<string, unknown>) : {};
+    const path = url.slice('/api/oidc-clients/transfers'.length).split('?')[0]!;
+
+    if (req.method === 'POST' && path === '') {
+      const key = req.headers['idempotency-key'];
+      if (typeof key !== 'string') return send(400, { code: 'idempotency_key_required' });
+      const replay = replays.get(key);
+      if (replay) return send(201, replay);
+      const transfer: FakeTransfer = {
+        transferId: randomUUID(),
+        fromSub: String(body.fromSub),
+        financialYear: String(body.financialYear),
+        bundleSha256: String(body.bundleSha256),
+        lineCount: Number(body.lineCount),
+        approvedBy: null,
+        assertion: null,
+      };
+      fake.transfers.set(transfer.transferId, transfer);
+      const made = { transferId: transfer.transferId, expiresAt: new Date(Date.now() + 15 * 60_000).toISOString() };
+      replays.set(key, made);
+      return send(201, made);
+    }
+    const match = /^\/([0-9a-f-]{36})\/assertion$/.exec(path);
+    const transfer = match ? fake.transfers.get(match[1]!) : undefined;
+    if (!transfer || body.fromSub !== transfer.fromSub) return send(404, { code: 'transfer_not_found' });
+    if (fake.assertionRefusal) return send(409, { code: fake.assertionRefusal });
+    if (!transfer.approvedBy) return send(409, { code: 'not_approved' });
+    transfer.assertion ??= `fake-assertion.${randomBytes(24).toString('base64url')}`;
+    return send(200, { assertion: transfer.assertion, expiresAt: new Date(Date.now() + 15 * 60_000).toISOString() });
+  }
 
   async function inviteApi(req: IncomingMessage, res: ServerResponse, url: string): Promise<void> {
     const send = (status: number, body: Record<string, unknown>) => {

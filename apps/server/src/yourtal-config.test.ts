@@ -146,3 +146,25 @@ YOURTAL_RECEIPT_REF_KEY="${KEY}"
     });
   });
 });
+
+describe('FTR_TRANSFER_URL (4.8.a)', () => {
+  it('is off when unset or blank', async () => {
+    vi.stubEnv('FTR_TRANSFER_URL', '  ');
+    expect((await load()).config().FTR_TRANSFER_URL).toBeUndefined();
+  });
+
+  it('is http only to this machine and outside production; https anywhere', async () => {
+    vi.stubEnv('FTR_TRANSFER_URL', 'http://127.0.0.1:1/api/yourtal/transfers');
+    expect((await load()).config().FTR_TRANSFER_URL).toMatch(/^http:/);
+    vi.stubEnv('FTR_TRANSFER_URL', 'https://freetaxreturns.com.au/api/yourtal/transfers');
+    expect((await load()).config().FTR_TRANSFER_URL).toMatch(/^https:/);
+    // Not a dev machine: a remote host over http is refused in development and test too (staging may not run as production).
+    for (const env of ['development', 'test', 'production']) {
+      vi.stubEnv('NODE_ENV', env);
+      vi.stubEnv('FTR_TRANSFER_URL', 'http://freetaxreturns.com.au/api/yourtal/transfers');
+      await expect((async () => (await load()).config())()).rejects.toThrow(/FTR_TRANSFER_URL/);
+    }
+    vi.stubEnv('FTR_TRANSFER_URL', 'http://127.0.0.1:1/x');
+    await expect((async () => (await load()).config())()).rejects.toThrow(/FTR_TRANSFER_URL/);
+  });
+});
