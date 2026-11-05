@@ -1,84 +1,41 @@
 /**
- * What a scan costs, derived rather than typed out.
+ * What a scan costs, and what the packs are.
  *
- * ── The rule ──────────────────────────────────────────────────────────────
+ * Settled by the founder 2026-10-20 (group plan 0.11.a): about 10c a scan, in
+ * packs of 50 / 100 / 250 for A$5 / 10 / 25, GST included. One scan is one
+ * credit.
  *
- * Settled by the owner 2026-09-17:
+ * The prices a customer is CHARGED live in `credit_packs`, set by migration
+ * 0051. A marketing page that hardcodes its own copy of them is one careless
+ * edit away from advertising a price the checkout does not honour (ACL s18), so
+ * `credit-packs.test.ts` reads the migration and fails if the two disagree.
  *
- *     price per scan = cost of one real model scan × 3
- *
- * `docs/MONETISATION.md` §5 measures that cost — extraction is ~$0.011/scan
- * blended (Haiku 4.5 primary, Sonnet 5 escalation) — so a credit is $0.033 and
- * a pack is simply that rate times its size. One scan is one credit.
- *
- * ── Why this is computed and not a list of prices ─────────────────────────
- *
- * The prices a customer is CHARGED live in `credit_packs`, seeded by migration
- * 0027 from the same rule. A marketing page that hardcodes its own copy of
- * them is one careless edit away from advertising a price the checkout does
- * not honour — which for a consumer product in Australia is a misleading
- * representation under ACL s18, not merely an embarrassment.
- *
- * So both sides derive from the rule instead of restating a number, and
- * `credit-packs.test.ts` reads the migration and fails if the two ever
- * disagree. Change the rate here and the test tells you the database is stale;
- * change it there and the test tells you the website is.
+ * Per scan on the A$5 pack (docs/MONETISATION.md section 3): 9.09c after GST,
+ * less 0.77c Stripe, about 0.5c to read and store, less 3c for the YourTal
+ * point, leaves about 4.8c.
  */
 
-/** Blended model cost of a single extraction, from MONETISATION.md §5. */
-export const MODEL_COST_AUD = 0.011;
+/** Measured all-in cost of a scan: Gemma 4 31B (A$0.0005) plus five years of storage. */
+export const MODEL_COST_AUD = 0.0027;
 
-/** The owner's multiple. */
-export const PRICE_MULTIPLE = 3;
-
-/** What we must RETAIN per credit, after everything has been taken out of it. */
-export const RETAINED_PER_CREDIT_AUD = MODEL_COST_AUD * PRICE_MULTIPLE;
-
-/**
- * GST as a share of a GST-INCLUSIVE price. Ten per cent added to an ex-GST
- * price is one eleventh of the inclusive one, which is the figure that matters
- * when grossing up.
- *
- * ASSUMES THE BUSINESS IS REGISTERED FOR GST. Registration is compulsory only
- * above $75,000 turnover; below it, charging or stating GST is not permitted.
- * If that is not true yet, this becomes 0 — see the note in migration 0029.
- */
+/** GST as a share of a GST-INCLUSIVE price (one eleventh). Assumes GST registration. */
 export const GST_SHARE_OF_INCLUSIVE = 1 / 11;
 
-/** The proportional part of card processing. The fixed part is deliberately absent. */
+/** Card processing: the proportional part, and the fixed part per transaction. */
 export const CARD_FEE_RATE = 0.0175;
+export const CARD_FEE_FIXED_AUD = 0.3;
 
-/**
- * One price, with everything already in it.
- *
- * The customer sees a single number and that number covers the inference, the
- * margin, GST and the card fee. Nothing is added at checkout. So the rate is
- * grossed UP from what has to survive the deductions:
- *
- *     0.0330 / (1 - 1/11 - 0.0175) = $0.037012...
- *
- * Published as $0.037, which is not a convenience rounding: at 3.7 cents every
- * pack on sale lands on an exact cent, so no total needs explaining.
- *
- * WHAT IS NOT IN IT: the fixed ~30c per transaction. It cannot be, while
- * pricing is flat — a per-transaction cost spread over a variable number of
- * scans is a different per-scan price for every pack, which is the taper the
- * owner rejected. Absorbing it means the retained multiple climbs with pack
- * size (2.45x at 50 credits, 2.97x at 1000) instead of sitting at exactly 3x.
- * Flat pricing and an exact 3x everywhere cannot both hold.
- */
-export const CREDIT_PRICE_AUD = 0.037;
+/** What Snap Apps pays YourTal for the point a bought-credit receipt earns. */
+export const POINT_COST_AUD = 0.03;
+
+/** One price, with everything already in it. */
+export const CREDIT_PRICE_AUD = 0.1;
 
 /**
  * The bundles on sale, smallest first. Matches the ACTIVE rows of
- * `credit_packs` after migration 0029.
- *
- * The 10-pack is retired, not deleted: at $0.33 it netted about two cents
- * after the fixed card fee against $0.11 of inference, so it lost money on
- * every sale — the only pack that did, with break-even at about fourteen
- * credits. It also duplicated the ten scans every new account already gets.
+ * `credit_packs` after migration 0051; the older packs are retired, not deleted.
  */
-export const PACK_SIZES = [50, 100, 200, 500, 1000] as const;
+export const PACK_SIZES = [50, 100, 250] as const;
 
 /** Scans a brand-new account starts with — `usage_grants.source = 'signup_bonus'`. */
 export const FREE_SCANS_AT_SIGNUP = 10;

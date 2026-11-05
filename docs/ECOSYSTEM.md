@@ -186,8 +186,10 @@ still read.
 ### Pricing, and the arithmetic that has to be honest
 
 > **Superseded 2026-10-21 for consumer pricing:** about 10c a scan, one page
-> per snap, packs of 50, 100 and 250 for A$5, A$10 and A$25. See
-> `MONETISATION.md` section 3. The packs below are kept for their reasoning.
+> per snap, packs of 50, 100 and 250 for A$5, A$10 and A$25 (migration 0051).
+> See `MONETISATION.md` sections 3 and 4 for the measured cost (about
+> A$0.0027 a scan all-in, not the A$0.011 below) and the per-scan calculation.
+> The packs below are kept for their reasoning.
 
 Packs, GST-inclusive AUD, unit price falling with volume:
 
@@ -201,9 +203,10 @@ Packs, GST-inclusive AUD, unit price falling with volume:
 | 1000 | $10.00 | $0.0100 |
 
 **The margin is not 3x.** The brief assumed $0.005 model cost against $0.015
-charged. Measured all-in cost today is **~$0.013/scan** — ~$0.011 blended
-extraction plus ~$0.002 storage across the five-year retention window
-(`MONETISATION.md` §4). At $0.015 that is ~13% gross on the smallest pack and
+charged. The cost at the time was **~$0.013/scan** (~$0.011 blended Haiku and
+Sonnet extraction plus ~$0.002 storage). It has since been measured at
+**~A$0.0027/scan** with Gemma 4 31B (A$0.0005 a page plus storage;
+`MONETISATION.md` §4, per-scan calculation from group plan 0.11.a). At $0.015 that is ~13% gross on the smallest pack and
 *negative* on the largest.
 
 The margin case therefore depends on two things that are not yet measured:

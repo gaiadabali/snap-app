@@ -52,14 +52,12 @@ describeIfDb('credits.repo', () => {
 
   it('lists the seeded active packs in display order', async () => {
     const packs = await listCreditPacks(OWNER, TENANT);
-    // credits_10 is retired (migration 0029) — active = false, so it is off
+    // credits_10, 200, 500 and 1000 are retired (0029, 0051) — active = false, so it is off
     // sale without being deleted, because old receipts reference it.
     expect(packs.map((p) => p.code)).toEqual([
       'credits_50',
       'credits_100',
-      'credits_200',
-      'credits_500',
-      'credits_1000',
+      'credits_250',
     ]);
     // Money crosses as a string, never a parsed number.
     expect(typeof packs[0]!.price_aud).toBe('string');

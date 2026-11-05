@@ -39,9 +39,9 @@ function run(text: string, size = 3, f = filterWith()): { shown: string; end: Fi
 describe('the money guard', () => {
   it('lets FACTS prices through, in any format', () => {
     for (const text of [
-      'A scan is 3.7 cents, so 100 scans are $3.70.',
-      'The 1,000-scan pack is $37.00, and 50 scans cost $1.85.',
-      'That works out at 3.7c a scan.',
+      'A scan is 10 cents, so 100 scans are $10.00.',
+      'The 250-scan pack is $25.00, and 50 scans cost $5.00.',
+      'That works out at 10c a scan.',
     ]) {
       const r = run(text);
       expect(r.end.replace, text).toBeUndefined();
@@ -53,7 +53,7 @@ describe('the money guard', () => {
     const r = run('Sure. A monthly plan is $9.99 and covers unlimited scans.');
     expect(r.stopped).toBe(true);
     expect(r.end.replace).toContain("I'd rather not put a number on that");
-    expect(r.end.replace).toContain('3.7 cents');
+    expect(r.end.replace).toContain('10 cents');
     expect(r.end.flags).toContain('price');
     // nothing of the invented figure ever went out
     expect(r.shown).not.toContain('9.99');

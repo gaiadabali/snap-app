@@ -1,13 +1,7 @@
 import { Icon, Reveal, TextLink } from '@/design/site';
 
 import { FREE_SCANS_AT_SIGNUP } from './credit-packs';
-import {
-  CENTS_PER_SCAN,
-  MODEL_TENTHS,
-  PRICE_MULTIPLE,
-  RETAINED_TENTHS,
-  tenthsLabel,
-} from './figures';
+import { CENTS_PER_SCAN } from './figures';
 
 /**
  * The questions people ask before they put money in.
@@ -28,7 +22,7 @@ const FAQ: { q: string; a: string }[] = [
   },
   {
     q: `Why ${CENTS_PER_SCAN} cents?`,
-    a: `A scan runs through a vision model with a real per-document price: about ${tenthsLabel(MODEL_TENTHS)} cents, blended across the model that reads most documents and the larger one that handles the hard ones. We charge ${PRICE_MULTIPLE} times that, ${tenthsLabel(RETAINED_TENTHS)} cents, which covers storage, the checks, support and the business. GST and the card fee then come out of the price rather than being added on top, and that is what takes ${tenthsLabel(RETAINED_TENTHS)} cents to ${CENTS_PER_SCAN}. You see one number and it is the whole number.`,
+    a: `Reading a document costs us a fraction of a cent. The rest of the ${CENTS_PER_SCAN} cents covers keeping a true copy for five years, the checks, card processing, GST, support and the business. GST and the card fee are inside the price rather than added on top. You see one number and it is the whole number.`,
   },
   {
     q: 'Is GST included?',

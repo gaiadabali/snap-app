@@ -104,11 +104,9 @@ export function parseSse(body: string): SseFrame[] {
   return out;
 }
 
-/** The active packs of migration 0029, as `credit_packs` returns them. */
+/** The active packs of migration 0051, as `credit_packs` returns them. */
 export const PACK_ROWS = [
-  { code: 'credits_50', credits: 50, price_aud: '1.8500' },
-  { code: 'credits_100', credits: 100, price_aud: '3.7000' },
-  { code: 'credits_200', credits: 200, price_aud: '7.4000' },
-  { code: 'credits_500', credits: 500, price_aud: '18.5000' },
-  { code: 'credits_1000', credits: 1000, price_aud: '37.0000' },
+  { code: 'credits_50', credits: 50, price_aud: '5.0000' },
+  { code: 'credits_100', credits: 100, price_aud: '10.0000' },
+  { code: 'credits_250', credits: 250, price_aud: '25.0000' },
 ];
