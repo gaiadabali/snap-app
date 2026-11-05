@@ -4,12 +4,14 @@ import {
   decimal,
   DEFAULT_CALL_TIMEOUT_MS,
   OPENROUTER_BASE_URL,
+  openRouterExtras,
   readOllamaCloudKey,
   readOpenRouterKey,
   str,
   TruncatedOutputError,
   withCallTimeout,
 } from './provider.js';
+import { usdToAudMicros, type ModelCall } from './call-cost.js';
 import { maskCardLast4 } from './types.js';
 import type { StatementChunkExtraction } from './statement-types.js';
 
@@ -44,6 +46,8 @@ export interface StatementChunkResult {
 export interface StatementChunkProvider {
   readonly name: string;
   readonly model: string;
+  /** One entry per chunk call that got an answer, for the worker to record (plan 7.2). */
+  readonly modelCalls?: ModelCall[];
   /**
    * `pageTexts` are the chunk's pages, in order, exactly as
    * `extractPdfText` returned them — no rasterisation, no images.
@@ -126,6 +130,7 @@ export function parseStatementChunk(text: string, pageRange: { from: number; to:
 export class OllamaCloudStatementProvider implements StatementChunkProvider {
   // Typed as string, not the literal, so `OpenRouterStatementProvider` can rename it.
   readonly name: string = 'ollama-cloud';
+  readonly modelCalls: ModelCall[] = [];
 
   constructor(
     readonly model = 'gemma4:31b',
@@ -145,6 +150,11 @@ export class OllamaCloudStatementProvider implements StatementChunkProvider {
     /** One chunk call's time limit; see `withCallTimeout` in provider.ts. */
     private readonly timeoutMs: number = DEFAULT_CALL_TIMEOUT_MS,
   ) {}
+
+  /** Request fields only some endpoints understand; see `OllamaCloudProvider.extraBody`. */
+  protected extraBody(): Record<string, unknown> {
+    return {};
+  }
 
   async extractChunk(
     pageTexts: readonly string[],
@@ -181,6 +191,7 @@ export class OllamaCloudStatementProvider implements StatementChunkProvider {
           messages: [{ role: 'user', content: body }],
           temperature: 0,
           max_tokens: this.maxTokens,
+          ...this.extraBody(),
         }),
       });
 
@@ -193,9 +204,34 @@ export class OllamaCloudStatementProvider implements StatementChunkProvider {
 
       return (await response.json()) as {
         choices?: Array<{ message?: { content?: string }; finish_reason?: string }>;
-        usage?: { prompt_tokens?: number; completion_tokens?: number };
+        usage?: { prompt_tokens?: number; completion_tokens?: number; cost?: number };
       };
     });
+    const call: ModelCall = {
+      model: this.model,
+      costMicros: usdToAudMicros(data.usage?.cost),
+      inputTokens: data.usage?.prompt_tokens ?? null,
+      outputTokens: data.usage?.completion_tokens ?? null,
+      latencyMs: Date.now() - started,
+      error: null,
+    };
+    this.modelCalls.push(call);
+    try {
+      return this.finish(data, call, pageRange);
+    } catch (error) {
+      call.error = error instanceof Error ? error.message : String(error);
+      throw error;
+    }
+  }
+
+  private finish(
+    data: {
+      choices?: Array<{ message?: { content?: string }; finish_reason?: string }>;
+      usage?: { prompt_tokens?: number; completion_tokens?: number };
+    },
+    call: ModelCall,
+    pageRange: { from: number; to: number },
+  ): StatementChunkResult {
     const raw = data.choices?.[0]?.message?.content ?? '';
     if (!raw) throw new Error(`${this.name} returned an empty response for pages ${pageRange.from}-${pageRange.to}.`);
 
@@ -214,9 +250,9 @@ export class OllamaCloudStatementProvider implements StatementChunkProvider {
         provider: this.name,
         model: this.model,
         promptVersion: STATEMENT_PROMPT_VERSION,
-        latencyMs: Date.now() - started,
-        inputTokens: data.usage?.prompt_tokens ?? null,
-        outputTokens: data.usage?.completion_tokens ?? null,
+        latencyMs: call.latencyMs,
+        inputTokens: call.inputTokens,
+        outputTokens: call.outputTokens,
         raw,
       },
     };
@@ -229,5 +265,9 @@ export class OpenRouterStatementProvider extends OllamaCloudStatementProvider {
 
   constructor(model: string, apiKey = readOpenRouterKey(), timeoutMs: number = DEFAULT_CALL_TIMEOUT_MS) {
     super(model, apiKey, OPENROUTER_BASE_URL, undefined, timeoutMs);
+  }
+
+  protected override extraBody(): Record<string, unknown> {
+    return openRouterExtras(this.model);
   }
 }

@@ -4,6 +4,7 @@ import { IsBoolean, IsOptional, IsString, IsUUID, MinLength } from 'class-valida
 import type {
   AdminAiKeyRef,
   AdminAiProviderConfig,
+  AdminAiCostDay,
   AdminAiUsageStat,
   AdminRevokeAiKeyRequest,
   AdminSetAiKeyRequest,
@@ -110,5 +111,13 @@ export class AdminAiController {
   @ApiOperation({ summary: 'Extraction runs, cost and latency by engine/model, last 30 days' })
   async usage(@CurrentUser() user: AuthUser): Promise<AdminAiUsageStat[]> {
     return adminRepo.getAiUsageSummary(user.userId);
+  }
+
+  @Get("usage/daily")
+  @ApiOperation({
+    summary: "AI cost, scans and cost per scan by day, last 30 days",
+  })
+  async usageDaily(@CurrentUser() user: AuthUser): Promise<AdminAiCostDay[]> {
+    return adminRepo.getAiCostDaily(user.userId);
   }
 }

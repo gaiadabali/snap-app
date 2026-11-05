@@ -4,7 +4,7 @@ import { claimJobs, completeJob, failJob, renewJobLock } from '@snap/db';
 import type { TaxRules } from '@snap/tax-rules';
 import { sql } from 'drizzle-orm';
 
-import { chain, openRouterModelId } from './ai/router.js';
+import { chain, openRouterModelId, type ModelSpec } from './ai/router.js';
 import { config } from './config.js';
 import { refundScanCredit, type RefundReason } from './credits/spend.js';
 import { getDb } from './db.js';
@@ -20,7 +20,9 @@ import {
 } from './extraction/provider.js';
 import { extractionPromptFor } from './extraction/prompt.js';
 import { toModelImages } from './extraction/model-image.js';
+import type { ModelCall } from './extraction/call-cost.js';
 import { runExtraction } from './extraction/run.js';
+import { STATEMENT_PROMPT_VERSION } from './extraction/statement-prompt.js';
 import { runShadowOcr } from './extraction/shadow.js';
 import type { Extraction } from './extraction/types.js';
 import {
@@ -28,7 +30,14 @@ import {
   OpenRouterStatementProvider,
   type StatementChunkProvider,
 } from './extraction/statement-provider.js';
-import { listCapturePages, groundingForCapture, readTenant, saveExtraction, saveExtractionFailure } from './repo.js';
+import {
+  listCapturePages,
+  groundingForCapture,
+  readTenant,
+  saveExtraction,
+  saveExtractionFailure,
+  saveModelCalls,
+} from './repo.js';
 import { importPdfStatement, StatementPageCapError } from './statements/pdf-statement-import.js';
 import { rulesFor } from './taxrules/taxrules.repo.js';
 import { get as readObject } from './storage.js';
@@ -163,7 +172,47 @@ function statementProviderFor(model: string): StatementChunkProvider {
   return new OllamaCloudStatementProvider(model, undefined, undefined, undefined, config().STATEMENT_CALL_TIMEOUT_MS);
 }
 
+/**
+ * Writes what a provider's model calls cost (plan 7.2.b): one succeeded run per
+ * answered chunk call, and, when the walk step failed, one failed run for that
+ * model, carrying the charge when the answer arrived before the failure.
+ * Returns whether a failure row was written.
+ */
+export async function recordCalls(
+  tenantId: string,
+  captureId: string,
+  provider: { model: string; modelCalls?: ModelCall[] },
+  promptVersion: string,
+  failure?: { stage: string; error: string },
+): Promise<boolean> {
+  const calls = provider.modelCalls ?? [];
+  await saveModelCalls(WORKER, tenantId, captureId, calls, promptVersion);
+  if (!failure) return false;
+  await saveExtractionFailure(
+    WORKER,
+    tenantId,
+    captureId,
+    failure.stage,
+    failure.error,
+    provider.model,
+    calls.find((c) => c.error),
+  );
+  return true;
+}
+
 type Job = { id: string; tenantId: string | null; payload: unknown; attempts?: number; maxAttempts?: number };
+
+/**
+ * The models a job tries (plan 7.3.b). The first attempt walks the whole chain;
+ * a retry (`attempts` counts the current claim, so more than 1) comes after the
+ * chain already failed, and re-walking it would pay for the same four failures
+ * again, up to about A$0.28 over five attempts. A retry tries the first model
+ * only, the cheapest; the transient failures a retry is for need no other reader.
+ */
+export function modelsForAttempt(job: Pick<Job, 'attempts'>, capability: 'vision' | 'chat'): ModelSpec[] {
+  const models = chain(capability);
+  return (job.attempts ?? 1) > 1 ? models.slice(0, 1) : models;
+}
 
 /**
  * How `handle` ended when it did not throw. `not_extracted`: the job is
@@ -300,7 +349,8 @@ async function handle(job: Job): Promise<HandleOutcome> {
     // §5.2, `statement-provider.ts`'s header) is that a native-text statement
     // needs no pixels at all — only a text-capable model, per `ai/router.ts`'s
     // capability split.
-    const textModels = chain('chat');
+    const textModels = modelsForAttempt(job, 'chat');
+    let failureRows = 0;
     let lastStatementError = 'no models tried';
     for (const spec of textModels) {
       let provider: StatementChunkProvider;
@@ -320,6 +370,7 @@ async function handle(job: Job): Promise<HandleOutcome> {
       try {
         result = await importPdfStatement(WORKER, job.tenantId, provider, { captureId, pageTexts });
       } catch (error) {
+        await recordCalls(job.tenantId, captureId, provider, STATEMENT_PROMPT_VERSION);
         // The page cap (Task 10, item 20) throws before any model call and
         // can NEVER succeed on retry — the page count is the PDF's own
         // property. Retrying would burn the queue's backoff forever on a
@@ -340,6 +391,7 @@ async function handle(job: Job): Promise<HandleOutcome> {
         throw error;
       }
       if (result.ok) {
+        await recordCalls(job.tenantId, captureId, provider, STATEMENT_PROMPT_VERSION);
         console.log(
           `job ${job.id}: statement ${result.statementId} → ${result.balanceCheck} (${result.lineCount} rows)`,
         );
@@ -347,6 +399,10 @@ async function handle(job: Job): Promise<HandleOutcome> {
       }
 
       lastStatementError = `${spec.id}: ${result.reason}`;
+      if (await recordCalls(job.tenantId, captureId, provider, STATEMENT_PROMPT_VERSION, {
+        stage: 'statement_extraction',
+        error: lastStatementError,
+      })) failureRows++;
 
       // 'truncated' — the cap is ours, a stronger model hits the same
       // per-chunk cap (`run.ts`'s own reasoning, reused verbatim).
@@ -370,14 +426,18 @@ async function handle(job: Job): Promise<HandleOutcome> {
     // provider outage), and this function cannot tell them apart any better
     // than the receipt path already admits it cannot — see `runOnce`'s own
     // comment on why a released job is safer than a swallowed error.
-    await saveExtractionFailure(
-      WORKER,
-      job.tenantId,
-      captureId,
-      'statement_extraction',
-      lastStatementError,
-      textModels.map((m) => m.id).join(','),
-    );
+    // Each failed model already wrote its own row (`recordCalls`); this one is
+    // only for a walk that never reached a model, such as a missing key.
+    if (failureRows === 0) {
+      await saveExtractionFailure(
+        WORKER,
+        job.tenantId,
+        captureId,
+        'statement_extraction',
+        lastStatementError,
+        textModels.map((m) => m.id).join(','),
+      );
+    }
     throw new Error(lastStatementError);
   }
 
@@ -455,7 +515,7 @@ async function handle(job: Job): Promise<HandleOutcome> {
     );
   }
 
-  const models = chain('vision');
+  const models = modelsForAttempt(job, 'vision');
 
   // The stored grounding report for this capture, READ — never re-run; the
   // shadow stage is its only writer. From Task 7 (audit item 1) the accept
@@ -483,8 +543,7 @@ async function handle(job: Job): Promise<HandleOutcome> {
   // changes the answer.
   let lastError = 'no models tried';
   // Every failed model's reason, kept so a later success can say what the
-  // earlier models tripped on. Console only: storing them is plan 7.2.b, and
-  // a redeploy used to take the logs, and the reasons, with it.
+  // earlier models tripped on. Stored too, one failed run per model (7.2.b).
   const earlierFailures: string[] = [];
 
   // What the model is shown: a smaller copy of each image, made once per job
@@ -507,8 +566,9 @@ async function handle(job: Job): Promise<HandleOutcome> {
       console.warn(`job ${job.id}: ${lastError}`);
       break;
     }
+    const provider = providerFor(spec.id, taxRules, Math.min(callLimitMs, Math.max(remainingMs, 10_000)));
     const outcome = await runExtraction(
-      providerFor(spec.id, taxRules, Math.min(callLimitMs, Math.max(remainingMs, 10_000))),
+      provider,
       pages,
       new Date(),
       taxRules,
@@ -529,6 +589,7 @@ async function handle(job: Job): Promise<HandleOutcome> {
           latencyMs: run.meta.latencyMs,
           inputTokens: run.meta.inputTokens,
           outputTokens: run.meta.outputTokens,
+          costMicros: run.meta.costMicros,
           raw: run.meta.raw,
         },
         // The same rule set (or null) just resolved above for `validate()` —
@@ -571,6 +632,8 @@ async function handle(job: Job): Promise<HandleOutcome> {
 
     lastError = `${spec.id}: ${outcome.failure.error}`;
     earlierFailures.push(lastError.slice(0, 300));
+    // One failed run per model call, with its charge (plan 7.2.b).
+    await recordCalls(job.tenantId, captureId, provider, 'n/a', { stage: 'provider', error: lastError });
 
     // Truncation ends the walk. Escalating spends a model call to reproduce
     // our own output cap, three more times, and the last one is the most
@@ -583,16 +646,8 @@ async function handle(job: Job): Promise<HandleOutcome> {
     console.warn(`job ${job.id}: ${lastError} — escalating`);
   }
 
-  // Every model failed. Recorded against the capture so the next attempt, or
-  // a person, can see what happened rather than finding a silent gap.
-  await saveExtractionFailure(
-    WORKER,
-    job.tenantId,
-    captureId,
-    'provider',
-    lastError,
-    models.map((m) => m.id).join(','),
-  );
+  // Every model failed. Each one already wrote its own failed run above, so
+  // the next attempt, or a person, can see what happened and what it cost.
   throw new Error(lastError);
 }
 

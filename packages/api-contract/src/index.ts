@@ -1468,6 +1468,18 @@ export interface AdminAiUsageStat {
   avgLatencyMs: number | null;
 }
 
+/** One row of `GET /v1/admin/ai/usage/daily`: a UTC day, newest first, last 30 days */
+export interface AdminAiCostDay {
+  /** YYYY-MM-DD */
+  day: string;
+  runs: number;
+  /** Distinct captures that had a model call that day, failed ones included. */
+  scans: number;
+  /** AUD, 4 decimal places: a scan costs about A$0.0005. */
+  costAud: MoneyString;
+  costPerScanAud: MoneyString;
+}
+
 /** Request body of `POST /v1/admin/operations/reextraction` */
 export interface AdminTriggerReextractionRequest {
   tenantId: string;

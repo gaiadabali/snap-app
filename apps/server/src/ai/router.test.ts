@@ -67,3 +67,28 @@ describe('the chat chain honours the exclusions in docs/AI.md', () => {
     }
   });
 });
+
+/** Plan 7.3.a and 7.3.c. */
+describe("the cost of the chains", () => {
+  it("walks Kimi K3 last, for vision and for chat", () => {
+    for (const capability of ["vision", "chat"] as const) {
+      const ids = chain(capability).map((m) => m.id);
+      expect(
+        ids[ids.length - 1],
+        `${capability} chain ends on the most expensive reader`,
+      ).toBe("kimi-k3");
+    }
+  });
+
+  it("starts vision on the cheapest reader", () => {
+    expect(primary("vision").id).toBe("gemma4:31b");
+  });
+
+  it("sets a price ceiling on every model a chain can reach", () => {
+    for (const m of [...chain("vision"), ...chain("chat")]) {
+      expect(m.maxPrice, `${m.id} has no provider.max_price`).toBeDefined();
+      expect(m.maxPrice!.prompt).toBeGreaterThan(0);
+      expect(m.maxPrice!.completion).toBeGreaterThan(0);
+    }
+  });
+});

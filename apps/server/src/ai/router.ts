@@ -74,6 +74,16 @@ export type ModelSpec = {
    * escalated to for that capability.
    */
   excludedFrom?: Partial<Record<Capability, string>>;
+  /**
+   * USD per million tokens. Sent to OpenRouter as `provider.max_price`, so a
+   * call is never routed to a provider above it (plan 7.3.c). Gemma's 18
+   * providers range from $0.10/$0.34 to $0.75/$1.00, a fivefold spread, and
+   * the cost figures assume the cheap end. Set from OpenRouter's
+   * `/models/<id>/endpoints` on 2026-11-05: about the typical price plus
+   * headroom. If a ceiling leaves no provider, the call fails and the chain
+   * escalates; re-check the ceilings whenever a price is re-measured.
+   */
+  maxPrice?: { prompt: number; completion: number };
 };
 
 /**
@@ -92,6 +102,7 @@ export const MODELS: ModelSpec[] = [
     benchmarkScore: 8,
     medianSeconds: 5.39,
     note: 'Primary reader. Perfect on a creased, glare-covered thermal docket.',
+    maxPrice: { prompt: 0.4, completion: 1.5 },
   },
   {
     id: 'gemma4:31b',
@@ -101,24 +112,30 @@ export const MODELS: ModelSpec[] = [
     benchmarkScore: 8,
     medianSeconds: 2.82,
     note: 'Fastest and cheapest at 140 output tokens. Non-Chinese fallback.',
+    maxPrice: { prompt: 0.4, completion: 0.6 },
   },
   {
     id: 'kimi-k3',
     openrouterId: 'moonshotai/kimi-k3',
     capabilities: ['vision', 'chat'],
-    tier: 2,
+    // Last in every chain (plan 7.3.a). One page costs A$0.034, about what a
+    // credit nets, so it is only reached once every cheaper reader has failed.
+    // Kept rather than removed: its failures are different from the others'.
+    tier: 3,
     benchmarkScore: 8,
     medianSeconds: 7.28,
-    note: 'Escalation. Same accuracy, slower, different failure modes.',
+    note: 'Last resort at A$0.034 a page. Same accuracy, different failure modes.',
+    maxPrice: { prompt: 3.5, completion: 16 },
   },
   {
     id: 'qwen3.5:397b',
     openrouterId: 'qwen/qwen3.5-397b-a17b',
     capabilities: ['vision', 'chat'],
-    tier: 3,
+    tier: 2,
     benchmarkScore: 8,
     medianSeconds: 23.21,
-    note: 'Last resort. Accurate but spends thousands of tokens reasoning.',
+    note: 'Escalation at A$0.019 a page. Accurate but spends thousands of tokens reasoning.',
+    maxPrice: { prompt: 0.8, completion: 4.8 },
   },
   {
     id: 'glm-5.3',
@@ -128,6 +145,7 @@ export const MODELS: ModelSpec[] = [
     benchmarkScore: null,
     medianSeconds: 3.4,
     note: 'Chat only — returns 400 for an image. Fast and fluent.',
+    maxPrice: { prompt: 1.5, completion: 4.5 },
   },
   {
     id: 'deepseek-v4-flash:0731',
