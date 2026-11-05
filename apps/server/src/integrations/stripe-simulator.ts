@@ -416,7 +416,7 @@ export async function startStripeSimulator(
     if (session && method === 'POST') return submit(session, body);
 
     return json(404, {
-      error: { type: 'invalid_request_error', message: `Unrecognized request URL: ${path}` },
+      error: { type: 'invalid_request_error', message: 'Unrecognized request URL' },
     });
   }
 
