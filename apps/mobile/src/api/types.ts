@@ -519,6 +519,8 @@ export interface SnapApi {
   resendEmailVerification(): Promise<{ alreadyVerified: boolean }>;
   /** `POST /v1/auth/sign-out-everywhere`, then a local sign-out. */
   signOutEverywhere(): Promise<void>;
+  /** `POST /v1/auth/account/delete`, then a local sign-out. The server queues the erasure and ends every session. */
+  deleteAccount(input: { confirm: string; password?: string }): Promise<void>;
 }
 
 /**

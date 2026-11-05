@@ -1364,4 +1364,15 @@ export class HttpApi implements SnapApi {
     });
     await this.signOut();
   }
+
+  async deleteAccount(input: { confirm: string; password?: string }): Promise<void> {
+    // Like signOutEverywhere: must reach the server, so a failure (wrong
+    // password, no connection) is thrown to the screen and nothing is cleared.
+    await this.request<{ ok: true }>('POST', '/v1/auth/account/delete', {
+      body: input,
+      workspaceId: null,
+      queue: false,
+    });
+    await this.signOut();
+  }
 }

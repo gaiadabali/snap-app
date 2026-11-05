@@ -774,7 +774,8 @@ YourTal retries and nothing is erased. `YOURTAL_OIDC_ISSUER` must also be set.
 ### Monitor check 2a
 
 `deploy/monitor/alert.sh --inbox` (every 10 minutes, from root's crontab) raises
-**erasure** when a `yourtal_event`, `storage_purge` or `erasure_notice` job is
+**erasure** when a `yourtal_event`, `account_delete` (a person deleting their own
+account in the app, 8.3.a; counted as `yourtal_event=`), `storage_purge` or `erasure_notice` job is
 still open 24 hours after it was queued. The check counts only. The cause is in
 `jobs.last_error`. Do not set `ERASURE_CHECK=off` on helios to silence it.
 
@@ -813,6 +814,29 @@ by `ON CONFLICT DO NOTHING`, so the open job must go first:
 To prevent this, YourTal should keep retired keys published for at least 72 hours.
 
 A `yourtal_event` job that has failed for good is blanked after 30 days (the hourly sweep keeps the row so its `jti` is still refused, but drops the SET). After that, resetting `attempts` cannot recover it: ask YourTal to re-deliver the event instead.
+
+### Account deletion requests by email
+
+The public page `/delete-account` (and the phone's Delete account screen) tell people they
+can ask for deletion by writing to hansel@gaiada.com, and that we handle it within 30 days.
+Procedure, for the person reading that inbox:
+
+1. **Check it is them.** The email must come from the address on the account. If it comes
+   from another address, reply to the account's address and ask them to confirm from there.
+   Do not delete on a request you cannot tie to the account's own inbox.
+2. **Find the account (read).** On helios, as root, from `/opt/snap-apps`:
+   `DRY_RUN=1 deploy/erase-account.sh person@example.com`. It prints the user id and what
+   will happen: an adult is erased by the worker, a parent's teen spaces are ended first, a
+   teen goes into the 30-day hold. It prints nothing and writes nothing else. "no account
+   has that address" means it is already gone, so reply that it is done.
+3. **Delete (a write: the owner's OK first).** `deploy/erase-account.sh person@example.com`.
+   It calls `account_delete_queue` (migration 0055), the same function the app's button
+   calls: it ends their sessions and queues one `account_delete` job, and the worker runs
+   `erase_person` within minutes. Do not insert jobs by hand.
+4. **Confirm.** Re-run step 2: "no account has that address" means done (a teen's account is
+   erased by the hourly hold sweep after 30 days). A job still open after 24 hours raises the
+   monitor's **erasure** alert (check 2a); the cause is in `jobs.last_error`.
+5. Reply to the person, from the same inbox, that it is done. Keep the request email.
 
 ### Rules
 

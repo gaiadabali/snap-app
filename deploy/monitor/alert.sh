@@ -251,7 +251,8 @@ if [ "${1:-}" = "--inbox" ]; then
 
   # 2a. YourTal deletion events (group 3.7, S2). A person who deleted their
   # YourTal account must be erased here within 72 hours (yourtal/docs/29):
-  # a `yourtal_event` job, the `storage_purge` of an erased workspace's
+  # a `yourtal_event` job (or an `account_delete`, someone deleting their own
+  # account in the app, 8.3.a: counted with it, as yourtal_event=), the `storage_purge` of an erased workspace's
   # files, or an `erasure_notice` to a member left behind, still open 24 h
   # after it was queued has stopped (retries spent, a
   # refused SET, a cross-workspace reference the erasure refuses). Also a
@@ -266,12 +267,12 @@ if [ "${1:-}" = "--inbox" ]; then
     erow=$(docker exec -i -e PGOPTIONS='-c default_transaction_read_only=on' "$pg_ctr" \
       psql -U postgres -d snapapps -X -At -F ' ' -v ON_ERROR_STOP=1 2>&1 <<'SQL'
 SELECT
-  count(*) FILTER (WHERE kind = 'yourtal_event'),
+  count(*) FILTER (WHERE kind IN ('yourtal_event', 'account_delete')),
   count(*) FILTER (WHERE kind = 'storage_purge'),
   count(*) FILTER (WHERE kind = 'erasure_notice'),
   (SELECT count(*) FROM teen_spaces WHERE erase_after < now() - interval '1 day')
 FROM jobs
-WHERE kind IN ('yourtal_event', 'storage_purge', 'erasure_notice') AND completed_at IS NULL
+WHERE kind IN ('yourtal_event', 'account_delete', 'storage_purge', 'erasure_notice') AND completed_at IS NULL
   AND created_at < now() - interval '24 hours';
 SQL
     ) && read -r e_ev e_sp e_en e_th e_extra <<< "$erow"
