@@ -17,10 +17,15 @@
 -- finish would consume it, and ID-token claims of a send's confirmation would
 -- reach the account-linking function.
 --
+-- The other two purposes of a flow refuse a flow that carries a send as well
+-- (identity_yourtal_flow_set_move, 0048; teen_invite_attach_flow, 0045), so a
+-- flow has exactly one purpose, whichever order they are asked in.
+--
 -- Same shape, owner and grants as 0048. CREATE OR REPLACE keeps the owner and
 -- the ACL of identity_yourtal_flow_take. Add-only otherwise: no table changes.
 -- Reverse: DROP the two new functions, then re-create identity_yourtal_flow_take
--- from 0039 (without the ftr_send_id condition).
+-- (0039), identity_yourtal_flow_set_move (0048) and teen_invite_attach_flow
+-- (0045) without the ftr_send_id condition.
 -- ---------------------------------------------------------------------------
 
 -- Link an open flow to its send. False for an unknown, used or expired flow.
@@ -63,6 +68,32 @@ LANGUAGE sql SECURITY DEFINER SET search_path = public, pg_temp AS $fn$
      AND f.expires_at > now()
      AND f.ftr_send_id IS NULL
   RETURNING f.client, f.state, f.nonce, f.code_verifier, f.return_to, f.sign_up;
+$fn$;
+
+-- 0048's move link, now refusing a flow that carries a send.
+CREATE OR REPLACE FUNCTION identity_yourtal_flow_set_move(p_flow_id uuid, p_user_id uuid)
+RETURNS boolean
+LANGUAGE sql SECURITY DEFINER SET search_path = public, pg_temp AS $fn$
+  WITH u AS (
+    UPDATE yourtal_sign_in_flows f
+       SET move_user_id = p_user_id
+     WHERE f.id = p_flow_id AND f.consumed_at IS NULL AND f.expires_at > now()
+       AND f.ftr_send_id IS NULL
+    RETURNING 1
+  )
+  SELECT EXISTS (SELECT 1 FROM u);
+$fn$;
+
+-- 0045's teen-invite link, likewise. It runs as app_teen, which reads only the
+-- flow columns it was granted: one more.
+GRANT SELECT (ftr_send_id) ON yourtal_sign_in_flows TO app_teen;
+CREATE OR REPLACE FUNCTION teen_invite_attach_flow(p_code_sha256 bytea, p_flow_id uuid) RETURNS uuid
+LANGUAGE sql SECURITY DEFINER SET search_path = public, pg_temp AS $fn$
+  UPDATE yourtal_sign_in_flows f SET teen_invite_id = i.id
+    FROM teen_invites i
+   WHERE i.code_sha256 = p_code_sha256 AND i.expires_at > now()
+     AND f.id = p_flow_id AND f.consumed_at IS NULL AND f.ftr_send_id IS NULL
+  RETURNING i.id;
 $fn$;
 
 REVOKE EXECUTE ON FUNCTION identity_yourtal_flow_set_ftr_send(uuid, uuid)  FROM PUBLIC;

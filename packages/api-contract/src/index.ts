@@ -2270,3 +2270,33 @@ export interface FtrSendStarted {
 export type FtrSendFinished =
   | { status: 'sent'; importId: string; financialYear: string; lineCount: number; returnTo: string | null }
   | { status: 'cancelled'; returnTo: string | null };
+
+/**
+ * The `error` of a refusal from `POST /v1/ftr-sends` or `/finish` (`{ error, message }`; `ftr_refused` also has `reason`,
+ * FTR's own code). `yourtal_failed`, `yourtal_unavailable`, `email_unverified`, `region_not_supported`, `not_configured` and
+ * `invalid_flow` can also come from the sign-in module's code redemption and ID token checks, and `invalid_return_to` from start.
+ */
+export type FtrSendErrorCode =
+  | 'not_configured'
+  | 'not_personal'
+  | 'not_owner'
+  | 'region_not_supported'
+  | 'teen_space'
+  | 'yourtal_sign_in_required'
+  | 'impersonated'
+  | 'rate_limited'
+  | 'nothing_to_send'
+  | 'invalid_bundle'
+  | 'invalid_flow'
+  | 'send_expired'
+  | 'yourtal_failed'
+  | 'yourtal_unavailable'
+  | 'email_unverified'
+  | 'wrong_account'
+  | 'not_allowed'
+  | 'not_approved'
+  | 'send_refused'
+  | 'ftr_refused'
+  | 'ftr_unavailable'
+  | 'invalid_return_to'
+  | 'internal';

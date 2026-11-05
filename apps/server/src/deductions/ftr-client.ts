@@ -12,6 +12,8 @@ import { config } from '../config.js';
  */
 
 const TIMEOUT_MS = 15_000;
+/** FTR's own 429 asks for a minute; a second's pause is all an assertion that lasts 15 minutes should cost. */
+const RETRY_DELAY_MS = 1_000;
 /** FTR's own `err` codes (docs/30 §4). Anything else is reported as `refused`. */
 const REASON = /^[a-z_]{1,40}$/;
 
@@ -60,5 +62,6 @@ async function once(assertion: string, bytes: Buffer): Promise<FtrResult> {
 export async function postBundle(assertion: string, bytes: Buffer): Promise<FtrResult> {
   const first = await once(assertion, bytes);
   if (first.ok || first.kind !== 'unavailable') return first;
+  await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
   return once(assertion, bytes);
 }

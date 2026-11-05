@@ -80,7 +80,7 @@ export class FtrSendController {
       'the flow id the finish needs within 10 minutes, and the send id. Only the owner of a personal workspace in ' +
       'Australia, signed in with YourTal, and not in a teen space. 5 a person per 15 minutes. Refusals are ' +
       '{ error, message }: 501 not_configured; 403 not_personal, not_owner, region_not_supported, teen_space, ' +
-      'yourtal_sign_in_required, impersonated; 422 nothing_to_send, invalid_bundle; 429 rate_limited; ' +
+      'yourtal_sign_in_required, impersonated; 400 invalid_return_to; 422 nothing_to_send, invalid_bundle; 429 rate_limited; ' +
       '503 yourtal_unavailable; 409 send_refused.',
   })
   async start(
@@ -107,14 +107,17 @@ export class FtrSendController {
       'redeems the code, checks the ID token is an adult in Australia and the session’s own `sub`, fetches the ' +
       'assertion and posts the stored bytes to Free Tax Returns. With `error` the send is closed as cancelled. ' +
       '200 { status: "sent", importId, … } or { status: "cancelled" }; refusals are { error, message } and close the send: ' +
-      'invalid_flow, send_expired, yourtal_failed, yourtal_unavailable, wrong_account, not_allowed, not_approved, ' +
-      'send_refused, ftr_refused (with reason), ftr_unavailable.',
+      'impersonated (before the flow is taken), invalid_flow, send_expired, yourtal_failed, yourtal_unavailable, ' +
+      'wrong_account, not_allowed, not_approved, send_refused, ftr_refused (with reason), ftr_unavailable; and, from ' +
+      'redeeming the code and reading the ID token, the sign-in codes region_not_supported, email_unverified and ' +
+      'not_configured. See FtrSendErrorCode in the contract.',
   })
   async finish(
     @CurrentUser() user: AuthUser,
     @WorkspaceId() tenantId: string,
+    @CurrentImpersonation() impersonation: ProductImpersonation | undefined,
     @ValidBody(FtrSendFinishDto) body: FtrSendFinishDto,
   ): Promise<FtrSendFinished> {
-    return finishSend(user, tenantId, body);
+    return finishSend(user, tenantId, impersonation !== undefined, body);
   }
 }

@@ -34,7 +34,9 @@ import { ftrTransferConfigured, postBundle } from './ftr-client.js';
  *    belong to the session's user: `flow.ftr_send_id` alone is never trusted
  *    (app_identity can link a flow to any workspace's send);
  *  - a send is closed only with `WHERE status = 'started'`, row count checked;
- *  - a send over an hour old is refused whether or not the sweep has run.
+ *  - a send over an hour old is refused whether or not the sweep has run. "Old" is 59 minutes: a
+ *    send that passes the check can still take ~40 s to finish, and the 5-minute sweep must not
+ *    expire (and so mis-record) a row FTR has already accepted.
  *
  * Nothing YourTal or FTR issues (code, tokens, the assertion) is logged or stored.
  */
@@ -74,6 +76,10 @@ const SEND_REFUSALS = {
 } as const satisfies Record<string, readonly [HttpStatus, string]>;
 
 export type SendRefusalCode = keyof typeof SEND_REFUSALS;
+
+// The finish also surfaces the sign-in module's refusals from redeeming the code and reading the ID
+// token (auth/yourtal-signin/claims.ts): yourtal_failed, yourtal_unavailable, invalid_flow,
+// region_not_supported, email_unverified, not_configured. Listed in the contract's FtrSendErrorCode.
 
 /** `{ error, message }` like the sign-in; `reason` is FTR's own fixed `err` code on `ftr_refused`. */
 export function sendRefusal(code: SendRefusalCode, reason?: string): HttpException {
@@ -165,7 +171,7 @@ async function loadSend(user: Who, tenantId: string, sendId: string): Promise<Se
   const row = await withTenantAs(getDb(), user.userId, tenantId, async (tx) => {
     const { rows } = await tx.execute<SendRow>(sql`
       select s.user_id, s.status, s.financial_year, s.line_count, s.bundle, s.bundle_sha256::text as bundle_sha256,
-             s.yourtal_transfer_id, s.created_at < now() - interval '1 hour' as stale,
+             s.yourtal_transfer_id, s.created_at < now() - interval '59 minutes' as stale,
              (select subject from users where id = current_user_id()) as subject
         from ftr_sends s
        where s.id = ${sendId}::uuid
@@ -307,7 +313,14 @@ function same(a: string, b: string): boolean {
   return x.byteLength === y.byteLength && timingSafeEqual(x, y);
 }
 
-export async function finishSend(user: Who, tenantId: string, input: FinishSendInput): Promise<FinishedSend> {
+export async function finishSend(
+  user: Who,
+  tenantId: string,
+  impersonated: boolean,
+  input: FinishSendInput,
+): Promise<FinishedSend> {
+  // Before the flow is taken, so staff acting as a person burn nothing of theirs.
+  if (impersonated) throw sendRefusal('impersonated');
   if (!(await finishesPerUser.consume(`ftr-send-finish:${user.userId}`))) throw sendRefusal('rate_limited');
 
   // Taken first, so a wrong state or a replay burns the flow; a flow with no send is not taken at all.

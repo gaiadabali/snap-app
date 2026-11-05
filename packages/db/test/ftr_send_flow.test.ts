@@ -44,6 +44,7 @@ describeIfDb('ftr send flow functions (migration 0050)', () => {
   async function wipe() {
     await owner();
     await c.query(`DELETE FROM yourtal_sign_in_flows WHERE state LIKE 'ftr-flow-%'`);
+    await c.query('DELETE FROM teen_invites WHERE parent_user_id = $1', [U]);
     await c.query('DELETE FROM ftr_sends WHERE tenant_id = $1', [W]);
     await c.query('DELETE FROM tenants WHERE id = $1', [W]);
     await c.query('DELETE FROM users WHERE id = $1', [U]);
@@ -110,5 +111,25 @@ describeIfDb('ftr send flow functions (migration 0050)', () => {
       expect((await c.query('SELECT identity_yourtal_flow_set_ftr_send($1,$2) AS ok', [id, sendId])).rows[0].ok).toBe(false);
     }
     expect((await c.query('SELECT identity_yourtal_flow_set_ftr_send($1,$2) AS ok', ['f7600000-0000-4000-8000-00000000ffff', sendId])).rows[0].ok).toBe(false);
+  });
+
+  it('a flow that carries a send refuses the move and teen-invite links, so it has one purpose', async () => {
+    await owner();
+    const sendId = await send();
+    const id = await flow('ftr-flow-5');
+    await c.query(`INSERT INTO teen_invites (id, parent_user_id, funding_tenant_id, code_sha256, expires_at)
+                   VALUES (gen_random_uuid(), $1, $2, decode(repeat('ab', 32), 'hex'), now() + interval '1 day')`, [U, W]);
+    await asApi();
+    expect((await c.query('SELECT identity_yourtal_flow_set_ftr_send($1,$2) AS ok', [id, sendId])).rows[0].ok).toBe(true);
+    expect((await c.query('SELECT identity_yourtal_flow_set_move($1,$2) AS ok', [id, U])).rows[0].ok).toBe(false);
+    expect((await c.query(`SELECT teen_invite_attach_flow(decode(repeat('ab', 32), 'hex'), $1) AS id`, [id])).rows[0].id).toBeNull();
+    // ...and a plain flow still takes both.
+    await owner();
+    const plain = await flow('ftr-flow-6');
+    await asApi();
+    expect((await c.query('SELECT identity_yourtal_flow_set_move($1,$2) AS ok', [plain, U])).rows[0].ok).toBe(true);
+    const other = await (async () => { await owner(); return flow('ftr-flow-7'); })();
+    await asApi();
+    expect((await c.query(`SELECT teen_invite_attach_flow(decode(repeat('ab', 32), 'hex'), $1) AS id`, [other])).rows[0].id).not.toBeNull();
   });
 });

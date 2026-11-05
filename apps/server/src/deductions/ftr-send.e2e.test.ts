@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { NotAMemberError } from '@snap/db';
 import { Client } from 'pg';
 
 import { closeDb } from '../db.js';
@@ -119,7 +120,7 @@ describeIfDb('POST /v1/ftr-sends and /finish', () => {
   }
 
   const finish = (f: Fixture, body: Awaited<ReturnType<typeof confirm>>, tenantId = f.tenantId) =>
-    send.finish(asUser(f.userId), tenantId, body as never);
+    send.finish(asUser(f.userId), tenantId, undefined, body as never);
 
   const refusalOf = async (p: Promise<unknown>) =>
     p.then(
@@ -216,6 +217,29 @@ describeIfDb('POST /v1/ftr-sends and /finish', () => {
     expect(await row(started.sendId)).toMatchObject({ status: 'failed', error: 'wrong_account', bundle: null });
   });
 
+  it('an ID token that says a teen, or a person in Indonesia, is refused by SnapApp itself: 403 not_allowed, nothing sent, the send failed', async () => {
+    for (const change of [{ ageBand: 'teen' }, { region: 'ID' }] as const) {
+      const f = await fixture();
+      const started = await begin(f);
+      ftr.calls.length = 0;
+      // Same account (same sub), but YourTal's token now says teen / ID: the fake does not refuse them, so only SnapApp's re-check can.
+      const body = await confirm(started, { ...f.person, ...change });
+      expect(await refusalOf(finish(f, body))).toMatchObject({ status: 403, body: { error: 'not_allowed' } });
+      expect(ftr.calls).toHaveLength(0);
+      expect(await row(started.sendId)).toMatchObject({ status: 'failed', error: 'not_allowed', bundle: null });
+    }
+  });
+
+  it('staff impersonating a person cannot finish a send either, and the flow is not burnt', async () => {
+    const f = await fixture();
+    const started = await begin(f);
+    const body = await confirm(started, f.person);
+    const refused = await refusalOf(send.finish(asUser(f.userId), f.tenantId, { sessionId: 's' } as never, body as never));
+    expect(refused).toMatchObject({ status: 403, body: { error: 'impersonated' } });
+    expect(await row(started.sendId)).toMatchObject({ status: 'started' });
+    expect(await finish(f, body)).toMatchObject({ status: 'sent' });
+  });
+
   it('Cancel at YourTal closes the send as cancelled; nothing is sent', async () => {
     const f = await fixture();
     const started = await begin(f);
@@ -288,9 +312,10 @@ describeIfDb('POST /v1/ftr-sends and /finish', () => {
     expect(ftr.calls).toHaveLength(2); // the original try and its one retry; never the redirect target
   });
 
-  it('an ID account, a plain member, a teen space, a workspace outside Australia and a legacy subject get 403 and no transfer', async () => {
+  it('an ID account, an admin, a plain member, a teen space, a workspace outside Australia and a legacy subject get 403 and no transfer', async () => {
     const cases: Array<[string, Fixture, string]> = [
       ['region_not_supported', await fixture({ country: 'ID' }), 'region_not_supported'],
+      ['not_owner', await fixture({ role: 'admin' }), 'not_owner'],
       ['not_owner', await fixture({ role: 'member' }), 'not_owner'],
       ['teen_space', await fixture({ teen: true }), 'teen_space'],
       ['yourtal_sign_in_required', await fixture({ subject: (s) => `google|${s}` }), 'yourtal_sign_in_required'],
@@ -359,7 +384,9 @@ describeIfDb('POST /v1/ftr-sends and /finish', () => {
     // Nor does naming the other workspace help: B is no member of it.
     const again = await confirm(await begin(b), b.person);
     await admin.query(`update yourtal_sign_in_flows set ftr_send_id = $1 where id = $2`, [aStart.sendId, again.flowId]);
-    expect(await refusalOf(finish(b, again, a.tenantId))).not.toBeNull();
+    // B is no member of A's workspace: the database refuses entry, whatever the header says.
+    await expect(finish(b, again, a.tenantId)).rejects.toBeInstanceOf(NotAMemberError);
+
     expect(await row(aStart.sendId)).toMatchObject({ status: 'started' });
   });
 
@@ -372,16 +399,16 @@ describeIfDb('POST /v1/ftr-sends and /finish', () => {
     await admin.query(`insert into users (id, subject, email, display_name) values ($1,$2,$3,'I')`, [intruder, `yourtal|${yt.subFor(randomUUID())}`, `${intruder}@x.test`]);
     await admin.query(`insert into memberships (tenant_id, user_id, role) values ($1,$2,'member')`, [a.tenantId, intruder]);
     const body = await confirm(aStart, a.person);
-    const refused = await refusalOf(send.finish(asUser(intruder), a.tenantId, body as never));
+    const refused = await refusalOf(send.finish(asUser(intruder), a.tenantId, undefined, body as never));
     expect(refused).toMatchObject({ status: 400, body: { error: 'invalid_flow' } });
     expect(await row(aStart.sendId)).toMatchObject({ status: 'started' });
   });
 
-  it('a send over an hour old is refused and closed as expired, whether or not the sweep has run', async () => {
+  it('a send over 59 minutes old (the sweep expires at 60) is refused and closed as expired, whether or not the sweep has run', async () => {
     const f = await fixture();
     const started = await begin(f);
     const body = await confirm(started, f.person);
-    await admin.query(`update ftr_sends set created_at = now() - interval '61 minutes' where id = $1`, [started.sendId]);
+    await admin.query(`update ftr_sends set created_at = now() - interval '59 minutes 30 seconds' where id = $1`, [started.sendId]);
     ftr.calls.length = 0;
     expect(await refusalOf(finish(f, body))).toMatchObject({ status: 400, body: { error: 'send_expired' } });
     expect(ftr.calls).toHaveLength(0);

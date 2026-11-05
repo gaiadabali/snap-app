@@ -295,7 +295,8 @@ const schema = z.object({
   /**
    * Free Tax Returns' transfer endpoint (group 4.8.a, yourtal docs/30 §6), e.g.
    * https://freetaxreturns.com.au/api/yourtal/transfers. Unset = direct send is
-   * off and only the file is offered. https in production.
+   * off and only the file is offered. https everywhere except a developer's
+   * machine and the tests: plain http only off production AND to a loopback host.
    */
   FTR_TRANSFER_URL: z
     .string()
@@ -416,15 +417,20 @@ const schema = z.object({
   ASSISTANT_PROXY_SECRET: z.string().optional(),
   ASSISTANT_LOG_TRANSCRIPTS: z.string().optional(),
 }).superRefine((settings, ctx) => {
+  // The assertion travels in this request's header: https unless it is http to this machine, outside production.
+  if (settings.FTR_TRANSFER_URL) {
+    const ftr = new URL(settings.FTR_TRANSFER_URL);
+    const loopback = ['127.0.0.1', 'localhost', '[::1]'].includes(ftr.hostname);
+    if (ftr.protocol !== 'https:' && !(ftr.protocol === 'http:' && loopback && settings.NODE_ENV !== 'production')) {
+      ctx.addIssue({ code: 'custom', path: ['FTR_TRANSFER_URL'], message: 'must be https (http only to localhost, outside production)' });
+    }
+  }
   // Sign in with YourTal over plain http is for a developer's machine and the
   // test suite's stand-in provider only. docs/26 §1.7: no staging or
   // production client has an http address.
   if (settings.NODE_ENV !== 'production') return;
   if (settings.YOURTAL_OIDC_ISSUER && !settings.YOURTAL_OIDC_ISSUER.startsWith('https://')) {
     ctx.addIssue({ code: 'custom', path: ['YOURTAL_OIDC_ISSUER'], message: 'must be https in production' });
-  }
-  if (settings.FTR_TRANSFER_URL && !settings.FTR_TRANSFER_URL.startsWith('https://')) {
-    ctx.addIssue({ code: 'custom', path: ['FTR_TRANSFER_URL'], message: 'must be https in production' });
   }
   if (settings.YOURTAL_OIDC_WEB_REDIRECT_URI && !settings.YOURTAL_OIDC_WEB_REDIRECT_URI.startsWith('https://')) {
     ctx.addIssue({ code: 'custom', path: ['YOURTAL_OIDC_WEB_REDIRECT_URI'], message: 'must be https in production' });
