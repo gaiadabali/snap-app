@@ -65,7 +65,7 @@ export function BuyCreditsClient({
       <Card>
         <div className="flex flex-wrap items-baseline justify-between gap-3">
           <div>
-            <div className="t-label text-[var(--color-ink-faint)]">Credits on hand</div>
+            <div className="t-label text-[var(--color-ink-muted)]">Credits on hand</div>
             <div className="mt-1 font-mono text-[28px] tabular text-[var(--color-ink)]">
               {creditsRemaining.toLocaleString('en-AU')}
             </div>
@@ -78,7 +78,7 @@ export function BuyCreditsClient({
       </Card>
 
       <div>
-        <div className="t-label text-[var(--color-ink-faint)]">Choose a pack</div>
+        <div className="t-label text-[var(--color-ink-muted)]">Choose a pack</div>
         <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {packs.map((pack) => {
             const active = selected?.code === pack.code;
@@ -98,7 +98,7 @@ export function BuyCreditsClient({
                 <span className="font-mono text-[20px] tabular text-[var(--color-ink)]">
                   {pack.credits.toLocaleString('en-AU')}
                 </span>
-                <span className="t-label mt-0.5 text-[var(--color-ink-faint)]">scans</span>
+                <span className="t-label mt-0.5 text-[var(--color-ink-muted)]">scans</span>
                 <span className="mt-3 font-mono text-[15px] tabular font-medium text-[var(--color-ink)]">
                   <Money amount={pack.priceAud} />
                 </span>
@@ -110,7 +110,7 @@ export function BuyCreditsClient({
 
       {selected ? (
         <Card>
-          <div className="t-label text-[var(--color-ink-faint)]">Order</div>
+          <div className="t-label text-[var(--color-ink-muted)]">Order</div>
           <dl className="mt-3 flex flex-col">
             <Row label={`${selected.credits.toLocaleString('en-AU')} credits`} value={<Money amount={selected.priceAud} />} />
             <Row label="GST" value="included" mono={false} />

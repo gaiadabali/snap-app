@@ -81,7 +81,7 @@ export function TaxPackClient({
         </Table>
       </Card>
 
-      <p className="text-[12px] text-[var(--color-ink-faint)]">{pack.retentionNote}</p>
+      <p className="text-[12px] text-[var(--color-ink-muted)]">{pack.retentionNote}</p>
     </div>
   );
 }

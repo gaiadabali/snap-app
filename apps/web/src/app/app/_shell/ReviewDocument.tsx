@@ -11,7 +11,7 @@ import {
   Input,
   Money,
   Switch,
-  Table,
+  Table, TableScroll,
   Td,
   Textarea,
   Th,
@@ -137,7 +137,7 @@ export function ReviewDocument({
               <div>
                 <span className="font-medium text-[var(--color-ink)]">{f.field}: </span>
                 <span className="text-[var(--color-ink-muted)]">{f.message}</span>
-                {f.fix ? <span className="block text-[var(--color-accent)]">{f.fix}</span> : null}
+                {f.fix ? <span className="block text-[var(--color-accent-readable)]">{f.fix}</span> : null}
               </div>
             </div>
           ))}
@@ -168,7 +168,7 @@ export function ReviewDocument({
                 className="max-h-[640px] w-full object-contain"
               />
             ) : (
-              <div className="flex h-[300px] items-center justify-center text-[13px] text-[var(--color-ink-faint)]">
+              <div className="flex h-[300px] items-center justify-center text-[13px] text-[var(--color-ink-muted)]">
                 No image on file
               </div>
             )}
@@ -182,7 +182,7 @@ export function ReviewDocument({
                   onClick={() => setActivePage(i)}
                   className={
                     i === activePage
-                      ? 'rounded-[var(--radius-sm)] border-2 border-[var(--color-accent)] px-2 py-1 text-[12px] font-semibold text-[var(--color-accent)]'
+                      ? 'rounded-[var(--radius-sm)] border-2 border-[var(--color-accent-readable)] px-2 py-1 text-[12px] font-semibold text-[var(--color-accent-readable)]'
                       : 'rounded-[var(--radius-sm)] border border-[var(--color-rule-strong)] px-2 py-1 text-[12px] text-[var(--color-ink-muted)]'
                   }
                 >
@@ -191,7 +191,7 @@ export function ReviewDocument({
               ))}
             </div>
           ) : null}
-          <p className="text-[12px] text-[var(--color-ink-faint)]">
+          <p className="text-[12px] text-[var(--color-ink-muted)]">
             The original, exactly as captured — this is the legal record and is never edited or re-rendered.
           </p>
         </Card>
@@ -246,13 +246,13 @@ export function ReviewDocument({
               {isBusiness ? (
                 <div className="grid grid-cols-2 gap-4 rounded-[var(--radius-md)] bg-[var(--color-surface)] p-3 text-[13px]">
                   <div>
-                    <div className="text-[var(--color-ink-faint)]">GST on this document</div>
+                    <div className="text-[var(--color-ink-muted)]">GST on this document</div>
                     <div className="font-semibold text-[var(--color-ink)]">
                       <Money amount={document.taxAmount} />
                     </div>
                   </div>
                   <div>
-                    <div className="text-[var(--color-ink-faint)]">Claimable now</div>
+                    <div className="text-[var(--color-ink-muted)]">Claimable now</div>
                     <div className={document.isTaxInvoice ? 'font-semibold text-[var(--color-good)]' : 'font-semibold text-[var(--color-risk)]'}>
                       {document.isTaxInvoice ? <Money amount={document.taxAmount} /> : <Money amount="0" />}
                     </div>
@@ -279,7 +279,7 @@ export function ReviewDocument({
           {document.lines.length > 0 ? (
             <Card>
               <h3 className="mb-3 text-[14px] font-semibold text-[var(--color-ink)]">Lines, as extracted</h3>
-              <div className="overflow-x-auto">
+              <TableScroll label="Lines, as extracted">
                 <Table>
                   <Thead>
                     <Th>Description</Th>
@@ -302,7 +302,7 @@ export function ReviewDocument({
                     ))}
                   </tbody>
                 </Table>
-              </div>
+              </TableScroll>
             </Card>
           ) : null}
 
@@ -389,7 +389,7 @@ export function ReviewDocument({
                     Cancel
                   </Button>
                 </div>
-                <p className="text-[12px] text-[var(--color-ink-faint)]">
+                <p className="text-[12px] text-[var(--color-ink-muted)]">
                   The image stays on file — a business must keep the record for five years even when the extraction was wrong.
                 </p>
               </form>

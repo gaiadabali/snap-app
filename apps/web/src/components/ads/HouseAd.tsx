@@ -93,7 +93,7 @@ export function HouseAd({
           aria-label="Dismiss this ad"
           className={cx(
             'inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-[var(--radius-sm)]',
-            'text-[var(--color-ink-faint)] transition-colors hover:bg-[var(--color-surface-alt)] hover:text-[var(--color-ink)]',
+            'text-[var(--color-ink-muted)] transition-colors hover:bg-[var(--color-surface-alt)] hover:text-[var(--color-ink)]',
           )}
         >
           <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden focusable="false">
@@ -112,7 +112,7 @@ export function HouseAd({
           href={ad.href}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-medium text-[var(--color-accent)] hover:text-[var(--color-accent-deep)]"
+          className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-medium text-[var(--color-accent-readable)] hover:underline"
         >
           {ad.ctaLabel}
           <span aria-hidden>&rarr;</span>
@@ -120,7 +120,7 @@ export function HouseAd({
       ) : (
         <Link
           href={ad.href}
-          className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-medium text-[var(--color-accent)] hover:text-[var(--color-accent-deep)]"
+          className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-medium text-[var(--color-accent-readable)] hover:underline"
         >
           {ad.ctaLabel}
           <span aria-hidden>&rarr;</span>

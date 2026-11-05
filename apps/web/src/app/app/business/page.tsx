@@ -57,7 +57,7 @@ export default async function BusinessOverviewPage() {
             tone={needsReview.length > 0 ? 'warn' : 'neutral'}
             hint={
               needsReview.length > 0 ? (
-                <Link href="/app/business/documents?status=needs_review" className="text-[var(--color-accent)] hover:underline">
+                <Link href="/app/business/documents?status=needs_review" className="text-[var(--color-accent-readable)] hover:underline">
                   Review now →
                 </Link>
               ) : (
@@ -70,7 +70,7 @@ export default async function BusinessOverviewPage() {
 
       <Card>
         <p className="text-[13px] text-[var(--color-ink-muted)]">{bas.note}</p>
-        <p className="mt-1 text-[12px] text-[var(--color-ink-faint)]">
+        <p className="mt-1 text-[12px] text-[var(--color-ink-muted)]">
           A tax invoice is required at ${bas.thresholds.taxInvoice} and up; the buyer&apos;s ABN must also appear at $
           {bas.thresholds.buyerAbn} and up.
         </p>
@@ -98,7 +98,7 @@ export default async function BusinessOverviewPage() {
               </Badge>
             </dd>
           </dl>
-          <Link href="/app/plan" className="mt-3 inline-block text-[13px] font-medium text-[var(--color-accent)] hover:underline">
+          <Link href="/app/plan" className="mt-3 inline-block text-[13px] font-medium text-[var(--color-accent-readable)] hover:underline">
             Manage plan →
           </Link>
         </Card>
@@ -118,7 +118,7 @@ export default async function BusinessOverviewPage() {
               body="Set one in Settings so deduction estimates can be checked against a benchmark for your trade."
             />
           )}
-          <p className="mt-2 text-[12px] text-[var(--color-ink-faint)]">
+          <p className="mt-2 text-[12px] text-[var(--color-ink-muted)]">
             {overview.ratesFy} rates, {overview.ratesDetermination}.
           </p>
         </Card>

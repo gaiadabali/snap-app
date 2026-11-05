@@ -1,4 +1,4 @@
-import { Card, Empty, Money, SectionTitle, Table, Td, Th, Thead, Tr } from '@/design/primitives';
+import { Card, Empty, Money, SectionTitle, Table, TableScroll, Td, Th, Thead, Tr } from '@/design/primitives';
 import { listRecurring } from '@/lib/panels/data';
 import { loadWorkspace } from '@/lib/panels/workspace';
 
@@ -21,7 +21,7 @@ export default async function RecurringPage() {
         <Empty title="Nothing recurring yet" body="Once a merchant shows up at a similar amount for a few months running, it will appear here." />
       ) : (
         <Card>
-          <div className="overflow-x-auto">
+          <TableScroll label="Recurring">
             <Table>
               <Thead>
                 <Th>Merchant</Th>
@@ -50,7 +50,7 @@ export default async function RecurringPage() {
                 ))}
               </tbody>
             </Table>
-          </div>
+          </TableScroll>
         </Card>
       )}
     </div>

@@ -38,7 +38,7 @@ export function YourtalMovePromptView({
         {/* A plain <a>, never next/link: /auth/yourtal is a GET handler that redirects off-site. */}
         <a
           href="/auth/yourtal?returnTo=/app&move=1"
-          className="inline-flex items-center rounded-[var(--radius-sm)] bg-[var(--color-accent)] px-4 py-2 text-[14px] font-semibold text-white"
+          className="inline-flex items-center rounded-[var(--radius-sm)] bg-[var(--color-accent-readable)] px-4 py-2 text-[14px] font-semibold text-[var(--color-accent-ink)]"
         >
           Sign in with YourTal
         </a>

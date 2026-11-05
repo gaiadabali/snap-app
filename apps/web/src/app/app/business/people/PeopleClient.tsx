@@ -3,7 +3,7 @@
 import { useActionState, useTransition } from 'react';
 import type { MemberList, MemberRole } from '@snap/api-contract';
 
-import { Badge, Button, Card, Field, Input, Select, Table, Td, Th, Thead, Tr } from '@/design/primitives';
+import { Badge, Button, Card, Field, Input, Select, Table, TableScroll, Td, Th, Thead, Tr } from '@/design/primitives';
 import { formatDate } from '@/lib/panels/format';
 import type { ActionResult } from '@/lib/panels/actions';
 
@@ -35,7 +35,7 @@ export function PeopleClient({
             {data.seatsUsed} of {data.seatLimit} seats used
           </span>
         </div>
-        <div className="mt-4 overflow-x-auto">
+        <TableScroll label="People and roles" className="mt-4">
           <Table>
             <Thead>
               <Th>Name</Th>
@@ -48,7 +48,7 @@ export function PeopleClient({
                 <Tr key={m.userId}>
                   <Td>
                     <div className="flex items-center gap-2">
-                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--color-accent-soft)] text-[10px] font-bold text-[var(--color-accent)]">
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--color-accent-soft)] text-[10px] font-bold text-[var(--color-accent-readable)]">
                         {m.initials}
                       </span>
                       {m.displayName}
@@ -108,7 +108,7 @@ export function PeopleClient({
               ))}
             </tbody>
           </Table>
-        </div>
+        </TableScroll>
       </Card>
 
       {canInvite ? (

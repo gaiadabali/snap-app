@@ -3,7 +3,7 @@
 import { useActionState, useState, useTransition } from 'react';
 import type { Item, StockMovement } from '@snap/api-contract';
 
-import { Badge, Button, Card, Field, Input, Money, Table, Td, Th, Thead, Tr } from '@/design/primitives';
+import { Badge, Button, Card, Field, Input, Money, Table, TableScroll, Td, Th, Thead, Tr } from '@/design/primitives';
 import { formatDateTime } from '@/lib/panels/format';
 import type { ActionResult } from '@/lib/panels/actions';
 
@@ -29,7 +29,7 @@ export function StockClient({
     <div className="flex flex-col gap-6">
       <Card>
         <h3 className="mb-3 text-[15px] font-semibold text-[var(--color-ink)]">Items</h3>
-        <div className="overflow-x-auto">
+        <TableScroll label="Stock items">
           <Table>
             <Thead>
               <Th>Name</Th>
@@ -52,7 +52,7 @@ export function StockClient({
                   </Td>
                   <Td align="right">
                     {i.stockOnHand === null ? (
-                      <span className="text-[var(--color-ink-faint)]">service</span>
+                      <span className="text-[var(--color-ink-muted)]">service</span>
                     ) : (
                       <span className={i.lowStock ? 'font-semibold text-[var(--color-risk)]' : ''}>{i.stockOnHand}</span>
                     )}
@@ -91,7 +91,7 @@ export function StockClient({
               ))}
             </tbody>
           </Table>
-        </div>
+        </TableScroll>
       </Card>
 
       {canManage ? (
@@ -124,7 +124,7 @@ export function StockClient({
                   <Badge tone="neutral">{m.kind}</Badge> {m.itemName}{' '}
                   <span className="text-[var(--color-ink-muted)]">{m.quantity > 0 ? `+${m.quantity}` : m.quantity}</span>
                 </span>
-                <span className="text-[var(--color-ink-faint)]">
+                <span className="text-[var(--color-ink-muted)]">
                   {formatDateTime(m.at)} {m.byName ? `· ${m.byName}` : ''}
                 </span>
               </li>

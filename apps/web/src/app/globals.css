@@ -424,3 +424,20 @@ body {
      become a second hover surface for anything else. */
   pointer-events: auto;
 }
+
+/* Accent for TEXT and button fills, at AA contrast in both themes: the deep
+   blue on light, the bright blue on dark (--color-accent itself is 4.2:1 as
+   text on a light ground). Appended here, away from the token blocks above.
+   Same values as --color-accent-strong on feat/ftr-send-ui: fold the two
+   together when that branch lands. */
+:root {
+  --color-accent-readable: var(--color-accent-deep);
+}
+:root[data-theme="dark"] {
+  --color-accent-readable: var(--color-accent);
+}
+:root:not([data-theme="light"]) {
+  @media (prefers-color-scheme: dark) {
+    --color-accent-readable: var(--color-accent);
+  }
+}

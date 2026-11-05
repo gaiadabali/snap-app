@@ -52,7 +52,7 @@ export default async function IndividualOverviewPage() {
             tone={needsReview.length > 0 ? 'warn' : 'neutral'}
             hint={
               needsReview.length > 0 ? (
-                <Link href="/app/documents?status=needs_review" className="text-[var(--color-accent)] hover:underline">
+                <Link href="/app/documents?status=needs_review" className="text-[var(--color-accent-readable)] hover:underline">
                   Review now →
                 </Link>
               ) : (
@@ -66,8 +66,8 @@ export default async function IndividualOverviewPage() {
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-[15px] font-semibold text-[var(--color-ink)]">By category</h3>
-            <Link href="/app/categories" className="text-[13px] font-medium text-[var(--color-accent)] hover:underline">
+            <h2 className="text-[15px] font-semibold text-[var(--color-ink)]">By category</h2>
+            <Link href="/app/categories" className="text-[13px] font-medium text-[var(--color-accent-readable)] hover:underline">
               Manage budgets →
             </Link>
           </div>
@@ -111,8 +111,8 @@ export default async function IndividualOverviewPage() {
 
         <Card>
           <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-[15px] font-semibold text-[var(--color-ink)]">Top merchants</h3>
-            <Link href="/app/analytics" className="text-[13px] font-medium text-[var(--color-accent)] hover:underline">
+            <h2 className="text-[15px] font-semibold text-[var(--color-ink)]">Top merchants</h2>
+            <Link href="/app/analytics" className="text-[13px] font-medium text-[var(--color-accent-readable)] hover:underline">
               Full analytics →
             </Link>
           </div>

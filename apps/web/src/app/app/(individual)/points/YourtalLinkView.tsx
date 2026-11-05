@@ -46,7 +46,7 @@ function External({ href, children }: { href: string; children: string }) {
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="w-fit text-[14px] font-medium text-[var(--color-accent)] underline underline-offset-2"
+      className="w-fit text-[14px] font-medium text-[var(--color-accent-readable)] underline underline-offset-2"
     >
       {children}
     </a>
@@ -55,12 +55,10 @@ function External({ href, children }: { href: string; children: string }) {
 
 function StatRow({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
-    <div className="flex flex-col gap-0.5 py-3">
-      <div className="flex items-baseline justify-between gap-4">
-        <dt className="text-[14px] text-[var(--color-ink)]">{label}</dt>
-        <dd className="font-mono text-[15px] tabular text-[var(--color-ink)]">{value}</dd>
-      </div>
-      {hint ? <p className="text-[13px] text-[var(--color-ink-muted)]">{hint}</p> : null}
+    <div className="grid grid-cols-[1fr_auto] items-baseline gap-x-4 gap-y-0.5 py-3">
+      <dt className="text-[14px] text-[var(--color-ink)]">{label}</dt>
+      <dd className="font-mono text-[15px] tabular text-[var(--color-ink)]">{value}</dd>
+      {hint ? <dd className="col-span-2 text-[13px] text-[var(--color-ink-muted)]">{hint}</dd> : null}
     </div>
   );
 }

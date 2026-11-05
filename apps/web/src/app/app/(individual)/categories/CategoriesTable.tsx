@@ -3,7 +3,7 @@
 import { useActionState, useState, useTransition } from 'react';
 import type { CategorySetting } from '@snap/api-contract';
 
-import { Button, Field, Input, Money, Switch, Table, Td, Th, Thead, Tr } from '@/design/primitives';
+import { Button, Field, Input, Money, Switch, Table, TableScroll, Td, Th, Thead, Tr } from '@/design/primitives';
 import type { ActionResult } from '@/lib/panels/actions';
 
 export function CategoriesTable({
@@ -26,7 +26,7 @@ export function CategoriesTable({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="overflow-x-auto rounded-[var(--radius-lg)] border border-[var(--color-rule)]">
+      <TableScroll label="Categories and budgets" className="rounded-[var(--radius-lg)] border border-[var(--color-rule)]">
         <Table>
           <Thead>
             <Th>Category</Th>
@@ -65,7 +65,7 @@ export function CategoriesTable({
                   ) : c.monthlyBudget ? (
                     <Money amount={c.monthlyBudget} />
                   ) : (
-                    <span className="text-[var(--color-ink-faint)]">—</span>
+                    <span className="text-[var(--color-ink-muted)]">—</span>
                   )}
                 </Td>
                 <Td>{c.documentCount}</Td>
@@ -88,7 +88,7 @@ export function CategoriesTable({
             ))}
           </tbody>
         </Table>
-      </div>
+      </TableScroll>
 
       {canManageBudgets ? (
         <form action={createAction} className="flex flex-wrap items-end gap-3 rounded-[var(--radius-lg)] border border-dashed border-[var(--color-rule-strong)] p-4">
