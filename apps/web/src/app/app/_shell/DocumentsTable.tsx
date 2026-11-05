@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import type { DocumentView } from '@snap/api-contract';
 
-import { Badge, Empty, Input, Money, Select, Table, Td, Th, Thead, Tr } from '@/design/primitives';
+import { Badge, Empty, Input, Money, Select, Table, TableScroll, Td, Th, Thead, Tr } from '@/design/primitives';
 import { formatDate, reviewStatusLabel } from '@/lib/panels/format';
 
 type Period = 'all' | 'this_month' | 'last_month' | 'quarter';
@@ -108,7 +108,7 @@ export function DocumentsTable({
           body="Try a different search, status or period — or clear the filters to see everything."
         />
       ) : (
-        <div className="overflow-x-auto rounded-[var(--radius-lg)] border border-[var(--color-rule)]">
+        <TableScroll label="Documents" className="rounded-[var(--radius-lg)] border border-[var(--color-rule)]">
           <Table>
             <Thead>
               <Th>Date</Th>
@@ -154,7 +154,7 @@ export function DocumentsTable({
                           <Money amount={d.gstAtRisk} />
                         </span>
                       ) : (
-                        <span className="text-[var(--color-ink-faint)]">—</span>
+                        <span className="text-[var(--color-ink-muted)]">—</span>
                       )}
                     </Td>
                   ) : null}
@@ -166,7 +166,7 @@ export function DocumentsTable({
               ))}
             </tbody>
           </Table>
-        </div>
+        </TableScroll>
       )}
     </div>
   );

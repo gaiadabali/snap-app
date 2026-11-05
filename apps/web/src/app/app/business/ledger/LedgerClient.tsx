@@ -2,7 +2,7 @@
 
 import { Fragment, useState, useTransition } from 'react';
 
-import { Badge, Button, Empty, Money, Table, Td, Th, Thead, Tr } from '@/design/primitives';
+import { Badge, Button, Empty, Money, Table, TableScroll, Td, Th, Thead, Tr } from '@/design/primitives';
 import { formatDate } from '@/lib/panels/format';
 import type { ActionResult } from '@/lib/panels/actions';
 import type { TransactionRow } from '@/lib/panels/data';
@@ -31,14 +31,14 @@ export function LedgerClient({
   }
 
   return (
-    <div className="overflow-x-auto rounded-[var(--radius-lg)] border border-[var(--color-rule)]">
+    <TableScroll label="Ledger" className="rounded-[var(--radius-lg)] border border-[var(--color-rule)]">
       <Table>
         <Thead>
           <Th>Date</Th>
           <Th>Memo</Th>
           <Th>Status</Th>
           <Th align="right">Splits</Th>
-          <Th></Th>
+          <Th className="relative"><span className="sr-only">Actions</span></Th>
         </Thead>
         <tbody>
           {transactions.map((t) => {
@@ -86,7 +86,7 @@ export function LedgerClient({
                     <td colSpan={5} className="bg-[var(--color-surface)] px-4 py-3">
                       <table className="w-full text-[12px]">
                         <thead>
-                          <tr className="text-left text-[var(--color-ink-faint)]">
+                          <tr className="text-left text-[var(--color-ink-muted)]">
                             <th className="pb-1 font-semibold">Account</th>
                             <th className="pb-1 font-semibold">Tax code</th>
                             <th className="pb-1 text-right font-semibold">Amount</th>
@@ -118,6 +118,6 @@ export function LedgerClient({
           })}
         </tbody>
       </Table>
-    </div>
+    </TableScroll>
   );
 }

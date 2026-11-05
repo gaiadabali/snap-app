@@ -33,7 +33,7 @@ export function GoalsClient({
             return (
               <Card key={g.id}>
                 <div className="flex items-start justify-between">
-                  <h3 className="font-semibold text-[var(--color-ink)]">{g.name}</h3>
+                  <h2 className="font-semibold text-[var(--color-ink)]">{g.name}</h2>
                   {g.done ? <Badge tone="good">Done</Badge> : null}
                 </div>
                 <div className="mt-2 text-[13px] text-[var(--color-ink-muted)]">
@@ -43,7 +43,7 @@ export function GoalsClient({
                   <div className="h-full rounded-full bg-[var(--color-accent)]" style={{ width: `${pct}%` }} />
                 </div>
                 {g.perMonth && !g.done ? (
-                  <p className="mt-2 text-[12px] text-[var(--color-ink-faint)]">
+                  <p className="mt-2 text-[12px] text-[var(--color-ink-muted)]">
                     <Money amount={g.perMonth} />/month keeps this on track for {g.targetDate}
                   </p>
                 ) : null}
@@ -88,7 +88,7 @@ export function GoalsClient({
       )}
 
       <Card>
-        <h3 className="mb-3 text-[15px] font-semibold text-[var(--color-ink)]">Start a goal</h3>
+        <h2 className="mb-3 text-[15px] font-semibold text-[var(--color-ink)]">Start a goal</h2>
         <form action={formAction} className="flex flex-wrap items-end gap-3">
           <Field label="Name"><Input name="name" placeholder="e.g. New tools" required className="w-[200px]" /></Field>
           <Field label="Target"><Input name="target" placeholder="e.g. 2000" required className="w-[140px]" inputMode="decimal" /></Field>

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import { Badge, Card, Empty, Money, SectionTitle, Table, Td, Th, Thead, Tr } from '@/design/primitives';
+import { Badge, Card, Empty, Money, SectionTitle, Table, TableScroll, Td, Th, Thead, Tr } from '@/design/primitives';
 import { formatDate } from '@/lib/panels/format';
 import { getOverview, listDocuments } from '@/lib/panels/data';
 import { loadWorkspace } from '@/lib/panels/workspace';
@@ -70,8 +70,8 @@ export default async function BasPage() {
         />
       ) : (
         <Card>
-          <h3 className="mb-3 text-[15px] font-semibold text-[var(--color-ink)]">The receipts behind that figure</h3>
-          <div className="overflow-x-auto">
+          <h2 className="mb-3 text-[15px] font-semibold text-[var(--color-ink)]">The receipts behind that figure</h2>
+          <TableScroll label="Receipts behind the BAS figure">
             <Table>
               <Thead>
                 <Th>Date</Th>
@@ -79,7 +79,7 @@ export default async function BasPage() {
                 <Th align="right">Paid</Th>
                 <Th align="right">GST at risk</Th>
                 <Th>What&apos;s missing</Th>
-                <Th></Th>
+                <Th className="relative"><span className="sr-only">Actions</span></Th>
               </Thead>
               <tbody>
                 {atRisk.map((d) => (
@@ -110,7 +110,7 @@ export default async function BasPage() {
                     <Td>
                       <Link
                         href={`/app/business/documents/${d.id}`}
-                        className="font-semibold text-[var(--color-accent)] hover:underline"
+                        className="font-semibold text-[var(--color-accent-strong)] hover:underline"
                       >
                         Review &amp; fix →
                       </Link>
@@ -119,7 +119,7 @@ export default async function BasPage() {
                 ))}
               </tbody>
             </Table>
-          </div>
+          </TableScroll>
         </Card>
       )}
     </div>

@@ -31,9 +31,9 @@ export function ConsumptionTaxCard({ report }: { report: ConsumptionTaxReport })
   return (
     <Card>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="text-[15px] font-semibold text-[var(--color-ink)]">
+        <h2 className="text-[15px] font-semibold text-[var(--color-ink)]">
           {report.taxName} you paid
-        </h3>
+        </h2>
         {report.recoverable ? (
           <Badge tone="accent">Recoverable</Badge>
         ) : (
@@ -83,7 +83,7 @@ export function ConsumptionTaxCard({ report }: { report: ConsumptionTaxReport })
               <li key={l.code} className="flex items-baseline justify-between gap-3 text-[12px]">
                 <span className="text-[var(--color-ink-muted)]">
                   {l.name}
-                  <span className="ml-1.5 text-[var(--color-ink-faint)]">
+                  <span className="ml-1.5 text-[var(--color-ink-muted)]">
                     × {l.transactionCount}
                   </span>
                 </span>
@@ -92,7 +92,7 @@ export function ConsumptionTaxCard({ report }: { report: ConsumptionTaxReport })
                   currency={report.currency}
                   className={cx(
                     l.treatment === 'other_tax'
-                      ? 'text-[var(--color-ink-faint)]'
+                      ? 'text-[var(--color-ink-muted)]'
                       : 'text-[var(--color-ink-muted)]',
                   )}
                 />
@@ -102,7 +102,7 @@ export function ConsumptionTaxCard({ report }: { report: ConsumptionTaxReport })
         </div>
       ) : null}
 
-      <p className="mt-4 text-[11px] text-[var(--color-ink-faint)]">
+      <p className="mt-4 text-[11px] text-[var(--color-ink-muted)]">
         {report.rulesId} · {report.rulesVersion}
       </p>
     </Card>
@@ -123,21 +123,20 @@ function Line({
   muted?: boolean;
 }) {
   return (
-    <div className="flex flex-col gap-0.5">
-      <div className="flex items-baseline justify-between gap-4">
-        <dt className="text-[var(--color-ink-muted)]">{label}</dt>
-        <dd>
-          <Money
-            amount={amount}
-            currency={currency}
-            className={muted ? 'text-[var(--color-ink-faint)]' : 'text-[var(--color-ink)]'}
-          />
-        </dd>
-      </div>
+    // dt and dd sit directly in the group: a <dl> allows nothing deeper.
+    <div className="grid grid-cols-[1fr_auto] items-baseline gap-x-4 gap-y-0.5">
+      <dt className="text-[var(--color-ink-muted)]">{label}</dt>
+      <dd>
+        <Money
+          amount={amount}
+          currency={currency}
+          className={muted ? 'text-[var(--color-ink-muted)]' : 'text-[var(--color-ink)]'}
+        />
+      </dd>
       {hint ? (
-        <p className="max-w-[46ch] text-[11px] leading-relaxed text-[var(--color-ink-faint)]">
+        <dd className="col-span-2 max-w-[46ch] text-[11px] leading-relaxed text-[var(--color-ink-muted)]">
           {hint}
-        </p>
+        </dd>
       ) : null}
     </div>
   );

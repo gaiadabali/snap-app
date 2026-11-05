@@ -3,7 +3,7 @@
 import { useActionState, useTransition } from 'react';
 import type { Trip } from '@snap/api-contract';
 
-import { Button, Card, Empty, Field, Input, Table, Td, Th, Thead, Tr } from '@/design/primitives';
+import { Button, Card, Empty, Field, Input, Table, TableScroll, Td, Th, Thead, Tr } from '@/design/primitives';
 import { formatDate } from '@/lib/panels/format';
 import type { ActionResult } from '@/lib/panels/actions';
 
@@ -22,7 +22,7 @@ export function MileageClient({
   return (
     <div className="flex flex-col gap-6">
       <Card>
-        <h3 className="mb-3 text-[15px] font-semibold text-[var(--color-ink)]">Log a trip</h3>
+        <h2 className="mb-3 text-[15px] font-semibold text-[var(--color-ink)]">Log a trip</h2>
         <form action={formAction} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
           <Field label="Date"><Input type="date" name="date" required /></Field>
           <Field label="From"><Input name="fromPlace" placeholder="Home" required /></Field>
@@ -45,7 +45,7 @@ export function MileageClient({
       {trips.length === 0 ? (
         <Empty title="No trips logged yet" body="Every work-related trip you log here counts toward the cents-per-km claim above." />
       ) : (
-        <div className="overflow-x-auto rounded-[var(--radius-lg)] border border-[var(--color-rule)]">
+        <TableScroll label="Mileage trips" className="rounded-[var(--radius-lg)] border border-[var(--color-rule)]">
           <Table>
             <Thead>
               <Th>Date</Th>
@@ -54,7 +54,7 @@ export function MileageClient({
               <Th>Purpose</Th>
               <Th align="right">Km</Th>
               <Th>Work-related</Th>
-              <Th></Th>
+              <Th className="relative"><span className="sr-only">Actions</span></Th>
             </Thead>
             <tbody>
               {trips.map((t) => (
@@ -78,7 +78,7 @@ export function MileageClient({
               ))}
             </tbody>
           </Table>
-        </div>
+        </TableScroll>
       )}
     </div>
   );

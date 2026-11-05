@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import type { Invoice, PaymentMethod } from '@snap/api-contract';
 
-import { Badge, Button, Empty, Input, Money, Select, Table, Td, Th, Thead, Tr } from '@/design/primitives';
+import { Badge, Button, Empty, Input, Money, Select, Table, TableScroll, Td, Th, Thead, Tr } from '@/design/primitives';
 import { formatDate } from '@/lib/panels/format';
 import type { ActionResult } from '@/lib/panels/actions';
 
@@ -27,7 +27,7 @@ export function SalesClient({
   if (invoices.length === 0) return <Empty title="No invoices or estimates yet" />;
 
   return (
-    <div className="overflow-x-auto rounded-[var(--radius-lg)] border border-[var(--color-rule)]">
+    <TableScroll label="Invoices and sales" className="rounded-[var(--radius-lg)] border border-[var(--color-rule)]">
       <Table>
         <Thead>
           <Th>#</Th>
@@ -120,6 +120,6 @@ export function SalesClient({
           ))}
         </tbody>
       </Table>
-    </div>
+    </TableScroll>
   );
 }

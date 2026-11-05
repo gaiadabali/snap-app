@@ -7,6 +7,7 @@ import { signOut } from '@/lib/panels/actions';
 import type { ImpersonationBannerInfo } from '@/lib/panels/impersonation';
 import { ImpersonationBanner } from './ImpersonationBanner';
 import type { NavItem } from './nav';
+import { MobileNav } from './MobileNav';
 import { Sidebar } from './Sidebar';
 import { WorkspaceSwitcher } from './WorkspaceSwitcher';
 
@@ -37,6 +38,14 @@ export function PanelShell({
   impersonation?: ImpersonationBannerInfo | null;
   children: ReactNode;
 }) {
+  const switchable = sameKindWorkspaces.length > 1;
+  const switchLink =
+    !impersonation && otherKindHref ? (
+      <Link href={otherKindHref} className="text-[13px] font-semibold text-[var(--color-accent-strong)] hover:underline">
+        {workspace.kind === 'business' ? 'Switch to personal' : 'Switch to business'}
+      </Link>
+    ) : null;
+
   return (
     <div className="min-h-screen bg-[var(--color-ground)]">
       {impersonation ? <ImpersonationBanner {...impersonation} /> : null}
@@ -49,14 +58,22 @@ export function PanelShell({
           // kept in lockstep by hand; dropping stickiness here instead means
           // there is nothing to keep in sync, and the banner (the thing that
           // actually matters right now) is never displaced.
-          impersonation ? null : 'sticky top-0 z-10',
+          impersonation ? 'relative' : 'sticky top-0 z-10',
         )}
       >
-        <Container width="full" className="flex h-14 items-center gap-4 px-4">
-          <Link href="/" className="text-[15px] font-bold text-[var(--color-ink)]">
+        <Container width="full" className="flex h-14 items-center gap-2 px-4 md:gap-4">
+          <MobileNav items={nav}>
+            {!impersonation && switchable ? (
+              <div className="px-3 py-2 sm:hidden">
+                <WorkspaceSwitcher workspaces={sameKindWorkspaces} activeId={workspace.id} className="w-full !max-w-none" />
+              </div>
+            ) : null}
+            {switchLink ? <div className="px-3 py-2 sm:hidden">{switchLink}</div> : null}
+          </MobileNav>
+          <Link href="/" className="whitespace-nowrap text-[15px] font-bold text-[var(--color-ink)]">
             Snap Apps
           </Link>
-          <span className="rounded-full bg-[var(--color-accent-soft)] px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--color-accent)]">
+          <span className="hidden rounded-full bg-[var(--color-accent-soft)] px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--color-ink-muted)] sm:inline">
             {workspace.kind === 'business' ? 'Business' : 'Personal'}
           </span>
 
@@ -65,23 +82,24 @@ export function PanelShell({
             // (`MembershipGuard`) — offering a switcher that the server
             // would just 403 is worse than no switcher.
             <span className="truncate text-[13px] font-medium text-[var(--color-ink-muted)]">{workspace.name}</span>
-          ) : sameKindWorkspaces.length > 1 ? (
-            <WorkspaceSwitcher workspaces={sameKindWorkspaces} activeId={workspace.id} />
+          ) : switchable ? (
+            <>
+              {/* Below sm the picker lives in the menu: a select this wide does not fit the header. */}
+              <span className="min-w-0 truncate text-[13px] font-medium text-[var(--color-ink-muted)] sm:hidden">
+                {workspace.name}
+              </span>
+              <div className="hidden min-w-0 sm:block">
+                <WorkspaceSwitcher workspaces={sameKindWorkspaces} activeId={workspace.id} className="w-full" />
+              </div>
+            </>
           ) : (
             <span className="truncate text-[13px] font-medium text-[var(--color-ink-muted)]">{workspace.name}</span>
           )}
 
           <div className="ml-auto flex items-center gap-3">
-            {!impersonation && otherKindHref ? (
-              <Link
-                href={otherKindHref}
-                className="text-[13px] font-semibold text-[var(--color-accent)] hover:underline"
-              >
-                {workspace.kind === 'business' ? 'Switch to personal' : 'Switch to business'}
-              </Link>
-            ) : null}
+            {switchLink ? <span className="hidden sm:inline">{switchLink}</span> : null}
             <div
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-accent)] text-[12px] font-bold text-[var(--color-accent-ink)]"
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-accent-strong)] text-[12px] font-bold text-[var(--color-accent-ink)]"
               title={`${user.displayName} · ${user.email}`}
             >
               {user.initials}
@@ -90,7 +108,7 @@ export function PanelShell({
               <form action={signOut}>
                 <button
                   type="submit"
-                  className="text-[13px] font-medium text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
+                  className="whitespace-nowrap text-[13px] font-medium text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
                 >
                   Sign out
                 </button>
@@ -100,8 +118,8 @@ export function PanelShell({
         </Container>
       </header>
 
-      <Container width="full" className="flex gap-8 px-4 py-6">
-        <aside className="w-[220px] shrink-0">
+      <Container width="full" className="flex gap-8 px-4 py-4 md:py-6">
+        <aside className="hidden w-[220px] shrink-0 md:block">
           <Sidebar items={nav} />
         </aside>
         <main className="min-w-0 flex-1 pb-16">{children}</main>

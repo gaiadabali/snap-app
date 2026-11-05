@@ -146,7 +146,7 @@ export function ArticleHero({
       </Reveal>
       {meta ? (
         <Reveal>
-          <p className="mt-3 font-mono text-[12px] tabular text-[var(--color-ink-faint)]">{meta}</p>
+          <p className="mt-3 font-mono text-[12px] tabular text-[var(--color-ink-muted)]">{meta}</p>
         </Reveal>
       ) : null}
     </header>
@@ -197,7 +197,7 @@ export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 export type ButtonSize = 'sm' | 'md' | 'lg';
 
 const BUTTON_VARIANTS: Record<ButtonVariant, string> = {
-  primary: 'bg-[var(--color-accent)] text-[var(--color-accent-ink)] hover:bg-[var(--color-accent-deep)]',
+  primary: 'bg-[var(--color-accent-strong)] text-[var(--color-accent-ink)] hover:brightness-90',
   secondary:
     'bg-transparent text-[var(--color-ink)] border border-[var(--color-rule-strong)] hover:border-[var(--color-ink)]',
   ghost: 'bg-transparent text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]',
@@ -219,7 +219,7 @@ export function buttonClasses(
   return cx(
     'inline-flex items-center justify-center gap-2 rounded-[var(--radius-sm)]',
     'font-medium tracking-[0.01em]',
-    'transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-50',
+    'transition-[color,background-color,filter] duration-150 disabled:cursor-not-allowed disabled:opacity-50',
     BUTTON_VARIANTS[variant],
     BUTTON_SIZES[size],
     className,
@@ -264,7 +264,7 @@ export function Badge({
     good: 'bg-[var(--color-good-soft)] text-[var(--color-good)]',
     warn: 'bg-[var(--color-warn-soft)] text-[var(--color-warn)]',
     risk: 'bg-[var(--color-risk-soft)] text-[var(--color-risk)]',
-    accent: 'bg-[var(--color-accent-soft)] text-[var(--color-accent)]',
+    accent: 'bg-[var(--color-accent-soft)] text-[var(--color-accent-strong)]',
   } as const;
   return (
     <span className={cx('t-label inline-flex items-center rounded-[var(--radius-sm)] px-2 py-1', tones[tone])}>
@@ -360,7 +360,7 @@ export function Stat({
   } as const;
   return (
     <div>
-      <div className="t-label text-[var(--color-ink-faint)]">{label}</div>
+      <div className="t-label text-[var(--color-ink-muted)]">{label}</div>
       <div className={cx('mt-2 font-mono text-[28px] font-normal tabular', tones[tone])}>{value}</div>
       {hint ? <div className="mt-1.5 text-[13px] text-[var(--color-ink-muted)]">{hint}</div> : null}
     </div>
@@ -458,7 +458,7 @@ export function SectionTitle({
   const Heading = as;
   return (
     <div className="max-w-[60ch]">
-      {eyebrow ? <div className="t-label text-[var(--color-accent)]">{eyebrow}</div> : null}
+      {eyebrow ? <div className="t-label text-[var(--color-accent-strong)]">{eyebrow}</div> : null}
       <Heading className="mt-3 text-[26px] font-normal leading-tight tracking-[-0.02em] text-[var(--color-ink)]">
         {title}
       </Heading>
@@ -538,13 +538,25 @@ export function Switch({
 
 /**
  * A dense, tabular-numeral table shell for panels — "density is a feature in
- * the panels" (docs/WEB.md §4). Wrap in a `div.overflow-x-auto` yourself when
+ * the panels" (docs/WEB.md §4). Wrap in a `TableScroll` (below) when
  * a table may run wide; this stays a plain `<table>` so semantics (screen
  * readers, `Ctrl+F`) are never sacrificed for layout.
  */
 export function Table({ children, className }: { children: ReactNode; className?: string }) {
   return (
     <table className={cx('w-full border-collapse text-[13px]', className)}>{children}</table>
+  );
+}
+
+/**
+ * The horizontal scroller for a table that may run wide. Focusable and named so
+ * a keyboard user can scroll it (axe: scrollable-region-focusable).
+ */
+export function TableScroll({ label, children, className }: { label: string; children: ReactNode; className?: string }) {
+  return (
+    <div role="region" aria-label={label} tabIndex={0} className={cx('overflow-x-auto', className)}>
+      {children}
+    </div>
   );
 }
 
@@ -560,7 +572,7 @@ export function Th({ children, className, align = 'left' }: { children?: ReactNo
   return (
     <th
       className={cx(
-        'whitespace-nowrap px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--color-ink-faint)]',
+        'whitespace-nowrap px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--color-ink-muted)]',
         align === 'right' && 'text-right',
         className,
       )}

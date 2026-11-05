@@ -73,7 +73,7 @@ export default async function AnalyticsPage({
             className={cx(
               'rounded-full px-3 py-1.5 text-[13px] font-semibold',
               r.value === range
-                ? 'bg-[var(--color-accent)] text-[var(--color-accent-ink)]'
+                ? 'bg-[var(--color-accent-strong)] text-[var(--color-accent-ink)]'
                 : 'bg-[var(--color-surface-alt)] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]',
             )}
           >
@@ -84,7 +84,7 @@ export default async function AnalyticsPage({
 
       <div className="grid gap-4 sm:grid-cols-3">
         <Card>
-          <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-ink-faint)]">Total</div>
+          <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-ink-muted)]">Total</div>
           <div className="mt-1 text-3xl font-bold tabular text-[var(--color-ink)]">
             <Money amount={analytics.total} />
           </div>
@@ -99,13 +99,13 @@ export default async function AnalyticsPage({
           </div>
         </Card>
         <Card>
-          <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-ink-faint)]">Average per period</div>
+          <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-ink-muted)]">Average per period</div>
           <div className="mt-1 text-3xl font-bold tabular text-[var(--color-ink)]">
             <Money amount={analytics.average} />
           </div>
         </Card>
         <Card>
-          <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-ink-faint)]">Largest</div>
+          <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-ink-muted)]">Largest</div>
           {analytics.largest ? (
             <>
               <div className="mt-1 text-3xl font-bold tabular text-[var(--color-ink)]">
@@ -116,13 +116,13 @@ export default async function AnalyticsPage({
               </div>
             </>
           ) : (
-            <div className="mt-1 text-[13px] text-[var(--color-ink-faint)]">No receipts yet</div>
+            <div className="mt-1 text-[13px] text-[var(--color-ink-muted)]">No receipts yet</div>
           )}
         </Card>
       </div>
 
       <Card>
-        <h3 className="mb-4 text-[15px] font-semibold text-[var(--color-ink)]">Spend over time</h3>
+        <h2 className="mb-4 text-[15px] font-semibold text-[var(--color-ink)]">Spend over time</h2>
         {analytics.series.length === 0 ? (
           <Empty title="Nothing to chart yet" />
         ) : (
@@ -133,7 +133,7 @@ export default async function AnalyticsPage({
                   className={cx('w-full rounded-t-[4px]', p.partial ? 'bg-[var(--color-accent-soft)]' : 'bg-[var(--color-accent)]')}
                   style={{ height: `${Math.max(4, (Number(p.value) / maxSeries) * 140)}px` }}
                 />
-                <span className="text-[10px] text-[var(--color-ink-faint)]">{p.label}</span>
+                <span className="text-[10px] text-[var(--color-ink-muted)]">{p.label}</span>
               </div>
             ))}
           </div>
@@ -144,7 +144,7 @@ export default async function AnalyticsPage({
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
-          <h3 className="mb-3 text-[15px] font-semibold text-[var(--color-ink)]">By category</h3>
+          <h2 className="mb-3 text-[15px] font-semibold text-[var(--color-ink)]">By category</h2>
           {analytics.byCategory.length === 0 ? (
             <Empty title="No spending yet" />
           ) : (
@@ -159,7 +159,7 @@ export default async function AnalyticsPage({
           )}
         </Card>
         <Card>
-          <h3 className="mb-3 text-[15px] font-semibold text-[var(--color-ink)]">Top merchants</h3>
+          <h2 className="mb-3 text-[15px] font-semibold text-[var(--color-ink)]">Top merchants</h2>
           {analytics.topMerchants.length === 0 ? (
             <Empty title="No spending yet" />
           ) : (
@@ -167,7 +167,7 @@ export default async function AnalyticsPage({
               {analytics.topMerchants.map((m) => (
                 <li key={m.name} className="flex items-center justify-between text-[13px]">
                   <span className="text-[var(--color-ink)]">
-                    {m.name} <span className="text-[var(--color-ink-faint)]">× {m.count}</span>
+                    {m.name} <span className="text-[var(--color-ink-muted)]">× {m.count}</span>
                   </span>
                   <Money amount={m.total} className="text-[var(--color-ink-muted)]" />
                 </li>

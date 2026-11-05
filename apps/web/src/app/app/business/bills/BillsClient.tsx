@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import type { Bill } from '@snap/api-contract';
 
-import { Badge, Button, Empty, Input, Money, Table, Td, Th, Thead, Tr } from '@/design/primitives';
+import { Badge, Button, Empty, Input, Money, Table, TableScroll, Td, Th, Thead, Tr } from '@/design/primitives';
 import { formatDate } from '@/lib/panels/format';
 import type { ActionResult } from '@/lib/panels/actions';
 
@@ -24,7 +24,7 @@ export function BillsClient({
   if (bills.length === 0) return <Empty title="No bills on file" body="Money owed to suppliers will show up here." />;
 
   return (
-    <div className="overflow-x-auto rounded-[var(--radius-lg)] border border-[var(--color-rule)]">
+    <TableScroll label="Bills" className="rounded-[var(--radius-lg)] border border-[var(--color-rule)]">
       <Table>
         <Thead>
           <Th>Due</Th>
@@ -86,6 +86,6 @@ export function BillsClient({
           ))}
         </tbody>
       </Table>
-    </div>
+    </TableScroll>
   );
 }

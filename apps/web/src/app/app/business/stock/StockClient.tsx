@@ -3,7 +3,7 @@
 import { useActionState, useState, useTransition } from 'react';
 import type { Item, StockMovement } from '@snap/api-contract';
 
-import { Badge, Button, Card, Field, Input, Money, Table, Td, Th, Thead, Tr } from '@/design/primitives';
+import { Badge, Button, Card, Field, Input, Money, Table, TableScroll, Td, Th, Thead, Tr } from '@/design/primitives';
 import { formatDateTime } from '@/lib/panels/format';
 import type { ActionResult } from '@/lib/panels/actions';
 
@@ -28,8 +28,8 @@ export function StockClient({
   return (
     <div className="flex flex-col gap-6">
       <Card>
-        <h3 className="mb-3 text-[15px] font-semibold text-[var(--color-ink)]">Items</h3>
-        <div className="overflow-x-auto">
+        <h2 className="mb-3 text-[15px] font-semibold text-[var(--color-ink)]">Items</h2>
+        <TableScroll label="Stock items">
           <Table>
             <Thead>
               <Th>Name</Th>
@@ -52,7 +52,7 @@ export function StockClient({
                   </Td>
                   <Td align="right">
                     {i.stockOnHand === null ? (
-                      <span className="text-[var(--color-ink-faint)]">service</span>
+                      <span className="text-[var(--color-ink-muted)]">service</span>
                     ) : (
                       <span className={i.lowStock ? 'font-semibold text-[var(--color-risk)]' : ''}>{i.stockOnHand}</span>
                     )}
@@ -91,12 +91,12 @@ export function StockClient({
               ))}
             </tbody>
           </Table>
-        </div>
+        </TableScroll>
       </Card>
 
       {canManage ? (
         <Card>
-          <h3 className="mb-3 text-[15px] font-semibold text-[var(--color-ink)]">Add an item</h3>
+          <h2 className="mb-3 text-[15px] font-semibold text-[var(--color-ink)]">Add an item</h2>
           <form action={createAction} className="flex flex-wrap items-end gap-3">
             <Field label="Name"><Input name="name" required className="w-[180px]" /></Field>
             <Field label="SKU"><Input name="sku" className="w-[120px]" /></Field>
@@ -113,7 +113,7 @@ export function StockClient({
       ) : null}
 
       <Card>
-        <h3 className="mb-3 text-[15px] font-semibold text-[var(--color-ink)]">Recent movements</h3>
+        <h2 className="mb-3 text-[15px] font-semibold text-[var(--color-ink)]">Recent movements</h2>
         {movements.length === 0 ? (
           <p className="text-[13px] text-[var(--color-ink-muted)]">Nothing recorded yet.</p>
         ) : (
@@ -124,7 +124,7 @@ export function StockClient({
                   <Badge tone="neutral">{m.kind}</Badge> {m.itemName}{' '}
                   <span className="text-[var(--color-ink-muted)]">{m.quantity > 0 ? `+${m.quantity}` : m.quantity}</span>
                 </span>
-                <span className="text-[var(--color-ink-faint)]">
+                <span className="text-[var(--color-ink-muted)]">
                   {formatDateTime(m.at)} {m.byName ? `· ${m.byName}` : ''}
                 </span>
               </li>

@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import type { CreditPack, CreditPurchase, PlanUsage, CreditBalance } from '@snap/api-contract';
 
-import { Badge, Button, Card, Empty, Money, Stat, Table, Td, Th, Thead, Tr } from '@/design/primitives';
+import { Badge, Button, Card, Empty, Money, Stat, Table, TableScroll, Td, Th, Thead, Tr } from '@/design/primitives';
 import type { ActionResult } from '@/lib/panels/actions';
 
 const STATUS_TONE: Record<CreditPurchase['status'], 'neutral' | 'good' | 'warn' | 'risk'> = {
@@ -99,7 +99,7 @@ export function CreditsClient({
         {purchases.length === 0 ? (
           <Empty title="No purchases yet" body="Order a pack above and it will show up here." />
         ) : (
-          <div className="overflow-x-auto rounded-[var(--radius-lg)] border border-[var(--color-rule)]">
+          <TableScroll label="Credit history" className="rounded-[var(--radius-lg)] border border-[var(--color-rule)]">
             <Table>
                 <Thead>
                   <Th>Date</Th>
@@ -124,7 +124,7 @@ export function CreditsClient({
                   ))}
                 </tbody>
               </Table>
-          </div>
+          </TableScroll>
         )}
       </div>
     </div>

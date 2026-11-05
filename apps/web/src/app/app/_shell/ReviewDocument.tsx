@@ -11,7 +11,7 @@ import {
   Input,
   Money,
   Switch,
-  Table,
+  Table, TableScroll,
   Td,
   Textarea,
   Th,
@@ -90,7 +90,7 @@ export function ReviewDocument({
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-[22px] font-bold text-[var(--color-ink)]">{document.supplierName}</h1>
             <Badge tone={rejected ? 'risk' : confirmed ? 'good' : 'warn'}>
               {reviewStatusLabel(document.reviewStatus)}
@@ -137,7 +137,7 @@ export function ReviewDocument({
               <div>
                 <span className="font-medium text-[var(--color-ink)]">{f.field}: </span>
                 <span className="text-[var(--color-ink-muted)]">{f.message}</span>
-                {f.fix ? <span className="block text-[var(--color-accent)]">{f.fix}</span> : null}
+                {f.fix ? <span className="block text-[var(--color-accent-strong)]">{f.fix}</span> : null}
               </div>
             </div>
           ))}
@@ -150,7 +150,7 @@ export function ReviewDocument({
         </div>
       ) : null}
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         {/* ── Image ──────────────────────────────────────────────────── */}
         <Card className="flex flex-col gap-3">
           <div
@@ -168,7 +168,7 @@ export function ReviewDocument({
                 className="max-h-[640px] w-full object-contain"
               />
             ) : (
-              <div className="flex h-[300px] items-center justify-center text-[13px] text-[var(--color-ink-faint)]">
+              <div className="flex h-[300px] items-center justify-center text-[13px] text-[var(--color-ink-muted)]">
                 No image on file
               </div>
             )}
@@ -182,7 +182,7 @@ export function ReviewDocument({
                   onClick={() => setActivePage(i)}
                   className={
                     i === activePage
-                      ? 'rounded-[var(--radius-sm)] border-2 border-[var(--color-accent)] px-2 py-1 text-[12px] font-semibold text-[var(--color-accent)]'
+                      ? 'rounded-[var(--radius-sm)] border-2 border-[var(--color-accent-strong)] px-2 py-1 text-[12px] font-semibold text-[var(--color-accent-strong)]'
                       : 'rounded-[var(--radius-sm)] border border-[var(--color-rule-strong)] px-2 py-1 text-[12px] text-[var(--color-ink-muted)]'
                   }
                 >
@@ -191,7 +191,7 @@ export function ReviewDocument({
               ))}
             </div>
           ) : null}
-          <p className="text-[12px] text-[var(--color-ink-faint)]">
+          <p className="text-[12px] text-[var(--color-ink-muted)]">
             The original, exactly as captured — this is the legal record and is never edited or re-rendered.
           </p>
         </Card>
@@ -246,13 +246,13 @@ export function ReviewDocument({
               {isBusiness ? (
                 <div className="grid grid-cols-2 gap-4 rounded-[var(--radius-md)] bg-[var(--color-surface)] p-3 text-[13px]">
                   <div>
-                    <div className="text-[var(--color-ink-faint)]">GST on this document</div>
+                    <div className="text-[var(--color-ink-muted)]">GST on this document</div>
                     <div className="font-semibold text-[var(--color-ink)]">
                       <Money amount={document.taxAmount} />
                     </div>
                   </div>
                   <div>
-                    <div className="text-[var(--color-ink-faint)]">Claimable now</div>
+                    <div className="text-[var(--color-ink-muted)]">Claimable now</div>
                     <div className={document.isTaxInvoice ? 'font-semibold text-[var(--color-good)]' : 'font-semibold text-[var(--color-risk)]'}>
                       {document.isTaxInvoice ? <Money amount={document.taxAmount} /> : <Money amount="0" />}
                     </div>
@@ -278,8 +278,8 @@ export function ReviewDocument({
 
           {document.lines.length > 0 ? (
             <Card>
-              <h3 className="mb-3 text-[14px] font-semibold text-[var(--color-ink)]">Lines, as extracted</h3>
-              <div className="overflow-x-auto">
+              <h2 className="mb-3 text-[14px] font-semibold text-[var(--color-ink)]">Lines, as extracted</h2>
+              <TableScroll label="Lines, as extracted">
                 <Table>
                   <Thead>
                     <Th>Description</Th>
@@ -302,15 +302,15 @@ export function ReviewDocument({
                     ))}
                   </tbody>
                 </Table>
-              </div>
+              </TableScroll>
             </Card>
           ) : null}
 
           {/* ── Confirm / reject — separate from editing on purpose ──── */}
           <Card tone="accent">
-            <h3 className="text-[14px] font-semibold text-[var(--color-ink)]">
+            <h2 className="text-[14px] font-semibold text-[var(--color-ink)]">
               {confirmed ? 'Confirmed' : 'Confirm this document'}
-            </h3>
+            </h2>
             <p className="mt-1 text-[13px] text-[var(--color-ink-muted)]">
               {confirmed
                 ? 'The fields above are locked against a later re-extraction overwriting them. A better model run may still flag a disagreement for review — it will never silently replace what a person confirmed.'
@@ -389,7 +389,7 @@ export function ReviewDocument({
                     Cancel
                   </Button>
                 </div>
-                <p className="text-[12px] text-[var(--color-ink-faint)]">
+                <p className="text-[12px] text-[var(--color-ink-muted)]">
                   The image stays on file — a business must keep the record for five years even when the extraction was wrong.
                 </p>
               </form>

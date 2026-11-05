@@ -32,7 +32,7 @@ export function ConnectionsClient({
         {connections.map((c) => (
           <Card key={c.id}>
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-[var(--color-ink)]">{c.name}</h3>
+              <h2 className="font-semibold text-[var(--color-ink)]">{c.name}</h2>
               <Badge tone={c.status === 'connected' ? 'good' : c.status === 'error' ? 'risk' : 'neutral'}>{c.status}</Badge>
             </div>
             <p className="mt-2 text-[13px] text-[var(--color-ink-muted)]">{c.note}</p>
