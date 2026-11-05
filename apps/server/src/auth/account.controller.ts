@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Controller,
+  ForbiddenException,
   Headers,
   HttpCode,
   HttpException,
@@ -11,7 +12,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
-import { IsEmail, IsString } from 'class-validator';
+import { IsEmail, IsOptional, IsString } from 'class-validator';
 
 import {
   CurrentSession,
@@ -37,6 +38,7 @@ import {
   issuePasswordReset,
   newLinkSecret,
   passwordResetIsLive,
+  queueAccountDeletion,
 } from './account.repo.js';
 import { clientIp, type IpAwareRequest } from './client-ip.js';
 import { hashPassword, passwordProblem, verifyPassword } from './passwords.js';
@@ -69,6 +71,17 @@ export class PasswordChangeDto {
   newPassword!: string;
 }
 
+export class AccountDeleteDto {
+  /** The word DELETE, typed: a tap alone never deletes an account. */
+  @IsString({ message: 'Type DELETE to confirm.' })
+  confirm!: string;
+
+  /** Needed when the account has a SnapApp password; an account that signs in with YourTal has none. */
+  @IsOptional()
+  @IsString()
+  password?: string;
+}
+
 export class EmailVerificationConfirmDto {
   @IsString({ message: 'The link is missing its token.' })
   token!: string;
@@ -93,6 +106,7 @@ const resetPerEmail = new RateLimiter(3, WINDOW);
 const resetPerIp = new RateLimiter(10, WINDOW);
 const resetConfirmPerIp = new RateLimiter(10, WINDOW);
 const changePerUser = new RateLimiter(5, WINDOW);
+const deletePerUser = new RateLimiter(5, WINDOW);
 const resendPerUser = new RateLimiter(3, WINDOW);
 const resendPerIp = new RateLimiter(10, WINDOW);
 const verifyConfirmPerIp = new RateLimiter(20, WINDOW);
@@ -232,6 +246,41 @@ export class AccountController {
     if (!changed) throw new UnauthorizedException('Your session has ended. Sign in again.');
 
     dispatchMail('security_notice', passwordChangedMessage(changed.email));
+    return { ok: true };
+  }
+
+  /* ── Delete the account (8.3.a) ──────────────────────────────────────── */
+
+  @Post('account/delete')
+  @UseGuards(SessionGuard)
+  @HttpCode(200)
+  @ApiOperation({
+    summary: 'Delete your SnapApp account',
+    description:
+      'Body {confirm: "DELETE", password?}. The password is needed when the account has one (an account ' +
+      'that signs in with YourTal has none). Queues the erasure for the worker (erase_person: workspaces ' +
+      'you run alone and everything in them, your attribution elsewhere, your sign-in) and ends EVERY ' +
+      'session at once, this one included. Deletes SnapApp only, never the YourTal account. Not available ' +
+      'to staff acting as a user. 403 wrong_password when the password is wrong. 429 past 5 tries per account in 15 minutes.',
+  })
+  async deleteAccount(
+    @CurrentUser() user: AuthUser,
+    @CurrentSession() session: CurrentSessionInfo,
+    @ValidBody(AccountDeleteDto) body: AccountDeleteDto,
+  ): Promise<{ ok: true }> {
+    if (!(await deletePerUser.consume(`account-delete:${user.userId}`))) throw tooMany();
+    if (body.confirm.trim() !== 'DELETE') {
+      throw new BadRequestException({ error: 'confirm_required', message: 'Type DELETE to confirm.' });
+    }
+    if (!(await isLinkedToYourTal(user.userId))) {
+      const record = await passwordRecordFor(user.email);
+      if (record?.passwordHash && !(await verifyPassword(body.password ?? '', record.passwordHash))) {
+        // 403, not 401: the phone treats a 401 on a signed-in call as "your session ended" and signs out.
+        throw new ForbiddenException({ error: 'wrong_password', message: 'That password is not right.' });
+      }
+    }
+    await queueAccountDeletion(user.userId);
+    await revokeAllSessions(session.tokenHash);
     return { ok: true };
   }
 

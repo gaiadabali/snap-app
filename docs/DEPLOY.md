@@ -774,7 +774,8 @@ YourTal retries and nothing is erased. `YOURTAL_OIDC_ISSUER` must also be set.
 ### Monitor check 2a
 
 `deploy/monitor/alert.sh --inbox` (every 10 minutes, from root's crontab) raises
-**erasure** when a `yourtal_event`, `storage_purge` or `erasure_notice` job is
+**erasure** when a `yourtal_event`, `account_delete` (a person deleting their own
+account in the app, 8.3.a; counted as `yourtal_event=`), `storage_purge` or `erasure_notice` job is
 still open 24 hours after it was queued. The check counts only. The cause is in
 `jobs.last_error`. Do not set `ERASURE_CHECK=off` on helios to silence it.
 

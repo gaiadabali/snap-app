@@ -139,3 +139,15 @@ export async function markEmailProven(userId: string): Promise<boolean> {
   `);
   return rows[0]?.cleared === true;
 }
+
+/**
+ * Queue the erasure of one account (8.3.a, 0051). The worker runs `erase_person`
+ * (the API cannot) and then empties the payload. Several requests queue several
+ * jobs; the second finds nothing to erase.
+ */
+export async function queueAccountDeletion(userId: string): Promise<void> {
+  await getDb().execute(sql`
+    insert into jobs (id, tenant_id, kind, payload, max_attempts)
+    values (gen_random_uuid(), null, 'account_delete', ${JSON.stringify({ userId })}::jsonb, 10)
+  `);
+}

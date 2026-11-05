@@ -38,6 +38,8 @@ import { endTeenInvite, teenInvitesConfigured } from '../teens/invite-api.js';
 
 export const STORAGE_PURGE_JOB = 'storage_purge';
 export const ERASURE_NOTICE_JOB = 'erasure_notice';
+/** Queued by `POST /v1/auth/account/delete` (0051). */
+export const ACCOUNT_DELETE_JOB = 'account_delete';
 /** YourTal's end for a teen invite, when the parent's End access could not reach it (0045). */
 export const TEEN_INVITE_END_JOB = 'teen_invite_end';
 
@@ -48,6 +50,39 @@ type Job = { id: string; tenantId: string | null; payload: unknown };
 /** Our side failed (YourTal's keys unreachable), not the job: retry later without spending an attempt. */
 class NotNow extends Error {}
 type Log = Pick<Console, 'log' | 'warn' | 'error'>;
+
+/** erase_person, then the members' notice mails queued in the same transaction (it returns them once). */
+async function erasePersonAndNotify(tx: Pick<Db, 'execute'>, userId: string): Promise<string> {
+  const { rows } = await tx.execute<{ workspace_id: string; outcome: 'erased' | 'handed_over'; notify_emails: string[] }>(
+    sql`select workspace_id, outcome, notify_emails from erase_person(${userId}::uuid)`,
+  );
+  let notices = 0;
+  for (const row of rows) {
+    for (const to of row.notify_emails) {
+      await tx.execute(sql`
+        insert into jobs (id, tenant_id, kind, payload, max_attempts)
+        values (gen_random_uuid(), null, ${ERASURE_NOTICE_JOB},
+                ${JSON.stringify({ to, outcome: row.outcome })}::jsonb, 10)
+      `);
+      notices += 1;
+    }
+  }
+  const erasedCount = rows.filter((r) => r.outcome === 'erased').length;
+  return `person erased: ${erasedCount} workspace(s) erased, ${rows.length - erasedCount} handed over, ${notices} notice(s) queued`;
+}
+
+/** Someone deleted their own account in the app (8.3.a, 0051). SnapApp's side only: their YourTal account stays. */
+async function handleAccountDelete(db: Db, job: Job, log: Log): Promise<void> {
+  const userId = (job.payload as { userId?: unknown } | null)?.userId;
+  if (typeof userId !== 'string' || !UUID.test(userId)) throw new Error('account_delete: bad payload');
+  const outcome = await db.transaction(async (tx) => {
+    const done = await erasePersonAndNotify(tx, userId);
+    // The payload holds the user id: emptied with the erasure, as erasure_notice does with its address.
+    await tx.execute(sql`update jobs set payload = '{}'::jsonb where id = ${job.id}`);
+    return done;
+  });
+  log.log(`account_delete ${job.id}: ${outcome}`);
+}
 
 async function handleEvent(db: Db, job: Job, log: Log): Promise<void> {
   const settings = yourtalEventsSettings();
@@ -69,22 +104,7 @@ async function handleEvent(db: Db, job: Job, log: Log): Promise<void> {
       );
       const userId = erased.rows[0]?.user_id;
       if (!userId) return 'unknown sub, recorded as erased';
-      const { rows } = await tx.execute<{ workspace_id: string; outcome: 'erased' | 'handed_over'; notify_emails: string[] }>(
-        sql`select workspace_id, outcome, notify_emails from erase_person(${userId}::uuid)`,
-      );
-      let notices = 0;
-      for (const row of rows) {
-        for (const to of row.notify_emails) {
-          await tx.execute(sql`
-            insert into jobs (id, tenant_id, kind, payload, max_attempts)
-            values (gen_random_uuid(), null, ${ERASURE_NOTICE_JOB},
-                    ${JSON.stringify({ to, outcome: row.outcome })}::jsonb, 10)
-          `);
-          notices += 1;
-        }
-      }
-      const erasedCount = rows.filter((r) => r.outcome === 'erased').length;
-      return `person erased: ${erasedCount} workspace(s) erased, ${rows.length - erasedCount} handed over, ${notices} notice(s) queued`;
+      return erasePersonAndNotify(tx, userId);
     });
     log.log(`yourtal event ${jti} account-deleted: ${outcome}`);
     return;
@@ -313,6 +333,7 @@ const HANDLERS: Array<[string, (db: Db, job: Job, log: Log) => Promise<void>]> =
   [YOURTAL_EVENT_JOB, handleEvent],
   [STORAGE_PURGE_JOB, handleStoragePurge],
   [ERASURE_NOTICE_JOB, handleNotice],
+  [ACCOUNT_DELETE_JOB, handleAccountDelete],
   [TEEN_INVITE_END_JOB, handleTeenInviteEnd],
 ];
 

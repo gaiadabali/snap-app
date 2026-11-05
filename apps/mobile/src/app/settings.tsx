@@ -370,6 +370,13 @@ export default function SettingsScreen() {
               </Card>
             ) : null}
 
+            {/* Play requires deletion from inside the app (group 8.3.a). Its own screen explains and re-confirms. */}
+            {session ? (
+              <Card padded={false}>
+                <DangerRow label="Delete account" onPress={() => router.push('/delete-account')} />
+              </Card>
+            ) : null}
+
             {IS_DEMO ? <Small style={{ textAlign: 'center' }}>Snap Apps · demo build</Small> : null}
           </>
         )}

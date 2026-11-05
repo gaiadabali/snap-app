@@ -191,13 +191,15 @@ export default function PrivacyPolicyPage() {
         <h2>8. Your rights</h2>
         <p>
           You can ask us for access to the personal information we hold about you, ask us to correct
-          it, and ask us to delete your account — see{' '}
-          <a href="/support">
-            Support
+          it, and delete your account yourself in the app (Settings, then Delete account) or by
+          email — see{' '}
+          <a href="/delete-account">
+            Delete your account
           </a>
-          . Where a record is still inside its mandatory five-year retention window, we can close it
-          out of active use but cannot delete the underlying record until that window passes, because
-          we are legally required to be able to produce it. If you are not satisfied with how we
+          . Deleting your account erases your receipts too, including any still inside the five-year
+          period the ATO sets for business records, because that duty is the taxpayer&apos;s;
+          export what you need first. Shared workspaces keep their records with your name removed.
+          If you are not satisfied with how we
           handle a privacy concern, you can complain to the OAIC.
         </p>
       </section>

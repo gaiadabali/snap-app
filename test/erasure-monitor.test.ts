@@ -85,7 +85,8 @@ describe("alert.sh erasure check", () => {
     expect(r.argv).toContain("default_transaction_read_only=on");
     expect(r.argv).toContain("postgres");
     expect(r.sql).toMatch(/^SELECT/);
-    expect(r.sql).not.toMatch(/payload|UPDATE|DELETE|INSERT/i);
+    // word boundaries: the job kind account_delete is not a DELETE statement
+    expect(r.sql).not.toMatch(/payload|\b(UPDATE|DELETE|INSERT)\b/i);
     for (const s of ["'yourtal_event'", "'storage_purge'", "'erasure_notice'", "completed_at IS NULL", "interval '24 hours'",
                      "FROM teen_spaces WHERE erase_after < now() - interval '1 day'"]) {
       expect(r.sql).toContain(s);

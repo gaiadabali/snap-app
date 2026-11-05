@@ -32,6 +32,7 @@ const COLUMNS: Array<{ heading: string; links: Array<{ href: string; label: stri
     heading: 'Help',
     links: [
       { href: '/support', label: 'Help centre' },
+      { href: '/delete-account', label: 'Delete account' },
       { href: '/docs', label: 'Guides' },
       { href: '/docs/getting-started', label: 'Getting started' },
       { href: '/sign-in', label: 'Sign in' },
