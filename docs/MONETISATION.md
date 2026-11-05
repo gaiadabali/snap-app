@@ -157,15 +157,19 @@ These override the per-scan figures elsewhere in this file where they disagree
 - **Out of credits (7.1.b):** a new snap is refused with `402 quota_exhausted`
   and a `buyUrl`, before anything is stored; the app offers "Buy credits". A
   snap already on the server when the last credit went (two at once, or a
-  phone's queued upload) is kept, not queued, and is read as soon as credits
-  arrive: when a pack is paid for, or when the phone sends it again. A CSV
-  statement is read without a model and needs no credit.
-- **One page per snap (7.1.d):** a capture declaring more than one page, or a
-  PDF with more than one, is refused with `400 one_page_per_snap`, before
-  anything is stored.
+  phone's queued upload) is kept, not queued. It is read, one credit each and
+  oldest first, when a pack is paid for, before the workspace's next new snap
+  is accepted, or when the phone sends it again; only snaps from the last 30
+  days, and never past the 200-a-day budget. Older ones stay stored, unread. A
+  CSV statement is read without a model and needs no credit; an upload must be
+  the kind of file it was registered as.
+- **One page per snap (7.1.d):** a new capture declaring more than one page,
+  or a PDF with more than one, is refused with `400 one_page_per_snap`, before
+  anything is stored. A resend of a capture made before the rule is not.
 - **`GET /v1/usage?kind=credits&month=YYYY-MM` (7.1.e)** lists the month's
   spends, newest first: 1 per scan, 0 for one given back. Paged with `limit`
-  and `before`; `GET /v1/usage/months` lists the months. Months are UTC.
+  and `before`; `GET /v1/usage/months` lists the months. Months are the
+  workspace's: Sydney time, or Jakarta time for an Indonesian workspace.
 
 ### Practice (the primary line)
 

@@ -6,7 +6,7 @@ import type { Client, Pool } from 'pg';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { closeDb, getDb } from '../db.js';
-import { createCapture, enqueueExtraction, resumeHeldCaptures } from '../repo.js';
+import { createCapture, enqueueExtraction, OnePagePerSnapError, resumeHeldCaptures } from '../repo.js';
 import { provisionTenant, wipeTenant } from '../test-support/tenant.js';
 import { workerActor, type WorkerActor } from '../tenant-entry.js';
 import { listCreditUsage, listCreditUsageMonths } from './credits.repo.js';
@@ -28,6 +28,13 @@ const OTHER_TENANT = 'c5e40000-0000-4000-8000-000000000002';
 const USER = 'c5e40000-0000-4000-8000-0000000000a1';
 const WORKER = 'c5e40000-0000-4000-8000-0000000000a2';
 const OTHER_USER = 'c5e40000-0000-4000-8000-0000000000a3';
+
+/** This month as an Australian workspace sees it. */
+function sydneyMonth(): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Australia/Sydney', year: 'numeric', month: '2-digit' })
+    .format(new Date())
+    .slice(0, 7);
+}
 
 describeIfDb('scan credits: spend, refuse, give back, list (7.1.a–e)', () => {
   let admin: Client;
@@ -260,15 +267,44 @@ describeIfDb('scan credits: spend, refuse, give back, list (7.1.a–e)', () => {
     expect(kept.rows[0].n).toBe(6);
 
     // Nothing to resume with no credit; three bought credits queue the oldest three held.
-    expect(await resumeHeldCaptures(USER, TENANT)).toBe(0);
+    expect(await resumeHeldCaptures(USER, TENANT, 200)).toBe(0);
     await grant('topup_pack', 3, 0, { bought: true });
-    expect(await resumeHeldCaptures(USER, TENANT)).toBe(3);
-    expect(await resumeHeldCaptures(USER, TENANT)).toBe(0);
+    expect(await resumeHeldCaptures(USER, TENANT, 200)).toBe(3);
+    expect(await resumeHeldCaptures(USER, TENANT, 200)).toBe(0);
     const queued = await admin.query(
       `select count(*)::int as n from jobs where kind = 'extract' and payload->>'captureId' = any($1)`,
       [racers],
     );
     expect(queued.rows[0].n).toBe(4);
+  });
+
+  it('resumes only held snaps from the last 30 days, and never past the daily budget', async () => {
+    // Earlier tests' captures lost their spends to beforeEach: out of the way.
+    await admin.query(`update captures set status = 'failed' where tenant_id = $1`, [TENANT]);
+    const old = await storedCapture();
+    await admin.query(`update captures set received_at = now() - interval '31 days' where id = $1`, [old]);
+    const recent = [await storedCapture(), await storedCapture(), await storedCapture()];
+    await grant('topup_pack', 10, 0, { bought: true });
+    const jobsToday = async () =>
+      (await admin.query(`select count(*)::int as n from jobs where tenant_id = $1 and kind = 'extract' and created_at >= date_trunc('day', now())`, [TENANT])).rows[0].n as number;
+
+    // A budget with room for exactly two more today stops after two.
+    expect(await resumeHeldCaptures(USER, TENANT, (await jobsToday()) + 2)).toBe(2);
+    expect(await resumeHeldCaptures(USER, TENANT, 200)).toBe(1);
+    expect(await jobsFor(recent[2]!)).toBe(1);
+    // The 31-day-old one stays stored and unread.
+    expect(await jobsFor(old)).toBe(0);
+    expect(await spendOf(old)).toEqual([]);
+  });
+
+  it('refuses a multi-page NEW capture, but never a resend of an existing one', async () => {
+    await grant('signup_bonus', 5, 0);
+    const pages = [1, 2].map(() => ({ sha256: randomBytes(32).toString('hex'), mimeType: 'image/jpeg', byteSize: 900 }));
+    await expect(createCapture(USER, TENANT, { pages, onePageOnly: true })).rejects.toBeInstanceOf(OnePagePerSnapError);
+    // One registered before the rule (no onePageOnly) is a duplicate when re-sent.
+    const before = await createCapture(USER, TENANT, { pages });
+    const resent = await createCapture(USER, TENANT, { pages, onePageOnly: true, requireCredit: true });
+    expect(resent).toMatchObject({ duplicate: true, capture: { id: before.capture.id } });
   });
 
   it('refuses a NEW capture at registration with no credit, storing nothing, but never a duplicate', async () => {
@@ -307,7 +343,7 @@ describeIfDb('scan credits: spend, refuse, give back, list (7.1.a–e)', () => {
     );
     expect(await remaining(pack)).toBe(3);
 
-    const month = new Date().toISOString().slice(0, 7);
+    const month = sydneyMonth();
     const page1 = await listCreditUsage(USER, TENANT, month, 2, null);
     expect(page1.total).toBe(2);
     expect(page1.items.map((i) => i.amount)).toEqual([1, 0]);
@@ -323,6 +359,30 @@ describeIfDb('scan credits: spend, refuse, give back, list (7.1.a–e)', () => {
     expect(await listCreditUsageMonths(USER, TENANT)).toEqual([month, '2026-01']);
     // Another workspace sees none of it.
     expect(await listCreditUsageMonths(OTHER_USER, OTHER_TENANT)).toEqual([]);
+  });
+
+  it("puts a scan made early on the 1st in that month, in the workspace's own time zone", async () => {
+    const spendAt = async (tenant: string, user: string, at: string) =>
+      admin.query(
+        `insert into credit_spends (tenant_id, capture_id, user_id, grant_id, grant_source, paid, spent_at)
+         values ($1, $2, $3, null, null, false, $4)`,
+        [tenant, await capture(tenant, user), user, at],
+      );
+    // 7:30 am on 1 March in Sydney is still 28 February in UTC.
+    await spendAt(TENANT, USER, '2026-03-01T07:30:00+11:00');
+    expect((await listCreditUsage(USER, TENANT, '2026-03', 10, null)).items).toHaveLength(1);
+    expect((await listCreditUsage(USER, TENANT, '2026-02', 10, null)).items).toHaveLength(0);
+    expect(await listCreditUsageMonths(USER, TENANT)).toContain('2026-03');
+
+    // An Indonesian workspace reads Jakarta time: 6 am on 1 March there.
+    await admin.query(`update tenants set country = 'ID' where id = $1`, [OTHER_TENANT]);
+    try {
+      await spendAt(OTHER_TENANT, OTHER_USER, '2026-03-01T06:00:00+07:00');
+      expect((await listCreditUsage(OTHER_USER, OTHER_TENANT, '2026-03', 10, null)).items).toHaveLength(1);
+      expect(await listCreditUsageMonths(OTHER_USER, OTHER_TENANT)).toEqual(['2026-03']);
+    } finally {
+      await admin.query(`update tenants set country = 'AU' where id = $1`, [OTHER_TENANT]);
+    }
   });
 
   it('gives an unreadable scan its credit back, exactly once', async () => {

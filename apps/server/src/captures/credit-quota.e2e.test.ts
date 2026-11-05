@@ -161,24 +161,68 @@ describeIfDb('out of scan credits — real HTTP (7.1.b, 7.1.e)', () => {
     expect(await jobsFor(heldId)).toBe(1);
   });
 
+  it('reads held snaps first, oldest first, when the next new snap is accepted (credits from anywhere)', async () => {
+    const heldBytes = photo();
+    await grant(1);
+    await admin.query(`update usage_grants set remaining = 0 where tenant_id = $1 and source <> 'support_credit'`, [TENANT]);
+    // Exactly one usable credit: the one just granted.
+    const reg = await register(heldBytes);
+    expect(reg.statusCode).toBe(201);
+    await admin.query(`update usage_grants set remaining = 0 where tenant_id = $1`, [TENANT]);
+    expect((await upload(reg.json().uploadUrl, heldBytes)).statusCode).toBe(402);
+    const heldId = reg.json().captureId as string;
+
+    // Credits arrive without a purchase (a voucher, a parent's top-up for a teen): no hook runs.
+    await grant(2);
+    expect(await jobsFor(heldId)).toBe(0);
+    const next = photo();
+    const nextReg = await register(next);
+    expect(nextReg.statusCode).toBe(201);
+    expect(await jobsFor(heldId)).toBe(1);
+    expect((await upload(nextReg.json().uploadUrl, next)).statusCode).toBe(200);
+    expect(await jobsFor(nextReg.json().captureId)).toBe(1);
+  });
+
+  it('refuses an upload that is not the kind of file registered (a CSV registration carrying a photo)', async () => {
+    const bytes = photo();
+    const reg = await app.inject({
+      method: 'POST',
+      url: '/v1/captures',
+      headers: auth(),
+      payload: {
+        pages: [{ sha256: createHash('sha256').update(bytes).digest('hex'), mimeType: 'text/csv', byteSize: bytes.byteLength }],
+      },
+    });
+    expect(reg.statusCode).toBe(201);
+    const res = await upload(reg.json().uploadUrl, bytes);
+    expect(res.statusCode).toBe(400);
+    expect(res.json()).toMatchObject({ error: 'content_type_mismatch' });
+    const pages = await admin.query(`select count(*)::int as n from capture_pages where capture_id = $1`, [reg.json().captureId]);
+    expect(pages.rows[0].n).toBe(0);
+  });
+
   it('lists what was spent this month, for this workspace only', async () => {
-    const month = new Date().toISOString().slice(0, 7);
+    // The workspace's month (an AU workspace reads Sydney time).
+    const month = new Intl.DateTimeFormat('en-CA', { timeZone: 'Australia/Sydney', year: 'numeric', month: '2-digit' })
+      .format(new Date())
+      .slice(0, 7);
     const months = await app.inject({ method: 'GET', url: '/v1/usage/months?kind=credits', headers: auth() });
     expect(months.json()).toEqual([month]);
 
-    const res = await app.inject({ method: 'GET', url: `/v1/usage?kind=credits&month=${month}&limit=2`, headers: auth() });
+    const res = await app.inject({ method: 'GET', url: `/v1/usage?kind=credits&month=${month}&limit=3`, headers: auth() });
     expect(res.statusCode).toBe(200);
     const body = res.json();
-    // Three scans paid above: the first upload, the resumed one, the one queued by the purchase.
-    expect(body).toMatchObject({ month, kind: 'credits', total: 3 });
-    expect(body.items).toHaveLength(2);
+    // Five scans paid above: the first upload, the resumed one, the one queued by the
+    // purchase, and the held one plus the new one in the test before.
+    expect(body).toMatchObject({ month, kind: 'credits', total: 5 });
+    expect(body.items).toHaveLength(3);
     expect(body.items[0]).toMatchObject({ label: 'Scan', amount: 1 });
     const rest = await app.inject({
       method: 'GET',
-      url: `/v1/usage?kind=credits&month=${month}&limit=2&before=${body.nextBefore as string}`,
+      url: `/v1/usage?kind=credits&month=${month}&limit=3&before=${body.nextBefore as string}`,
       headers: auth(),
     });
-    expect(rest.json().items).toHaveLength(1);
+    expect(rest.json().items).toHaveLength(2);
     expect(rest.json().nextBefore).toBeNull();
 
     expect((await app.inject({ method: 'GET', url: '/v1/usage?kind=credits&month=2026-13', headers: auth() })).statusCode).toBe(400);

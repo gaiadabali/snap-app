@@ -259,6 +259,14 @@ function planFromExisting(
  * set from PAGE 1 ONLY (migration 0018) — every existing reader of a capture
  * keeps working against a single-page shape without knowing pages exist.
  */
+/** A new capture of more than one page: one snap is one page (founder 0.11.b). */
+export class OnePagePerSnapError extends Error {
+  constructor() {
+    super('one page per snap');
+    this.name = 'OnePagePerSnapError';
+  }
+}
+
 export async function createCapture(
   userId: string,
   tenantId: string,
@@ -268,6 +276,8 @@ export async function createCapture(
     legibilityScore?: number;
     /** Refuse a NEW capture (never a duplicate) when no credit is left (7.1.b). */
     requireCredit?: boolean;
+    /** Refuse a NEW capture of more than one page (founder 0.11.b); a resend of one is a duplicate. */
+    onePageOnly?: boolean;
   },
 ): Promise<{ capture: CaptureRow; duplicate: boolean; pages: CapturePagePlan[] }> {
   return withTenantAs(getDb(), userId, tenantId, async (tx) => {
@@ -291,6 +301,7 @@ export async function createCapture(
 
     // Throwing rolls back before anything is stored. Advisory, not the money
     // guard: the spend in `enqueueExtraction` is what refuses atomically.
+    if (input.onePageOnly && input.pages.length > 1) throw new OnePagePerSnapError();
     if (input.requireCredit) {
       const credit = await creditsLeft(tx);
       if (credit.left <= 0) throw new QuotaExhaustedError(credit.teen);
@@ -613,6 +624,16 @@ export async function enqueueExtraction(
   });
 }
 
+/** The MIME type the capture was registered with (its first page's). */
+export async function getCaptureMimeType(userId: string, tenantId: string, captureId: string): Promise<string | null> {
+  return withTenantAs(getDb(), userId, tenantId, async (tx) => {
+    const rows = await tx.execute<{ mime: string }>(sql`
+      select original_mime_type as mime from captures where id = ${captureId}
+    `);
+    return rows.rows[0]?.mime ?? null;
+  });
+}
+
 /**
  * Has this capture already been queued (it has a spend) or got past intake?
  * The callers' cheap check before the daily budget and the spend; the spend
@@ -632,16 +653,25 @@ export async function isCaptureQueued(userId: string, tenantId: string, captureI
 
 /**
  * Queues the captures that were stored while the workspace had no credit
- * (7.1.b), oldest first, until the credits run out. Called after credits are
- * added. A held capture: every page stored, never queued (no spend), not a CSV
- * (a CSV is read on upload and never spends). Returns how many were queued.
+ * (7.1.b), oldest first, one credit each, until the credits or the day's
+ * extraction budget run out. Called after a purchase and before a workspace's
+ * next new snap is accepted. A held capture: every page stored, never queued
+ * (no spend), not a CSV (read on upload, never spends), received in the last
+ * 30 days. Older ones stay stored, unread: nobody expects them read now.
+ * Returns how many were queued.
  */
-export async function resumeHeldCaptures(userId: string, tenantId: string): Promise<number> {
+export async function resumeHeldCaptures(
+  userId: string,
+  tenantId: string,
+  // `config().EXTRACTION_DAILY_BUDGET`, passed in: repo.ts does not read config.
+  dailyBudget: number,
+): Promise<number> {
   const held = await withTenantAs(getDb(), userId, tenantId, async (tx) => {
     const rows = await tx.execute<{ id: string }>(sql`
       select c.id
         from captures c
        where c.status = 'received'
+         and c.received_at > now() - interval '30 days'
          and c.original_mime_type <> 'text/csv'
          and not exists (select 1 from credit_spends s where s.capture_id = c.id)
          and (select count(*) from capture_pages p where p.capture_id = c.id) >= greatest(c.page_count, 1)
@@ -652,6 +682,7 @@ export async function resumeHeldCaptures(userId: string, tenantId: string): Prom
   });
   let queued = 0;
   for (const captureId of held) {
+    if ((await countExtractionsToday(userId, tenantId)) >= dailyBudget) break;
     try {
       await enqueueExtraction(userId, tenantId, captureId);
       queued += 1;

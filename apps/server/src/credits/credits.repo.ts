@@ -339,6 +339,14 @@ export async function fulfilCreditPurchaseFromProvider(
   });
 }
 
+/**
+ * The workspace's time zone, from its country: Indonesia is Jakarta, anywhere
+ * else (Australia) Sydney. ponytail: one zone a country; Perth is 2–3 hours
+ * off, which only moves a scan made in the first hours of the 1st.
+ */
+const workspaceZone = sql`(select case t.country when 'ID' then 'Asia/Jakarta' else 'Australia/Sydney' end
+                             from tenants t where t.id = current_tenant_id())`;
+
 export type UsageRow = {
   id: string;
   label: string;
@@ -354,9 +362,9 @@ export type UsageRow = {
  * month reads true. `total` is over the whole month; `items` is one page,
  * continued with `before` = the last item's id.
  *
- * ponytail: months are UTC; a workspace time zone would move scans made in
- * the first hours of an Australian month. Teen scans paid from this
- * workspace are not listed here (teen_space_spends is not readable by the API).
+ * Months are the workspace's, by its country (`workspaceZone`), whatever the
+ * database session's time zone. Teen scans paid from this workspace are not
+ * listed here (teen_space_spends is not readable by the API).
  */
 export async function listCreditUsage(
   userId: string,
@@ -366,8 +374,11 @@ export async function listCreditUsage(
   before: string | null,
 ): Promise<{ total: number; items: UsageRow[]; nextBefore: string | null }> {
   return withTenantAs(getDb(), userId, tenantId, async (tx) => {
-    const start = sql`(${`${month}-01`}::date at time zone 'UTC')`;
-    const inMonth = sql`s.spent_at >= ${start} and s.spent_at < ${start} + interval '1 month'`;
+    // `timestamp at time zone` reads the local date in the workspace's zone;
+    // a `date` would first be cast through the session's.
+    const local = sql`${`${month}-01`}::timestamp`;
+    const inMonth = sql`s.spent_at >= (${local} at time zone ${workspaceZone})
+                    and s.spent_at < ((${local} + interval '1 month') at time zone ${workspaceZone})`;
     const total = await tx.execute<{ n: number }>(sql`
       select count(*)::int as n from credit_spends s
        where ${inMonth} and s.grant_source is not null and s.refunded_at is null
@@ -401,11 +412,11 @@ export async function listCreditUsage(
   });
 }
 
-/** The months (`YYYY-MM`, UTC, newest first) with any scan spend in them. */
+/** The months (`YYYY-MM`, the workspace's, newest first) with any scan spend in them. */
 export async function listCreditUsageMonths(userId: string, tenantId: string): Promise<string[]> {
   return withTenantAs(getDb(), userId, tenantId, async (tx) => {
     const rows = await tx.execute<{ month: string }>(sql`
-      select distinct to_char(spent_at at time zone 'UTC', 'YYYY-MM') as month
+      select distinct to_char(spent_at at time zone ${workspaceZone}, 'YYYY-MM') as month
         from credit_spends
        order by month desc
     `);

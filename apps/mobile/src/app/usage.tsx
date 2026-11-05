@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, type UsageKind, type UsagePeriod } from '@/api';
 import { Icon } from '@/components/Icon';
-import { Card, Notice, Screen, ScreenHeader, SectionHeader, Small } from '@/components/ui';
+import { Button, Card, Notice, Screen, ScreenHeader, SectionHeader, Small } from '@/components/ui';
 import { numeric, radius, shadow, space, type, usePalette, useTheme } from '@/theme';
 
 /**
@@ -79,7 +79,13 @@ export default function UsageScreen() {
     let live = true;
     const wanted = months.filter((m) => m.startsWith(String(year)));
     void Promise.all(
-      wanted.map((m) => api().getUsage(kind, m).then((u) => [m, u.total] as const).catch(() => [m, 0] as const)),
+      // limit 1: only the month's total is wanted here.
+      wanted.map((m) =>
+        api()
+          .getUsage(kind, m, { limit: 1 })
+          .then((u) => [m, u.total] as const)
+          .catch(() => [m, 0] as const),
+      ),
     ).then((pairs) => {
       if (!live) return;
       setByMonth(Object.fromEntries(pairs));
@@ -88,6 +94,19 @@ export default function UsageScreen() {
       live = false;
     };
   }, [kind, year, months]);
+
+  /** The month's next page, appended (7.1.e pages a month by `before`). */
+  async function showMore(shown: UsagePeriod) {
+    if (!shown.nextBefore) return;
+    try {
+      const next = await api().getUsage(kind, shown.month, { before: shown.nextBefore });
+      setPeriod((cur) =>
+        cur && cur.month === shown.month ? { ...cur, items: [...cur.items, ...next.items], nextBefore: next.nextBefore } : cur,
+      );
+    } catch {
+      // Offline: the button stays, and a tap later tries again.
+    }
+  }
 
   const peak = useMemo(() => Math.max(1, ...Object.values(byMonth)), [byMonth]);
   const years = useMemo(
@@ -226,7 +245,11 @@ export default function UsageScreen() {
                 <View style={{ gap: 3 }}>
                   <Text style={[type.label, { color: p.inkMuted }]}>{pretty(period.month)}</Text>
                   <Small>
-                    {period.items.length === 1 ? '1 entry' : `${period.items.length} entries`}
+                    {period.nextBefore
+                      ? `Latest ${period.items.length} entries`
+                      : period.items.length === 1
+                        ? '1 entry'
+                        : `${period.items.length} entries`}
                   </Small>
                 </View>
                 <Text style={[type.h2, numeric, { color: p.ink }]}>
@@ -260,6 +283,10 @@ export default function UsageScreen() {
 
               {period.items.length === 0 ? (
                 <Small>Nothing used in this month.</Small>
+              ) : null}
+
+              {period.nextBefore ? (
+                <Button label="Show more" tone="outline" onPress={() => void showMore(period)} />
               ) : null}
             </>
           ) : (

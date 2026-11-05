@@ -1311,9 +1311,11 @@ export class HttpApi implements SnapApi {
     });
   }
 
-  getUsage(kind: UsageKind, month: string): Promise<UsagePeriod> {
-    // Workspace-scoped: credits belong to the workspace (7.1.e).
-    return this.get<UsagePeriod>(`/v1/usage?kind=${kind}&month=${month}`);
+  getUsage(kind: UsageKind, month: string, page: { limit?: number; before?: string } = {}): Promise<UsagePeriod> {
+    // Workspace-scoped: credits belong to the workspace (7.1.e). Paged by `before`.
+    const more =
+      (page.limit ? `&limit=${page.limit}` : '') + (page.before ? `&before=${encodeURIComponent(page.before)}` : '');
+    return this.get<UsagePeriod>(`/v1/usage?kind=${kind}&month=${month}${more}`);
   }
 
   listUsageMonths(kind: UsageKind): Promise<string[]> {

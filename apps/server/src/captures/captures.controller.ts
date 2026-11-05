@@ -45,6 +45,7 @@ import {
 } from '../common/auth.guard.js';
 import { ValidBody } from '../common/valid-body.decorator.js';
 import { config } from '../config.js';
+import { resumeAfterCredits } from '../credits/credits.controller.js';
 import { QuotaExhaustedError } from '../credits/spend.js';
 import { countPdfPages, demuxPdf } from '../extraction/pdf.js';
 import {
@@ -52,8 +53,10 @@ import {
   createCapture,
   enqueueExtraction,
   finalizeCapturePages,
+  getCaptureMimeType,
   getCaptureProgress,
   isCaptureQueued,
+  OnePagePerSnapError,
   listCapturePages,
   markCaptureStored,
   recordCapturePage,
@@ -279,19 +282,26 @@ export class CapturesController {
       });
     }
 
-    if (declared.length > 1) throw onePagePerSnap();
-
-    // A new capture needs a credit (7.1.b), refused before anything is
-    // stored. A CSV is read without a model and never spends one.
+    // A NEW capture must be one page (0.11.b) and needs a credit (7.1.b),
+    // both refused before anything is stored; a resend of an existing one is
+    // a duplicate and is neither. A CSV is read without a model: no credit.
+    const needsCredit = declared[0]!.mimeType.toLowerCase() !== 'text/csv';
     const { capture, duplicate, pages: plan } = await createCapture(user.userId, tenantId, {
       pages: declared,
       capturedAt: body.capturedAt,
       legibilityScore: body.legibilityScore,
-      requireCredit: declared[0]!.mimeType.toLowerCase() !== 'text/csv',
+      requireCredit: needsCredit,
+      onePageOnly: true,
     }).catch((error: unknown) => {
       if (error instanceof QuotaExhaustedError) throw creditsExhausted(error.teen, false);
+      if (error instanceof OnePagePerSnapError) throw onePagePerSnap();
       throw error;
     });
+
+    // There is a credit now (the check above passed): snaps held for want of
+    // one are read first, oldest first, one credit each (7.1.b). This one has
+    // no pages yet, so it is never among them.
+    if (!duplicate && needsCredit) await resumeAfterCredits(user.userId, tenantId);
 
     // The daily extraction budget — ONE counter query, after registration
     // so `duplicate` is known (a duplicate is never refused: its document
@@ -450,6 +460,17 @@ export class CapturesController {
     // page out as a separate declared entry is a real request; it needs
     // renumbering support this contract does not specify, so it is refused
     // rather than silently mis-ordered.
+    // The upload must be what was registered (a CSV registration, which
+    // needs no credit, cannot carry an image or a PDF, and vice versa).
+    const kindOf = (mime: string) => (mime === 'text/csv' ? 'csv' : mime === 'application/pdf' ? 'pdf' : 'image');
+    const registered = await getCaptureMimeType(user.userId, claim.tenantId, claim.captureId);
+    if (registered === null || kindOf(registered.toLowerCase()) !== kindOf(normalisedType)) {
+      throw new BadRequestException({
+        error: 'content_type_mismatch',
+        message: 'This upload is not the kind of file that was registered. Start the snap again.',
+      });
+    }
+
     if (isPdf && claim.pageCount > 1) {
       throw new BadRequestException(
         'A PDF must be the only page in its capture. Upload it on its own, or photograph the pages individually instead.',

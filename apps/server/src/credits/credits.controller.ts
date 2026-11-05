@@ -20,7 +20,7 @@ import type {
 } from '@snap/api-contract';
 import { IsString } from 'class-validator';
 
-import { isManualCreditFulfilmentEnabled } from '../config.js';
+import { config, isManualCreditFulfilmentEnabled } from '../config.js';
 import { paymentProvider } from './payment-provider.js';
 import {
   CurrentUser,
@@ -65,13 +65,14 @@ async function requireAdmin(user: AuthUser, tenantId: string): Promise<void> {
 }
 
 /**
- * Queues the captures held for want of credit (7.1.b) once credits arrive.
- * Best effort: the credits are granted either way, and a capture still held
- * is queued the next time its phone re-sends it.
+ * Queues the captures held for want of credit (7.1.b): after a purchase, and
+ * before a workspace's next new snap is accepted (which also covers teen
+ * spaces, voucher credits and a resume that failed here). Best effort: the
+ * credits or the new snap go through either way.
  */
 export async function resumeAfterCredits(userId: string, tenantId: string): Promise<void> {
   try {
-    const queued = await resumeHeldCaptures(userId, tenantId);
+    const queued = await resumeHeldCaptures(userId, tenantId, config().EXTRACTION_DAILY_BUDGET);
     if (queued > 0) new Logger('Credits').log(`queued ${queued} held capture(s) for tenant ${tenantId}`);
   } catch (error) {
     new Logger('Credits').error(`could not queue held captures for tenant ${tenantId}: ${String(error)}`);
