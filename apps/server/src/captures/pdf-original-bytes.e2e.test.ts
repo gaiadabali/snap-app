@@ -31,9 +31,9 @@ const USER = 'e8e8e8e8-0000-4000-8000-000000000002';
 /** A minimal, valid, hand-built multi-page PDF — same construction as
  *  `statement-caps.e2e.test.ts`'s fixture, so this suite proves something
  *  about the real endpoint rather than about a library-generated PDF. */
-function fixturePdf(pageCount: number): Buffer {
+function fixturePdf(pageCount: number, label = 'Original-bytes fixture'): Buffer {
   const contentStreams = Array.from({ length: pageCount }, (_, i) => {
-    const text = `Original-bytes fixture, page ${i + 1} of ${pageCount}`;
+    const text = `${label}, page ${i + 1} of ${pageCount}`;
     const escaped = text.replace(/[()\\]/g, (c) => `\\${c}`);
     return `BT /F1 10 Tf 20 270 Td (${escaped}) Tj ET`;
   });
@@ -84,6 +84,7 @@ describeIfDb('the raw PDF is actually persisted at original_storage_key', () => 
     process.env.ADMIN_KMS_MASTER_KEY ??= '11'.repeat(32);
 
     admin = await provisionTenant({
+      scanCredits: 100,
       tenantId: TENANT,
       name: 'Original Bytes Test Co',
       users: [{ id: USER, role: 'owner' }],
@@ -151,8 +152,28 @@ describeIfDb('the raw PDF is actually persisted at original_storage_key', () => 
     return rows[0]!.original_storage_key;
   }
 
-  it('leaves the real PDF bytes at original_storage_key — not merely present, but parseable', async () => {
+  it('refuses a PDF of more than one page — one page per snap — and stores nothing (0.11.b)', async () => {
     const pdf = fixturePdf(3);
+    const { uploadUrl, captureId } = await registerPdfCapture(pdf);
+    const keyBefore = await originalStorageKeyFor(captureId);
+
+    const res = await app.inject({
+      method: 'PUT',
+      url: uploadUrl,
+      headers: { ...auth(), 'content-type': 'application/pdf' },
+      payload: pdf,
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.json()).toMatchObject({ error: 'one_page_per_snap', message: expect.stringContaining('3 pages') });
+    expect(await originalStorageKeyFor(captureId)).toBe(keyBefore);
+    const pages = await admin.query(`select count(*)::int as n from capture_pages where capture_id = $1`, [captureId]);
+    expect(pages.rows[0].n).toBe(0);
+    const spends = await admin.query(`select count(*)::int as n from credit_spends where capture_id = $1`, [captureId]);
+    expect(spends.rows[0].n).toBe(0);
+  });
+
+  it('leaves the real PDF bytes at original_storage_key — not merely present, but parseable', async () => {
+    const pdf = fixturePdf(1);
     const { uploadUrl, captureId } = await registerPdfCapture(pdf);
 
     const res = await app.inject({
@@ -166,16 +187,16 @@ describeIfDb('the raw PDF is actually persisted at original_storage_key', () => 
     const key = await originalStorageKeyFor(captureId);
 
     // Not just "a file exists" — bytes read back from that exact key must
-    // themselves parse as a 3-page PDF, the same document that was uploaded.
+    // themselves parse as the same PDF that was uploaded.
     const stored = getStored(key);
     expect(stored.subarray(0, 5).toString('latin1')).toBe('%PDF-');
     const rendered = await demuxPdf(stored);
-    expect(rendered).toHaveLength(3);
+    expect(rendered).toHaveLength(1);
     expect(stored.equals(pdf)).toBe(true);
   });
 
   it('a retried PUT of the same PDF does not corrupt or duplicate the original', async () => {
-    const pdf = fixturePdf(2);
+    const pdf = fixturePdf(1, 'Retried PUT fixture');
     const { uploadUrl, captureId } = await registerPdfCapture(pdf);
 
     const first = await app.inject({
@@ -197,5 +218,13 @@ describeIfDb('the raw PDF is actually persisted at original_storage_key', () => 
     const key = await originalStorageKeyFor(captureId);
     const stored = getStored(key);
     expect(stored.equals(pdf)).toBe(true);
+    // Queued, and paid for, once.
+    const jobs = await admin.query(
+      `select count(*)::int as n from jobs where kind = 'extract' and payload->>'captureId' = $1`,
+      [captureId],
+    );
+    expect(jobs.rows[0].n).toBe(1);
+    const spends = await admin.query(`select count(*)::int as n from credit_spends where capture_id = $1`, [captureId]);
+    expect(spends.rows[0].n).toBe(1);
   });
 });

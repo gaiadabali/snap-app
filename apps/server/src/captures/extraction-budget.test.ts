@@ -56,6 +56,7 @@ describeIfDb('the daily extraction budget at intake', () => {
 
   beforeAll(async () => {
     admin = await provisionTenant({
+      scanCredits: 100,
       tenantId: TENANT,
       name: 'Budget Test Co',
       users: [{ id: USER, role: 'owner' }],

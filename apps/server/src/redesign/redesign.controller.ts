@@ -18,7 +18,16 @@ import type {
   UsagePeriod,
 } from '@snap/api-contract';
 
-import { CurrentUser, SessionGuard, type AuthUser } from '../common/auth.guard.js';
+import {
+  CurrentUser,
+  MembershipGuard,
+  SessionGuard,
+  WorkspaceId,
+  type AuthUser,
+} from '../common/auth.guard.js';
+import { listCreditUsage, listCreditUsageMonths } from '../credits/credits.repo.js';
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * ⚠ STUBS. Everything in this file is in-process state, not a database.
@@ -47,7 +56,7 @@ import { CurrentUser, SessionGuard, type AuthUser } from '../common/auth.guard.j
  * preferences are NOT hidden: they are still shown, and they still reset to
  * their defaults on a restart.
  *
- * `GET /v1/usage` is the exception worth reading closely — see its comment.
+ * `GET /v1/usage` is the exception: it reads `credit_spends` (7.1.e).
  */
 
 /* ── In-process state, keyed by user ──────────────────────────────────────── */
@@ -106,28 +115,56 @@ const PRIVACY_KEYS = Object.keys(DEFAULT_PRIVACY) as (keyof PrivacySettings & st
 
 @ApiTags('usage')
 @Controller('v1/usage')
-@UseGuards(SessionGuard)
+@UseGuards(SessionGuard, MembershipGuard)
 export class UsageController {
   /**
-   * ⚠ Returns an EMPTY period, always.
-   *
-   * This is deliberate and is the honest answer until the projection exists.
-   * A real implementation reads `usage_grants` consumption for credits,
-   * grouped by month. There is no points half: Snap Apps points are retired
-   * (D33) and YourTal's points are shown from `GET /v1/yourtal/link`. Inventing rows here would
-   * put fabricated spend in front of someone reconciling a balance, which is
-   * worse than an empty month.
+   * What this workspace's scans spent, one month at a time (group plan
+   * 7.1.e), from `credit_spends`. Points are retired here (D33; YourTal's are
+   * shown from `GET /v1/yourtal/link`), so `kind=points` is always empty.
+   * Paged within the month: `limit` (default 100, at most 500) and `before`.
    */
   @Get()
-  @ApiOperation({ summary: 'Itemised usage for a month (STUB — returns empty)' })
-  period(@Query('kind') kind: UsageKind, @Query('month') month: string): UsagePeriod {
-    return { month, kind: kind === 'points' ? 'points' : 'credits', total: 0, items: [] };
+  @ApiOperation({ summary: 'Itemised scan credit spend for one month (YYYY-MM)' })
+  async period(
+    @CurrentUser() user: AuthUser,
+    @WorkspaceId() tenantId: string,
+    @Query('kind') kind: UsageKind,
+    @Query('month') month: string,
+    @Query('limit') limitParam?: string,
+    @Query('before') before?: string,
+  ): Promise<UsagePeriod> {
+    if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month ?? '')) {
+      throw new BadRequestException('month must be YYYY-MM.');
+    }
+    if (before !== undefined && !UUID.test(before)) throw new BadRequestException('before is not valid.');
+    if (kind === 'points') return { month, kind: 'points', total: 0, items: [], nextBefore: null };
+    const parsed = Number(limitParam);
+    const limit = Number.isInteger(parsed) && parsed > 0 ? Math.min(parsed, 500) : 100;
+    const page = await listCreditUsage(user.userId, tenantId, month, limit, before ?? null);
+    return {
+      month,
+      kind: 'credits',
+      total: page.total,
+      items: page.items.map((r) => ({
+        id: r.id,
+        label: r.label,
+        occurredAt: r.occurred_at,
+        amount: r.amount,
+        ...(r.refunded ? { refunded: true } : {}),
+      })),
+      nextBefore: page.nextBefore,
+    };
   }
 
   @Get('months')
-  @ApiOperation({ summary: 'Months with usage to show (STUB — returns none)' })
-  months(): string[] {
-    return [];
+  @ApiOperation({ summary: 'Months with scan credit spend, newest first' })
+  async months(
+    @CurrentUser() user: AuthUser,
+    @WorkspaceId() tenantId: string,
+    @Query('kind') kind?: UsageKind,
+  ): Promise<string[]> {
+    if (kind === 'points') return [];
+    return listCreditUsageMonths(user.userId, tenantId);
   }
 }
 

@@ -53,6 +53,7 @@
     "worker": "tsx scripts/worker.ts",
     "seed": "tsx scripts/seed.ts",
     "bench:engine": "tsx scripts/bench-engine.ts",
+    "bench:cost": "tsx bench/scan-cost.ts",
     "yourtal:oidc-key": "tsx scripts/yourtal-oidc-key.ts"
   }
 }

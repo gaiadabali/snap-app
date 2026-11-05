@@ -137,6 +137,7 @@ function RootChrome() {
           <Stack.Screen name="help" options={{ headerShown: false }} />
           <Stack.Screen name="export" options={{ headerShown: false }} />
           <Stack.Screen name="goal/[id]" options={{ headerShown: false }} />
+          <Stack.Screen name="delete-account" options={{ headerShown: false }} />
         </Stack>
         </NavFrame>
           </View>

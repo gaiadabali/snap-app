@@ -1,6 +1,7 @@
 import 'server-only';
 
 import type {
+  AdminAiCostDay,
   AdminAiKeyRef,
   AdminAiProviderConfig,
   AdminAiUsageStat,
@@ -18,6 +19,7 @@ import { adminApi, capabilityGated, type Gated } from './client';
 // Re-exported so pages/components under `(governance)/` can type against
 // these without every file importing from `@snap/api-contract` directly.
 export type {
+  AdminAiCostDay,
   AdminAiKeyRef,
   AdminAiProviderConfig,
   AdminAiUsageStat,
@@ -127,6 +129,10 @@ export async function revokeAiKey(
 
 export async function getAiUsage(): Promise<Gated<AdminAiUsageStat[]>> {
   return capabilityGated(() => adminApi<AdminAiUsageStat[]>('/v1/admin/ai/usage'));
+}
+
+export async function getAiCostDaily(): Promise<Gated<AdminAiCostDay[]>> {
+  return capabilityGated(() => adminApi<AdminAiCostDay[]>('/v1/admin/ai/usage/daily'));
 }
 
 // ─────────────────────────────────────────────────────────────────────────

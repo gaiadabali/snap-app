@@ -53,6 +53,14 @@ truck stop at 2am, not a flat scan. Eight checkable fields.
 
 **Decision: `minimax-m3` primary, `kimi-k3` escalation, `gemma4:31b` fallback.**
 
+> **Superseded by cost (group plan Phase 7, 2026-11-05).** The live vision chain
+> in `ai/router.ts` is `gemma4:31b`, `minimax-m3`, `qwen3.5:397b`, `kimi-k3`:
+> Kimi K3 costs A$0.034 a page, about what a credit nets, so it goes last. A
+> retried job tries only the first model. Each model carries a `provider.max_price`
+> ceiling, and every run stores what it cost in `extraction_runs.cost_micros`
+> (AUD, from OpenRouter's `usage.cost`). Re-measure with `pnpm --filter
+> @snap/server bench:cost`.
+
 GLM and DeepSeek are text-only and cannot do this job at all — worth knowing
 before building on either.
 

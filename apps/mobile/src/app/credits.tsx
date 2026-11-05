@@ -149,6 +149,7 @@ export default function CreditsScreen() {
               );
             })}
             {packs?.length === 0 ? <Small>No packs are on sale right now.</Small> : null}
+            <Small>Snaps waiting for credits are read first, one credit each.</Small>
           </View>
         </View>
 

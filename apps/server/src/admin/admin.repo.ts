@@ -4,6 +4,7 @@ import { sql } from 'drizzle-orm';
 
 import { getDb } from '../db.js';
 import type {
+  AdminAiCostDay,
   AdminAiProviderConfig,
   AdminAiUsageStat,
   AdminAnalyticsOverview,
@@ -628,6 +629,29 @@ export async function getAiUsageSummary(staffUserId: string): Promise<AdminAiUsa
       failed: Number(r.failed),
       costAud: r.cost_aud,
       avgLatencyMs: r.avg_latency_ms == null ? null : Number(r.avg_latency_ms),
+    }));
+  });
+}
+
+export async function getAiCostDaily(
+  staffUserId: string,
+): Promise<AdminAiCostDay[]> {
+  return callAs(staffUserId, async (tx) => {
+    const rows = await tx.execute<{
+      day: string;
+      runs: string;
+      scans: string;
+      cost_aud: string;
+      cost_per_scan_aud: string;
+    }>(
+      sql`select day::text, runs, scans, cost_aud, cost_per_scan_aud from admin_ai_cost_daily()`,
+    );
+    return rows.rows.map((r) => ({
+      day: r.day,
+      runs: Number(r.runs),
+      scans: Number(r.scans),
+      costAud: r.cost_aud,
+      costPerScanAud: r.cost_per_scan_aud,
     }));
   });
 }

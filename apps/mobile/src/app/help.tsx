@@ -19,7 +19,7 @@ import { space, type, usePalette } from '@/theme';
 const TOPICS: Array<{ q: string; a: string }> = [
   {
     q: 'What is a credit, exactly?',
-    a: 'One credit is one page. A single receipt costs one; a two-page invoice costs two. A scan that fails to read costs nothing — you are never charged for our mistake.',
+    a: 'One snap is one page and costs one credit, so a two-page invoice is two snaps. A file with more than one page is refused: send each page on its own. A scan that fails to read gives its credit back. When credits run out, new snaps are refused until you buy more, and anything already sent is kept.',
   },
   {
     q: 'Why does a receipt need checking?',

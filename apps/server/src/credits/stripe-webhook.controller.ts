@@ -1,6 +1,7 @@
 import { BadRequestException, Controller, HttpCode, Logger, Post, Req } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
+import { resumeAfterCredits } from './credits.controller.js';
 import {
   fulfilCreditPurchaseFromProvider,
   CreditPurchaseNotPendingError,
@@ -152,6 +153,7 @@ export class StripeWebhookController {
         return { received: true };
       }
       this.logger.log(`granted ${row.credits} credits for purchase ${purchaseId} (${providerRef})`);
+      await resumeAfterCredits(userId, tenantId);
     } catch (error) {
       if (error instanceof DuplicateCreditPaymentError) {
         // Money taken through a session this order did not open: nothing is

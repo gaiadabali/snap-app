@@ -14,9 +14,10 @@ import { enterTenantAsWorker, type WorkerActor } from '../tenant-entry.js';
  *
  * Which credit: free grants first (the signup bonus first among them), then
  * bought ones (a grant backed by a paid `credit_purchases` row), oldest
- * `granted_at` first, ties by id. With no usable grant the spend is still
- * recorded, with no grant, and the scan still goes ahead: refusing a scan when
- * credits run out is 7.1.b, not built yet.
+ * `granted_at` first, ties by id. With no usable grant nothing is spent or
+ * queued: `QuotaExhaustedError` rolls the caller's transaction back (7.1.b).
+ * The capture itself is never touched, so a stored capture waits, and is
+ * queued by the next `enqueueExtraction` once there is a credit.
  *
  * Only a PAID spend that was not refunded lets the receipt earn YourTal points
  * (`readPaidScan`, read by `saveExtraction`; group plan 2.5.f).
@@ -25,6 +26,37 @@ import { enterTenantAsWorker, type WorkerActor } from '../tenant-entry.js';
 export type ScanSpend =
   | { alreadySpent: true }
   | { alreadySpent: false; grantId: string | null; grantSource: string | null; paid: boolean };
+
+/**
+ * No credit left to pay for a scan (7.1.b). Thrown inside the transaction so
+ * nothing is spent, queued or (at registration) stored. `teen`: the space's
+ * scans are paid from a parent's workspace, which is the one that is out.
+ */
+export class QuotaExhaustedError extends Error {
+  constructor(readonly teen: boolean) {
+    super('no scan credits left');
+    this.name = 'QuotaExhaustedError';
+  }
+}
+
+/**
+ * Credits this workspace can spend now: its own live `scans` grants, or, in a
+ * teen's space, the parent's (0045). Read inside a tenant transaction.
+ */
+export async function creditsLeft(tx: Tx): Promise<{ left: number; teen: boolean }> {
+  const rows = await tx.execute<{ left: number; teen: boolean }>(sql`
+    select coalesce(teen_space_credits(), (
+             select coalesce(sum(remaining), 0)::int
+               from usage_grants
+              where tenant_id = current_tenant_id()
+                and metric = 'scans'
+                and remaining > 0
+                and (expires_at is null or expires_at > now())
+           )) as left,
+           teen_space_credits() is not null as teen
+  `);
+  return rows.rows[0] ?? { left: 0, teen: false };
+}
 
 /** Bounded, and never reached in practice: see the loop below. */
 const MAX_TAKE_ATTEMPTS = 5;
@@ -86,11 +118,13 @@ export async function spendScanCredit(
     select teen_space, grant_id from teen_space_take_credit(${input.captureId})
   `);
   if (teen.rows[0]?.teen_space) {
+    // The parent is out of credits: refused, and the transaction (with the
+    // function's own teen_space_spends row) rolls back.
+    if (!teen.rows[0].grant_id) throw new QuotaExhaustedError(true);
     await tx.execute(sql`
       insert into credit_spends (tenant_id, capture_id, user_id, grant_id, grant_source, paid)
       values (current_tenant_id(), ${input.captureId}, ${input.userId}, null, null, false)
     `);
-    // The parent's grant, or null when the parent had no credit left.
     return { alreadySpent: false, grantId: teen.rows[0].grant_id, grantSource: null, paid: false };
   }
 
@@ -130,7 +164,9 @@ export async function spendScanCredit(
     const left = await tx.execute<{ any: boolean }>(sql`select exists (${usableGrants}) as any`);
     if (!left.rows[0]?.any) decided = true;
   }
-  if (!decided) {
+  if (!taken) {
+    // Out of credits (7.1.b): nothing spent, nothing queued.
+    if (decided) throw new QuotaExhaustedError(false);
     // Rolls the transaction back, job insert included: the capture stays
     // stored and un-queued rather than being queued against a wrong record.
     throw new Error(`could not take a scan credit for capture ${input.captureId} after ${MAX_TAKE_ATTEMPTS} attempts`);
@@ -140,15 +176,9 @@ export async function spendScanCredit(
   // grant itself; these values must agree with it or the insert is refused.
   await tx.execute(sql`
     insert into credit_spends (tenant_id, capture_id, user_id, grant_id, grant_source, paid)
-    values (current_tenant_id(), ${input.captureId}, ${input.userId},
-            ${taken?.id ?? null}, ${taken?.source ?? null}, ${taken?.paid ?? false})
+    values (current_tenant_id(), ${input.captureId}, ${input.userId}, ${taken.id}, ${taken.source}, ${taken.paid})
   `);
-  return {
-    alreadySpent: false,
-    grantId: taken?.id ?? null,
-    grantSource: taken?.source ?? null,
-    paid: taken?.paid ?? false,
-  };
+  return { alreadySpent: false, grantId: taken.id, grantSource: taken.source, paid: taken.paid };
 }
 
 /**

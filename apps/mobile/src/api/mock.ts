@@ -2191,6 +2191,10 @@ export class MockApi implements SnapApi {
   async signOutEverywhere(): Promise<void> {
     await this.signOut();
   }
+
+  async deleteAccount(): Promise<void> {
+    await this.signOut();
+  }
 }
 
 

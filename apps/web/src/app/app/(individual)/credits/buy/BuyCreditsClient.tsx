@@ -72,7 +72,7 @@ export function BuyCreditsClient({
           </div>
           <p className="max-w-[46ch] text-[13px] leading-relaxed text-[var(--color-ink-muted)]">
             One scan costs one credit. Credits never expire and are shared across everyone in this
-            workspace.
+            workspace. Snaps waiting for credits are read first, one credit each.
           </p>
         </div>
       </Card>

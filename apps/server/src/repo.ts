@@ -11,10 +11,11 @@ import type {
 import type { ConsumptionTaxSpec, TaxRules } from '@snap/tax-rules';
 import { sql } from 'drizzle-orm';
 
-import { readPaidScan, spendScanCredit } from './credits/spend.js';
+import { creditsLeft, QuotaExhaustedError, readPaidScan, spendScanCredit } from './credits/spend.js';
 import { getDb } from './db.js';
 import type { ReceiptContent, ReceiptOriginal } from './yourtal/external-ref.js';
 import { queueReceiptReport } from './yourtal/outbox.repo.js';
+import type { ModelCall } from './extraction/call-cost.js';
 import { maskCardLast4, type ValidatedExtraction } from './extraction/types.js';
 import { enterTenant, enterTenantAsWorker, type TenantActor, type WorkerActor } from './tenant-entry.js';
 
@@ -259,6 +260,14 @@ function planFromExisting(
  * set from PAGE 1 ONLY (migration 0018) — every existing reader of a capture
  * keeps working against a single-page shape without knowing pages exist.
  */
+/** A new capture of more than one page: one snap is one page (founder 0.11.b). */
+export class OnePagePerSnapError extends Error {
+  constructor() {
+    super('one page per snap');
+    this.name = 'OnePagePerSnapError';
+  }
+}
+
 export async function createCapture(
   userId: string,
   tenantId: string,
@@ -266,6 +275,10 @@ export async function createCapture(
     pages: CapturePageInput[];
     capturedAt?: string;
     legibilityScore?: number;
+    /** Refuse a NEW capture (never a duplicate) when no credit is left (7.1.b). */
+    requireCredit?: boolean;
+    /** Refuse a NEW capture of more than one page (founder 0.11.b); a resend of one is a duplicate. */
+    onePageOnly?: boolean;
   },
 ): Promise<{ capture: CaptureRow; duplicate: boolean; pages: CapturePagePlan[] }> {
   return withTenantAs(getDb(), userId, tenantId, async (tx) => {
@@ -285,6 +298,14 @@ export async function createCapture(
         duplicate: true,
         pages: planFromExisting(input.pages.length, existingPages),
       };
+    }
+
+    // Throwing rolls back before anything is stored. Advisory, not the money
+    // guard: the spend in `enqueueExtraction` is what refuses atomically.
+    if (input.onePageOnly && input.pages.length > 1) throw new OnePagePerSnapError();
+    if (input.requireCredit) {
+      const credit = await creditsLeft(tx);
+      if (credit.left <= 0) throw new QuotaExhaustedError(credit.teen);
     }
 
     const id = randomUUID();
@@ -583,10 +604,11 @@ export async function markCaptureStored(
  *
  * The scan spends one credit HERE, in the same transaction as the job insert
  * (group plan 7.1.a, founder decision 0.11): a capture is queued if and only
- * if its spend is recorded. Free credits go first, then bought ones; with no
- * credit left the spend is recorded without one and the scan still goes
- * ahead (refusing it is 7.1.b). Calling this twice for a capture never spends
- * twice. See `credits/spend.ts`.
+ * if its spend is recorded. Free credits go first, then bought ones. With no
+ * credit left it throws `QuotaExhaustedError` and nothing is spent or queued
+ * (7.1.b); the stored capture waits for the next call. Idempotent: a capture
+ * already spent for is neither spent for nor queued again. See
+ * `credits/spend.ts`.
  */
 export async function enqueueExtraction(
   userId: string,
@@ -594,12 +616,83 @@ export async function enqueueExtraction(
   captureId: string,
 ): Promise<void> {
   await withTenantAs(getDb(), userId, tenantId, async (tx) => {
-    await spendScanCredit(tx, { tenantId, userId, captureId });
+    const spend = await spendScanCredit(tx, { tenantId, userId, captureId });
+    if (spend.alreadySpent) return;
     await tx.execute(sql`
       insert into jobs (id, tenant_id, kind, payload)
       values (${randomUUID()}, ${tenantId}, 'extract', ${JSON.stringify({ captureId })}::jsonb)
     `);
   });
+}
+
+/** The MIME type the capture was registered with (its first page's). */
+export async function getCaptureMimeType(userId: string, tenantId: string, captureId: string): Promise<string | null> {
+  return withTenantAs(getDb(), userId, tenantId, async (tx) => {
+    const rows = await tx.execute<{ mime: string }>(sql`
+      select original_mime_type as mime from captures where id = ${captureId}
+    `);
+    return rows.rows[0]?.mime ?? null;
+  });
+}
+
+/**
+ * Has this capture already been queued (it has a spend) or got past intake?
+ * The callers' cheap check before the daily budget and the spend; the spend
+ * itself is idempotent either way.
+ */
+export async function isCaptureQueued(userId: string, tenantId: string, captureId: string): Promise<boolean> {
+  return withTenantAs(getDb(), userId, tenantId, async (tx) => {
+    const rows = await tx.execute<{ queued: boolean }>(sql`
+      select (c.status <> 'received'
+              or exists (select 1 from credit_spends s where s.capture_id = c.id)) as queued
+        from captures c
+       where c.id = ${captureId}
+    `);
+    return rows.rows[0]?.queued ?? false;
+  });
+}
+
+/**
+ * Queues the captures that were stored while the workspace had no credit
+ * (7.1.b), oldest first, one credit each, until the credits or the day's
+ * extraction budget run out. Called after a purchase and before a workspace's
+ * next new snap is accepted. A held capture: every page stored, never queued
+ * (no spend), not a CSV (read on upload, never spends), received in the last
+ * 30 days. Older ones stay stored, unread: nobody expects them read now.
+ * Returns how many were queued.
+ */
+export async function resumeHeldCaptures(
+  userId: string,
+  tenantId: string,
+  // `config().EXTRACTION_DAILY_BUDGET`, passed in: repo.ts does not read config.
+  dailyBudget: number,
+): Promise<number> {
+  const held = await withTenantAs(getDb(), userId, tenantId, async (tx) => {
+    const rows = await tx.execute<{ id: string }>(sql`
+      select c.id
+        from captures c
+       where c.status = 'received'
+         and c.received_at > now() - interval '30 days'
+         and c.original_mime_type <> 'text/csv'
+         and not exists (select 1 from credit_spends s where s.capture_id = c.id)
+         and (select count(*) from capture_pages p where p.capture_id = c.id) >= greatest(c.page_count, 1)
+       order by c.received_at, c.id
+       limit 200
+    `);
+    return rows.rows.map((r) => r.id);
+  });
+  let queued = 0;
+  for (const captureId of held) {
+    if ((await countExtractionsToday(userId, tenantId)) >= dailyBudget) break;
+    try {
+      await enqueueExtraction(userId, tenantId, captureId);
+      queued += 1;
+    } catch (error) {
+      if (error instanceof QuotaExhaustedError) break;
+      throw error;
+    }
+  }
+  return queued;
 }
 
 /**
@@ -1442,6 +1535,8 @@ export async function saveExtraction(
     latencyMs: number;
     inputTokens: number | null;
     outputTokens: number | null;
+    /** AUD micros the call cost, when the provider reports it (plan 7.2). */
+    costMicros?: number | null;
     raw: string;
   },
   // The same rule set `worker.ts` already resolved to run `validate()` against
@@ -1548,11 +1643,12 @@ export async function saveExtraction(
       insert into extraction_runs (
         id, tenant_id, capture_id, engine, model_id, prompt_version, schema_version,
         tier, status, started_at, finished_at, latency_ms, input_tokens, output_tokens,
-        raw_response
+        cost_micros, raw_response
       ) values (
         ${runId}, ${tenantId}, ${captureId}, ${engineFor(meta.model)}, ${meta.model}, ${meta.promptVersion},
         ${e.schemaVersion}, 1, 'succeeded', now(), now(), ${meta.latencyMs},
-        ${meta.inputTokens}, ${meta.outputTokens}, ${JSON.stringify({ raw: meta.raw })}::jsonb
+        ${meta.inputTokens}, ${meta.outputTokens}, ${meta.costMicros ?? null},
+        ${JSON.stringify({ raw: meta.raw })}::jsonb
       )
     `);
 
@@ -1870,7 +1966,11 @@ export async function saveExtraction(
   return { documentId };
 }
 
-/** Records why an extraction failed, so a retry has something to read. */
+/**
+ * Records why an extraction failed, so a retry has something to read. One row
+ * per failed model call (plan 7.2.b); `call` carries what that call cost when
+ * the provider answered before the failure, and is null when it never did.
+ */
 export async function saveExtractionFailure(
   worker: WorkerActor,
   tenantId: string,
@@ -1878,17 +1978,68 @@ export async function saveExtractionFailure(
   stage: string,
   error: string,
   model: string,
+  call?: ModelCall | null,
 ): Promise<void> {
   await enterTenantAsWorker(worker, tenantId, async (tx) => {
     await tx.execute(sql`
       insert into extraction_runs (
         id, tenant_id, capture_id, engine, model_id, prompt_version, schema_version,
-        tier, status, error, started_at, finished_at
+        tier, status, error, started_at, finished_at, latency_ms, input_tokens, output_tokens,
+        cost_micros
       ) values (
         ${randomUUID()}, ${tenantId}, ${captureId}, ${engineFor(model)}, ${model}, 'n/a', '1',
-        1, 'failed', ${`${stage}: ${error}`.slice(0, 2000)}, now(), now()
+        1, 'failed', ${`${stage}: ${error}`.slice(0, 2000)}, now(), now(), ${call?.latencyMs ?? null},
+        ${call?.inputTokens ?? null}, ${call?.outputTokens ?? null}, ${call?.costMicros ?? null}
       )
     `);
+  });
+}
+
+/** Registry ids of the models that already have a failed run for this capture (plan 7.3.b). */
+export async function failedModelsFor(
+  worker: WorkerActor,
+  tenantId: string,
+  captureId: string,
+): Promise<Set<string>> {
+  return enterTenantAsWorker(worker, tenantId, async (tx) => {
+    const rows = await tx.execute<{ model_id: string }>(sql`
+      select distinct model_id from extraction_runs
+       where capture_id = ${captureId} and status = 'failed'
+    `);
+    return new Set(rows.rows.map((r) => r.model_id));
+  });
+}
+
+/**
+ * One succeeded run per answered model call, for work that has no document row
+ * of its own to carry the run: a statement's chunk calls (plan 7.2.b). Calls
+ * that ended in an error are not written here; the failure path records those.
+ */
+export async function saveModelCalls(
+  worker: WorkerActor,
+  tenantId: string,
+  captureId: string,
+  /** The registry model id, stored on every row; `c.model` may be the endpoint's own name. */
+  model: string,
+  calls: readonly ModelCall[],
+  promptVersion: string,
+): Promise<void> {
+  const ok = calls.filter((c) => !c.error);
+  if (ok.length === 0) return;
+  await enterTenantAsWorker(worker, tenantId, async (tx) => {
+    for (const c of ok) {
+      await tx.execute(sql`
+        insert into extraction_runs (
+          id, tenant_id, capture_id, engine, model_id, prompt_version, schema_version,
+          tier, status, started_at, finished_at, latency_ms, input_tokens, output_tokens,
+          cost_micros
+        ) values (
+          ${randomUUID()}, ${tenantId}, ${captureId}, ${engineFor(model)}, ${model}, ${promptVersion}, '1',
+          1, 'succeeded', now(), now(), ${c.latencyMs}, ${c.inputTokens}, ${c.outputTokens},
+          ${c.costMicros}
+        )
+      `);
+    }
   });
 }
 

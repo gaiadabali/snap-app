@@ -164,6 +164,16 @@ async function openPdf(bytes: Buffer) {
   return { doc, loadingTask };
 }
 
+/** How many pages a PDF has, without rendering any. Throws as `demuxPdf` does. */
+export async function countPdfPages(bytes: Buffer): Promise<number> {
+  const { doc, loadingTask } = await openPdf(bytes);
+  try {
+    return doc.numPages;
+  } finally {
+    await loadingTask.destroy();
+  }
+}
+
 export async function demuxPdf(bytes: Buffer): Promise<DemuxedPage[]> {
   const { doc, loadingTask } = await openPdf(bytes);
   try {

@@ -1468,6 +1468,18 @@ export interface AdminAiUsageStat {
   avgLatencyMs: number | null;
 }
 
+/** One row of `GET /v1/admin/ai/usage/daily`: a UTC day, newest first, last 30 days */
+export interface AdminAiCostDay {
+  /** YYYY-MM-DD */
+  day: string;
+  runs: number;
+  /** Distinct captures that had a model call that day, failed ones included. */
+  scans: number;
+  /** AUD, 4 decimal places: a scan costs about A$0.0005. */
+  costAud: MoneyString;
+  costPerScanAud: MoneyString;
+}
+
 /** Request body of `POST /v1/admin/operations/reextraction` */
 export interface AdminTriggerReextractionRequest {
   tenantId: string;
@@ -2071,10 +2083,12 @@ export interface UsageItem {
   label: string;
   occurredAt: IsoDate;
   /**
-   * Units moved, always POSITIVE. The sign is implied by `UsagePeriod.kind`
-   * plus the endpoint: this is a spend report, not a ledger.
+   * Units spent, never negative: this is a spend report, not a ledger. For
+   * credits, 1 per scan, or 0 when it was given back (`refunded`).
    */
   amount: number;
+  /** The scan could not be read and its credit was given back. */
+  refunded?: boolean;
 }
 
 /**
@@ -2088,8 +2102,12 @@ export interface UsagePeriod {
   /** `YYYY-MM`. */
   month: string;
   kind: UsageKind;
+  /** The whole month, not just this page of `items`. */
   total: number;
+  /** Newest first. */
   items: UsageItem[];
+  /** More items: pass as `before` for the next page. */
+  nextBefore?: string | null;
 }
 
 /**

@@ -271,6 +271,7 @@ describeIfDb('admin plane', () => {
         'manage_ai_config',
         () => c.query(`SELECT admin_ai_provider_upsert('ollama', 'admin-test-cfg', NULL, true)`),
       ],
+      ['manage_ai_config', () => c.query(`SELECT * FROM admin_ai_cost_daily()`)],
       [
         'manage_staff',
         () =>
@@ -321,6 +322,29 @@ describeIfDb('admin plane', () => {
       const r = await c.query('SELECT * FROM admin_analytics_overview()');
       expect(r.rows).toHaveLength(1);
       expect(Number(r.rows[0].tenant_count)).toBeGreaterThanOrEqual(2);
+    });
+
+    it('manage_ai_config: cost per day counts failed runs too and shows a sub-cent cost per scan (0054)', async () => {
+      await asSuperuser();
+      // One scan: a failed call that cost A$0.0004 and a succeeded one at A$0.0005.
+      for (const [status, micros] of [['failed', 400], ['succeeded', 500]] as const) {
+        await c.query(
+          `INSERT INTO extraction_runs (id, tenant_id, capture_id, engine, model_id, prompt_version,
+                                        schema_version, tier, status, started_at, finished_at, cost_micros)
+           VALUES (gen_random_uuid(), $1, $2, 'ocr_llm', 'admin-test-model', 'v', '1', 1, $3, now(), now(), $4)`,
+          [SUBJECT_TENANT, CAPTURE_ID, status, micros],
+        );
+      }
+      await asAppRw(STAFF_USER);
+      const today = (await c.query(`SELECT * FROM admin_ai_cost_daily()`)).rows[0];
+      expect(Number(today.scans)).toBeGreaterThanOrEqual(1);
+      expect(Number(today.cost_aud)).toBeGreaterThanOrEqual(0.0009);
+      expect(Number(today.cost_per_scan_aud)).toBeGreaterThan(0);
+
+      const model = (await c.query(`SELECT * FROM admin_ai_usage_summary() WHERE model_id = 'admin-test-model'`)).rows[0];
+      expect(Number(model.runs)).toBe(2);
+      // Both runs, not only the succeeded one.
+      expect(model.cost_aud).toBe('0.0009');
     });
 
     it('view_tenant_metadata: finds the fixture tenant by name and logs the detail view', async () => {
