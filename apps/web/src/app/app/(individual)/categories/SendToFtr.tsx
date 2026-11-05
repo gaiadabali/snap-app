@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { Card, buttonClasses } from '@/design/primitives';
 import { ftrSendMessage } from '@/lib/auth/yourtal-errors';
@@ -28,6 +28,9 @@ export function SendToFtr({
   reviewUrl?: string;
 }) {
   const [busy, setBusy] = useState(false);
+  // The result arrives with a redirect's first render, which screen readers often skip: move focus to it.
+  const resultRef = useRef<HTMLParagraphElement>(null);
+  useEffect(() => resultRef.current?.focus(), [result]);
   const [error, setError] = useState<string | null>(null);
 
   async function sendDirect() {
@@ -75,7 +78,7 @@ export function SendToFtr({
   }
 
   const fileButton = (
-    <button type="button" onClick={() => void send()} disabled={busy} className={buttonClasses(directSend ? 'secondary' : 'primary', 'md', directSend ? '!h-auto min-h-11 py-2 text-center' : '!h-auto min-h-11 py-2 text-center')}>
+    <button type="button" onClick={() => void send()} disabled={busy} className={buttonClasses(directSend ? 'secondary' : 'primary', 'md', '!h-auto min-h-11 py-2 text-center')}>
       {directSend ? 'Save as a file instead' : `Send ${financialYear} to Free Tax Returns`}
     </button>
   );
@@ -102,7 +105,7 @@ export function SendToFtr({
     <Card>
       <div className="flex flex-col gap-3">
         {result?.status === 'sent' ? (
-          <p role="status" className="text-[14px] font-medium">
+          <p ref={resultRef} tabIndex={-1} role="status" className="text-[14px] font-medium">
             Sent. Your {result.year} deductions are waiting in Free Tax Returns.{' '}
             {reviewUrl ? (
               <a href={reviewUrl} className="underline">
@@ -112,10 +115,10 @@ export function SendToFtr({
           </p>
         ) : null}
         {result?.status === 'cancelled' ? (
-          <p role="status" className="text-[14px] font-medium">Nothing was sent.</p>
+          <p ref={resultRef} tabIndex={-1} role="status" className="text-[14px] font-medium">Nothing was sent.</p>
         ) : null}
         {result?.status === 'failed' ? (
-          <p role="alert" className="text-[14px] text-[var(--color-risk)]">{ftrSendMessage(result.code)}</p>
+          <p ref={resultRef} tabIndex={-1} role="alert" className="text-[14px] text-[var(--color-risk)]">{ftrSendMessage(result.code)}</p>
         ) : null}
         <p className="max-w-prose text-[14px]">
           Your {financialYear} deductions go straight to Free Tax Returns. YourTal asks you to confirm,

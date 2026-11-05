@@ -6,17 +6,10 @@ import { createCategory, setBudget, setCategoryActive } from '@/lib/panels/categ
 import { getPermissions } from '@/lib/panels/permissions';
 import { loadWorkspace } from '@/lib/panels/workspace';
 import { CategoriesTable } from './CategoriesTable';
-import { SendToFtr, type FtrSendResult } from './SendToFtr';
+import { ftrResult } from './ftr-result';
+import { SendToFtr } from './SendToFtr';
 
 export const metadata = { title: 'Categories & budgets' };
-
-/** The callback's `?ftr=` (a code, never text) back into what to show. */
-function ftrResult(q: { ftr?: string; fy?: string; code?: string }): FtrSendResult | undefined {
-  if (q.ftr === 'sent' && q.fy && /^\d{4}-\d{2}$/.test(q.fy)) return { status: 'sent', year: q.fy };
-  if (q.ftr === 'cancelled') return { status: 'cancelled' };
-  if (q.ftr === 'failed') return { status: 'failed', code: q.code ?? null };
-  return undefined;
-}
 
 export default async function CategoriesPage({ searchParams }: { searchParams: Promise<{ ftr?: string; fy?: string; code?: string }> }) {
   const query = await searchParams;

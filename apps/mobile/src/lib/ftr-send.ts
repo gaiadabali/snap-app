@@ -8,7 +8,7 @@
  * none thrown; a code becomes a fixed sentence, never text from a URL or a body.
  * Nothing here logs the URL (it carries `state`), the code or an id.
  */
-import { redirectFor, type BrowserResult } from './yourtal-signin';
+import { parseReturnUrl, redirectFor, type BrowserResult } from './yourtal-signin';
 
 import { ftrSendMessage, NOT_SENT } from '@snap/api-contract/ftr-send';
 
@@ -42,16 +42,6 @@ const codeOf = (e: unknown): string | null =>
     ? (e as { code: string }).code
     : null;
 
-/** One query value, decoded; hand-parsed like `parseReturnUrl` (Hermes' `URL` is not reliable on every scheme). */
-function param(url: string, name: string): string | null {
-  const m = new RegExp(`[?&]${name}=([^&#]*)`).exec(url);
-  try {
-    return m ? decodeURIComponent(m[1]!.replace(/\+/g, ' ')) : null;
-  } catch {
-    return null;
-  }
-}
-
 export async function runFtrSend(
   deps: FtrSendDeps,
   options: { financialYear: string; locale?: 'en-AU' | 'id-ID' },
@@ -74,14 +64,15 @@ export async function runFtrSend(
   // Closed by the person, or by the system: nothing was confirmed, nothing sent.
   if (result.type !== 'success' || typeof result.url !== 'string') return { kind: 'cancelled' };
 
-  const state = param(result.url, 'state');
-  const error = param(result.url, 'error');
-  const code = param(result.url, 'code');
-  const iss = param(result.url, 'iss');
-  if (!state || (!error && (!code || !iss))) return failed('yourtal_failed');
+  const parsed = parseReturnUrl(result.url);
+  if (parsed.kind === 'invalid' || (parsed.kind === 'denied' && !parsed.state)) return failed('yourtal_failed');
 
   try {
-    const done = await deps.finish({ flowId: started.flowId, state, ...(error ? { error } : { code: code!, iss: iss! }) });
+    const done = await deps.finish(
+      parsed.kind === 'denied'
+        ? { flowId: started.flowId, state: parsed.state!, error: parsed.error }
+        : { flowId: started.flowId, state: parsed.state, code: parsed.code, iss: parsed.iss },
+    );
     return done.status === 'sent' ? { kind: 'sent', year: done.financialYear } : { kind: 'cancelled' };
   } catch (e) {
     // Cancel at YourTal's send screen comes back as `send_refused`: the same as cancelled.

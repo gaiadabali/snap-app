@@ -1,13 +1,13 @@
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { AccessibilityInfo, Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, type CategorySetting } from '@/api';
 import * as WebBrowser from 'expo-web-browser';
 import { SendToFtrCard, type FtrSendState } from '@/components/SendToFtrCard';
 import { FTR_REVIEW_URL } from '@/config';
-import { runFtrSend } from '@/lib/ftr-send';
+import { FTR_SEND_COPY, runFtrSend } from '@/lib/ftr-send';
 import { exportDeductionBundle } from '@/lib/share';
 import { AddButton, Empty, Field, Loading, Sheet } from '@/components/form';
 import { CategoryIcon, Raised } from '@/components/rich';
@@ -57,6 +57,14 @@ export default function CategoriesScreen() {
       setSending(false);
     }
   }
+
+  // iOS ignores accessibilityLiveRegion, so say the result out loud.
+  useEffect(() => {
+    if (!ftrState) return;
+    AccessibilityInfo.announceForAccessibility(
+      ftrState.kind === 'sent' ? FTR_SEND_COPY.sent(ftrState.year) : ftrState.kind === 'cancelled' ? FTR_SEND_COPY.cancelled : ftrState.message,
+    );
+  }, [ftrState]);
 
   async function sendDirect() {
     if (!ftr || sending) return;

@@ -23,7 +23,7 @@ export const YOURTAL_FLOW_COOKIE_OPTIONS = {
 };
 
 /**
- * Marks the flow above as a "send to Free Tax Returns" (group 4.8.a): the
+ * Holds the id of the flow above when it is a "send to Free Tax Returns" (group 4.8.a): the
  * callback sends such a flow to `/v1/ftr-sends/finish`, not the sign-in finish,
  * and deletes both cookies. Same options as the flow cookie, so it travels with it.
  */

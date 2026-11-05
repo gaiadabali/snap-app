@@ -4,6 +4,7 @@ import type { FtrSendStarted } from '@snap/api-contract';
 import { ApiError, api } from '@/lib/api/server';
 import { ftrSendMessage } from '@/lib/auth/yourtal-errors';
 import { FTR_SEND_COOKIE, YOURTAL_FLOW_COOKIE, YOURTAL_FLOW_COOKIE_OPTIONS } from '@/lib/auth/yourtal-flow';
+import { crossSite } from '@/lib/http/same-origin';
 import { loadWorkspace } from '@/lib/panels/workspace';
 
 /**
@@ -13,12 +14,7 @@ import { loadWorkspace } from '@/lib/panels/workspace';
  * the page to go to. Errors come back as a code with a fixed message.
  */
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  // Same-origin only: the Origin's host must be the one the browser used.
-  const origin = request.headers.get('origin');
-  const host = (request.headers.get('x-forwarded-host') ?? request.headers.get('host') ?? '').split(',')[0]?.trim();
-  if (request.headers.get('sec-fetch-site') === 'cross-site' || (origin !== null && (!host || !origin.endsWith(`//${host}`)))) {
-    return NextResponse.json({ message: ftrSendMessage(null) }, { status: 403 });
-  }
+  if (crossSite(request)) return NextResponse.json({ message: ftrSendMessage(null) }, { status: 403 });
 
   const { workspace } = await loadWorkspace('personal');
   if (!workspace) return NextResponse.json({ error: 'not_personal', message: ftrSendMessage('not_personal') }, { status: 404 });
@@ -34,7 +30,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     });
     const response = NextResponse.json({ url: started.url });
     response.cookies.set(YOURTAL_FLOW_COOKIE, started.flowId, YOURTAL_FLOW_COOKIE_OPTIONS);
-    response.cookies.set(FTR_SEND_COOKIE, '1', YOURTAL_FLOW_COOKIE_OPTIONS);
+    // The marker names its flow, so a leftover one never matches a later sign-in's flow.
+    response.cookies.set(FTR_SEND_COOKIE, started.flowId, YOURTAL_FLOW_COOKIE_OPTIONS);
     response.headers.set('cache-control', 'private, no-store');
     return response;
   } catch (e) {

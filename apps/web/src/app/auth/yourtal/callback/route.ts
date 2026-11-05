@@ -39,7 +39,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const flowId = request.cookies.get(YOURTAL_FLOW_COOKIE)?.value;
 
   // A send to Free Tax Returns (group 4.8.a) comes back here too; its marker cookie says so.
-  if (flowId && request.cookies.get(FTR_SEND_COOKIE)?.value === '1') return finishSend(request, flowId);
+  if (flowId && request.cookies.get(FTR_SEND_COOKIE)?.value === flowId) return finishSend(request, flowId);
 
   const providerError = params.get('error');
   if (providerError) {

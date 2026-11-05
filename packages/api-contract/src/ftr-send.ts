@@ -1,6 +1,8 @@
+import type { FtrSendErrorCode } from './index';
+
 /** The fixed words for a send to Free Tax Returns (group 4.8.a) that did not go through, keyed by the API's error code. Web and phone share them; no text from a URL or a body is ever shown. */
 export const NOT_SENT = 'Nothing was sent.';
-const MESSAGES: Record<string, string> = {
+const MESSAGES: Record<Exclude<FtrSendErrorCode, 'internal'>, string> = {
   not_configured: `Sending to Free Tax Returns isn't available right now. ${NOT_SENT}`,
   not_personal: `Only your personal space can send to Free Tax Returns. ${NOT_SENT}`,
   not_owner: `Only the owner of this space can send to Free Tax Returns. ${NOT_SENT}`,
@@ -14,6 +16,8 @@ const MESSAGES: Record<string, string> = {
   invalid_flow: `That send took too long or was already used. Start again. ${NOT_SENT}`,
   send_expired: `That send took too long. Start again. ${NOT_SENT}`,
   yourtal_failed: `YourTal could not confirm the send. Try again. ${NOT_SENT}`,
+  email_unverified: `Confirm your email at YourTal first. ${NOT_SENT}`,
+  invalid_return_to: `That send couldn't start. ${NOT_SENT}`,
   yourtal_unavailable: `YourTal isn't answering right now. Try again in a few minutes. ${NOT_SENT}`,
   ftr_unavailable: `Free Tax Returns isn't answering right now. Try again in a few minutes. ${NOT_SENT}`,
   wrong_account: `You confirmed with a different YourTal account from the one you use here. ${NOT_SENT}`,
@@ -25,6 +29,6 @@ const MESSAGES: Record<string, string> = {
 const GENERIC = `Something went wrong. ${NOT_SENT}`;
 
 export function ftrSendMessage(code: string | null | undefined): string {
-  return code && Object.hasOwn(MESSAGES, code) ? MESSAGES[code]! : GENERIC;
+  return code && Object.hasOwn(MESSAGES, code) ? MESSAGES[code as keyof typeof MESSAGES] : GENERIC;
 }
 

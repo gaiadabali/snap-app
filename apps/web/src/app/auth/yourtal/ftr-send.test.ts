@@ -18,7 +18,7 @@ beforeEach(() => {
 
 const cb = (qs: string, cookies: string) =>
   new NextRequest(`http://0.0.0.0:3000/auth/yourtal/callback?${qs}`, { headers: { cookie: cookies } });
-const SEND = `${FLOW}=f1; snap_ftr_send=1`;
+const SEND = `${FLOW}=f1; snap_ftr_send=f1`;
 const where = (r: Response) => new URL(r.headers.get('location')!);
 const cleared = (r: Response) => r.headers.getSetCookie().join(';');
 
@@ -63,6 +63,13 @@ describe('YourTal callback for a send', () => {
     expect(res.headers.get('location')).not.toContain('raw');
   });
 
+  it('a marker that names another flow leaves the sign-in callback alone', async () => {
+    apiMock.mockRejectedValue(new Error('x'));
+    const { GET } = await import('./callback/route');
+    await GET(cb('code=c&state=s&iss=i', `${FLOW}=f2; snap_ftr_send=f1`));
+    expect(apiMock.mock.calls[0]![0]).toBe('/v1/auth/yourtal/finish');
+  });
+
   it('without the marker cookie it stays the sign-in callback', async () => {
     apiMock.mockRejectedValue(new Error('x'));
     const { GET } = await import('./callback/route');
@@ -86,7 +93,7 @@ describe('POST /app/ftr-send', () => {
     expect(await res.json()).toEqual({ url: 'https://yourtal/auth?transfer=t' });
     const c = res.headers.getSetCookie().join(';');
     expect(c).toContain(`${FLOW}=f9`);
-    expect(c).toContain('snap_ftr_send=1');
+    expect(c).toContain('snap_ftr_send=f9');
     expect(c).toContain('Path=/auth/yourtal');
   });
 
@@ -94,6 +101,13 @@ describe('POST /app/ftr-send', () => {
     const { POST } = await import('../../app/(individual)/ftr-send/route');
     const res = await POST(post({ origin: 'https://evil.example' }));
     expect(res.status).toBe(403);
+    expect(apiMock).not.toHaveBeenCalled();
+  });
+
+  it('refuses Sec-Fetch-Site cross-site with no Origin, and Origin: null', async () => {
+    const { POST } = await import('../../app/(individual)/ftr-send/route');
+    expect((await POST(post({ 'sec-fetch-site': 'cross-site' }))).status).toBe(403);
+    expect((await POST(post({ origin: 'null' }))).status).toBe(403);
     expect(apiMock).not.toHaveBeenCalled();
   });
 

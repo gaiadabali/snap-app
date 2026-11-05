@@ -36,7 +36,7 @@ export function redirectFor(authUrl: string): string {
 /** What the redirect carried: a result to finish with, or why there is none. */
 export type ReturnParse =
   | { kind: 'code'; code: string; state: string; iss: string }
-  | { kind: 'denied'; error: string; description: string | null }
+  | { kind: 'denied'; error: string; description: string | null; state: string | null }
   | { kind: 'invalid' };
 
 /**
@@ -66,7 +66,7 @@ export function parseReturnUrl(url: string): ReturnParse {
     }
   }
   const error = params.get('error');
-  if (error) return { kind: 'denied', error, description: params.get('error_description') || null };
+  if (error) return { kind: 'denied', error, description: params.get('error_description') || null, state: params.get('state') || null };
   const code = params.get('code');
   const state = params.get('state');
   const iss = params.get('iss');
