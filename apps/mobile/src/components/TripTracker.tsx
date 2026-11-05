@@ -216,9 +216,9 @@ export function TripTracker({ onSaved }: { onSaved: () => void }) {
                 </Body>
                 <Body>
                   Location is used only while this trip screen is open. It is not tracked in the
-                  background, and only the total kilometres are saved, not where you went. Android
-                  will ask for your permission next, and you can say no and type the distance in
-                  instead.
+                  background. Only the total kilometres are saved, never your GPS route; the start
+                  and end places are whatever you type. Android will ask for your permission next,
+                  and you can say no and type the distance in instead.
                 </Body>
                 <View style={{ flexDirection: 'row', gap: space.sm }}>
                   <Button
