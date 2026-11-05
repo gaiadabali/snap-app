@@ -42,11 +42,13 @@ describe('parseReturnUrl', () => {
       kind: 'denied',
       error: 'access_denied',
       description: 'account_on_hold',
+      state: 's',
     });
     expect(parseReturnUrl(`${REDIRECT}?error=access_denied`)).toEqual({
       kind: 'denied',
       error: 'access_denied',
       description: null,
+      state: null,
     });
   });
 

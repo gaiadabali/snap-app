@@ -1,10 +1,13 @@
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { AccessibilityInfo, Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, type CategorySetting } from '@/api';
-import { SendToFtrCard } from '@/components/SendToFtrCard';
+import * as WebBrowser from 'expo-web-browser';
+import { SendToFtrCard, type FtrSendState } from '@/components/SendToFtrCard';
+import { FTR_REVIEW_URL } from '@/config';
+import { FTR_SEND_COPY, runFtrSend } from '@/lib/ftr-send';
 import { exportDeductionBundle } from '@/lib/share';
 import { AddButton, Empty, Field, Loading, Sheet } from '@/components/form';
 import { CategoryIcon, Raised } from '@/components/rich';
@@ -41,7 +44,8 @@ export default function CategoriesScreen() {
   const [budget, setBudget] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
-  const [ftrYear, setFtrYear] = useState<string | null>(null);
+  const [ftr, setFtr] = useState<{ financialYear: string; directSend: boolean } | null>(null);
+  const [ftrState, setFtrState] = useState<FtrSendState>(null);
 
   async function sendToFtr() {
     setSending(true);
@@ -54,9 +58,37 @@ export default function CategoriesScreen() {
     }
   }
 
+  // iOS ignores accessibilityLiveRegion, so say the result out loud.
+  useEffect(() => {
+    if (!ftrState) return;
+    AccessibilityInfo.announceForAccessibility(
+      ftrState.kind === 'sent' ? FTR_SEND_COPY.sent(ftrState.year) : ftrState.kind === 'cancelled' ? FTR_SEND_COPY.cancelled : ftrState.message,
+    );
+  }, [ftrState]);
+
+  async function sendDirect() {
+    if (!ftr || sending) return;
+    setSending(true);
+    setFtrState(null);
+    try {
+      setFtrState(
+        await runFtrSend(
+          {
+            start: (input) => api().startFtrSend(input),
+            openBrowser: (url, redirect) => WebBrowser.openAuthSessionAsync(url, redirect),
+            finish: (input) => api().finishFtrSend(input),
+          },
+          { financialYear: ftr.financialYear },
+        ),
+      );
+    } finally {
+      setSending(false);
+    }
+  }
+
   const load = useCallback(async () => {
     setRows(await api().listCategorySettings(workspace));
-    if (workspace === 'personal') setFtrYear(await api().getDeductionYear().catch(() => null));
+    if (workspace === 'personal') setFtr(await api().getDeductionYear().catch(() => null));
   }, [workspace]);
 
   useFocusEffect(
@@ -154,7 +186,17 @@ export default function CategoriesScreen() {
               </View>
             ) : null}
 
-            {!isBusiness && ftrYear ? <SendToFtrCard financialYear={ftrYear} busy={sending} onSend={() => void sendToFtr()} /> : null}
+            {!isBusiness && ftr ? (
+              <SendToFtrCard
+                financialYear={ftr.financialYear}
+                busy={sending}
+                onSend={() => void sendToFtr()}
+                directSend={ftr.directSend}
+                onSendDirect={() => void sendDirect()}
+                state={ftrState}
+                reviewUrl={FTR_REVIEW_URL}
+              />
+            ) : null}
           </>
         )}
       </ScrollView>

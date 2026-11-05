@@ -10,7 +10,8 @@
     "./money": "./src/money.ts",
     "./analytics": "./src/analytics.ts",
     "./docdom": "./src/docdom.ts",
-    "./deduction-bundle": "./src/deduction-bundle.ts"
+    "./deduction-bundle": "./src/deduction-bundle.ts",
+    "./ftr-send": "./src/ftr-send.ts"
   },
   "types": "./src/index.ts",
   "sideEffects": false,

@@ -31,3 +31,5 @@ export function yourtalErrorCode(
     ? DESCRIPTION_CODES[description]!
     : 'yourtal_cancelled';
 }
+
+export { ftrSendMessage } from '@snap/api-contract/ftr-send';
