@@ -11,7 +11,7 @@ import type {
 import type { ConsumptionTaxSpec, TaxRules } from '@snap/tax-rules';
 import { sql } from 'drizzle-orm';
 
-import { readPaidScan, spendScanCredit } from './credits/spend.js';
+import { creditsLeft, QuotaExhaustedError, readPaidScan, spendScanCredit } from './credits/spend.js';
 import { getDb } from './db.js';
 import type { ReceiptContent, ReceiptOriginal } from './yourtal/external-ref.js';
 import { queueReceiptReport } from './yourtal/outbox.repo.js';
@@ -260,6 +260,14 @@ function planFromExisting(
  * set from PAGE 1 ONLY (migration 0018) — every existing reader of a capture
  * keeps working against a single-page shape without knowing pages exist.
  */
+/** A new capture of more than one page: one snap is one page (founder 0.11.b). */
+export class OnePagePerSnapError extends Error {
+  constructor() {
+    super('one page per snap');
+    this.name = 'OnePagePerSnapError';
+  }
+}
+
 export async function createCapture(
   userId: string,
   tenantId: string,
@@ -267,6 +275,10 @@ export async function createCapture(
     pages: CapturePageInput[];
     capturedAt?: string;
     legibilityScore?: number;
+    /** Refuse a NEW capture (never a duplicate) when no credit is left (7.1.b). */
+    requireCredit?: boolean;
+    /** Refuse a NEW capture of more than one page (founder 0.11.b); a resend of one is a duplicate. */
+    onePageOnly?: boolean;
   },
 ): Promise<{ capture: CaptureRow; duplicate: boolean; pages: CapturePagePlan[] }> {
   return withTenantAs(getDb(), userId, tenantId, async (tx) => {
@@ -286,6 +298,14 @@ export async function createCapture(
         duplicate: true,
         pages: planFromExisting(input.pages.length, existingPages),
       };
+    }
+
+    // Throwing rolls back before anything is stored. Advisory, not the money
+    // guard: the spend in `enqueueExtraction` is what refuses atomically.
+    if (input.onePageOnly && input.pages.length > 1) throw new OnePagePerSnapError();
+    if (input.requireCredit) {
+      const credit = await creditsLeft(tx);
+      if (credit.left <= 0) throw new QuotaExhaustedError(credit.teen);
     }
 
     const id = randomUUID();
@@ -584,10 +604,11 @@ export async function markCaptureStored(
  *
  * The scan spends one credit HERE, in the same transaction as the job insert
  * (group plan 7.1.a, founder decision 0.11): a capture is queued if and only
- * if its spend is recorded. Free credits go first, then bought ones; with no
- * credit left the spend is recorded without one and the scan still goes
- * ahead (refusing it is 7.1.b). Calling this twice for a capture never spends
- * twice. See `credits/spend.ts`.
+ * if its spend is recorded. Free credits go first, then bought ones. With no
+ * credit left it throws `QuotaExhaustedError` and nothing is spent or queued
+ * (7.1.b); the stored capture waits for the next call. Idempotent: a capture
+ * already spent for is neither spent for nor queued again. See
+ * `credits/spend.ts`.
  */
 export async function enqueueExtraction(
   userId: string,
@@ -595,12 +616,83 @@ export async function enqueueExtraction(
   captureId: string,
 ): Promise<void> {
   await withTenantAs(getDb(), userId, tenantId, async (tx) => {
-    await spendScanCredit(tx, { tenantId, userId, captureId });
+    const spend = await spendScanCredit(tx, { tenantId, userId, captureId });
+    if (spend.alreadySpent) return;
     await tx.execute(sql`
       insert into jobs (id, tenant_id, kind, payload)
       values (${randomUUID()}, ${tenantId}, 'extract', ${JSON.stringify({ captureId })}::jsonb)
     `);
   });
+}
+
+/** The MIME type the capture was registered with (its first page's). */
+export async function getCaptureMimeType(userId: string, tenantId: string, captureId: string): Promise<string | null> {
+  return withTenantAs(getDb(), userId, tenantId, async (tx) => {
+    const rows = await tx.execute<{ mime: string }>(sql`
+      select original_mime_type as mime from captures where id = ${captureId}
+    `);
+    return rows.rows[0]?.mime ?? null;
+  });
+}
+
+/**
+ * Has this capture already been queued (it has a spend) or got past intake?
+ * The callers' cheap check before the daily budget and the spend; the spend
+ * itself is idempotent either way.
+ */
+export async function isCaptureQueued(userId: string, tenantId: string, captureId: string): Promise<boolean> {
+  return withTenantAs(getDb(), userId, tenantId, async (tx) => {
+    const rows = await tx.execute<{ queued: boolean }>(sql`
+      select (c.status <> 'received'
+              or exists (select 1 from credit_spends s where s.capture_id = c.id)) as queued
+        from captures c
+       where c.id = ${captureId}
+    `);
+    return rows.rows[0]?.queued ?? false;
+  });
+}
+
+/**
+ * Queues the captures that were stored while the workspace had no credit
+ * (7.1.b), oldest first, one credit each, until the credits or the day's
+ * extraction budget run out. Called after a purchase and before a workspace's
+ * next new snap is accepted. A held capture: every page stored, never queued
+ * (no spend), not a CSV (read on upload, never spends), received in the last
+ * 30 days. Older ones stay stored, unread: nobody expects them read now.
+ * Returns how many were queued.
+ */
+export async function resumeHeldCaptures(
+  userId: string,
+  tenantId: string,
+  // `config().EXTRACTION_DAILY_BUDGET`, passed in: repo.ts does not read config.
+  dailyBudget: number,
+): Promise<number> {
+  const held = await withTenantAs(getDb(), userId, tenantId, async (tx) => {
+    const rows = await tx.execute<{ id: string }>(sql`
+      select c.id
+        from captures c
+       where c.status = 'received'
+         and c.received_at > now() - interval '30 days'
+         and c.original_mime_type <> 'text/csv'
+         and not exists (select 1 from credit_spends s where s.capture_id = c.id)
+         and (select count(*) from capture_pages p where p.capture_id = c.id) >= greatest(c.page_count, 1)
+       order by c.received_at, c.id
+       limit 200
+    `);
+    return rows.rows.map((r) => r.id);
+  });
+  let queued = 0;
+  for (const captureId of held) {
+    if ((await countExtractionsToday(userId, tenantId)) >= dailyBudget) break;
+    try {
+      await enqueueExtraction(userId, tenantId, captureId);
+      queued += 1;
+    } catch (error) {
+      if (error instanceof QuotaExhaustedError) break;
+      throw error;
+    }
+  }
+  return queued;
 }
 
 /**

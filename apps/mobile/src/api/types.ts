@@ -492,7 +492,7 @@ export interface SnapApi {
    * `GET /v1/usage?kind=&month=` — itemised spend for one month, `YYYY-MM`.
    * A projection for the Usage screen, not a ledger; see `UsagePeriod`.
    */
-  getUsage(kind: UsageKind, month: string): Promise<UsagePeriod>;
+  getUsage(kind: UsageKind, month: string, page?: { limit?: number; before?: string }): Promise<UsagePeriod>;
   /** `GET /v1/usage/months?kind=` — which months have anything to show. */
   listUsageMonths(kind: UsageKind): Promise<string[]>;
 

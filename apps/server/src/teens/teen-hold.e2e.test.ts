@@ -397,7 +397,12 @@ describeIfDb('the teen hold and turning 18 — real database, real provider', ()
         [capture, space, teenId, randomBytes(32)],
       );
       const { enqueueExtraction } = await import('../repo.js');
-      await enqueueExtraction(teenId, space, capture);
+      // It has no credits of its own yet, so the scan is refused as its own
+      // (not the parent's) and waits (7.1.b).
+      await expect(enqueueExtraction(teenId, space, capture)).rejects.toMatchObject({
+        name: 'QuotaExhaustedError',
+        teen: false,
+      });
       expect(await parentBalance()).toBe(before);
       expect((await admin.query('SELECT count(*)::int AS n FROM teen_space_spends WHERE capture_id = $1', [capture])).rows[0].n).toBe(0);
       // And the teen-space locks are gone: they can make a workspace of their own.

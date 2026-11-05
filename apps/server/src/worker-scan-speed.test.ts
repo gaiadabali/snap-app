@@ -71,6 +71,7 @@ describeIfDb('worker: scan speed (1.29)', () => {
     setEnv('DOCAI_SIDECAR_URL', undefined);
 
     admin = await provisionTenant({
+      scanCredits: 100,
       tenantId: TENANT,
       name: 'Scan speed worker co',
       users: [{ id: USER, role: 'owner', subject: 'test|speed-user', email: 'user@scan-speed.test' }],

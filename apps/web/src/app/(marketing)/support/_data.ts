@@ -60,8 +60,8 @@ const ALL_CATEGORIES: SupportCategory[] = [
         a: 'A same-supplier, same-amount, same-day match is only ever soft-flagged for you to check — it is never merged automatically, because two identical purchases on one day can both be real.',
       },
       {
-        q: 'A multi-page invoice split into separate documents',
-        a: 'Capture a multi-page tax invoice as one multi-page document rather than one photo per page, so the line items reconcile against a single total.',
+        q: 'My multi-page PDF or invoice was refused',
+        a: 'One snap is one page, and each uses one credit. Snap or upload each page on its own; a file with more than one page is refused.',
       },
     ],
   },

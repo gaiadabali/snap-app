@@ -303,6 +303,8 @@ export class HttpApi implements SnapApi {
             return { kind: 'sent' };
           } catch (error) {
             if (error instanceof ApiError && error.status === 0) return { kind: 'offline' };
+            // Out of credits (402 quota_exhausted) lands below and stays
+            // queued: it sends by itself once credits are bought (7.1.b).
             // Any other refusal stays queued rather than dropped: unlike a
             // JSON write, a capture's most likely failure — an upload link
             // that expired while the phone was offline — fixes itself on the
@@ -719,12 +721,22 @@ export class HttpApi implements SnapApi {
 
     const response = await fetch(url, { method: 'PUT', headers, body: bytes });
     if (!response.ok) {
+      // The server's own words and code where it gave them: a refusal such as
+      // `one_page_per_snap` or `quota_exhausted` (402) says what to do next.
+      let problem: { message?: unknown; error?: unknown } = {};
+      try {
+        problem = (await response.json()) as typeof problem;
+      } catch {
+        // Not JSON: the status is all there is.
+      }
       throw new ApiError(
         response.status,
-        response.status === 404
-          ? 'That upload link has expired. Take the photo again.'
-          : `The image could not be uploaded (${response.status}).`,
-        null,
+        typeof problem.message === 'string'
+          ? problem.message
+          : response.status === 404
+            ? 'That upload link has expired. Take the photo again.'
+            : `The image could not be uploaded (${response.status}).`,
+        typeof problem.error === 'string' ? problem.error : null,
       );
     }
   }
@@ -1299,12 +1311,15 @@ export class HttpApi implements SnapApi {
     });
   }
 
-  getUsage(kind: UsageKind, month: string): Promise<UsagePeriod> {
-    return this.get<UsagePeriod>(`/v1/usage?kind=${kind}&month=${month}`, null);
+  getUsage(kind: UsageKind, month: string, page: { limit?: number; before?: string } = {}): Promise<UsagePeriod> {
+    // Workspace-scoped: credits belong to the workspace (7.1.e). Paged by `before`.
+    const more =
+      (page.limit ? `&limit=${page.limit}` : '') + (page.before ? `&before=${encodeURIComponent(page.before)}` : '');
+    return this.get<UsagePeriod>(`/v1/usage?kind=${kind}&month=${month}${more}`);
   }
 
   listUsageMonths(kind: UsageKind): Promise<string[]> {
-    return this.get<string[]>(`/v1/usage/months?kind=${kind}`, null);
+    return this.get<string[]>(`/v1/usage/months?kind=${kind}`);
   }
 
   listAlerts(): Promise<AlertItem[]> {

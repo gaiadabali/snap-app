@@ -20,6 +20,11 @@ import { provisionTenant, wipeTenant } from '../test-support/tenant.js';
  * actually matters for a PDF is the post-demux check added in `upload()`,
  * and only a real multipart-free PUT of real PDF bytes exercises it.
  *
+ * Since founder ruling 0.11.b (2026-10-21) the cap is ONE page per snap:
+ * a statement is sent page by page, each its own capture and credit, so a
+ * multi-page PDF or a multi-page declaration is refused with
+ * `one_page_per_snap`.
+ *
  * Refusal first, per this repository's own convention
  * (`taxrules.e2e.test.ts`'s header): a cap that has never rejected anything
  * proves nothing.
@@ -90,6 +95,7 @@ describeIfDb('statement intake caps — real HTTP (T7)', () => {
     process.env.ADMIN_KMS_MASTER_KEY ??= '11'.repeat(32);
 
     admin = await provisionTenant({
+      scanCredits: 100,
       tenantId: TENANT,
       name: 'Statement Test Co',
       users: [{ id: USER, role: 'owner' }],
@@ -152,34 +158,52 @@ describeIfDb('statement intake caps — real HTTP (T7)', () => {
 
   /* ── Refusal first ────────────────────────────────────────────────────── */
 
-  it('refuses a PDF past the page cap, naming the cap — not silently, not by timeout', async () => {
-    // Well past MAX_CAPTURE_PAGES (50) — a genuinely abusive upload, the
-    // shape of thing the missing cap let through before T7: no page-count
-    // check existed at all for a PDF, because it always declares ONE page at
-    // registration and the declared-pages cap never sees its real count.
-    const abusive = statementPdf(120);
-    const uploadUrl = await registerPdfCapture(abusive);
+  it('refuses a PDF of more than one page, naming its pages — not silently, not by timeout', async () => {
+    for (const pageCount of [120, 40, 2]) {
+      const pdf = statementPdf(pageCount);
+      const uploadUrl = await registerPdfCapture(pdf);
 
-    const res = await app.inject({
-      method: 'PUT',
-      url: uploadUrl,
-      headers: { ...auth(), 'content-type': 'application/pdf' },
-      payload: abusive,
-    });
+      const res = await app.inject({
+        method: 'PUT',
+        url: uploadUrl,
+        headers: { ...auth(), 'content-type': 'application/pdf' },
+        payload: pdf,
+      });
+
+      expect(res.statusCode).toBe(400);
+      expect(res.json()).toMatchObject({
+        error: 'one_page_per_snap',
+        message: expect.stringContaining(`${pageCount} pages`),
+      });
+    }
+    // Nothing of any of them was stored as a page.
+    const { rows } = await admin.query(
+      `select count(*)::int as n from capture_pages cp join captures c on c.id = cp.capture_id where c.tenant_id = $1`,
+      [TENANT],
+    );
+    expect(rows[0].n).toBe(0);
+  });
+
+  it('refuses a capture that declares two pages, before anything is stored', async () => {
+    const pages = Array.from({ length: 2 }, () => ({
+      sha256: createHash('sha256').update(randomUUID()).digest('hex'),
+      mimeType: 'image/jpeg',
+      byteSize: 1024,
+    }));
+    const before = await admin.query(`select count(*)::int as n from captures where tenant_id = $1`, [TENANT]);
+
+    const res = await app.inject({ method: 'POST', url: '/v1/captures', headers: auth(), payload: { pages } });
 
     expect(res.statusCode).toBe(400);
-    const body = res.json();
-    // The cap is NAMED in the message — asserting the number, not just the
-    // status code, is what proves this is a deliberate refusal rather than
-    // an accidental 400 from something else going wrong.
-    expect(body.message).toMatch(/120 pages/);
-    expect(body.message).toMatch(/50-page cap/);
+    expect(res.json()).toMatchObject({ error: 'one_page_per_snap', message: expect.stringMatching(/One page per snap/) });
+    const after = await admin.query(`select count(*)::int as n from captures where tenant_id = $1`, [TENANT]);
+    expect(after.rows[0].n).toBe(before.rows[0].n);
   });
 
   /* ── Acceptance ───────────────────────────────────────────────────────── */
 
-  it('accepts a realistic 40-page statement PDF — the docs stated target', async () => {
-    const statement = statementPdf(40);
+  it('accepts a one-page statement PDF', async () => {
+    const statement = statementPdf(1);
     const uploadUrl = await registerPdfCapture(statement);
 
     const res = await app.inject({
@@ -192,11 +216,8 @@ describeIfDb('statement intake caps — real HTTP (T7)', () => {
     expect(res.statusCode).toBe(200);
     const body = res.json();
     expect(body.queued).toBe(true);
-    expect(body.pages).toBe(40);
+    expect(body.pages).toBe(1);
 
-    // Not just a 200 — every one of the 40 pages actually landed as its own
-    // `capture_pages` row, tagged `pdf_native` (real embedded text, per this
-    // fixture's content streams), under the app's own tenant-scoped role.
     const { rows } = await admin.query(
       `select count(*)::int as n, count(*) filter (where source = 'pdf_native')::int as native
          from capture_pages cp
@@ -204,8 +225,8 @@ describeIfDb('statement intake caps — real HTTP (T7)', () => {
         where c.tenant_id = $1`,
       [TENANT],
     );
-    expect(rows[0].n).toBe(40);
-    expect(rows[0].native).toBe(40);
+    expect(rows[0].n).toBe(1);
+    expect(rows[0].native).toBe(1);
   });
 
   it('still refuses a capture that DECLARES more than the cap up front', async () => {
