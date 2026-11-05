@@ -1,5 +1,8 @@
 import { readFileSync } from 'node:fs';
 
+import { MODELS } from '../ai/router.js';
+
+import { usdToAudMicros, type CallLog, type ModelCall } from './call-cost.js';
 import { EXTRACTION_PROMPT, PROMPT_VERSION } from './prompt.js';
 import { maskCardLast4, type Extraction, type ExtractedLine, type Field, type Payment } from './types.js';
 
@@ -26,6 +29,8 @@ export type ProviderResult = {
     latencyMs: number;
     inputTokens: number | null;
     outputTokens: number | null;
+    /** What the call cost in AUD micros, when the provider reports a charge (OpenRouter). */
+    costMicros?: number | null;
     /** The raw text, stored so a parse failure can be diagnosed later. */
     raw: string;
   };
@@ -49,6 +54,8 @@ export class TruncatedOutputError extends Error {
 export interface ExtractionProvider {
   readonly name: string;
   readonly model: string;
+  /** One entry per call that got an answer, for the worker to record (plan 7.2). */
+  readonly modelCalls?: ModelCall[];
   /**
    * A single page, or every page of a multi-page capture, in page order.
    *
@@ -235,9 +242,11 @@ export function parseExtraction(text: string): Extraction {
  * Measured on a photographed, creased, glare-covered docket: `gemma4:31b`
  * extracted all eight checked fields correctly in ~3s for ~600 tokens.
  */
-export class OllamaCloudProvider implements ExtractionProvider {
+export class OllamaCloudProvider implements ExtractionProvider, CallLog {
   // Typed as string, not the literal, so `OpenRouterProvider` can rename it.
   readonly name: string = 'ollama-cloud';
+  /** Every call that got an answer, for the worker to record (plan 7.2). */
+  readonly modelCalls: ModelCall[] = [];
 
   constructor(
     readonly model = 'gemma4:31b',
@@ -255,6 +264,11 @@ export class OllamaCloudProvider implements ExtractionProvider {
     /** One call's time limit; see `withCallTimeout`. */
     private readonly timeoutMs: number = DEFAULT_CALL_TIMEOUT_MS,
   ) {}
+
+  /** Request fields only some endpoints understand; OpenRouter adds usage accounting and a price ceiling. */
+  protected extraBody(): Record<string, unknown> {
+    return {};
+  }
 
   async extract(pages: PageImage | PageImage[]): Promise<ProviderResult> {
     const images = Array.isArray(pages) ? pages : [pages];
@@ -302,6 +316,7 @@ export class OllamaCloudProvider implements ExtractionProvider {
           // check below: the cap is now generous, and running into it is
           // reported as what it is.
           max_tokens: 16000,
+          ...this.extraBody(),
         }),
       });
 
@@ -314,9 +329,35 @@ export class OllamaCloudProvider implements ExtractionProvider {
 
       return (await response.json()) as {
         choices?: Array<{ message?: { content?: string }; finish_reason?: string }>;
-        usage?: { prompt_tokens?: number; completion_tokens?: number };
+        usage?: { prompt_tokens?: number; completion_tokens?: number; cost?: number };
       };
     });
+    // From here the provider has answered, and an OpenRouter answer is charged
+    // whether or not it turns out to be readable.
+    const call: ModelCall = {
+      model: this.model,
+      costMicros: usdToAudMicros(data.usage?.cost),
+      inputTokens: data.usage?.prompt_tokens ?? null,
+      outputTokens: data.usage?.completion_tokens ?? null,
+      latencyMs: Date.now() - started,
+      error: null,
+    };
+    this.modelCalls.push(call);
+    try {
+      return this.finish(data, call);
+    } catch (error) {
+      call.error = error instanceof Error ? error.message : String(error);
+      throw error;
+    }
+  }
+
+  private finish(
+    data: {
+      choices?: Array<{ message?: { content?: string }; finish_reason?: string }>;
+      usage?: { prompt_tokens?: number; completion_tokens?: number };
+    },
+    call: ModelCall,
+  ): ProviderResult {
     const raw = data.choices?.[0]?.message?.content ?? '';
     if (!raw) throw new Error(`${this.name} returned an empty response.`);
 
@@ -340,9 +381,10 @@ export class OllamaCloudProvider implements ExtractionProvider {
         provider: this.name,
         model: this.model,
         promptVersion: PROMPT_VERSION,
-        latencyMs: Date.now() - started,
-        inputTokens: data.usage?.prompt_tokens ?? null,
-        outputTokens: data.usage?.completion_tokens ?? null,
+        latencyMs: call.latencyMs,
+        inputTokens: call.inputTokens,
+        outputTokens: call.outputTokens,
+        costMicros: call.costMicros,
         raw,
       },
     };
@@ -422,6 +464,22 @@ export class OpenRouterProvider extends OllamaCloudProvider {
   ) {
     super(model, apiKey, OPENROUTER_BASE_URL, prompt, timeoutMs);
   }
+
+  protected override extraBody(): Record<string, unknown> {
+    return openRouterExtras(this.model);
+  }
+}
+
+/**
+ * What every OpenRouter request adds: the registry's price ceiling for the
+ * model (7.3.c), so a call never lands on a provider far above the price the
+ * cost figures assume. The charge (`usage.cost`, plan 7.2.a) needs no request
+ * flag: `usage: { include: true }` is deprecated and OpenRouter now returns
+ * usage on every response.
+ */
+export function openRouterExtras(openRouterId: string): Record<string, unknown> {
+  const maxPrice = MODELS.find((m) => m.openrouterId === openRouterId)?.maxPrice;
+  return maxPrice ? { provider: { max_price: maxPrice } } : {};
 }
 
 /**

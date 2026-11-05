@@ -15,6 +15,7 @@ import { readPaidScan, spendScanCredit } from './credits/spend.js';
 import { getDb } from './db.js';
 import type { ReceiptContent, ReceiptOriginal } from './yourtal/external-ref.js';
 import { queueReceiptReport } from './yourtal/outbox.repo.js';
+import type { ModelCall } from './extraction/call-cost.js';
 import { maskCardLast4, type ValidatedExtraction } from './extraction/types.js';
 import { enterTenant, enterTenantAsWorker, type TenantActor, type WorkerActor } from './tenant-entry.js';
 
@@ -1442,6 +1443,8 @@ export async function saveExtraction(
     latencyMs: number;
     inputTokens: number | null;
     outputTokens: number | null;
+    /** AUD micros the call cost, when the provider reports it (plan 7.2). */
+    costMicros?: number | null;
     raw: string;
   },
   // The same rule set `worker.ts` already resolved to run `validate()` against
@@ -1548,11 +1551,12 @@ export async function saveExtraction(
       insert into extraction_runs (
         id, tenant_id, capture_id, engine, model_id, prompt_version, schema_version,
         tier, status, started_at, finished_at, latency_ms, input_tokens, output_tokens,
-        raw_response
+        cost_micros, raw_response
       ) values (
         ${runId}, ${tenantId}, ${captureId}, ${engineFor(meta.model)}, ${meta.model}, ${meta.promptVersion},
         ${e.schemaVersion}, 1, 'succeeded', now(), now(), ${meta.latencyMs},
-        ${meta.inputTokens}, ${meta.outputTokens}, ${JSON.stringify({ raw: meta.raw })}::jsonb
+        ${meta.inputTokens}, ${meta.outputTokens}, ${meta.costMicros ?? null},
+        ${JSON.stringify({ raw: meta.raw })}::jsonb
       )
     `);
 
@@ -1870,7 +1874,11 @@ export async function saveExtraction(
   return { documentId };
 }
 
-/** Records why an extraction failed, so a retry has something to read. */
+/**
+ * Records why an extraction failed, so a retry has something to read. One row
+ * per failed model call (plan 7.2.b); `call` carries what that call cost when
+ * the provider answered before the failure, and is null when it never did.
+ */
 export async function saveExtractionFailure(
   worker: WorkerActor,
   tenantId: string,
@@ -1878,17 +1886,68 @@ export async function saveExtractionFailure(
   stage: string,
   error: string,
   model: string,
+  call?: ModelCall | null,
 ): Promise<void> {
   await enterTenantAsWorker(worker, tenantId, async (tx) => {
     await tx.execute(sql`
       insert into extraction_runs (
         id, tenant_id, capture_id, engine, model_id, prompt_version, schema_version,
-        tier, status, error, started_at, finished_at
+        tier, status, error, started_at, finished_at, latency_ms, input_tokens, output_tokens,
+        cost_micros
       ) values (
         ${randomUUID()}, ${tenantId}, ${captureId}, ${engineFor(model)}, ${model}, 'n/a', '1',
-        1, 'failed', ${`${stage}: ${error}`.slice(0, 2000)}, now(), now()
+        1, 'failed', ${`${stage}: ${error}`.slice(0, 2000)}, now(), now(), ${call?.latencyMs ?? null},
+        ${call?.inputTokens ?? null}, ${call?.outputTokens ?? null}, ${call?.costMicros ?? null}
       )
     `);
+  });
+}
+
+/** Registry ids of the models that already have a failed run for this capture (plan 7.3.b). */
+export async function failedModelsFor(
+  worker: WorkerActor,
+  tenantId: string,
+  captureId: string,
+): Promise<Set<string>> {
+  return enterTenantAsWorker(worker, tenantId, async (tx) => {
+    const rows = await tx.execute<{ model_id: string }>(sql`
+      select distinct model_id from extraction_runs
+       where capture_id = ${captureId} and status = 'failed'
+    `);
+    return new Set(rows.rows.map((r) => r.model_id));
+  });
+}
+
+/**
+ * One succeeded run per answered model call, for work that has no document row
+ * of its own to carry the run: a statement's chunk calls (plan 7.2.b). Calls
+ * that ended in an error are not written here; the failure path records those.
+ */
+export async function saveModelCalls(
+  worker: WorkerActor,
+  tenantId: string,
+  captureId: string,
+  /** The registry model id, stored on every row; `c.model` may be the endpoint's own name. */
+  model: string,
+  calls: readonly ModelCall[],
+  promptVersion: string,
+): Promise<void> {
+  const ok = calls.filter((c) => !c.error);
+  if (ok.length === 0) return;
+  await enterTenantAsWorker(worker, tenantId, async (tx) => {
+    for (const c of ok) {
+      await tx.execute(sql`
+        insert into extraction_runs (
+          id, tenant_id, capture_id, engine, model_id, prompt_version, schema_version,
+          tier, status, started_at, finished_at, latency_ms, input_tokens, output_tokens,
+          cost_micros
+        ) values (
+          ${randomUUID()}, ${tenantId}, ${captureId}, ${engineFor(model)}, ${model}, ${promptVersion}, '1',
+          1, 'succeeded', now(), now(), ${c.latencyMs}, ${c.inputTokens}, ${c.outputTokens},
+          ${c.costMicros}
+        )
+      `);
+    }
   });
 }
 

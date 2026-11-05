@@ -19,6 +19,7 @@
     "emitDecoratorMetadata": true
   },
   "include": [
+    "bench/*.ts",
     "scripts/**/*.ts",
     "src/**/*.ts"
   ]
