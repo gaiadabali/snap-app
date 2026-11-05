@@ -12,7 +12,7 @@ import './pricing-teaser-styles.css';
  * "What would a month cost me?" A range slider and one honest number.
  *
  * The arithmetic is integer end to end (docs/WEB.md §3.2). The price of a scan
- * is held in tenths of a cent (10c is 100), a month is receipts × 37 tenths,
+ * is held in tenths of a cent (10c is 100), a month is receipts × the per-scan tenths,
  * and only the final step rounds to whole cents for display. No float is ever
  * multiplied by a count.
  *

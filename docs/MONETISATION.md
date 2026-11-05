@@ -141,7 +141,7 @@ These override the per-scan figures elsewhere in this file where they disagree
   spent. There is no per-person cap.
 - **The arithmetic, per scan on an A$5 pack:** 9.09c after GST, less 0.77c for
   Stripe, about 0.5c to read and store it for five years, and 3c for the point,
-  leaves **about 4.8c (53%)**. A scan bought through Google Play Billing keeps
+  leaves **about 4.8c (53% of the ex-GST price)**. A scan bought through Google Play Billing keeps
   about 2.9c after Google's fee.
 
 **Built (group plan 7.1.a, 7.1.c and 2.5.f; migration 0039):**
@@ -189,7 +189,7 @@ gives an accountant a reason to bring their clients onto a practice plan.
 base, which assumed Claude Haiku and Sonnet).** Production reads with Gemma 4
 31B: **A$0.0005 a one-page scan** (average 1,568 tokens in, 343 out; 27 of 27
 real reads; OpenRouter's exact charge, USD to AUD 1.4314, plus its 5.5% card
-fee). Add a A$0.002 storage reserve for five years of retention and one scan
+fee). Add about A$0.002 of storage for five years of retention (rounded) and one scan
 costs about **A$0.0027 all-in**. The fallback models cost more per page
 (MiniMax M3 A$0.0022, Qwen 3.5 A$0.019, Kimi K3 A$0.034) but serve few scans.
 
@@ -202,7 +202,7 @@ costs about **A$0.0027 all-in**. The fallback models cost more per page
 | Stripe, 1.75% + 30c over 50 scans | −0.77c |
 | Read and store (measured 0.27c, 0.5c kept as headroom) | −0.50c |
 | One YourTal point, bought at cost | −3.00c |
-| **Profit** | **about 4.8c (53%)** |
+| **Profit** | **about 4.8c (53% of the ex-GST price)** |
 
 The A$10 and A$25 packs keep more, because Stripe's fixed 30c is spread wider
 (0.3c and 0.12c a scan). The old $0.011 base and the A$0.037 credit are gone;

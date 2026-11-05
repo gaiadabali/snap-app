@@ -18,7 +18,6 @@ import { CREDIT_PRICE_AUD, MODEL_COST_AUD } from './credit-packs';
 export const PRICE_TENTHS = Math.round(CREDIT_PRICE_AUD * 1000);
 
 /** What the model costs us per scan, in tenths of a cent. */
-export const MODEL_TENTHS = Math.round(MODEL_COST_AUD * 1000);
 
 /** 37 → "3.7", 100 → "10". Tenths of a cent as a plain decimal string. */
 export function tenthsLabel(tenths: number): string {
