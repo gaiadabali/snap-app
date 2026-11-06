@@ -363,8 +363,13 @@ export type UsageRow = {
  * continued with `before` = the last item's id.
  *
  * Months are the workspace's, by its country (`workspaceZone`), whatever the
- * database session's time zone. Teen scans paid from this workspace are not
- * listed here (teen_space_spends is not readable by the API).
+ * database session's time zone.
+ *
+ * Teen scans are paid from the parent's workspace and recorded in
+ * `teen_space_spends`, which the API cannot read; two definer reads (0056) fill
+ * the gap. In a teen space a scan paid by the parent counts 1 credit; in the
+ * parent's workspace each credit a teen's scan took is a "Teen scan" line (no
+ * supplier: what the receipt held stays in the teen's space).
  */
 export async function listCreditUsage(
   userId: string,
@@ -377,19 +382,32 @@ export async function listCreditUsage(
     // `timestamp at time zone` reads the local date in the workspace's zone;
     // a `date` would first be cast through the session's.
     const local = sql`${`${month}-01`}::timestamp`;
-    const inMonth = sql`s.spent_at >= (${local} at time zone ${workspaceZone})
-                    and s.spent_at < ((${local} + interval '1 month') at time zone ${workspaceZone})`;
+    const from = sql`(${local} at time zone ${workspaceZone})`;
+    const to = sql`((${local} + interval '1 month') at time zone ${workspaceZone})`;
+    // This workspace's spends plus the teen scans it paid for, in one list.
+    const spends = sql`
+      with sp as (
+        select s.id, s.capture_id, s.spent_at,
+               (s.refunded_at is null
+                and (s.grant_source is not null or s.capture_id in (select teen_space_paid_captures())))::int as amount,
+               s.refunded_at is not null as refunded, false as teen
+          from credit_spends s
+         where s.spent_at >= ${from} and s.spent_at < ${to}
+        union all
+        select f.id, null::uuid, f.spent_at, (not f.refunded)::int, f.refunded, true
+          from teen_space_funded_spends(${from}, ${to}) f
+      )`;
     const total = await tx.execute<{ n: number }>(sql`
-      select count(*)::int as n from credit_spends s
-       where ${inMonth} and s.grant_source is not null and s.refunded_at is null
+      ${spends} select coalesce(sum(amount), 0)::int as n from sp
     `);
     const rows = await tx.execute<UsageRow>(sql`
+      ${spends}
       select s.id,
-             coalesce(sup.legal_name, 'Scan') as label,
+             case when s.teen then 'Teen scan' else coalesce(sup.legal_name, 'Scan') end as label,
              to_json(s.spent_at)#>>'{}' as occurred_at,
-             (s.grant_source is not null and s.refunded_at is null)::int as amount,
-             s.refunded_at is not null as refunded
-        from credit_spends s
+             s.amount,
+             s.refunded
+        from sp s
         left join lateral (
           select p.legal_name from documents d join parties p on p.id = d.supplier_id
            where d.capture_id = s.capture_id
@@ -397,9 +415,8 @@ export async function listCreditUsage(
              and (d.visibility = 'shared' or d.created_by = current_user_id())
            limit 1
         ) sup on true
-       where ${inMonth}
-         and (${before}::uuid is null
-              or (s.spent_at, s.id) < (select b.spent_at, b.id from credit_spends b where b.id = ${before}::uuid))
+       where (${before}::uuid is null
+              or (s.spent_at, s.id) < (select b.spent_at, b.id from sp b where b.id = ${before}::uuid))
        order by s.spent_at desc, s.id desc
        limit ${limit + 1}
     `);
@@ -416,8 +433,9 @@ export async function listCreditUsage(
 export async function listCreditUsageMonths(userId: string, tenantId: string): Promise<string[]> {
   return withTenantAs(getDb(), userId, tenantId, async (tx) => {
     const rows = await tx.execute<{ month: string }>(sql`
-      select distinct to_char(spent_at at time zone ${workspaceZone}, 'YYYY-MM') as month
-        from credit_spends
+      select distinct to_char(t at time zone ${workspaceZone}, 'YYYY-MM') as month
+        from (select spent_at as t from credit_spends
+              union all select spent_at from teen_space_funded_spends(null, null)) m
        order by month desc
     `);
     return rows.rows.map((r) => r.month);

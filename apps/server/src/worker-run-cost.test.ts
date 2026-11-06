@@ -89,6 +89,7 @@ describeIfDb("worker: what each run cost (7.2) and retries (7.3.b)", () => {
     admin = await provisionTenant({
       tenantId: TENANT,
       name: "Run cost worker co",
+      scanCredits: 100,
       users: [
         {
           id: USER,

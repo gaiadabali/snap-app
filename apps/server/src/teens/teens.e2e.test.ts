@@ -385,6 +385,31 @@ describeIfDb('teen spaces — real database, real provider', () => {
       }
     });
 
+    it('lists a teen’s paid scans in both usage lists: 1 credit for the teen, a "Teen scan" line for the parent (0056)', async () => {
+      const { listCreditUsage, listCreditUsageMonths } = await import('../credits/credits.repo.js');
+      const parentId = (await userIdOf(parent))!;
+      // The previous test left one paid scan and one refunded (given back) in this space.
+      const [month] = await listCreditUsageMonths(teenId, space);
+      expect(month).toBeDefined();
+
+      const teenList = await listCreditUsage(teenId, space, month!, 100, null);
+      expect(teenList.total).toBe(1);
+      expect(teenList.items.map((i) => [i.amount, i.refunded]).sort()).toEqual([[0, true], [1, false]]);
+
+      // The parent's workspace lists them, with no supplier and no capture; their own list is untouched.
+      const parentList = await listCreditUsage(parentId, household, month!, 100, null);
+      expect(parentList.total).toBe(1);
+      expect(parentList.items.map((i) => [i.label, i.amount, i.refunded]).sort()).toEqual([
+        ['Teen scan', 0, true],
+        ['Teen scan', 1, false],
+      ]);
+      expect(await listCreditUsageMonths(parentId, household)).toEqual([month]);
+      // Paging works across the merged list.
+      const one = await listCreditUsage(parentId, household, month!, 1, null);
+      expect(one.nextBefore).toBe(one.items[0]!.id);
+      expect((await listCreditUsage(parentId, household, month!, 1, one.nextBefore)).nextBefore).toBeNull();
+    });
+
     it('redoes a setup that failed after the join, at the next sign-in', async () => {
       await admin.query('DELETE FROM categories WHERE tenant_id = $1', [space]);
       teenToken = (await signIn(teen)).token;

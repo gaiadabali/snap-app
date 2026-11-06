@@ -246,12 +246,28 @@ describeIfDb('teen spaces (migration 0045)', () => {
     expect((await c.query('SELECT teen_space_credits() AS n')).rows[0].n).toBeNull();
     expect((await c.query('SELECT teen_space_funded() AS f')).rows[0].f).toBeNull();
 
+    // 0056: the usage reads. The parent sees its teen's spend with no capture; the teen sees which capture was paid.
+    expect((await c.query('SELECT * FROM teen_space_funded_spends(NULL, NULL)')).rows).toEqual([
+      { id: expect.any(String), spent_at: expect.any(Date), refunded: false },
+    ]);
+    expect((await c.query('SELECT count(*)::int AS n FROM teen_space_funded_spends(now() + interval \'1 day\', NULL)')).rows[0].n).toBe(0);
+    expect((await c.query('SELECT count(*)::int AS n FROM teen_space_paid_captures()')).rows[0].n).toBe(0);
+    await as('app_rw', TEEN, space);
+    expect((await c.query('SELECT * FROM teen_space_paid_captures()')).rows).toEqual([{ teen_space_paid_captures: capture }]);
+    expect((await c.query('SELECT count(*)::int AS n FROM teen_space_funded_spends(NULL, NULL)')).rows[0].n).toBe(0);
+    // Still no direct read of the table.
+    await as('app_rw', PARENT, FUND);
+    expect(await failure('SELECT * FROM teen_space_spends')).toMatch(/^42501/);
+
     // Only the worker refunds; twice gives one credit back.
     expect(await failure('SELECT teen_space_refund_credit($1)', [capture])).toMatch(/^42501/);
     await as('app_worker', null, space);
     expect((await c.query('SELECT teen_space_refund_credit($1) AS ok', [capture])).rows[0].ok).toBe(true);
     expect((await c.query('SELECT teen_space_refund_credit($1) AS ok', [capture])).rows[0].ok).toBe(false);
     expect(await remaining()).toBe(2);
+    await as('app_rw', PARENT, FUND);
+    expect((await c.query('SELECT refunded FROM teen_space_funded_spends(NULL, NULL)')).rows).toEqual([{ refunded: true }]);
+    await c.query('RESET ROLE');
 
     // The parent's money record outlives the teen's capture.
     await owner.query('DELETE FROM credit_spends WHERE capture_id = $1', [capture]);
