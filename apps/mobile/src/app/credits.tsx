@@ -5,20 +5,16 @@ import { Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
 import { Text } from '@/theme/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { api, type CreditPack, type SavedCard } from '@/api';
-import { Icon } from '@/components/Icon';
+import { api, type CreditPack } from '@/api';
 import { GradientHero } from '@/components/rich';
 import {
-  Body,
   Button,
-  Card,
   Notice,
   Screen,
   ScreenHeader,
   SectionHeader,
   Small,
 } from '@/components/ui';
-import { EXPERIMENTAL_FEATURES_ENABLED } from '@/config';
 import { formatAud, numeric, radius, shadow, space, type, usePalette, useTheme } from '@/theme';
 
 /**
@@ -31,8 +27,9 @@ import { formatAud, numeric, radius, shadow, space, type, usePalette, useTheme }
  * meters that behave differently must never share one number.
  *
  * Rebuilt 2026-09-19 as the prototype's "Credits" screen: balance, a grid of
- * packs, the saved cards to charge, and a checkout bar pinned to the bottom
- * that only becomes live once BOTH a pack and a method are chosen. The bar is
+ * packs, and a checkout bar pinned to the bottom that becomes live once a pack
+ * is chosen. The card is typed on the processor's checkout page (`pay.tsx`);
+ * the saved-cards stub was removed in group task 7.5.d. The bar is
  * pinned rather than inline because the packs grid can push it under the fold
  * on a small phone, and a checkout you have to scroll to find is a checkout
  * people abandon.
@@ -54,9 +51,7 @@ export default function CreditsScreen() {
 
   const [packs, setPacks] = useState<CreditPack[] | null>(null);
   const [remaining, setRemaining] = useState<number | null>(null);
-  const [cards, setCards] = useState<SavedCard[] | null>(null);
   const [pack, setPack] = useState<CreditPack | null>(null);
-  const [cardId, setCardId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useFocusEffect(
@@ -64,27 +59,13 @@ export default function CreditsScreen() {
       let live = true;
       void api().listCreditPacks().then((x) => live && setPacks(x)).catch(() => live && setPacks([]));
       void api().getCreditBalance().then((b) => live && setRemaining(b.creditsRemaining)).catch(() => {});
-      // The saved cards come from a server stub and are only a label, so
-      // without the flag they are neither fetched nor asked for.
-      if (EXPERIMENTAL_FEATURES_ENABLED) {
-        void api()
-          .listSavedCards()
-          .then((x) => {
-            if (!live) return;
-            setCards(x);
-            // Preselect the default, which is what almost everyone wants.
-            setCardId((cur) => cur ?? x.find((c) => c.isDefault)?.id ?? null);
-          })
-          .catch(() => live && setCards([]));
-      }
       return () => {
         live = false;
       };
     }, []),
   );
 
-  const hasCards = (cards?.length ?? 0) > 0;
-  const ready = EXPERIMENTAL_FEATURES_ENABLED ? !!pack && !!cardId : !!pack;
+  const ready = !!pack;
 
   if (teenSpace) return <Redirect href="/" />;
 
@@ -172,93 +153,6 @@ export default function CreditsScreen() {
           </View>
         </View>
 
-        {/* Pay with */}
-        {EXPERIMENTAL_FEATURES_ENABLED ? (
-          <View style={{ gap: space.md }}>
-            <SectionHeader
-              title="Pay with"
-              action={hasCards ? { label: 'Add another', onPress: () => router.push('/wallet/add') } : undefined}
-            />
-
-            {cards === null ? (
-              <Small>Loading your payment methods…</Small>
-            ) : hasCards ? (
-              <Card padded={false}>
-                {cards.map((c, i) => {
-                  const on = cardId === c.id;
-                  return (
-                    <Pressable
-                      key={c.id}
-                      accessibilityRole="radio"
-                      accessibilityState={{ selected: on }}
-                      onPress={() => setCardId(c.id)}
-                      style={{
-                        minHeight: 64,
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        gap: space.md,
-                        paddingHorizontal: space.lg,
-                        paddingVertical: space.md,
-                        borderTopWidth: i === 0 ? 0 : 1,
-                        borderTopColor: p.rule,
-                      }}
-                    >
-                      <View
-                        style={{
-                          width: 40,
-                          height: 40,
-                          borderRadius: radius.md,
-                          backgroundColor: p.accentSoft,
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                      >
-                        <Icon
-                          name={c.provider === 'card' ? 'card' : 'wallet'}
-                          size={20}
-                          color={p.accentText}
-                        />
-                      </View>
-                      <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
-                        <Body strong numberOfLines={1}>
-                          {c.label}
-                        </Body>
-                        <Small>
-                          {c.provider === 'card'
-                            ? `Expires ${String(c.expiryMonth).padStart(2, '0')}/${String(c.expiryYear).slice(-2)}`
-                            : 'Confirmed on this device'}
-                        </Small>
-                      </View>
-                      <Radio on={on} />
-                    </Pressable>
-                  );
-                })}
-              </Card>
-            ) : (
-              <Pressable accessibilityRole="button" onPress={() => router.push('/wallet/add')}>
-                <Card style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
-                  <View
-                    style={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: radius.md,
-                      backgroundColor: p.accentSoft,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <Icon name="plus" size={20} color={p.accentText} />
-                  </View>
-                  <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
-                    <Body strong>No payment method yet</Body>
-                    <Small>Add a card or wallet before your first top up.</Small>
-                  </View>
-                </Card>
-              </Pressable>
-            )}
-          </View>
-        ) : null}
-
         {error ? <Notice tone="risk" icon="alert">{error}</Notice> : null}
       </ScrollView>
 
@@ -289,36 +183,10 @@ export default function CreditsScreen() {
           onPress={() => {
             if (!pack) return;
             setError(null);
-            if (!EXPERIMENTAL_FEATURES_ENABLED) {
-              router.push({ pathname: '/pay', params: { pack: pack.code } });
-              return;
-            }
-            if (!cardId) return;
-            router.push({ pathname: '/pay', params: { pack: pack.code, card: cardId } });
+            router.push({ pathname: '/pay', params: { pack: pack.code } });
           }}
         />
       </View>
     </Screen>
-  );
-}
-
-function Radio({ on }: { on: boolean }) {
-  const p = usePalette();
-  return (
-    <View
-      style={{
-        width: 22,
-        height: 22,
-        borderRadius: 11,
-        borderWidth: 2,
-        borderColor: on ? p.accent : p.ruleStrong,
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
-      {on ? (
-        <View style={{ width: 11, height: 11, borderRadius: 6, backgroundColor: p.accent }} />
-      ) : null}
-    </View>
   );
 }

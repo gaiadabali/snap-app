@@ -3,9 +3,7 @@ import {
   Body,
   Controller,
   NotImplementedException,
-  Delete,
   Get,
-  Param,
   Patch,
   Post,
   Query,
@@ -13,11 +11,9 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import type {
-  AddSavedCardRequest,
   AlertItem,
   NotificationPrefs,
   PrivacySettings,
-  SavedCard,
   UsageKind,
   UsagePeriod,
 } from '@snap/api-contract';
@@ -37,7 +33,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
  * ⚠ STUBS. Everything in this file is in-process state, not a database.
  *
  * These endpoints exist so the 2026-09-19 mobile redesign has something real
- * to talk to while the surfaces it introduced — a wallet, an alert feed,
+ * to talk to while the surfaces it introduced — an alert feed,
  * per-user notification and privacy choices — get their migrations written.
  * They answer with the right shapes and they mutate consistently within one
  * process, which is enough to develop and demo against.
@@ -45,18 +41,16 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
  * What they are NOT:
  *   - durable. A restart resets every one of them.
  *   - correct across replicas. Two pods disagree, immediately and silently.
- *   - safe for real card data. `POST /v1/wallet/cards` here throws away
- *     everything but the last four digits, which is the right behaviour, but
- *     there is no processor behind it and nothing is tokenised.
  *
  * Before any of this ships to a user:
- *   1. add tables — `saved_cards`, `alerts`, `notification_prefs`,
- *      `privacy_settings` — all USER-scoped, none tenant-scoped;
- *   2. wire `POST /v1/wallet/cards` to a real processor and store its token,
- *      never a PAN;
- *   3. delete this file's `Map`s and point the controllers at repos.
+ *   1. add tables — `alerts`, `notification_prefs`, `privacy_settings` —
+ *      all USER-scoped, none tenant-scoped;
+ *   2. delete this file's `Map`s and point the controllers at repos.
  *
- * Until those tables exist the mobile client hides the wallet, alerts
+ * The saved-cards wallet that was here is gone (group task 7.5.d): cards are
+ * typed on the processor's hosted checkout page, never into this API.
+ *
+ * Until those tables exist the mobile client hides the alerts
  * and fingerprint surfaces behind `EXPERIMENTAL_FEATURES_ENABLED`
  * (`apps/mobile/src/config.ts`), off by default. Notification and privacy
  * preferences are NOT hidden: they are still shown, and they still reset to
@@ -67,7 +61,6 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /* ── In-process state, keyed by user ──────────────────────────────────────── */
 
-const cards = new Map<string, SavedCard[]>();
 const alertsRead = new Map<string, string>();
 const notificationPrefs = new Map<string, NotificationPrefs>();
 const privacySettings = new Map<string, PrivacySettings>();
@@ -117,80 +110,6 @@ function pickPrefs<T extends object>(
 
 const NOTIFICATION_KEYS = Object.keys(DEFAULT_NOTIFICATIONS) as (keyof NotificationPrefs & string)[];
 const PRIVACY_KEYS = Object.keys(DEFAULT_PRIVACY) as (keyof PrivacySettings & string)[];
-
-function brandOf(digits: string): SavedCard['brand'] {
-  if (/^4/.test(digits)) return 'visa';
-  if (/^(5[1-5]|2[2-7])/.test(digits)) return 'mastercard';
-  if (/^3[47]/.test(digits)) return 'amex';
-  return 'other';
-}
-
-/* ── Wallet ───────────────────────────────────────────────────────────────── */
-
-@ApiTags('wallet')
-@Controller('v1/wallet/cards')
-@UseGuards(SessionGuard)
-export class WalletController {
-  @Get()
-  @ApiOperation({ summary: 'Saved payment methods (STUB — in-process)' })
-  list(@CurrentUser() user: AuthUser): SavedCard[] {
-    return [...(cards.get(user.userId) ?? [])].sort(
-      (a, b) => Number(b.isDefault) - Number(a.isDefault),
-    );
-  }
-
-  @Post()
-  @ApiOperation({
-    summary: 'Save a payment method (STUB — no processor)',
-    description:
-      'The PAN and CVC are read, used to derive the brand and last four, and discarded. Nothing is tokenised because there is no processor wired yet.',
-  })
-  add(@CurrentUser() user: AuthUser, @Body() body: AddSavedCardRequest): SavedCard {
-    const digits = (body.number ?? '').replace(/\D/g, '');
-    const mine = cards.get(user.userId) ?? [];
-    const card: SavedCard = {
-      id: `card_${Date.now().toString(36)}`,
-      provider: body.provider,
-      brand: brandOf(digits),
-      // The ONLY part of the number that survives this function.
-      last4: digits.slice(-4) || '0000',
-      expiryMonth: body.expiryMonth,
-      expiryYear: body.expiryYear,
-      label:
-        body.provider === 'card'
-          ? `${brandOf(digits).replace(/^./, (c) => c.toUpperCase())} ending ${digits.slice(-4)}`
-          : body.nameOnCard,
-      isDefault: body.makeDefault ?? mine.length === 0,
-      createdAt: new Date().toISOString(),
-    };
-    cards.set(
-      user.userId,
-      card.isDefault ? [...mine.map((c) => ({ ...c, isDefault: false })), card] : [...mine, card],
-    );
-    return card;
-  }
-
-  @Delete(':id')
-  @ApiOperation({ summary: 'Forget a payment method (STUB)' })
-  remove(@CurrentUser() user: AuthUser, @Param('id') id: string): void {
-    const mine = cards.get(user.userId) ?? [];
-    const gone = mine.find((c) => c.id === id);
-    let left = mine.filter((c) => c.id !== id);
-    // Removing the default promotes the next one rather than leaving none.
-    if (gone?.isDefault && left.length > 0) {
-      left = left.map((c, i) => ({ ...c, isDefault: i === 0 }));
-    }
-    cards.set(user.userId, left);
-  }
-
-  @Post(':id/default')
-  @ApiOperation({ summary: 'Make this the default method (STUB)' })
-  setDefault(@CurrentUser() user: AuthUser, @Param('id') id: string): SavedCard | null {
-    const mine = (cards.get(user.userId) ?? []).map((c) => ({ ...c, isDefault: c.id === id }));
-    cards.set(user.userId, mine);
-    return mine.find((c) => c.id === id) ?? null;
-  }
-}
 
 /* ── Usage ────────────────────────────────────────────────────────────────── */
 
