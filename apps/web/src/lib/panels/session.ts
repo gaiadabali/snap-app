@@ -42,21 +42,10 @@ export const requireSession = cache(
     try {
       const session = await api<{
         user: AuthUser;
-        workspaces: Array<{ id: string; name: string; kind: 'business' | 'personal'; role: string; baseCurrency?: string }>;
+        workspaces: SessionWorkspace[];
         yourtalLinked?: boolean;
       }>('/v1/auth/session');
-      // The session endpoint answers with the same fields as `/v1/workspaces`
-      // (a member count is not one of them), which is enough for every place
-      // that only needs to know which workspaces exist and what kind they are.
-      const workspaces: WorkspaceSummary[] = session.workspaces.map((w) => ({
-        id: w.id,
-        name: w.name,
-        kind: w.kind,
-        role: w.role as WorkspaceSummary['role'],
-        memberCount: 0,
-        abn: null,
-        baseCurrency: w.baseCurrency ?? 'AUD',
-      }));
+      const workspaces = toWorkspaceSummaries(session.workspaces);
       return { user: session.user, workspaces, impersonation, yourtalLinked: session.yourtalLinked };
     } catch (error) {
       if (isImpersonationEndedError(error)) {
@@ -69,3 +58,31 @@ export const requireSession = cache(
     }
   },
 );
+
+type SessionWorkspace = {
+  id: string;
+  name: string;
+  kind: 'business' | 'personal';
+  role: string;
+  baseCurrency?: string;
+  teenSpace?: 'teen' | 'parent' | null;
+};
+
+/**
+ * The session endpoint answers with the same fields as `/v1/workspaces` (a
+ * member count is not one of them), which is enough for every place that only
+ * needs to know which workspaces exist, what kind they are, and whether one is
+ * a teen space (its nav, notice and redirects read `teenSpace`).
+ */
+export function toWorkspaceSummaries(list: SessionWorkspace[]): WorkspaceSummary[] {
+  return list.map((w) => ({
+    id: w.id,
+    name: w.name,
+    kind: w.kind,
+    role: w.role as WorkspaceSummary['role'],
+    memberCount: 0,
+    abn: null,
+    baseCurrency: w.baseCurrency ?? 'AUD',
+    teenSpace: w.teenSpace ?? null,
+  }));
+}
