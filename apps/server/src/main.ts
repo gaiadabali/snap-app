@@ -12,6 +12,8 @@ import { closeDb, getDb } from './db.js';
 import { config, isGoogleSignInSimulatorEnabled } from './config.js';
 import { RateLimiter } from './auth/rate-limit.js';
 import { simulationMode } from './integrations/simulation.js';
+import { STRIPE_SIM_PREFIX } from './integrations/stripe-simulator.js';
+import { simulatedStripe } from './credits/payment-provider.js';
 import { sql } from 'drizzle-orm';
 
 import cors from '@fastify/cors';
@@ -207,6 +209,35 @@ export async function bootstrap(): Promise<NestFastifyApplication> {
       }
     },
   );
+
+  /**
+   * The simulated Stripe's checkout pages, on this host under `/stripe-sim`
+   * (group task 7.5.a), only when `STRIPE_SIMULATOR=true` selected it — which
+   * `integrations/simulation.ts` refuses on a production host without
+   * `DEMO_ENV=staging`. Its own scope and parser: form posts reach it as text
+   * and nothing else in the API starts accepting forms.
+   */
+  if (simulationMode('stripe') === 'simulated') {
+    const sim = await simulatedStripe();
+    await app.register(
+      async (scope: typeof fastify) => {
+        scope.removeAllContentTypeParsers();
+        scope.addContentTypeParser('*', { parseAs: 'string', bodyLimit: 64 * 1024 }, (_req, body, done) =>
+          done(null, body),
+        );
+        scope.all('/*', async (request, reply) => {
+          const answer = await sim.handle(
+            request.method,
+            request.url.slice(STRIPE_SIM_PREFIX.length),
+            request.headers,
+            typeof request.body === 'string' ? request.body : '',
+          );
+          return reply.code(answer.status).headers(answer.headers).send(answer.body);
+        });
+      },
+      { prefix: STRIPE_SIM_PREFIX },
+    );
+  }
 
 /**
  * The GLOBAL rate limiter.

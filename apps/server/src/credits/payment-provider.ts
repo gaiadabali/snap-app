@@ -1,6 +1,7 @@
 import type { CheckoutSession, PaymentProviderId } from '@snap/api-contract';
 
 import { simulationMode } from '../integrations/simulation.js';
+import type { StripeSimulator } from '../integrations/stripe-simulator.js';
 
 /**
  * The seam a payment processor drops into.
@@ -66,7 +67,8 @@ export interface CheckoutRequest {
 
 export interface PaymentProvider {
   readonly id: PaymentProviderId;
-  createCheckout(request: CheckoutRequest): Promise<CheckoutSession>;
+  /** `providerRef`: the processor's session id, recorded on the purchase (one per purchase). */
+  createCheckout(request: CheckoutRequest): Promise<CheckoutSession & { providerRef?: string }>;
 }
 
 /**
@@ -137,6 +139,10 @@ async function build(): Promise<PaymentProvider> {
 
   const { StripePaymentProvider } = await import('./stripe-provider.js');
   const webBase = process.env.WEB_PUBLIC_URL ?? 'http://127.0.0.1:3000';
+  // `/credits/thanks` is public and only says thank you (credits come from
+  // the webhook); the phone app's browser tab also ends there.
+  const successUrl = `${webBase}/credits/thanks`;
+  const cancelUrl = `${webBase}/app/credits`;
 
   if (mode === 'real') {
     if (!process.env.STRIPE_WEBHOOK_SECRET) {
@@ -153,32 +159,71 @@ async function build(): Promise<PaymentProvider> {
     }
     return new StripePaymentProvider({
       secretKey: process.env.STRIPE_SECRET_KEY!,
-      successUrl: `${webBase}/credits/thanks`,
-      cancelUrl: `${webBase}/credits`,
+      successUrl,
+      cancelUrl,
     });
   }
 
   // Simulated. The SAME class, pointed at a server that serves Stripe's
   // Checkout Sessions shape and signs its webhooks with a real HMAC — not a
   // second implementation, and nothing short-circuited. See the header.
-  const { startStripeSimulator } = await import('../integrations/stripe-simulator.js');
-  const sim = await startStripeSimulator();
-  simulatedWebhookSecret = sim.webhookSecret;
+  const sim = await simulatedStripe();
   return new StripePaymentProvider({
     secretKey: sim.secretKey,
     apiBase: sim.apiBase,
-    successUrl: `${webBase}/credits/thanks`,
-    cancelUrl: `${webBase}/credits`,
+    successUrl,
+    cancelUrl,
   });
+}
+
+let simulator: Promise<StripeSimulator> | null = null;
+
+/**
+ * The one simulated Stripe of this process (group task 7.5.a). `main.ts`
+ * mounts its pages at `${PUBLIC_URL}/stripe-sim` when `STRIPE_SIMULATOR=true`,
+ * and it delivers its webhooks to this same process, as Stripe would over
+ * the internet.
+ */
+export function simulatedStripe(): Promise<StripeSimulator> {
+  if (!simulator) {
+    simulator = (async () => {
+      const { startStripeSimulator, STRIPE_SIM_PREFIX } = await import(
+        '../integrations/stripe-simulator.js'
+      );
+      const publicUrl = (process.env.PUBLIC_URL ?? 'http://127.0.0.1:4000').replace(/\/+$/, '');
+      const webhook = `http://127.0.0.1:${process.env.PORT ?? 4000}/v1/credits/webhooks/stripe`;
+      const sim = await startStripeSimulator({
+        publicBase: `${publicUrl}${STRIPE_SIM_PREFIX}`,
+        async deliver({ body, signature }) {
+          const response = await fetch(webhook, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json', 'stripe-signature': signature },
+            body,
+            signal: AbortSignal.timeout(10_000),
+          });
+          if (!response.ok) throw new Error(`webhook answered ${response.status}`);
+        },
+      });
+      simulatedWebhookSecret = sim.webhookSecret;
+      return sim;
+    })().catch((error: unknown) => {
+      simulator = null;
+      throw error;
+    });
+  }
+  return simulator;
 }
 
 /** The secret the webhook handler must verify against. */
 export function stripeWebhookSecret(): string | null {
-  return process.env.STRIPE_WEBHOOK_SECRET ?? simulatedWebhookSecret;
+  // The simulator's own secret first: a stale STRIPE_WEBHOOK_SECRET left on
+  // a simulated host would otherwise refuse every simulated payment.
+  return simulatedWebhookSecret ?? process.env.STRIPE_WEBHOOK_SECRET ?? null;
 }
 
 /** Test-only: drop the memoised provider so the next call re-reads the env. */
 export function resetPaymentProviderForTesting(): void {
   cached = null;
+  simulator = null;
   simulatedWebhookSecret = null;
 }

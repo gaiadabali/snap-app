@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { ButtonLink, Empty, SectionTitle } from '@/design/primitives';
 import { getCreditBalance, getPlanUsage, listCreditPacks, listCreditPurchases } from '@/lib/panels/data';
-import { startCreditPurchase } from '@/lib/panels/credit-actions';
+import { purchaseCredits } from '@/lib/panels/credit-actions';
 import { loadWorkspace } from '@/lib/panels/workspace';
 import { CreditsClient } from './CreditsClient';
 
@@ -44,7 +44,7 @@ export default async function CreditsPage() {
         balance={balance}
         packs={packs}
         purchases={purchases}
-        onPurchase={startCreditPurchase.bind(null, workspace.id, path)}
+        onPurchase={purchaseCredits.bind(null, workspace.id, path)}
       />
     </div>
   );

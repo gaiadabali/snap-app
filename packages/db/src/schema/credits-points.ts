@@ -58,6 +58,8 @@ export const creditPurchases = pgTable('credit_purchases', {
      processor list is shared with `subscriptions` and must not fork. */
   provider: billingProvider('provider').notNull().default('manual'),
   providerRef: text('provider_ref'),
+  /** The processor's payment (Stripe PaymentIntent) it was settled or refunded by (0053). */
+  paymentRef: text('payment_ref'),
   /** NULL until paid: credits must never exist before the money does. */
   grantId: uuid('grant_id'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

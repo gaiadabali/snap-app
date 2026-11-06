@@ -40,11 +40,9 @@ export const BUSINESS_FEATURES_ENABLED = false;
  * in any build. Unlike `BUSINESS_FEATURES_ENABLED`, these screens are ones the
  * SERVER CANNOT HONOUR yet, not merely ones the release does not target:
  * `app/fingerprint.tsx` records a preference that locks nothing, and the
- * wallet and alerts screens read `v1/wallet/cards` and `v1/alerts`, which the
- * server serves from in-process Maps
- * (`apps/server/src/redesign/redesign.controller.ts`). A card saved there is
- * gone at the next restart, and every merge to main restarts the server. A
- * screen that looks like it keeps your card is worse than no screen.
+ * alerts screen reads `v1/alerts`, which the server serves from in-process
+ * Maps (`apps/server/src/redesign/redesign.controller.ts`), gone at the next
+ * restart. (The saved-cards wallet that was here is removed: group task 7.5.d.)
  *
  * Each surface is hidden twice: its entry point is removed (the home bell,
  * the privacy "fingerprint" row) and the screen

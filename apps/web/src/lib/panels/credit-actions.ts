@@ -5,37 +5,6 @@ import { revalidatePath } from 'next/cache';
 import type { CheckoutSession, CreditPurchase } from '@snap/api-contract';
 
 import { api, ApiError, newIdempotencyKey } from '@/lib/api/server';
-import type { ActionResult } from './actions';
-
-/**
- * Starts a credit purchase.
- *
- * Records intent and comes back `pending`. Taking money is a second step —
- * `beginCheckout` below — because the purchase record must exist before
- * anything is asked to charge against it, and because which rail that will be
- * is undecided.
- */
-export async function startCreditPurchase(
-  workspaceId: string,
-  path: string,
-  packCode: string,
-): Promise<ActionResult> {
-  try {
-    await api('/v1/credits/purchases', {
-      method: 'POST',
-      body: { packCode },
-      workspaceId,
-      idempotencyKey: newIdempotencyKey(),
-    });
-  } catch (error) {
-    return {
-      ok: false,
-      message: error instanceof ApiError ? error.message : 'Could not start that purchase.',
-    };
-  }
-  revalidatePath(path);
-  return { ok: true };
-}
 
 /**
  * Asks what happens next about a pending purchase.

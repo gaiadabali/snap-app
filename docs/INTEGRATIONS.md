@@ -308,6 +308,29 @@ rejection is exercised by replaying an old signature.
 > stricter version of that check would have rejected every real price in the
 > table. That one was caught by a test failing, and the test was the thing
 > that was wrong the first time.
+
+**P4 — Checkout page, refunds, the phone (group plan 7.5.a, 7.5.d).** With
+`STRIPE_SIMULATOR=true` (refused on a production host without
+`DEMO_ENV=staging`), the API serves the simulator at `${PUBLIC_URL}/stripe-sim`.
+Its checkout page takes Stripe's test cards only (4242 4242 4242 4242 pays,
+4000 0000 0000 0002 is declined, anything else is refused; the number is never
+stored or logged) and says "Simulated payment, no real money" on every page.
+Paying sends `checkout.session.completed` to this process's own webhook,
+signed and retried while the app does not answer 2xx; the first attempt is
+awaited before the browser goes on to `${WEB_PUBLIC_URL}/credits/thanks`. A
+paid page offers a refund, which sends `charge.refunded`: the webhook zeroes
+and expires what is left of the pack's grant and marks the purchase `refunded`
+(migration 0053 keeps its `paid_at`). Scans already spent stay spent. A
+purchase has ONE checkout session (`provider_ref`, set when `/checkout` opens
+it; a second is refused 409), and the completion records Stripe's PaymentIntent
+in `payment_ref`: a refund is matched to that payment, a payment through any
+other session grants nothing and is logged as a duplicate to refund, and a
+refund that overtakes its completion is recorded so the completion grants
+nothing. The phone app opens
+the same page in the system browser and reads the purchase back when it
+closes; the saved-cards stub (`/v1/wallet/cards`) is removed. Going live is
+`STRIPE_SECRET_KEY` + `STRIPE_WEBHOOK_SECRET` (6.8); the simulator then turns
+itself off.
 >
 > **A refusal the ticket did not ask for.** `paymentProvider()` throws when
 > `STRIPE_SECRET_KEY` is set and `STRIPE_WEBHOOK_SECRET` is not. Without the
