@@ -408,6 +408,23 @@ describeIfDb('teen spaces — real database, real provider', () => {
       const one = await listCreditUsage(parentId, household, month!, 1, null);
       expect(one.nextBefore).toBe(one.items[0]!.id);
       expect((await listCreditUsage(parentId, household, month!, 1, one.nextBefore)).nextBefore).toBeNull();
+
+      // Other members of the parent's workspace see none of it (the teen agreed to the parent, not staff).
+      const sam = person('staff', { name: 'Sam' });
+      await signIn(sam);
+      const staff = (await userIdOf(sam))!;
+      await admin.query(`INSERT INTO memberships (tenant_id, user_id, role) VALUES ($1, $2, 'member')`, [household, staff]);
+      try {
+        expect(await listCreditUsage(staff, household, month!, 100, null)).toMatchObject({ total: 0, items: [] });
+        expect(await listCreditUsageMonths(staff, household)).toEqual([]);
+      } finally {
+        await admin.query(`DELETE FROM memberships WHERE tenant_id = $1 AND user_id = $2`, [household, staff]);
+      }
+
+      // A credit spent stays spent: the teen deleting the capture changes neither list.
+      await admin.query(`DELETE FROM captures WHERE tenant_id = $1`, [space]);
+      expect((await listCreditUsage(teenId, space, month!, 100, null)).total).toBe(1);
+      expect((await listCreditUsage(parentId, household, month!, 100, null)).total).toBe(1);
     });
 
     it('redoes a setup that failed after the join, at the next sign-in', async () => {

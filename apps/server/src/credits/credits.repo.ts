@@ -466,9 +466,10 @@ export type UsageRow = {
  * database session's time zone.
  *
  * Teen scans are paid from the parent's workspace and recorded in
- * `teen_space_spends`, which the API cannot read; two definer reads (0056) fill
- * the gap. In a teen space a scan paid by the parent counts 1 credit; in the
- * parent's workspace each credit a teen's scan took is a "Teen scan" line (no
+ * `teen_space_spends`, which the API cannot read; 0056 fills
+ * the gap (a flag on the teen's own spend row, and a definer read for the
+ * parent). In a teen space a scan paid by the parent counts 1 credit; in the
+ * parent's workspace, for its owner only, each credit a teen's scan took is a "Teen scan" line (no
  * supplier: what the receipt held stays in the teen's space).
  */
 export async function listCreditUsage(
@@ -489,7 +490,7 @@ export async function listCreditUsage(
       with sp as (
         select s.id, s.capture_id, s.spent_at,
                (s.refunded_at is null
-                and (s.grant_source is not null or s.capture_id in (select teen_space_paid_captures())))::int as amount,
+                and (s.grant_source is not null or s.parent_funded))::int as amount,
                s.refunded_at is not null as refunded, false as teen
           from credit_spends s
          where s.spent_at >= ${from} and s.spent_at < ${to}

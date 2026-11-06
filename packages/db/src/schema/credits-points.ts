@@ -104,6 +104,8 @@ export const creditSpends = pgTable('credit_spends', {
   /** A copy of `usage_grants.source` at spend time. */
   grantSource: text('grant_source'),
   paid: boolean('paid').notNull(),
+  /** A teen's scan paid from the parent's credit (0056): shown as 1 credit, earns nothing. */
+  parentFunded: boolean('parent_funded').notNull().default(false),
   spentAt: timestamp('spent_at', { withTimezone: true }).notNull().defaultNow(),
   refundedAt: timestamp('refunded_at', { withTimezone: true }),
   /** 'unreadable' or 'not_extracted'. */

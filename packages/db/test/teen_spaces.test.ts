@@ -246,15 +246,21 @@ describeIfDb('teen spaces (migration 0045)', () => {
     expect((await c.query('SELECT teen_space_credits() AS n')).rows[0].n).toBeNull();
     expect((await c.query('SELECT teen_space_funded() AS f')).rows[0].f).toBeNull();
 
-    // 0056: the usage reads. The parent sees its teen's spend with no capture; the teen sees which capture was paid.
+    // 0056: the parent sees its teen's spend with no capture ...
     expect((await c.query('SELECT * FROM teen_space_funded_spends(NULL, NULL)')).rows).toEqual([
       { id: expect.any(String), spent_at: expect.any(Date), refunded: false },
     ]);
     expect((await c.query('SELECT count(*)::int AS n FROM teen_space_funded_spends(now() + interval \'1 day\', NULL)')).rows[0].n).toBe(0);
-    expect((await c.query('SELECT count(*)::int AS n FROM teen_space_paid_captures()')).rows[0].n).toBe(0);
+    // ... the teen's own space and a stranger's see none ...
     await as('app_rw', TEEN, space);
-    expect((await c.query('SELECT * FROM teen_space_paid_captures()')).rows).toEqual([{ teen_space_paid_captures: capture }]);
     expect((await c.query('SELECT count(*)::int AS n FROM teen_space_funded_spends(NULL, NULL)')).rows[0].n).toBe(0);
+    // ... and a non-owner member of the funding workspace (staff) sees none either.
+    await c.query('RESET ROLE');
+    await c.query(`INSERT INTO memberships (tenant_id, user_id, role) VALUES ($1, $2, 'member')`, [FUND, OTHER]);
+    await as('app_rw', OTHER, FUND);
+    expect((await c.query('SELECT count(*)::int AS n FROM teen_space_funded_spends(NULL, NULL)')).rows[0].n).toBe(0);
+    await c.query('RESET ROLE');
+    await c.query(`DELETE FROM memberships WHERE tenant_id = $1 AND user_id = $2`, [FUND, OTHER]);
     // Still no direct read of the table.
     await as('app_rw', PARENT, FUND);
     expect(await failure('SELECT * FROM teen_space_spends')).toMatch(/^42501/);
