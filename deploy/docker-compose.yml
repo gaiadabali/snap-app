@@ -112,6 +112,10 @@ services:
       # Found by publishing an APK into the volume and watching the API answer
       # "nothing published" while the file sat there in plain sight.
       STORAGE_DIR: /data/storage
+      # Self-deleted account ids, on the host and outside Postgres (8.3.g R2;
+      # docs/DEPLOY.md "Restoring from a backup"). One-time on the host:
+      #   mkdir -p /opt/snap-apps/data/erased && chown 1001 /opt/snap-apps/data/erased
+      ERASED_LOG_DIR: /data/erased
       # ── Snapper, the website assistant (docs/ASSISTANT.md §8) ──────────
       #
       # The model key is the SAME secret file the worker reads: the
@@ -141,6 +145,7 @@ services:
       YOURTAL_OIDC_KEY_FILE: /run/secrets/yourtal-oidc-web.jwk
     volumes:
       - ${STORAGE_HOST_DIR:?set STORAGE_HOST_DIR in .env — where original captures persist on the host}:/data/storage
+      - ${ERASED_LOG_HOST_DIR:-/opt/snap-apps/data/erased}:/data/erased
       # Same file, same mount, same uid-1001 readability rule as the worker's
       # (see the long note on the worker's volume below).
       - ${OLLAMA_ENV_FILE_HOST:?set it in deploy/.env to the host path of the ollama key file, readable by uid 1001}:/run/secrets/ollama.env:ro

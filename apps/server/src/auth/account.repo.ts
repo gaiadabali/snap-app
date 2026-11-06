@@ -146,11 +146,16 @@ export async function markEmailProven(userId: string): Promise<boolean> {
  * ends the person's teen spaces through teen_space_end (a parent's teens, or a
  * teen's own space, which then goes through the 30-day hold instead), queues the
  * `account_delete` job the worker erases from (parents and adults), and revokes
- * every session. False when the session is not live.
+ * every session. 8.3.g (0057): `freshWithinSeconds` is the step-up for a passwordless account
+ * (the session must be that young, null = no step-up), and an active staff account is refused.
  */
-export async function requestAccountDeletion(sessionTokenHash: Buffer): Promise<boolean> {
-  const { rows } = await getDb().execute<{ ok: boolean }>(sql`
-    select identity_account_delete_request(${sessionTokenHash}) as ok
+export type AccountDeletionResult = 'queued' | 'no_session' | 'staff' | 'sign_in_again';
+export async function requestAccountDeletion(
+  sessionTokenHash: Buffer,
+  freshWithinSeconds: number | null,
+): Promise<AccountDeletionResult> {
+  const { rows } = await getDb().execute<{ r: AccountDeletionResult }>(sql`
+    select identity_account_delete_request(${sessionTokenHash}, ${freshWithinSeconds}::integer) as r
   `);
-  return rows[0]?.ok === true;
+  return rows[0]?.r ?? 'no_session';
 }

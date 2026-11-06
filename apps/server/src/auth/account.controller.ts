@@ -41,6 +41,7 @@ import {
   requestAccountDeletion,
 } from './account.repo.js';
 import { clientIp, type IpAwareRequest } from './client-ip.js';
+import { recordSelfErased } from './erased-log.js';
 import { hashPassword, passwordProblem, verifyPassword } from './passwords.js';
 import { RateLimiter } from './rate-limit.js';
 import { revokeAllSessions, revokeSession } from './sessions.js';
@@ -107,6 +108,8 @@ const resetPerIp = new RateLimiter(10, WINDOW);
 const resetConfirmPerIp = new RateLimiter(10, WINDOW);
 const changePerUser = new RateLimiter(5, WINDOW);
 const deletePerUser = new RateLimiter(5, WINDOW);
+/** How recent a sign-in a passwordless account needs to delete itself (8.3.g L4). */
+const DELETE_FRESH_SIGN_IN_SECONDS = 10 * 60;
 const resendPerUser = new RateLimiter(3, WINDOW);
 const resendPerIp = new RateLimiter(10, WINDOW);
 const verifyConfirmPerIp = new RateLimiter(20, WINDOW);
@@ -263,7 +266,8 @@ export class AccountController {
       'session at once, this one included. A parent\'s teen spaces are ended first (30-day hold, YourTal told); ' +
       'a teen\'s own request is that same hold, and the space and account are erased after 30 days. ' +
       'Deletes SnapApp only, never the YourTal account. Not available ' +
-      'to staff acting as a user. 403 wrong_password when the password is wrong. 429 past 5 tries per account in 15 minutes.',
+      'to staff acting as a user, nor to staff accounts (403 staff_cannot_self_delete). An account with no password ' +
+      'needs a sign-in from the last 10 minutes (403 recent_sign_in_required). 403 wrong_password when the password is wrong. 429 past 5 tries per account in 15 minutes.',
   })
   async deleteAccount(
     @CurrentUser() user: AuthUser,
@@ -274,17 +278,34 @@ export class AccountController {
     if (body.confirm.trim() !== 'DELETE') {
       throw new BadRequestException({ error: 'confirm_required', message: 'Type DELETE to confirm.' });
     }
-    if (!(await isLinkedToYourTal(user.userId))) {
-      const record = await passwordRecordFor(user.email);
-      if (record?.passwordHash && !(await verifyPassword(body.password ?? '', record.passwordHash))) {
-        // 403, not 401: the phone treats a 401 on a signed-in call as "your session ended" and signs out.
-        throw new ForbiddenException({ error: 'wrong_password', message: 'That password is not right.' });
-      }
+    // A password to re-type is the step-up. Without one (YourTal, Google, an emailed link) the session
+    // itself must be a recent sign-in: the database checks its age (L4).
+    let freshWithinSeconds: number | null = null;
+    const linked = await isLinkedToYourTal(user.userId);
+    const record = linked ? null : await passwordRecordFor(user.email);
+    if (!record?.passwordHash) {
+      freshWithinSeconds = DELETE_FRESH_SIGN_IN_SECONDS;
+    } else if (!(await verifyPassword(body.password ?? '', record.passwordHash))) {
+      // 403, not 401: the phone treats a 401 on a signed-in call as "your session ended" and signs out.
+      throw new ForbiddenException({ error: 'wrong_password', message: 'That password is not right.' });
     }
     // One transaction in SQL: the user comes from the session, the job is queued, every session ends.
-    if (!(await requestAccountDeletion(session.tokenHash))) {
-      throw new UnauthorizedException('Your session has ended. Sign in again.');
+    const result = await requestAccountDeletion(session.tokenHash, freshWithinSeconds);
+    if (result === 'no_session') throw new UnauthorizedException('Your session has ended. Sign in again.');
+    // 403s, like wrong_password: the phone must stay signed in and show the message.
+    if (result === 'staff') {
+      throw new ForbiddenException({
+        error: 'staff_cannot_self_delete',
+        message: 'Staff accounts cannot be deleted here. Ask another admin to remove your staff access first.',
+      });
     }
+    if (result === 'sign_in_again') {
+      throw new ForbiddenException({
+        error: 'recent_sign_in_required',
+        message: `To delete your account, sign in again first: sign out, sign in, then come straight back here (within ${DELETE_FRESH_SIGN_IN_SECONDS / 60} minutes).`,
+      });
+    }
+    await recordSelfErased(user.userId);
     return { ok: true };
   }
 
