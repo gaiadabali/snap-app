@@ -53,7 +53,7 @@
  * test below possible without touching the process environment.
  */
 
-export type IntegrationId = 'kms' | 'mailer' | 'stripe' | 'xero' | 'powersync';
+export type IntegrationId = 'kms' | 'mailer' | 'stripe' | 'googleplay' | 'xero' | 'powersync';
 
 export type SimulationMode = 'real' | 'simulated' | 'absent';
 
@@ -107,6 +107,14 @@ export const INTEGRATIONS: readonly IntegrationSpec[] = [
     simulatorVar: 'STRIPE_SIMULATOR',
     credentialVars: ['STRIPE_SECRET_KEY'],
     protocol: "Stripe's Checkout Sessions REST shape and Stripe-Signature HMAC",
+  },
+  {
+    id: 'googleplay',
+    label: 'Google Play Billing',
+    simulatorVar: 'GOOGLE_PLAY_SIMULATOR',
+    // A path under /etc/snap-apps/secrets on the host, never the key itself.
+    credentialVars: ['GOOGLE_PLAY_SERVICE_ACCOUNT_FILE'],
+    protocol: "the Play Developer API's purchase states (an in-process store of tokens it issued)",
   },
   {
     id: 'xero',

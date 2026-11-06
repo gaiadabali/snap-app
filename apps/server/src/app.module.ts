@@ -11,6 +11,7 @@ import { BusinessController } from './business/business.controller.js';
 import { CreditsController } from './credits/credits.controller.js';
 import { PointsController } from './credits/points.controller.js';
 import { StripeWebhookController } from './credits/stripe-webhook.controller.js';
+import { GooglePlayController, GooglePlayNotificationsController } from './credits/google-play.controller.js';
 import { DocumentsController } from './documents/documents.controller.js';
 import { DownloadsController } from './export/downloads.controller.js';
 import { CaptureDocumentController } from './captures/capture-document.controller.js';
@@ -132,6 +133,8 @@ export class HealthController {
     YourtalEventsController,
     YourtalVouchersController,
     StripeWebhookController,
+    GooglePlayController,
+    GooglePlayNotificationsController,
     AssistantController,
 
     /* The 2026-09-19 mobile redesign. Read the file header before relying on

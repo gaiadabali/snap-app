@@ -7,6 +7,9 @@ import { Text } from '@/theme/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, type CreditPurchase } from '@/api';
+import { buyOnPlay } from '@/lib/play-billing';
+import { isPlayBuild } from '@/lib/updates';
+import { useSession } from '@/session';
 import { Icon } from '@/components/Icon';
 import { Button, Card, Divider, Screen, Small } from '@/components/ui';
 import { formatAud, numeric, space, type, usePalette } from '@/theme';
@@ -24,12 +27,19 @@ import { formatAud, numeric, space, type, usePalette } from '@/theme';
  * processor's signed webhook, so when the browser closes this screen only
  * reads the purchase back; it never marks anything paid. The purchase id is
  * kept so a failure is reported against a real row rather than vanishing.
+ *
+ * The Play build pays through Google Play instead (group plan 8.3.b) and never
+ * opens the web checkout: Play's sheet takes the money, the server confirms
+ * the token with Google, and this screen shows what the server says.
  */
 type Phase = 'busy' | 'done' | 'waiting' | 'failed';
 
 export default function PayScreen() {
   // A teen's own space buys nothing: its scans spend the parent's credits (group 3.10, F112).
-  const teenSpace = useWorkspace().active.teenSpace === 'teen';
+  const { active, workspaceId } = useWorkspace();
+  const teenSpace = active.teenSpace === 'teen';
+  const userId = useSession().session?.user.userId ?? '';
+  const play = isPlayBuild();
   const p = usePalette();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -65,7 +75,11 @@ export default function PayScreen() {
   }
 
   function checkAgain() {
-    if (!purchase) return;
+    // Play: the Credits screen confirms any purchase Play has since settled.
+    if (!purchase) {
+      router.replace('/credits');
+      return;
+    }
     setPhase('busy');
     void settledPurchase(purchase.id)
       .then(show)
@@ -89,6 +103,19 @@ export default function PayScreen() {
       setPhase('busy');
       setReason(null);
       try {
+        if (play) {
+          const outcome = await buyOnPlay(params.pack as string, { workspaceId, userId });
+          if (!live) return;
+          if (outcome.kind === 'cancelled') {
+            setReason('You closed Google Play without paying. Nothing was charged.');
+            setPhase('failed');
+          } else if (outcome.kind === 'pending') {
+            setPhase('waiting');
+          } else {
+            await show(outcome.purchase);
+          }
+          return;
+        }
         const started = await api().startCreditPurchase(params.pack as string);
         if (!live) return;
         setPurchase(started);
@@ -118,6 +145,8 @@ export default function PayScreen() {
     return () => {
       live = false;
     };
+    // Workspace and user are fixed while this screen is open (SessionGate);
+    // listing them would let a late change start a second purchase.
   }, [params.pack, attempt, teenSpace]);
 
   const body = {
@@ -140,7 +169,9 @@ export default function PayScreen() {
           <Text
             style={[type.body, { color: p.inkMuted, marginTop: space.sm, textAlign: 'center', maxWidth: 300 }]}
           >
-            Finish paying in the browser, then close it to come back here.
+            {play
+              ? 'Finish paying in Google Play.'
+              : 'Finish paying in the browser, then close it to come back here.'}
           </Text>
           <Small style={{ marginTop: space.lg }}>Do not close the app.</Small>
         </View>

@@ -1640,6 +1640,17 @@ export interface StartCreditPurchaseRequest {
 }
 
 /**
+ * `POST /v1/credits/google-play` request body (group plan 8.3.b). The Play
+ * build sends what Play's billing sheet returned; the server asks Google
+ * about the token before granting anything. `productId` is the pack code
+ * (`credits_50`, `credits_100`, `credits_250`).
+ */
+export interface GooglePlayPurchaseRequest {
+  productId: string;
+  purchaseToken: string;
+}
+
+/**
  * One purchase record. `status` starts `pending`; it becomes `paid` only
  * once a grant exists (migration 0024's CHECK constraints make the reverse
  * unrepresentable). There is no payment processor yet — Stripe is phase 6.5

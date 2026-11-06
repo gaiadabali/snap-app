@@ -1996,6 +1996,11 @@ export class MockApi implements SnapApi {
     };
   }
 
+  /** The demo has no Google Play to verify against. */
+  async redeemGooglePlayPurchase(): Promise<CreditPurchase> {
+    throw new Error('The demo takes no payments, so nothing was charged and no scans were added.');
+  }
+
   /** The demo has no YourTal provider to send anyone to: the buttons stay hidden. */
   async getYourtalSignInAvailable(): Promise<boolean> {
     return false;

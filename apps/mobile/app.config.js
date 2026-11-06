@@ -48,6 +48,12 @@ module.exports = ({ config }) => {
     android: {
       ...config.android,
       versionCode,
+      // Google Play Billing (8.3.b) is only for the Play build; expo-iap's
+      // manifest would otherwise give the website APK the billing permission.
+      blockedPermissions:
+        process.env.EXPO_PUBLIC_DISTRIBUTION === 'play'
+          ? config.android?.blockedPermissions
+          : [...(config.android?.blockedPermissions ?? []), 'com.android.vending.BILLING'],
       // Sign in with YourTal returns here (3.3.e). Android verifies it against
       // https://<host>/.well-known/assetlinks.json. Keep in step with
       // YOURTAL_REDIRECT_URI in src/lib/yourtal-signin.ts.

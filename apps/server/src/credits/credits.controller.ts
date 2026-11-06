@@ -50,7 +50,7 @@ export class StartCreditPurchaseDto implements StartCreditPurchaseRequest {
 /** Same bar as `workspaces.controller.ts`'s invite/role endpoints: a
  *  purchase — even an unfulfilled one today — commits the workspace to a
  *  cost, so it is gated the same way seats and roles are. */
-async function requireAdmin(user: AuthUser, tenantId: string): Promise<void> {
+export async function requireAdmin(user: AuthUser, tenantId: string): Promise<void> {
   const members = await listMembers(user.userId, tenantId);
   const role = members.find((m) => m.user_id === user.userId)?.role;
   if (role !== 'owner' && role !== 'admin') {
@@ -80,7 +80,7 @@ export async function resumeAfterCredits(userId: string, tenantId: string): Prom
   }
 }
 
-function toPurchase(row: CreditPurchaseRow): CreditPurchase {
+export function toPurchase(row: CreditPurchaseRow): CreditPurchase {
   return {
     id: row.id,
     packCode: row.pack_code,

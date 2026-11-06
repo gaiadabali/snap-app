@@ -167,6 +167,16 @@ describe('the five simulated integrations, at boot', () => {
     expect(result.failures.join('\n')).toContain('DEMO_ENV=staging');
   });
 
+  it('REFUSES to start on an unreadable Google Play key, without quoting it (8.3.b)', () => {
+    const result = evaluatePreflight(settings(), safe, {
+      NODE_ENV: 'production',
+      GOOGLE_PLAY_SERVICE_ACCOUNT_FILE: '/nonexistent/google-play.json',
+    });
+    expect(result.ok).toBe(false);
+    expect(result.failures.join('\n')).toContain('GOOGLE_PLAY_SERVICE_ACCOUNT_FILE could not be read (ENOENT)');
+    expect(result.warnings.join('\n')).toContain('GOOGLE_PLAY_RTDN_AUDIENCE');
+  });
+
   it('names EVERY refused simulator, not just the first', () => {
     const result = evaluatePreflight(settings(), safe, {
       NODE_ENV: 'production',
