@@ -36,6 +36,8 @@
 -- fields above and to the funding workspace's owner.
 -- ---------------------------------------------------------------------------
 
+-- credit_spends is busy: give up rather than queue behind live spends (as 0043/0047).
+SET LOCAL lock_timeout = '5s';
 ALTER TABLE credit_spends ADD COLUMN IF NOT EXISTS parent_funded boolean NOT NULL DEFAULT false;
 
 UPDATE credit_spends cs SET parent_funded = true
@@ -72,6 +74,7 @@ BEGIN
      AND p.prosecdef AND p.provolatile = 's'
      AND p.proconfig::text LIKE '%search_path%'
      AND pg_get_userbyid(p.proowner) = 'app_teen'
+     AND p.proacl IS NOT NULL  -- a NULL acl means PUBLIC may execute
      AND NOT EXISTS (SELECT 1 FROM aclexplode(p.proacl) a
                       WHERE a.grantee = 0 OR pg_get_userbyid(a.grantee) NOT IN ('app_teen', 'app_rw'));
   IF n <> 1 THEN
