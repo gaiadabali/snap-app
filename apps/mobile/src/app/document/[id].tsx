@@ -355,8 +355,8 @@ export default function DocumentScreen() {
                   calls the most expensive to get wrong. */}
             </View>
             <Divider />
-            {/* Nothing to exclude on a receipt with no tax on it. */}
-            {Number(doc.taxAmount) !== 0 ? (
+            {/* Unknown ex-tax total, or no tax on the receipt: nothing to show. */}
+            {doc.taxExclusiveAmount != null && Number(doc.taxAmount) !== 0 ? (
               <Field label="Excluding GST" value={money.fmt(doc.taxExclusiveAmount)} />
             ) : null}
             {transitions ? (

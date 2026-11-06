@@ -4,6 +4,7 @@ import {
   analyticsSummary,
   detectRecurring,
   personalSummary,
+  startOfMonth,
 } from '@snap/api-contract/analytics';
 import type {
   AnalyticsRange,
@@ -56,13 +57,13 @@ export class SummariesController {
    *
    * Every total here is shown in the workspace's currency, so a receipt in
    * another one (an IDR receipt in an AUD household) must not be added in: Rp
-   * 70,900 + Rp 20 showed as "$70,920.00". Those are counted in `foreign`
-   * instead, never summed — the same rule the deduction totals follow.
+   * 70,900 + Rp 20 showed as "$70,920.00". Those are returned apart, as
+   * `foreign`, never summed — the same rule the deduction totals follow.
    */
   private async views(
     user: AuthUser,
     tenantId: string,
-  ): Promise<{ docs: DocumentView[]; foreign: number }> {
+  ): Promise<{ docs: DocumentView[]; foreign: DocumentView[] }> {
     const rows = await listDocuments(user.userId, tenantId, 'all');
     // One resolution for the whole workspace, not one per row.
     const tenant = await readTenant(user.userId, tenantId);
@@ -70,8 +71,8 @@ export class SummariesController {
     // Aggregation reads amounts and dates only; it never displays a document's
     // pages, so there is no reason to pay for `listCapturePages` per row here.
     const all = rows.map((r) => toWire(r, [], [], consumptionTax));
-    const docs = tenant ? all.filter((d) => d.currency === tenant.base_currency) : all;
-    return { docs, foreign: all.length - docs.length };
+    const inBase = (d: DocumentView) => !tenant || d.currency === tenant.base_currency;
+    return { docs: all.filter(inBase), foreign: all.filter((d) => !inBase(d)) };
   }
 
   @Get('overview')
@@ -176,7 +177,9 @@ export class SummariesController {
     // headline figure that can silently disagree with them.
     return {
       ...personalSummary(documents, budgets, sum(budgets.map((b) => b.monthly))),
-      foreignCurrencyCount: foreign,
+      // Only this month's, the window the figures above cover: a receipt from
+      // last year must not keep a "not counted" note on every month.
+      foreignCurrencyCount: foreign.filter((d) => d.issueDate >= startOfMonth(new Date())).length,
     };
   }
 

@@ -84,15 +84,18 @@ export function formatTotals(
   fallback: string | null | undefined,
   opts?: { cents?: boolean },
 ): string {
+  const home = (fallback || 'AUD').toUpperCase();
   const units = new Map<string, bigint>();
   for (const d of docs) {
-    const code = (d.currency || fallback || 'AUD').toUpperCase();
+    const code = (d.currency || home).toUpperCase();
     const [w = '0', f = ''] = d.payableAmount.replace('-', '').split('.');
     const v = BigInt(w) * 10000n + BigInt((f + '0000').slice(0, 4));
     units.set(code, (units.get(code) ?? 0n) + (d.payableAmount.trimStart().startsWith('-') ? -v : v));
   }
-  if (units.size === 0) units.set((fallback || 'AUD').toUpperCase(), 0n);
+  if (units.size === 0) units.set(home, 0n);
+  // The workspace's currency first, so day totals read the same way each day.
   return [...units]
+    .sort(([a], [b]) => Number(b === home) - Number(a === home))
     .map(([code, u]) => {
       const abs = u < 0n ? -u : u;
       return formatMoney(`${u < 0n ? '-' : ''}${abs / 10000n}.${(abs % 10000n).toString().padStart(4, '0')}`, code, opts);

@@ -90,12 +90,14 @@ export default function ReceiptsScreen() {
   const byCategory = useMemo(() => {
     const m = new Map<string, number>();
     for (const d of all) {
+      // The workspace's currency only: IDR and AUD amounts on one bar mean nothing.
+      if (d.currency !== money.currency) continue;
       // Display-only aggregation, so a float is acceptable here; every figure
       // that is stored or reported stays a decimal string.
       m.set(d.category, (m.get(d.category) ?? 0) + Number(d.payableAmount));
     }
     return [...m.entries()].map(([category, amount]) => ({ category, amount }));
-  }, [all]);
+  }, [all, money.currency]);
 
   const sections = useMemo(() => {
     const list = onlyReview ? all.filter((d) => d.reviewStatus === 'needs_review') : all;

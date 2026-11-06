@@ -30,14 +30,14 @@ const OWNER = 'd0d0d0d0-0000-4000-8000-0000000000f4';
 const f = <T>(value: T | null) => ({ value, confidence: 0.99 });
 const today = new Date().toISOString().slice(0, 10);
 
-function receipt(n: string, currency: string, payable: string): ValidatedExtraction {
+function receipt(n: string, currency: string, payable: string, date = today): ValidatedExtraction {
   return {
     extraction: {
       schemaVersion: '1',
       docType: f('receipt' as const),
       saysTaxInvoice: f(false),
       documentNumber: f(n),
-      issueDate: f(today),
+      issueDate: f(date),
       currency: f(currency),
       supplierName: f('Warung'),
       supplierAbn: f(null),
@@ -66,7 +66,7 @@ describeIfDb('GET /v1/personal: totals never mix currencies', () => {
   let worker: WorkerDb;
   const controller = new SummariesController();
 
-  async function addDoc(tenant: string, n: string, currency: string, payable: string) {
+  async function addDoc(tenant: string, n: string, currency: string, payable: string, date?: string) {
     const capture = randomUUID();
     await withTenantAs(getDb(), OWNER, tenant, (tx) =>
       tx.execute(sql`
@@ -76,7 +76,7 @@ describeIfDb('GET /v1/personal: totals never mix currencies', () => {
                 1024, decode(${randomUUID().replace(/-/g, '').repeat(2).slice(0, 64)}, 'hex'), 'received')
       `),
     );
-    await saveExtraction(worker.actor, tenant, capture, receipt(n, currency, payable), META, null);
+    await saveExtraction(worker.actor, tenant, capture, receipt(n, currency, payable, date), META, null);
   }
 
   beforeAll(async () => {
@@ -99,6 +99,8 @@ describeIfDb('GET /v1/personal: totals never mix currencies', () => {
     await addDoc(AUD_WS, 'A-1', 'AUD', '12.50');
     await addDoc(AUD_WS, 'A-2', 'IDR', '70900');
     await addDoc(AUD_WS, 'A-3', 'IDR', '20');
+    // Last year's: it must not keep a "not counted" note on this month.
+    await addDoc(AUD_WS, 'A-old', 'IDR', '5000', '2020-01-01');
     await addDoc(IDR_WS, 'I-1', 'IDR', '70900');
     await addDoc(IDR_WS, 'I-2', 'IDR', '20');
   });
@@ -120,7 +122,7 @@ describeIfDb('GET /v1/personal: totals never mix currencies', () => {
     expect(s.foreignCurrencyCount).toBe(0);
   });
 
-  it('an AUD workspace leaves IDR receipts out of its total and counts them', async () => {
+  it("an AUD workspace leaves IDR receipts out of its total and counts this month's", async () => {
     const s = await controller.personal(owner, AUD_WS);
     expect(s.spentThisMonth).toBe('12.5000');
     expect(s.receiptCount).toBe(1);

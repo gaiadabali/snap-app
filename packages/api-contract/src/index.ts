@@ -357,7 +357,8 @@ export interface DocumentView {
   supplierAbnValid: boolean;
   issueDate: string;
   currency: string;
-  taxExclusiveAmount: string;
+  /** The total before tax, or null when the receipt gave neither it nor enough to work it out. */
+  taxExclusiveAmount: string | null;
   taxAmount: string;
   payableAmount: string;
   gstFreeAmount: string | null;

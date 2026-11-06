@@ -176,6 +176,11 @@ describe('formatTotals: one figure per currency, never one sum', () => {
     expect(formatTotals([d('12.5000', 'AUD'), d('70900', 'IDR'), d('20', 'IDR')], 'AUD')).toBe('$12.50 + Rp 70.920');
   });
 
+  it('puts the workspace currency first whichever document comes first', () => {
+    expect(formatTotals([d('70900', 'IDR'), d('12.5', 'AUD')], 'AUD')).toBe('$12.50 + Rp 70.900');
+    expect(formatTotals([d('70900', 'IDR')], 'AUD')).toBe('Rp 70.900');
+  });
+
   it('a document with no currency counts in the workspace currency; empty is zero', () => {
     expect(formatTotals([d('1.10'), d('2.20')], 'AUD')).toBe('$3.30');
     expect(formatTotals([], 'IDR')).toBe('Rp 0');

@@ -20,9 +20,18 @@ describe('toWire: the ex-tax total', () => {
     expect(w.taxExclusiveAmount).toBe('28.9100');
   });
 
-  it('receipt with no tax at all: ex-tax is the whole total', () => {
+  it('tax unknown: ex-tax stays unknown (null), never the whole total', () => {
     const w = wire({ payable_amount: '8.5000', tax_amount: null, tax_exclusive_amount: null });
-    expect(w.taxExclusiveAmount).toBe('8.5000');
+    expect(w.taxExclusiveAmount).toBeNull();
     expect(w.taxAmount).toBe('0.0000');
+  });
+
+  it('total unknown: ex-tax stays unknown, never negative', () => {
+    const w = wire({ payable_amount: null, tax_amount: '2.8900', tax_exclusive_amount: null });
+    expect(w.taxExclusiveAmount).toBeNull();
+  });
+
+  it('receipt that says GST 0: ex-tax is the total', () => {
+    expect(wire({ payable_amount: '8.5000', tax_amount: '0.0000', tax_exclusive_amount: null }).taxExclusiveAmount).toBe('8.5000');
   });
 });
