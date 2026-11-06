@@ -1,5 +1,5 @@
 import { randomBytes, randomUUID } from 'node:crypto';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -9,6 +9,7 @@ import { createDb, createPool, type Db } from '@snap/db';
 import pg, { type Client, type Pool } from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
+import { mintImpersonationToken } from '../admin/crypto/impersonation-tokens.js';
 import { provisionTenant, wipeTenant } from '../test-support/tenant.js';
 import { workerDatabaseUrl } from '../test-support/worker-db.js';
 
@@ -25,6 +26,9 @@ const Y = 'e8300000-0000-4000-8000-0000000000a1';
 const W_HOME = 'e8300000-0000-4000-8000-000000000002'; // the parent's household
 const W_TEEN = 'e8300000-0000-4000-8000-000000000003'; // the teen's space
 const W_SHARED = 'e8300000-0000-4000-8000-000000000004'; // O owns it, M manages it
+const W_IMP = 'e8300000-0000-4000-8000-000000000005'; // the subject of the impersonation test
+const X = 'e8300000-0000-4000-8000-0000000000d1'; // ... who is that subject
+const STAFF = 'e8300000-0000-4000-8000-0000000000d2'; // ... and the staff member acting as them
 const P = 'e8300000-0000-4000-8000-0000000000b1';
 const T = 'e8300000-0000-4000-8000-0000000000b2';
 const O = 'e8300000-0000-4000-8000-0000000000c1';
@@ -41,6 +45,14 @@ describeIfDb('delete your account (8.3.a)', () => {
   let storage: string;
   let runErasureJobsOnce: (db: Db, log?: typeof quiet, only?: string[]) => Promise<number>;
   const emails: string[] = [];
+  const staffEmailUsers: string[] = [];
+  /** The host record of self-deleted ids (8.3.g R2), outside Postgres. */
+  const recorded = () => {
+    const file = join(storage, 'erased', 'accounts.log');
+    return existsSync(file) ? readFileSync(file, 'utf8') : '';
+  };
+  const stale = (userId: string) =>
+    admin.query(`update user_sessions set created_at = now() - interval '1 hour' where user_id = $1`, [userId]);
   let ipCounter = 0;
 
   const ip = () => `2001:db8:${run.slice(0, 4)}:${run.slice(4)}::${(++ipCounter).toString(16)}`;
@@ -80,6 +92,7 @@ describeIfDb('delete your account (8.3.a)', () => {
   beforeAll(async () => {
     storage = mkdtempSync(join(tmpdir(), 'account-delete-'));
     process.env.STORAGE_DIR = storage;
+    process.env.ERASED_LOG_DIR = join(storage, 'erased'); // R2: created on first write
     process.env.WEB_PUBLIC_URL ??= 'http://127.0.0.1:3000';
     admin = await provisionTenant({
       tenantId: W,
@@ -111,6 +124,17 @@ describeIfDb('delete your account (8.3.a)', () => {
         { id: M, role: 'admin', email: `m-${run}@example.test` },
       ],
     })).end();
+    (await provisionTenant({
+      tenantId: W_IMP,
+      name: 'Impersonated',
+      users: [{ id: X, role: 'owner', subject: `yourtal|dx-${run}`, email: `x-${run}@example.test` }],
+    })).end();
+    await admin.query(`insert into users (id, subject, email, display_name) values ($1, $2, $3, 'Staff')`, [STAFF, `dev|ds-${run}`, `s-${run}@example.test`]);
+    await admin.query(`insert into platform_staff (user_id, role) values ($1, 'support')`, [STAFF]);
+    await admin.query(
+      `insert into platform_staff_capabilities (staff_id, capability) select id, 'impersonate'::platform_capability from platform_staff where user_id = $1`,
+      [STAFF],
+    );
     workerPool = createPool(workerDatabaseUrl());
     workerDb = createDb(workerPool);
     ({ runErasureJobsOnce } = await import('../yourtal/events-job.js'));
@@ -129,6 +153,10 @@ describeIfDb('delete your account (8.3.a)', () => {
       await wipeTenant(admin, W_TEEN, [T]);
       await wipeTenant(admin, W_HOME, [P]);
       await wipeTenant(admin, W_SHARED, [O, M]);
+      await admin.query('delete from impersonation_sessions where staff_user_id = $1', [STAFF]);
+      await admin.query('delete from platform_staff_capabilities where staff_id in (select id from platform_staff where user_id = $1)', [STAFF]);
+      await admin.query('delete from platform_staff where user_id = any($1)', [[STAFF, ...staffEmailUsers]]);
+      await wipeTenant(admin, W_IMP, [X, STAFF]);
       await wipeTenant(admin, W, [Y]);
       await admin.query('delete from users where email = any($1)', [emails]);
       await admin.end();
@@ -158,6 +186,8 @@ describeIfDb('delete your account (8.3.a)', () => {
 
     const res = await del(token, { confirm: 'DELETE', password: 'a-decent-password' });
     expect(res.statusCode).toBe(200);
+    expect(recorded()).toMatch(new RegExp(`^\\d{4}-\\d\\d-\\d\\dT[\\d:.]+Z ${user.userId}$`, 'm')); // R2: id only, no address
+    expect(recorded()).not.toContain('@');
     expect(await sessionStatus(token)).toBe(401);
     if (second.token) expect(await sessionStatus(second.token)).toBe(401);
 
@@ -201,8 +231,8 @@ describeIfDb('delete your account (8.3.a)', () => {
         ]),
       ).rejects.toThrow(/row-level security/);
       // A token that is no live session names nobody.
-      const none = await api.query(`select identity_account_delete_request($1) as ok`, [randomBytes(32)]);
-      expect(none.rows[0].ok).toBe(false);
+      const none = await api.query(`select identity_account_delete_request($1, null) as r`, [randomBytes(32)]);
+      expect(none.rows[0].r).toBe('no_session');
       await expect(api.query(`select * from erase_person($1)`, [O])).rejects.toThrow(/permission denied/);
       await expect(api.query(`select account_delete_queue($1)`, [O])).rejects.toThrow(/permission denied/);
     } finally {
@@ -230,6 +260,78 @@ describeIfDb('delete your account (8.3.a)', () => {
     expect(await exists(user.userId)).toBe(false);
   });
 
+  it('a passwordless account needs a recent sign-in (L4): refused when stale, accepted when fresh', async () => {
+    const { token, user } = await register();
+    await admin.query('update users set password_hash = null where id = $1', [user.userId]); // a magic-link / Google account
+    await stale(user.userId);
+    const refused = await del(token, { confirm: 'DELETE' });
+    expect(refused.statusCode).toBe(403); // not 401: the phone would sign out and lose the screen
+    expect(refused.json()).toMatchObject({ error: 'recent_sign_in_required' });
+    expect(refused.json().message).toMatch(/sign in again/i);
+    expect(await queued(user.userId)).toHaveLength(0);
+    expect(recorded()).not.toContain(user.userId); // a refused request is not a deletion
+    expect(await sessionStatus(token)).toBe(200);
+    expect(await exists(user.userId)).toBe(true);
+
+    await admin.query(`update user_sessions set created_at = now() - interval '9 minutes' where user_id = $1`, [user.userId]);
+    expect((await del(token, { confirm: 'DELETE' })).statusCode).toBe(200);
+    expect(await queued(user.userId)).toHaveLength(1);
+    await runErasureJobsOnce(workerDb, quiet, (await queued(user.userId)).map((j) => j.id));
+  });
+
+  it('a YourTal-linked account is held to the same recent sign-in; a password stands in for it elsewhere', async () => {
+    const { issueYourTalSession } = await import('./sessions.js');
+    const token = await issueYourTalSession(X);
+    await stale(X);
+    expect((await del(token, { confirm: 'DELETE' })).json()).toMatchObject({ error: 'recent_sign_in_required' });
+    expect(await queued(X)).toHaveLength(0);
+
+    const { token: pwToken, user } = await register();
+    await stale(user.userId); // an old session of a password account is fine: the password is the step-up
+    expect((await del(pwToken, { confirm: 'DELETE', password: 'a-decent-password' })).statusCode).toBe(200);
+    await runErasureJobsOnce(workerDb, quiet, (await queued(user.userId)).map((j) => j.id));
+  });
+
+  it('an active staff account cannot delete itself (L5); once revoked it can', async () => {
+    const { token, user } = await register();
+    staffEmailUsers.push(user.userId);
+    await admin.query(`insert into platform_staff (user_id, role) values ($1, 'support')`, [user.userId]);
+    const refused = await del(token, { confirm: 'DELETE', password: 'a-decent-password' });
+    expect(refused.statusCode).toBe(403);
+    expect(refused.json()).toMatchObject({ error: 'staff_cannot_self_delete' });
+    expect(refused.json().message).toMatch(/another admin/i);
+    expect(await queued(user.userId)).toHaveLength(0);
+    expect(await sessionStatus(token)).toBe(200);
+    expect((await admin.query('select 1 from platform_staff where user_id = $1', [user.userId])).rowCount).toBe(1);
+
+    await admin.query(`update platform_staff set revoked_at = now(), revoked_by = $1 where user_id = $1`, [user.userId]);
+    expect((await del(token, { confirm: 'DELETE', password: 'a-decent-password' })).statusCode).toBe(200);
+    await runErasureJobsOnce(workerDb, quiet, (await queued(user.userId)).map((j) => j.id));
+  });
+
+  it('staff acting as a user cannot delete that user (L6), and the token itself is good', async () => {
+    const { token, tokenHash } = mintImpersonationToken();
+    await admin.query(
+      `insert into impersonation_sessions (id, staff_user_id, subject_user_id, subject_tenant_id, reason, token_hash, started_at, expires_at)
+       values ($1, $2, $3, $4, 'delete-account e2e', $5, now(), now() + interval '15 minutes')`,
+      [randomUUID(), STAFF, X, W_IMP, tokenHash],
+    );
+    const impersonated = { 'x-impersonation-token': token, 'x-workspace-id': W_IMP };
+    // The control: the same token reaches the product, so the refusal below is the endpoint's, not a dead token.
+    expect((await app.inject({ method: 'GET', url: '/v1/overview', headers: impersonated })).statusCode).toBe(200);
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/v1/auth/account/delete',
+      payload: { confirm: 'DELETE' },
+      remoteAddress: ip(),
+      headers: impersonated,
+    });
+    expect(res.statusCode).toBe(403);
+    expect(await queued(X)).toHaveLength(0);
+    expect(await exists(X)).toBe(true);
+  });
+
   it('an owner who leaves a manager behind hands the workspace over instead of erasing it', async () => {
     const { issueYourTalSession } = await import('./sessions.js');
     const token = await issueYourTalSession(O);
@@ -251,6 +353,9 @@ describeIfDb('delete your account (8.3.a)', () => {
     expect(await queued(T)).toHaveLength(0); // the hold sweep erases the space and the account after 30 days
     expect(await exists(T)).toBe(true);
     expect((await admin.query('select 1 from tenants where id = $1', [W_TEEN])).rowCount).toBe(1);
+    const teenNotices = await admin.query(`select payload from jobs where kind = 'erasure_notice' and payload->>'to' = $1`, [`t-${run}@example.test`]);
+    expect(teenNotices.rows.map((n) => n.payload.outcome)).toEqual(['teen_ended_teen']); // the parent can still invite again
+    await admin.query(`delete from jobs where kind = 'erasure_notice' and payload->>'to' = any($1)`, [[`t-${run}@example.test`, `p-${run}@example.test`]]);
     // Back to a live space for the parent's case below.
     await admin.query(`update teen_spaces set access_ended_at = null, erase_after = null where tenant_id = $1`, [W_TEEN]);
     await admin.query(`delete from jobs where kind = 'teen_invite_end' and payload->>'inviteId' = $1`, [INVITE]);
@@ -269,6 +374,18 @@ describeIfDb('delete your account (8.3.a)', () => {
     expect(Math.round(days)).toBe(30);
     expect((await inviteEnds()).map((j) => j.payload.parentSub)).toEqual([`dp-${run}`]);
     expect(await sessionStatus(token)).toBe(401);
+
+    // R1: the teen's notice must not promise that a new invite brings the space back.
+    const notices = (await admin.query(
+      `select payload from jobs where kind = 'erasure_notice' and payload->>'to' = $1`, [`t-${run}@example.test`])).rows;
+    expect(notices.map((n) => n.payload.outcome)).toEqual(['teen_ended_parent_deleted']);
+    // G6: the parent being erased is not mailed "invite them again and the space comes back" either.
+    expect((await admin.query(`select 1 from jobs where kind = 'erasure_notice' and payload->>'to' = $1`, [`p-${run}@example.test`])).rowCount).toBe(0);
+    const { teenNotice } = await import('../yourtal/events-job.js');
+    const text = teenNotice('teen_ended_parent_deleted', 'Pat', held.erase_after!.toISOString())!.text;
+    expect(text).toMatch(/deleted their SnapApp account/);
+    expect(text).not.toMatch(/invite|comes back/i);
+    expect(teenNotice('teen_ended_teen', 'Pat', held.erase_after!.toISOString())!.text).toMatch(/comes back/); // unchanged
 
     expect(await runErasureJobsOnce(workerDb, quiet, (await queued(P)).map((j) => j.id))).toBe(1);
     expect(await exists(P)).toBe(false);

@@ -31,5 +31,11 @@ if [ "${DRY_RUN:-0}" = 1 ]; then echo "dry run: nothing written"; exit 0; fi
 psql_run <<'SQL' >/dev/null
 SELECT account_delete_queue(u.id) FROM users u WHERE u.email = :'email';
 SQL
+# R2 (8.3.g): the id, on the host outside Postgres, so a restore of an older backup can erase it again.
+erased_dir="${ERASED_LOG_HOST_DIR:-/opt/snap-apps/data/erased}"
+api_uid="${ERASED_OWNER_UID:-1001}"  # the api's uid: the directory and file must stay writable by it, never root-only
+install -d -o "$api_uid" -g "$api_uid" -m 0750 "$erased_dir"
+echo "$(date -u +%FT%TZ) ${found%%|*}" >> "$erased_dir/accounts.log"
+chown "$api_uid:$api_uid" "$erased_dir/accounts.log"
 echo "queued. The worker erases within minutes (a teen: after the 30-day hold)."
 echo "Check: re-run with DRY_RUN=1; 'no account has that address' means it is done."

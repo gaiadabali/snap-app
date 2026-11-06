@@ -832,7 +832,9 @@ Procedure, for the person reading that inbox:
 3. **Delete (a write: the owner's OK first).** `deploy/erase-account.sh person@example.com`.
    It calls `account_delete_queue` (migration 0055), the same function the app's button
    calls: it ends their sessions and queues one `account_delete` job, and the worker runs
-   `erase_person` within minutes. Do not insert jobs by hand.
+   `erase_person` within minutes. Do not insert jobs by hand. It also appends the user id to
+   `/opt/snap-apps/data/erased/accounts.log` (see "Restoring from a backup"). A staff account is
+   refused by the app's button (8.3.g); this script is how a root shell removes one on purpose.
 4. **Confirm.** Re-run step 2: "no account has that address" means done (a teen's account is
    erased by the hourly hold sweep after 30 days). A job still open after 24 hours raises the
    monitor's **erasure** alert (check 2a); the cause is in `jobs.last_error`.
@@ -851,3 +853,34 @@ After restoring SnapApp from a backup, ask YourTal to re-deliver its
 `account-deleted` and `access-ended` events since the backup time. SnapApp keeps
 the erased subjects (`yourtal_erased_subjects`), so re-delivery is safe: an
 event for someone already erased is a no-op.
+
+**Then erase the self-deleted accounts again** (8.3.g R2). Restoring a database from before
+someone deleted their own account brings that account back, and YourTal cannot re-deliver
+those: they never went through YourTal. The record of who asked lives outside Postgres, in
+`/opt/snap-apps/data/erased/accounts.log` on the host (lines of `<ISO time> <user id>`, never an
+address). The api appends to it on every in-app delete and `deploy/erase-account.sh` on every
+emailed one; `offsite.sh` pushes it off the box nightly, so it survives losing the host.
+
+1. Before the restore, keep a copy of that file. A restore of the database does not touch it,
+   but a restore of the host does: get it back from restic
+   (`restic restore latest --target /tmp/erased --include /opt/snap-apps/data/erased`).
+2. Note **when the restored backup was taken** (the dump's timestamp). Only deletions recorded
+   after that time can have come back; earlier ones are already in the backup.
+3. After the restore, and before reopening the app to people:
+   `DRY_RUN=1 deploy/re-erase-accounts.sh --since <backup time>` (for example
+   `--since 2026-11-05T02:00:00Z`) lists which recorded accounts exist again (a read). `--since` is
+   required: replaying the whole file could put a teen who was legitimately invited back onto the
+   30-day hold again.
+4. `deploy/re-erase-accounts.sh --since <backup time>` queues them (a write: the owner's OK first).
+   It calls `account_delete_queue`, the same function the button calls. Ids already gone are
+   skipped. The worker erases within minutes (a teen: after the 30-day hold). Re-run with
+   `DRY_RUN=1` until it reports none.
+
+One-time on the host for the file to be writable by the api (uid 1001), once per host:
+`install -d -o 1001 -g 1001 -m 0750 /opt/snap-apps/data/erased` (never a root-owned directory, and never `mkdir -p` as root). If it is not, the
+api logs `erased-log: could not record the erased account ...` and the deletion itself still
+goes through: grep for that line, and fix the directory.
+
+If the file is missing or short, the only other trace is the worker's `account_delete <job id>:
+person erased` log line, which holds no user id. A deletion not in the file cannot be found after
+a restore, so check the directory after the first real deletion on a new host.

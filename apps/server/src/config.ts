@@ -84,6 +84,13 @@ const schema = z.object({
    */
   STORAGE_DIR: z.string().default('.storage'),
 
+  /**
+   * Where the API appends the id of every self-deleted account (8.3.g R2), on
+   * the host and outside Postgres, so a database restore can erase them again.
+   * Unset = not recorded (dev, tests).
+   */
+  ERASED_LOG_DIR: z.string().optional(),
+
   /** How long an upload URL is good for. Short: it is a bearer credential. */
   UPLOAD_TTL_SECONDS: z.coerce.number().int().positive().default(900),
 

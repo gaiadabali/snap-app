@@ -248,7 +248,7 @@ const NOTICE = {
 } as const;
 
 /** The teen notices 0047 queues (F111, docs/26 §3.3). `name` is the other person's; `date` is the erasure day. */
-function teenNotice(outcome: string, name: string | null, date: string | null): { subject: string; text: string } | null {
+export function teenNotice(outcome: string, name: string | null, date: string | null): { subject: string; text: string } | null {
   const day = date
     ? new Date(date).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
     : null;
@@ -270,6 +270,14 @@ function teenNotice(outcome: string, name: string | null, date: string | null): 
           'Hello,\n\nYou can no longer sign in to SnapApp. Your SnapApp space, including your receipts, will be ' +
           `deleted on ${day}.\n\nIf ${name ?? 'your parent'} invites you again before then, your space comes back ` +
           'as it was.\n\nSnapApp',
+      };
+    case 'teen_ended_parent_deleted': // 0057: the parent's own account is gone, so no invite can restore the space
+      return {
+        subject: 'Your access to SnapApp has ended',
+        text:
+          `Hello,\n\nYou can no longer sign in to SnapApp, because ${name ?? 'your parent'} has deleted their SnapApp ` +
+          `account. Your SnapApp space, including your receipts, will be deleted on ${day}, and it can't be ` +
+          'restored.\n\nSnapApp',
       };
     case 'teen_adult_parent': {
       const teen = name ?? 'Your teen';

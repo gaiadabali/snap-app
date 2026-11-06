@@ -36,7 +36,9 @@ export default function DeleteAccountPage() {
           </li>
           <li>
             Read what will be deleted, type <strong>DELETE</strong>
-            {' '}(and your password, if your account has one), then confirm.
+            {' '}(and your password, if your account has one), then confirm. If your account has no
+            password (you sign in with YourTal, Google or an emailed link), you must have signed in
+            within the last 10 minutes: sign out and sign in again first if not.
           </li>
         </ol>
         <p className="body mt-4">
