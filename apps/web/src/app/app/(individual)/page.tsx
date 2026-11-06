@@ -24,16 +24,16 @@ export default async function IndividualOverviewPage() {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
-          <Stat label="Spent this month" value={<Money amount={personal.spentThisMonth} />} hint={`${personal.receiptCount} receipts`} />
+          <Stat label="Spent this month" value={<Money currency={workspace.baseCurrency} amount={personal.spentThisMonth} />} hint={`${personal.receiptCount} receipts${personal.foreignCurrencyCount ? `, ${personal.foreignCurrencyCount} more in another currency not counted` : ''}`} />
         </Card>
         <Card>
           <Stat
             label="Left in budget"
-            value={<Money amount={personal.remaining} />}
+            value={<Money currency={workspace.baseCurrency} amount={personal.remaining} />}
             tone={remainingTone}
             hint={
               <>
-                of <Money amount={personal.budgetTotal} /> for the month
+                of <Money currency={workspace.baseCurrency} amount={personal.budgetTotal} /> for the month
               </>
             }
           />
@@ -41,7 +41,7 @@ export default async function IndividualOverviewPage() {
         <Card>
           <Stat
             label="Safe to spend per day"
-            value={<Money amount={personal.safeToSpendPerDay} />}
+            value={<Money currency={workspace.baseCurrency} amount={personal.safeToSpendPerDay} />}
             hint={`${personal.daysLeftInMonth} days left`}
           />
         </Card>
@@ -82,11 +82,11 @@ export default async function IndividualOverviewPage() {
                     <div className="flex items-center justify-between text-[13px]">
                       <span className="font-medium text-[var(--color-ink)]">{c.category}</span>
                       <span className="text-[var(--color-ink-muted)]">
-                        <Money amount={c.spent} />
+                        <Money currency={workspace.baseCurrency} amount={c.spent} />
                         {c.budget ? (
                           <>
                             {' '}
-                            / <Money amount={c.budget} />
+                            / <Money currency={workspace.baseCurrency} amount={c.budget} />
                           </>
                         ) : null}
                       </span>
@@ -124,7 +124,7 @@ export default async function IndividualOverviewPage() {
                 <li key={m.name} className="flex items-center justify-between text-[13px]">
                   <span className="text-[var(--color-ink)]">{m.name}</span>
                   <span className="text-[var(--color-ink-muted)]">
-                    <Money amount={m.total} className="text-[var(--color-ink)]" /> · {m.count} receipt
+                    <Money currency={workspace.baseCurrency} amount={m.total} className="text-[var(--color-ink)]" /> · {m.count} receipt
                     {m.count === 1 ? '' : 's'}
                   </span>
                 </li>
@@ -137,7 +137,7 @@ export default async function IndividualOverviewPage() {
       <div className="flex items-center justify-between rounded-[var(--radius-lg)] border border-dashed border-[var(--color-rule-strong)] p-5">
         <p className="text-[14px] text-[var(--color-ink-muted)]">
           Spending {pace} the same point last month (
-          <Money amount={personal.lastMonthToDate} /> then vs <Money amount={personal.spentThisMonth} /> now).
+          <Money currency={workspace.baseCurrency} amount={personal.lastMonthToDate} /> then vs <Money currency={workspace.baseCurrency} amount={personal.spentThisMonth} /> now).
         </p>
         <ButtonLink href="/app/documents" variant="secondary" size="sm">
           All documents

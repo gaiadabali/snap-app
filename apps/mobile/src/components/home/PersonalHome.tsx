@@ -375,6 +375,12 @@ export default function PersonalHome() {
             {summary.receiptCount} receipts in {summary.monthLabel}
           </Small>
         ) : null}
+        {summary?.foreignCurrencyCount ? (
+          <Small style={{ textAlign: 'center' }}>
+            {summary.foreignCurrencyCount} receipt{summary.foreignCurrencyCount === 1 ? ' is' : 's are'} in another
+            currency and not counted here
+          </Small>
+        ) : null}
       </ScrollView>
     </Screen>
   );

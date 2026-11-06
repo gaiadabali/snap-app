@@ -254,7 +254,15 @@ export function toWire(
     supplierAbnValid: document.supplier_abn_valid === true,
     issueDate: document.issue_date ?? '',
     currency: document.currency,
-    taxExclusiveAmount: document.tax_exclusive_amount ?? '0.0000',
+    // A receipt that never printed an ex-tax total still has one when we know
+    // both the total and its tax: total less tax. With either unknown it is NULL
+    // (never 0, never the total): a flat 0 showed "Excluding GST $0.00" on a
+    // $31.80 receipt, and an unknown tax is not "no tax".
+    taxExclusiveAmount:
+      document.tax_exclusive_amount ??
+      (document.payable_amount != null && document.tax_amount != null
+        ? money.subtract(money.money(document.payable_amount), money.money(document.tax_amount))
+        : null),
     taxAmount: document.tax_amount ?? '0.0000',
     payableAmount: payable,
     gstFreeAmount: gstFreeAmount(taxSubtotals),

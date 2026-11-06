@@ -357,7 +357,8 @@ export interface DocumentView {
   supplierAbnValid: boolean;
   issueDate: string;
   currency: string;
-  taxExclusiveAmount: string;
+  /** The total before tax, or null when the receipt gave neither it nor enough to work it out. */
+  taxExclusiveAmount: string | null;
   taxAmount: string;
   payableAmount: string;
   gstFreeAmount: string | null;
@@ -647,6 +648,12 @@ export interface PersonalSummary {
   receiptCount: number;
   byCategory: CategorySpend[];
   topMerchants: MerchantSpend[];
+  /**
+   * Receipts left out of every figure above because they are in a currency other
+   * than the workspace's. Counted, never converted or added. Absent from a server
+   * that predates it.
+   */
+  foreignCurrencyCount?: number;
 }
 
 /* ── Analytics ──────────────────────────────────────────────────────────── */

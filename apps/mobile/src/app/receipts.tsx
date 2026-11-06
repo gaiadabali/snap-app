@@ -16,6 +16,7 @@ import {
 } from '@/components/SearchBar';
 import { exportDocumentsCsv, exportLinesCsv } from '@/lib/share';
 import { formatMoney, space, usePalette } from '@/theme';
+import { formatTotals } from '@/lib/format';
 import { useMoney } from '@/lib/use-money';
 import { WorkspaceSwitch, useWorkspace } from '@/workspace';
 
@@ -39,15 +40,6 @@ function dayLabel(iso: string): string {
   if (days === 1) return 'Yesterday';
   if (days < 7) return d.toLocaleDateString('en-AU', { weekday: 'long' });
   return d.toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short' });
-}
-
-/** Sum decimal strings exactly — never parse money to a float. */
-function sumMoney(values: string[]): string {
-  const total = values.reduce((acc, v) => {
-    const [w = '0', f = ''] = v.replace('-', '').split('.');
-    return acc + BigInt(w) * 10_000n + BigInt((f + '0000').slice(0, 4));
-  }, 0n);
-  return `${total / 10_000n}.${(total % 10_000n).toString().padStart(4, '0')}`;
 }
 
 export default function ReceiptsScreen() {
@@ -92,18 +84,20 @@ export default function ReceiptsScreen() {
   }, [loaded, period, query]);
 
   const needsReview = all.filter((d) => d.reviewStatus === 'needs_review').length;
-  const total = useMemo(() => sumMoney(all.map((d) => d.payableAmount)), [all]);
+  const total = useMemo(() => formatTotals(all, money.currency), [all, money.currency]);
 
   /** Share of spend per category, for the breakdown bar. */
   const byCategory = useMemo(() => {
     const m = new Map<string, number>();
     for (const d of all) {
+      // The workspace's currency only: IDR and AUD amounts on one bar mean nothing.
+      if (d.currency !== money.currency) continue;
       // Display-only aggregation, so a float is acceptable here; every figure
       // that is stored or reported stays a decimal string.
       m.set(d.category, (m.get(d.category) ?? 0) + Number(d.payableAmount));
     }
     return [...m.entries()].map(([category, amount]) => ({ category, amount }));
-  }, [all]);
+  }, [all, money.currency]);
 
   const sections = useMemo(() => {
     const list = onlyReview ? all.filter((d) => d.reviewStatus === 'needs_review') : all;
@@ -114,12 +108,12 @@ export default function ReceiptsScreen() {
     }
     return [...byDay.entries()].map(([iso, data]) => ({
       title: dayLabel(iso),
-      total: sumMoney(data.map((x) => x.payableAmount)),
+      total: formatTotals(data, money.currency),
       // One item per day: the whole day is drawn as a single white card, which
       // a per-row list cannot do (rows cannot share a rounded, lifted frame).
       data: [data],
     }));
-  }, [all, onlyReview]);
+  }, [all, onlyReview, money.currency]);
 
   return (
     <Screen>
@@ -161,7 +155,7 @@ export default function ReceiptsScreen() {
               style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' }}
             >
               <Small>{all.length === 1 ? '1 receipt' : `${all.length} receipts`}</Small>
-              <Figure size="h2">{money.fmt(total)}</Figure>
+              <Figure size="h2">{total}</Figure>
             </View>
 
             {byCategory.length > 1 ? <CategoryBar parts={byCategory} /> : null}
@@ -188,7 +182,7 @@ export default function ReceiptsScreen() {
             }}
           >
             <Small style={{ fontWeight: '600' }}>{section.title}</Small>
-            <Small>{money.fmt(section.total)}</Small>
+            <Small>{section.total}</Small>
           </View>
         )}
         ListEmptyComponent={

@@ -24,15 +24,6 @@ export function greeting(): string {
   return 'Good evening';
 }
 
-/** Sum decimal strings exactly — never parse money to a float. */
-export function sumMoney(values: string[]): string {
-  const total = values.reduce((acc, v) => {
-    const [w = '0', f = ''] = v.replace('-', '').split('.');
-    return acc + BigInt(w) * 10_000n + BigInt((f + '0000').slice(0, 4));
-  }, 0n);
-  return `${total / 10_000n}.${(total % 10_000n).toString().padStart(4, '0')}`;
-}
-
 /** One of the round shortcuts under the hero. */
 export function Action({ icon, label, href }: { icon: IconName; label: string; href: Href }) {
   const p = usePalette();
