@@ -15,12 +15,10 @@ const SRC = path.resolve(import.meta.dirname, '..');
 const GUARDED_SCREENS = [
   'app/alerts.tsx',
   'app/fingerprint.tsx',
-  'app/wallet/add.tsx',
-  'app/wallet/card.tsx',
 ];
 
-/** Quotes or backticks DIRECTLY around the route, so `/v1/wallet/cards` never matches. */
-const ROUTE_LITERAL = /(['"`])(\/alerts|\/fingerprint|\/wallet\/add|\/wallet\/card)\1/;
+/** Quotes or backticks DIRECTLY around the route, so `/v1/alerts` never matches. */
+const ROUTE_LITERAL = /(['"`])(\/alerts|\/fingerprint)\1/;
 
 function sourceFiles(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {
@@ -50,9 +48,9 @@ describe('experimental surfaces are gated', () => {
   });
 
   it('the route matcher ignores API paths', () => {
-    expect(ROUTE_LITERAL.test("api('/v1/wallet/cards')")).toBe(false);
+    expect(ROUTE_LITERAL.test("api('/v1/alerts')")).toBe(false);
     expect(ROUTE_LITERAL.test("router.push('/alerts')")).toBe(true);
-    expect(ROUTE_LITERAL.test('router.push(`/wallet/add`)')).toBe(true);
+    expect(ROUTE_LITERAL.test('router.push(`/fingerprint`)')).toBe(true);
   });
 
   it.each(GUARDED_SCREENS)('%s redirects away when the flag is off', (rel) => {

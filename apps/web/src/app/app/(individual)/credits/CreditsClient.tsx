@@ -1,10 +1,9 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import type { CreditPack, CreditPurchase, PlanUsage, CreditBalance } from '@snap/api-contract';
+import type { CheckoutSession, CreditPack, CreditPurchase, PlanUsage, CreditBalance } from '@snap/api-contract';
 
 import { Badge, Button, Card, Empty, Money, Stat, Table, TableScroll, Td, Th, Thead, Tr } from '@/design/primitives';
-import type { ActionResult } from '@/lib/panels/actions';
 
 const STATUS_TONE: Record<CreditPurchase['status'], 'neutral' | 'good' | 'warn' | 'risk'> = {
   pending: 'warn',
@@ -24,7 +23,10 @@ export function CreditsClient({
   balance: CreditBalance;
   packs: CreditPack[];
   purchases: CreditPurchase[];
-  onPurchase: (packCode: string) => Promise<ActionResult>;
+  /** `purchaseCredits`: records the order and asks for the checkout to send the browser to. */
+  onPurchase: (
+    packCode: string,
+  ) => Promise<{ ok: true; session: CheckoutSession } | { ok: false; message: string }>;
 }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<{ code: string; text: string } | null>(null);
@@ -69,17 +71,21 @@ export function CreditsClient({
                   setMessage(null);
                   startTransition(async () => {
                     const result = await onPurchase(pack.code);
+                    // Same as /app/credits/buy: off to the checkout page. Credits
+                    // come from the processor's webhook, never from coming back.
+                    if (result.ok && result.session.state === 'redirect' && result.session.url) {
+                      window.location.href = result.session.url;
+                      return;
+                    }
                     setBusy(null);
                     setMessage({
                       code: pack.code,
-                      text: result.ok
-                        ? 'Order placed — see it below as "Pending".'
-                        : result.message,
+                      text: result.ok ? (result.session.message ?? 'Checkout is not available right now.') : result.message,
                     });
                   });
                 }}
               >
-                {busy === pack.code ? 'Placing order…' : 'Order this pack'}
+                {busy === pack.code ? 'Opening checkout…' : 'Buy this pack'}
               </Button>
               {message?.code === pack.code ? (
                 <p className="mt-2 text-[12px] text-[var(--color-ink-muted)]">{message.text}</p>
@@ -88,9 +94,8 @@ export function CreditsClient({
           ))}
         </div>
         <p className="mt-3 max-w-[70ch] text-[13px] text-[var(--color-ink-muted)]">
-          There is no live checkout yet — ordering a pack records a pending purchase, and a member
-          of the team confirms payment and applies the credits by hand. That is the real,
-          working process today, not a placeholder for one.
+          Buying a pack takes you to checkout. Your scans are added as soon as the payment is
+          confirmed.
         </p>
       </div>
 

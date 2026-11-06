@@ -97,9 +97,8 @@ import type {
   CreditBalance,
   CreditPack,
   CreditPurchase,
+  CheckoutSession,
   AvailableTaxRules,
-  SavedCard,
-  AddSavedCardRequest,
   UsageKind,
   UsagePeriod,
   NotificationPrefs,
@@ -396,17 +395,16 @@ export interface SnapApi {
   listCreditPurchases(): Promise<CreditPurchase[]>;
   /**
    * `POST /v1/credits/purchases` — records intent to buy a pack. Returns it
-   * `pending`; nothing is granted yet. There is no payment processor (Stripe
-   * is phase 6.5), so a real checkout does not exist for this to redirect to.
+   * `pending`; nothing is granted yet.
    */
   startCreditPurchase(packCode: string): Promise<CreditPurchase>;
   /**
-   * `POST /v1/credits/purchases/:id/fulfil` — the manual stand-in for a
-   * payment processor's webhook: marks the purchase `paid` and grants the
-   * credits, atomically. Idempotent — fulfilling an already-paid purchase
-   * returns it unchanged rather than granting twice.
+   * `POST /v1/credits/purchases/:id/checkout` — where to pay for a pending
+   * purchase: `redirect` with the processor's hosted page, or `unavailable`
+   * with words to show. Credits arrive by the processor's webhook, never by
+   * this call or by the browser coming back (group task 7.5.d).
    */
-  fulfilCreditPurchase(purchaseId: string): Promise<CreditPurchase>;
+  checkoutCreditPurchase(purchaseId: string): Promise<CheckoutSession>;
 
   /**
    * `GET /v1/yourtal/link` — USER-scoped, not workspace-scoped. YourTal points
@@ -473,19 +471,6 @@ export interface SnapApi {
    * needs to render the options at registration.
    */
   listAvailableTaxRules(): Promise<AvailableTaxRules[]>;
-
-  // ── Wallet (2026-09-19 redesign) ──
-  /** `GET /v1/wallet/cards` — saved instruments, default first. */
-  listSavedCards(): Promise<SavedCard[]>;
-  /**
-   * `POST /v1/wallet/cards`. The PAN and CVC in the request are exchanged for
-   * a processor token and discarded; what comes back carries `last4` only.
-   */
-  addSavedCard(input: AddSavedCardRequest): Promise<SavedCard>;
-  /** `DELETE /v1/wallet/cards/:id`. Removing the default promotes the next. */
-  removeSavedCard(cardId: string): Promise<void>;
-  /** `POST /v1/wallet/cards/:id/default`. */
-  setDefaultCard(cardId: string): Promise<SavedCard>;
 
   // ── Usage ──
   /**

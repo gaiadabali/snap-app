@@ -2,7 +2,12 @@ import { BadRequestException, Controller, HttpCode, Logger, Post, Req } from '@n
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { resumeAfterCredits } from './credits.controller.js';
-import { fulfilCreditPurchaseFromProvider, CreditPurchaseNotPendingError } from './credits.repo.js';
+import {
+  fulfilCreditPurchaseFromProvider,
+  CreditPurchaseNotPendingError,
+  DuplicateCreditPaymentError,
+  refundCreditPurchaseFromProvider,
+} from './credits.repo.js';
 import { stripeWebhookSecret } from './payment-provider.js';
 import { StripeError, verifyStripeSignature } from './stripe-provider.js';
 
@@ -98,6 +103,8 @@ export class StripeWebhookController {
       throw new BadRequestException('Signature verification failed.');
     }
 
+    if (event.type === 'charge.refunded') return this.refunded(event.data.object);
+
     if (event.type !== 'checkout.session.completed') {
       // Verified and uninteresting. 200 so Stripe stops.
       return { received: true };
@@ -139,6 +146,7 @@ export class StripeWebhookController {
         purchaseId,
         'stripe',
         providerRef,
+        typeof session.payment_intent === 'string' ? session.payment_intent : null,
       );
       if (!row) {
         this.logger.error(`webhook ${providerRef}: purchase ${purchaseId} does not exist`);
@@ -147,6 +155,15 @@ export class StripeWebhookController {
       this.logger.log(`granted ${row.credits} credits for purchase ${purchaseId} (${providerRef})`);
       await resumeAfterCredits(userId, tenantId);
     } catch (error) {
+      if (error instanceof DuplicateCreditPaymentError) {
+        // Money taken through a session this order did not open: nothing is
+        // granted, and the payment must be refunded by a person.
+        this.logger.error(
+          `webhook ${providerRef}: purchase ${purchaseId} (${error.status}) belongs to session ` +
+            `${error.ownSession} — a DUPLICATE PAYMENT was taken; refund it`,
+        );
+        return { received: true };
+      }
       if (error instanceof CreditPurchaseNotPendingError) {
         // refunded or failed. Not something a retry fixes.
         this.logger.error(`webhook ${providerRef}: purchase ${purchaseId} is ${error.status}`);
@@ -157,6 +174,44 @@ export class StripeWebhookController {
       throw error;
     }
 
+    return { received: true };
+  }
+
+  /**
+   * A refund takes the credits back (group task 7.5.a). Full refunds only:
+   * a partial one is logged and left for a person, since which scans it
+   * covers is a decision, not arithmetic.
+   */
+  private async refunded(charge: Record<string, unknown>): Promise<{ received: true }> {
+    const metadata = (charge.metadata ?? {}) as Record<string, string>;
+    const { purchase_id: purchaseId, tenant_id: tenantId, user_id: userId } = metadata;
+    if (!purchaseId || !tenantId || !userId) {
+      this.logger.error(`charge.refunded ${String(charge.id)} carries no usable metadata — nothing taken back`);
+      return { received: true };
+    }
+    if (charge.refunded !== true) {
+      this.logger.error(`charge.refunded ${String(charge.id)} is a partial refund — credits left as they are`);
+      return { received: true };
+    }
+    const paymentRef = typeof charge.payment_intent === 'string' ? charge.payment_intent : null;
+    if (!paymentRef) {
+      this.logger.error(`charge.refunded ${String(charge.id)} names no payment — nothing taken back`);
+      return { received: true };
+    }
+    // A database failure throws: 5xx, and Stripe retries.
+    const result = await refundCreditPurchaseFromProvider(userId, tenantId, purchaseId, paymentRef);
+    if (!result) {
+      this.logger.error(`charge.refunded ${String(charge.id)}: purchase ${purchaseId} does not exist`);
+    } else if (result.otherPayment) {
+      this.logger.error(
+        `charge.refunded ${String(charge.id)}: ${paymentRef} is not the payment purchase ${purchaseId} ` +
+          'was settled by (a duplicate or unrecorded payment) — nothing taken back',
+      );
+    } else if (result.status !== 'refunded') {
+      this.logger.error(`charge.refunded ${String(charge.id)}: purchase ${purchaseId} is ${result.status}`);
+    } else {
+      this.logger.log(`refunded purchase ${purchaseId}: took back ${result.clawedBack} credits`);
+    }
     return { received: true };
   }
 }
