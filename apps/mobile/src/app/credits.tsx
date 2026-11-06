@@ -42,7 +42,8 @@ import { formatAud, numeric, radius, shadow, space, type, usePalette, useTheme }
  */
 export default function CreditsScreen() {
   // A teen's own space has no credits or plan of its own (group 3.10).
-  const teenSpace = useWorkspace().active.teenSpace === 'teen';
+  const { active, workspaceId } = useWorkspace();
+  const teenSpace = active.teenSpace === 'teen';
   const p = usePalette();
   const { scheme } = useTheme();
   const router = useRouter();
@@ -75,14 +76,14 @@ export default function CreditsScreen() {
         })
         .catch(() => live && setPacks([]));
       // A pack paid for but not yet confirmed (app closed, network lost) is confirmed now.
-      void (play ? confirmUnfinishedPlayPurchases() : Promise.resolve(0))
+      void (play ? confirmUnfinishedPlayPurchases(workspaceId) : Promise.resolve(0))
         .then(() => api().getCreditBalance())
         .then((b) => live && setRemaining(b.creditsRemaining))
         .catch(() => {});
       return () => {
         live = false;
       };
-    }, [play]),
+    }, [play, workspaceId]),
   );
 
   const ready = !!pack;

@@ -2,6 +2,7 @@ import type { Config } from './config.js';
 import type { EngineSpec } from '@snap/docai';
 import { PdfTextEngine, SidecarEngine, violatesLicenceFloor } from '@snap/docai';
 import { evaluateSimulations, simulationMode, type Env } from './integrations/simulation.js';
+import { loadServiceAccount } from './credits/google-play.js';
 
 /**
  * What must be true before this server is allowed to serve production traffic.
@@ -231,6 +232,22 @@ export function evaluatePreflight(
   // of them running is correctly configured, and it must still be able to
   // boot. One line each, so none of the four is the one nobody mentions.
   for (const finding of simulations.active) warnings.push(finding.message);
+
+  // Google Play Billing's key (8.3.b): a bad file fails the deploy, not the
+  // first purchase. The message never quotes the file.
+  if (simulationMode('googleplay', env) === 'real') {
+    try {
+      loadServiceAccount(env.GOOGLE_PLAY_SERVICE_ACCOUNT_FILE!);
+    } catch (error) {
+      failures.push(error instanceof Error ? error.message : String(error));
+    }
+    if (!env.GOOGLE_PLAY_RTDN_AUDIENCE || !env.GOOGLE_PLAY_RTDN_PUSH_ACCOUNT) {
+      warnings.push(
+        'Google Play is real but GOOGLE_PLAY_RTDN_AUDIENCE / GOOGLE_PLAY_RTDN_PUSH_ACCOUNT are not set, so every ' +
+          'Play refund notification is refused and refunded credits are never taken back (docs/BUILD.md section 9).',
+      );
+    }
+  }
 
   // ── 6. The licence floor (D23). ──────────────────────────────────────────
   //

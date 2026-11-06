@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 
-import { SignJWT, importPKCS8 } from 'jose';
+import { SignJWT, createRemoteJWKSet, importPKCS8, jwtVerify, type JWTVerifyGetKey } from 'jose';
 
 import { simulationMode, type Env } from '../integrations/simulation.js';
 
@@ -24,7 +24,8 @@ import { simulationMode, type Env } from '../integrations/simulation.js';
  * (`preflight.ts`, gate G-SIM), like every other simulator.
  */
 
-export type PlayPurchaseState = 'purchased' | 'cancelled' | 'pending';
+/** `unknown`: anything Play does not plainly call purchased, pending or cancelled. Never acted on. */
+export type PlayPurchaseState = 'purchased' | 'cancelled' | 'pending' | 'unknown';
 
 /** What the server needs to know about one Play purchase. */
 export interface PlayPurchase {
@@ -37,6 +38,10 @@ export interface PlayPurchase {
   /** Set by the phone at purchase: the buyer's user id. */
   profileId: string | null;
   purchasedAtMs: number | null;
+  /** A licence tester's test-card order: no money moved. */
+  test: boolean;
+  /** Units bought across all line items. Only 1 is sold. */
+  quantity: number;
 }
 
 export interface GooglePlayDriver {
@@ -76,26 +81,33 @@ export class GooglePlayApiDriver implements GooglePlayDriver {
     if (res.status === 400 || res.status === 404 || res.status === 410) return null;
     if (!res.ok) throw new Error(`Google Play purchases.productsv2.get answered ${res.status}`);
     const body = (await res.json()) as {
-      productLineItem?: { productId?: string; productOfferDetails?: { consumptionState?: string } }[];
+      productLineItem?: {
+        productId?: string;
+        productOfferDetails?: { consumptionState?: string; quantity?: number };
+      }[];
+      testPurchaseContext?: { fopType?: string };
       purchaseStateContext?: { purchaseState?: string };
       orderId?: string;
       obfuscatedExternalAccountId?: string;
       obfuscatedExternalProfileId?: string;
       purchaseCompletionTime?: string;
     };
-    const item = body.productLineItem?.[0];
+    const items = body.productLineItem ?? [];
+    const item = items[0];
     if (!item?.productId) return null;
     const raw = body.purchaseStateContext?.purchaseState;
     const completed = body.purchaseCompletionTime ? Date.parse(body.purchaseCompletionTime) : NaN;
     return {
       productId: item.productId,
       orderId: body.orderId ?? null,
-      // Anything Play does not call PURCHASED or PENDING grants nothing.
-      state: raw === 'PURCHASED' ? 'purchased' : raw === 'PENDING' ? 'pending' : 'cancelled',
+      state:
+        raw === 'PURCHASED' ? 'purchased' : raw === 'PENDING' ? 'pending' : raw === 'CANCELLED' ? 'cancelled' : 'unknown',
       consumed: item.productOfferDetails?.consumptionState === 'CONSUMPTION_STATE_CONSUMED',
       accountId: body.obfuscatedExternalAccountId ?? null,
       profileId: body.obfuscatedExternalProfileId ?? null,
       purchasedAtMs: Number.isFinite(completed) ? completed : null,
+      test: body.testPurchaseContext?.fopType === 'TEST',
+      quantity: items.reduce((n, i) => n + (i.productOfferDetails?.quantity ?? 1), 0),
     };
   }
 
@@ -174,6 +186,7 @@ export class SimulatedGooglePlay implements GooglePlayDriver {
     productId: string,
     ids: { accountId: string | null; profileId: string | null },
     state: PlayPurchaseState = 'purchased',
+    extra: { test?: boolean; quantity?: number } = {},
   ): string {
     const token = `simplay.${randomUUID()}`;
     this.orders += 1;
@@ -185,6 +198,8 @@ export class SimulatedGooglePlay implements GooglePlayDriver {
       accountId: ids.accountId,
       profileId: ids.profileId,
       purchasedAtMs: Date.now(),
+      test: extra.test ?? false,
+      quantity: extra.quantity ?? 1,
       voided: false,
     });
     return token;
@@ -228,18 +243,67 @@ export function googlePlayDriver(env: Env = process.env): GooglePlayDriver | nul
   const mode = simulationMode('googleplay', env);
   if (mode === 'absent') return (cached = null);
   if (mode === 'simulated') return (cached = simulatedGooglePlay());
-  const file = env.GOOGLE_PLAY_SERVICE_ACCOUNT_FILE!;
-  let account: ServiceAccount;
+  // Not cached on failure: the next request tries again once the file is fixed.
+  const account = loadServiceAccount(env.GOOGLE_PLAY_SERVICE_ACCOUNT_FILE!);
+  return (cached = new GooglePlayApiDriver(account, env.GOOGLE_PLAY_PACKAGE_NAME ?? DEFAULT_PACKAGE_NAME));
+}
+
+/**
+ * Reads the service-account key. Its errors never quote the file: a JSON
+ * parse error carries the first characters of the input, which is the key.
+ * `preflight.ts` calls this at boot, so a bad key fails the deploy.
+ */
+export function loadServiceAccount(file: string): ServiceAccount {
+  let text: string;
   try {
-    account = JSON.parse(readFileSync(file, 'utf8')) as ServiceAccount;
+    text = readFileSync(file, 'utf8');
   } catch (error) {
-    // Not cached: the next request tries again once the file is fixed.
-    throw new Error(`GOOGLE_PLAY_SERVICE_ACCOUNT_FILE could not be read as JSON: ${String(error)}`);
+    throw new Error(
+      `GOOGLE_PLAY_SERVICE_ACCOUNT_FILE could not be read (${(error as NodeJS.ErrnoException).code ?? 'error'})`,
+    );
   }
-  if (!account.client_email || !account.private_key) {
+  let account: Partial<ServiceAccount>;
+  try {
+    account = JSON.parse(text) as Partial<ServiceAccount>;
+  } catch {
+    throw new Error('GOOGLE_PLAY_SERVICE_ACCOUNT_FILE is not JSON (expected the service-account key file)');
+  }
+  if (typeof account?.client_email !== 'string' || typeof account.private_key !== 'string') {
     throw new Error('GOOGLE_PLAY_SERVICE_ACCOUNT_FILE is not a service-account key (no client_email/private_key)');
   }
-  return (cached = new GooglePlayApiDriver(account, env.GOOGLE_PLAY_PACKAGE_NAME ?? DEFAULT_PACKAGE_NAME));
+  return account as ServiceAccount;
+}
+
+/**
+ * Who may push Play's notifications: Pub/Sub, signing an OIDC token as the
+ * push subscription's service account (`GOOGLE_PLAY_RTDN_PUSH_ACCOUNT`) for
+ * the audience set on that subscription (`GOOGLE_PLAY_RTDN_AUDIENCE`).
+ * Throws on anything else, including either setting being absent.
+ */
+export async function verifyPushToken(authorization: string | undefined, env: Env = process.env): Promise<void> {
+  const audience = env.GOOGLE_PLAY_RTDN_AUDIENCE;
+  const account = env.GOOGLE_PLAY_RTDN_PUSH_ACCOUNT;
+  if (!audience || !account) throw new Error('GOOGLE_PLAY_RTDN_AUDIENCE and GOOGLE_PLAY_RTDN_PUSH_ACCOUNT are not set');
+  const token = /^Bearer (\S+)$/.exec(authorization ?? '')?.[1];
+  if (!token) throw new Error('no bearer token');
+  const { payload } = await jwtVerify(token, pushKeys(), {
+    issuer: ['https://accounts.google.com', 'accounts.google.com'],
+    audience,
+  });
+  if (payload.email !== account || payload.email_verified !== true) {
+    throw new Error('the token is not from the configured push service account');
+  }
+}
+
+let googleKeys: JWTVerifyGetKey | null = null;
+let testKeys: JWTVerifyGetKey | null = null;
+function pushKeys(): JWTVerifyGetKey {
+  return testKeys ?? (googleKeys ??= createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/certs')));
+}
+
+/** Test-only: verify push tokens against these keys instead of Google's. */
+export function setPushKeysForTesting(keys: JWTVerifyGetKey | null): void {
+  testKeys = keys;
 }
 
 /** Test-only: forget the selected driver and the simulator's purchases. */

@@ -433,7 +433,7 @@ export async function grantGooglePlayPurchase(
   tenantId: string,
   packCode: string,
   purchaseToken: string,
-  orderId: string | null,
+  paymentRef: string,
 ): Promise<{ row: CreditPurchaseRow; granted: boolean } | 'other_workspace' | null> {
   return withTenantAs(getDb(), userId, tenantId, async (tx) => {
     const pack = await tx.execute<{ code: string; credits: number; price_aud: string }>(sql`
@@ -467,7 +467,7 @@ export async function grantGooglePlayPurchase(
     `);
     const paid = await tx.execute<CreditPurchaseRow>(sql`
       update credit_purchases
-         set status = 'paid', paid_at = now(), grant_id = ${grantId}, payment_ref = ${orderId ?? purchaseToken}
+         set status = 'paid', paid_at = now(), grant_id = ${grantId}, payment_ref = ${paymentRef}
        where id = ${purchaseId} and tenant_id = current_tenant_id()
       returning ${columns}
     `);

@@ -53,14 +53,17 @@ export async function playPrices(codes: string[]): Promise<Record<string, string
 /**
  * Hands the server any pack bought but not yet confirmed (the app closed
  * mid-purchase, or the network dropped). Safe to repeat: the server grants
- * each token once. Best effort; returns how many it confirmed.
+ * each token once. Only purchases made for this workspace: another's would
+ * be refused here, and is confirmed when that workspace is open. Best
+ * effort; returns how many it confirmed.
  */
-export async function confirmUnfinishedPlayPurchases(): Promise<number> {
+export async function confirmUnfinishedPlayPurchases(workspaceId: string): Promise<number> {
   let confirmed = 0;
   try {
     const iap = await billing();
     for (const p of await iap.getAvailablePurchases()) {
       if (!p.productId.startsWith('credits_') || p.purchaseState !== 'purchased' || !p.purchaseToken) continue;
+      if ('obfuscatedAccountIdAndroid' in p && p.obfuscatedAccountIdAndroid !== workspaceId) continue;
       try {
         await api().redeemGooglePlayPurchase(p.productId, p.purchaseToken);
         confirmed += 1;
@@ -91,7 +94,7 @@ export async function buyOnPlay(
   const iap = await billing();
   // An earlier purchase of the same pack left unconfirmed would make Play
   // answer "already owned".
-  await confirmUnfinishedPlayPurchases();
+  await confirmUnfinishedPlayPurchases(ids.workspaceId);
 
   const products = (await iap.fetchProducts({ skus: [packCode], type: 'in-app' })) ?? [];
   if (products.length === 0) {
@@ -132,6 +135,11 @@ export async function buyOnPlay(
     });
   } catch (error) {
     if (iap.isUserCancelledError(error)) return { kind: 'cancelled' };
+    if ((error as { code?: string } | null)?.code === iap.ErrorCode.AlreadyOwned) {
+      throw new Error(
+        'Google Play says you already have this pack, still waiting to be added. Open Credits in the workspace you bought it for; if it is never added, Google Play refunds it within three days.',
+      );
+    }
     throw error;
   }
 

@@ -488,13 +488,16 @@ APK and the web app keep the card checkout.
   module with a config plugin (`"expo-iap"` in `app.json`), so it works with
   `expo prebuild` and EAS and needs no ejecting. It is by the maintainer of
   `react-native-iap`, which now needs Nitro modules as well. RevenueCat was
-  ruled out: a paid service in the middle of every purchase. The library
-  adds the `com.android.vending.BILLING` permission to every Android build;
-  the APK build never calls it.
+  ruled out: a paid service in the middle of every purchase. The library's
+  manifest carries `com.android.vending.BILLING`; `app.config.js` blocks it
+  in every build except the Play build, so the website APK does not ask for it.
 - **Server**: `POST /v1/credits/google-play` with `{ productId, purchaseToken }`
   (owner or manager only, like any purchase). It asks Google for the
   purchase (`purchases.productsv2.get`), refuses one that is for another pack,
-  pending, cancelled, or tagged for another workspace or person, then records
+  pending, cancelled, in a state Play does not name, for more than one unit,
+  a licence tester's test order (unless `GOOGLE_PLAY_ALLOW_TEST_PURCHASES=true`;
+  accepted ones are recorded with `payment_ref` = `TEST:<order id>`), or
+  tagged for another workspace or person, then records
   the purchase (provider `google`, the token as `provider_ref`, the Play order
   id as `payment_ref`) and grants the pack in one transaction. The token is
   unique across all workspaces (`credit_purchases_provider_ref_idx`), so a
@@ -503,9 +506,13 @@ APK and the web app keep the card checkout.
   purchase nobody acknowledges within three days, so a purchase the server
   refused costs the buyer nothing in the end.
 - **Refunds and chargebacks**: Play's Real-time developer notifications arrive
-  by Pub/Sub push at `POST /v1/credits/webhooks/google-play`. The message is
-  only a hint: the server asks Google itself (the purchase is `CANCELLED`, or
-  listed by the Voided Purchases API) before acting, then takes back the
+  by Pub/Sub push at `POST /v1/credits/webhooks/google-play`. Each push must
+  carry the OIDC token Pub/Sub signs for the subscription: issuer
+  `accounts.google.com`, audience `GOOGLE_PLAY_RTDN_AUDIENCE`, email
+  `GOOGLE_PLAY_RTDN_PUSH_ACCOUNT` (verified). Anything else is 401, and with
+  either setting unset every push is refused (preflight warns). Even then the
+  message is only a hint: the server asks Google itself (the purchase is
+  `CANCELLED`, or listed by the Voided Purchases API) before acting, then takes back the
   credits not yet spent, as a Stripe refund does. Scans already spent stay
   spent. A partial refund is logged for a person to settle.
 - **Drivers** (`apps/server/src/credits/google-play.ts`), chosen by
@@ -522,11 +529,14 @@ exists, plan 8.1):
    one-time (consumable) products with ids exactly `credits_50`,
    `credits_100` and `credits_250`, priced A$5, A$10 and A$25 (Play's
    Australian prices include GST). Activate them. The ids cannot be changed
-   later and must match the pack codes.
+   later and must match the pack codes. Leave multi-quantity purchases off:
+   the server refuses any purchase of more than one unit.
 2. **Licence testers.** Settings > License testing: add the testers' Google
    accounts and set the response to `RESPOND_NORMALLY`. They install from the
    internal testing track and pay with Play's test cards, so no money moves
-   (plan 7.5.e).
+   (plan 7.5.e). The server refuses test orders unless `deploy/.env` has
+   `GOOGLE_PLAY_ALLOW_TEST_PURCHASES=true`; set it only while testing, and
+   remove it before real customers buy, since a tester's credits are free.
 3. **Service account.** In a Google Cloud project, enable the *Google Play
    Android Developer API*, create a service account and a JSON key. In Play
    Console > Users and permissions, invite the service account's email with
@@ -539,6 +549,11 @@ exists, plan 8.1):
    a Pub/Sub topic (for example `play-billing`), grant
    `google-play-developer-notifications@system.gserviceaccount.com` the
    *Pub/Sub Publisher* role on it, and add a **push** subscription to
-   `https://snap-apps-api.gaiada.com/v1/credits/webhooks/google-play`. In Play
-   Console > Monetization setup, enter the topic name, choose to receive all
-   notifications, and press *Send test notification*.
+   `https://snap-apps-api.gaiada.com/v1/credits/webhooks/google-play` with
+   **Enable authentication** on: pick a service account for it (one made for
+   this, for example `play-rtdn@<project>.iam.gserviceaccount.com`) and set
+   the audience to that same URL. The server owner puts both in `deploy/.env`:
+   `GOOGLE_PLAY_RTDN_PUSH_ACCOUNT=<that service account's email>` and
+   `GOOGLE_PLAY_RTDN_AUDIENCE=<the audience>`. In Play Console > Monetization
+   setup, enter the topic name, choose to receive all notifications, and press
+   *Send test notification* (it is acknowledged and ignored).

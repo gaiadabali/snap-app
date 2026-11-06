@@ -7,7 +7,7 @@ import { decodeJwt } from 'jose';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { evaluateSimulations } from '../integrations/simulation.js';
-import { GooglePlayApiDriver, googlePlayDriver, resetGooglePlayForTesting } from './google-play.js';
+import { GooglePlayApiDriver, googlePlayDriver, loadServiceAccount, resetGooglePlayForTesting } from './google-play.js';
 
 const { privateKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });
 const account = {
@@ -34,6 +34,22 @@ describe('selecting the Google Play driver', () => {
     writeFileSync(file, JSON.stringify(account));
     const driver = googlePlayDriver({ NODE_ENV: 'production', GOOGLE_PLAY_SIMULATOR: 'true', GOOGLE_PLAY_SERVICE_ACCOUNT_FILE: file });
     expect(driver?.mode).toBe('real');
+  });
+
+  it('rejects a bad key file without ever quoting it', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'play-'));
+    const pem = join(dir, 'key.pem');
+    writeFileSync(pem, account.private_key);
+    for (const file of [pem, join(dir, 'missing.json')]) {
+      let message = '';
+      try {
+        loadServiceAccount(file);
+      } catch (error) {
+        message = (error as Error).message;
+      }
+      expect(message).toMatch(/GOOGLE_PLAY_SERVICE_ACCOUNT_FILE/);
+      expect(message).not.toMatch(/BEGIN|PRIVATE|MII/);
+    }
   });
 
   it('is absent when nothing is configured', () => {
@@ -78,6 +94,8 @@ describe('the real Play Developer API driver', () => {
       accountId: 'tenant',
       profileId: 'user',
       purchasedAtMs: Date.parse('2026-11-06T00:00:00Z'),
+      test: false,
+      quantity: 1,
     });
     await driver.consume('credits_50', 'tok1');
 
@@ -91,6 +109,20 @@ describe('the real Play Developer API driver', () => {
       url: 'https://androidpublisher.googleapis.com/androidpublisher/v3/applications/au.com.snapapps.app/purchases/products/credits_50/tokens/tok1:consume',
       auth: 'Bearer ya29.test',
     });
+  });
+
+  it('reads test orders, quantities and states it does not know', async () => {
+    const { http } = fakeGoogle({
+      '/tokens/test': {
+        productLineItem: [{ productId: 'credits_50', productOfferDetails: { quantity: 2 } }],
+        purchaseStateContext: { purchaseState: 'PURCHASED' },
+        testPurchaseContext: { fopType: 'TEST' },
+      },
+      '/tokens/odd': { productLineItem: [{ productId: 'credits_50' }, { productId: 'credits_100' }] },
+    });
+    const driver = new GooglePlayApiDriver(account, 'au.com.snapapps.app', http);
+    expect(await driver.getPurchase('test')).toMatchObject({ test: true, quantity: 2, state: 'purchased' });
+    expect(await driver.getPurchase('odd')).toMatchObject({ test: false, quantity: 2, state: 'unknown' });
   });
 
   it('answers null for a token Play does not know', async () => {
@@ -108,7 +140,7 @@ describe('the real Play Developer API driver', () => {
     const driver = new GooglePlayApiDriver(account, 'au.com.snapapps.app', second);
     const purchase = {
       productId: 'credits_50', orderId: 'GPA.1', state: 'purchased' as const, consumed: true,
-      accountId: null, profileId: null, purchasedAtMs: Date.now(),
+      accountId: null, profileId: null, purchasedAtMs: Date.now(), test: false, quantity: 1,
     };
     expect(await driver.isVoided('tok1', purchase)).toBe(true);
     expect(await driver.isVoided('tok9', purchase)).toBe(false);

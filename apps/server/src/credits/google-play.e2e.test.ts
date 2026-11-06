@@ -2,12 +2,13 @@ import { Client } from 'pg';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import type { AuthUser } from '@snap/api-contract';
+import { SignJWT, createLocalJWKSet, exportJWK, generateKeyPair } from 'jose';
 
 import { closeDb } from '../db.js';
 import { provisionTenant, wipeTenant } from '../test-support/tenant.js';
 import { getCreditBalance, grantGooglePlayPurchase, listCreditPurchases } from './credits.repo.js';
 import { GooglePlayController, GooglePlayNotificationsController } from './google-play.controller.js';
-import { resetGooglePlayForTesting, simulatedGooglePlay } from './google-play.js';
+import { resetGooglePlayForTesting, setPushKeysForTesting, simulatedGooglePlay } from './google-play.js';
 
 /**
  * Group plan 8.3.b: credits bought through Google Play, against a real
@@ -26,6 +27,22 @@ const OTHER_OWNER = 'de000000-0000-4000-8000-0000000083b4';
 
 const owner = { userId: OWNER } as AuthUser;
 
+const AUDIENCE = 'https://snap-apps-api.test/v1/credits/webhooks/google-play';
+const PUSHER = 'play-rtdn@snap-test.iam.gserviceaccount.com';
+const pushKey = await generateKeyPair('RS256');
+setPushKeysForTesting(createLocalJWKSet({ keys: [{ ...(await exportJWK(pushKey.publicKey)), kid: 'k1', alg: 'RS256' }] }));
+
+/** The OIDC token Pub/Sub signs for an authenticated push subscription. */
+async function pushToken(claims: Record<string, unknown> = {}, key = pushKey.privateKey): Promise<string> {
+  return new SignJWT({ email: PUSHER, email_verified: true, ...claims })
+    .setProtectedHeader({ alg: 'RS256', kid: 'k1' })
+    .setIssuer('https://accounts.google.com')
+    .setAudience(AUDIENCE)
+    .setIssuedAt()
+    .setExpirationTime('5m')
+    .sign(key);
+}
+
 describeIfDb('Google Play purchases', () => {
   let admin: Client;
   let other: Client;
@@ -36,14 +53,11 @@ describeIfDb('Google Play purchases', () => {
     simulatedGooglePlay().issue(productId, ids);
   const redeem = (productId: string, purchaseToken: string) =>
     play.redeem(owner, TENANT, { productId, purchaseToken });
-  const notify = (note: object) =>
-    rtdn.notify({
-      body: {
-        message: {
-          data: Buffer.from(JSON.stringify({ packageName: 'au.com.snapapps.app', ...note })).toString('base64'),
-        },
-      },
-    });
+  const body = (note: object) => ({
+    message: { data: Buffer.from(JSON.stringify({ packageName: 'au.com.snapapps.app', ...note })).toString('base64') },
+  });
+  const notify = async (note: object, authorization?: string) =>
+    rtdn.notify({ body: body(note), headers: { authorization: authorization ?? `Bearer ${await pushToken()}` } });
 
   beforeAll(async () => {
     admin = await provisionTenant({
@@ -60,11 +74,14 @@ describeIfDb('Google Play purchases', () => {
 
   beforeEach(() => {
     process.env.GOOGLE_PLAY_SIMULATOR = 'true';
+    process.env.GOOGLE_PLAY_RTDN_AUDIENCE = AUDIENCE;
+    process.env.GOOGLE_PLAY_RTDN_PUSH_ACCOUNT = PUSHER;
     resetGooglePlayForTesting();
   });
 
   afterEach(async () => {
     delete process.env.GOOGLE_PLAY_SIMULATOR;
+    delete process.env.GOOGLE_PLAY_ALLOW_TEST_PURCHASES;
     resetGooglePlayForTesting();
     for (const t of [TENANT, OTHER_TENANT]) {
       await admin.query('DELETE FROM credit_purchases WHERE tenant_id = $1', [t]);
@@ -170,9 +187,81 @@ describeIfDb('Google Play purchases', () => {
 
     await notify({ voidedPurchaseNotification: { purchaseToken: token, productType: 2, refundType: 1 } });
     await notify({ packageName: 'com.someone.else', voidedPurchaseNotification: { purchaseToken: token, productType: 2 } });
-    await rtdn.notify({ body: { message: { data: 'not base64 json' } } });
+    await rtdn.notify({
+      body: { message: { data: 'not base64 json' } },
+      headers: { authorization: `Bearer ${await pushToken()}` },
+    });
 
     expect(await getCreditBalance(OWNER, TENANT)).toBe(before + 50);
+  });
+
+  it("refuses a licence tester's test purchase unless this host accepts them", async () => {
+    const before = await getCreditBalance(OWNER, TENANT);
+    const token = simulatedGooglePlay().issue('credits_50', { accountId: TENANT, profileId: OWNER }, 'purchased', {
+      test: true,
+    });
+    await expect(redeem('credits_50', token)).rejects.toThrow(/Test purchases are not accepted/);
+    expect(await getCreditBalance(OWNER, TENANT)).toBe(before);
+    // Not consumed, so Play refunds the test order.
+    expect((await simulatedGooglePlay().getPurchase(token))?.consumed).toBe(false);
+
+    process.env.GOOGLE_PLAY_ALLOW_TEST_PURCHASES = 'true';
+    const purchase = await redeem('credits_50', token);
+    expect(await getCreditBalance(OWNER, TENANT)).toBe(before + 50);
+    const { rows } = await admin.query('SELECT payment_ref FROM credit_purchases WHERE id = $1', [purchase.id]);
+    expect(rows[0].payment_ref).toMatch(/^TEST:GPA\.SIM-/);
+  });
+
+  it('refuses a purchase of more than one unit', async () => {
+    const before = await getCreditBalance(OWNER, TENANT);
+    const token = simulatedGooglePlay().issue('credits_50', { accountId: TENANT, profileId: OWNER }, 'purchased', {
+      quantity: 3,
+    });
+    await expect(redeem('credits_50', token)).rejects.toThrow(/one pack at a time/);
+    expect(await getCreditBalance(OWNER, TENANT)).toBe(before);
+  });
+
+  it('never grants, and never takes back, on a state Play does not name', async () => {
+    const before = await getCreditBalance(OWNER, TENANT);
+    const token = simulatedGooglePlay().issue('credits_50', { accountId: TENANT, profileId: OWNER }, 'unknown');
+    await expect(redeem('credits_50', token)).rejects.toThrow(/could not confirm/);
+
+    // A granted purchase whose state later reads as unknown keeps its credits; the push is retried.
+    const good = buy('credits_50');
+    await redeem('credits_50', good);
+    Object.assign((simulatedGooglePlay() as unknown as { purchases: Map<string, { state: string }> }).purchases.get(good)!, {
+      state: 'unknown',
+    });
+    await expect(
+      notify({ voidedPurchaseNotification: { purchaseToken: good, productType: 2, refundType: 1 } }),
+    ).rejects.toThrow(/unknown/i);
+    expect(await getCreditBalance(OWNER, TENANT)).toBe(before + 50);
+  });
+
+  it('refuses a notification without a valid Pub/Sub token, before asking Google anything', async () => {
+    const before = await getCreditBalance(OWNER, TENANT);
+    const token = buy('credits_50');
+    await redeem('credits_50', token);
+    simulatedGooglePlay().voidPurchase(token);
+    const voided = { voidedPurchaseNotification: { purchaseToken: token, productType: 2, refundType: 1 } };
+    const stranger = await generateKeyPair('RS256');
+
+    await expect(notify(voided, 'Bearer nope')).rejects.toThrow(/Not a Google Play notification/);
+    await expect(rtdn.notify({ body: body(voided), headers: {} })).rejects.toThrow(/Not a Google Play notification/);
+    await expect(notify(voided, `Bearer ${await pushToken({}, stranger.privateKey)}`)).rejects.toThrow(/Not a Google/);
+    await expect(notify(voided, `Bearer ${await pushToken({ email: 'someone@else.test' })}`)).rejects.toThrow(
+      /Not a Google/,
+    );
+    await expect(notify(voided, `Bearer ${await pushToken({ email_verified: false })}`)).rejects.toThrow(/Not a Google/);
+    expect(await getCreditBalance(OWNER, TENANT)).toBe(before + 50);
+
+    // Unconfigured: every push refused.
+    delete process.env.GOOGLE_PLAY_RTDN_AUDIENCE;
+    await expect(notify(voided)).rejects.toThrow(/Not a Google Play notification/);
+    process.env.GOOGLE_PLAY_RTDN_AUDIENCE = AUDIENCE;
+
+    await notify(voided);
+    expect(await getCreditBalance(OWNER, TENANT)).toBe(before);
   });
 
   it('says Play is not connected when no driver is configured', async () => {
