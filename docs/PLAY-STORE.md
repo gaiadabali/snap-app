@@ -1,5 +1,8 @@
 # Google Play paperwork: drafts (group plan 8.3.d, 8.3.f, 8.4.b)
 
+> **Decide before submitting (found 2026-11-06 while making the screenshots):** the shipped app has `BUSINESS_FEATURES_ENABLED` off, so it is a personal-spending app: no trips, ledger, GST/BAS, Xero or Free Tax Returns screens. The listing below describes those business features. Either turn the business features on for the Play build, or rewrite the listing for personal spending. Play rejects a listing that claims features the app doesn't have.
+
+
 **Status: DRAFT, 2026-11-06. Nothing is submitted; the Play account does not exist yet (8.1).**
 Written from the code at `origin/main` and the privacy policy draft (`apps/web/.../legal/privacy`, "Draft, last updated 20 October 2026").
 Google's form wording changes; re-check each question against the live Play Console when the account exists.
