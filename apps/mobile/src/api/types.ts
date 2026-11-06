@@ -405,6 +405,12 @@ export interface SnapApi {
    * this call or by the browser coming back (group task 7.5.d).
    */
   checkoutCreditPurchase(purchaseId: string): Promise<CheckoutSession>;
+  /**
+   * `POST /v1/credits/google-play` — the Play build's purchase (group plan
+   * 8.3.b). The server asks Google about the token and grants the pack once;
+   * a repeat returns the same purchase.
+   */
+  redeemGooglePlayPurchase(productId: string, purchaseToken: string): Promise<CreditPurchase>;
 
   /**
    * `GET /v1/yourtal/link` — USER-scoped, not workspace-scoped. YourTal points

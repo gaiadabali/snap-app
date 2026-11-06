@@ -466,3 +466,79 @@ Group plan 0.12. Nothing below is set up yet; this is what the Play work
   has no id-ID strings) before the OS location prompt.
 - `versionCode` already rises per build (`app.config.js`). The AAB itself needs the
   signing key (plan 8.1).
+
+### Buying credits through Google Play (plan 8.3.b)
+
+The Play build sells credits only through Google Play Billing (ruling 0.12.b):
+Play rejects an app that takes money through its own checkout. The website
+APK and the web app keep the card checkout.
+
+**How it works.**
+
+- **Phone** (`apps/mobile/src/lib/play-billing.ts`, used by `credits.tsx` and
+  `pay.tsx` when `EXPO_PUBLIC_DISTRIBUTION=play`). The packs are Play products
+  whose ids are the pack codes: `credits_50`, `credits_100`, `credits_250`.
+  The Credits screen shows Play's own price and only the packs Play sells. Pay
+  opens Play's billing sheet, tagged with the workspace id and user id
+  (`obfuscatedAccountId` / `obfuscatedProfileId`), then sends the purchase
+  token to the server. The Play build never opens the web checkout. Each visit
+  to Credits also sends any purchase that was paid but never confirmed (app
+  closed, network lost, a cash payment that settled later).
+- **Library: `expo-iap`** (pinned 6.1.1, a 2026-10-18 release). It is an Expo
+  module with a config plugin (`"expo-iap"` in `app.json`), so it works with
+  `expo prebuild` and EAS and needs no ejecting. It is by the maintainer of
+  `react-native-iap`, which now needs Nitro modules as well. RevenueCat was
+  ruled out: a paid service in the middle of every purchase. The library
+  adds the `com.android.vending.BILLING` permission to every Android build;
+  the APK build never calls it.
+- **Server**: `POST /v1/credits/google-play` with `{ productId, purchaseToken }`
+  (owner or manager only, like any purchase). It asks Google for the
+  purchase (`purchases.productsv2.get`), refuses one that is for another pack,
+  pending, cancelled, or tagged for another workspace or person, then records
+  the purchase (provider `google`, the token as `provider_ref`, the Play order
+  id as `payment_ref`) and grants the pack in one transaction. The token is
+  unique across all workspaces (`credit_purchases_provider_ref_idx`), so a
+  repeat or a race grants once. Only then does it consume the purchase
+  (`purchases.products.consume`, which also acknowledges it). Play refunds a
+  purchase nobody acknowledges within three days, so a purchase the server
+  refused costs the buyer nothing in the end.
+- **Refunds and chargebacks**: Play's Real-time developer notifications arrive
+  by Pub/Sub push at `POST /v1/credits/webhooks/google-play`. The message is
+  only a hint: the server asks Google itself (the purchase is `CANCELLED`, or
+  listed by the Voided Purchases API) before acting, then takes back the
+  credits not yet spent, as a Stripe refund does. Scans already spent stay
+  spent. A partial refund is logged for a person to settle.
+- **Drivers** (`apps/server/src/credits/google-play.ts`), chosen by
+  `integrations/simulation.ts`, never both: the real Play Developer API when
+  `GOOGLE_PLAY_SERVICE_ACCOUNT_FILE` is set; a simulator, which accepts only
+  tokens it issued itself, when `GOOGLE_PLAY_SIMULATOR=true` on a host that may
+  simulate; otherwise none, and the endpoint answers 503. A production host
+  that asks for the simulator refuses to boot.
+
+**What the founder sets up in Play Console** (once the developer account
+exists, plan 8.1):
+
+1. **Products.** Monetize > Products > In-app products: create three
+   one-time (consumable) products with ids exactly `credits_50`,
+   `credits_100` and `credits_250`, priced A$5, A$10 and A$25 (Play's
+   Australian prices include GST). Activate them. The ids cannot be changed
+   later and must match the pack codes.
+2. **Licence testers.** Settings > License testing: add the testers' Google
+   accounts and set the response to `RESPOND_NORMALLY`. They install from the
+   internal testing track and pay with Play's test cards, so no money moves
+   (plan 7.5.e).
+3. **Service account.** In a Google Cloud project, enable the *Google Play
+   Android Developer API*, create a service account and a JSON key. In Play
+   Console > Users and permissions, invite the service account's email with
+   *View financial data* and *Manage orders and subscriptions* for this app.
+   Hand the JSON key to the server owner, never by chat or in a repo. On the
+   host it goes to `/etc/snap-apps/secrets/google-play-service-account.json`
+   (mode 0600, readable by uid 1001), and `deploy/.env` gets
+   `GOOGLE_PLAY_SERVICE_ACCOUNT_FILE_HOST=` that path.
+4. **Real-time developer notifications.** In the same Cloud project, create
+   a Pub/Sub topic (for example `play-billing`), grant
+   `google-play-developer-notifications@system.gserviceaccount.com` the
+   *Pub/Sub Publisher* role on it, and add a **push** subscription to
+   `https://snap-apps-api.gaiada.com/v1/credits/webhooks/google-play`. In Play
+   Console > Monetization setup, enter the topic name, choose to receive all
+   notifications, and press *Send test notification*.

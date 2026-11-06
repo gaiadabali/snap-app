@@ -144,6 +144,12 @@ These override the per-scan figures elsewhere in this file where they disagree
   leaves **about 4.8c (53% of the ex-GST price)**. A scan bought through Google Play Billing keeps
   about 2.9c after Google's fee.
 
+**Google Play (group plan 8.3.b):** the Play build sells the same three packs
+as Play products (`credits_50`, `credits_100`, `credits_250`) through Google
+Play Billing; the server verifies each purchase with Google and grants it once,
+and a refund in Play takes back the credits not yet spent. What to set up in
+Play Console: `docs/BUILD.md` section 9.
+
 **Built (group plan 7.1.a, 7.1.c and 2.5.f; migration 0039):**
 
 - A scan spends one credit when its capture is queued for reading, in the same

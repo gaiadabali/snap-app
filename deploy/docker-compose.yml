@@ -143,6 +143,10 @@ services:
       # key for private_key_jwt, read from the file mounted below. The other
       # YOURTAL_OIDC_* settings come from .env; unset, the feature is off.
       YOURTAL_OIDC_KEY_FILE: /run/secrets/yourtal-oidc-web.jwk
+      # Google Play Billing (group plan 8.3.b, docs/BUILD.md section 9): named
+      # only when the host key is set, so an unset key leaves Play OFF rather
+      # than selecting the real driver with an empty file.
+      GOOGLE_PLAY_SERVICE_ACCOUNT_FILE: ${GOOGLE_PLAY_SERVICE_ACCOUNT_FILE_HOST:+/run/secrets/google-play-service-account.json}
     volumes:
       - ${STORAGE_HOST_DIR:?set STORAGE_HOST_DIR in .env — where original captures persist on the host}:/data/storage
       - ${ERASED_LOG_HOST_DIR:-/opt/snap-apps/data/erased}:/data/erased
@@ -183,6 +187,15 @@ services:
       - type: bind
         source: ${YOURTAL_OIDC_KEY_FILE_HOST:-/dev/null}
         target: /run/secrets/yourtal-oidc-web.jwk
+        read_only: true
+        bind:
+          create_host_path: false
+      # ── Google Play Billing's service-account key, OPTIONAL ──────────────
+      # Host: /etc/snap-apps/secrets/google-play-service-account.json, mode
+      # 0600, readable by uid 1001. Same rules as yourtal.env above.
+      - type: bind
+        source: ${GOOGLE_PLAY_SERVICE_ACCOUNT_FILE_HOST:-/dev/null}
+        target: /run/secrets/google-play-service-account.json
         read_only: true
         bind:
           create_host_path: false

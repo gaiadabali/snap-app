@@ -6,6 +6,8 @@ import { Text } from '@/theme/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, type CreditPack } from '@/api';
+import { confirmUnfinishedPlayPurchases, playPrices } from '@/lib/play-billing';
+import { isPlayBuild } from '@/lib/updates';
 import { GradientHero } from '@/components/rich';
 import {
   Button,
@@ -53,16 +55,34 @@ export default function CreditsScreen() {
   const [remaining, setRemaining] = useState<number | null>(null);
   const [pack, setPack] = useState<CreditPack | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Play build (8.3.b): packs are Play products, sold at Play's price.
+  const play = isPlayBuild();
+  const [prices, setPrices] = useState<Record<string, string>>({});
+  const priceOf = (pk: CreditPack) => (play ? prices[pk.code] ?? '—' : formatAud(pk.priceAud));
 
   useFocusEffect(
     useCallback(() => {
       let live = true;
-      void api().listCreditPacks().then((x) => live && setPacks(x)).catch(() => live && setPacks([]));
-      void api().getCreditBalance().then((b) => live && setRemaining(b.creditsRemaining)).catch(() => {});
+      void api()
+        .listCreditPacks()
+        .then(async (x) => {
+          if (!play) return live && setPacks(x);
+          const found = await playPrices(x.map((pk) => pk.code));
+          if (!live) return;
+          setPrices(found);
+          // Only what Play actually sells can be bought here.
+          setPacks(x.filter((pk) => found[pk.code]));
+        })
+        .catch(() => live && setPacks([]));
+      // A pack paid for but not yet confirmed (app closed, network lost) is confirmed now.
+      void (play ? confirmUnfinishedPlayPurchases() : Promise.resolve(0))
+        .then(() => api().getCreditBalance())
+        .then((b) => live && setRemaining(b.creditsRemaining))
+        .catch(() => {});
       return () => {
         live = false;
       };
-    }, []),
+    }, [play]),
   );
 
   const ready = !!pack;
@@ -119,7 +139,7 @@ export default function CreditsScreen() {
                   key={pk.code}
                   accessibilityRole="radio"
                   accessibilityState={{ selected: on }}
-                  accessibilityLabel={`${pk.credits} scans for ${formatAud(pk.priceAud)}`}
+                  accessibilityLabel={`${pk.credits} scans for ${priceOf(pk)}`}
                   onPress={() => setPack(on ? null : pk)}
                   style={[
                     {
@@ -143,7 +163,7 @@ export default function CreditsScreen() {
                   </Text>
                   <Small>scans</Small>
                   <Text style={[type.bodyStrong, numeric, { color: p.accentText, marginTop: space.xs }]}>
-                    {formatAud(pk.priceAud)}
+                    {priceOf(pk)}
                   </Text>
                 </Pressable>
               );
@@ -173,7 +193,7 @@ export default function CreditsScreen() {
         <View style={{ flex: 1, minWidth: 0, gap: 1 }}>
           <Small>{pack ? `${pack.credits} scans` : 'Choose a pack'}</Small>
           <Text style={[type.h2, numeric, { color: p.ink }]}>
-            {pack ? formatAud(pack.priceAud) : '—'}
+            {pack ? priceOf(pack) : '—'}
           </Text>
         </View>
         <Button

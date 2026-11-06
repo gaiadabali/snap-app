@@ -1176,6 +1176,15 @@ export class HttpApi implements SnapApi {
     });
   }
 
+  redeemGooglePlayPurchase(productId: string, purchaseToken: string): Promise<CreditPurchase> {
+    // Never queued: Play refunds a purchase nobody confirms, so a failure must
+    // show now and the purchase is offered again on the next visit.
+    return this.request<CreditPurchase>('POST', '/v1/credits/google-play', {
+      body: { productId, purchaseToken },
+      queue: false,
+    });
+  }
+
   async getYourtalSignInAvailable(): Promise<boolean> {
     try {
       const status = await this.request<{ web: boolean; mobile: boolean }>('GET', '/v1/auth/yourtal', {

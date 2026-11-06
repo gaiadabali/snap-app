@@ -137,6 +137,15 @@ if [[ -n "${YOURTAL_OIDC_KEY_FILE_HOST:-}" && ! -f "${YOURTAL_OIDC_KEY_FILE_HOST
   export YOURTAL_OIDC_KEY_FILE_HOST=/dev/null
 fi
 
+# Google Play Billing's service-account key (group plan 8.3.b): optional too.
+# Missing, it is UNSET (not /dev/null): the compose file names the key to the
+# api only when this is set, and an empty key would select the real driver.
+if [[ -n "${GOOGLE_PLAY_SERVICE_ACCOUNT_FILE_HOST:-}" && ! -f "${GOOGLE_PLAY_SERVICE_ACCOUNT_FILE_HOST}" ]]; then
+  log "WARNING: GOOGLE_PLAY_SERVICE_ACCOUNT_FILE_HOST=${GOOGLE_PLAY_SERVICE_ACCOUNT_FILE_HOST} is not a file on this host;"
+  log "         Google Play purchases stay OFF for this deploy."
+  export GOOGLE_PLAY_SERVICE_ACCOUNT_FILE_HOST=
+fi
+
 if [[ -n "${CALLER_IMAGE_TAG}" ]]; then
   IMAGE_TAG="${CALLER_IMAGE_TAG}"
   export IMAGE_TAG

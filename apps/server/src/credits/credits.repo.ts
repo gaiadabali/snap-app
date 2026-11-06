@@ -416,6 +416,83 @@ export async function refundCreditPurchaseFromProvider(
 }
 
 /**
+ * A Google Play purchase the driver has verified becomes a paid purchase and
+ * its grant, exactly once per purchase token (group plan 8.3.b).
+ *
+ * The token is the purchase's `provider_ref` under provider 'google', so
+ * `credit_purchases_provider_ref_idx` (0024) holds it to one row across every
+ * workspace. The insert is ON CONFLICT DO NOTHING: two concurrent calls with
+ * the same token queue on that index and the second inserts nothing, so it
+ * cannot grant. A repeat finds the row and returns it unchanged.
+ *
+ * Returns null for an unknown or retired pack, and 'other_workspace' when the
+ * token is already recorded somewhere this workspace cannot see.
+ */
+export async function grantGooglePlayPurchase(
+  userId: string,
+  tenantId: string,
+  packCode: string,
+  purchaseToken: string,
+  orderId: string | null,
+): Promise<{ row: CreditPurchaseRow; granted: boolean } | 'other_workspace' | null> {
+  return withTenantAs(getDb(), userId, tenantId, async (tx) => {
+    const pack = await tx.execute<{ code: string; credits: number; price_aud: string }>(sql`
+      select code, credits, price_aud::text as price_aud from credit_packs where code = ${packCode} and active = true
+    `);
+    const p = pack.rows[0];
+    if (!p) return null;
+
+    const purchaseId = randomUUID();
+    const inserted = await tx.execute<{ id: string }>(sql`
+      insert into credit_purchases (id, tenant_id, purchased_by, pack_code, credits, price_aud, status, provider, provider_ref)
+      values (${purchaseId}, current_tenant_id(), ${userId}, ${p.code}, ${p.credits}, ${p.price_aud}, 'pending', 'google', ${purchaseToken})
+      on conflict (provider, provider_ref) where provider_ref is not null do nothing
+      returning id
+    `);
+    const columns = sql`id, pack_code, credits, price_aud::text as price_aud, status::text as status,
+      provider::text as provider, to_json(created_at)#>>'{}' as created_at, to_json(paid_at)#>>'{}' as paid_at`;
+
+    if (inserted.rows.length === 0) {
+      const existing = await tx.execute<CreditPurchaseRow>(sql`
+        select ${columns} from credit_purchases
+         where provider = 'google' and provider_ref = ${purchaseToken} and tenant_id = current_tenant_id()
+      `);
+      return existing.rows[0] ? { row: existing.rows[0], granted: false } : 'other_workspace';
+    }
+
+    const grantId = randomUUID();
+    await tx.execute(sql`
+      insert into usage_grants (id, tenant_id, metric, amount, remaining, source)
+      values (${grantId}, current_tenant_id(), 'scans', ${p.credits}, ${p.credits}, 'topup_pack')
+    `);
+    const paid = await tx.execute<CreditPurchaseRow>(sql`
+      update credit_purchases
+         set status = 'paid', paid_at = now(), grant_id = ${grantId}, payment_ref = ${orderId ?? purchaseToken}
+       where id = ${purchaseId} and tenant_id = current_tenant_id()
+      returning ${columns}
+    `);
+    return { row: paid.rows[0]!, granted: true };
+  });
+}
+
+/** The purchase a processor reference belongs to, in this workspace. */
+export async function findCreditPurchaseByProviderRef(
+  userId: string,
+  tenantId: string,
+  provider: 'google',
+  providerRef: string,
+): Promise<{ id: string; payment_ref: string | null } | null> {
+  return withTenantAs(getDb(), userId, tenantId, async (tx) => {
+    const found = await tx.execute<{ id: string; payment_ref: string | null }>(sql`
+      select id, payment_ref from credit_purchases
+       where provider = ${provider}::billing_provider and provider_ref = ${providerRef}
+         and tenant_id = current_tenant_id()
+    `);
+    return found.rows[0] ?? null;
+  });
+}
+
+/**
  * Ties a just-opened checkout session to its purchase: one session per
  * purchase (review M1). False when the purchase is no longer pending or
  * already has one; the caller then refuses and never shows the new session.
