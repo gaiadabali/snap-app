@@ -1,5 +1,10 @@
 [
   {
+    "id": "credits-checkout-and-delete-account",
+    "date": "2026-11-06",
+    "notes": "Each snap is one page, and a scan needs a credit. When credits run out the app says so and offers to buy more; snaps already sent are kept and read once you have credits again. Buying credits now goes through a card checkout (simulated on this test build, so no real money moves). Settings can delete your account, and the trip recorder explains why it asks for your location before Android does."
+  },
+  {
     "id": "yourtal-sign-in-credits-and-your-currency",
     "date": "2026-10-21",
     "notes": "You can now sign in or create an account with YourTal, and link YourTal so receipts scanned with bought credits earn points. Each scan uses one credit, free ones first, and a scan we cannot read gives its credit back. Amounts now show in your workspace’s own currency, so an Indonesian workspace reads in Rupiah (Rp). Credit prices stay in Australian dollars, because that is what Snap Apps charges."
