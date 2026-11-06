@@ -122,8 +122,8 @@ export async function spendScanCredit(
     // function's own teen_space_spends row) rolls back.
     if (!teen.rows[0].grant_id) throw new QuotaExhaustedError(true);
     await tx.execute(sql`
-      insert into credit_spends (tenant_id, capture_id, user_id, grant_id, grant_source, paid)
-      values (current_tenant_id(), ${input.captureId}, ${input.userId}, null, null, false)
+      insert into credit_spends (tenant_id, capture_id, user_id, grant_id, grant_source, paid, parent_funded)
+      values (current_tenant_id(), ${input.captureId}, ${input.userId}, null, null, false, true)
     `);
     return { alreadySpent: false, grantId: teen.rows[0].grant_id, grantSource: null, paid: false };
   }

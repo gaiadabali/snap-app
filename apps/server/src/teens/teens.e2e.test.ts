@@ -385,6 +385,48 @@ describeIfDb('teen spaces — real database, real provider', () => {
       }
     });
 
+    it('lists a teen’s paid scans in both usage lists: 1 credit for the teen, a "Teen scan" line for the parent (0056)', async () => {
+      const { listCreditUsage, listCreditUsageMonths } = await import('../credits/credits.repo.js');
+      const parentId = (await userIdOf(parent))!;
+      // The previous test left one paid scan and one refunded (given back) in this space.
+      const [month] = await listCreditUsageMonths(teenId, space);
+      expect(month).toBeDefined();
+
+      const teenList = await listCreditUsage(teenId, space, month!, 100, null);
+      expect(teenList.total).toBe(1);
+      expect(teenList.items.map((i) => [i.amount, i.refunded]).sort()).toEqual([[0, true], [1, false]]);
+
+      // The parent's workspace lists them, with no supplier and no capture; their own list is untouched.
+      const parentList = await listCreditUsage(parentId, household, month!, 100, null);
+      expect(parentList.total).toBe(1);
+      expect(parentList.items.map((i) => [i.label, i.amount, i.refunded]).sort()).toEqual([
+        ['Teen scan', 0, true],
+        ['Teen scan', 1, false],
+      ]);
+      expect(await listCreditUsageMonths(parentId, household)).toEqual([month]);
+      // Paging works across the merged list.
+      const one = await listCreditUsage(parentId, household, month!, 1, null);
+      expect(one.nextBefore).toBe(one.items[0]!.id);
+      expect((await listCreditUsage(parentId, household, month!, 1, one.nextBefore)).nextBefore).toBeNull();
+
+      // Other members of the parent's workspace see none of it (the teen agreed to the parent, not staff).
+      const sam = person('staff', { name: 'Sam' });
+      await signIn(sam);
+      const staff = (await userIdOf(sam))!;
+      await admin.query(`INSERT INTO memberships (tenant_id, user_id, role) VALUES ($1, $2, 'member')`, [household, staff]);
+      try {
+        expect(await listCreditUsage(staff, household, month!, 100, null)).toMatchObject({ total: 0, items: [] });
+        expect(await listCreditUsageMonths(staff, household)).toEqual([]);
+      } finally {
+        await admin.query(`DELETE FROM memberships WHERE tenant_id = $1 AND user_id = $2`, [household, staff]);
+      }
+
+      // A credit spent stays spent: the teen deleting the capture changes neither list.
+      await admin.query(`DELETE FROM captures WHERE tenant_id = $1`, [space]);
+      expect((await listCreditUsage(teenId, space, month!, 100, null)).total).toBe(1);
+      expect((await listCreditUsage(parentId, household, month!, 100, null)).total).toBe(1);
+    });
+
     it('redoes a setup that failed after the join, at the next sign-in', async () => {
       await admin.query('DELETE FROM categories WHERE tenant_id = $1', [space]);
       teenToken = (await signIn(teen)).token;

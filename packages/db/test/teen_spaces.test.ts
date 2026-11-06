@@ -246,12 +246,34 @@ describeIfDb('teen spaces (migration 0045)', () => {
     expect((await c.query('SELECT teen_space_credits() AS n')).rows[0].n).toBeNull();
     expect((await c.query('SELECT teen_space_funded() AS f')).rows[0].f).toBeNull();
 
+    // 0056: the parent sees its teen's spend with no capture ...
+    expect((await c.query('SELECT * FROM teen_space_funded_spends(NULL, NULL)')).rows).toEqual([
+      { id: expect.any(String), spent_at: expect.any(Date), refunded: false },
+    ]);
+    expect((await c.query('SELECT count(*)::int AS n FROM teen_space_funded_spends(now() + interval \'1 day\', NULL)')).rows[0].n).toBe(0);
+    // ... the teen's own space and a stranger's see none ...
+    await as('app_rw', TEEN, space);
+    expect((await c.query('SELECT count(*)::int AS n FROM teen_space_funded_spends(NULL, NULL)')).rows[0].n).toBe(0);
+    // ... and a non-owner member of the funding workspace (staff) sees none either.
+    await c.query('RESET ROLE');
+    await c.query(`INSERT INTO memberships (tenant_id, user_id, role) VALUES ($1, $2, 'member')`, [FUND, OTHER]);
+    await as('app_rw', OTHER, FUND);
+    expect((await c.query('SELECT count(*)::int AS n FROM teen_space_funded_spends(NULL, NULL)')).rows[0].n).toBe(0);
+    await c.query('RESET ROLE');
+    await c.query(`DELETE FROM memberships WHERE tenant_id = $1 AND user_id = $2`, [FUND, OTHER]);
+    // Still no direct read of the table.
+    await as('app_rw', PARENT, FUND);
+    expect(await failure('SELECT * FROM teen_space_spends')).toMatch(/^42501/);
+
     // Only the worker refunds; twice gives one credit back.
     expect(await failure('SELECT teen_space_refund_credit($1)', [capture])).toMatch(/^42501/);
     await as('app_worker', null, space);
     expect((await c.query('SELECT teen_space_refund_credit($1) AS ok', [capture])).rows[0].ok).toBe(true);
     expect((await c.query('SELECT teen_space_refund_credit($1) AS ok', [capture])).rows[0].ok).toBe(false);
     expect(await remaining()).toBe(2);
+    await as('app_rw', PARENT, FUND);
+    expect((await c.query('SELECT refunded FROM teen_space_funded_spends(NULL, NULL)')).rows).toEqual([{ refunded: true }]);
+    await c.query('RESET ROLE');
 
     // The parent's money record outlives the teen's capture.
     await owner.query('DELETE FROM credit_spends WHERE capture_id = $1', [capture]);
