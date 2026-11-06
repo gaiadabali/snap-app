@@ -8,10 +8,11 @@ import { GradientHero, HeroBody, HeroFigure, HeroLabel, Raised } from '@/compone
 import { Chip, Figure, Label, Screen, Small } from '@/components/ui';
 import { UpdateNotice } from '@/components/UpdateNotice';
 import { space, usePalette } from '@/theme';
+import { formatTotals } from '@/lib/format';
 import { useMoney } from '@/lib/use-money';
 import { WorkspaceSwitch } from '@/workspace';
 
-import { Action, AttentionRow, LatestReceipts, StatCard, greeting, sumMoney } from './shared';
+import { Action, AttentionRow, LatestReceipts, StatCard, greeting } from './shared';
 
 /**
  * Business home: what needs your attention, and the way to act on it.
@@ -65,7 +66,7 @@ export default function BusinessHome() {
     const start = `${now.getFullYear()}-${String(Math.floor(now.getMonth() / 3) * 3 + 1).padStart(2, '0')}-01`;
     return all.filter((d) => d.issueDate >= start);
   }, [all]);
-  const quarterTotal = useMemo(() => sumMoney(quarterDocs.map((d) => d.payableAmount)), [quarterDocs]);
+  const quarterTotal = useMemo(() => formatTotals(quarterDocs, money.currency), [quarterDocs, money.currency]);
   const needsReview = all.filter((d) => d.reviewStatus === 'needs_review').length;
 
   const atRisk = overview?.bas.gstAtRisk ?? '0';
@@ -103,7 +104,7 @@ export default function BusinessHome() {
           <GradientHero>
             <View style={{ gap: space.xs }}>
               <HeroLabel>Captured this quarter</HeroLabel>
-              <HeroFigure>{money.fmt(quarterTotal)}</HeroFigure>
+              <HeroFigure>{quarterTotal}</HeroFigure>
               <HeroBody>
                 {quarterDocs.length} receipt{quarterDocs.length === 1 ? '' : 's'} ·{' '}
                 {money.fmt(overview?.bas.gstClaimable ?? '0')} GST to claim

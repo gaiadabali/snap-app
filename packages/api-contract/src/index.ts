@@ -647,6 +647,12 @@ export interface PersonalSummary {
   receiptCount: number;
   byCategory: CategorySpend[];
   topMerchants: MerchantSpend[];
+  /**
+   * Receipts left out of every figure above because they are in a currency other
+   * than the workspace's. Counted, never converted or added. Absent from a server
+   * that predates it.
+   */
+  foreignCurrencyCount?: number;
 }
 
 /* ── Analytics ──────────────────────────────────────────────────────────── */

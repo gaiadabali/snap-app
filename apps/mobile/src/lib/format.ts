@@ -74,6 +74,33 @@ export function formatMoney(
 }
 
 /**
+ * A total over documents that may be in different currencies: one figure per
+ * currency ("Rp 70.900 + $12.50"), never one sum. Adding Rp 70,900 to $12.50 is
+ * a number in no currency at all. A document with no currency counts in
+ * `fallback` (the workspace's).
+ */
+export function formatTotals(
+  docs: Array<{ currency?: string | null; payableAmount: string }>,
+  fallback: string | null | undefined,
+  opts?: { cents?: boolean },
+): string {
+  const units = new Map<string, bigint>();
+  for (const d of docs) {
+    const code = (d.currency || fallback || 'AUD').toUpperCase();
+    const [w = '0', f = ''] = d.payableAmount.replace('-', '').split('.');
+    const v = BigInt(w) * 10000n + BigInt((f + '0000').slice(0, 4));
+    units.set(code, (units.get(code) ?? 0n) + (d.payableAmount.trimStart().startsWith('-') ? -v : v));
+  }
+  if (units.size === 0) units.set((fallback || 'AUD').toUpperCase(), 0n);
+  return [...units]
+    .map(([code, u]) => {
+      const abs = u < 0n ? -u : u;
+      return formatMoney(`${u < 0n ? '-' : ''}${abs / 10000n}.${(abs % 10000n).toString().padStart(4, '0')}`, code, opts);
+    })
+    .join(' + ');
+}
+
+/**
  * Australian dollars, for the amounts that are AUD by product decision
  * (SnapApp's own credit and plan prices). Never for a workspace's books: those
  * go through `formatMoney` with the record's or workspace's currency.

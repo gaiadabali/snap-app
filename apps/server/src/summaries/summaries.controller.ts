@@ -51,15 +51,27 @@ import { add, ZERO } from '@snap/api-contract/money';
 @Controller('v1')
 @UseGuards(SessionGuard, MembershipGuard)
 export class SummariesController {
-  /** Everything in the workspace, as the app's own type. */
-  private async views(user: AuthUser, tenantId: string): Promise<DocumentView[]> {
+  /**
+   * The workspace's documents in its base currency, as the app's own type.
+   *
+   * Every total here is shown in the workspace's currency, so a receipt in
+   * another one (an IDR receipt in an AUD household) must not be added in: Rp
+   * 70,900 + Rp 20 showed as "$70,920.00". Those are counted in `foreign`
+   * instead, never summed — the same rule the deduction totals follow.
+   */
+  private async views(
+    user: AuthUser,
+    tenantId: string,
+  ): Promise<{ docs: DocumentView[]; foreign: number }> {
     const rows = await listDocuments(user.userId, tenantId, 'all');
     // One resolution for the whole workspace, not one per row.
     const tenant = await readTenant(user.userId, tenantId);
     const consumptionTax = await consumptionTaxFor(tenant);
     // Aggregation reads amounts and dates only; it never displays a document's
     // pages, so there is no reason to pay for `listCapturePages` per row here.
-    return rows.map((r) => toWire(r, [], [], consumptionTax));
+    const all = rows.map((r) => toWire(r, [], [], consumptionTax));
+    const docs = tenant ? all.filter((d) => d.currency === tenant.base_currency) : all;
+    return { docs, foreign: all.length - docs.length };
   }
 
   @Get('overview')
@@ -72,7 +84,7 @@ export class SummariesController {
     @CurrentUser() user: AuthUser,
     @WorkspaceId() tenantId: string,
   ): Promise<Overview> {
-    const [tenant, plan, documents] = await Promise.all([
+    const [tenant, plan, { docs: documents }] = await Promise.all([
       readTenant(user.userId, tenantId),
       readPlan(user.userId, tenantId),
       this.views(user, tenantId),
@@ -155,14 +167,17 @@ export class SummariesController {
     @CurrentUser() user: AuthUser,
     @WorkspaceId() tenantId: string,
   ): Promise<PersonalSummary> {
-    const [documents, budgets] = await Promise.all([
+    const [{ docs: documents, foreign }, budgets] = await Promise.all([
       this.views(user, tenantId),
       listBudgets(user.userId, tenantId),
     ]);
     // The budget total is the sum of the category budgets: a household that
     // has set three caps has budgeted the sum of those three, not a separate
     // headline figure that can silently disagree with them.
-    return personalSummary(documents, budgets, sum(budgets.map((b) => b.monthly)));
+    return {
+      ...personalSummary(documents, budgets, sum(budgets.map((b) => b.monthly))),
+      foreignCurrencyCount: foreign,
+    };
   }
 
   @Get('analytics')
@@ -180,7 +195,7 @@ export class SummariesController {
     const chosen = allowed.includes(range as AnalyticsRange)
       ? (range as AnalyticsRange)
       : 'quarter';
-    const [tenant, documents, budgets] = await Promise.all([
+    const [tenant, { docs: documents }, budgets] = await Promise.all([
       readTenant(user.userId, tenantId),
       this.views(user, tenantId),
       listBudgets(user.userId, tenantId),
@@ -198,7 +213,7 @@ export class SummariesController {
     @CurrentUser() user: AuthUser,
     @WorkspaceId() tenantId: string,
   ): Promise<Recurring[]> {
-    return detectRecurring(await this.views(user, tenantId));
+    return detectRecurring((await this.views(user, tenantId)).docs);
   }
 
   @Get('sales')

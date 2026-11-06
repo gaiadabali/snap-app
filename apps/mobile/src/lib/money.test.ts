@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { currencyDecimals, currencySymbol, formatAud, formatMoney } from './format';
+import { currencyDecimals, currencySymbol, formatAud, formatMoney, formatTotals } from './format';
 import { ZERO, add, gstFromInclusive, gstOnSale, isZero, multiply, subtract } from './money';
 
 /**
@@ -162,5 +162,22 @@ describe('currencySymbol / currencyDecimals', () => {
     expect(currencyDecimals('AUD')).toBe(2);
     expect(currencyDecimals('IDR')).toBe(0);
     expect(currencyDecimals('USD')).toBe(2);
+  });
+});
+
+describe('formatTotals: one figure per currency, never one sum', () => {
+  const d = (payableAmount: string, currency?: string) => ({ payableAmount, currency });
+
+  it('an IDR workspace totals in rupiah, not dollars', () => {
+    expect(formatTotals([d('70900.0000', 'IDR'), d('20.0000', 'IDR')], 'IDR')).toBe('Rp 70.920');
+  });
+
+  it('keeps AUD and IDR apart instead of adding them', () => {
+    expect(formatTotals([d('12.5000', 'AUD'), d('70900', 'IDR'), d('20', 'IDR')], 'AUD')).toBe('$12.50 + Rp 70.920');
+  });
+
+  it('a document with no currency counts in the workspace currency; empty is zero', () => {
+    expect(formatTotals([d('1.10'), d('2.20')], 'AUD')).toBe('$3.30');
+    expect(formatTotals([], 'IDR')).toBe('Rp 0');
   });
 });

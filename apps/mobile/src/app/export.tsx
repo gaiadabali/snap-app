@@ -19,6 +19,7 @@ import {
 } from '@/components/ui';
 import { exportDocumentsCsv, exportLinesCsv } from '@/lib/share';
 import { numeric, shadow, space, type, usePalette, useTheme } from '@/theme';
+import { formatTotals } from '@/lib/format';
 import { useMoney } from '@/lib/use-money';
 
 /**
@@ -65,7 +66,7 @@ export default function ExportScreen() {
     return period === 'all' ? docs : docs.filter((d) => d.issueDate >= from && d.issueDate <= to);
   }, [docs, period]);
 
-  const total = useMemo(() => sumMoney(selected.map((d) => d.payableAmount)), [selected]);
+  const total = useMemo(() => formatTotals(selected, money.currency), [selected, money.currency]);
   const empty = docs !== null && selected.length === 0;
 
   async function run(kind: 'documents' | 'lines') {
@@ -117,7 +118,7 @@ export default function ExportScreen() {
                   ? '1 receipt'
                   : `${selected.length} receipts`}
             </Body>
-            <Text style={[type.h2, numeric, { color: p.ink }]}>{money.fmt(total)}</Text>
+            <Text style={[type.h2, numeric, { color: p.ink }]}>{total}</Text>
           </View>
           <Small>
             A CSV of the fields, plus a line-item CSV if you want the detail. The original photos
@@ -207,14 +208,4 @@ function PeriodCards({ value, onChange }: { value: Period; onChange: (v: Period)
       })}
     </View>
   );
-}
-
-/** Adds `MoneyString`s without a float — see `orders.tsx` for why. */
-function sumMoney(values: string[]): string {
-  let units = 0n;
-  for (const v of values) {
-    const [whole = '0', frac = ''] = v.replace('-', '').split('.');
-    units += BigInt(whole) * 10_000n + BigInt((frac + '0000').slice(0, 4));
-  }
-  return `${units / 10_000n}.${(units % 10_000n).toString().padStart(4, '0')}`;
 }

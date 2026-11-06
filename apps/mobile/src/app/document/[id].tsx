@@ -355,7 +355,10 @@ export default function DocumentScreen() {
                   calls the most expensive to get wrong. */}
             </View>
             <Divider />
-            <Field label="Excluding GST" value={money.fmt(doc.taxExclusiveAmount)} />
+            {/* Nothing to exclude on a receipt with no tax on it. */}
+            {Number(doc.taxAmount) !== 0 ? (
+              <Field label="Excluding GST" value={money.fmt(doc.taxExclusiveAmount)} />
+            ) : null}
             {transitions ? (
               <ProvisionalNotice transition={transitions['header.payable_amount']} />
             ) : null}

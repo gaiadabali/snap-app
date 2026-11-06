@@ -51,9 +51,11 @@ export default function ReportsScreen() {
     return `${now.getFullYear()}-${String(m + 1).padStart(2, '0')}-01`;
   }, []);
 
+  // Only receipts in the workspace's currency: profit is one figure in that
+  // currency, and a receipt in another one cannot be taken off it.
   const periodDocs = useMemo(
-    () => docs.filter((d) => d.issueDate >= quarterStart),
-    [docs, quarterStart],
+    () => docs.filter((d) => d.issueDate >= quarterStart && d.currency === money.currency),
+    [docs, quarterStart, money.currency],
   );
 
   // Income is recognised on issued invoices, ex-GST: GST collected is money
