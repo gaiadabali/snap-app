@@ -379,6 +379,8 @@ describeIfDb('delete your account (8.3.a)', () => {
     const notices = (await admin.query(
       `select payload from jobs where kind = 'erasure_notice' and payload->>'to' = $1`, [`t-${run}@example.test`])).rows;
     expect(notices.map((n) => n.payload.outcome)).toEqual(['teen_ended_parent_deleted']);
+    // G6: the parent being erased is not mailed "invite them again and the space comes back" either.
+    expect((await admin.query(`select 1 from jobs where kind = 'erasure_notice' and payload->>'to' = $1`, [`p-${run}@example.test`])).rowCount).toBe(0);
     const { teenNotice } = await import('../yourtal/events-job.js');
     const text = teenNotice('teen_ended_parent_deleted', 'Pat', held.erase_after!.toISOString())!.text;
     expect(text).toMatch(/deleted their SnapApp account/);

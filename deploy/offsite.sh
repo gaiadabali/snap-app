@@ -107,7 +107,8 @@ fi
 # The self-deleted account ids (8.3.g R2): a restore from any of the backups
 # above must be followed by erasing these again. Small, and the only copy that
 # is not in a database. Included once the host directory exists.
-[[ -d /opt/snap-apps/data/erased ]] && extra_paths+=(/opt/snap-apps/data/erased)
+ERASED_DIR="${ERASED_LOG_HOST_DIR:-/opt/snap-apps/data/erased}"
+[[ -d "$ERASED_DIR" ]] && extra_paths+=("$ERASED_DIR")
 
 # The Vault unseal shares (/etc/snap-apps/secrets/vault-unseal) are deliberately
 # NOT in the paths below and must never be added: they live under ${SECRETS_DIR},

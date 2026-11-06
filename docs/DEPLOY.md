@@ -864,15 +864,20 @@ emailed one; `offsite.sh` pushes it off the box nightly, so it survives losing t
 1. Before the restore, keep a copy of that file. A restore of the database does not touch it,
    but a restore of the host does: get it back from restic
    (`restic restore latest --target /tmp/erased --include /opt/snap-apps/data/erased`).
-2. After the restore, and before reopening the app to people: `DRY_RUN=1 deploy/re-erase-accounts.sh`
-   lists which recorded accounts exist again (a read).
-3. `deploy/re-erase-accounts.sh` queues them (a write: the owner's OK first). It calls
-   `account_delete_queue`, the same function the button calls, over every id in the file: ids
-   already gone are skipped, so the whole file is always safe to replay. The worker erases within
-   minutes (a teen: after the 30-day hold). Re-run with `DRY_RUN=1` until it reports none.
+2. Note **when the restored backup was taken** (the dump's timestamp). Only deletions recorded
+   after that time can have come back; earlier ones are already in the backup.
+3. After the restore, and before reopening the app to people:
+   `DRY_RUN=1 deploy/re-erase-accounts.sh --since <backup time>` (for example
+   `--since 2026-11-05T02:00:00Z`) lists which recorded accounts exist again (a read). `--since` is
+   required: replaying the whole file could put a teen who was legitimately invited back onto the
+   30-day hold again.
+4. `deploy/re-erase-accounts.sh --since <backup time>` queues them (a write: the owner's OK first).
+   It calls `account_delete_queue`, the same function the button calls. Ids already gone are
+   skipped. The worker erases within minutes (a teen: after the 30-day hold). Re-run with
+   `DRY_RUN=1` until it reports none.
 
 One-time on the host for the file to be writable by the api (uid 1001), once per host:
-`mkdir -p /opt/snap-apps/data/erased && chown 1001 /opt/snap-apps/data/erased`. If it is not, the
+`install -d -o 1001 -g 1001 -m 0750 /opt/snap-apps/data/erased` (never a root-owned directory, and never `mkdir -p` as root). If it is not, the
 api logs `erased-log: could not record the erased account ...` and the deletion itself still
 goes through: grep for that line, and fix the directory.
 

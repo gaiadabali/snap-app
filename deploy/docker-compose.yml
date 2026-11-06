@@ -114,7 +114,7 @@ services:
       STORAGE_DIR: /data/storage
       # Self-deleted account ids, on the host and outside Postgres (8.3.g R2;
       # docs/DEPLOY.md "Restoring from a backup"). One-time on the host:
-      #   mkdir -p /opt/snap-apps/data/erased && chown 1001 /opt/snap-apps/data/erased
+      #   install -d -o 1001 -g 1001 -m 0750 /opt/snap-apps/data/erased
       ERASED_LOG_DIR: /data/erased
       # ── Snapper, the website assistant (docs/ASSISTANT.md §8) ──────────
       #

@@ -18,6 +18,9 @@
 --       no such promise. The outcome is swapped in teen_space_notice while the
 --       transaction-local setting app.parent_deleting is on (set and cleared
 --       around the one call, like app.user_id in 0055).
+--       The PARENT's own notice ('teen_ended_parent', "invite them again and the
+--       space comes back") is not queued at all in that case: the parent is being
+--       erased, and the worker could mail it before it does (8.3.g review G6).
 --
 -- Replaces identity_account_delete_request(bytea) with (bytea, integer) that
 -- answers a status instead of a boolean; same owner and grants. Everything else
@@ -69,7 +72,8 @@ LANGUAGE sql SECURITY DEFINER SET search_path = public, pg_temp AS $fn$
            'date', p_date)),
          10
     FROM users u
-   WHERE u.id = p_to AND u.email IS NOT NULL;
+   WHERE u.id = p_to AND u.email IS NOT NULL
+     AND NOT (p_outcome = 'teen_ended_parent' AND current_setting('app.parent_deleting', true) IS NOT DISTINCT FROM 'on'); -- unset is NULL: never read as "skip"
 $fn$;
 
 -- The helper gains p_parent_deleting (true only for the parent's own deletion).
