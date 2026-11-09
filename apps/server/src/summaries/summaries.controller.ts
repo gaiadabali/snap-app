@@ -217,15 +217,19 @@ export class SummariesController {
   @Get('recurring')
   @ApiOperation({
     summary: 'Subscriptions and repeat bills the spending implies',
-    description: 'Inferred from what has actually been captured — never from a list a user has to maintain.',
+    description:
+      'Inferred from what has actually been captured — never from a list a user has to maintain. Workspace-currency rows only, unless allCurrencies=1: then rows from receipts in other currencies follow, each tagged with its currency.',
   })
   async recurring(
     @CurrentUser() user: AuthUser,
     @WorkspaceId() tenantId: string,
+    @Query('allCurrencies') allCurrencies?: string,
   ): Promise<Recurring[]> {
-    // The workspace's own currency first; a subscription paid in another one is
-    // still listed, in its own currency, never averaged into the first.
     const { docs, foreign } = await this.views(user, tenantId);
+    // Opt-in: a phone build from before 1.30.e formats every row in the
+    // workspace currency and adds them all into one yearly total, so it must
+    // keep getting exactly the workspace-currency rows it always got.
+    if (allCurrencies !== '1') return detectRecurring(docs);
     return [...detectRecurring(docs), ...detectRecurring(foreign)];
   }
 

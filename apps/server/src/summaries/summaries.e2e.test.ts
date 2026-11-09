@@ -30,7 +30,7 @@ const OWNER = 'd0d0d0d0-0000-4000-8000-0000000000f4';
 const f = <T>(value: T | null) => ({ value, confidence: 0.99 });
 const today = new Date().toISOString().slice(0, 10);
 
-function receipt(n: string, currency: string, payable: string, date = today): ValidatedExtraction {
+function receipt(n: string, currency: string, payable: string, date = today, supplier = 'Warung'): ValidatedExtraction {
   return {
     extraction: {
       schemaVersion: '1',
@@ -39,7 +39,7 @@ function receipt(n: string, currency: string, payable: string, date = today): Va
       documentNumber: f(n),
       issueDate: f(date),
       currency: f(currency),
-      supplierName: f('Warung'),
+      supplierName: f(supplier),
       supplierAbn: f(null),
       buyerIdentified: f(false),
       taxExclusiveAmount: f(null),
@@ -66,7 +66,7 @@ describeIfDb('GET /v1/personal: totals never mix currencies', () => {
   let worker: WorkerDb;
   const controller = new SummariesController();
 
-  async function addDoc(tenant: string, n: string, currency: string, payable: string, date?: string) {
+  async function addDoc(tenant: string, n: string, currency: string, payable: string, date?: string, supplier?: string) {
     const capture = randomUUID();
     await withTenantAs(getDb(), OWNER, tenant, (tx) =>
       tx.execute(sql`
@@ -76,7 +76,7 @@ describeIfDb('GET /v1/personal: totals never mix currencies', () => {
                 1024, decode(${randomUUID().replace(/-/g, '').repeat(2).slice(0, 64)}, 'hex'), 'received')
       `),
     );
-    await saveExtraction(worker.actor, tenant, capture, receipt(n, currency, payable, date), META, null);
+    await saveExtraction(worker.actor, tenant, capture, receipt(n, currency, payable, date, supplier), META, null);
   }
 
   beforeAll(async () => {
@@ -101,6 +101,13 @@ describeIfDb('GET /v1/personal: totals never mix currencies', () => {
     await addDoc(AUD_WS, 'A-3', 'IDR', '20');
     // Last year's: it must not keep a "not counted" note on this month.
     await addDoc(AUD_WS, 'A-old', 'IDR', '5000', '2020-01-01');
+    // A rupiah subscription 3-5 months back: recurring, but outside this
+    // month, this quarter and the analytics window, so no other figure moves.
+    for (const k of [3, 4, 5]) {
+      const d = new Date(new Date().getFullYear(), new Date().getMonth() - k, 5);
+      const date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-05`;
+      await addDoc(AUD_WS, `N-${k}`, 'IDR', '186000', date, 'Netflix');
+    }
     await addDoc(IDR_WS, 'I-1', 'IDR', '70900');
     await addDoc(IDR_WS, 'I-2', 'IDR', '20');
   });
@@ -136,5 +143,12 @@ describeIfDb('GET /v1/personal: totals never mix currencies', () => {
     const o = await controller.overview(owner, AUD_WS);
     expect(o.otherCurrencies).toEqual([{ currency: 'IDR', total: '70920.0000', count: 2 }]);
     expect((await controller.analytics(owner, IDR_WS, 'quarter')).otherCurrencies).toEqual([]);
+  });
+
+  it('recurring keeps old clients on workspace-currency rows; other currencies only on request', async () => {
+    // A build from before 1.30.e adds every row into one AUD total: it must not see the rupiah one.
+    expect(await controller.recurring(owner, AUD_WS)).toEqual([]);
+    const all = await controller.recurring(owner, AUD_WS, '1');
+    expect(all.map((r) => [r.merchant, r.currency, r.typicalAmount])).toEqual([['Netflix', 'IDR', '186000.0000']]);
   });
 });

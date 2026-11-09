@@ -874,7 +874,11 @@ export interface Recurring {
   /** One month on from the last sighting. */
   nextExpected: string;
   annualCost: string;
-  /** The charges' own currency; absent (the workspace's) from an older server. */
+  /**
+   * The charges' own currency; absent (the workspace's) from an older server.
+   * `GET /v1/recurring` returns only workspace-currency rows unless the client
+   * asks for `?allCurrencies=1`, so builds that predate this never see others.
+   */
   currency?: string;
 }
 
