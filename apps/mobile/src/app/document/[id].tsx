@@ -208,6 +208,7 @@ export default function DocumentScreen() {
 
   const failures = doc.complianceFailures ?? [];
   const atRisk = !doc.isTaxInvoice;
+  const hasTax = Number(doc.taxAmount) !== 0;
 
   // `doc` is non-null from here down; capture it so the closures below do not
   // each need their own narrowing.
@@ -349,20 +350,27 @@ export default function DocumentScreen() {
           <Card>
           <View style={{ gap: space.md }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
-              <Label>Total incl GST</Label>
+              <Label>{hasTax ? `Total incl ${money.taxName}` : 'Total'}</Label>
               <Figure size="h1">{money.fmt(doc.payableAmount)}</Figure>
               {/* The most expensive number on the screen, and the one §6.3
                   calls the most expensive to get wrong. */}
             </View>
             <Divider />
             {/* Unknown ex-tax total, or no tax on the receipt: nothing to show. */}
-            {doc.taxExclusiveAmount != null && Number(doc.taxAmount) !== 0 ? (
-              <Field label="Excluding GST" value={money.fmt(doc.taxExclusiveAmount)} />
+            {doc.taxExclusiveAmount != null && hasTax ? (
+              <Field label={`Excluding ${money.taxName}`} value={money.fmt(doc.taxExclusiveAmount)} />
             ) : null}
             {transitions ? (
               <ProvisionalNotice transition={transitions['header.payable_amount']} />
             ) : null}
-            <Field label="GST" value={money.fmt(doc.taxAmount)} hint="Exactly 1/11 of the taxable amount" />
+            {/* No tax on the receipt: no "GST $0.00" row. */}
+            {hasTax ? (
+              <Field
+                label={money.taxName}
+                value={money.fmt(doc.taxAmount)}
+                hint={money.taxName === 'GST' ? 'Exactly 1/11 of the taxable amount' : undefined}
+              />
+            ) : null}
             {transitions ? (
               <ProvisionalNotice transition={transitions['header.tax_amount']} />
             ) : null}
@@ -381,21 +389,21 @@ export default function DocumentScreen() {
                 {doc.taxSubtotals.map((s) => (
                   <Field
                     key={s.categoryCode}
-                    label={s.categoryCode === 'Z' ? 'GST-free' : 'Taxable'}
+                    label={s.categoryCode === 'Z' ? `${money.taxName}-free` : 'Taxable'}
                     value={money.fmt(s.inclusiveAmount)}
                     hint={
                       s.categoryCode === 'Z'
-                        ? 'Fresh food and other GST-free items. No GST to claim on this portion.'
-                        : `Carries ${money.fmt(s.taxAmount)} of GST`
+                        ? `Fresh food and other ${money.taxName}-free items. No ${money.taxName} to claim on this portion.`
+                        : `Carries ${money.fmt(s.taxAmount)} of ${money.taxName}`
                     }
                   />
                 ))}
               </>
             ) : doc.gstFreeAmount ? (
               <Field
-                label="GST-free portion"
+                label={`${money.taxName}-free portion`}
                 value={money.fmt(doc.gstFreeAmount)}
-                hint="Fresh food and other GST-free items, separated from the taxable total"
+                hint={`Fresh food and other ${money.taxName}-free items, separated from the taxable total`}
               />
             ) : null}
           </View>

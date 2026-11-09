@@ -2,9 +2,11 @@ import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
   analyticsSummary,
+  buckets,
   detectRecurring,
   personalSummary,
   startOfMonth,
+  totalsByCurrency,
 } from '@snap/api-contract/analytics';
 import type {
   AnalyticsRange,
@@ -85,7 +87,7 @@ export class SummariesController {
     @CurrentUser() user: AuthUser,
     @WorkspaceId() tenantId: string,
   ): Promise<Overview> {
-    const [tenant, plan, { docs: documents }] = await Promise.all([
+    const [tenant, plan, { docs: documents, foreign }] = await Promise.all([
       readTenant(user.userId, tenantId),
       readPlan(user.userId, tenantId),
       this.views(user, tenantId),
@@ -116,6 +118,7 @@ export class SummariesController {
       benchmarkMax: profile?.benchmarks?.max ?? null,
       ratesFy: CURRENT_RATES.fy,
       ratesDetermination: CURRENT_RATES.determination,
+      otherCurrencies: totalsByCurrency(foreign, startOfQuarter()),
       bas: {
         periodLabel: quarterLabel(),
         purchasesInclusive: sum(quarter.map((d) => d.payableAmount)),
@@ -198,13 +201,17 @@ export class SummariesController {
     const chosen = allowed.includes(range as AnalyticsRange)
       ? (range as AnalyticsRange)
       : 'quarter';
-    const [tenant, { docs: documents }, budgets] = await Promise.all([
+    const [tenant, { docs: documents, foreign }, budgets] = await Promise.all([
       readTenant(user.userId, tenantId),
       this.views(user, tenantId),
       listBudgets(user.userId, tenantId),
     ]);
     const workspace = tenant?.kind === 'personal' ? 'personal' : 'business';
-    return analyticsSummary(documents, workspace, chosen, budgets);
+    const window = buckets(chosen);
+    return {
+      ...analyticsSummary(documents, workspace, chosen, budgets),
+      otherCurrencies: totalsByCurrency(foreign, window[0]!.from, window[window.length - 1]!.to),
+    };
   }
 
   @Get('recurring')
@@ -216,7 +223,10 @@ export class SummariesController {
     @CurrentUser() user: AuthUser,
     @WorkspaceId() tenantId: string,
   ): Promise<Recurring[]> {
-    return detectRecurring((await this.views(user, tenantId)).docs);
+    // The workspace's own currency first; a subscription paid in another one is
+    // still listed, in its own currency, never averaged into the first.
+    const { docs, foreign } = await this.views(user, tenantId);
+    return [...detectRecurring(docs), ...detectRecurring(foreign)];
   }
 
   @Get('sales')

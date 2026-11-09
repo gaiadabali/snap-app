@@ -128,4 +128,13 @@ describeIfDb('GET /v1/personal: totals never mix currencies', () => {
     expect(s.receiptCount).toBe(1);
     expect(s.foreignCurrencyCount).toBe(2);
   });
+
+  it('analytics and the overview total the IDR receipts apart, per currency, in the period only', async () => {
+    const a = await controller.analytics(owner, AUD_WS, 'quarter');
+    expect(a.total).toBe('12.5000');
+    expect(a.otherCurrencies).toEqual([{ currency: 'IDR', total: '70920.0000', count: 2 }]);
+    const o = await controller.overview(owner, AUD_WS);
+    expect(o.otherCurrencies).toEqual([{ currency: 'IDR', total: '70920.0000', count: 2 }]);
+    expect((await controller.analytics(owner, IDR_WS, 'quarter')).otherCurrencies).toEqual([]);
+  });
 });

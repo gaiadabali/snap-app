@@ -533,6 +533,8 @@ export interface Overview {
   ratesFy: string;
   ratesDetermination: string;
   bas: BasSummary;
+  /** This quarter's receipts in another currency, per currency: not in `bas`. */
+  otherCurrencies?: CurrencyTotal[];
   deductions: DeductionSummary;
   entitlement: Entitlement;
 }
@@ -686,6 +688,19 @@ export interface AnalyticsSummary {
   /** Business only. null in the personal workspace, which never shows GST. */
   gstClaimable: string | null;
   gstAtRisk: string | null;
+  /**
+   * Receipts in this period in a currency other than the workspace's: left out
+   * of every figure above (amounts in two currencies cannot be added), and
+   * totalled here per currency instead. Absent from a server that predates it.
+   */
+  otherCurrencies?: CurrencyTotal[];
+}
+
+/** What a period's receipts in one currency add up to. */
+export interface CurrencyTotal {
+  currency: string;
+  total: string;
+  count: number;
 }
 
 /* ── Collaboration ──────────────────────────────────────────────────────── */
@@ -859,6 +874,8 @@ export interface Recurring {
   /** One month on from the last sighting. */
   nextExpected: string;
   annualCost: string;
+  /** The charges' own currency; absent (the workspace's) from an older server. */
+  currency?: string;
 }
 
 export interface Goal {

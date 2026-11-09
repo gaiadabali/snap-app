@@ -7,6 +7,7 @@ import { formatPercent } from '@/lib/panels/format';
 import { getAnalytics, getConsumptionTax } from '@/lib/panels/data';
 import { loadWorkspace } from '@/lib/panels/workspace';
 import { ConsumptionTaxCard } from '../../_shell/ConsumptionTaxCard';
+import { OtherCurrencies } from '../../_shell/OtherCurrencies';
 
 export const metadata = { title: 'Analytics' };
 
@@ -120,6 +121,7 @@ export default async function AnalyticsPage({
           )}
         </Card>
       </div>
+      <OtherCurrencies totals={analytics.otherCurrencies} />
 
       <Card>
         <h2 className="mb-4 text-[15px] font-semibold text-[var(--color-ink)]">Spend over time</h2>

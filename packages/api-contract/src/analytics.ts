@@ -4,6 +4,7 @@ import type {
   AnalyticsSummary,
   Budget,
   CategorySpend,
+  CurrencyTotal,
   DocumentView,
   MerchantSpend,
   PersonalSummary,
@@ -50,6 +51,21 @@ export function daysInMonth(now: Date): number {
 
 export function total(docs: DocumentView[]): string {
   return docs.reduce((acc, d) => add(acc, d.payableAmount), ZERO);
+}
+
+/**
+ * One total per currency, for the receipts dated `from`..`to` that are NOT in
+ * the workspace's currency: they are kept out of the main figures, never added
+ * to them, and shown apart so nothing disappears silently.
+ */
+export function totalsByCurrency(docs: DocumentView[], from: string, to = '9999-12-31'): CurrencyTotal[] {
+  const out = new Map<string, CurrencyTotal>();
+  for (const d of docs) {
+    if (!inRange(d, from, to)) continue;
+    const t = out.get(d.currency) ?? { currency: d.currency, total: ZERO, count: 0 };
+    out.set(d.currency, { currency: d.currency, total: add(t.total, d.payableAmount), count: t.count + 1 });
+  }
+  return [...out.values()].sort((a, b) => a.currency.localeCompare(b.currency));
 }
 
 /** Compares two decimal strings without going through a float. */
@@ -338,15 +354,18 @@ export function detectRecurring(docs: DocumentView[], now = new Date()): Recurri
   const since = iso(new Date(now.getFullYear(), now.getMonth() - 5, 1));
   const recent = docs.filter((d) => d.issueDate >= since);
 
+  // Per merchant AND currency: amounts in two currencies are never averaged.
   const byMerchant = new Map<string, DocumentView[]>();
   for (const d of recent) {
-    const list = byMerchant.get(d.supplierName) ?? [];
+    const key = `${d.supplierName}\u0000${d.currency}`;
+    const list = byMerchant.get(key) ?? [];
     list.push(d);
-    byMerchant.set(d.supplierName, list);
+    byMerchant.set(key, list);
   }
 
   const out: Recurring[] = [];
-  for (const [merchant, rows] of byMerchant) {
+  for (const rows of byMerchant.values()) {
+    const merchant = rows[0]!.supplierName;
     const months = new Set(rows.map((r) => r.issueDate.slice(0, 7)));
     if (months.size < 3) continue;
 
@@ -375,6 +394,7 @@ export function detectRecurring(docs: DocumentView[], now = new Date()): Recurri
       lastSeen: last.issueDate,
       nextExpected: iso(next),
       annualCost: (Math.round(mean * 12 * 100) / 100).toFixed(4),
+      currency: last.currency,
     });
   }
 

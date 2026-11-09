@@ -18,7 +18,7 @@ const FACTOR = 10n ** BigInt(SCALE);
 function toUnits(value: string): bigint {
   const m = /^(-?)(\d+)(?:\.(\d*))?$/.exec(value.trim());
   if (!m) throw new Error(`not a decimal amount: ${JSON.stringify(value)}`);
-  const [, sign, whole, frac = ''] = m;
+  const [, sign, whole = '0', frac = ''] = m; // `whole` always matches; the default is for strict index checks
   const units = BigInt(whole) * FACTOR + BigInt((frac + '0000').slice(0, SCALE) || '0');
   return sign === '-' ? -units : units;
 }
@@ -143,3 +143,16 @@ export function isZero(a: string): boolean {
 }
 
 export const ZERO = '0.0000';
+
+/**
+ * What the consumption tax on an amount in this currency is called: `PPN` in
+ * rupiah, `GST` otherwise. A receipt's tax is the tax of the country that
+ * printed it, so a document passes its own currency, a total the workspace's.
+ *
+ * ponytail: currency stands in for country (base_currency is set by the
+ * installed tax rules, and the rules list has AU and ID only). Serve the rules'
+ * `consumptionTaxName` on the wire once a third country shares a currency.
+ */
+export function taxNameFor(currency: string | null | undefined): 'GST' | 'PPN' {
+  return currency?.toUpperCase() === 'IDR' ? 'PPN' : 'GST';
+}

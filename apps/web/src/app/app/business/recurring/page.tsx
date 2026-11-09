@@ -34,17 +34,17 @@ export default async function RecurringPage() {
               </Thead>
               <tbody>
                 {recurring.map((r) => (
-                  <Tr key={r.merchant}>
+                  <Tr key={`${r.merchant}-${r.currency}`}>
                     <Td className="font-medium">{r.merchant}</Td>
                     <Td className="text-[var(--color-ink-muted)]">{r.category}</Td>
                     <Td align="right">
-                      <Money amount={r.typicalAmount} />
+                      <Money amount={r.typicalAmount} currency={r.currency} />
                     </Td>
                     <Td align="right">{r.monthsSeen}</Td>
                     <Td>{r.lastSeen}</Td>
                     <Td>{r.nextExpected}</Td>
                     <Td align="right">
-                      <Money amount={r.annualCost} />
+                      <Money amount={r.annualCost} currency={r.currency} />
                     </Td>
                   </Tr>
                 ))}

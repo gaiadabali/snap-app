@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { applyFraction, gstFromInclusive } from './money';
+import { applyFraction, gstFromInclusive, taxNameFor } from './money';
 
 /**
  * `gstFromInclusive` asking the rule set instead of hardcoding 1/11.
@@ -100,5 +100,14 @@ describe('applyFraction', () => {
   it('refuses the same way gstFromInclusive does', () => {
     // @ts-expect-error — no rule set in scope
     expect(() => applyFraction('110.00', undefined)).toThrow(/no default/);
+  });
+});
+
+describe('taxNameFor', () => {
+  it('rupiah reads PPN; AUD, unknown and missing read GST', () => {
+    expect(taxNameFor('IDR')).toBe('PPN');
+    expect(taxNameFor('idr')).toBe('PPN');
+    expect(taxNameFor('AUD')).toBe('GST');
+    expect(taxNameFor(null)).toBe('GST');
   });
 });

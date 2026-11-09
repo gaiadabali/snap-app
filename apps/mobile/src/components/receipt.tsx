@@ -68,12 +68,14 @@ function Paper({ doc }: { doc: DocumentView }) {
         <Text style={[mono, { fontWeight: '700' }]}>TOTAL</Text>
         <Text style={[mono, { fontWeight: '700' }]}>{money.fmt(doc.payableAmount)}</Text>
       </View>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-        <Text style={mono}>GST included</Text>
-        <Text style={mono}>{money.fmt(doc.taxAmount)}</Text>
-      </View>
+      {Number(doc.taxAmount) !== 0 ? (
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+          <Text style={mono}>{money.taxName} included</Text>
+          <Text style={mono}>{money.fmt(doc.taxAmount)}</Text>
+        </View>
+      ) : null}
       {doc.lines.some((l) => l.gstFree) ? (
-        <Text style={[mono, { marginTop: 6 }]}>* GST-free item</Text>
+        <Text style={[mono, { marginTop: 6 }]}>* {money.taxName}-free item</Text>
       ) : null}
 
       {/* The torn edge, so a facsimile never reads as a screenshot of a form. */}
