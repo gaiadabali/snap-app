@@ -1,5 +1,10 @@
 [
   {
+    "id": "new-signing-key",
+    "date": "2026-11-09",
+    "notes": "This build is signed with Snap Apps’ own private key instead of the shared test key, so Android will not install it over your current app. Before updating, open the app and let any snaps still waiting send, then uninstall Snap Apps and install this version from the download page. You only need to do this once; later updates install over it as before."
+  },
+  {
     "id": "credits-checkout-and-delete-account",
     "date": "2026-11-06",
     "notes": "Each snap is one page, and a scan needs a credit. When credits run out the app says so and offers to buy more; snaps already sent are kept and read once you have credits again. Buying credits now goes through a card checkout (simulated on this test build, so no real money moves). Settings can delete your account, and the trip recorder explains why it asks for your location before Android does."

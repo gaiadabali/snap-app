@@ -22,7 +22,10 @@ name: Android release
 # A tag must be on `main` and must be named after the APK's own version, so the
 # tag, the release and the number inside the APK can never disagree.
 #
-# SIGNING. Every APK is signed with the public React Native debug key, which
+# SIGNING. Since 8.1 (2026-11-09) every APK is re-signed with the private release
+# key "CN=Snap Apps, O=Gaiada, C=AU" (repository secrets ANDROID_RELEASE_KEYSTORE_B64
+# and _PASSWORD; master copy on helios in /etc/snap-apps/secrets/android-release).
+# Before that, every APK was signed with the public React Native debug key, which
 # `expo prebuild` copies from its template into android/app/debug.keystore. Testers
 # install each build over the last, and Android only allows that when the signing
 # certificate is identical, so this workflow REFUSES an APK whose signer is not the
@@ -65,7 +68,7 @@ env:
   # BEFORE the build step and the build is told to sign with it (a signingConfig
   # in apps/mobile config), this value becomes the new certificate's fingerprint,
   # and the change is announced, because testers must uninstall once.
-  EXPECTED_SIGNER_SHA256: fac61745dc0903786fb9ede62a962b399f7348f0bb6f899b8332667591033b9c
+  EXPECTED_SIGNER_SHA256: 06c654570901573c2703849ed88ec9c95b38986a52ed5179cbde7621e0d34466
   # What `react-native` 0.86 builds with (packages/react-native/gradle/libs.versions.toml).
   NDK_VERSION: 27.1.12297006
   BUILD_TOOLS_VERSION: 36.0.0
@@ -199,12 +202,20 @@ jobs:
       # script sets EXPO_PUBLIC_API_URL, _BUILD_COMMIT, _BUILD_VERSION and
       # _BUILD_VERSION_CODE itself; this is the same command a person runs.
       - name: Build
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_RELEASE_KEYSTORE_B64 }}
+          SNAP_RELEASE_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_RELEASE_KEYSTORE_PASSWORD }}
         run: |
           case "$API_URL" in
             https://*) ;;
             *) echo "::error::api_url must be an https URL"; exit 1 ;;
           esac
+          # SIGNING SEAM (8.1): the private release key, restored from a repository secret.
+          [ -n "$KEYSTORE_B64" ] || { echo "::error::ANDROID_RELEASE_KEYSTORE_B64 secret is missing"; exit 1; }
+          export SNAP_RELEASE_KEYSTORE="$RUNNER_TEMP/snap-release.p12"
+          (umask 077; printf '%s' "$KEYSTORE_B64" | base64 -d > "$SNAP_RELEASE_KEYSTORE")
           deploy/build-apk.sh "$API_URL"
+          rm -f "$SNAP_RELEASE_KEYSTORE"
 
       - name: Check what was built
         id: apk
