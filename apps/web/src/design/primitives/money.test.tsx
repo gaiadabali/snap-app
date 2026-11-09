@@ -5,7 +5,12 @@ import { OtherCurrencies } from '@/app/app/_shell/OtherCurrencies';
 import { Money, WorkspaceCurrency } from './money';
 
 // Money joins `Rp` and the figure with a no-break space; compare with a plain one.
-const text = (html: string) => html.replace(/<[^>]+>/g, '').replace(/\u00a0/g, ' ');
+const text = (html: string) =>
+  html
+    .split('<')
+    .map((part, i) => (i === 0 ? part : part.slice(part.indexOf('>') + 1)))
+    .join('')
+    .replace(/\u00a0/g, ' ');
 
 describe('<Money> currency', () => {
   it('defaults to AUD outside a workspace', () => {
