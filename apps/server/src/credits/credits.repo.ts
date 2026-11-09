@@ -91,6 +91,9 @@ export async function listCreditPurchases(userId: string, tenantId: string): Pro
              provider::text as provider, to_json(created_at)#>>'{}' as created_at, to_json(paid_at)#>>'{}' as paid_at
         from credit_purchases
        where tenant_id = current_tenant_id()
+         -- A Play void recorded for a purchase never granted (recordGooglePlayVoid):
+         -- not an order the buyer made here (8.3.b follow-up review L4, L5).
+         and not (provider = 'google' and status = 'refunded' and grant_id is null)
        order by created_at desc
     `);
     return rows.rows;
@@ -472,6 +475,41 @@ export async function grantGooglePlayPurchase(
       returning ${columns}
     `);
     return { row: paid.rows[0]!, granted: true };
+  });
+}
+
+/**
+ * A Google Play void for a token we hold no purchase for (review L3): it was
+ * never redeemed, or a redeem is between Google's "purchased" and its insert.
+ * Records the token as a `refunded` purchase with no grant, so that late
+ * redeem conflicts on the token index and grants nothing, as the Stripe
+ * pending-refund path does. 'exists' when a row for the token is already
+ * there (a redeem committed meanwhile: the caller refunds that row instead);
+ * null for a pack that is not in the catalogue, which no redeem can grant.
+ */
+export async function recordGooglePlayVoid(
+  userId: string,
+  tenantId: string,
+  packCode: string,
+  purchaseToken: string,
+  paymentRef: string,
+): Promise<'recorded' | 'exists' | null> {
+  return withTenantAs(getDb(), userId, tenantId, async (tx) => {
+    const pack = await tx.execute<{ code: string; credits: number; price_aud: string }>(sql`
+      select code, credits, price_aud::text as price_aud from credit_packs where code = ${packCode}
+    `);
+    const p = pack.rows[0];
+    if (!p) return null;
+    // Waits on the token index for an uncommitted redeem, then conflicts.
+    const inserted = await tx.execute<{ id: string }>(sql`
+      insert into credit_purchases (id, tenant_id, purchased_by, pack_code, credits, price_aud, status, provider,
+                                    provider_ref, payment_ref, paid_at)
+      values (${randomUUID()}, current_tenant_id(), ${userId}, ${p.code}, ${p.credits}, ${p.price_aud}, 'refunded',
+              'google', ${purchaseToken}, ${paymentRef}, now())
+      on conflict (provider, provider_ref) where provider_ref is not null do nothing
+      returning id
+    `);
+    return inserted.rows.length ? 'recorded' : 'exists';
   });
 }
 

@@ -2,9 +2,11 @@ import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
   analyticsSummary,
+  buckets,
   detectRecurring,
   personalSummary,
   startOfMonth,
+  totalsByCurrency,
 } from '@snap/api-contract/analytics';
 import type {
   AnalyticsRange,
@@ -85,7 +87,7 @@ export class SummariesController {
     @CurrentUser() user: AuthUser,
     @WorkspaceId() tenantId: string,
   ): Promise<Overview> {
-    const [tenant, plan, { docs: documents }] = await Promise.all([
+    const [tenant, plan, { docs: documents, foreign }] = await Promise.all([
       readTenant(user.userId, tenantId),
       readPlan(user.userId, tenantId),
       this.views(user, tenantId),
@@ -116,6 +118,7 @@ export class SummariesController {
       benchmarkMax: profile?.benchmarks?.max ?? null,
       ratesFy: CURRENT_RATES.fy,
       ratesDetermination: CURRENT_RATES.determination,
+      otherCurrencies: totalsByCurrency(foreign, startOfQuarter()),
       bas: {
         periodLabel: quarterLabel(),
         purchasesInclusive: sum(quarter.map((d) => d.payableAmount)),
@@ -198,25 +201,36 @@ export class SummariesController {
     const chosen = allowed.includes(range as AnalyticsRange)
       ? (range as AnalyticsRange)
       : 'quarter';
-    const [tenant, { docs: documents }, budgets] = await Promise.all([
+    const [tenant, { docs: documents, foreign }, budgets] = await Promise.all([
       readTenant(user.userId, tenantId),
       this.views(user, tenantId),
       listBudgets(user.userId, tenantId),
     ]);
     const workspace = tenant?.kind === 'personal' ? 'personal' : 'business';
-    return analyticsSummary(documents, workspace, chosen, budgets);
+    const window = buckets(chosen);
+    return {
+      ...analyticsSummary(documents, workspace, chosen, budgets),
+      otherCurrencies: totalsByCurrency(foreign, window[0]!.from, window[window.length - 1]!.to),
+    };
   }
 
   @Get('recurring')
   @ApiOperation({
     summary: 'Subscriptions and repeat bills the spending implies',
-    description: 'Inferred from what has actually been captured — never from a list a user has to maintain.',
+    description:
+      'Inferred from what has actually been captured — never from a list a user has to maintain. Workspace-currency rows only, unless allCurrencies=1: then rows from receipts in other currencies follow, each tagged with its currency.',
   })
   async recurring(
     @CurrentUser() user: AuthUser,
     @WorkspaceId() tenantId: string,
+    @Query('allCurrencies') allCurrencies?: string,
   ): Promise<Recurring[]> {
-    return detectRecurring((await this.views(user, tenantId)).docs);
+    const { docs, foreign } = await this.views(user, tenantId);
+    // Opt-in: a phone build from before 1.30.e formats every row in the
+    // workspace currency and adds them all into one yearly total, so it must
+    // keep getting exactly the workspace-currency rows it always got.
+    if (allCurrencies !== '1') return detectRecurring(docs);
+    return [...detectRecurring(docs), ...detectRecurring(foreign)];
   }
 
   @Get('sales')

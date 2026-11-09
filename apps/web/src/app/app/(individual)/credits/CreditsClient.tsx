@@ -59,7 +59,7 @@ export function CreditsClient({
             <Card key={pack.code}>
               <div className="text-[13px] text-[var(--color-ink-muted)]">{pack.credits} scans</div>
               <div className="mt-1 text-[22px] font-normal text-[var(--color-ink)]">
-                <Money amount={pack.priceAud} />
+                <Money currency="AUD" amount={pack.priceAud} />
               </div>
               <Button
                 size="sm"
@@ -120,7 +120,7 @@ export function CreditsClient({
                       <Td>{p.packCode}</Td>
                       <Td align="right">{p.credits}</Td>
                       <Td align="right">
-                        <Money amount={p.priceAud} />
+                        <Money currency="AUD" amount={p.priceAud} />
                       </Td>
                       <Td>
                         <Badge tone={STATUS_TONE[p.status]}>{p.status}</Badge>

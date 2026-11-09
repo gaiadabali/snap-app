@@ -56,7 +56,7 @@ export const getDocument = (workspaceId: string, id: string) =>
 export const getAnalytics = (workspaceId: string, range: AnalyticsRange) =>
   api<AnalyticsSummary>(`/v1/analytics?range=${range}`, { workspaceId });
 
-export const listRecurring = (workspaceId: string) => api<Recurring[]>('/v1/recurring', { workspaceId });
+export const listRecurring = (workspaceId: string) => api<Recurring[]>('/v1/recurring?allCurrencies=1', { workspaceId });
 
 export const getMileage = (workspaceId: string) => api<MileageSummary>('/v1/mileage', { workspaceId });
 

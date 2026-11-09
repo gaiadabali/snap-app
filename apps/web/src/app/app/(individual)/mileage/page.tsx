@@ -32,7 +32,7 @@ export default async function MileagePage() {
         <Card>
           <Stat
             label="Claim at cents/km"
-            value={<Money amount={mileage.claimAtCentsPerKm} />}
+            value={<Money currency="AUD" amount={mileage.claimAtCentsPerKm} />}
             hint={`${mileage.centsPerKmRate}¢/km, capped at ${mileage.centsPerKmCapKm.toLocaleString()} km`}
           />
         </Card>

@@ -145,13 +145,13 @@ export function DocumentsTable({
                     </Td>
                   ) : null}
                   <Td align="right">
-                    <Money amount={d.payableAmount} />
+                    <Money amount={d.payableAmount} currency={d.currency} />
                   </Td>
                   {showTaxColumns ? (
                     <Td align="right">
                       {d.gstAtRisk && Number(d.gstAtRisk) > 0 ? (
                         <span className="text-[var(--color-risk)]">
-                          <Money amount={d.gstAtRisk} />
+                          <Money amount={d.gstAtRisk} currency={d.currency} />
                         </span>
                       ) : (
                         <span className="text-[var(--color-ink-muted)]">—</span>

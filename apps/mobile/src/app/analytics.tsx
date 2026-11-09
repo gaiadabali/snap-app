@@ -9,6 +9,7 @@ import { BarSeries, CategoryBars, CategoryRing, RingLegend } from '@/components/
 import { Raised, Tile } from '@/components/rich';
 import { Body, Divider, Figure, Label, Screen, SectionHeader, Small } from '@/components/ui';
 import { formatShortDate, shadow, space, type, usePalette, useTheme } from '@/theme';
+import { formatMoney } from '@/lib/format';
 import { useMoney } from '@/lib/use-money';
 import { WorkspaceSwitch, useWorkspace } from '@/workspace';
 
@@ -96,6 +97,14 @@ export default function AnalyticsScreen() {
                     {`  vs ${money.fmt(data.previousTotal, { cents: false })} the period before`}
                   </Small>
                 )}
+                {/* Receipts in another currency are not in the figures; say so, per currency. */}
+                {data.otherCurrencies?.length ? (
+                  <Small>
+                    {`Not counted, in another currency: ${data.otherCurrencies
+                      .map((c) => `${formatMoney(c.total, c.currency)} (${c.count} receipt${c.count === 1 ? '' : 's'})`)
+                      .join(', ')}`}
+                  </Small>
+                ) : null}
               </View>
 
               <BarSeries points={data.series} onSelect={setSelected} />
