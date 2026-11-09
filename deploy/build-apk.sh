@@ -78,6 +78,16 @@ cd android
   --max-workers=4
 
 APK="$REPO_ROOT/apps/mobile/android/app/build/outputs/apk/release/app-release.apk"
+
+# 8.1: re-sign with the private release key when one is given (CI restores it
+# from a repository secret). Without it the APK keeps the public debug key.
+if [ -n "${SNAP_RELEASE_KEYSTORE:-}" ]; then
+  : "${SNAP_RELEASE_KEYSTORE_PASSWORD:?SNAP_RELEASE_KEYSTORE is set but its password is not}"
+  APKSIGNER=$(ls -d "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
+  "$APKSIGNER" sign --ks "$SNAP_RELEASE_KEYSTORE" --ks-key-alias snap-release \
+    --ks-pass env:SNAP_RELEASE_KEYSTORE_PASSWORD --key-pass env:SNAP_RELEASE_KEYSTORE_PASSWORD "$APK"
+  echo "signed with the release key ($SNAP_RELEASE_KEYSTORE)"
+fi
 ls -la "$APK"
 echo
 echo "built. CI releases by tag (docs/BUILD.md section 8); to publish this APK by hand:"
