@@ -5,16 +5,19 @@
  */
 export const ANDROID_PACKAGE = 'au.com.snapapps.app';
 
-/** The public React Native debug key every build is signed with today (docs/BUILD.md). */
-const DEBUG_KEY_SHA256 = 'fac61745dc0903786fb9ede62a962b399f7348f0bb6f899b8332667591033b9c';
+/**
+ * The private release key every APK is signed with since 8.1 (android-v0.1.290,
+ * CN=Snap Apps). The old public debug key is deliberately absent: anyone can sign
+ * with it, so listing it would let any sideloaded build catch the sign-in.
+ */
+const RELEASE_KEY_SHA256 = '06c654570901573c2703849ed88ec9c95b38986a52ed5179cbde7621e0d34466';
 
 /**
  * SHA-256 fingerprints of the signing certificates, `ANDROID_CERT_SHA256`
- * (comma-separated hex, colons optional) or the debug key when unset. Add the
- * private release key (plan 8.1) next to the debug one, then drop the debug one.
+ * (comma-separated hex, colons optional) or the release key when unset.
  */
 export function certFingerprints(env: string | undefined = process.env.ANDROID_CERT_SHA256): string[] {
-  const raw = env?.trim() ? env.split(',') : [DEBUG_KEY_SHA256];
+  const raw = env?.trim() ? env.split(',') : [RELEASE_KEY_SHA256];
   return raw.map((f) => {
     const hex = f.replace(/[:\s]/g, '').toUpperCase();
     if (!/^[0-9A-F]{64}$/.test(hex)) throw new Error('ANDROID_CERT_SHA256 must be SHA-256 fingerprints (64 hex digits each)');
