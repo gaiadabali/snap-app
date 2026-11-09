@@ -278,6 +278,7 @@ jobs:
       # must not block a release.
       - name: Build x86_64 APK (emulator, not published)
         id: x86
+        if: github.event_name != 'pull_request'
         continue-on-error: true
         run: |
           SNAP_ABI=x86_64 deploy/build-apk.sh "$API_URL"
