@@ -185,7 +185,10 @@ describeIfDb('Google Play purchases', () => {
     const token = buy('credits_50');
     await redeem('credits_50', token);
 
-    await notify({ voidedPurchaseNotification: { purchaseToken: token, productType: 2, refundType: 1 } });
+    // Unconfirmed yet (Google's reads can lag): 503, so Pub/Sub redelivers (review L3).
+    await expect(
+      notify({ voidedPurchaseNotification: { purchaseToken: token, productType: 2, refundType: 1 } }),
+    ).rejects.toThrow(/not confirmed/);
     await notify({ packageName: 'com.someone.else', voidedPurchaseNotification: { purchaseToken: token, productType: 2 } });
     await rtdn.notify({
       body: { message: { data: 'not base64 json' } },
@@ -193,6 +196,21 @@ describeIfDb('Google Play purchases', () => {
     });
 
     expect(await getCreditBalance(OWNER, TENANT)).toBe(before + 50);
+  });
+
+  it('a void that overtakes a redeem is recorded, so the late grant adds nothing (review L3)', async () => {
+    const before = await getCreditBalance(OWNER, TENANT);
+    const token = buy('credits_50');
+    // The redeem has read "purchased" from Google; then the void lands before its grant.
+    simulatedGooglePlay().voidPurchase(token);
+    const voided = { voidedPurchaseNotification: { purchaseToken: token, productType: 2, refundType: 1 } };
+    await notify(voided);
+    await notify(voided); // redelivered: still one row, nothing granted
+
+    const late = await grantGooglePlayPurchase(OWNER, TENANT, 'credits_50', token, 'GPA.LATE');
+    expect(late).toMatchObject({ granted: false, row: { status: 'refunded' } });
+    expect(await getCreditBalance(OWNER, TENANT)).toBe(before);
+    expect((await listCreditPurchases(OWNER, TENANT)).filter((p) => p.provider === 'google')).toHaveLength(1);
   });
 
   it("refuses a licence tester's test purchase unless this host accepts them", async () => {
