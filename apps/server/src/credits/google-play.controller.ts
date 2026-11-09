@@ -29,6 +29,7 @@ import { requireAdmin, resumeAfterCredits, toPurchase } from './credits.controll
 import {
   findCreditPurchaseByProviderRef,
   grantGooglePlayPurchase,
+  recordGooglePlayVoid,
   refundCreditPurchaseFromProvider,
 } from './credits.repo.js';
 import { DEFAULT_PACKAGE_NAME, googlePlayDriver, verifyPushToken, type GooglePlayDriver } from './google-play.js';
@@ -121,6 +122,10 @@ export class GooglePlayController {
     if (result === 'other_workspace') {
       throw new ConflictException('This Google Play purchase has already been added to another workspace.');
     }
+    // Voided after Google said "purchased" above (review L3).
+    if (result.row.status === 'refunded') {
+      throw new ConflictException('This Google Play purchase was cancelled or refunded, so no scans were added.');
+    }
 
     if (result.row.status === 'paid' && !purchase.consumed) {
       try {
@@ -140,6 +145,9 @@ export class GooglePlayController {
     return toPurchase(result.row);
   }
 }
+
+/** How long a void that keeps failing is redelivered before it is logged and dropped. */
+const GIVE_UP_AFTER_MS = 72 * 3600 * 1000;
 
 /**
  * Google Play's Real-time developer notifications, pushed by Cloud Pub/Sub.
@@ -195,16 +203,37 @@ export class GooglePlayNotificationsController {
       return { received: true };
     }
 
+    // A failure answers 5xx so Pub/Sub redelivers. One that never clears (Google
+    // never confirms, or the order names a teen space) would be redelivered
+    // for the subscription's whole retention and slow every other push, so it
+    // is given up after 72 h by the message's publishTime (review L1).
+    const message = (request.body as { message?: { publishTime?: unknown } } | undefined)?.message;
+    const published = Date.parse(String(message?.publishTime ?? ''));
+    try {
+      await this.takeBack(voided.purchaseToken);
+    } catch (error) {
+      if (Date.now() - published > GIVE_UP_AFTER_MS) {
+        this.logger.error(
+          `gave up on a Play void published ${message?.publishTime}: ${error instanceof Error ? error.message : String(error)}; check it by hand`,
+        );
+        return { received: true };
+      }
+      throw error;
+    }
+    return { received: true };
+  }
+
+  /** Takes back the unspent credits of a purchase Google confirms is voided. */
+  private async takeBack(token: string): Promise<void> {
     const driver = googlePlayDriver();
     if (!driver) {
       // Redelivered until Play purchases are connected, so the void is not lost.
       throw new ServiceUnavailableException('Google Play purchases are not connected on this server.');
     }
-    const token = voided.purchaseToken;
     const purchase = await driver.getPurchase(token);
     if (!purchase) {
       this.logger.error('a voided Play purchase is unknown to Google Play; nothing taken back');
-      return { received: true };
+      return;
     }
     if (purchase.state === 'unknown') {
       // Never take credits back on a state nobody can read. Redelivered later.
@@ -212,28 +241,48 @@ export class GooglePlayNotificationsController {
       throw new ServiceUnavailableException('Purchase state unknown.');
     }
     if (!(await driver.isVoided(token, purchase))) {
-      this.logger.warn('a Play void notification Google does not confirm; nothing taken back');
-      return { received: true };
+      // Google's read APIs can lag the notification. Pushes are authenticated,
+      // so asking Pub/Sub to redeliver is safe (review L3); nothing taken yet.
+      this.logger.warn(`a Play void Google does not confirm yet for order ${purchase.orderId}; retrying later`);
+      throw new ServiceUnavailableException('Void not confirmed by Google Play yet.');
     }
     const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!uuid.test(purchase.accountId ?? '') || !uuid.test(purchase.profileId ?? '')) {
       this.logger.error(`voided Play order ${purchase.orderId} names no workspace; nothing taken back`);
-      return { received: true };
+      return;
     }
 
+    const [userId, tenantId] = [purchase.profileId!, purchase.accountId!];
     let found: { id: string; payment_ref: string | null } | null;
     try {
-      found = await findCreditPurchaseByProviderRef(purchase.profileId!, purchase.accountId!, 'google', token);
+      found = await findCreditPurchaseByProviderRef(userId, tenantId, 'google', token);
+      if (!found) {
+        // Never granted, or a redeem is granting it right now: record the void
+        // so that grant adds nothing (review L3).
+        // Marked as the redeem marks it, so a tester's order never reads as revenue (review L4).
+        const ref = `${purchase.test ? 'TEST:' : ''}${purchase.orderId ?? token}`;
+        const recorded = await recordGooglePlayVoid(userId, tenantId, purchase.productId, token, ref);
+        if (recorded === null) {
+          this.logger.warn(`voided Play order ${purchase.orderId} is for ${purchase.productId}, not a pack; nothing to do`);
+          return;
+        }
+        if (recorded === 'recorded') {
+          this.logger.log(`voided Play order ${purchase.orderId} was never granted; recorded so it never is`);
+          return;
+        }
+        // A redeem committed meanwhile: take that grant back below.
+        found = await findCreditPurchaseByProviderRef(userId, tenantId, 'google', token);
+      }
     } catch (error) {
       if (!(error instanceof NotAMemberError)) throw error;
       // The buyer has left the workspace since, so RLS will not let us in as them.
       this.logger.error(`voided Play order ${purchase.orderId}: the buyer is no longer a member; take the credits back by hand`);
-      return { received: true };
+      return;
     }
     if (!found) {
-      // Never granted (it was refused or never redeemed): nothing to take.
-      this.logger.log(`voided Play order ${purchase.orderId} was never granted`);
-      return { received: true };
+      // The token is recorded in a workspace the order does not name.
+      this.logger.error(`voided Play order ${purchase.orderId} is recorded in another workspace; check it by hand`);
+      return;
     }
     const result = await refundCreditPurchaseFromProvider(
       purchase.profileId!,
@@ -242,6 +291,5 @@ export class GooglePlayNotificationsController {
       found.payment_ref!,
     );
     this.logger.log(`voided Play purchase ${found.id}: took back ${result?.clawedBack ?? 0} credits`);
-    return { received: true };
   }
 }

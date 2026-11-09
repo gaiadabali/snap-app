@@ -150,6 +150,13 @@ Play Billing; the server verifies each purchase with Google and grants it once,
 and a refund in Play takes back the credits not yet spent. What to set up in
 Play Console: `docs/BUILD.md` section 9.
 
+- **Price shown and stored (8.3.b review L6).** The Credits screen in the Play
+  build shows Play's own `displayPrice`, and the pay result screen there shows
+  no price (Play emails its own receipt). The purchase row still stores our A$
+  catalogue price (`price_aud`), so purchase history and revenue figures read
+  A$5/10/25 for a Play order, whatever currency the buyer paid in. Until that
+  is stored from Play, keep the Play Console AUD prices equal to the packs.
+
 **Built (group plan 7.1.a, 7.1.c and 2.5.f; migration 0039):**
 
 - A scan spends one credit when its capture is queued for reading, in the same

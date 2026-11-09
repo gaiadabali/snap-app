@@ -225,7 +225,8 @@ export default function PayScreen() {
         </Text>
 
         <Card style={{ width: '100%', maxWidth: 380, marginTop: space.xl, gap: space.md }}>
-          <SummaryRow label={ok ? 'Paid' : 'Attempted'} value={formatAud(purchase?.priceAud ?? null)} />
+          {/* Play charges its own price, in the buyer's currency, and emails its own receipt; ours is the A$ catalogue price (8.3.b review L6). */}
+          {play ? null : <SummaryRow label={ok ? 'Paid' : 'Attempted'} value={formatAud(purchase?.priceAud ?? null)} />}
           {ok ? (
             <>
               <SummaryRow label="Reference" value={(purchase?.id ?? '').slice(-10).toUpperCase()} />

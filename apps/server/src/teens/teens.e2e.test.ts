@@ -425,6 +425,18 @@ describeIfDb('teen spaces — real database, real provider', () => {
       await admin.query(`DELETE FROM captures WHERE tenant_id = $1`, [space]);
       expect((await listCreditUsage(teenId, space, month!, 100, null)).total).toBe(1);
       expect((await listCreditUsage(parentId, household, month!, 100, null)).total).toBe(1);
+
+      // The workspace handed to a new owner: the lines stay the inviting parent's, never the new owner's.
+      await admin.query(`INSERT INTO memberships (tenant_id, user_id, role) VALUES ($1, $2, 'owner')`, [household, staff]);
+      await admin.query(`UPDATE memberships SET role = 'admin' WHERE tenant_id = $1 AND user_id = $2`, [household, parentId]);
+      try {
+        expect(await listCreditUsage(staff, household, month!, 100, null)).toMatchObject({ total: 0, items: [] });
+        expect(await listCreditUsageMonths(staff, household)).toEqual([]);
+        expect((await listCreditUsage(parentId, household, month!, 100, null)).total).toBe(1);
+      } finally {
+        await admin.query(`UPDATE memberships SET role = 'owner' WHERE tenant_id = $1 AND user_id = $2`, [household, parentId]);
+        await admin.query(`DELETE FROM memberships WHERE tenant_id = $1 AND user_id = $2`, [household, staff]);
+      }
     });
 
     it('redoes a setup that failed after the join, at the next sign-in', async () => {
