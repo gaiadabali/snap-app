@@ -1,5 +1,5 @@
 import { Client } from 'pg';
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { AuthUser } from '@snap/api-contract';
 import { SignJWT, createLocalJWKSet, exportJWK, generateKeyPair } from 'jose';
@@ -16,6 +16,19 @@ import { resetGooglePlayForTesting, setPushKeysForTesting, simulatedGooglePlay }
  * failure this guards against is granting twice, or for the wrong pack, or
  * keeping credits Play has refunded.
  */
+
+// Lets one test make recording a void fail as a teen-space order would (TS001 / read-only).
+const failRecord = vi.hoisted(() => ({ on: false }));
+vi.mock('./credits.repo.js', async (importOriginal) => {
+  const real = await importOriginal<typeof import('./credits.repo.js')>();
+  return {
+    ...real,
+    recordGooglePlayVoid: (...args: Parameters<typeof real.recordGooglePlayVoid>) =>
+      failRecord.on
+        ? Promise.reject(new Error('cannot execute INSERT in a read-only transaction'))
+        : real.recordGooglePlayVoid(...args),
+  };
+});
 
 const hasDb = Boolean(process.env.DATABASE_URL);
 const describeIfDb = hasDb ? describe : describe.skip;
@@ -53,11 +66,17 @@ describeIfDb('Google Play purchases', () => {
     simulatedGooglePlay().issue(productId, ids);
   const redeem = (productId: string, purchaseToken: string) =>
     play.redeem(owner, TENANT, { productId, purchaseToken });
-  const body = (note: object) => ({
-    message: { data: Buffer.from(JSON.stringify({ packageName: 'au.com.snapapps.app', ...note })).toString('base64') },
+  const body = (note: object, publishTime = new Date().toISOString()) => ({
+    message: {
+      data: Buffer.from(JSON.stringify({ packageName: 'au.com.snapapps.app', ...note })).toString('base64'),
+      publishTime,
+    },
   });
-  const notify = async (note: object, authorization?: string) =>
-    rtdn.notify({ body: body(note), headers: { authorization: authorization ?? `Bearer ${await pushToken()}` } });
+  const notify = async (note: object, authorization?: string, publishTime?: string) =>
+    rtdn.notify({
+      body: body(note, publishTime),
+      headers: { authorization: authorization ?? `Bearer ${await pushToken()}` },
+    });
 
   beforeAll(async () => {
     admin = await provisionTenant({
@@ -210,7 +229,47 @@ describeIfDb('Google Play purchases', () => {
     const late = await grantGooglePlayPurchase(OWNER, TENANT, 'credits_50', token, 'GPA.LATE');
     expect(late).toMatchObject({ granted: false, row: { status: 'refunded' } });
     expect(await getCreditBalance(OWNER, TENANT)).toBe(before);
-    expect((await listCreditPurchases(OWNER, TENANT)).filter((p) => p.provider === 'google')).toHaveLength(1);
+    const { rows } = await admin.query(
+      `SELECT status::text, grant_id FROM credit_purchases WHERE provider = 'google' AND provider_ref = $1`,
+      [token],
+    );
+    expect(rows).toEqual([{ status: 'refunded', grant_id: null }]);
+    // Not an order the buyer made: kept out of their purchase history (review L4).
+    expect((await listCreditPurchases(OWNER, TENANT)).filter((p) => p.provider === 'google')).toHaveLength(0);
+  });
+
+  it("marks a tester's never-granted void TEST:, as the redeem would", async () => {
+    const token = simulatedGooglePlay().issue('credits_50', { accountId: TENANT, profileId: OWNER }, 'purchased', {
+      test: true,
+    });
+    simulatedGooglePlay().voidPurchase(token);
+    await notify({ voidedPurchaseNotification: { purchaseToken: token, productType: 2, refundType: 1 } });
+    const { rows } = await admin.query(`SELECT payment_ref FROM credit_purchases WHERE provider_ref = $1`, [token]);
+    expect(rows[0].payment_ref).toMatch(/^TEST:GPA\.SIM-/);
+  });
+
+  it('gives up on a void that keeps failing once it is 72 hours old (review L1)', async () => {
+    const before = await getCreditBalance(OWNER, TENANT);
+    const token = buy('credits_50');
+    await redeem('credits_50', token);
+    const unconfirmed = { voidedPurchaseNotification: { purchaseToken: token, productType: 2, refundType: 1 } };
+
+    const fresh = new Date(Date.now() - 71 * 3600 * 1000).toISOString();
+    await expect(notify(unconfirmed, undefined, fresh)).rejects.toThrow(/not confirmed/);
+    const stale = new Date(Date.now() - 73 * 3600 * 1000).toISOString();
+    await expect(notify(unconfirmed, undefined, stale)).resolves.toEqual({ received: true });
+    expect(await getCreditBalance(OWNER, TENANT)).toBe(before + 50);
+
+    // A void that cannot be recorded (the order names a teen space's parent) is given up the same way.
+    simulatedGooglePlay().voidPurchase(token);
+    await admin.query(`UPDATE credit_purchases SET provider_ref = 'moved' WHERE provider_ref = $1`, [token]);
+    failRecord.on = true;
+    try {
+      await expect(notify(unconfirmed, undefined, fresh)).rejects.toThrow(/read-only/);
+      await expect(notify(unconfirmed, undefined, stale)).resolves.toEqual({ received: true });
+    } finally {
+      failRecord.on = false;
+    }
   });
 
   it("refuses a licence tester's test purchase unless this host accepts them", async () => {

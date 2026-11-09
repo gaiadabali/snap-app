@@ -42,6 +42,6 @@ export const teenSpaceSpends = pgTable('teen_space_spends', {
   grantId: uuid('grant_id'),
   spentAt: timestamp('spent_at', { withTimezone: true }).notNull().defaultNow(),
   refundedAt: timestamp('refunded_at', { withTimezone: true }),
-  /** The space's inviting parent: the only one shown the line in the funding workspace (0060). */
+  /** The space's inviting parent: the only one shown the line in the funding workspace (0058). */
   parentUserId: uuid('parent_user_id'),
 });

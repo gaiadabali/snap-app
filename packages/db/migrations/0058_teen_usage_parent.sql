@@ -1,5 +1,5 @@
 -- ---------------------------------------------------------------------------
--- 0060 — Teen usage lines belong to the inviting parent (7.1 gap after 0056)
+-- 0058 — Teen usage lines belong to the inviting parent (7.1 gap after 0056)
 --
 -- 0056's `teen_space_funded_spends` showed a teen's paid scans to whoever
 -- OWNS the funding workspace now, because a spend row did not say whose teen
@@ -8,14 +8,17 @@
 --
 -- `teen_space_spends.parent_user_id` (new) records the space's inviting parent
 -- when the credit is taken, and the read is scoped to it: the parent sees
--- their teen's lines in the funding workspace whatever their role there now;
--- nobody else does, the new owner included. Erasing the parent nulls it
+-- their teen's lines in the funding workspace while a member there, in any
+-- role; nobody else does, the new owner included. Erasing the parent nulls it
 -- (ON DELETE SET NULL), and the lines go with them.
 --
--- BACKFILL, best known parent: the capture's space; else the one parent whose
--- spaces that workspace funds; else the workspace's owner now (the spend could
--- only be taken while the parent owned it, so this is wrong only for a
--- workspace already handed over before this migration).
+-- BACKFILL, best known parent: the capture's space. A row whose capture is
+-- still there keeps that answer, NULL included (the parent was erased: their
+-- lines go with them, never to the owner now). Only a row whose capture is
+-- gone falls back: to the one parent whose spaces that workspace funds, else
+-- to the workspace's single owner now (the spend could only be taken while
+-- the parent owned it, so this is wrong only for a workspace already handed
+-- over before this migration). Anything else stays NULL: shown to nobody.
 --
 -- Reverse: restore 0056's teen_space_funded_spends and 0047's
 -- teen_space_take_credit, then ALTER TABLE teen_space_spends DROP COLUMN parent_user_id.
@@ -25,6 +28,7 @@ SET LOCAL lock_timeout = '5s';
 ALTER TABLE teen_space_spends
   ADD COLUMN IF NOT EXISTS parent_user_id uuid REFERENCES users (id) ON DELETE SET NULL;
 
+-- backfill:start (packages/db/test/teen_usage_parent.test.ts runs this section)
 UPDATE teen_space_spends s SET parent_user_id = t.parent_user_id
   FROM captures c JOIN teen_spaces t ON t.tenant_id = c.tenant_id
  WHERE c.id = s.capture_id AND s.parent_user_id IS NULL;
@@ -33,11 +37,13 @@ UPDATE teen_space_spends s SET parent_user_id = p.parent_user_id
   FROM (SELECT funding_tenant_id, min(parent_user_id::text)::uuid AS parent_user_id
           FROM teen_spaces WHERE parent_user_id IS NOT NULL AND funding_tenant_id IS NOT NULL
          GROUP BY funding_tenant_id HAVING count(DISTINCT parent_user_id) = 1) p
- WHERE p.funding_tenant_id = s.funding_tenant_id AND s.parent_user_id IS NULL;
+ WHERE p.funding_tenant_id = s.funding_tenant_id AND s.parent_user_id IS NULL AND s.capture_id IS NULL;
 
-UPDATE teen_space_spends s SET parent_user_id = m.user_id
-  FROM memberships m
- WHERE m.tenant_id = s.funding_tenant_id AND m.role = 'owner' AND s.parent_user_id IS NULL;
+UPDATE teen_space_spends s SET parent_user_id = o.user_id
+  FROM (SELECT tenant_id, min(user_id::text)::uuid AS user_id FROM memberships
+         WHERE role = 'owner' GROUP BY tenant_id HAVING count(*) = 1) o
+ WHERE o.tenant_id = s.funding_tenant_id AND s.parent_user_id IS NULL AND s.capture_id IS NULL;
+-- backfill:end
 
 CREATE INDEX IF NOT EXISTS teen_space_spends_by_parent ON teen_space_spends (parent_user_id);
 
@@ -103,8 +109,8 @@ BEGIN
   RETURN QUERY SELECT true, v_grant;
 END $fn$;
 
--- 0056's read, scoped to the parent who invited the teen instead of the owner now.
--- withTenantAs has already checked the caller is a member of this workspace.
+-- 0056's read, scoped to the parent who invited the teen instead of the owner now,
+-- and still only while they are a member of the funding workspace (any role).
 CREATE OR REPLACE FUNCTION teen_space_funded_spends(p_from timestamptz, p_to timestamptz)
 RETURNS TABLE (id uuid, spent_at timestamptz, refunded boolean)
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public, pg_temp AS $fn$
@@ -112,6 +118,8 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public, pg_temp AS $fn$
     FROM teen_space_spends s
    WHERE s.funding_tenant_id = current_tenant_id() AND s.grant_id IS NOT NULL
      AND s.parent_user_id = current_user_id()
+     AND EXISTS (SELECT 1 FROM memberships m
+                  WHERE m.tenant_id = s.funding_tenant_id AND m.user_id = current_user_id())
      AND (p_from IS NULL OR s.spent_at >= p_from)
      AND (p_to   IS NULL OR s.spent_at <  p_to);
 $fn$;
@@ -123,6 +131,7 @@ DECLARE
 BEGIN
   SELECT count(*) INTO n FROM pg_proc p
    WHERE p.proname IN ('teen_space_funded_spends', 'teen_space_take_credit')
+     AND (p.proname <> 'teen_space_funded_spends' OR p.provolatile = 's')
      AND p.prosecdef AND p.proconfig::text LIKE '%search_path%'
      AND pg_get_userbyid(p.proowner) = 'app_teen'
      AND p.proacl IS NOT NULL

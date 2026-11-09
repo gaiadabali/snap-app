@@ -91,6 +91,9 @@ export async function listCreditPurchases(userId: string, tenantId: string): Pro
              provider::text as provider, to_json(created_at)#>>'{}' as created_at, to_json(paid_at)#>>'{}' as paid_at
         from credit_purchases
        where tenant_id = current_tenant_id()
+         -- A Play void recorded for a purchase never granted (recordGooglePlayVoid):
+         -- not an order the buyer made here (8.3.b follow-up review L4, L5).
+         and not (provider = 'google' and status = 'refunded' and grant_id is null)
        order by created_at desc
     `);
     return rows.rows;
