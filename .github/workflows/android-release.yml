@@ -271,6 +271,28 @@ jobs:
           if-no-files-found: error
           retention-days: ${{ github.event_name == 'pull_request' && 14 || 30 }}
 
+      # Extra APK for the x86_64 PC emulator (the published one is arm64-only and
+      # crashes there: "couldn't find DSO to load: libreactnative.so"). A workflow
+      # artifact ONLY: the release job downloads `snap-apps-android` by name, so this
+      # can never reach the Release or the download page. Best effort: a failure here
+      # must not block a release.
+      - name: Build x86_64 APK (emulator, not published)
+        id: x86
+        if: github.event_name != 'pull_request'
+        continue-on-error: true
+        run: |
+          SNAP_ABI=x86_64 deploy/build-apk.sh "$API_URL"
+          mkdir -p dist-x86
+          cp apps/mobile/android/app/build/outputs/apk/release/app-release.apk dist-x86/snap-apps-android-x86_64.apk
+
+      - uses: actions/upload-artifact@v4
+        if: steps.x86.outcome == 'success'
+        with:
+          name: snap-apps-android-x86_64
+          path: dist-x86/
+          if-no-files-found: error
+          retention-days: ${{ github.event_name == 'pull_request' && 14 || 30 }}
+
   # The ONLY job that can write to the repository, and it runs no repository code:
   # it has no checkout, and does nothing but turn the built files into a release.
   release:

@@ -31,6 +31,8 @@
 # average past 100 on an 8-core box for no benefit: every Android phone worth
 # testing on is arm64, and armeabi-v7a is 32-bit hardware from before 2015. A
 # full-fat multi-ABI build belongs in CI.
+# SNAP_ABI overrides it: CI sets x86_64 for an extra APK the PC emulator can run
+# (never published; see .github/workflows/android-release.yml).
 set -euo pipefail
 
 API_URL="${1:-${EXPO_PUBLIC_API_URL:-https://snap-apps-api.gaiada.com}}"
@@ -72,7 +74,7 @@ cd "$REPO_ROOT/apps/mobile"
 npx expo prebuild --platform android --no-install
 cd android
 ./gradlew :app:assembleRelease --console=plain \
-  -PreactNativeArchitectures=arm64-v8a \
+  -PreactNativeArchitectures="${SNAP_ABI:-arm64-v8a}" \
   --max-workers=4
 
 APK="$REPO_ROOT/apps/mobile/android/app/build/outputs/apk/release/app-release.apk"
