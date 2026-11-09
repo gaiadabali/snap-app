@@ -1,6 +1,5 @@
 import { withTenantAs } from '@snap/db';
 import {
-  ID_2026,
   NoRulesInstalled,
   TaxRulesRegistry,
   consumptionTaxDisclosure,
@@ -11,6 +10,7 @@ import { sql } from 'drizzle-orm';
 
 import { getDb } from '../db.js';
 import { readTenant, type TenantRow } from '../repo.js';
+import { BUILTIN } from './tax-name.js';
 
 /**
  * Resolving a workspace's tax engine, and reporting from its ledger.
@@ -42,7 +42,6 @@ import { readTenant, type TenantRow } from '../repo.js';
  * performance optimisation's clothes: this process serves many workspaces in
  * many countries concurrently.
  */
-const BUILTIN: TaxRules[] = [ID_2026];
 
 /** Rule sets this deployment can install, for the settings screen. */
 export type AvailableRules = {

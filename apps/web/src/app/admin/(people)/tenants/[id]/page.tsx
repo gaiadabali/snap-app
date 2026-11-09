@@ -185,8 +185,8 @@ async function TenantDocuments({ tenantId, reason }: { tenantId: string; reason:
               </td>
               <td className="px-3 py-2 text-[var(--color-ink-muted)]">{d.docType}</td>
               <td className="px-3 py-2 text-[var(--color-ink-muted)]">{d.issueDate ? formatDate(d.issueDate) : '—'}</td>
-              <td className="px-3 py-2 text-right">{d.taxAmount ? <Money amount={d.taxAmount} /> : '—'}</td>
-              <td className="px-3 py-2 text-right">{d.payableAmount ? <Money amount={d.payableAmount} /> : '—'}</td>
+              <td className="px-3 py-2 text-right">{d.taxAmount ? <Money amount={d.taxAmount} currency={d.currency} /> : '—'}</td>
+              <td className="px-3 py-2 text-right">{d.payableAmount ? <Money amount={d.payableAmount} currency={d.currency} /> : '—'}</td>
               <td className="px-3 py-2">
                 <Badge
                   tone={

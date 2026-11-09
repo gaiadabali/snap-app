@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { taxSubtotalsFromLines } from './extraction/tax-subtotals';
 
-import { NotAMemberError, listWorkspacesFor, withTenant, withTenantAs, type Tx } from '@snap/db';
+import { NotAMemberError, listWorkspacesFor as listWorkspaceRows, withTenant, withTenantAs, type Tx } from '@snap/db';
 import type {
   AuthUser,
   CapturePageInput,
@@ -13,6 +13,7 @@ import { sql } from 'drizzle-orm';
 
 import { creditsLeft, QuotaExhaustedError, readPaidScan, spendScanCredit } from './credits/spend.js';
 import { getDb } from './db.js';
+import { taxNameForCountry } from './taxrules/tax-name.js';
 import type { ReceiptContent, ReceiptOriginal } from './yourtal/external-ref.js';
 import { queueReceiptReport } from './yourtal/outbox.repo.js';
 import type { ModelCall } from './extraction/call-cost.js';
@@ -34,7 +35,16 @@ import { enterTenant, enterTenantAsWorker, type TenantActor, type WorkerActor } 
  *     a query string, including ids that "came from us".
  */
 
-export { NotAMemberError, listWorkspacesFor };
+export { NotAMemberError };
+
+/**
+ * The workspaces a user may switch into, each with its consumption tax's local
+ * name (`GST`, `PPN`) so clients need not guess it from the currency.
+ */
+export async function listWorkspacesFor(db: Parameters<typeof listWorkspaceRows>[0], userId: string) {
+  const rows = await listWorkspaceRows(db, userId);
+  return rows.map(({ country, ...w }) => ({ ...w, taxName: taxNameForCountry(country) }));
+}
 
 /* ── Users and sessions ─────────────────────────────────────────────────── */
 

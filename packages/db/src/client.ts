@@ -326,6 +326,7 @@ export async function listWorkspacesFor(
     kind: 'business' | 'personal';
     role: string;
     baseCurrency: string;
+    country: string;
     /** A teen space (0045): `teen` for its teen, `parent` for the parent who views it. */
     teenSpace: 'teen' | 'parent' | null;
   }>
@@ -339,9 +340,10 @@ export async function listWorkspacesFor(
       kind: 'business' | 'personal';
       role: string;
       baseCurrency: string;
+      country: string;
       teenSpace: 'teen' | 'parent' | null;
     }>(sql`
-      select t.id, t.name, t.kind, m.role, t.base_currency as "baseCurrency",
+      select t.id, t.name, t.kind, m.role, t.base_currency as "baseCurrency", t.country::text as country,
              case when ts.teen_user_id = current_user_id() then 'teen'
                   when ts.parent_user_id = current_user_id() then 'parent' end as "teenSpace"
       from memberships m

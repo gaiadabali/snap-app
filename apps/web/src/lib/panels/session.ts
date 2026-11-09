@@ -65,6 +65,7 @@ type SessionWorkspace = {
   kind: 'business' | 'personal';
   role: string;
   baseCurrency?: string;
+  taxName?: string;
   teenSpace?: 'teen' | 'parent' | null;
 };
 
@@ -83,6 +84,7 @@ export function toWorkspaceSummaries(list: SessionWorkspace[]): WorkspaceSummary
     memberCount: 0,
     abn: null,
     baseCurrency: w.baseCurrency ?? 'AUD',
+    taxName: w.taxName,
     teenSpace: w.teenSpace ?? null,
   }));
 }

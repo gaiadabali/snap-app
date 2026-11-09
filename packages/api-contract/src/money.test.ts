@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { applyFraction, gstFromInclusive, taxNameFor } from './money';
+import { applyFraction, gstFromInclusive, taxNameFor, workspaceTaxName } from './money';
 
 /**
  * `gstFromInclusive` asking the rule set instead of hardcoding 1/11.
@@ -109,5 +109,25 @@ describe('taxNameFor', () => {
     expect(taxNameFor('idr')).toBe('PPN');
     expect(taxNameFor('AUD')).toBe('GST');
     expect(taxNameFor(null)).toBe('GST');
+  });
+});
+
+describe('workspaceTaxName', () => {
+  const idr = { baseCurrency: 'IDR', taxName: 'VAT' };
+
+  it("prefers the server's name for a workspace figure or a document in the workspace currency", () => {
+    expect(workspaceTaxName(idr)).toBe('VAT');
+    expect(workspaceTaxName(idr, 'IDR')).toBe('VAT');
+  });
+
+  it("a document in another currency is that country's tax, so it falls back to the currency", () => {
+    expect(workspaceTaxName(idr, 'AUD')).toBe('GST');
+    expect(workspaceTaxName({ baseCurrency: 'AUD', taxName: 'GST' }, 'IDR')).toBe('PPN');
+  });
+
+  it('an old server sends no name: derive it from the currency', () => {
+    expect(workspaceTaxName({ baseCurrency: 'IDR' })).toBe('PPN');
+    expect(workspaceTaxName({ baseCurrency: 'AUD' })).toBe('GST');
+    expect(workspaceTaxName({})).toBe('GST');
   });
 });

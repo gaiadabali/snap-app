@@ -2,7 +2,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 
 import { OtherCurrencies } from '@/app/app/_shell/OtherCurrencies';
-import { Money, WorkspaceCurrency } from './money';
+import { Money, WorkspaceCurrency, useTaxName } from './money';
 
 // Money joins `Rp` and the figure with a no-break space; compare with a plain one.
 const text = (html: string) =>
@@ -51,5 +51,36 @@ describe('<OtherCurrencies>', () => {
     expect(text(html)).toContain('Rp 70.920 (2 receipts)');
     expect(renderToStaticMarkup(<OtherCurrencies totals={[]} />)).toBe('');
     expect(renderToStaticMarkup(<OtherCurrencies />)).toBe('');
+  });
+});
+
+describe('useTaxName', () => {
+  const Label = ({ currency }: { currency?: string }) => <>{useTaxName(currency)}</>;
+
+  it("uses the server's name for a workspace figure, and falls back to the currency without one", () => {
+    expect(
+      renderToStaticMarkup(
+        <WorkspaceCurrency currency="IDR" taxName="VAT">
+          <Label />
+        </WorkspaceCurrency>,
+      ),
+    ).toBe('VAT');
+    expect(
+      renderToStaticMarkup(
+        <WorkspaceCurrency currency="IDR">
+          <Label />
+        </WorkspaceCurrency>,
+      ),
+    ).toBe('PPN');
+  });
+
+  it('a document in another currency is named for that currency', () => {
+    expect(
+      renderToStaticMarkup(
+        <WorkspaceCurrency currency="IDR" taxName="PPN">
+          <Label currency="AUD" />
+        </WorkspaceCurrency>,
+      ),
+    ).toBe('GST');
   });
 });

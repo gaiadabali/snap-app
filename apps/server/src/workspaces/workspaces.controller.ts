@@ -108,6 +108,7 @@ export class WorkspacesController {
           memberCount: members.length,
           abn: null as string | null,
           baseCurrency: w.baseCurrency,
+          taxName: w.taxName,
           teenSpace: w.teenSpace,
         };
       }),
@@ -154,7 +155,7 @@ export class WorkspacesController {
     });
 
     // A new tenant starts on the column default (AUD) until tax rules are installed.
-    return { id, name: body.name, kind: body.kind, role: 'owner', memberCount: 1, abn, baseCurrency: 'AUD' };
+    return { id, name: body.name, kind: body.kind, role: 'owner', memberCount: 1, abn, baseCurrency: 'AUD', taxName: 'GST' };
   }
 
   @Post('onboarding')
