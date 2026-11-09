@@ -31,6 +31,13 @@ describe('<Money> currency', () => {
   });
 });
 
+describe('<Money> outside the AUD/IDR table', () => {
+  it('EUR and USD never print under the AUD dollar sign', () => {
+    expect(text(renderToStaticMarkup(<Money amount="5.5000" currency="EUR" />))).toBe('EUR 5.50');
+    expect(text(renderToStaticMarkup(<Money amount="1234.5" currency="USD" />))).toBe('USD 1,234.50');
+  });
+});
+
 describe('<OtherCurrencies>', () => {
   it('lists each other currency in its own money, and nothing when there are none', () => {
     const html = renderToStaticMarkup(

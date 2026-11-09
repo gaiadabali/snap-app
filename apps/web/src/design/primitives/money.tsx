@@ -26,8 +26,8 @@ const THOUSANDS = /\B(?=(\d{3})+(?!\d))/g;
  * error as `docs/INDONESIA.md` §7.1, where reading `15.000` under the wrong
  * convention silently means fifteen instead of fifteen thousand.
  *
- * A currency this table does not know falls back to the AUD shape, which is
- * what every existing caller already gets.
+ * A currency this table does not know is written by `Intl` in en-AU
+ * (`EUR 5.50`, `USD 5.50`: there `$` means AUD), never under the AUD symbol.
  */
 const CURRENCY_FORMATS: Record<
   string,
@@ -61,8 +61,15 @@ export function Money({
 }) {
   const fallback = useContext(CurrencyContext);
   const currency = given || fallback;
-  const fmt = CURRENCY_FORMATS[currency.toUpperCase()] ?? CURRENCY_FORMATS.AUD!;
   const trimmed = amount.trim();
+  const fmt = CURRENCY_FORMATS[currency.toUpperCase()];
+  if (!fmt) {
+    return (
+      <span className={cx('tabular', className)} title={currency + ' ' + amount}>
+        {otherCurrency(trimmed, currency)}
+      </span>
+    );
+  }
   const negative = trimmed.startsWith('-');
   const digits = negative ? trimmed.slice(1) : trimmed;
   const parts = digits.split('.');
@@ -85,4 +92,18 @@ export function Money({
       {fraction}
     </span>
   );
+}
+
+/**
+ * A currency outside the table. `Intl` formats the decimal STRING as given (an
+ * exact decimal, not a float, in current engines). A code `Intl` rejects is
+ * shown as itself: `XYZ 5.50`.
+ */
+function otherCurrency(amount: string, code: string): string {
+  try {
+    // A string is an exact decimal to Intl; the cast is only for older lib typings.
+    return new Intl.NumberFormat('en-AU', { style: 'currency', currency: code }).format(amount as unknown as number);
+  } catch {
+    return `${code} ${amount}`;
+  }
 }
