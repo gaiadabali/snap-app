@@ -100,7 +100,7 @@ export function BuyCreditsClient({
                 </span>
                 <span className="t-label mt-0.5 text-[var(--color-ink-muted)]">scans</span>
                 <span className="mt-3 font-mono text-[15px] tabular font-medium text-[var(--color-ink)]">
-                  <Money amount={pack.priceAud} />
+                  <Money currency="AUD" amount={pack.priceAud} />
                 </span>
               </button>
             );
@@ -112,13 +112,13 @@ export function BuyCreditsClient({
         <Card>
           <div className="t-label text-[var(--color-ink-muted)]">Order</div>
           <dl className="mt-3 flex flex-col">
-            <Row label={`${selected.credits.toLocaleString('en-AU')} credits`} value={<Money amount={selected.priceAud} />} />
+            <Row label={`${selected.credits.toLocaleString('en-AU')} credits`} value={<Money currency="AUD" amount={selected.priceAud} />} />
             <Row label="GST" value="included" mono={false} />
             <Row label="Recurring charge" value="none" mono={false} />
             <div className="flex items-baseline justify-between gap-4 border-t border-[var(--color-rule-strong)] pt-3">
               <dt className="text-[14px] font-medium text-[var(--color-ink)]">Total</dt>
               <dd className="font-mono text-[18px] tabular font-medium text-[var(--color-ink)]">
-                <Money amount={selected.priceAud} />
+                <Money currency="AUD" amount={selected.priceAud} />
               </dd>
             </div>
           </dl>

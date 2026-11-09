@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Badge, Card, Empty, Money, SectionTitle, Stat } from '@/design/primitives';
 import { getOverview, listDocuments } from '@/lib/panels/data';
 import { loadWorkspace } from '@/lib/panels/workspace';
+import { OtherCurrencies } from '../_shell/OtherCurrencies';
 
 export const metadata = { title: 'Overview · Business' };
 
@@ -67,6 +68,7 @@ export default async function BusinessOverviewPage() {
           />
         </Card>
       </div>
+      <OtherCurrencies totals={overview.otherCurrencies} />
 
       <Card>
         <p className="text-[13px] text-[var(--color-ink-muted)]">{bas.note}</p>

@@ -2,7 +2,7 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 import type { WorkspaceSummary } from '@snap/api-contract';
 
-import { Container, cx } from '@/design/primitives';
+import { Container, cx, WorkspaceCurrency } from '@/design/primitives';
 import { signOut } from '@/lib/panels/actions';
 import type { ImpersonationBannerInfo } from '@/lib/panels/impersonation';
 import { ImpersonationBanner } from './ImpersonationBanner';
@@ -122,7 +122,10 @@ export function PanelShell({
         <aside className="hidden w-[220px] shrink-0 md:block">
           <Sidebar items={nav} />
         </aside>
-        <main className="min-w-0 flex-1 pb-16">{children}</main>
+        <main className="min-w-0 flex-1 pb-16">
+          {/* Every <Money> below defaults to this workspace's currency, not AUD. */}
+          <WorkspaceCurrency currency={workspace.baseCurrency}>{children}</WorkspaceCurrency>
+        </main>
       </Container>
     </div>
   );

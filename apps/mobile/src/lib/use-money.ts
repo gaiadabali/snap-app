@@ -1,6 +1,8 @@
 import { useCallback, useMemo } from 'react';
 
 import { useWorkspace } from '@/workspace';
+import { taxNameFor } from '@snap/api-contract/money';
+
 import { currencyDecimals, currencySymbol, formatMoney } from './format';
 
 /**
@@ -34,6 +36,8 @@ export function useMoney(currency?: string | null) {
       symbol: currencySymbol(code),
       /** Decimal places to prefill an amount input with: 0 for rupiah, else 2. */
       decimals: currencyDecimals(code),
+      /** The consumption tax's local name for this currency: `GST`, `PPN`. */
+      taxName: taxNameFor(code),
     }),
     [code, fmt],
   );

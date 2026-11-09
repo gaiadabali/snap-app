@@ -101,10 +101,10 @@ export function LedgerClient({
                               </td>
                               <td className="py-0.5">{s.taxCode ?? '—'}</td>
                               <td className="py-0.5 text-right tabular">
-                                <Money amount={s.amount} />
+                                <Money amount={s.amount} currency={t.currency} />
                               </td>
                               <td className="py-0.5 text-right tabular">
-                                <Money amount={s.gstAmount} />
+                                <Money amount={s.gstAmount} currency={t.currency} />
                               </td>
                             </tr>
                           ))}

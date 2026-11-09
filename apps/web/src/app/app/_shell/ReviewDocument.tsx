@@ -2,6 +2,7 @@
 
 import { useActionState, useState, useTransition } from 'react';
 import type { DocumentView, Permissions } from '@snap/api-contract';
+import { taxNameFor } from '@snap/api-contract/money';
 
 import {
   Badge,
@@ -243,18 +244,19 @@ export function ReviewDocument({
                 </Field>
               ) : null}
 
-              {isBusiness ? (
+              {/* No tax on the document: no "GST $0.00" box. */}
+              {isBusiness && Number(document.taxAmount) !== 0 ? (
                 <div className="grid grid-cols-2 gap-4 rounded-[var(--radius-md)] bg-[var(--color-surface)] p-3 text-[13px]">
                   <div>
-                    <div className="text-[var(--color-ink-muted)]">GST on this document</div>
+                    <div className="text-[var(--color-ink-muted)]">{taxNameFor(document.currency)} on this document</div>
                     <div className="font-semibold text-[var(--color-ink)]">
-                      <Money amount={document.taxAmount} />
+                      <Money amount={document.taxAmount} currency={document.currency} />
                     </div>
                   </div>
                   <div>
                     <div className="text-[var(--color-ink-muted)]">Claimable now</div>
                     <div className={document.isTaxInvoice ? 'font-semibold text-[var(--color-good)]' : 'font-semibold text-[var(--color-risk)]'}>
-                      {document.isTaxInvoice ? <Money amount={document.taxAmount} /> : <Money amount="0" />}
+                      {document.isTaxInvoice ? <Money amount={document.taxAmount} currency={document.currency} /> : <Money amount="0" currency={document.currency} />}
                     </div>
                   </div>
                 </div>
@@ -294,7 +296,7 @@ export function ReviewDocument({
                         <Td>{l.description}</Td>
                         <Td align="right">{l.quantity}</Td>
                         <Td align="right">
-                          <Money amount={l.amount} />
+                          <Money amount={l.amount} currency={document.currency} />
                         </Td>
                         {isBusiness ? <Td>{l.gstFree ? 'Yes' : 'No'}</Td> : null}
                         <Td align="right">{formatConfidence(l.confidence)}</Td>

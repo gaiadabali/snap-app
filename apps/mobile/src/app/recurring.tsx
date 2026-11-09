@@ -8,6 +8,7 @@ import { Empty, Loading } from '@/components/form';
 import { CategoryIcon, GradientHero, HeroBody, HeroFigure, HeroLabel, Raised } from '@/components/rich';
 import { Body, Chip, Divider, Figure, Screen, SectionHeader, Small } from '@/components/ui';
 import { formatShortDate, space } from '@/theme';
+import { formatMoney, formatTotals } from '@/lib/format';
 import { useMoney } from '@/lib/use-money';
 
 /**
@@ -36,8 +37,10 @@ export default function RecurringScreen() {
   );
 
   const all = rows ?? [];
-  const monthly = all.reduce((a, r) => a + Number(r.typicalAmount), 0);
-  const annual = all.reduce((a, r) => a + Number(r.annualCost), 0);
+  // One figure per currency: a subscription paid in rupiah is never added to dollars.
+  const per = (pick: (r: Recurring) => string) => all.map((r) => ({ currency: r.currency, payableAmount: pick(r) }));
+  const annual = formatTotals(per((r) => r.annualCost), money.currency, { cents: false });
+  const monthly = formatTotals(per((r) => r.typicalAmount), money.currency);
 
   return (
     <Screen>
@@ -57,9 +60,9 @@ export default function RecurringScreen() {
             <GradientHero>
               <View style={{ gap: space.xs }}>
                 <HeroLabel>Committed each year</HeroLabel>
-                <HeroFigure>{money.fmt(annual.toFixed(4), { cents: false })}</HeroFigure>
+                <HeroFigure>{annual}</HeroFigure>
                 <HeroBody>
-                  {money.fmt(monthly.toFixed(4))} a month across {all.length} recurring{' '}
+                  {monthly} a month across {all.length} recurring{' '}
                   {all.length === 1 ? 'cost' : 'costs'}
                 </HeroBody>
               </View>
@@ -75,7 +78,7 @@ export default function RecurringScreen() {
                 <SectionHeader title="Found in your receipts" />
                 <Raised style={{ padding: 0 }}>
                   {all.map((r, i) => (
-                    <View key={r.merchant}>
+                    <View key={`${r.merchant}-${r.currency}`}>
                       {i > 0 ? <Divider style={{ marginLeft: 68 }} /> : null}
                       <View
                         style={{
@@ -95,14 +98,14 @@ export default function RecurringScreen() {
                             style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}
                           >
                             <Small numberOfLines={1}>
-                              {money.fmt(r.typicalAmount)}/mo · next {formatShortDate(r.nextExpected)}
+                              {formatMoney(r.typicalAmount, r.currency ?? money.currency)}/mo · next {formatShortDate(r.nextExpected)}
                             </Small>
                             <Chip>{r.monthsSeen} months</Chip>
                           </View>
                         </View>
                         <View style={{ alignItems: 'flex-end' }}>
                           <Figure size="h2">
-                            {money.fmt(r.annualCost, { cents: false })}
+                            {formatMoney(r.annualCost, r.currency ?? money.currency, { cents: false })}
                           </Figure>
                           <Small>a year</Small>
                         </View>

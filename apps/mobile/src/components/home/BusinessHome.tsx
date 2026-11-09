@@ -107,7 +107,7 @@ export default function BusinessHome() {
               <HeroFigure>{quarterTotal}</HeroFigure>
               <HeroBody>
                 {quarterDocs.length} receipt{quarterDocs.length === 1 ? '' : 's'} ·{' '}
-                {money.fmt(overview?.bas.gstClaimable ?? '0')} GST to claim
+                {money.fmt(overview?.bas.gstClaimable ?? '0')} {money.taxName} to claim
               </HeroBody>
             </View>
           </GradientHero>
@@ -141,7 +141,7 @@ export default function BusinessHome() {
                 <AttentionRow
                   first={needsReview === 0}
                   icon="alert"
-                  title="GST credits at risk"
+                  title={`${money.taxName} credits at risk`}
                   detail={`${overview?.bas.atRiskCount ?? 0} missing a valid tax invoice`}
                   value={money.fmt(atRisk)}
                   tone="risk"

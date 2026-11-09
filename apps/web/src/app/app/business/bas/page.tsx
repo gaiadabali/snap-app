@@ -87,11 +87,11 @@ export default async function BasPage() {
                     <Td>{formatDate(d.issueDate)}</Td>
                     <Td>{d.supplierName}</Td>
                     <Td align="right">
-                      <Money amount={d.payableAmount} />
+                      <Money amount={d.payableAmount} currency={d.currency} />
                     </Td>
                     <Td align="right">
                       <span className="text-[var(--color-risk)]">
-                        <Money amount={d.gstAtRisk ?? '0'} />
+                        <Money amount={d.gstAtRisk ?? '0'} currency={d.currency} />
                       </span>
                     </Td>
                     <Td>

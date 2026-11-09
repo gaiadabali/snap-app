@@ -806,7 +806,8 @@ export class HttpApi implements SnapApi {
   }
 
   listRecurring(): Promise<Recurring[]> {
-    return this.get<Recurring[]>('/v1/recurring');
+    // Rows in other currencies too; this build formats and totals them per currency.
+    return this.get<Recurring[]>('/v1/recurring?allCurrencies=1');
   }
 
   /* ── Sales ────────────────────────────────────────────────────────────── */
