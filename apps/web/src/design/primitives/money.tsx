@@ -4,6 +4,8 @@
 // it still renders on the server like any other.
 import { createContext, useContext, type ReactNode } from 'react';
 
+import { workspaceTaxName } from '@snap/api-contract/money';
+
 import { cx } from './cx';
 
 const THOUSANDS = /\B(?=(\d{3})+(?!\d))/g;
@@ -43,10 +45,25 @@ const CURRENCY_FORMATS: Record<
  * workspace (marketing, admin) there is no provider and it stays AUD, which is
  * also what SnapApp's own prices are in — those pass `currency="AUD"` anyway.
  */
-const CurrencyContext = createContext('AUD');
+const CurrencyContext = createContext<{ currency: string; taxName?: string }>({ currency: 'AUD' });
 
-export function WorkspaceCurrency({ currency, children }: { currency: string; children: ReactNode }) {
-  return <CurrencyContext.Provider value={currency}>{children}</CurrencyContext.Provider>;
+export function WorkspaceCurrency({
+  currency,
+  taxName,
+  children,
+}: {
+  currency: string;
+  /** The server's name for the workspace's consumption tax; omitted by an old server. */
+  taxName?: string;
+  children: ReactNode;
+}) {
+  return <CurrencyContext.Provider value={{ currency, taxName }}>{children}</CurrencyContext.Provider>;
+}
+
+/** `GST`/`PPN` for a figure in `currency` (omitted: the workspace's), preferring the server's name. */
+export function useTaxName(currency?: string | null): string {
+  const { currency: base, taxName } = useContext(CurrencyContext);
+  return workspaceTaxName({ baseCurrency: base, taxName }, currency);
 }
 
 export function Money({
@@ -59,7 +76,7 @@ export function Money({
   currency?: string | null;
   className?: string;
 }) {
-  const fallback = useContext(CurrencyContext);
+  const fallback = useContext(CurrencyContext).currency;
   const currency = given || fallback;
   const trimmed = amount.trim();
   const fmt = CURRENCY_FORMATS[currency.toUpperCase()];

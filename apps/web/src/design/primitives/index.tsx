@@ -275,7 +275,7 @@ export function Badge({
 
 // ── Money & figures ───────────────────────────────────────────────────────
 
-export { Money, WorkspaceCurrency } from './money';
+export { Money, WorkspaceCurrency, useTaxName } from './money';
 
 export function Stat({
   label,

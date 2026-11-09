@@ -156,3 +156,17 @@ export const ZERO = '0.0000';
 export function taxNameFor(currency: string | null | undefined): 'GST' | 'PPN' {
   return currency?.toUpperCase() === 'IDR' ? 'PPN' : 'GST';
 }
+
+/**
+ * The tax name to show for an amount: the server's `taxName` for the workspace
+ * when the amount is the workspace's (no currency given, or the workspace's
+ * own), else `taxNameFor` the amount's currency. A server that predates
+ * `taxName` leaves it out, which falls back to the currency.
+ */
+export function workspaceTaxName(
+  workspace: { baseCurrency?: string; taxName?: string },
+  currency?: string | null,
+): string {
+  const own = !currency || currency === workspace.baseCurrency;
+  return own && workspace.taxName ? workspace.taxName : taxNameFor(currency || workspace.baseCurrency);
+}

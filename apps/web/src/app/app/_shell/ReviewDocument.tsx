@@ -2,7 +2,6 @@
 
 import { useActionState, useState, useTransition } from 'react';
 import type { DocumentView, Permissions } from '@snap/api-contract';
-import { taxNameFor } from '@snap/api-contract/money';
 
 import {
   Badge,
@@ -18,6 +17,7 @@ import {
   Th,
   Thead,
   Tr,
+  useTaxName,
 } from '@/design/primitives';
 import { formatConfidence, formatDateTime, reviewStatusLabel } from '@/lib/panels/format';
 import {
@@ -60,6 +60,7 @@ export function ReviewDocument({
   listPath: string;
   isBusiness: boolean;
 }) {
+  const taxName = useTaxName(document.currency);
   const boundUpdate = updateDocumentAction.bind(null, workspaceId, document.id, path);
   const boundReject = rejectDocumentAction.bind(null, workspaceId, document.id, path, listPath);
 
@@ -248,7 +249,7 @@ export function ReviewDocument({
               {isBusiness && Number(document.taxAmount) !== 0 ? (
                 <div className="grid grid-cols-2 gap-4 rounded-[var(--radius-md)] bg-[var(--color-surface)] p-3 text-[13px]">
                   <div>
-                    <div className="text-[var(--color-ink-muted)]">{taxNameFor(document.currency)} on this document</div>
+                    <div className="text-[var(--color-ink-muted)]">{taxName} on this document</div>
                     <div className="font-semibold text-[var(--color-ink)]">
                       <Money amount={document.taxAmount} currency={document.currency} />
                     </div>

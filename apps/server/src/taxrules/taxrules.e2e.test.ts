@@ -107,6 +107,14 @@ describeIfDb('tax rules — real HTTP', () => {
     expect(body.available.map((a: { rulesId: string }) => a.rulesId)).toContain('id-2026');
   });
 
+  it('names the workspace tax on the workspace list, from its country', async () => {
+    const res = await app.inject({ method: 'GET', url: '/v1/workspaces', headers: auth() });
+    expect(res.statusCode).toBe(200);
+    const mine = res.json().find((w: { id: string }) => w.id === TENANT);
+    expect(mine).toMatchObject({ baseCurrency: 'IDR', taxName: 'PPN' });
+    expect(mine).not.toHaveProperty('country');
+  });
+
   it('refuses a tax figure while no engine is installed — 422, never zeros', async () => {
     // The worst possible answer here is a confident nothing: zeros are
     // indistinguishable from a workspace that genuinely spent nothing.

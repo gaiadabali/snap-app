@@ -124,7 +124,7 @@ export function PanelShell({
         </aside>
         <main className="min-w-0 flex-1 pb-16">
           {/* Every <Money> below defaults to this workspace's currency, not AUD. */}
-          <WorkspaceCurrency currency={workspace.baseCurrency}>{children}</WorkspaceCurrency>
+          <WorkspaceCurrency currency={workspace.baseCurrency} taxName={workspace.taxName}>{children}</WorkspaceCurrency>
         </main>
       </Container>
     </div>

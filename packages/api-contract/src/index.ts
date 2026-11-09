@@ -733,6 +733,12 @@ export interface WorkspaceSummary {
    */
   baseCurrency: string;
   /**
+   * The workspace country's consumption tax, as people there call it: `GST`,
+   * `PPN`. Additive: a server that predates it omits the field, and clients
+   * then derive the name from `baseCurrency` (`taxNameFor`).
+   */
+  taxName?: string;
+  /**
    * A teen's space (group 3.10): `teen` for the teen, whose space it is;
    * `parent` for the inviting parent, who can only view it. Null or absent
    * for every other workspace (and from a server that predates it).
