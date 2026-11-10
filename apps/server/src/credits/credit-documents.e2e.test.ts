@@ -79,6 +79,7 @@ describeIfDb('receipts and tax invoices for credit purchases', () => {
     delete process.env.STRIPE_WEBHOOK_SECRET;
     await sim.close();
     await wipeIssuers();
+    await admin.query('DELETE FROM credit_documents WHERE tenant_id = $1', [TENANT]);
     await admin.query('DELETE FROM credit_purchases WHERE tenant_id = $1', [TENANT]);
     await admin.query('DELETE FROM usage_grants WHERE tenant_id = $1', [TENANT]);
     await wipeTenant(admin, TENANT, [OWNER]);
@@ -88,6 +89,7 @@ describeIfDb('receipts and tax invoices for credit purchases', () => {
 
   beforeEach(wipeIssuers);
   afterEach(async () => {
+    await admin.query('DELETE FROM credit_documents WHERE tenant_id = $1', [TENANT]);
     await admin.query('DELETE FROM credit_purchases WHERE tenant_id = $1', [TENANT]);
     await admin.query('DELETE FROM usage_grants WHERE tenant_id = $1', [TENANT]);
   });

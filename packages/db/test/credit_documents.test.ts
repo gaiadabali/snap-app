@@ -27,6 +27,7 @@ const STAFF_1 = '7a000000-d0c5-4000-8000-000000000004';
 const STAFF_2 = '7a000000-d0c5-4000-8000-000000000005';
 const PLAIN = '7a000000-d0c5-4000-8000-000000000006';
 const OTHER = '7a000000-d0c5-4000-8000-000000000007';
+const TENANT_E = '7a000000-d0c5-4000-8000-000000000008'; // erased in its test
 
 /** The ATO's example ABN. */
 const ABN = '51824753556';
@@ -51,10 +52,13 @@ describeIfDb('credit documents and the invoice issuer (migration 0059)', () => {
     // The test database is disposable: start from "no issuer approved".
     await c.query('DELETE FROM invoice_issuer_changes');
     await c.query(`DELETE FROM audit_log WHERE action LIKE 'invoice_issuer_%'`);
-    await c.query('DELETE FROM credit_purchases WHERE tenant_id = ANY($1::uuid[])', [[TENANT_A, TENANT_B]]);
-    await c.query('DELETE FROM usage_grants WHERE tenant_id = ANY($1::uuid[])', [[TENANT_A, TENANT_B]]);
-    await c.query('DELETE FROM memberships WHERE tenant_id = ANY($1::uuid[])', [[TENANT_A, TENANT_B]]);
-    await c.query('DELETE FROM tenants WHERE id = ANY($1::uuid[])', [[TENANT_A, TENANT_B]]);
+    // Documents survive their purchase and workspace (tax records), so remove them explicitly.
+    await c.query(`DELETE FROM credit_documents WHERE tenant_id = ANY($1::uuid[]) OR buyer_name = 'Erased Workspace'`, [[TENANT_A, TENANT_B, TENANT_E]]);
+    await c.query(`DELETE FROM jobs WHERE kind = 'storage_purge' AND payload->>'tenantId' = $1`, [TENANT_E]);
+    await c.query('DELETE FROM credit_purchases WHERE tenant_id = ANY($1::uuid[])', [[TENANT_A, TENANT_B, TENANT_E]]);
+    await c.query('DELETE FROM usage_grants WHERE tenant_id = ANY($1::uuid[])', [[TENANT_A, TENANT_B, TENANT_E]]);
+    await c.query('DELETE FROM memberships WHERE tenant_id = ANY($1::uuid[])', [[TENANT_A, TENANT_B, TENANT_E]]);
+    await c.query('DELETE FROM tenants WHERE id = ANY($1::uuid[])', [[TENANT_A, TENANT_B, TENANT_E]]);
     const users = [BUYER, STAFF_1, STAFF_2, PLAIN, OTHER];
     await c.query(
       `DELETE FROM platform_staff_capabilities WHERE staff_id IN (SELECT id FROM platform_staff WHERE user_id = ANY($1::uuid[]))`,
@@ -130,8 +134,9 @@ describeIfDb('credit documents and the invoice issuer (migration 0059)', () => {
     await wipe();
     await c.query(
       `INSERT INTO tenants (id, name, kind, country, base_currency)
-       VALUES ($1,'Buyer Workspace','business','AU','AUD'), ($2,'Other Workspace','business','AU','AUD')`,
-      [TENANT_A, TENANT_B],
+       VALUES ($1,'Buyer Workspace','business','AU','AUD'), ($2,'Other Workspace','business','AU','AUD'),
+              ($3,'Erased Workspace','business','AU','AUD')`,
+      [TENANT_A, TENANT_B, TENANT_E],
     );
     await c.query(
       `INSERT INTO users (id, subject, email, display_name) VALUES
@@ -437,6 +442,47 @@ describeIfDb('credit documents and the invoice issuer (migration 0059)', () => {
       await asOwner();
       await c.query('SET ROLE app_readonly');
       await expect(c.query(`SELECT credit_document_issue($1, 'sale')`, [purchase])).rejects.toMatchObject({ code: '42501' });
+      await asOwner();
+    });
+  });
+
+  describe('erasing a workspace keeps its tax documents', () => {
+    it('detaches them (tenant and purchase NULL), readable by no tenant, and the GST report still counts them', async () => {
+      await approveIssuer({ abn: ABN, gst: true, at: '2026-07-01T00:00:00Z' });
+      const purchase = await paidPurchase(TENANT_E);
+      const number = (await issue(TENANT_E, purchase, 'sale'))!;
+
+      const report = async () => {
+        await asAppRw(STAFF_1, null);
+        const r = await c.query<{ number: string; total_cents: string; gst_cents: string; kind: string }>(
+          `SELECT number::text, total_cents::text, gst_cents::text, kind FROM admin_gst_report(current_date - 1, current_date + 1) WHERE section = 'documents' ORDER BY number`,
+        );
+        await asOwner();
+        return r.rows;
+      };
+      const before = await report();
+      expect(before.find((r) => Number(r.number) === number)).toMatchObject({ kind: 'tax_invoice', total_cents: '500', gst_cents: '45' });
+
+      await asOwner();
+      await c.query('SELECT erase_workspace($1)', [TENANT_E]);
+
+      const kept = await c.query(
+        `SELECT tenant_id, purchase_id, kind, total_cents::int AS total, gst_cents::int AS gst, issuer->>'abn' AS abn, buyer_name FROM credit_documents WHERE number = $1`,
+        [number],
+      );
+      expect(kept.rows).toEqual([
+        { tenant_id: null, purchase_id: null, kind: 'tax_invoice', total: 500, gst: 45, abn: ABN, buyer_name: 'Erased Workspace' },
+      ]);
+      expect(await report()).toEqual(before);
+
+      // No tenant can read it, whatever tenant it is acting as.
+      for (const [user, tenant] of [[BUYER, TENANT_A], [OTHER, TENANT_B]] as const) {
+        await asAppRw(user, tenant);
+        const r = await c.query('SELECT 1 FROM credit_documents WHERE number = $1', [number]);
+        expect(r.rows).toHaveLength(0);
+      }
+      await asAppRw(null, null);
+      expect((await c.query('SELECT 1 FROM credit_documents WHERE number = $1', [number])).rows).toHaveLength(0);
       await asOwner();
     });
   });

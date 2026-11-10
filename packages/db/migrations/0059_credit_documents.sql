@@ -49,6 +49,10 @@
 -- documents issued in the range (dates in Australia/Sydney) and, separately,
 -- the Play sales, whose GST Google pays.
 --
+-- Erasure: documents SURVIVE it (the ATO requires tax records kept five years;
+-- APP 11.2). tenant_id and purchase_id go NULL; number, amounts, GST, kind, pack,
+-- issuer snapshot and buyer fields stay.
+--
 -- Reverse: DROP the functions, then the tables credit_documents,
 -- credit_document_counter, invoice_issuer_changes. Add-only otherwise.
 
@@ -105,8 +109,9 @@ INSERT INTO credit_document_counter (id, last_number) VALUES (true, 0);
 
 CREATE TABLE credit_documents (
   id               uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id        uuid NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
-  purchase_id      uuid NOT NULL REFERENCES credit_purchases(id) ON DELETE CASCADE,
+  /* NULL once the workspace is erased: the document is the seller's tax record and is kept. */
+  tenant_id        uuid REFERENCES tenants(id) ON DELETE SET NULL,
+  purchase_id      uuid REFERENCES credit_purchases(id) ON DELETE SET NULL,
   direction        text NOT NULL CHECK (direction IN ('sale', 'refund')),
   kind             text NOT NULL CHECK (kind IN ('tax_invoice', 'receipt', 'adjustment_note', 'refund_receipt')),
   /* The gap-free sequence, shown as SNAP-000001. */
@@ -144,6 +149,18 @@ CREATE INDEX credit_documents_issued_idx ON credit_documents (issued_at);
 CREATE OR REPLACE FUNCTION credit_documents_immutable() RETURNS trigger
 LANGUAGE plpgsql AS $fn$
 BEGIN
+  -- The one change allowed: erasing the workspace (or its purchase) detaches the
+  -- document (ON DELETE SET NULL). Everything the tax record needs stays.
+  IF (NEW.tenant_id IS NULL OR NEW.tenant_id IS NOT DISTINCT FROM OLD.tenant_id)
+     AND (NEW.purchase_id IS NULL OR NEW.purchase_id IS NOT DISTINCT FROM OLD.purchase_id)
+     AND (NEW.tenant_id IS DISTINCT FROM OLD.tenant_id OR NEW.purchase_id IS DISTINCT FROM OLD.purchase_id)
+     AND (NEW.id, NEW.direction, NEW.kind, NEW.number, NEW.issued_at, NEW.original_number, NEW.pack_code, NEW.credits,
+          NEW.total_cents, NEW.gst_cents, NEW.issuer, NEW.buyer_name, NEW.buyer_email, NEW.provider)
+         IS NOT DISTINCT FROM
+         (OLD.id, OLD.direction, OLD.kind, OLD.number, OLD.issued_at, OLD.original_number, OLD.pack_code, OLD.credits,
+          OLD.total_cents, OLD.gst_cents, OLD.issuer, OLD.buyer_name, OLD.buyer_email, OLD.provider) THEN
+    RETURN NEW;
+  END IF;
   RAISE EXCEPTION 'credit_documents: an issued document cannot be changed' USING ERRCODE = 'integrity_constraint_violation';
 END $fn$;
 CREATE TRIGGER credit_documents_immutable BEFORE UPDATE ON credit_documents
@@ -159,11 +176,13 @@ ALTER TABLE credit_documents        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE credit_documents        FORCE  ROW LEVEL SECURITY;
 
 -- Platform tables: no policy at all (as 0021). app_platform bypasses RLS.
--- Tenant table: a workspace reads its own documents and can write none.
+-- Tenant table: a workspace reads its own documents and can write none. A document
+-- whose workspace was erased has tenant_id NULL and matches no tenant: only the
+-- admin GST report (SECURITY DEFINER) reads it.
 DROP POLICY IF EXISTS tenant_isolation ON credit_documents;
 CREATE POLICY tenant_isolation ON credit_documents
   FOR SELECT
-  USING (tenant_id = current_tenant_id());
+  USING (tenant_id IS NOT NULL AND tenant_id = current_tenant_id());
 
 REVOKE ALL ON invoice_issuer_changes, credit_document_counter, credit_documents FROM app_rw, app_readonly;
 GRANT SELECT ON credit_documents TO app_rw;
