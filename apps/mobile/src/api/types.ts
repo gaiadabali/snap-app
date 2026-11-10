@@ -96,6 +96,7 @@ import type {
   PatchCaptureDocumentRequest,
   CreditBalance,
   CreditPack,
+  CreditDocument,
   CreditPurchase,
   CheckoutSession,
   AvailableTaxRules,
@@ -393,6 +394,8 @@ export interface SnapApi {
   getCreditBalance(): Promise<CreditBalance>;
   /** `GET /v1/credits/purchases` — this workspace's purchase history. */
   listCreditPurchases(): Promise<CreditPurchase[]>;
+  /** `GET /v1/credits/documents/:id` — a receipt or tax invoice (7.7.b); the server writes every word. */
+  getCreditDocument(documentId: string): Promise<CreditDocument>;
   /**
    * `POST /v1/credits/purchases` — records intent to buy a pack. Returns it
    * `pending`; nothing is granted yet.

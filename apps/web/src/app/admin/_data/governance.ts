@@ -11,6 +11,9 @@ import type {
   AdminRetentionStatusRow,
   AdminSession,
   AdminYourtalReview,
+  GstReport,
+  InvoiceIssuerProposalRequest,
+  InvoiceIssuerState,
   PlatformCapability,
 } from '@snap/api-contract';
 
@@ -30,6 +33,8 @@ export type {
   AdminSession,
   AdminYourtalReview,
   Gated,
+  GstReport,
+  InvoiceIssuerState,
   PlatformCapability,
 };
 
@@ -407,4 +412,46 @@ export async function resolveYourtalReview(
     body: { resolution },
     idempotencyKey,
   });
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Receipts and tax invoices — apps/server/src/admin/invoicing.controller.ts
+// Issuer: manage_platform_settings (propose, then a DIFFERENT admin approves).
+// GST report: manage_billing.
+// ─────────────────────────────────────────────────────────────────────────
+
+export async function getInvoiceIssuer(): Promise<Gated<InvoiceIssuerState>> {
+  return capabilityGated(() => adminApi<InvoiceIssuerState>('/v1/admin/invoicing/issuer'));
+}
+
+export async function proposeInvoiceIssuer(
+  input: InvoiceIssuerProposalRequest,
+  idempotencyKey: string,
+): Promise<InvoiceIssuerState> {
+  return adminApi<InvoiceIssuerState>('/v1/admin/invoicing/issuer/proposals', {
+    method: 'POST',
+    body: input,
+    idempotencyKey,
+  });
+}
+
+export async function decideInvoiceIssuer(
+  id: string,
+  approve: boolean,
+  idempotencyKey: string,
+): Promise<InvoiceIssuerState> {
+  return adminApi<InvoiceIssuerState>(
+    `/v1/admin/invoicing/issuer/proposals/${encodeURIComponent(id)}/${approve ? 'approve' : 'reject'}`,
+    { method: 'POST', idempotencyKey },
+  );
+}
+
+/** `quarter` like "FY2026-Q2", or an explicit Sydney date range. */
+export async function getGstReport(
+  range: { quarter: string } | { from: string; to: string },
+): Promise<Gated<GstReport>> {
+  const qs = 'quarter' in range
+    ? `quarter=${encodeURIComponent(range.quarter)}`
+    : `from=${encodeURIComponent(range.from)}&to=${encodeURIComponent(range.to)}`;
+  return capabilityGated(() => adminApi<GstReport>(`/v1/admin/invoicing/gst-report?${qs}`));
 }

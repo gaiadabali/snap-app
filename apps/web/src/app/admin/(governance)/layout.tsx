@@ -21,6 +21,7 @@ export default function GovernanceLayout({ children }: { children: ReactNode }) 
           { href: '/admin/ai', label: 'AI' },
           { href: '/admin/operations', label: 'Operations' },
           { href: '/admin/settings', label: 'Settings' },
+          { href: '/admin/invoicing', label: 'Invoicing' },
         ]}
       />
       <div className="pt-6">{children}</div>

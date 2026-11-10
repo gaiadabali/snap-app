@@ -30,6 +30,7 @@ import type {
   FtrSendStarted,
   CreditBalance,
   CreditPack,
+  CreditDocument,
   CreditPurchase,
   CheckoutSession,
   DocumentFilter,
@@ -1163,6 +1164,10 @@ export class HttpApi implements SnapApi {
 
   listCreditPurchases(): Promise<CreditPurchase[]> {
     return this.get<CreditPurchase[]>('/v1/credits/purchases');
+  }
+
+  getCreditDocument(documentId: string): Promise<CreditDocument> {
+    return this.get<CreditDocument>(`/v1/credits/documents/${encodeURIComponent(documentId)}`);
   }
 
   startCreditPurchase(packCode: string): Promise<CreditPurchase> {

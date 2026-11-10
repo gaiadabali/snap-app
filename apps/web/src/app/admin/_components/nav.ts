@@ -60,4 +60,10 @@ export const PRIMARY_NAV: NavItem[] = [
     hint: 'Flags & defaults',
     capability: 'manage_platform_settings',
   },
+  {
+    href: '/admin/invoicing',
+    label: 'Invoicing',
+    hint: 'Issuer, receipts, GST report',
+    capability: 'manage_platform_settings',
+  },
 ];

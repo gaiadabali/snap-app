@@ -3,6 +3,8 @@ import { asUser, withTenant, type Tx } from '@snap/db';
 import { sql } from 'drizzle-orm';
 
 import { getDb } from '../db.js';
+import { isValidAbn, normaliseAbn } from '../credits/abn.js';
+import type { GstReportRow } from '../credits/gst-report.js';
 import type {
   AdminAiCostDay,
   AdminAiProviderConfig,
@@ -24,6 +26,9 @@ import type {
   AdminTenantSummary,
   AdminUserSummary,
   DocumentSummary,
+  InvoiceIssuerChange,
+  InvoiceIssuerProposalRequest,
+  InvoiceIssuerState,
   PlatformCapability,
   PlatformStaffRole,
 } from '@snap/api-contract';
@@ -826,4 +831,92 @@ export async function searchAuditLog(
       occurredAt: toIso(r.occurred_at),
     }));
   });
+}
+
+/* ── Credit receipts and tax invoices: issuer + GST report (7.7, 6.12.b) ─── */
+
+type IssuerRow = {
+  id: string;
+  status: 'pending' | 'approved' | 'rejected';
+  legal_name: string;
+  abn: string | null;
+  address: string;
+  email: string;
+  gst_registered: boolean;
+  reason: string;
+  proposed_by: string | null;
+  proposed_by_label: string | null;
+  proposed_at: string;
+  decided_by: string | null;
+  decided_by_label: string | null;
+  decided_at: string | null;
+};
+
+function toIssuerChange(r: IssuerRow): InvoiceIssuerChange {
+  return {
+    id: r.id,
+    status: r.status,
+    legalName: r.legal_name,
+    abn: r.abn,
+    address: r.address,
+    email: r.email,
+    gstRegistered: r.gst_registered,
+    reason: r.reason,
+    proposedBy: r.proposed_by,
+    proposedByLabel: r.proposed_by_label,
+    proposedAt: toIso(r.proposed_at),
+    decidedBy: r.decided_by,
+    decidedByLabel: r.decided_by_label,
+    decidedAt: toIso(r.decided_at),
+  };
+}
+
+/** The issuer in force, the change waiting for a second admin, and the history. */
+export async function getInvoiceIssuerState(staffUserId: string): Promise<InvoiceIssuerState> {
+  const rows = await callAs(staffUserId, (tx) =>
+    tx.execute<IssuerRow>(sql`select * from admin_invoice_issuer_list()`),
+  );
+  const history = rows.rows.map(toIssuerChange);
+  const current =
+    [...history]
+      .filter((c) => c.status === 'approved')
+      .sort((a, b) => (b.decidedAt ?? '').localeCompare(a.decidedAt ?? ''))[0] ?? null;
+  const pending = history.find((c) => c.status === 'pending') ?? null;
+  // What a purchase made now would get: the same test the database applies at issue.
+  const mode = current && current.gstRegistered && current.abn && isValidAbn(current.abn) ? 'tax_invoice' : 'receipt';
+  return { current, pending, history, mode };
+}
+
+export async function proposeInvoiceIssuer(staffUserId: string, req: InvoiceIssuerProposalRequest): Promise<string> {
+  const abn = normaliseAbn(req.abn);
+  if (abn !== null && !isValidAbn(abn)) {
+    throw new BadRequestException('That ABN is not valid: its check digits do not match.');
+  }
+  if (req.gstRegistered && abn === null) {
+    throw new BadRequestException('GST registered needs a valid ABN.');
+  }
+  const rows = await callAs(staffUserId, (tx) =>
+    tx.execute<{ id: string }>(sql`
+      select admin_invoice_issuer_propose(${req.legalName}, ${abn}, ${req.address}, ${req.email},
+                                          ${req.gstRegistered}, ${req.reason}) as id
+    `),
+  );
+  return rows.rows[0]!.id;
+}
+
+/** Approve (a DIFFERENT admin than the proposer, enforced by the database) or reject (the proposer may withdraw). */
+export async function decideInvoiceIssuer(staffUserId: string, changeId: string, approve: boolean): Promise<void> {
+  await callAs(staffUserId, (tx) => tx.execute(sql`select admin_invoice_issuer_decide(${changeId}::uuid, ${approve})`));
+}
+
+export async function getGstReportRows(staffUserId: string, from: string, to: string): Promise<GstReportRow[]> {
+  const rows = await callAs(staffUserId, (tx) =>
+    tx.execute<Omit<GstReportRow, 'issued_at'> & { issued_at: string | Date }>(sql`
+      select section, number::text as number, to_json(issued_at)#>>'{}' as issued_at, kind,
+             original_number::text as original_number, total_cents::text as total_cents,
+             gst_cents::text as gst_cents, ref
+        from admin_gst_report(${from}::date, ${to}::date)
+    `),
+  );
+  return rows.rows as GstReportRow[];
 }

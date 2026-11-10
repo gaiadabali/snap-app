@@ -1432,6 +1432,65 @@ export interface AdminPlatformSetting {
   updatedAt: IsoDateTime;
 }
 
+/** The issuer of credit receipts and tax invoices (7.7.a). */
+export interface InvoiceIssuerFields {
+  legalName: string;
+  /** Eleven digits, or NULL until the company has one. */
+  abn: string | null;
+  address: string;
+  email: string;
+  gstRegistered: boolean;
+}
+
+export interface InvoiceIssuerChange extends InvoiceIssuerFields {
+  id: string;
+  status: 'pending' | 'approved' | 'rejected';
+  reason: string;
+  proposedBy: string | null;
+  proposedByLabel: string | null;
+  proposedAt: IsoDateTime;
+  decidedBy: string | null;
+  decidedByLabel: string | null;
+  decidedAt: IsoDateTime | null;
+}
+
+/** `GET /v1/admin/invoicing/issuer` */
+export interface InvoiceIssuerState {
+  /** The latest approved change, or NULL: documents are plain receipts until there is one. */
+  current: InvoiceIssuerChange | null;
+  /** At most one change waiting for a second admin. */
+  pending: InvoiceIssuerChange | null;
+  /** The newest changes, pending first. */
+  history: InvoiceIssuerChange[];
+  /** What a purchase made now would get: 'tax_invoice' only with a valid ABN and GST registered. */
+  mode: 'tax_invoice' | 'receipt';
+}
+
+/** `POST /v1/admin/invoicing/issuer/proposals` */
+export interface InvoiceIssuerProposalRequest extends Omit<InvoiceIssuerFields, 'abn'> {
+  /** Spaces allowed; validated with the ATO check digits. */
+  abn?: string | null;
+  reason: string;
+}
+
+/** `GET /v1/admin/invoicing/gst-report` */
+export interface GstReport {
+  /** YYYY-MM-DD, Sydney dates, both included. */
+  from: string;
+  to: string;
+  filename: string;
+  csv: string;
+  totals: {
+    salesCents: number;
+    salesGstCents: number;
+    refundsCents: number;
+    refundsGstCents: number;
+    documentCount: number;
+    playSalesCents: number;
+    playSalesCount: number;
+  };
+}
+
 /** Request body of `PUT /v1/admin/settings/:key` */
 export interface AdminSetSettingRequest {
   value: unknown;
@@ -1695,6 +1754,57 @@ export interface CreditPurchase {
   provider: string;
   createdAt: IsoDateTime;
   paidAt: IsoDateTime | null;
+  /**
+   * The documents issued for this purchase (7.7.b), oldest first: the receipt or
+   * tax invoice, then the refund receipt or adjustment note if it was refunded.
+   * Empty for a purchase made before documents existed and for a store-issued one.
+   */
+  documents?: CreditDocumentRef[];
+  /** "Google issues the receipt for this purchase": set for a Play purchase, which gets no document from us. */
+  receiptNote?: string | null;
+}
+
+export type CreditDocumentKind = 'tax_invoice' | 'receipt' | 'adjustment_note' | 'refund_receipt';
+
+/** A document in a purchase's history, enough to link to it. */
+export interface CreditDocumentRef {
+  id: string;
+  /** SNAP-000123 */
+  number: string;
+  kind: CreditDocumentKind;
+  /** "Tax invoice", "Receipt", "Adjustment note", "Refund receipt". */
+  title: string;
+  issuedAt: IsoDateTime;
+}
+
+/**
+ * One receipt or tax invoice, ready to print (`GET /v1/credits/documents/:id`).
+ * The server writes every word, so the website and the phone show the same text
+ * and a receipt never carries an ABN or GST line.
+ */
+export interface CreditDocument {
+  id: string;
+  purchaseId: string;
+  number: string;
+  kind: CreditDocumentKind;
+  title: string;
+  /** Issue date in Sydney, as people write it: "11 Nov 2026". */
+  issuedOn: string;
+  issuedAt: IsoDateTime;
+  /** The issuer as at issue. NULL when none was approved yet. `abn` is set on a tax invoice only. */
+  issuer: { legalName: string; abn: string | null; address: string; email: string } | null;
+  /** The workspace the credits were bought for. */
+  buyer: { name: string; email: string | null };
+  /** What was bought: label, quantity, the GST-inclusive amount. */
+  item: { description: string; quantity: number; amount: string };
+  /** "Total includes GST of A$0.45" on a tax invoice, "... GST adjustment ..." on an adjustment note, else NULL. */
+  gstStatement: string | null;
+  /** Total (GST included), negative on a refund: "-A$5.00". */
+  total: string;
+  /** "Adjusts tax invoice SNAP-000001" / "Refund of receipt SNAP-000001" on a refund. */
+  reference: string | null;
+  /** Free text under the totals (how it was paid). */
+  note: string;
 }
 
 /**

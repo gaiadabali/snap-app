@@ -1,10 +1,11 @@
 import { randomUUID } from 'node:crypto';
 
-import { withTenantAs } from '@snap/db';
+import { withTenantAs, type Tx } from '@snap/db';
 import { sql } from 'drizzle-orm';
 
 import { getDb } from '../db.js';
 import { creditsLeft } from './spend.js';
+import type { CreditDocumentRow } from './documents.js';
 
 /**
  * Credits — bought with money, or granted free at signup. Tenant-scoped,
@@ -67,6 +68,8 @@ export type CreditPurchaseRow = {
   provider: string;
   created_at: string;
   paid_at: string | null;
+  /** Only on the history list (7.7.b): the documents issued for it, oldest first. */
+  documents?: Array<Pick<CreditDocumentRow, 'id' | 'number' | 'kind' | 'issued_at'>>;
 };
 
 /** Purchase history for this workspace, most recent first. */
@@ -88,7 +91,10 @@ export async function listCreditPurchases(userId: string, tenantId: string): Pro
   return withTenantAs(getDb(), userId, tenantId, async (tx) => {
     const rows = await tx.execute<CreditPurchaseRow>(sql`
       select id, pack_code, credits, price_aud::text as price_aud, status::text as status,
-             provider::text as provider, to_json(created_at)#>>'{}' as created_at, to_json(paid_at)#>>'{}' as paid_at
+             provider::text as provider, to_json(created_at)#>>'{}' as created_at, to_json(paid_at)#>>'{}' as paid_at,
+             coalesce((select json_agg(json_build_object('id', d.id, 'number', d.number::text, 'kind', d.kind,
+                                                         'issued_at', to_json(d.issued_at)#>>'{}') order by d.number)
+                         from credit_documents d where d.purchase_id = credit_purchases.id), '[]'::json) as documents
         from credit_purchases
        where tenant_id = current_tenant_id()
          -- A Play void recorded for a purchase never granted (recordGooglePlayVoid):
@@ -211,6 +217,7 @@ export async function fulfilCreditPurchase(
       returning id, pack_code, credits, price_aud::text as price_aud, status::text as status,
                 provider::text as provider, to_json(created_at)#>>'{}' as created_at, to_json(paid_at)#>>'{}' as paid_at
     `);
+    await issueCreditDocument(tx, purchaseId, 'sale');
     return updated.rows[0]!;
   });
 }
@@ -359,6 +366,8 @@ export async function fulfilCreditPurchaseFromProvider(
       returning id, pack_code, credits, price_aud::text as price_aud, status::text as status,
                 provider::text as provider, to_json(created_at)#>>'{}' as created_at, to_json(paid_at)#>>'{}' as paid_at
     `);
+    // Same transaction as the status change: a paid purchase never lacks its document.
+    await issueCreditDocument(tx, purchaseId, 'sale');
     return updated.rows[0]!;
   });
 }
@@ -414,6 +423,8 @@ export async function refundCreditPurchaseFromProvider(
       update credit_purchases set status = 'refunded'
        where id = ${purchaseId} and tenant_id = current_tenant_id()
     `);
+    // The adjustment note or refund receipt (none for a Play purchase).
+    await issueCreditDocument(tx, purchaseId, 'refund');
     return { status: 'refunded', clawedBack: taken.rows[0]?.taken ?? 0 };
   });
 }
@@ -655,5 +666,46 @@ export async function listCreditUsageMonths(userId: string, tenantId: string): P
        order by month desc
     `);
     return rows.rows.map((r) => r.month);
+  });
+}
+
+
+/**
+ * Takes the receipt, tax invoice, adjustment note or refund receipt for a purchase
+ * (7.7.b), INSIDE the transaction that marks the purchase paid or refunded.
+ *
+ * Idempotent per purchase and direction: `credit_document_issue` (0059) returns
+ * the document already issued before it takes a number, and the caller holds
+ * the purchase row FOR UPDATE, so a replayed webhook finds `paid` and never gets
+ * here at all. The number comes from one counter row updated in this same
+ * transaction, so a rollback gives it back and the sequence has no gaps.
+ * Returns the number, or null for a purchase a store issues the receipt for.
+ */
+export async function issueCreditDocument(
+  tx: Tx,
+  purchaseId: string,
+  direction: 'sale' | 'refund',
+): Promise<number | null> {
+  const res = await tx.execute(sql`select credit_document_issue(${purchaseId}::uuid, ${direction}) as number`);
+  const n = (res.rows[0] as { number: string | number | null } | undefined)?.number ?? null;
+  return n === null ? null : Number(n);
+}
+
+const DOCUMENT_COLUMNS = sql`id, purchase_id, direction, kind, number::text as number,
+  to_json(issued_at)#>>'{}' as issued_at, original_number::text as original_number, pack_code, credits,
+  total_cents::text as total_cents, gst_cents::text as gst_cents, issuer, buyer_name, buyer_email, provider`;
+
+/** One document of this workspace, or null (another workspace's is not visible). */
+export async function getCreditDocument(
+  userId: string,
+  tenantId: string,
+  documentId: string,
+): Promise<CreditDocumentRow | null> {
+  return withTenantAs(getDb(), userId, tenantId, async (tx) => {
+    const rows = await tx.execute<CreditDocumentRow>(sql`
+      select ${DOCUMENT_COLUMNS} from credit_documents
+       where id = ${documentId} and tenant_id = current_tenant_id()
+    `);
+    return rows.rows[0] ?? null;
   });
 }

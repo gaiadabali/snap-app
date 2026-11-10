@@ -1,4 +1,4 @@
-import { boolean, integer, numeric, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { bigint, boolean, integer, jsonb, numeric, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 
 import { billingProvider } from './enums';
 
@@ -110,4 +110,32 @@ export const creditSpends = pgTable('credit_spends', {
   refundedAt: timestamp('refunded_at', { withTimezone: true }),
   /** 'unreadable' or 'not_extracted'. */
   refundReason: text('refund_reason'),
+});
+
+/**
+ * A receipt, tax invoice, adjustment note or refund receipt for a credit
+ * purchase (0059). Written only by `credit_document_issue`, inside the
+ * purchase transaction; `app_rw` can read, never write; a row never changes.
+ * Money is integer cents; `issuer` is the issuer as it stood at the time.
+ */
+export const creditDocuments = pgTable('credit_documents', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: uuid('tenant_id').notNull(),
+  purchaseId: uuid('purchase_id').notNull(),
+  /** 'sale' | 'refund'. One of each per purchase at most. */
+  direction: text('direction').notNull(),
+  /** 'tax_invoice' | 'receipt' | 'adjustment_note' | 'refund_receipt'. */
+  kind: text('kind').notNull(),
+  /** Gap-free, shown as SNAP-000001. */
+  number: bigint('number', { mode: 'number' }).notNull(),
+  issuedAt: timestamp('issued_at', { withTimezone: true }).notNull().defaultNow(),
+  originalNumber: bigint('original_number', { mode: 'number' }),
+  packCode: text('pack_code').notNull(),
+  credits: integer('credits').notNull(),
+  totalCents: bigint('total_cents', { mode: 'number' }).notNull(),
+  gstCents: bigint('gst_cents', { mode: 'number' }),
+  issuer: jsonb('issuer'),
+  buyerName: text('buyer_name').notNull(),
+  buyerEmail: text('buyer_email'),
+  provider: text('provider').notNull(),
 });

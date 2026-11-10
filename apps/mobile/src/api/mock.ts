@@ -2,6 +2,7 @@ import type {
   CapturePageUpload,
   CreateCaptureRequest,
   CreateCaptureResponse,
+  CreditDocument,
   FtrSendFinished,
   PatchCaptureDocumentRequest,
   UpdateDocumentRequest,
@@ -1962,6 +1963,11 @@ export class MockApi implements SnapApi {
   async listCreditPurchases(): Promise<CreditPurchase[]> {
     await settle(140);
     return [...creditPurchases].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+
+  async getCreditDocument(documentId: string): Promise<CreditDocument> {
+    await settle(140);
+    throw new Error(`No such document: ${documentId}.`);
   }
 
   async startCreditPurchase(packCode: string): Promise<CreditPurchase> {
