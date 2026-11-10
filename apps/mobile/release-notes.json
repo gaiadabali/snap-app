@@ -1,5 +1,10 @@
 [
   {
+    "id": "rupiah-amounts-and-yourtal-return",
+    "date": "2026-11-10",
+    "notes": "Rupiah amounts now read correctly: a receipt printed Rp 74.000 is saved as seventy-four thousand, not 74. If a month has no spending in your workspace’s currency, the home screen says so and tells you how many receipts are in another currency, instead of showing $0. If you leave to confirm your email while creating a YourTal account, coming back now finishes signing you in, and tax totals use your workspace’s own tax name."
+  },
+  {
     "id": "new-signing-key",
     "date": "2026-11-09",
     "notes": "This build is signed with Snap Apps’ own private key instead of the shared test key, so Android will not install it over your current app. Before updating, open the app and let any snaps still waiting send, then uninstall Snap Apps and install this version from the download page. You only need to do this once; later updates install over it as before."
