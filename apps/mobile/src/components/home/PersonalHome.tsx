@@ -348,7 +348,12 @@ export default function PersonalHome() {
             action={{ label: 'Analytics', onPress: () => router.push('/analytics') }}
           />
           <Raised style={{ gap: space.lg }}>
-            {summary && summary.byCategory.length > 0 ? (
+            {/* Budgeted categories with no spend are listed at zero, so the
+                list is never empty on its own; draw the ring only when
+                something was spent in the workspace currency (a $0 ring
+                beside 0% rows read as a wrong total on the founder's phone,
+                2026-11-10). */}
+            {summary && Number(summary.spentThisMonth) > 0 && summary.byCategory.length > 0 ? (
               <>
                 <CategoryRing
                   parts={summary.byCategory}
@@ -360,7 +365,14 @@ export default function PersonalHome() {
             ) : summary ? (
               <View style={{ alignItems: 'center', gap: 6, paddingVertical: space.lg }}>
                 <Icon name="chart" size={26} color={p.inkMuted} />
-                <Small>Nothing in this range</Small>
+                <Small>Nothing spent in {summary.monthLabel}</Small>
+                {summary.foreignCurrencyCount ? (
+                  <Small style={{ textAlign: 'center' }}>
+                    {summary.foreignCurrencyCount} receipt
+                    {summary.foreignCurrencyCount === 1 ? ' is' : 's are'} in another currency and
+                    not counted in this total
+                  </Small>
+                ) : null}
               </View>
             ) : (
               <Small>Loading…</Small>
@@ -375,7 +387,7 @@ export default function PersonalHome() {
             {summary.receiptCount} receipts in {summary.monthLabel}
           </Small>
         ) : null}
-        {summary?.foreignCurrencyCount ? (
+        {summary?.foreignCurrencyCount && Number(summary.spentThisMonth) > 0 ? (
           <Small style={{ textAlign: 'center' }}>
             {summary.foreignCurrencyCount} receipt{summary.foreignCurrencyCount === 1 ? ' is' : 's are'} in another
             currency and not counted here
