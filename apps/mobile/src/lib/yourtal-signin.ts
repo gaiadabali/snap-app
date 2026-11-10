@@ -183,6 +183,103 @@ export interface SignInDeps<S> {
   }): Promise<{ url: string; flowId: string }>;
   openBrowser(url: string, redirectUri: string): Promise<BrowserResult>;
   finish(input: { flowId: string; code: string; state: string; iss: string }): Promise<S>;
+  /** Clock for the pending-flow registry (tests); defaults to `Date.now`. */
+  now?(): number;
+}
+
+/**
+ * Flows this app started and has not finished. On Android a Custom Tab can outlive
+ * the attempt (the person leaves to confirm their email, the attempt is reported
+ * `dismiss`) and later complete an OLDER flow than the newest one, so a return is
+ * tried against the pending flows, newest first. Each flow id is a secret only this
+ * app holds; the server compares `state` after taking the flow, so a wrong flow id
+ * is `invalid_flow` and the code is not redeemed. Memory only, never logged.
+ */
+const MAX_PENDING_FLOWS = 3;
+const PENDING_FLOW_TTL_MS = 15 * 60 * 1000;
+let pendingFlows: { flowId: string; at: number }[] = [];
+
+/** Empties the registry (tests). */
+export function resetPendingFlows(): void {
+  pendingFlows = [];
+}
+
+/** Drops flows past the TTL, returns the rest newest first. */
+function freshPending(now: number): string[] {
+  pendingFlows = pendingFlows.filter((f) => now - f.at <= PENDING_FLOW_TTL_MS);
+  return pendingFlows.map((f) => f.flowId).reverse();
+}
+
+function rememberFlow(flowId: string, now: number): void {
+  freshPending(now);
+  pendingFlows = pendingFlows.filter((f) => f.flowId !== flowId);
+  pendingFlows.push({ flowId, at: now });
+  if (pendingFlows.length > MAX_PENDING_FLOWS) pendingFlows = pendingFlows.slice(-MAX_PENDING_FLOWS);
+}
+
+function forgetFlows(ids: string[]): void {
+  pendingFlows = pendingFlows.filter((f) => !ids.includes(f.flowId));
+}
+
+const codeOf = (e: unknown): string | null =>
+  e && typeof e === 'object' && 'code' in e && typeof (e as { code: unknown }).code === 'string'
+    ? (e as { code: string }).code
+    : null;
+
+function failedWith<S>(code: string | null): SignInAttempt<S> {
+  return { kind: 'failed', code, message: signInErrorMessage(code) };
+}
+
+/**
+ * finish with each flow id in turn (newest first): on `invalid_flow` try the next,
+ * stop at the first success or the first other error. Forgets everything on success,
+ * and the flows tried on a final failure.
+ */
+async function finishAcross<S>(
+  deps: Pick<SignInDeps<S>, 'finish'>,
+  flowIds: string[],
+  parsed: { code: string; state: string; iss: string },
+): Promise<SignInAttempt<S>> {
+  const tried: string[] = [];
+  let code: string | null = null;
+  for (const flowId of flowIds) {
+    tried.push(flowId);
+    try {
+      const session = await deps.finish({ flowId, code: parsed.code, state: parsed.state, iss: parsed.iss });
+      resetPendingFlows();
+      return { kind: 'signed-in', session };
+    } catch (e) {
+      code = codeOf(e);
+      if (code !== 'invalid_flow') break;
+    }
+  }
+  forgetFlows(tried);
+  return failedWith<S>(code);
+}
+
+function deniedAttempt<S>(parsed: { error: string; description: string | null }): SignInAttempt<S> {
+  const message = deniedMessage(parsed.error, parsed.description);
+  return message === null ? { kind: 'quiet' } : { kind: 'failed', code: 'yourtal_failed', message };
+}
+
+/**
+ * A redirect that reached the app while no attempt was waiting (the old Custom Tab
+ * finished after the attempt had been reported `dismiss`). Tries the pending flows,
+ * newest first; with none, or a URL that is not a return, it is quiet.
+ */
+export async function finishLateReturn<S>(
+  deps: Pick<SignInDeps<S>, 'finish' | 'now'>,
+  url: string,
+): Promise<SignInAttempt<S>> {
+  const parsed = parseReturnUrl(url);
+  if (parsed.kind === 'invalid') return { kind: 'quiet' };
+  const flowIds = freshPending((deps.now ?? Date.now)());
+  if (flowIds.length === 0) return { kind: 'quiet' };
+  if (parsed.kind === 'denied') {
+    resetPendingFlows();
+    return deniedAttempt<S>(parsed);
+  }
+  return finishAcross(deps, flowIds, parsed);
 }
 
 /**
@@ -193,15 +290,7 @@ export async function runYourtalSignIn<S>(
   deps: SignInDeps<S>,
   options: { signUp?: boolean; freshSignIn?: boolean; locale?: 'en-AU' | 'id-ID'; moveCurrentAccount?: boolean } = {},
 ): Promise<SignInAttempt<S>> {
-  const codeOf = (e: unknown): string | null =>
-    e && typeof e === 'object' && 'code' in e && typeof (e as { code: unknown }).code === 'string'
-      ? (e as { code: string }).code
-      : null;
-  const fail = (code: string | null): SignInAttempt<S> => ({
-    kind: 'failed',
-    code,
-    message: signInErrorMessage(code),
-  });
+  const fail = (code: string | null): SignInAttempt<S> => failedWith<S>(code);
 
   let started: { url: string; flowId: string };
   try {
@@ -214,6 +303,7 @@ export async function runYourtalSignIn<S>(
   } catch (e) {
     return fail(codeOf(e));
   }
+  rememberFlow(started.flowId, (deps.now ?? Date.now)());
 
   let result: BrowserResult;
   try {
@@ -226,22 +316,17 @@ export async function runYourtalSignIn<S>(
 
   const parsed = parseReturnUrl(result.url);
   if (parsed.kind === 'denied') {
-    const message = deniedMessage(parsed.error, parsed.description);
-    return message === null ? { kind: 'quiet' } : { kind: 'failed', code: 'yourtal_failed', message };
+    forgetFlows([started.flowId]);
+    return deniedAttempt<S>(parsed);
   }
-  if (parsed.kind === 'invalid') return fail('yourtal_failed');
+  if (parsed.kind === 'invalid') {
+    forgetFlows([started.flowId]);
+    return fail('yourtal_failed');
+  }
 
-  try {
-    const session = await deps.finish({
-      flowId: started.flowId,
-      code: parsed.code,
-      state: parsed.state,
-      iss: parsed.iss,
-    });
-    return { kind: 'signed-in', session };
-  } catch (e) {
-    return fail(codeOf(e));
-  }
+  // This flow first; then any older ones a surviving tab may belong to.
+  const older = freshPending((deps.now ?? Date.now)()).filter((id) => id !== started.flowId);
+  return finishAcross(deps, [started.flowId, ...older], parsed);
 }
 
 /** True for the redirect however the platform spells it (`/oauth/yourtal?…`, a full URL, one or two slashes). */

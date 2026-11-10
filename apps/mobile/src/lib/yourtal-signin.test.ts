@@ -1,7 +1,9 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   deniedMessage,
+  finishLateReturn,
+  resetPendingFlows,
   isStaffReauth,
   isUseYourtal,
   isYourtalReturn,
@@ -167,6 +169,8 @@ function deps(over: Record<string, Fn> = {}) {
 const returning = (url: string) => vi.fn(async () => ({ type: 'success', url }));
 
 describe('runYourtalSignIn', () => {
+  beforeEach(() => resetPendingFlows());
+
   it('opens the browser at the redirect_uri the server put in the URL', async () => {
     const url = `https://id.yourtal.test/authorize?redirect_uri=${encodeURIComponent(LINK)}&state=SECRET`;
     const d = deps({ start: vi.fn(async () => ({ url, flowId: 'flow-1' })), openBrowser: returning(`${LINK}?code=C&state=s&iss=i`) });
@@ -282,5 +286,126 @@ describe('runYourtalSignIn', () => {
       expect(s).not.toHaveBeenCalled();
       s.mockRestore();
     });
+  });
+});
+
+describe('pending flows (3.3.g: the email detour)', () => {
+  const T0 = 1_000_000;
+  const MIN = 60_000;
+  let clock = T0;
+  const withClock = <T extends object>(d: T) => Object.assign(d, { now: () => clock });
+  const flowStart = (id: string) => vi.fn(async () => ({ url: 'https://id.yourtal.test/authorize?state=SECRET', flowId: id }));
+  const refusal = (code: string) => Object.assign(new Error('server words'), { code });
+  const RETURN = `${REDIRECT}?code=CODE&state=OLD&iss=https%3A%2F%2Fid.yourtal.test`;
+  const dismissed = () => vi.fn(async () => ({ type: 'dismiss' }));
+  const idsOf = (f: Fn) => f.mock.calls.map((c) => (c[0] as { flowId: string }).flowId);
+
+  beforeEach(() => {
+    clock = T0;
+    resetPendingFlows();
+  });
+
+  it('retries an older pending flow after invalid_flow, then clears the registry', async () => {
+    await runYourtalSignIn(withClock(deps({ start: flowStart('old'), openBrowser: dismissed() })));
+    clock += MIN;
+    const finish = vi.fn(async ({ flowId }: { flowId: string }) => {
+      if (flowId !== 'old') throw refusal('invalid_flow');
+      return { user: 'kira' };
+    });
+    const d = withClock(deps({ start: flowStart('new'), openBrowser: returning(RETURN), finish }));
+    expect(await runYourtalSignIn(d)).toEqual({ kind: 'signed-in', session: { user: 'kira' } });
+    expect(idsOf(finish)).toEqual(['new', 'old']);
+
+    const after = withClock(deps());
+    expect(await finishLateReturn(after, RETURN)).toEqual({ kind: 'quiet' });
+    expect(after.finish).not.toHaveBeenCalled();
+  });
+
+  it('tries older flows newest first', async () => {
+    for (const id of ['a', 'b']) await runYourtalSignIn(withClock(deps({ start: flowStart(id), openBrowser: dismissed() })));
+    const finish = vi.fn(async ({ flowId }: { flowId: string }) => {
+      if (flowId !== 'a') throw refusal('invalid_flow');
+      return { user: 'kira' };
+    });
+    await runYourtalSignIn(withClock(deps({ start: flowStart('c'), openBrowser: returning(RETURN), finish })));
+    expect(idsOf(finish)).toEqual(['c', 'b', 'a']);
+  });
+
+  it('stops at an error that is not invalid_flow', async () => {
+    await runYourtalSignIn(withClock(deps({ start: flowStart('old'), openBrowser: dismissed() })));
+    const finish = vi.fn(async () => Promise.reject(refusal('yourtal_email_mismatch')));
+    const d = withClock(deps({ start: flowStart('new'), openBrowser: returning(RETURN), finish }));
+    expect(await runYourtalSignIn(d)).toEqual({
+      kind: 'failed',
+      code: 'yourtal_email_mismatch',
+      message: signInErrorMessage('yourtal_email_mismatch'),
+    });
+    expect(finish).toHaveBeenCalledTimes(1);
+  });
+
+  it('invalid_flow on every flow is a failure, and the tried flows are forgotten', async () => {
+    await runYourtalSignIn(withClock(deps({ start: flowStart('old'), openBrowser: dismissed() })));
+    const finish = vi.fn(async () => Promise.reject(refusal('invalid_flow')));
+    const d = withClock(deps({ start: flowStart('new'), openBrowser: returning(RETURN), finish }));
+    expect(await runYourtalSignIn(d)).toMatchObject({ kind: 'failed', code: 'invalid_flow' });
+    expect(finish).toHaveBeenCalledTimes(2);
+    expect(await finishLateReturn(withClock(deps()), RETURN)).toEqual({ kind: 'quiet' });
+  });
+
+  it('dismiss keeps the flow, so a later finishLateReturn finishes with it', async () => {
+    const first = withClock(deps({ start: flowStart('kept'), openBrowser: dismissed() }));
+    expect(await runYourtalSignIn(first)).toEqual({ kind: 'quiet' });
+    expect(first.finish).not.toHaveBeenCalled();
+    clock += 5 * MIN;
+    const late = withClock(deps());
+    expect(await finishLateReturn(late, RETURN)).toEqual({ kind: 'signed-in', session: { user: 'kira' } });
+    expect(late.finish).toHaveBeenCalledWith({ flowId: 'kept', code: 'CODE', state: 'OLD', iss: 'https://id.yourtal.test' });
+  });
+
+  it('does not try flows older than 15 minutes', async () => {
+    await runYourtalSignIn(withClock(deps({ start: flowStart('stale'), openBrowser: dismissed() })));
+    clock += 15 * MIN + 1;
+    const late = withClock(deps());
+    expect(await finishLateReturn(late, RETURN)).toEqual({ kind: 'quiet' });
+    expect(late.finish).not.toHaveBeenCalled();
+
+    await runYourtalSignIn(withClock(deps({ start: flowStart('fresh'), openBrowser: dismissed() })));
+    const finish = vi.fn(async () => Promise.reject(refusal('invalid_flow')));
+    await finishLateReturn(withClock(deps({ finish })), RETURN);
+    expect(idsOf(finish)).toEqual(['fresh']);
+  });
+
+  it('keeps at most 3 flows', async () => {
+    for (const id of ['f1', 'f2', 'f3', 'f4']) await runYourtalSignIn(withClock(deps({ start: flowStart(id), openBrowser: dismissed() })));
+    const finish = vi.fn(async () => Promise.reject(refusal('invalid_flow')));
+    await finishLateReturn(withClock(deps({ finish })), RETURN);
+    expect(idsOf(finish)).toEqual(['f4', 'f3', 'f2']);
+  });
+
+  it('finishLateReturn is quiet with nothing pending, or when the URL is not a return', async () => {
+    const d = withClock(deps());
+    expect(await finishLateReturn(d, RETURN)).toEqual({ kind: 'quiet' });
+    await runYourtalSignIn(withClock(deps({ start: flowStart('p'), openBrowser: dismissed() })));
+    expect(await finishLateReturn(d, `${REDIRECT}?code=c&state=s`)).toEqual({ kind: 'quiet' });
+    expect(d.finish).not.toHaveBeenCalled();
+  });
+
+  it('a late denial maps like the normal path', async () => {
+    await runYourtalSignIn(withClock(deps({ start: flowStart('p'), openBrowser: dismissed() })));
+    const d = withClock(deps());
+    const hold = await finishLateReturn(d, `${REDIRECT}?error=access_denied&error_description=account_on_hold`);
+    expect(hold).toMatchObject({ kind: 'failed', code: 'yourtal_failed' });
+    expect((hold as { message: string }).message).toContain('on hold');
+
+    await runYourtalSignIn(withClock(deps({ start: flowStart('q'), openBrowser: dismissed() })));
+    expect(await finishLateReturn(d, `${REDIRECT}?error=access_denied`)).toEqual({ kind: 'quiet' });
+    expect(d.finish).not.toHaveBeenCalled();
+  });
+
+  it('puts no flow id, code or state in a failure result', async () => {
+    await runYourtalSignIn(withClock(deps({ start: flowStart('FLOWSECRET'), openBrowser: dismissed() })));
+    const finish = vi.fn(async () => Promise.reject(new Error('boom CODE OLD FLOWSECRET')));
+    const r = await finishLateReturn(withClock(deps({ finish })), RETURN);
+    expect(JSON.stringify(r)).not.toMatch(/CODE|OLD|FLOWSECRET/);
   });
 });
