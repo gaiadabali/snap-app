@@ -1,10 +1,17 @@
 import * as WebBrowser from 'expo-web-browser';
-import { useCallback, useEffect, useState } from 'react';
-import { View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Linking, View } from 'react-native';
 
 import { api, type Session } from '@/api';
 import { Button } from '@/components/ui';
-import { isStaffReauth, runYourtalSignIn, SIGNIN_COPY } from '@/lib/yourtal-signin';
+import {
+  finishLateReturn,
+  isStaffReauth,
+  isYourtalReturn,
+  runYourtalSignIn,
+  SIGNIN_COPY,
+  type SignInAttempt,
+} from '@/lib/yourtal-signin';
 import { space } from '@/theme';
 
 /**
@@ -46,31 +53,62 @@ export function YourtalSignInButtons({
     };
   }, []);
 
+  // True while any attempt (a button or a late return) runs. A ref, so the auth session's own URL event is not raced.
+  const inFlight = useRef(false);
+
+  const route = useCallback(
+    (result: SignInAttempt<Session>) => {
+      if (result.kind === 'signed-in') onSignedIn(result.session);
+      else if (result.kind === 'failed') {
+        setReauth(isStaffReauth(result.code));
+        onFailure(result.message, result.code);
+      }
+      // 'quiet': cancelled or dismissed. Back on the sign-in screen, no message.
+    },
+    [onSignedIn, onFailure],
+  );
+
   const go = useCallback(
     async (kind: Kind) => {
-      if (busy) return;
+      if (busy || inFlight.current) return;
+      inFlight.current = true;
       setBusy(kind);
       try {
-        const result = await runYourtalSignIn(
-          {
-            start: (input) => api().startYourtalSignIn(input),
-            openBrowser: (url, redirect) => WebBrowser.openAuthSessionAsync(url, redirect),
-            finish: (input) => api().finishYourtalSignIn(input),
-          },
-          { signUp: kind === 'signUp', freshSignIn: kind === 'fresh' },
+        route(
+          await runYourtalSignIn(
+            {
+              start: (input) => api().startYourtalSignIn(input),
+              openBrowser: (url, redirect) => WebBrowser.openAuthSessionAsync(url, redirect),
+              finish: (input) => api().finishYourtalSignIn(input),
+            },
+            { signUp: kind === 'signUp', freshSignIn: kind === 'fresh' },
+          ),
         );
-        if (result.kind === 'signed-in') onSignedIn(result.session);
-        else if (result.kind === 'failed') {
-          setReauth(isStaffReauth(result.code));
-          onFailure(result.message, result.code);
-        }
-        // 'quiet': cancelled or dismissed. Back on the sign-in screen, no message.
       } finally {
+        inFlight.current = false;
         setBusy(null);
       }
     },
-    [busy, onSignedIn, onFailure],
+    [busy, route],
   );
+
+  // On Android the Custom Tab can outlive an attempt reported "dismiss" (the email detour) and finish
+  // later: the redirect then reaches the app with no attempt waiting (3.3.g).
+  useEffect(() => {
+    const sub = Linking.addEventListener('url', ({ url }) => {
+      if (!isYourtalReturn(url) || inFlight.current) return;
+      inFlight.current = true;
+      setBusy('signIn');
+      finishLateReturn({ finish: (input) => api().finishYourtalSignIn(input) }, url)
+        .then(route)
+        .catch(() => {})
+        .finally(() => {
+          inFlight.current = false;
+          setBusy(null);
+        });
+    });
+    return () => sub.remove();
+  }, [route]);
 
   if (!available) return null;
   return <YourtalSignInButtonsView mode={mode} busy={busy} reauth={reauth} onGo={(kind) => void go(kind)} />;
