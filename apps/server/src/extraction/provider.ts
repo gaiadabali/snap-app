@@ -122,18 +122,52 @@ const digits = (v: unknown): string | null => {
   const d = String(v).replace(/\D/g, '');
   return d === '' ? null : d;
 };
-export const decimal = (v: unknown): string | null => {
-  // Tolerates "$1,848.00" and "1 848,00" — models produce both, and the
-  // alternative to accepting them is discarding a correct reading over
-  // punctuation.
-  const cleaned = String(v).replace(/[^0-9.,-]/g, '');
-  const normalised =
-    cleaned.includes(',') && !cleaned.includes('.')
-      ? cleaned.replace(',', '.')
-      : cleaned.replace(/,/g, '');
-  const n = Number(normalised);
-  return Number.isFinite(n) ? n.toFixed(4) : null;
-};
+export const decimal = (v: unknown): string | null => decimalFor(null)(v);
+
+/** Currencies printed with no minor unit, where `74.000` means seventy-four thousand. */
+const ZERO_MINOR_UNIT_CURRENCIES = new Set(['IDR', 'JPY', 'KRW', 'VND']);
+
+/**
+ * A model's printed amount as a decimal string, read under the convention of
+ * the receipt's own currency.
+ *
+ * Tolerates "$1,848.00", "1 848,00", "Rp 74.000" and "6.727,27": models copy
+ * the paper's punctuation, and discarding a correct reading over punctuation
+ * is worse than reading it. Rules:
+ * - a JSON number is taken as it is;
+ * - when both `.` and `,` appear, the LAST one is the decimal separator;
+ * - a separator that appears more than once groups thousands;
+ * - a single `,` followed by exactly three digits groups thousands ("1,848");
+ * - a single `.` followed by exactly three digits groups thousands only for a
+ *   currency with no minor unit (IDR "74.000" is Rp 74,000, not Rp 74: the
+ *   thousand-fold misread found on the founder's phone, 2026-11-10);
+ * - otherwise the single separator is the decimal point.
+ */
+export const decimalFor =
+  (currency: string | null) =>
+  (v: unknown): string | null => {
+    if (typeof v === 'number') return Number.isFinite(v) ? v.toFixed(4) : null;
+    const cleaned = String(v).replace(/[^0-9.,-]/g, '');
+    const zeroMinor = currency != null && ZERO_MINOR_UNIT_CURRENCIES.has(currency.toUpperCase());
+    const lastDot = cleaned.lastIndexOf('.');
+    const lastComma = cleaned.lastIndexOf(',');
+    let normalised: string;
+    if (lastDot >= 0 && lastComma >= 0) {
+      const dec = lastDot > lastComma ? '.' : ',';
+      const thou = dec === '.' ? ',' : '.';
+      normalised = cleaned.split(thou).join('').replace(dec, '.');
+    } else if (lastDot >= 0 || lastComma >= 0) {
+      const sep = lastDot >= 0 ? '.' : ',';
+      const count = cleaned.split(sep).length - 1;
+      const after = cleaned.length - cleaned.lastIndexOf(sep) - 1;
+      const groupsThousands = count > 1 || (after === 3 && (sep === ',' || zeroMinor));
+      normalised = groupsThousands ? cleaned.split(sep).join('') : cleaned.replace(sep, '.');
+    } else {
+      normalised = cleaned;
+    }
+    const n = Number(normalised);
+    return normalised !== '' && Number.isFinite(n) ? n.toFixed(4) : null;
+  };
 const bool = (v: unknown): boolean | null => {
   if (typeof v === 'boolean') return v;
   const s = String(v).toLowerCase();
@@ -177,6 +211,10 @@ export function parseExtraction(text: string): Extraction {
   // downstream rather than trusted to have happened here.
   const cardLast4 = (v: unknown): string | null => maskCardLast4(v == null ? null : String(v));
 
+  // Amounts are read under the receipt's own currency: "74.000" is Rp 74,000.
+  const currency = asField(raw.currency, str);
+  const amount = decimalFor(currency.value);
+
   const payment: Payment = {
     method: asField(paymentRaw.method, str),
     cardLast4: asField(paymentRaw.cardLast4, cardLast4),
@@ -189,8 +227,8 @@ export function parseExtraction(text: string): Extraction {
         return {
           description: asField(o.description, str),
           quantity: asField(o.quantity, int),
-          unitPrice: asField(o.unitPrice, decimal),
-          amount: asField(o.amount, decimal),
+          unitPrice: asField(o.unitPrice, amount),
+          amount: asField(o.amount, amount),
           gstFree: asField(o.gstFree, bool),
         };
       })
@@ -210,14 +248,14 @@ export function parseExtraction(text: string): Extraction {
     documentNumber: asField(raw.documentNumber, str),
     issueDate: asField(raw.issueDate, str),
     issueDatePrinted: asField(raw.issueDatePrinted, str),
-    currency: asField(raw.currency, str),
+    currency,
     supplierName: asField(raw.supplierName, str),
     supplierAbn: asField(raw.supplierAbn, digits),
     buyerIdentified: asField(raw.buyerIdentified, bool),
-    taxExclusiveAmount: asField(raw.taxExclusiveAmount, decimal),
-    taxAmount: asField(raw.taxAmount, decimal),
-    payableAmount: asField(raw.payableAmount, decimal),
-    roundingAmount: asField(raw.roundingAmount, decimal),
+    taxExclusiveAmount: asField(raw.taxExclusiveAmount, amount),
+    taxAmount: asField(raw.taxAmount, amount),
+    payableAmount: asField(raw.payableAmount, amount),
+    roundingAmount: asField(raw.roundingAmount, amount),
     dueDate: asField(raw.dueDate, str),
     payment,
     lines,
