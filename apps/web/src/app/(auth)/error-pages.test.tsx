@@ -66,6 +66,19 @@ describe('sign-in and register: every known code', () => {
     expect(html).not.toContain('auth-alert-error');
   });
 
+  it('the "not for you" page says so, offers to continue or sign out, and refuses an outside next', async () => {
+    const { default: Page } = await import('./invite-not-for-you/page');
+    const render = async (next: string) =>
+      decode(renderToStaticMarkup(await (Page as (p: unknown) => Promise<ReactElement>)({ searchParams: Promise.resolve({ next }) })));
+    const html = await render('/onboarding');
+    expect(html).toContain('This invite isn’t for you');
+    expect(html).toContain('nothing was shared');
+    expect(html).toContain('href="/onboarding"');
+    expect(html).toContain('action="/auth/sign-out"');
+    expect(html).toContain('Sign out');
+    expect(await render('https://evil.example/')).toContain('href="/app"');
+  });
+
   it('shows a refusal as an alert', async () => {
     const html = await pageHtml(PAGES[0]![1], 'teen_invite_required');
     expect(html).toContain('auth-alert-error');

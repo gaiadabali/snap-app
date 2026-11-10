@@ -89,6 +89,12 @@ export type YourTalFinishResponse = SignInResponse & {
   returnTo: string | null;
   /** `linked`: an existing SnapApp account was connected to YourTal just now. */
   outcome: 'signed_in' | 'linked' | 'created';
+  /**
+   * Set when this sign-in came through a parent's teen invite link but the person is an adult
+   * (3.10.i): they were signed in as an ordinary user, nothing was shared and the invite was not
+   * used, so the website says so. Absent otherwise.
+   */
+  teenInvite?: 'not_for_you';
 };
 
 // Per caller, fifteen-minute windows, counted in Postgres like every other
@@ -202,7 +208,7 @@ export class YourTalSignInController {
       'Takes the flow (once), checks state and iss, redeems the code, verifies the ID token, re-checks ' +
       'region and age band, then finds, links or creates the account and answers like every sign-in. ' +
       'Refusals are { error, message } with error one of invalid_flow, yourtal_failed, yourtal_unavailable, ' +
-      'region_not_supported, teen_invite_required, teen_access_ended, teen_account_in_use, email_unverified, staff_strong_auth_required, ' +
+      'region_not_supported, teen_invite_required, teen_invite_expired, teen_invite_not_yours, teen_access_ended, teen_account_in_use, email_unverified, staff_strong_auth_required, ' +
         'staff_reauth_required, yourtal_email_mismatch (a move flow whose YourTal email is not the signed-in account’s), ' +
       'account_review, try_again, rate_limited, not_configured.',
   })
@@ -246,7 +252,10 @@ export class YourTalSignInController {
         if (!teenInviteId) throw refusal('teen_invite_required');
         const invite = await readTeenInvite(teenInviteId);
         if (!invite) throw refusal('yourtal_unavailable');
-        if (invite.status !== 'accepted' || invite.teenSub !== identity.sub) throw refusal('teen_invite_required');
+        // Say which: used up or ended, or one that YourTal has not accepted for exactly this
+        // teen (not their guardian's invite). Nothing is consumed either way.
+        if (invite.status === 'expired' || invite.status === 'ended') throw refusal('teen_invite_expired');
+        if (invite.status !== 'accepted' || invite.teenSub !== identity.sub) throw refusal('teen_invite_not_yours');
         // A teen is never linked by email (0039's rule 2 would bind, and lock,
         // someone else's account here): refused before anything is written.
         if (await teenEmailTaken(identity.sub, identity.email)) {
@@ -261,6 +270,11 @@ export class YourTalSignInController {
       if (identity.ageBand !== 'teen' && (await teenSpaceHeldForSignIn(identity.sub))) {
         throw refusal('teen_access_ended');
       }
+
+      // An adult who opened a teen's join link (3.10.i): the flow carries the invite, but only a
+      // teen can use it. Signed in as an ordinary user below; the invite is left pending.
+      const inviteNotForYou =
+        identity.ageBand !== 'teen' && teenInvitesConfigured() && (await inviteForSignIn(body.flowId, identity.sub)) !== null;
 
       const result = await signInWithYourTal({
         sub: identity.sub,
@@ -281,7 +295,12 @@ export class YourTalSignInController {
             `sign-in ok: ${result.outcome} client=${flow.client} user=${result.userId}` +
               (result.emailFlagged ? ' email-copy-kept (collision, sent to review)' : ''),
           );
-          return { ...session, returnTo: flow.returnTo, outcome: result.outcome };
+          return {
+            ...session,
+            returnTo: flow.returnTo,
+            outcome: result.outcome,
+            ...(inviteNotForYou ? { teenInvite: 'not_for_you' as const } : {}),
+          };
         }
         case 'second_sub':
         case 'unlinkable_account':

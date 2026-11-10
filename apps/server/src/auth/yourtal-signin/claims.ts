@@ -57,6 +57,11 @@ export const REFUSALS = {
     HttpStatus.FORBIDDEN,
     'This invite has expired or has already been used. Ask your parent for a new one.',
   ],
+  teen_invite_not_yours: [
+    HttpStatus.FORBIDDEN,
+    'This invite isn’t for this account. It was made for a teen whose parent or guardian invited them. ' +
+      'Ask your parent to check they sent it to the right YourTal account.',
+  ],
   teen_access_ended: [
     HttpStatus.FORBIDDEN,
     'Your access to SnapApp ended, so your SnapApp space is being deleted. You can use SnapApp again once ' +
