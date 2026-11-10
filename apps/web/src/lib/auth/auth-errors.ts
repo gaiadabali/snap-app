@@ -37,6 +37,10 @@ export const AUTH_ERRORS = {
   },
   teen_invite_required: { message: TEEN_INVITE },
   teen_invite_expired: { message: 'This invite has expired or has already been used. Ask your parent for a new one.' },
+  teen_invite_not_yours: {
+    message:
+      "This invite isn't for this account. It was made for a teen whose parent or guardian invited them. Ask your parent to check they sent it to the right YourTal account.",
+  },
   teen_access_ended: {
     message: 'Your access to Snap Apps ended, so your Snap Apps space is being deleted. You can use Snap Apps again once it has been deleted, within 30 days of your access ending.',
   },

@@ -19,6 +19,8 @@ type FinishResult = {
   workspaces: WorkspaceSummary[];
   returnTo: string | null;
   outcome: 'signed_in' | 'linked' | 'created';
+  /** An adult opened a teen's join link: nothing was shared (3.10.i). */
+  teenInvite?: 'not_for_you';
 };
 
 /**
@@ -67,7 +69,13 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   }
 
   const destination = destinationAfterYourtalSignIn(result.workspaces, result.returnTo);
-  const response = NextResponse.redirect(publicUrl(destination));
+  // An adult with a teen's link: say so before anything else, with the normal next page one tap away.
+  let target = publicUrl(destination);
+  if (result.teenInvite === 'not_for_you') {
+    target = publicUrl('/invite-not-for-you');
+    target.searchParams.set('next', destination);
+  }
+  const response = NextResponse.redirect(target);
   response.cookies.set(SESSION_COOKIE, result.token, AUTH_COOKIE_OPTIONS);
   clearFlowCookie(response);
   return response;

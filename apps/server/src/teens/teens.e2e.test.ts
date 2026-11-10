@@ -212,12 +212,30 @@ describeIfDb('teen spaces — real database, real provider', () => {
     yt.enforceTeenInvites = false;
     const teen = person('unaccepted-teen', { ageBand: 'teen', guardianAccountId: parent.accountId });
     const { code } = await inviteCode();
-    await expect(signIn(teen, code)).rejects.toMatchObject({ response: { error: 'teen_invite_required' } });
+    await expect(signIn(teen, code)).rejects.toMatchObject({ response: { error: 'teen_invite_not_yours' } });
     // Without any invite at all, too.
     await expect(signIn(person('no-invite-teen', { ageBand: 'teen' }))).rejects.toMatchObject({
       response: { error: 'teen_invite_required' },
     });
     expect(await userIdOf(teen)).toBeUndefined();
+  });
+
+  it('tells an adult who opened a teen’s link that it is not for them, and leaves the invite pending (3.10.i)', async () => {
+    const adult = person('adult-with-link', { name: 'Alex' });
+    const { code, inviteId } = await inviteCode();
+    const signedIn = await signIn(adult, code);
+    // An ordinary sign-up: no teen space, and the reason is in the answer.
+    expect(signedIn.outcome).toBe('created');
+    expect(signedIn.teenInvite).toBe('not_for_you');
+    expect(signedIn.workspaces).toHaveLength(0);
+    const { rows } = await admin.query('SELECT 1 FROM teen_spaces WHERE invite_id = $1', [inviteId]);
+    expect(rows).toHaveLength(0);
+    // Not consumed: still open for the parent, and still pending at YourTal.
+    const family = (await http('GET', '/v1/family', parentToken)).json();
+    expect(family.pendingInvites.map((i: { inviteId: string }) => i.inviteId)).toContain(inviteId);
+    expect(yt.teenInvites.get(inviteId)!.status).toBe('pending');
+    // An adult who signs in with no link gets no such note.
+    expect((await signIn(person('adult-no-link', { name: 'Sam' }))).teenInvite).toBeUndefined();
   });
 
   describe('the guardian’s teen', () => {

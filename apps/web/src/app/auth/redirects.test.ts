@@ -235,6 +235,8 @@ describe('YourTal callback route', () => {
 
   it.each([
     'teen_invite_required',
+    'teen_invite_expired',
+    'teen_invite_not_yours',
     'region_not_supported',
     'email_unverified',
     'staff_strong_auth_required',
@@ -252,6 +254,28 @@ describe('YourTal callback route', () => {
     const { GET } = await import('./yourtal/callback/route');
     const res = await GET(cb('code=c&state=s&iss=https%3A%2F%2Fyt.test'));
     expect(res.headers.get('location')).toBe(signIn(code));
+  });
+
+  it('an adult who opened a teen link is shown the "not for you" page, still signed in', async () => {
+    apiMock.mockResolvedValue({
+      token: 'tok',
+      user: {},
+      workspaces: [],
+      returnTo: null,
+      outcome: 'created',
+      teenInvite: 'not_for_you',
+    });
+    const { GET } = await import('./yourtal/callback/route');
+    const res = await GET(cb('code=c&state=s&iss=https%3A%2F%2Fyt.test'));
+    expect(res.headers.get('location')).toBe(`${PUBLIC}/invite-not-for-you?next=%2Fonboarding`);
+    expect(res.headers.get('set-cookie') ?? '').toContain('snap_session');
+  });
+
+  it('a sign-in without that note goes to onboarding as before', async () => {
+    apiMock.mockResolvedValue({ token: 'tok', user: {}, workspaces: [], returnTo: null, outcome: 'created' });
+    const { GET } = await import('./yourtal/callback/route');
+    const res = await GET(cb('code=c&state=s&iss=https%3A%2F%2Fyt.test'));
+    expect(res.headers.get('location')).toBe(`${PUBLIC}/onboarding`);
   });
 
   it('a move with another YourTal email goes back to /app with the flow cookie cleared, not to /sign-in', async () => {
