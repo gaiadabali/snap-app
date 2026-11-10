@@ -72,6 +72,11 @@ export default function DataRetentionPage() {
           </a>{' '}
           for the full detail.
         </p>
+        <p>
+          One exception: the receipts and tax invoices Snap Apps issued to you for credit purchases
+          are Snap Apps&apos; own tax records. We keep them for five years for the ATO, detached
+          from your erased workspace.
+        </p>
       </article>
       <Toc items={sections} />
     </div>

@@ -14,6 +14,7 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import type {
   CheckoutSession,
   CreditBalance,
+  CreditDocument,
   CreditPack,
   CreditPurchase,
   StartCreditPurchaseRequest,
@@ -21,6 +22,7 @@ import type {
 import { IsString } from 'class-validator';
 
 import { config, isManualCreditFulfilmentEnabled } from '../config.js';
+import { PLAY_RECEIPT_NOTE, toCreditDocument, toCreditDocumentRef } from './documents.js';
 import { paymentProvider } from './payment-provider.js';
 import {
   CurrentUser,
@@ -37,11 +39,14 @@ import {
   attachCheckoutSession,
   fulfilCreditPurchase,
   getCreditBalance,
+  getCreditDocument,
   listCreditPacks,
   listCreditPurchases,
   startCreditPurchase,
   type CreditPurchaseRow,
 } from './credits.repo.js';
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export class StartCreditPurchaseDto implements StartCreditPurchaseRequest {
   @IsString() packCode!: string;
@@ -90,6 +95,9 @@ export function toPurchase(row: CreditPurchaseRow): CreditPurchase {
     provider: row.provider,
     createdAt: row.created_at,
     paidAt: row.paid_at,
+    documents: (row.documents ?? []).map(toCreditDocumentRef),
+    // Google issues the receipt for a Play purchase; we issue nothing (7.7.b).
+    receiptNote: row.provider === 'google' && row.paid_at !== null ? PLAY_RECEIPT_NOTE : null,
   };
 }
 
@@ -142,6 +150,23 @@ export class CreditsController {
   ): Promise<CreditPurchase[]> {
     const rows = await listCreditPurchases(user.userId, tenantId);
     return rows.map(toPurchase);
+  }
+
+  @Get('credits/documents/:id')
+  @ApiOperation({
+    summary: 'One receipt, tax invoice, adjustment note or refund receipt, ready to print',
+    description:
+      'Any member of the workspace that bought the credits can read it, like the purchase history. The server writes the wording: a tax invoice only when the issuer had a valid ABN and was GST registered when it was issued.',
+  })
+  async document(
+    @CurrentUser() user: AuthUser,
+    @WorkspaceId() tenantId: string,
+    @Param('id') id: string,
+  ): Promise<CreditDocument> {
+    // Not a uuid is not a document: 404, not a database error.
+    const row = UUID.test(id) ? await getCreditDocument(user.userId, tenantId, id) : null;
+    if (!row) throw new NotFoundException('No such document.');
+    return toCreditDocument(row);
   }
 
   @Post('credits/purchases')

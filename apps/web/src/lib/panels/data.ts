@@ -10,6 +10,7 @@ import type {
   Connection,
   CreditBalance,
   CreditPack,
+  CreditDocument,
   CreditPurchase,
   DocumentFilter,
   DocumentView,
@@ -117,6 +118,10 @@ export const getCreditBalance = (workspaceId: string) => api<CreditBalance>('/v1
 
 export const listCreditPurchases = (workspaceId: string) =>
   api<CreditPurchase[]>('/v1/credits/purchases', { workspaceId });
+
+/** One receipt or tax invoice (7.7.b); the server writes the wording. */
+export const getCreditDocument = (workspaceId: string, documentId: string) =>
+  api<CreditDocument>(`/v1/credits/documents/${encodeURIComponent(documentId)}`, { workspaceId });
 
 /** `workspaceId` only adds that workspace's voucher history (`vouchers.redemptions`). */
 /** `GET /v1/family`: the caller's teens and open invites, or, for a teen, who can see their space. */

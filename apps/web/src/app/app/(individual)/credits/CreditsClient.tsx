@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState, useTransition } from 'react';
 import type { CheckoutSession, CreditPack, CreditPurchase, PlanUsage, CreditBalance } from '@snap/api-contract';
 
@@ -112,6 +113,7 @@ export function CreditsClient({
                   <Th align="right">Credits</Th>
                   <Th align="right">Price</Th>
                   <Th>Status</Th>
+                  <Th>Receipt</Th>
                 </Thead>
                 <tbody>
                   {purchases.map((p) => (
@@ -124,6 +126,23 @@ export function CreditsClient({
                       </Td>
                       <Td>
                         <Badge tone={STATUS_TONE[p.status]}>{p.status}</Badge>
+                      </Td>
+                      <Td>
+                        {(p.documents ?? []).length > 0 ? (
+                          <span className="flex flex-col gap-1">
+                            {(p.documents ?? []).map((d) => (
+                              <Link
+                                key={d.id}
+                                href={`/app/credits/receipt/${d.id}`}
+                                className="text-[13px] font-semibold text-[var(--color-accent-strong)] hover:underline"
+                              >
+                                {d.kind === 'receipt' || d.kind === 'tax_invoice' ? 'View receipt' : `View ${d.title.toLowerCase()}`}
+                              </Link>
+                            ))}
+                          </span>
+                        ) : p.receiptNote ? (
+                          <span className="text-[12px] text-[var(--color-ink-muted)]">{p.receiptNote}</span>
+                        ) : null}
                       </Td>
                     </Tr>
                   ))}

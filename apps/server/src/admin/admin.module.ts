@@ -4,6 +4,7 @@ import { AdminAiController } from './ai.controller.js';
 import { AdminAnalyticsController } from './analytics.controller.js';
 import { AdminAuditController } from './audit.controller.js';
 import { AdminBillingController } from './billing.controller.js';
+import { AdminGstReportController, AdminInvoiceIssuerController } from './invoicing.controller.js';
 import { AdminImpersonationController } from './impersonation.controller.js';
 import { AdminOperationsController } from './operations.controller.js';
 import { AdminSettingsController } from './settings.controller.js';
@@ -31,6 +32,8 @@ import { AdminTenantsController } from './tenants.controller.js';
     AdminOperationsController,
     AdminStaffController,
     AdminAuditController,
+    AdminInvoiceIssuerController,
+    AdminGstReportController,
   ],
 })
 export class AdminModule {}

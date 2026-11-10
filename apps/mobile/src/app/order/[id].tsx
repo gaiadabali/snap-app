@@ -113,6 +113,19 @@ export default function OrderScreen() {
                   : 'Nothing was charged for this order.'}
             </Small>
 
+            {order.documents && order.documents.length > 0
+              ? order.documents.map((d) => (
+                  <Button
+                    key={d.id}
+                    label={d.kind === 'receipt' || d.kind === 'tax_invoice' ? 'View receipt' : `View ${d.title.toLowerCase()}`}
+                    icon="receipt"
+                    tone="outline"
+                    onPress={() => router.push({ pathname: '/receipt/[id]', params: { id: d.id } })}
+                  />
+                ))
+              : null}
+            {order.receiptNote ? <Small>{order.receiptNote}.</Small> : null}
+
             <Button
               label="Top up again"
               icon="plus"

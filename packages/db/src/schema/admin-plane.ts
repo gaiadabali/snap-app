@@ -1,4 +1,4 @@
-import { boolean, jsonb, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { bigint, boolean, jsonb, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 
 import { bytea } from '../types';
 
@@ -119,4 +119,32 @@ export const aiProviderKeys = pgTable('ai_provider_keys', {
   createdBy: uuid('created_by'),
   revokedAt: timestamp('revoked_at', { withTimezone: true }),
   revokedBy: uuid('revoked_by'),
+});
+
+/**
+ * Who issues credit receipts and tax invoices, as a proposal a second admin
+ * approves (0059). The current issuer is the latest `approved` row. Reached
+ * only through the `admin_invoice_issuer_*` functions.
+ */
+export const invoiceIssuerChanges = pgTable('invoice_issuer_changes', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  legalName: text('legal_name').notNull(),
+  /** Eleven digits, no spaces. */
+  abn: text('abn'),
+  address: text('address').notNull(),
+  email: text('email').notNull(),
+  gstRegistered: boolean('gst_registered').notNull(),
+  reason: text('reason').notNull(),
+  /** 'pending' | 'approved' | 'rejected'. */
+  status: text('status').notNull().default('pending'),
+  proposedBy: uuid('proposed_by'),
+  proposedAt: timestamp('proposed_at', { withTimezone: true }).notNull().defaultNow(),
+  decidedBy: uuid('decided_by'),
+  decidedAt: timestamp('decided_at', { withTimezone: true }),
+});
+
+/** The single row the gap-free document number is taken from (0059). */
+export const creditDocumentCounter = pgTable('credit_document_counter', {
+  id: boolean('id').primaryKey().default(true),
+  lastNumber: bigint('last_number', { mode: 'number' }).notNull(),
 });
