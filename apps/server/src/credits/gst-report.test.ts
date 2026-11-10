@@ -18,6 +18,7 @@ describe('Australian quarters (named by the financial year ending 30 June)', () 
     expect(quarterRange('2026-Q2')).toBeNull();
     expect(quarterRange('FY2026-Q5')).toBeNull();
     expect(resolveRange({ from: '2026-02-31', to: '2026-03-01' })).toBeNull();
+    expect(resolveRange({ from: '2026-13-01', to: '2026-14-01' })).toBeNull();
     expect(resolveRange({ from: '2026-03-02', to: '2026-03-01' })).toBeNull();
     expect(resolveRange({})).toBeNull();
     expect(resolveRange({ from: '2026-01-01', to: '2026-03-31' })).toEqual({ from: '2026-01-01', to: '2026-03-31' });

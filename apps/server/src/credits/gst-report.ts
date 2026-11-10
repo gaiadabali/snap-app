@@ -43,7 +43,10 @@ export function resolveRange(q: { quarter?: string; from?: string; to?: string }
   if (q.quarter) return quarterRange(q.quarter);
   if (q.from && q.to && DATE.test(q.from) && DATE.test(q.to) && q.from <= q.to) {
     // Real dates only: 2025-02-31 is not one.
-    for (const d of [q.from, q.to]) if (new Date(`${d}T00:00:00Z`).toISOString().slice(0, 10) !== d) return null;
+    for (const d of [q.from, q.to]) {
+      const t = new Date(`${d}T00:00:00Z`);
+      if (Number.isNaN(t.getTime()) || t.toISOString().slice(0, 10) !== d) return null;
+    }
     return { from: q.from, to: q.to };
   }
   return null;
