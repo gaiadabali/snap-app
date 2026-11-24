@@ -166,7 +166,7 @@ export const SIGNIN_COPY = {
   signInAgain: 'Sign in again',
   opening: 'Opening YourTal…',
   useYourtalTitle: 'This account now signs in with YourTal',
-  useYourtalBody: 'Use the button below. Your receipts and budgets are all still here.',
+  useYourtalBody: 'Use “Continue with YourTal”. Your receipts and budgets are all still here.',
 } as const;
 
 /**

@@ -81,7 +81,7 @@ Nothing outside the box watches anything. Add a repo-owned, external watcher.
    # Check every snap-apps endpoint; exit non-zero and print FAILED lines on any miss.
    set -u
    fail=0
-   for url in https://snapapp.gaiada.com https://snap-apps-api.gaiada.com/v1/ready https://snapapp.app.gaiada.com; do
+   for url in https://snap-apps.gaiada.com https://snap-apps-api.gaiada.com/v1/ready https://snap-apps-app.gaiada.com; do
      body=$(curl -fsS --max-time 15 "$url" 2>&1) || { echo "FAILED $url"; fail=1; continue; }
      case "$url" in
        *"/v1/ready"*) echo "$body" | grep -q '"rlsEnforced": *true' || { echo "FAILED rlsEnforced at $url"; fail=1; } ;;
@@ -90,7 +90,7 @@ Nothing outside the box watches anything. Add a repo-owned, external watcher.
    exit $fail
    ```
 2. `deploy/monitor/alert.sh`: wraps `uptime.sh`; on failure posts a webhook (env `ALERT_WEBHOOK_URL`, Telegram/Slack/Discord — one HTTPS POST, no SDK) and de-duplicates so a 6-hour outage does not send 72 alerts (keep last state in `/var/lib/snap-monitor/state` on the watching box).
-3. Also monitor the things the audit called silent: backup success (`tail -1 /opt/snap-apps/backups/backup.log | grep` for today's dump), disk free (`df -P / | awk 'NR==2{exit $5>90?1:0}'`), Vault sealed state (`curl -s $VAULT_ADDR/v1/sys/health | grep .sealed`), TLS expiry (`openssl s_client -connect snapapp.gaiada.com:443 </dev/null 2>/dev/null | openssl x509 -checkend 1209600`).
+3. Also monitor the things the audit called silent: backup success (`tail -1 /opt/snap-apps/backups/backup.log | grep` for today's dump), disk free (`df -P / | awk 'NR==2{exit $5>90?1:0}'`), Vault sealed state (`curl -s $VAULT_ADDR/v1/sys/health | grep .sealed`), TLS expiry (`openssl s_client -connect snap-apps.gaiada.com:443 </dev/null 2>/dev/null | openssl x509 -checkend 1209600`).
 4. Add `deploy/monitor/README.md` with the exact cron line for the external box and the exact `ssh delphi` fallback commands. Verify: run `uptime.sh` from this Windows machine — expected output ends with exit 0 and no FAILED lines (staging is healthy); then break one URL in a copy → exit 1.
 
 ### Task 4 (item 3). WAL archiving + PITR and a restore drill
