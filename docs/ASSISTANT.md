@@ -37,7 +37,7 @@ specifics (Indonesian, leads, agency pricing, WhatsApp).
 ## 2. Architecture
 
 ```
-browser (snap-apps.gaiada.com)
+browser (snapapp.gaiada.com)
   └─ POST /api/assistant            Next route handler, same origin (apps/web)
        │  checks Origin / Sec-Fetch-Site, forwards client IP + shared secret
        └─ POST http://api:4000/v1/assistant/chat      Nest (apps/server)
@@ -110,7 +110,7 @@ CTAs: `app` → the Android download (/download); `start` → start free
   provider: { sort: 'latency', data_collection: 'deny', allow_fallbacks: true }`.
 - Timeouts: first token 7 s, total 25 s, retry delay 400 ms; retry on 429, 5xx,
   first-token timeout or an upstream error object; never after the first token.
-- Headers: `HTTP-Referer: https://snap-apps.gaiada.com`, `X-Title: Snap Apps`.
+- Headers: `HTTP-Referer: https://snapapp.gaiada.com`, `X-Title: Snap Apps`.
 - **No `tools` parameter.** See §5.
 
 ## 5. Figures come from code, never from the model

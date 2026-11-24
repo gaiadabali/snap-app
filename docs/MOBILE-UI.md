@@ -54,5 +54,5 @@ outside the palette and category hues; red is money at risk only.
 ## Verifying
 
 Don't run Metro or a local web export — the owner's machine runs several
-projects. Typecheck locally; look at it on https://snap-apps-app.gaiada.com/
+projects. Typecheck locally; look at it on https://snapapp.app.gaiada.com/
 (demo accounts on the sign-in screen), light and dark.

@@ -34,7 +34,7 @@ Items marked **[confirm]** are collected in section 5.
 | Does the app collect or share any of the required user data types? | Yes |
 | Is all of the user data collected by your app encrypted in transit? | Yes (HTTPS). **[confirm]** that every endpoint including the OpenRouter hop and Xero/FTR calls is TLS-only; the code-side calls are |
 | Do you provide a way for users to request that their data is deleted? | Yes |
-| Deletion URL | `https://snap-apps.gaiada.com/delete-account` **[confirm]** final host |
+| Deletion URL | `https://snapapp.gaiada.com/delete-account` **[confirm]** final host |
 | Independent security review (MASA)? | No |
 | Committed to the Play Families Policy? | Not applicable (not a children's app, see section 2) |
 
@@ -165,7 +165,7 @@ A parent can invite a teenager into Snap Apps so they can track their own spendi
 
 YOUR DATA
 - Trip distance is measured only while the trip screen is open, and only the distance is saved, not your route
-- You can delete your account and your records in the app (Settings, Delete account) or by email. See snap-apps.gaiada.com/delete-account
+- You can delete your account and your records in the app (Settings, Delete account) or by email. See snapapp.gaiada.com/delete-account
 - Business records are kept for five years to match the ATO's record-keeping period, unless you delete your account first. Export what you need before you do
 
 IMPORTANT

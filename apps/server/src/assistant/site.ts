@@ -7,7 +7,7 @@
  * model says — add it here when the page ships.
  */
 
-export const SITE_URL = 'https://snap-apps.gaiada.com';
+export const SITE_URL = 'https://snapapp.gaiada.com';
 
 export const SITE_PAGES: Readonly<Record<string, string>> = Object.freeze({
   '/': 'Snap Apps',

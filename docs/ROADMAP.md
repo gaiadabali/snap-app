@@ -21,9 +21,9 @@ All three hosts answer 200. Checked by request, not by assumption.
 
 | Address | State | Evidence |
 |---|---|---|
-| `snap-apps.gaiada.com` | **Live** | 200; marketing, docs, legal, panels |
+| `snapapp.gaiada.com` | **Live** | 200; marketing, docs, legal, panels |
 | `snap-apps-api.gaiada.com` | **Live** | `/v1/ready` → `rlsEnforced: true`, role `snap_app` |
-| `snap-apps-app.gaiada.com` | **Live** | 200; the Expo web build of the phone app |
+| `snapapp.app.gaiada.com` | **Live** | 200; the Expo web build of the phone app |
 
 **The two security checks `deploy/deploy.sh` refuses to skip both pass against
 the running host:**

@@ -461,8 +461,8 @@ is the reliable one, since the HTML is a prerender served with
 `x-nextjs-cache: HIT`:
 
 ```bash
-css=$(curl -s https://snap-apps.gaiada.com/ | grep -o '/_next/static/css/[^"]*\.css' | head -1)
-curl -s "https://snap-apps.gaiada.com${css}" | grep -c 'some-class-from-your-change'
+css=$(curl -s https://snapapp.gaiada.com/ | grep -o '/_next/static/css/[^"]*\.css' | head -1)
+curl -s "https://snapapp.gaiada.com${css}" | grep -c 'some-class-from-your-change'
 ```
 
 ```
@@ -694,9 +694,9 @@ Three addresses:
 
 | Address | Serves | Consumed by | Loopback port |
 |---|---|---|---|
-| `snap-apps.gaiada.com` | Website + individual / business / admin panels | Browsers | 3300 |
+| `snapapp.gaiada.com` | Website + individual / business / admin panels | Browsers | 3300 |
 | `snap-apps-api.gaiada.com` | The API | Website (server-side), the browser app, the phone app | 3301 |
-| `snap-apps-app.gaiada.com` | **The mobile app, exported for the browser** | Reviewers, before anyone installs anything | 3302 |
+| `snapapp.app.gaiada.com` | **The mobile app, exported for the browser** | Reviewers, before anyone installs anything | 3302 |
 
 The third exists because the dev review looks at the app in a browser rather
 than on a phone. Expo exports the same React Native source as a web bundle, so
@@ -707,7 +707,7 @@ covers that path.
 
 **The browser build is subject to CORS and the phone build is not.** A native
 app is not governed by the same-origin policy at all; a web bundle is. So
-`CORS_ORIGINS` must name `https://snap-apps-app.gaiada.com` as well as the
+`CORS_ORIGINS` must name `https://snapapp.app.gaiada.com` as well as the
 website, or every request the app makes fails at preflight and surfaces as a
 network error indistinguishable from being offline. That precise failure has
 already cost this project a day once, when a missing header on the allow-list
@@ -737,9 +737,9 @@ listeners on 3000, 5432 and 9000).
 hPanel. The three A records point at helios:
 
 ```
-snap-apps.gaiada.com        A   187.77.116.133
-snap-apps-api.gaiada.com    A   187.77.116.133
-snap-apps-app.gaiada.com    A   187.77.116.133
+snapapp.gaiada.com        A   187.77.116.133
+snap-apps-api.gaiada.com  A   187.77.116.133
+snapapp.app.gaiada.com    A   187.77.116.133
 ```
 
 On delphi the same three sites were CloudPanel reverse-proxy sites

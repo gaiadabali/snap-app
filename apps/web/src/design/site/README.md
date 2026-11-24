@@ -1,6 +1,6 @@
 # The marketing kit — `src/design/site`
 
-The 2026-10 redesign turned snap-apps.gaiada.com into an **app's website**: it
+The 2026-10 redesign turned snapapp.gaiada.com into an **app's website**: it
 shows the phone app, in the app's own type (Geist) and the app's own surfaces
 (white raised cards on a cool ground, the blue gradient hero card, a floating
 bar). The earlier "ledger" register — hairlines, mono gutter codes, one pinned

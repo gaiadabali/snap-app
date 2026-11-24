@@ -11,9 +11,9 @@ set -u
 fail=0
 
 for url in \
-  https://snap-apps.gaiada.com \
+  https://snapapp.gaiada.com \
   https://snap-apps-api.gaiada.com/v1/ready \
-  https://snap-apps-app.gaiada.com; do
+  https://snapapp.app.gaiada.com; do
   body=$(curl -fsS --max-time 15 "$url" 2>&1) || { echo "FAILED unreachable: $url"; fail=1; continue; }
   case "$url" in
     *"/v1/ready"*)
@@ -22,9 +22,9 @@ for url in \
 done
 
 # TLS expiry: refuse a certificate inside two weeks of dying (1209600 s).
-if ! openssl s_client -connect snap-apps.gaiada.com:443 -servername snap-apps.gaiada.com </dev/null 2>/dev/null \
+if ! openssl s_client -connect snapapp.gaiada.com:443 -servername snapapp.gaiada.com </dev/null 2>/dev/null \
   | openssl x509 -checkend 1209600 >/dev/null 2>&1; then
-  echo "FAILED TLS certificate for snap-apps.gaiada.com expires within 14 days"
+  echo "FAILED TLS certificate for snapapp.gaiada.com expires within 14 days"
   fail=1
 fi
 

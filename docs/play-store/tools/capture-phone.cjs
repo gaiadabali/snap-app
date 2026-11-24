@@ -4,7 +4,7 @@
 // Sign-in uses POST /v1/auth/google-simulator/sign-in, which only admits the seeded demo people.
 const path = require('path');
 const { chromium } = require(process.env.PLAYWRIGHT || 'playwright');
-const APP = 'https://snap-apps-app.gaiada.com';
+const APP = 'https://snapapp.app.gaiada.com';
 const API = 'https://snap-apps-api.gaiada.com';
 const OUT = path.join(__dirname, '..', 'phone');
 const RECEIPT = process.argv[2]; // synthetic receipt, already uploaded once as Sam (see README)

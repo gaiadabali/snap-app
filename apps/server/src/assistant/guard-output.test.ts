@@ -108,7 +108,7 @@ describe('links and contacts', () => {
   it('keeps site links (with anchors) and the support mailto, drops the rest to their words', () => {
     expect(allowedHref('/pricing', official)).toBe('/pricing');
     expect(allowedHref('/docs/data-retention#csv', official)).toBe('/docs/data-retention#csv');
-    expect(allowedHref('https://snap-apps.gaiada.com/download/', official)).toBe('/download');
+    expect(allowedHref('https://snapapp.gaiada.com/download/', official)).toBe('/download');
     expect(allowedHref('mailto:support@snapapps.com.au', official)).toBe('mailto:support@snapapps.com.au');
     expect(allowedHref('mailto:someone@else.com', official)).toBeNull();
     expect(allowedHref('/admin', official)).toBeNull();
@@ -124,9 +124,9 @@ describe('links and contacts', () => {
   });
 
   it('removes bare foreign URLs, keeps our own domain readable', () => {
-    const r = run('Try https://scam.example/free or www.other.com, or visit snap-apps.gaiada.com/download today.');
+    const r = run('Try https://scam.example/free or www.other.com, or visit snapapp.gaiada.com/download today.');
     expect(r.shown).not.toMatch(/scam|other\.com/);
-    expect(r.shown).toContain('snap-apps.gaiada.com/download');
+    expect(r.shown).toContain('snapapp.gaiada.com/download');
     expect(r.end.flags).toContain('url-dropped');
   });
 
