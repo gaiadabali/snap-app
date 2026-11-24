@@ -30,7 +30,7 @@ export const AUTH_ERRORS = {
   yourtal_unavailable: { message: "Sign-in with YourTal isn't available right now." },
   not_configured: { message: "Sign-in with YourTal isn't available right now." },
   yourtal_failed: { message: "We couldn't sign you in with YourTal. Please try again." },
-  use_yourtal: { message: 'This account signs in with YourTal. Use the Sign in with YourTal button.' },
+  use_yourtal: { message: 'This account signs in with YourTal. Use the Continue with YourTal button.' },
   yourtal_email_mismatch: {
     message:
       'Your YourTal account uses a different email. Use the YourTal account with your SnapApp email, or change your SnapApp email first.',

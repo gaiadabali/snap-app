@@ -234,6 +234,34 @@
   color: var(--s-ink-4);
 }
 
+/* "Sign in with email instead": SnapApp's own methods, folded behind a text link. */
+.auth-more > summary {
+  cursor: pointer;
+  list-style: none;
+  text-align: center;
+  font-size: 0.9375rem;
+  font-weight: 640;
+  color: var(--s-blue-text);
+}
+
+.auth-more > summary::-webkit-details-marker {
+  display: none;
+}
+
+.auth-more > summary:hover {
+  text-decoration: underline;
+}
+
+.auth-more[open] > summary {
+  margin-bottom: 16px;
+}
+
+.auth-more-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
 .auth-note {
   padding: 14px 16px;
   border: 1px solid var(--s-edge-2);

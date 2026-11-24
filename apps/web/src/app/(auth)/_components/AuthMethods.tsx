@@ -35,11 +35,77 @@ export function AuthMethods({
   /** The refusal was `staff_reauth_required`: offer a YourTal sign-in that must be fresh (`fresh=1`). */
   signInAgain?: boolean;
 }) {
+  // One primary YourTal button; SnapApp's own methods fold behind a link. Without YourTal they show as before.
+  const yourtalFirst = yourtalEnabled && mode === 'sign-in';
   const heading = mode === 'sign-in' ? 'Sign in' : 'Create your account';
   const lede =
     mode === 'sign-in'
       ? 'Use the same method you signed up with.'
       : 'No password to invent or remember — a link in your inbox is the whole account.';
+
+  const ownMethods = (
+    <>
+      {!config.googleOauthConfigured && isGoogleSignInSimulatorAvailable() ? (
+        <Link
+          href={`/auth/google-simulator?returnTo=${encodeURIComponent(returnTo)}`}
+          className="btn btn-secondary btn-lg w-full"
+        >
+          Continue with Google (demo sign-in)
+        </Link>
+      ) : (
+        <a
+          href={`/auth/google?returnTo=${encodeURIComponent(returnTo)}`}
+          className="btn btn-secondary btn-lg w-full"
+        >
+          Continue with Google
+        </a>
+      )}
+
+      {config.mailerConfigured ? (
+        <>
+          <div className="auth-divider">or</div>
+
+          <form action={requestMagicLinkAction} className="auth-form">
+            <input type="hidden" name="returnTo" value={returnTo} />
+            <AuthField label="Email address" htmlFor="magic-email">
+              <AuthInput
+                id="magic-email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                placeholder="you@example.com"
+                required
+              />
+            </AuthField>
+            <button type="submit" className="btn btn-primary btn-lg w-full">
+              Email me a sign-in link
+            </button>
+          </form>
+        </>
+      ) : (
+        /*
+         * No mail provider, so a magic link cannot be delivered. Offering
+         * the form anyway would answer "check your email" for a message
+         * that never arrives — a dead end that looks like a mail delay and
+         * wastes a reviewer's time before they think to try anything else.
+         * Say so instead, and point at the way in that does work.
+         */
+        <div className="auth-note">
+          <strong>
+            {mode === 'register'
+              ? 'Account creation is closed on this demo host.'
+              : 'Email sign-in is unavailable on this demo host.'}
+          </strong>
+          <p>
+            No mail provider is configured, so a sign-in link cannot be delivered.
+            {mode === 'register'
+              ? ' Use one of the demo identities above to explore every role — including the platform admin console.'
+              : ' Use the demo sign-in above.'}
+          </p>
+        </div>
+      )}
+    </>
+  );
 
   return (
     <div className="auth-panel">
@@ -91,71 +157,20 @@ export function AuthMethods({
                 }
                 className="btn btn-primary btn-lg w-full"
               >
-                {mode === 'register' ? 'Create account with YourTal' : 'Sign in with YourTal'}
+                {mode === 'register' ? 'Create account with YourTal' : 'Continue with YourTal'}
               </a>
               <p className="auth-method-note">One account for SnapApp, YourTal and our other apps.</p>
-              <div className="auth-divider">or</div>
+              {mode === 'register' ? <div className="auth-divider">or</div> : null}
             </>
           ) : null}
 
-          {!config.googleOauthConfigured && isGoogleSignInSimulatorAvailable() ? (
-            <Link
-              href={`/auth/google-simulator?returnTo=${encodeURIComponent(returnTo)}`}
-              className="btn btn-secondary btn-lg w-full"
-            >
-              Continue with Google (demo sign-in)
-            </Link>
+          {yourtalFirst ? (
+            <details className="auth-more">
+              <summary>Sign in with email instead</summary>
+              <div className="auth-more-body">{ownMethods}</div>
+            </details>
           ) : (
-            <a
-              href={`/auth/google?returnTo=${encodeURIComponent(returnTo)}`}
-              className="btn btn-secondary btn-lg w-full"
-            >
-              Continue with Google
-            </a>
-          )}
-
-          {config.mailerConfigured ? (
-            <>
-              <div className="auth-divider">or</div>
-
-              <form action={requestMagicLinkAction} className="auth-form">
-                <input type="hidden" name="returnTo" value={returnTo} />
-                <AuthField label="Email address" htmlFor="magic-email">
-                  <AuthInput
-                    id="magic-email"
-                    name="email"
-                    type="email"
-                    autoComplete="email"
-                    placeholder="you@example.com"
-                    required
-                  />
-                </AuthField>
-                <button type="submit" className="btn btn-primary btn-lg w-full">
-                  Email me a sign-in link
-                </button>
-              </form>
-            </>
-          ) : (
-            /*
-             * No mail provider, so a magic link cannot be delivered. Offering
-             * the form anyway would answer "check your email" for a message
-             * that never arrives — a dead end that looks like a mail delay and
-             * wastes a reviewer's time before they think to try anything else.
-             * Say so instead, and point at the way in that does work.
-             */
-            <div className="auth-note">
-              <strong>
-                {mode === 'register'
-                  ? 'Account creation is closed on this demo host.'
-                  : 'Email sign-in is unavailable on this demo host.'}
-              </strong>
-              <p>
-                No mail provider is configured, so a sign-in link cannot be delivered.
-                {mode === 'register'
-                  ? ' Use one of the demo identities above to explore every role — including the platform admin console.'
-                  : ' Use the demo sign-in above.'}
-              </p>
-            </div>
+            ownMethods
           )}
         </>
       )}

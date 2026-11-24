@@ -25,7 +25,7 @@ export type SignInMethod = 'yourtal' | 'snapapp';
 export function useYourTalInstead(): ForbiddenException {
   return new ForbiddenException({
     error: 'use_yourtal',
-    message: 'This account signs in with YourTal now. Use “Sign in with YourTal”.',
+    message: 'This account signs in with YourTal now. Use “Continue with YourTal”.',
   });
 }
 
