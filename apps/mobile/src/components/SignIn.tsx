@@ -20,7 +20,7 @@ import {
 } from '@/components/ui';
 import { YourtalSignInButtons } from '@/components/YourtalSignInButtons';
 import { rememberCountry } from '@/lib/pending-country';
-import { isUseYourtal, SIGNIN_COPY } from '@/lib/yourtal-signin';
+import { isUseYourtal, showEmailForm, SIGNIN_COPY } from '@/lib/yourtal-signin';
 import { control, radius, space, type, usePalette } from '@/theme';
 
 /**
@@ -70,6 +70,10 @@ export function SignIn({
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
+  // Does the server offer YourTal? null until the answer arrives. False (or a failed ask) opens the email form,
+  // so the screen is never left without a way in.
+  const [yourtal, setYourtal] = useState<boolean | null>(null);
+  const [emailOpen, setEmailOpen] = useState(false);
 
   useEffect(() => {
     void api().listDemoAccounts().then(setAccounts).catch(() => {});
@@ -128,6 +132,8 @@ export function SignIn({
 
   /* ── Choose ─────────────────────────────────────────────────────────── */
   if (step === 'choose') {
+    // Folded behind the link while YourTal is on or still being asked; open when it is off, failed, or the link was pressed.
+    const showEmail = showEmailForm(yourtal, emailOpen);
     return (
       <Screen>
         <ScrollView
@@ -144,87 +150,110 @@ export function SignIn({
             </View>
           </GradientHero>
 
-          <Card style={{ gap: space.md, padding: space.gutter }}>
-            <AuthInput
-              label="Email"
-              value={email}
-              onChangeText={setEmail}
-              placeholder="you@example.com"
-              keyboardType="email-address"
-              invalid={email.length > 0 && !emailOk}
+          {/* YourTal first: one button, YourTal's own page handles new and existing accounts. */}
+          <View style={{ gap: space.sm }}>
+            <YourtalSignInButtons
+              mode="single"
+              onSignedIn={onSignedIn}
+              onFailure={yourtalFailed}
+              onAvailability={setYourtal}
             />
-            <Button
-              label="Continue"
-              onPress={() => go(accounts.length ? 'login' : 'register')}
-              disabled={!emailOk}
-            />
-            <Small>
-              {email.length > 0 && !emailOk
-                ? 'That does not look like an email address.'
-                : "An address we don't recognise creates a new account."}
-            </Small>
-          </Card>
-
-          <YourtalSignInButtons mode="both" onSignedIn={onSignedIn} onFailure={yourtalFailed} />
+            {yourtal ? <Small style={{ textAlign: 'center' }}>{SIGNIN_COPY.oneAccount}</Small> : null}
+          </View>
 
           {notice ? <Notice tone="info" icon="info">{notice}</Notice> : null}
           {note ? <Notice tone="info" icon="info">{note}</Notice> : null}
           {error ? <Notice tone="risk" icon="alert">{error}</Notice> : null}
 
-          {accounts.length > 0 ? (
+          {yourtal !== false && !emailOpen ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => setEmailOpen(true)}
+              style={{ minHeight: control.tap, justifyContent: 'center', alignSelf: 'center' }}
+            >
+              <Text style={[type.bodyStrong, { color: p.accentText, fontSize: 14 }]}>{SIGNIN_COPY.emailInstead}</Text>
+            </Pressable>
+          ) : null}
+
+          {showEmail ? (
             <>
-              <DividerLabel>or continue as</DividerLabel>
-              {/* One white lifted card, rows divided by an inset hairline that
-                  starts at the text, not the card edge. The inner view clips
-                  so a pressed row follows the card's rounded corners (the Card
-                  itself cannot clip: that would cut its shadow). */}
-              <Card padded={false}>
-                <View style={{ borderRadius: radius.xl, overflow: 'hidden' }}>
-                  {accounts.map((a, i) => (
-                    <Fragment key={a.userId}>
-                      {i === 0 ? null : (
-                        <View
-                          style={{
-                            height: StyleSheet.hairlineWidth * 2,
-                            marginLeft: space.lg + 42 + space.md,
-                            backgroundColor: p.rule,
-                          }}
-                        />
-                      )}
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityLabel={`Continue as ${a.displayName}`}
-                        onPress={() => void run(a.email, () => api().signIn(a.email))}
-                        style={({ pressed }) => ({
-                          minHeight: 64,
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          gap: space.md,
-                          paddingHorizontal: space.lg,
-                          paddingVertical: space.md,
-                          backgroundColor: pressed ? p.surface : 'transparent',
-                          opacity: busy && busy !== a.email ? 0.5 : 1,
-                        })}
-                      >
-                        <Avatar initials={a.initials} size={42} />
-                        <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
-                          <Body strong>{a.displayName}</Body>
-                          <Small numberOfLines={1}>{a.email}</Small>
-                        </View>
-                        {busy === a.email ? (
-                          <Small>Signing in…</Small>
-                        ) : (
-                          <Icon name="chevronRight" size={18} color={p.inkMuted} />
-                        )}
-                      </Pressable>
-                    </Fragment>
-                  ))}
-                </View>
+              <Card style={{ gap: space.md, padding: space.gutter }}>
+                <AuthInput
+                  label="Email"
+                  value={email}
+                  onChangeText={setEmail}
+                  placeholder="you@example.com"
+                  keyboardType="email-address"
+                  invalid={email.length > 0 && !emailOk}
+                />
+                <Button
+                  label="Continue"
+                  onPress={() => go(accounts.length ? 'login' : 'register')}
+                  disabled={!emailOk}
+                />
+                <Small>
+                  {email.length > 0 && !emailOk
+                    ? 'That does not look like an email address.'
+                    : "An address we don't recognise creates a new account."}
+                </Small>
               </Card>
-              <Small style={{ textAlign: 'center', paddingHorizontal: space.sm }}>
-                Each one has a different role, so the app behaves differently. Dan is Staff: he
-                can scan and correct, but cannot post anything to the ledger.
-              </Small>
+
+              {accounts.length > 0 ? (
+                <>
+                  <DividerLabel>or continue as</DividerLabel>
+                  {/* One white lifted card, rows divided by an inset hairline that
+                      starts at the text, not the card edge. The inner view clips
+                      so a pressed row follows the card's rounded corners (the Card
+                      itself cannot clip: that would cut its shadow). */}
+                  <Card padded={false}>
+                    <View style={{ borderRadius: radius.xl, overflow: 'hidden' }}>
+                      {accounts.map((a, i) => (
+                        <Fragment key={a.userId}>
+                          {i === 0 ? null : (
+                            <View
+                              style={{
+                                height: StyleSheet.hairlineWidth * 2,
+                                marginLeft: space.lg + 42 + space.md,
+                                backgroundColor: p.rule,
+                              }}
+                            />
+                          )}
+                          <Pressable
+                            accessibilityRole="button"
+                            accessibilityLabel={`Continue as ${a.displayName}`}
+                            onPress={() => void run(a.email, () => api().signIn(a.email))}
+                            style={({ pressed }) => ({
+                              minHeight: 64,
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                              gap: space.md,
+                              paddingHorizontal: space.lg,
+                              paddingVertical: space.md,
+                              backgroundColor: pressed ? p.surface : 'transparent',
+                              opacity: busy && busy !== a.email ? 0.5 : 1,
+                            })}
+                          >
+                            <Avatar initials={a.initials} size={42} />
+                            <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+                              <Body strong>{a.displayName}</Body>
+                              <Small numberOfLines={1}>{a.email}</Small>
+                            </View>
+                            {busy === a.email ? (
+                              <Small>Signing in…</Small>
+                            ) : (
+                              <Icon name="chevronRight" size={18} color={p.inkMuted} />
+                            )}
+                          </Pressable>
+                        </Fragment>
+                      ))}
+                    </View>
+                  </Card>
+                  <Small style={{ textAlign: 'center', paddingHorizontal: space.sm }}>
+                    Each one has a different role, so the app behaves differently. Dan is Staff: he
+                    can scan and correct, but cannot post anything to the ledger.
+                  </Small>
+                </>
+              ) : null}
             </>
           ) : null}
         </ScrollView>
