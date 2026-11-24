@@ -88,7 +88,7 @@ describe('OpenRouter client', () => {
     const call = calls[0];
     expect(call?.url).toBe('https://openrouter.ai/api/v1/chat/completions');
     expect(call?.init.headers.Authorization).toBe('Bearer test-key');
-    expect(call?.init.headers['HTTP-Referer']).toBe('https://snap-apps.gaiada.com');
+    expect(call?.init.headers['HTTP-Referer']).toBe('https://snapapp.gaiada.com');
     expect(call?.init.headers['X-Title']).toBe('Snap Apps');
     expect(call?.body).toEqual({
       model: 'm/primary',

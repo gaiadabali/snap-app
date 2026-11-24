@@ -104,7 +104,7 @@ export async function selectMailer(): Promise<Mailer> {
     }
     return new SmtpMailer({
       url: process.env.SMTP_URL!,
-      from: process.env.MAIL_FROM ?? 'no-reply@snap-apps.gaiada.com',
+      from: process.env.MAIL_FROM ?? 'no-reply@snapapp.gaiada.com',
       allowInsecure,
     });
   }

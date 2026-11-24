@@ -50,7 +50,7 @@ describe('SmtpMailer, over a real SMTP exchange', () => {
     // the recipient receives contain a usable link". A transport that
     // mangles or wraps the URL would pass a resolve-only assertion.
     const s = await sim();
-    const link = 'https://snap-apps.gaiada.com/auth/magic?token=abc123DEF456-xyz';
+    const link = 'https://snapapp.gaiada.com/auth/magic?token=abc123DEF456-xyz';
 
     await mailerFor(s).send({
       to: 'kate@marshtransport.example',

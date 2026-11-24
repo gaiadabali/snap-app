@@ -158,12 +158,23 @@ export const isUseYourtal = (code: string | null | undefined): boolean => code =
 
 export const SIGNIN_COPY = {
   signIn: 'Sign in with YourTal',
+  /** The single button on the main sign-in screen: YourTal's own page handles new and existing accounts. */
+  continue: 'Continue with YourTal',
+  emailInstead: 'Sign in with email instead',
+  oneAccount: 'One account for SnapApp, YourTal and our other apps.',
   createAccount: 'Create account with YourTal',
   signInAgain: 'Sign in again',
   opening: 'Opening YourTal…',
   useYourtalTitle: 'This account now signs in with YourTal',
-  useYourtalBody: 'Use the button below. Your receipts and budgets are all still here.',
+  useYourtalBody: 'Use “Continue with YourTal”. Your receipts and budgets are all still here.',
 } as const;
+
+/**
+ * Whether the main sign-in screen shows SnapApp's own email form. `yourtal` is the server's answer
+ * (null while asking). Only a known-off YourTal (false, or the ask failed) opens it by itself, so no
+ * screen is ever left without a way in; otherwise the person opens it with "Sign in with email instead".
+ */
+export const showEmailForm = (yourtal: boolean | null, emailOpen: boolean): boolean => yourtal === false || emailOpen;
 
 /** Result of one attempt, for the screen to act on. */
 export type SignInAttempt<S> =

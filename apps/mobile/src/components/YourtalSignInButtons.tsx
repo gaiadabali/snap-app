@@ -15,7 +15,7 @@ import {
 import { space } from '@/theme';
 
 /**
- * "Sign in with YourTal" and "Create account with YourTal" (group task 3.3.c).
+ * "Sign in with YourTal" / "Continue with YourTal" and "Create account with YourTal" (group task 3.3.c).
  *
  * Shown only when the server says the phone client is configured
  * (`GET /v1/auth/yourtal` → `mobile`); until that answer arrives, and when it
@@ -31,9 +31,12 @@ export function YourtalSignInButtons({
   mode,
   onSignedIn,
   onFailure,
+  onAvailability,
 }: {
-  mode: 'both' | 'signIn' | 'signUp';
+  mode: Mode;
   onSignedIn: (session: Session) => void;
+  /** Told once whether the server offers YourTal (false when the answer failed), so the screen can fall back. */
+  onAvailability?: (available: boolean) => void;
   /** A refusal, as a sentence. `code` is the server's, for the screen to act on. */
   onFailure: (message: string, code: string | null) => void;
 }) {
@@ -46,11 +49,17 @@ export function YourtalSignInButtons({
     let alive = true;
     void api()
       .getYourtalSignInAvailable()
-      .then((ok) => alive && setAvailable(ok))
-      .catch(() => {});
+      .then((ok) => {
+        if (!alive) return;
+        setAvailable(ok);
+        onAvailability?.(ok);
+      })
+      .catch(() => alive && onAvailability?.(false));
     return () => {
       alive = false;
     };
+    // Asked once per mount; the callback is a notification, not an input.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // True while any attempt (a button or a late return) runs. A ref, so the auth session's own URL event is not raced.
@@ -115,6 +124,8 @@ export function YourtalSignInButtons({
 }
 
 export type Kind = 'signIn' | 'signUp' | 'fresh';
+/** `single` is the main sign-in screen's one "Continue with YourTal" button (it runs a sign-in; YourTal's page offers creating an account). */
+export type Mode = 'both' | 'signIn' | 'signUp' | 'single';
 
 /** The buttons themselves, with no state of their own (`YourtalSignInButtons.test.tsx`). */
 export function YourtalSignInButtonsView({
@@ -123,7 +134,7 @@ export function YourtalSignInButtonsView({
   reauth,
   onGo,
 }: {
-  mode: 'both' | 'signIn' | 'signUp';
+  mode: Mode;
   busy: Kind | null;
   reauth: boolean;
   onGo: (kind: Kind) => void;
@@ -132,14 +143,14 @@ export function YourtalSignInButtonsView({
     <View style={{ gap: space.md }}>
       {mode !== 'signUp' ? (
         <Button
-          label={busy === 'signIn' ? SIGNIN_COPY.opening : SIGNIN_COPY.signIn}
-          tone="outline"
+          label={busy === 'signIn' ? SIGNIN_COPY.opening : mode === 'single' ? SIGNIN_COPY.continue : SIGNIN_COPY.signIn}
+          tone={mode === 'single' ? 'accent' : 'outline'}
           busy={busy === 'signIn'}
           disabled={busy !== null}
           onPress={() => onGo('signIn')}
         />
       ) : null}
-      {mode !== 'signIn' ? (
+      {mode === 'both' || mode === 'signUp' ? (
         <Button
           label={busy === 'signUp' ? SIGNIN_COPY.opening : SIGNIN_COPY.createAccount}
           tone="outline"

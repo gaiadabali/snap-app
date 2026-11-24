@@ -149,7 +149,7 @@ export function DeleteAccountPanel(props: DeleteAccountPanelProps) {
         </Small>
         <Button label="Delete my account" tone="risk" busy={busy} disabled={!ready || busy} onPress={props.onDelete} />
         <Small>
-          Can’t sign in, or want us to do it? Email hansel@gaiada.com (we handle emailed requests within 30 days), or see snap-apps.gaiada.com/delete-account.
+          Can’t sign in, or want us to do it? Email hansel@gaiada.com (we handle emailed requests within 30 days), or see snapapp.gaiada.com/delete-account.
         </Small>
       </View>
     </View>

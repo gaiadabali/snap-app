@@ -9,6 +9,7 @@ import {
   isYourtalReturn,
   parseReturnUrl,
   runYourtalSignIn,
+  showEmailForm,
   SIGNIN_COPY,
   SIGNIN_ERROR_CODES,
   signInErrorMessage,
@@ -18,7 +19,7 @@ import {
 } from './yourtal-signin';
 
 const REDIRECT = 'au.com.snapapps.app:/oauth/yourtal';
-const LINK = 'https://snap-apps.gaiada.com/oauth/yourtal';
+const LINK = 'https://snapapp.gaiada.com/oauth/yourtal';
 
 describe('parseReturnUrl', () => {
   it('reads code, state and iss', () => {
@@ -92,12 +93,12 @@ describe('isYourtalReturn', () => {
     REDIRECT,
     `${REDIRECT}?code=c&state=s`,
     'au.com.snapapps.app://oauth/yourtal?code=c',
-    'https://snap-apps.gaiada.com/oauth/yourtal?code=c&state=s',
+    'https://snapapp.gaiada.com/oauth/yourtal?code=c&state=s',
     '/oauth/yourtal?code=c',
     'oauth/yourtal',
   ])('%s is the redirect', (p) => expect(isYourtalReturn(p)).toBe(true));
 
-  it.each(['/', '/join/abc', 'snapapps://join/abc', '/oauth/yourtalx', '/x/oauth/yourtal', 'https://snap-apps.gaiada.com/x/oauth/yourtal'])('%s is not', (p) =>
+  it.each(['/', '/join/abc', 'snapapps://join/abc', '/oauth/yourtalx', '/x/oauth/yourtal', 'https://snapapp.gaiada.com/x/oauth/yourtal'])('%s is not', (p) =>
     expect(isYourtalReturn(p)).toBe(false),
   );
 });
@@ -407,5 +408,20 @@ describe('pending flows (3.3.g: the email detour)', () => {
     const finish = vi.fn(async () => Promise.reject(new Error('boom CODE OLD FLOWSECRET')));
     const r = await finishLateReturn(withClock(deps({ finish })), RETURN);
     expect(JSON.stringify(r)).not.toMatch(/CODE|OLD|FLOWSECRET/);
+  });
+});
+
+describe('showEmailForm (the main sign-in screen)', () => {
+  it('stays folded while YourTal is on or still being asked', () => {
+    expect(showEmailForm(true, false)).toBe(false);
+    expect(showEmailForm(null, false)).toBe(false);
+  });
+  it('opens by itself when YourTal is off or the ask failed, so there is always a way in', () => {
+    expect(showEmailForm(false, false)).toBe(true);
+  });
+  it('opens when the person presses "Sign in with email instead"', () => {
+    expect(showEmailForm(true, true)).toBe(true);
+    expect(SIGNIN_COPY.emailInstead).toBe('Sign in with email instead');
+    expect(SIGNIN_COPY.continue).toBe('Continue with YourTal');
   });
 });

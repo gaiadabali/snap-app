@@ -20,7 +20,7 @@ All sizes are checked by `python3 docs/play-store/tools/verify.py` (Play limits:
 
 ## How the screenshots were made
 
-`tools/capture-phone.cjs` drives the Expo web build at https://snap-apps-app.gaiada.com in Chromium with a 360x640 viewport at deviceScaleFactor 3 (1080x1920, standard Android xxhdpi). Sign-in is `POST /v1/auth/google-simulator/sign-in` for two of the five seeded demo people (Kate Marsh, Sam Oyelaran); the token is placed in the app's own storage slot. No account was created.
+`tools/capture-phone.cjs` drives the Expo web build at https://snapapp.app.gaiada.com in Chromium with a 360x640 viewport at deviceScaleFactor 3 (1080x1920, standard Android xxhdpi). Sign-in is `POST /v1/auth/google-simulator/sign-in` for two of the five seeded demo people (Kate Marsh, Sam Oyelaran); the token is placed in the app's own storage slot. No account was created.
 
 - **Mock viewfinder (`2-scan.png`).** A browser has no camera, so the web build draws a text placeholder. The script swaps that placeholder for the demo receipt photo and darkens its edges. The frame, shutter, Torch button, "Filing to" chip and tab bar are the real UI. On a phone the live camera fills that area.
 - **One synthetic receipt was scanned on staging** as Sam Oyelaran, through the normal Scan screen: `tools/demo-receipt.jpg` ("Harbour St Coffee", a made-up cafe; the image is made by `tools/make_demo_receipt.py`). It cost one scan credit (60 to 59) and left one receipt in Sam's Personal space. This was needed because the existing staging receipts are real people's: Kate's household holds two real receipts (one shows a personal Gmail address) and are in IDR. Those are not used anywhere in these files.

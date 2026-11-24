@@ -66,7 +66,7 @@ const SESSION = {
   returnTo: null,
   outcome: 'created',
 };
-const REDIRECT = 'https://snap-apps.gaiada.com/oauth/yourtal';
+const REDIRECT = 'https://snapapp.gaiada.com/oauth/yourtal';
 
 describe('Sign in with YourTal against the API client', () => {
   beforeEach(() => {

@@ -289,9 +289,17 @@ const schema = z.object({
     .transform((v) => (v ?? '').trim() || undefined)
     .pipe(
       z
-        .enum(['au.com.snapapps.app:/oauth/yourtal', 'https://snap-apps.gaiada.com/oauth/yourtal'], {
-          message: 'YOURTAL_OIDC_MOBILE_REDIRECT_URI must be the old scheme or the https App Link (docs/AUTH.md)',
-        })
+        .enum(
+          [
+            'au.com.snapapps.app:/oauth/yourtal',
+            'https://snapapp.gaiada.com/oauth/yourtal',
+            // Pre-2026-11-24 host, kept so a server whose .env still names it validates during the switch.
+            'https://snap-apps.gaiada.com/oauth/yourtal',
+          ],
+          {
+            message: 'YOURTAL_OIDC_MOBILE_REDIRECT_URI must be the old scheme or the https App Link (docs/AUTH.md)',
+          },
+        )
         .optional(),
     ),
   YOURTAL_OIDC_KEY_FILE: z
