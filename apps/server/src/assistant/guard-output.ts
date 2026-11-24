@@ -85,7 +85,7 @@ const IMAGE = /!\[[^\]\n]*\]\([^)\n]*\)/g;
 const TAG = /<\/?[a-zA-Z][^>\n]{0,300}>/g;
 const BARE_URL = /\b(?:https?:\/\/|www\.)[^\s<>()[\]{}"']+/gi;
 /** This site's host written without a scheme. Not after "@" or a dot: that is the support address or a subdomain. */
-const BARE_HOST = /(?<![@\w.-])(?:snap-apps\.gaiada\.com|snapapps\.com\.au)(?:\/[^\s<>()[\]{}"']*)?/gi;
+const BARE_HOST = /(?<![@\w.-])(?:snapapp\.gaiada\.com|snap-apps\.gaiada\.com|snapapps\.com\.au)(?:\/[^\s<>()[\]{}"']*)?/gi;
 const EMAIL = /[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}/g;
 const PHONE = /(?:\+|\b0)\d[\d\s().-]{7,18}\d/g;
 const FENCE = /```[a-zA-Z0-9_-]*\n?/g;
