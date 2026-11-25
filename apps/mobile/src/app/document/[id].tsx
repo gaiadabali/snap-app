@@ -9,6 +9,7 @@ import {
   abnIsValid,
   api,
   ApiError,
+  IS_DEMO,
   type DocumentLine,
   type DocumentView,
   type Permissions,
@@ -319,7 +320,12 @@ export default function DocumentScreen() {
         </View>
 
         {/* ── The original, then what was read off it ── */}
-        <OriginalDocument doc={doc} localPages={localPageUris} onImageExpired={handleImageExpired} />
+        <OriginalDocument
+          doc={doc}
+          localPages={localPageUris}
+          onImageExpired={handleImageExpired}
+          demo={IS_DEMO}
+        />
 
         {doc.demoExtraction ? (
           // Sample data is a caution, not money at risk, so amber rather than red.
