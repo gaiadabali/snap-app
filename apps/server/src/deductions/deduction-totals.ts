@@ -77,6 +77,8 @@ export interface DeductionTotals {
   /** Only receipts a person confirmed (`category_source = 'user'`). */
   items: DeductionItemTotal[];
   totalCents: bigint;
+  /** Distinct receipts behind `items` (a receipt split over two items counts once). */
+  receiptCount: number;
   /** Supplier-filed receipts, not counted above, waiting for a person to confirm. */
   toReview: {
     receiptCount: number;
@@ -95,6 +97,7 @@ export function foldTotals(
 ): DeductionTotals {
   const byItem = new Map<string, DeductionItemTotal & { docs: Set<string>; refs: Set<string> }>();
   const reviewDocs = new Set<string>();
+  const countedDocs = new Set<string>();
   const foreignDocs = new Set<string>();
   let reviewCents = 0n;
   let totalCents = 0n;
@@ -114,6 +117,7 @@ export function foldTotals(
     e.workCents += w;
     totalCents += w;
     e.docs.add(l.documentId);
+    countedDocs.add(l.documentId);
     if (l.receiptRef) e.refs.add(l.receiptRef);
     byItem.set(key, e);
   }
@@ -124,6 +128,7 @@ export function foldTotals(
     financialYear,
     items,
     totalCents,
+    receiptCount: countedDocs.size,
     toReview: { receiptCount: reviewDocs.size, amountCents: reviewCents,
       foreignCurrencyCount: foreignDocs.size },
     workKilometres,

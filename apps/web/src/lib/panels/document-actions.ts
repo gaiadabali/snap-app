@@ -177,3 +177,29 @@ function messageOf(error: unknown): string {
   if (error instanceof ApiError) return error.message;
   return error instanceof Error ? error.message : 'Something went wrong.';
 }
+
+/**
+ * Files the receipt in a category of this workspace (null takes it out), as a person's choice.
+ * A work category is what sends a receipt to Free Tax Returns; filing the same category again
+ * confirms one the supplier memory chose. Only `header.category_id` is sent, so nothing that
+ * was read off the paper is touched.
+ */
+export async function setDocumentCategory(
+  workspaceId: string,
+  documentId: string,
+  path: string,
+  categoryId: string | null,
+): Promise<ActionResult> {
+  try {
+    await api(`/v1/documents/${documentId}`, {
+      method: 'PATCH',
+      body: { edits: { 'header.category_id': categoryId } },
+      workspaceId,
+      idempotencyKey: newIdempotencyKey(),
+    });
+  } catch (error) {
+    return { ok: false, message: messageOf(error) };
+  }
+  revalidatePath(path);
+  return { ok: true };
+}

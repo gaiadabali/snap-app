@@ -4,6 +4,7 @@ import { AccessibilityInfo, Alert, Pressable, ScrollView, StyleSheet, View } fro
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, type CategorySetting } from '@/api';
+import type { FtrSendContents } from '@snap/api-contract';
 import * as WebBrowser from 'expo-web-browser';
 import { SendToFtrCard, type FtrSendState } from '@/components/SendToFtrCard';
 import { FTR_REVIEW_URL } from '@/config';
@@ -46,6 +47,7 @@ export default function CategoriesScreen() {
   const [sending, setSending] = useState(false);
   const [ftr, setFtr] = useState<{ financialYear: string; directSend: boolean } | null>(null);
   const [ftrState, setFtrState] = useState<FtrSendState>(null);
+  const [ftrContents, setFtrContents] = useState<FtrSendContents | null>(null);
 
   async function sendToFtr() {
     setSending(true);
@@ -88,7 +90,12 @@ export default function CategoriesScreen() {
 
   const load = useCallback(async () => {
     setRows(await api().listCategorySettings(workspace));
-    if (workspace === 'personal') setFtr(await api().getDeductionYear().catch(() => null));
+    if (workspace === 'personal') {
+      const year = await api().getDeductionYear().catch(() => null);
+      setFtr(year);
+      // Counted for an owner or manager only; anyone else simply sees no count.
+      setFtrContents(year ? await api().getDeductionContents(year.financialYear).catch(() => null) : null);
+    }
   }, [workspace]);
 
   useFocusEffect(
@@ -195,6 +202,7 @@ export default function CategoriesScreen() {
                 onSendDirect={() => void sendDirect()}
                 state={ftrState}
                 reviewUrl={FTR_REVIEW_URL}
+                contents={ftrContents}
               />
             ) : null}
           </>

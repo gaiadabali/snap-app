@@ -11,7 +11,8 @@
     "./analytics": "./src/analytics.ts",
     "./docdom": "./src/docdom.ts",
     "./deduction-bundle": "./src/deduction-bundle.ts",
-    "./ftr-send": "./src/ftr-send.ts"
+    "./ftr-send": "./src/ftr-send.ts",
+    "./work-expense": "./src/work-expense.ts"
   },
   "types": "./src/index.ts",
   "sideEffects": false,

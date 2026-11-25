@@ -1,7 +1,7 @@
 'use client';
 
 import { useActionState, useState, useTransition } from 'react';
-import type { DocumentView, Permissions } from '@snap/api-contract';
+import type { CategorySetting, DocumentView, Permissions } from '@snap/api-contract';
 
 import {
   Badge,
@@ -28,6 +28,7 @@ import {
 } from '@/lib/panels/document-actions';
 import { draftTransactionFromDocument } from '@/lib/panels/ledger-actions';
 import type { ActionResult } from '@/lib/panels/actions';
+import { WorkExpenseCard } from './WorkExpenseCard';
 
 const FINDING_TONE = { error: 'risk', warning: 'warn', note: 'neutral' } as const;
 
@@ -50,6 +51,7 @@ export function ReviewDocument({
   path,
   listPath,
   isBusiness,
+  categories,
 }: {
   document: DocumentView;
   /** The API origin — images are served from there directly, token-authenticated. */
@@ -59,6 +61,8 @@ export function ReviewDocument({
   path: string;
   listPath: string;
   isBusiness: boolean;
+  /** The personal space's categories; with them, the receipt can be filed as a work expense. */
+  categories?: CategorySetting[];
 }) {
   const taxName = useTaxName(document.currency);
   const boundUpdate = updateDocumentAction.bind(null, workspaceId, document.id, path);
@@ -278,6 +282,16 @@ export function ReviewDocument({
               </div>
             </form>
           </Card>
+
+          {!isBusiness && categories && !rejected ? (
+            <WorkExpenseCard
+              document={document}
+              categories={categories}
+              canEdit={permissions.canEdit}
+              workspaceId={workspaceId}
+              path={path}
+            />
+          ) : null}
 
           {document.lines.length > 0 ? (
             <Card>

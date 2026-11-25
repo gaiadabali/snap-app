@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { Card, buttonClasses } from '@/design/primitives';
+import type { FtrSendContents } from '@snap/api-contract';
+import { describeSendContents } from '@snap/api-contract/ftr-send';
 import { ftrSendMessage } from '@/lib/auth/yourtal-errors';
 
 /** How the last send ended, read from the callback's redirect (`?ftr=`); the page validates it. */
@@ -19,6 +21,7 @@ export function SendToFtr({
   directSend = false,
   result,
   reviewUrl,
+  contents = null,
 }: {
   financialYear: string;
   href?: string;
@@ -26,7 +29,13 @@ export function SendToFtr({
   directSend?: boolean;
   result?: FtrSendResult;
   reviewUrl?: string;
+  /** What the send would carry (`GET /v1/deduction-bundle/contents`); null when not counted. */
+  contents?: FtrSendContents | null;
 }) {
+  // Exactly what goes, so nobody expects receipts the file does not hold.
+  const what = contents ? (
+    <p className="max-w-prose text-[14px] font-medium">{describeSendContents(financialYear, contents)}</p>
+  ) : null;
   const [busy, setBusy] = useState(false);
   // Not a control, so no ring (globals.css rings every [tabindex]; an inline style beats it). The result arrives with a redirect's first render, which screen readers often skip: move focus to it.
   const resultRef = useRef<HTMLParagraphElement>(null);
@@ -87,11 +96,14 @@ export function SendToFtr({
     return (
       <Card>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="max-w-prose text-[14px]">
-            Doing your tax return with Free Tax Returns? Download your {financialYear} deductions as a
-            file and upload it there. It lists each deduction with its total and a fingerprint of each
-            receipt. It has no merchant names, and it does not include the receipt images.
-          </p>
+          <div className="flex flex-col gap-2">
+            <p className="max-w-prose text-[14px]">
+              Doing your tax return with Free Tax Returns? Download your {financialYear} deductions as a
+              file and upload it there. It lists each deduction with its total and a fingerprint of each
+              receipt. It has no merchant names, and it does not include the receipt images.
+            </p>
+            {what}
+          </div>
           <div className="flex flex-col gap-2">
             {fileButton}
             {error ? <p role="alert" className="text-[13px] text-[var(--color-risk)]">{error}</p> : null}
@@ -124,6 +136,7 @@ export function SendToFtr({
           Your {financialYear} deductions go straight to Free Tax Returns. YourTal asks you to confirm,
           and nothing in your return changes until you accept it there.
         </p>
+        {what}
         <div className="flex flex-col gap-2 sm:flex-row">
           <button type="button" onClick={() => void sendDirect()} disabled={busy} className={buttonClasses('primary', 'md', '!h-auto min-h-11 py-2 text-center')}>
             Send to Free Tax Returns

@@ -108,6 +108,7 @@ import type {
   FamilyStatus,
   TeenInviteCreated,
   RedeemYourtalVoucherResult,
+  FtrSendContents,
   FtrSendFinished,
 } from '@snap/api-contract';
 
@@ -377,6 +378,8 @@ export interface SnapApi {
   getDeductionBundle(): Promise<DeductionBundle>;
   /** `GET /v1/deduction-bundle/year` — the year the file covers, like `2025-26`, and whether it may go straight to Free Tax Returns. */
   getDeductionYear(): Promise<{ financialYear: string; directSend: boolean }>;
+  /** `GET /v1/deduction-bundle/contents?fy=`: what the send for that year would carry, counted (owner or manager). */
+  getDeductionContents(financialYear: string): Promise<FtrSendContents>;
   /**
    * `POST /v1/ftr-sends` (group 4.8.a): YourTal's authorization URL, with the `transfer`
    * to confirm (it carries `state`, so never log it), and the flow id for `finish`.

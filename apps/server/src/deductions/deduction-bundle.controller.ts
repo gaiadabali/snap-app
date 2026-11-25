@@ -10,6 +10,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import type { DeductionYear, FtrSendContents } from '@snap/api-contract';
 import { FINANCIAL_YEAR_PATTERN, isFinancialYear, type DeductionBundle } from '@snap/api-contract/deduction-bundle';
 import { KNOWN_FYS } from '@snap/tax-engine';
 
@@ -27,12 +28,14 @@ import { requireOwnerOrAdmin } from '../common/roles.js';
 import { readTenant } from '../repo.js';
 import { sydneyToday } from '../summaries/summaries.controller.js';
 import { buildDeductionBundle } from './deduction-bundle.js';
-import { fyLabel, fyStartYear } from './deduction-totals.js';
+import { fyLabel, fyStartYear, type DeductionTotals } from './deduction-totals.js';
 import { deductionTotals } from './deductions.repo.js';
 import { sendEligibility } from './ftr-send.service.js';
 
 // Per person: a bundle is a query over a year of receipts.
 const exportPerUser = new RateLimiter(20, 60_000);
+// The send card asks on every visit to the categories screen; same query, kept apart from the export's budget.
+const contentsPerUser = new RateLimiter(30, 60_000);
 
 /**
  * The year a person means by "this year's deductions": the newest year we hold rates for
@@ -53,6 +56,17 @@ export function parseFy(fy: string | undefined, today: string = sydneyToday()): 
   return KNOWN_FYS.includes(start + 1) ? start : null;
 }
 
+/** What the bundle for these totals would carry: the same lines `buildDeductionBundle` writes. */
+export function sendContents(totals: DeductionTotals): FtrSendContents {
+  const bundle = buildDeductionBundle(totals, { generatedAt: new Date(0), occupation: null });
+  return {
+    lines: bundle.lines.length,
+    receipts: bundle.lines.length > 0 ? totals.receiptCount : 0,
+    workKilometres: bundle.workKilometres ?? 0,
+    toConfirm: totals.toReview.receiptCount,
+  };
+}
+
 @ApiTags('deductions')
 @Controller('v1')
 @UseGuards(SessionGuard, MembershipGuard)
@@ -69,10 +83,43 @@ export class DeductionBundleController {
     @WorkspaceId() tenantId: string,
     @CurrentImpersonation() impersonation: ProductImpersonation | undefined,
     @Res({ passthrough: true }) reply: { header: (k: string, v: string) => void },
-  ): Promise<{ financialYear: string; directSend: boolean }> {
+  ): Promise<DeductionYear> {
     reply.header('Cache-Control', 'private, no-store');
     const directSend = (await sendEligibility(user, tenantId, impersonation !== undefined)).ok;
     return { financialYear: fyLabel(defaultFyStart(sydneyToday())), directSend };
+  }
+
+  @Get('deduction-bundle/contents')
+  @ApiOperation({
+    summary: 'What the file for one financial year would carry, counted',
+    description:
+      'Lines (one per deduction item), the receipts behind them, work kilometres, and receipts the supplier memory filed in a ' +
+      'tax category that go only once a person confirms them. Counted from the same totals as GET /v1/deduction-bundle, with the ' +
+      'same rules: `fy` as there, a personal workspace, an owner or manager.',
+  })
+  async contents(
+    @CurrentUser() user: AuthUser,
+    @WorkspaceId() tenantId: string,
+    @Res({ passthrough: true }) reply: { header: (k: string, v: string) => void },
+    @Query('fy') fy?: string,
+  ): Promise<FtrSendContents> {
+    const start = parseFy(fy);
+    if (start === null) {
+      throw new BadRequestException('`fy` must be a financial year we support, like 2025-26.');
+    }
+    if (!(await contentsPerUser.consume(`deduction-contents:${user.userId}`))) {
+      throw new HttpException(
+        { error: 'rate_limited', message: 'Too many requests. Try again in a minute.' },
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+    const tenant = await readTenant(user.userId, tenantId);
+    if (tenant?.kind !== 'personal') {
+      throw new ForbiddenException('Deductions are exported from a personal workspace.');
+    }
+    await requireOwnerOrAdmin(user.userId, tenantId);
+    reply.header('Cache-Control', 'private, no-store');
+    return sendContents(await deductionTotals(user.userId, tenantId, start));
   }
 
   @Get('deduction-bundle')

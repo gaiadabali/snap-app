@@ -472,6 +472,7 @@ export class DocumentsController {
     // columns. One translation, at the boundary, rather than a second
     // vocabulary leaking through the handler.
     const edit = flattenEdits(body.edits);
+    const fieldEdit = Object.keys(edit).length > 0;
     const categoryEdit = await resolveCategoryEdit(user.userId, tenantId, body.edits, before.document);
 
     // The workspace's tax rule set, or null for Australia. Resolved before the
@@ -535,10 +536,16 @@ export class DocumentsController {
         payableAmount: edit.payableAmount,
         taxAmount,
         taxExclusiveAmount,
-        isTaxInvoice: verdict.isTaxInvoice,
         // Visibility has its own endpoint; a correction never changes who
-        // can see a document.
-        atoCompliance: { failures: verdict.complianceFailures, findings: verdict.findings },
+        // can see a document. A category-only edit (filing the receipt) is
+        // not a correction of what was read, so the verdict stays as it was:
+        // recomputing it without the lines would drop their findings.
+        ...(fieldEdit
+          ? {
+              isTaxInvoice: verdict.isTaxInvoice,
+              atoCompliance: { failures: verdict.complianceFailures, findings: verdict.findings },
+            }
+          : {}),
         ...(categoryEdit ? { categoryId: categoryEdit.categoryId } : {}),
       },
       body.version,

@@ -2,6 +2,7 @@ import type {
   CapturePageUpload,
   CreateCaptureRequest,
   CreateCaptureResponse,
+  FtrSendContents,
   FtrSendFinished,
   PatchCaptureDocumentRequest,
   UpdateDocumentRequest,
@@ -263,6 +264,19 @@ let parties: Party[] = DEMO.parties.map((p) => ({ ...p }));
 const inactiveCategories = new Set<string>();
 /** Business categories the user added by hand, before anything is filed to them. */
 const customCategories = new Set<string>();
+
+/**
+ * A few of the work categories every real personal space starts with (server
+ * PERSONAL_DEDUCTION_CATEGORIES), so the demo can show filing a receipt as a work expense.
+ * In the demo a category's id is its name.
+ */
+const DEMO_WORK_CATEGORIES: ReadonlyArray<{ name: string; taxLabel: string; engineRowId: string }> = [
+  { name: 'Work car: fuel', taxLabel: 'D1', engineRowId: 'fuelReceiptTotal' },
+  { name: 'Work parking and tolls', taxLabel: 'D2', engineRowId: 'tollsTotal' },
+  { name: 'Work clothing and uniforms', taxLabel: 'D3', engineRowId: 'uniforms' },
+  { name: 'Work tools and equipment', taxLabel: 'D5', engineRowId: 'tools' },
+  { name: 'Work phone and internet', taxLabel: 'D5', engineRowId: 'phoneDevices' },
+];
 
 /**
  * The active catalogue packs, in the `CreditPack` shape from
@@ -944,6 +958,17 @@ export class MockApi implements SnapApi {
       if (path === 'supplier.name') Object.assign(next, { supplierName: String(value ?? '') });
       if (path === 'header.issue_date') Object.assign(next, { issueDate: String(value ?? '') });
       if (path === 'header.category') Object.assign(next, { category: String(value ?? '') });
+      if (path === 'header.category_id') {
+        // The demo's ids are names (listCategorySettings).
+        const work = DEMO_WORK_CATEGORIES.find((w) => w.name === value);
+        Object.assign(next, {
+          category: value == null ? 'Uncategorised' : String(value),
+          categoryId: value == null ? null : String(value),
+          categorySource: value == null ? null : 'user',
+          taxLabel: work?.taxLabel ?? null,
+          engineRowId: work?.engineRowId ?? 'unassigned',
+        });
+      }
 
       // Correcting the total re-derives every dependent figure. GST is never
       // taken from the human: it is exactly 1/11 of the taxable part, and
@@ -1706,20 +1731,24 @@ export class MockApi implements SnapApi {
     await settle(160);
     const mine = docs.filter((d) => d.workspace === workspace);
     const names = new Set(mine.map((d) => d.category));
-    if (workspace === 'personal') for (const b of budgets) names.add(b.category);
-    else for (const c of customCategories) names.add(c);
+    if (workspace === 'personal') {
+      for (const b of budgets) names.add(b.category);
+      for (const w of DEMO_WORK_CATEGORIES) names.add(w.name);
+    } else for (const c of customCategories) names.add(c);
 
     return [...names]
       .map((name) => {
         const rows = mine.filter((d) => d.category === name);
         const hasBudget = budgets.some((b) => b.category === name);
+        const work = workspace === 'personal' ? DEMO_WORK_CATEGORIES.find((w) => w.name === name) : undefined;
         return {
+          id: name,
           name,
           taxLabel:
             workspace === 'business'
               ? (rows[0]?.engineRowId.split('.')[0] ?? null)
-              : null,
-          engineRowId: null,
+              : (work?.taxLabel ?? null),
+          engineRowId: work?.engineRowId ?? null,
           privateUsePercent: null,
           monthlyBudget: budgets.find((b) => b.category === name)?.monthly ?? null,
           documentCount: rows.length,
@@ -1853,6 +1882,11 @@ export class MockApi implements SnapApi {
   async getDeductionYear(): Promise<{ financialYear: string; directSend: boolean }> {
     // The demo has no YourTal to confirm at, so only the file is offered.
     return { financialYear: '2025-26', directSend: false };
+  }
+
+  async getDeductionContents(): Promise<FtrSendContents> {
+    // Nothing goes from the demo (getDeductionBundle refuses), so nothing is counted.
+    return { lines: 0, receipts: 0, workKilometres: 0, toConfirm: 0 };
   }
 
   async startFtrSend(): Promise<{ url: string; flowId: string }> {

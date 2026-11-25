@@ -8,6 +8,7 @@ import { withTenantAs } from '@snap/db';
 
 import { CaptureDocumentController } from '../captures/capture-document.controller.js';
 import { closeDb, getDb } from '../db.js';
+import { DocumentsController } from './documents.controller.js';
 import { saveExtraction } from '../repo.js';
 import { provisionTenant, wipeTenant } from '../test-support/tenant.js';
 import { openWorkerDb, type WorkerDb } from '../test-support/worker-db.js';
@@ -189,5 +190,26 @@ describeIfDb('PATCH /v1/captures/:id/document: category edits', () => {
     const again = await row(b.documentId);
     expect(again.category_id).toBeNull();
     expect(again.category_source).toBe('user');
+  });
+
+  it('PATCH /v1/documents/:id with only a category files it as the person’s choice and keeps the verdict', async () => {
+    // B picks up Travel from A by supplier memory; the review screens' card files or confirms it.
+    await makeDoc('CE-5a', TRAVEL);
+    const b = await makeDoc('CE-5b');
+    expect((await row(b.documentId)).category_source).toBe('supplier');
+    const verdict = { failures: ['supplier_abn_missing'], findings: [{ code: 'kept', field: 'lines', severity: 'note', message: 'x' }] };
+    await admin.query(`update documents set ato_compliance = $1::jsonb where id = $2`, [JSON.stringify(verdict), b.documentId]);
+    const docs = new DocumentsController();
+
+    // Confirm: the same category again, now chosen by a person.
+    await docs.update(owner as never, TENANT, b.documentId, { edits: { 'header.category_id': TRAVEL } } as never);
+    expect(await row(b.documentId)).toMatchObject({ category_id: TRAVEL, category_source: 'user' });
+    // Change it: still only the category moves.
+    await docs.update(owner as never, TENANT, b.documentId, { edits: { 'header.category_id': MEALS } } as never);
+    const after = await admin.query<{ category_id: string; ato_compliance: unknown; payable_amount: string }>(
+      `select category_id, ato_compliance, payable_amount::text from documents where id = $1`, [b.documentId],
+    );
+    expect(after.rows[0]!.category_id).toBe(MEALS);
+    expect(after.rows[0]!.ato_compliance).toEqual(verdict);
   });
 });

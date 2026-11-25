@@ -16,6 +16,7 @@ import {
 } from '@/api';
 import { Avatar } from '@/components/form';
 import { EditFields } from '@/components/EditFields';
+import { WorkExpenseCard } from '@/components/WorkExpenseCard';
 import { Findings } from '@/components/Findings';
 import { LineItems } from '@/components/LineItems';
 import { BalanceNote, OriginalDocument } from '@/components/receipt';
@@ -471,6 +472,11 @@ export default function DocumentScreen() {
             with the fields rather than at the bottom of the page. */}
         {canEdit && doc.reviewStatus !== 'reviewed' ? (
           <EditFields doc={current} onChange={(next) => setDoc(next)} />
+        ) : null}
+
+        {/* Work expense or not: open after confirming too, since filing is not a correction. */}
+        {doc.workspace === 'personal' && doc.reviewStatus !== 'rejected' ? (
+          <WorkExpenseCard doc={current} canEdit={canEdit} onChange={(next) => setDoc(next)} />
         ) : null}
 
         {/* ── Extracted fields ── */}

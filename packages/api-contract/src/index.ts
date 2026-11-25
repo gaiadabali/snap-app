@@ -1059,6 +1059,8 @@ export interface ConsumptionTaxReport {
 }
 
 export interface CategorySetting {
+  /** The category's id: what a receipt is filed under (`header.category_id`). */
+  id: string;
   name: string;
   /**
    * The ATO label this category feeds (one of `ATO_LABELS`, e.g. 'D5'), or
@@ -2269,6 +2271,27 @@ export interface TeenInviteCreated {
   inviteId: string;
   joinUrl: string;
   expiresAt: IsoDateTime;
+}
+
+/**
+ * `GET /v1/deduction-bundle/contents?fy=`: what a send to Free Tax Returns would carry for one
+ * year, counted from the same totals the bundle is built from (an owner or manager only).
+ */
+export interface FtrSendContents {
+  /** Bundle lines: one per deduction item (ATO label + Free Tax Returns item), never one per receipt. */
+  lines: number;
+  /** Receipts behind those lines; a receipt split over two items counts once. */
+  receipts: number;
+  /** Whole work kilometres from trips (0 when none). */
+  workKilometres: number;
+  /** Receipts filed in a tax category by the supplier memory, which go only once a person confirms the category. */
+  toConfirm: number;
+}
+
+/** `GET /v1/deduction-bundle/year`. */
+export interface DeductionYear {
+  financialYear: string;
+  directSend: boolean;
 }
 
 /** `POST /v1/ftr-sends` (group 4.8.a): where to send the person to confirm at YourTal. */
