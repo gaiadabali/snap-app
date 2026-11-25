@@ -33,6 +33,11 @@ export class FtrSendStartDto {
   @IsOptional()
   @IsIn(['en-AU', 'id-ID'])
   locale?: 'en-AU' | 'id-ID';
+
+  /** The phone client in a browser (the PWA): YourTal returns to its own page. Default `native`. */
+  @IsOptional()
+  @IsIn(['native', 'web'], { message: 'platform must be "native" or "web".' })
+  platform?: 'native' | 'web';
 }
 
 export class FtrSendFinishDto {
@@ -94,6 +99,7 @@ export class FtrSendController {
       financialYear: body.financialYear,
       returnTo: body.returnTo,
       locale: body.locale ?? 'en-AU',
+      ...(body.platform ? { platform: body.platform } : {}),
     });
   }
 

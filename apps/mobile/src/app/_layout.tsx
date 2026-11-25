@@ -2,20 +2,34 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import * as SystemUI from 'expo-system-ui';
+import * as WebBrowser from 'expo-web-browser';
 import { useEffect } from 'react';
 import { Platform, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { AuthReturnPage } from '@/components/AuthReturnPage';
 import { NavFrame } from '@/components/BottomNav';
 import { UpdateGate } from '@/components/UpdateGate';
 import { ThemeProvider, usePalette, useTheme } from '@/theme';
 import { face, useAppFonts } from '@/theme/text';
+import { handBackAuthReturn } from '@/lib/auth-return';
 import { SessionGate } from '@/session';
 import { WorkspaceProvider } from '@/workspace';
 
 /* Held until Geist settles, so the first frame is already set in it rather
    than flashing the system font and reflowing. Ignored on web: no splash. */
 void SplashScreen.preventAutoHideAsync().catch(() => {});
+
+/* The PWA's Sign in with YourTal return page (`lib/auth-return.ts`): hands the URL back
+   to the tab that opened YourTal as the bundle loads, before any gate. Null everywhere
+   else, and always on a phone (Android's App Link goes through +native-intent.ts). */
+const AUTH_RETURN =
+  Platform.OS === 'web' && typeof window !== 'undefined'
+    ? handBackAuthReturn({
+        pathname: window.location.pathname,
+        complete: () => WebBrowser.maybeCompleteAuthSession(),
+      })
+    : null;
 
 export default function RootLayout() {
   const { ready } = useAppFonts();
@@ -29,7 +43,12 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider>
-      <RootChrome />
+      {AUTH_RETURN ? (
+        // Not the app: no session check, no update check, no navigator in the popup.
+        <AuthReturnPage outcome={AUTH_RETURN} onOpenApp={() => window.location.assign('/')} />
+      ) : (
+        <RootChrome />
+      )}
     </ThemeProvider>
   );
 }

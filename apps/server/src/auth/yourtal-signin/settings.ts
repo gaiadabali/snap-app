@@ -11,7 +11,8 @@ import { config } from '../../config.js';
  *
  * Two clients, one sector at YourTal (so both see the same `sub`):
  *   web     snapapp-staging-web     confidential, private_key_jwt, https redirect
- *   mobile  snapapp-staging-mobile  public (`none`), PKCE, private-use scheme redirect
+ *   mobile  snapapp-staging-mobile  public (`none`), PKCE, private-use scheme or App Link
+ *                                   redirect; plus the PWA's same-origin return page
  *
  * Each is ON only when the issuer and its client id are set; the web client
  * also needs its private key. Anything missing turns that client off — never
@@ -23,7 +24,37 @@ export type YourTalClientSettings = {
   kind: YourTalClientKind;
   clientId: string;
   redirectUri: string;
+  /**
+   * Mobile only: where YourTal returns when the app runs in a browser (the PWA,
+   * YOURTAL_OIDC_MOBILE_WEB_REDIRECT_URI). Unset: the PWA cannot use YourTal.
+   */
+  webRedirectUri?: string;
 };
+
+/** Where the app that started the flow is running: the installed app, or the browser build (PWA). */
+export type ReturnPlatform = 'native' | 'web';
+
+/**
+ * Marks the `state` of a phone-client flow started by the PWA. The state is made here
+ * and stored with the flow, so at finish the server reads back which of its OWN two
+ * redirect URIs the authorization used; the client never names one. The random part
+ * after it is unchanged (32 bytes, base64url, which never contains a dot).
+ */
+export const WEB_RETURN_STATE_PREFIX = 'pwa.';
+
+/** The platform a stored state was made for. */
+export const platformOfState = (state: string): ReturnPlatform =>
+  state.startsWith(WEB_RETURN_STATE_PREFIX) ? 'web' : 'native';
+
+/**
+ * The redirect URI for a platform, from this server's configuration only. The website
+ * client has one. The phone client has the native one and, when configured, the PWA's.
+ * Null when that platform has none (the caller refuses with not_configured).
+ */
+export function redirectUriFor(client: YourTalClientSettings, platform: ReturnPlatform): string | null {
+  if (client.kind === 'web' || platform === 'native') return client.redirectUri;
+  return client.webRedirectUri ?? null;
+}
 
 export type YourTalSignInSettings = {
   issuer: URL;
@@ -67,6 +98,9 @@ export function yourtalSignInSettings(): YourTalSignInSettings | null {
       kind: 'mobile',
       clientId: settings.YOURTAL_OIDC_MOBILE_CLIENT_ID,
       redirectUri: settings.YOURTAL_OIDC_MOBILE_REDIRECT_URI ?? DEFAULT_MOBILE_REDIRECT_URI,
+      ...(settings.YOURTAL_OIDC_MOBILE_WEB_REDIRECT_URI
+        ? { webRedirectUri: settings.YOURTAL_OIDC_MOBILE_WEB_REDIRECT_URI }
+        : {}),
     };
   }
   return result;

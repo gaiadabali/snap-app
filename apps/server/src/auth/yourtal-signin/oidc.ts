@@ -4,8 +4,12 @@ import * as oidc from 'openid-client';
 
 import { refusal } from './claims.js';
 import {
+  WEB_RETURN_STATE_PREFIX,
   YOURTAL_SCOPES,
+  platformOfState,
+  redirectUriFor,
   webClientKey,
+  type ReturnPlatform,
   yourtalClient,
   type YourTalClientKind,
   type YourTalClientSettings,
@@ -62,7 +66,7 @@ async function configurationFor(issuer: URL, client: YourTalClientSettings): Pro
       issuer,
       client.clientId,
       {
-        redirect_uris: [client.redirectUri],
+        redirect_uris: [client.redirectUri, ...(client.webRedirectUri ? [client.webRedirectUri] : [])],
         response_types: ['code'],
         // docs/26 §1.7: RS256 for ID tokens. Anything else is refused.
         id_token_signed_response_alg: 'RS256',
@@ -97,9 +101,10 @@ function clientOrRefuse(kind: YourTalClientKind) {
   return found;
 }
 
-/** Whether a client is configured, for `GET /v1/auth/yourtal`. */
-export function isClientConfigured(kind: YourTalClientKind): boolean {
-  return yourtalClient(kind) !== null;
+/** Whether a client is configured (for `GET /v1/auth/yourtal`), and has a redirect for that platform. */
+export function isClientConfigured(kind: YourTalClientKind, platform: ReturnPlatform = 'native'): boolean {
+  const found = yourtalClient(kind);
+  return found !== null && redirectUriFor(found.client, kind === 'mobile' ? platform : 'native') !== null;
 }
 
 export type StartedAuthorization = {
@@ -116,9 +121,21 @@ export type StartedAuthorization = {
  */
 export async function startAuthorization(
   kind: YourTalClientKind,
-  options: { signUp: boolean; locale: string; freshSignIn?: boolean; teenInvite?: string; transfer?: string },
+  options: {
+    signUp: boolean;
+    locale: string;
+    freshSignIn?: boolean;
+    teenInvite?: string;
+    transfer?: string;
+    /** The phone client in a browser (the PWA) returns to its own page; ignored for the website client. */
+    platform?: ReturnPlatform;
+  },
 ): Promise<StartedAuthorization> {
   const { issuer, client } = clientOrRefuse(kind);
+  const platform: ReturnPlatform = kind === 'mobile' && options.platform === 'web' ? 'web' : 'native';
+  // From this server's own settings, never from the request.
+  const redirectUri = redirectUriFor(client, platform);
+  if (!redirectUri) throw refusal('not_configured');
   let config: oidc.Configuration;
   try {
     config = await configurationFor(issuer, client);
@@ -126,11 +143,12 @@ export async function startAuthorization(
     throw refusal('yourtal_unavailable');
   }
 
-  const state = oidc.randomState();
+  // A PWA flow says so in its state, which is stored with the flow: redeemCode reads it back.
+  const state = (platform === 'web' ? WEB_RETURN_STATE_PREFIX : '') + oidc.randomState();
   const nonce = oidc.randomNonce();
   const codeVerifier = oidc.randomPKCECodeVerifier();
   const parameters: Record<string, string> = {
-    redirect_uri: client.redirectUri,
+    redirect_uri: redirectUri,
     scope: YOURTAL_SCOPES,
     response_type: 'code',
     code_challenge: await oidc.calculatePKCECodeChallenge(codeVerifier),
@@ -188,8 +206,13 @@ export async function redeemCode(
 
   if (!same(response.iss, config.serverMetadata().issuer)) throw refusal('invalid_flow');
 
+  // The redirect URI the authorization used, read back from the STORED state (startAuthorization):
+  // the token request must name the same one (RFC 6749 §4.1.3).
+  const redirectUri = redirectUriFor(client, platformOfState(expected.state));
+  if (!redirectUri) throw refusal('not_configured');
+
   // The authorization response exactly as YourTal sent it to the redirect URI.
-  const currentUrl = new URL(client.redirectUri);
+  const currentUrl = new URL(redirectUri);
   currentUrl.searchParams.set('code', response.code);
   currentUrl.searchParams.set('state', response.state);
   currentUrl.searchParams.set('iss', response.iss);

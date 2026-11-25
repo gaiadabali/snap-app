@@ -144,7 +144,20 @@ export class HttpApi implements SnapApi {
    */
   private workspaces: WorkspaceSummary[] = [];
 
-  constructor(private readonly baseUrl: string) {}
+  /**
+   * @param authReturn where Sign in with YourTal comes back: `native` (the installed app's
+   *   scheme or App Link) or `web` (the browser build's own page, `/oauth/yourtal`). The
+   *   server maps it to one of its own configured redirects; it never takes a URL from here.
+   */
+  constructor(
+    private readonly baseUrl: string,
+    private readonly authReturn: 'native' | 'web' = 'native',
+  ) {}
+
+  /** `platform` for the YourTal starts: sent only from the browser build, so a native body is as before. */
+  private platformField(): { platform?: 'web' } {
+    return this.authReturn === 'web' ? { platform: 'web' } : {};
+  }
 
   /* ── Transport ────────────────────────────────────────────────────────── */
 
@@ -1118,7 +1131,7 @@ export class HttpApi implements SnapApi {
   /* Neither is queued: the flow is single-use and lasts ten minutes. */
   async startFtrSend(input: { financialYear: string; locale?: 'en-AU' | 'id-ID' }): Promise<{ url: string; flowId: string }> {
     const r = await this.request<FtrSendStarted>('POST', '/v1/ftr-sends', {
-      body: { client: 'mobile', ...input },
+      body: { client: 'mobile', ...input, ...this.platformField() },
       workspaceId: await this.idForKind('personal'),
       queue: false,
     });
@@ -1188,11 +1201,13 @@ export class HttpApi implements SnapApi {
 
   async getYourtalSignInAvailable(): Promise<boolean> {
     try {
-      const status = await this.request<{ web: boolean; mobile: boolean }>('GET', '/v1/auth/yourtal', {
-        auth: false,
-        workspaceId: null,
-      });
-      return status?.mobile === true;
+      const status = await this.request<{ web: boolean; mobile: boolean; mobileWeb?: boolean }>(
+        'GET',
+        '/v1/auth/yourtal',
+        { auth: false, workspaceId: null },
+      );
+      // The browser build needs its own return page configured on the server, or the button is hidden.
+      return this.authReturn === 'web' ? status?.mobileWeb === true : status?.mobile === true;
     } catch {
       return false;
     }
@@ -1215,6 +1230,7 @@ export class HttpApi implements SnapApi {
           ...(input.freshSignIn ? { freshSignIn: true } : {}),
           ...(input.locale ? { locale: input.locale } : {}),
           ...(input.moveCurrentAccount ? { moveCurrentAccount: true } : {}),
+          ...this.platformField(),
         },
         auth: input.moveCurrentAccount === true,
         workspaceId: null,

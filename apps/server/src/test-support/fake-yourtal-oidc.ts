@@ -90,6 +90,8 @@ export type FakeYourTalOidc = {
   mobileClientId: string;
   webRedirectUri: string;
   mobileRedirectUri: string;
+  /** The phone client's second return: its browser build's (the PWA's) own page. */
+  mobileWebRedirectUri: string;
   /** The website client's PRIVATE JWK, for the app's key file. */
   webPrivateJwk: JWK;
   /** Set before each `authorize`. Edit a person's fields to simulate a change at YourTal. */
@@ -173,6 +175,8 @@ export async function startFakeYourTalOidc(): Promise<FakeYourTalOidc> {
     mobileClientId: 'snapapp-test-mobile',
     webRedirectUri: 'https://snap-apps.test/auth/yourtal/callback',
     mobileRedirectUri: 'au.com.snapapps.app:/oauth/yourtal',
+    // One of config.ts's allowed values; nothing is fetched from it.
+    mobileWebRedirectUri: 'https://snapapp.app.gaiada.com/oauth/yourtal',
     webPrivateJwk,
     nextSignIn: null,
     lastAuthorizationParams: null,
@@ -214,7 +218,9 @@ export async function startFakeYourTalOidc(): Promise<FakeYourTalOidc> {
         client_id: fake.mobileClientId,
         application_type: 'native',
         token_endpoint_auth_method: 'none',
-        redirect_uris: [fake.mobileRedirectUri],
+        redirect_uris: [fake.mobileRedirectUri, fake.mobileWebRedirectUri],
+        // Two redirect hosts need a sector, as at YourTal; never fetched (below).
+        sector_identifier_uri: 'https://snapapp.sector.test/',
         grant_types: ['authorization_code'],
         response_types: ['code'],
         id_token_signed_response_alg: 'RS256',
@@ -239,6 +245,7 @@ export async function startFakeYourTalOidc(): Promise<FakeYourTalOidc> {
     subjectTypes: ['public', 'pairwise'],
     extraParams: ['teen_invite', 'transfer'],
     pairwiseIdentifier: async (_ctx, accountId) => subFor(accountId),
+    sectorIdentifierUriValidate: () => false,
     clientAuthMethods: ['private_key_jwt', 'none'],
     scopes: ['openid', 'email', 'profile', 'account', 'teen_invites', 'app_transfers'],
     claims: {
@@ -500,7 +507,7 @@ async function followAsBrowser(start: string, fake: FakeYourTalOidc): Promise<UR
     if (!location) {
       throw new Error(`fake YourTal answered ${res.status} with no redirect: ${(await res.text()).slice(0, 300)}`);
     }
-    if (location.startsWith(fake.webRedirectUri) || location.startsWith(fake.mobileRedirectUri)) {
+    if ([fake.webRedirectUri, fake.mobileRedirectUri, fake.mobileWebRedirectUri].some((uri) => location.startsWith(uri))) {
       return new URL(location);
     }
     url = new URL(location, url);
