@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, type Session } from '@/api';
 import { currencyDecimals, formatMoney } from '@/lib/format';
+import { onboardingBudgets } from '@/lib/onboarding-budget';
 import { peekPendingCurrency, takePendingCountry } from '@/lib/pending-country';
 import { Icon, type IconName } from '@/components/Icon';
 import { GradientHero } from '@/components/rich';
@@ -95,6 +96,7 @@ export function Onboarding({
   const [error, setError] = useState<string | null>(null);
 
   const named = drafts.filter((d) => d.name.trim() && Number(d.amount) > 0);
+  const budgets = onboardingBudgets(drafts);
   const monthly = named.reduce((a, d) => a + Number(d.amount), 0);
 
   async function finish() {
@@ -113,7 +115,9 @@ export function Onboarding({
         gstRegistered: false,
         gstBasis: 'cash',
         occupationProfileId: null,
-        monthlyBudget: monthly > 0 ? monthly.toFixed(4) : null,
+        // Null on purpose — see `onboardingBudgets`: the category rows below
+        // are the whole budget, and a total would be counted a second time.
+        monthlyBudget: budgets.monthlyBudget,
         taxRulesId,
       });
 
@@ -122,9 +126,9 @@ export function Onboarding({
          summary, and firing them together means the last write wins on a
          server that reads-modifies-writes. Three extra round trips at signup
          is a fair price for not losing two of five budgets. */
-      for (const d of named) {
+      for (const c of budgets.categories) {
         try {
-          await api().setBudget(d.name.trim(), Number(d.amount).toFixed(4));
+          await api().setBudget(c.name, c.monthly);
         } catch {
           /* A budget that fails to save is recoverable from the Budgets
              screen; failing the whole signup over one is not. */

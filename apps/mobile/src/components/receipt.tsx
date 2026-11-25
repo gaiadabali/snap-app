@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Image, Modal, Pressable, ScrollView, View } from 'react-native';
+import { Image, Linking, Modal, Pressable, ScrollView, View } from 'react-native';
 import { Text } from '@/theme/text';
 import { useDeviceInsets } from '@/components/device-insets';
 import { Icon } from '@/components/Icon';
@@ -9,6 +9,7 @@ import { Raised } from '@/components/rich';
 import { Body, Chip, SectionHeader, Small } from '@/components/ui';
 import { formatAbn, formatShortDate, numeric, radius, space, type, usePalette } from '@/theme';
 import { useMoney } from '@/lib/use-money';
+import { isPdfOriginal, originalCopy } from '@/lib/original-copy';
 
 /**
  * The original document, as proof.
@@ -102,8 +103,11 @@ export function OriginalDocument({
   doc,
   localPages,
   onImageExpired,
+  demo = false,
 }: {
   doc: DocumentView;
+  /** Running on fixtures. Only then may the copy say the demo ships no photographs. */
+  demo?: boolean;
   /**
    * Every page of a just-finished capture, still on this device.
    *
@@ -156,10 +160,16 @@ export function OriginalDocument({
     !localPageUris && doc.pages.length > 1 ? doc.pages.map((page) => page.imageUrl) : null;
   const pages = localPageUris ?? storedPageUris;
   const pageCount = pages ? pages.length : 1;
+  const pdf = isPdfOriginal(doc);
+  // A PDF's `imageUrl` serves the PDF bytes, which an <Image> cannot draw;
+  // its stored page rasterisation can. The PDF itself is offered as a link.
   const rawPhoto = pages
     ? pages[Math.min(pageIndex, pages.length - 1)]
-    : (doc.localImageUri ?? doc.imageUrl);
+    : pdf
+      ? doc.pages[0]?.imageUrl
+      : (doc.localImageUri ?? doc.imageUrl);
   const photo = display(rawPhoto);
+  const copy = originalCopy({ photo: !!photo, pdf, demo });
 
   function goTo(index: number) {
     if (!pages) return;
@@ -172,7 +182,7 @@ export function OriginalDocument({
         <SectionHeader title="Original document" />
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.xs }}>
           {pageCount > 1 ? <Chip>{`Page ${pageIndex + 1} of ${pageCount}`}</Chip> : null}
-          <Chip tone={photo ? 'accent' : 'neutral'}>{photo ? 'Photographed' : 'Facsimile'}</Chip>
+          <Chip tone={photo ? 'accent' : 'neutral'}>{copy.chip}</Chip>
         </View>
       </View>
 
@@ -266,11 +276,17 @@ export function OriginalDocument({
         </ScrollView>
       ) : null}
 
-      <Small>
-        {photo
-          ? 'Stored unmodified as the legal record. Tap to view full size.'
-          : 'Reconstructed from the extracted lines — this demo ships no photographs. A real capture stores the original image unmodified. Tap to view full size.'}
-      </Small>
+      <Small>{copy.caption}</Small>
+
+      {pdf && doc.imageUrl ? (
+        <Pressable
+          accessibilityRole="link"
+          accessibilityLabel="Open the original PDF"
+          onPress={() => void Linking.openURL(doc.imageUrl as string)}
+        >
+          <Text style={[type.small, { color: p.accent, fontWeight: '700' }]}>Open original PDF</Text>
+        </Pressable>
+      ) : null}
 
       <Modal visible={zoomed} animationType="fade" onRequestClose={() => setZoomed(false)}>
         <View style={{ flex: 1, backgroundColor: '#0A0F16' }}>

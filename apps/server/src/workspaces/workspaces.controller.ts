@@ -229,6 +229,13 @@ export class WorkspacesController {
     // A household that said what it intends to spend gets that recorded now,
     // so the tracker has something to measure against on the first screen
     // rather than after the first receipt.
+    //
+    // This is the budget for a client that has ONE number and no categories
+    // (the web sign-up form), stored as the catch-all row. The budget total is
+    // the SUM of every row (summaries.controller `personalSummary`), so a
+    // client that goes on to write per-category budgets must NOT also send
+    // this — the mobile onboarding did, and every dollar counted twice. Rows
+    // already written that way were removed by migration 0059.
     const budget = (body.monthlyBudget ?? '').trim();
     if (body.kind === 'personal' && budget !== '' && Number(budget) > 0) {
       await setBudget(user.userId, created.id, 'Everything else', budget);
