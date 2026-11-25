@@ -28,4 +28,14 @@ describe('SendToFtrCard', () => {
     expect(direct({ state: { kind: 'cancelled' } })).toContain('Nothing was sent.');
     expect(direct({ state: { kind: 'failed', message: 'Too many tries. Nothing was sent.' } })).toContain('Too many tries.');
   });
+
+  it('says exactly what will go, and how to add a receipt when nothing will', () => {
+    expect(direct({ contents: { lines: 2, receipts: 3, workKilometres: 1150, toConfirm: 0 } })).toContain(
+      'Ready to send for 2025-26: 2 deduction lines from 3 receipts and 1,150 work km.',
+    );
+    expect(direct({ contents: { lines: 0, receipts: 0, workKilometres: 0, toConfirm: 0 } })).toContain(
+      'To include a receipt, open it and choose a work category.',
+    );
+    expect(direct()).not.toContain('Ready to send');
+  });
 });

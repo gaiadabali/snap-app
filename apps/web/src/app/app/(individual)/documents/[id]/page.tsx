@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 
 import { Empty } from '@/design/primitives';
 import { config } from '@/lib/config';
-import { getDocument } from '@/lib/panels/data';
+import { getDocument, listCategorySettings } from '@/lib/panels/data';
 import { getPermissions } from '@/lib/panels/permissions';
 import { loadWorkspace } from '@/lib/panels/workspace';
 import { ReviewDocument } from '../../../_shell/ReviewDocument';
@@ -15,9 +15,11 @@ export default async function IndividualDocumentPage({ params }: { params: Promi
   const { workspace } = await loadWorkspace('personal');
   if (!workspace) return <Empty title="No personal workspace yet" />;
 
-  const [document, permissions] = await Promise.all([
+  const [document, permissions, categories] = await Promise.all([
     getDocument(workspace.id, id).catch(() => null),
     getPermissions(workspace.id),
+    // Without them the page still reviews the receipt; it just can't file it.
+    listCategorySettings(workspace.id).catch(() => undefined),
   ]);
   if (!document) notFound();
 
@@ -34,6 +36,7 @@ export default async function IndividualDocumentPage({ params }: { params: Promi
         path={`/app/documents/${id}`}
         listPath="/app/documents"
         isBusiness={false}
+        categories={categories}
       />
     </div>
   );

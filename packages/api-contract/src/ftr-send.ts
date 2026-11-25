@@ -1,4 +1,4 @@
-import type { FtrSendErrorCode } from './index';
+import type { FtrSendContents, FtrSendErrorCode } from './index';
 
 /** The fixed words for a send to Free Tax Returns (group 4.8.a) that did not go through, keyed by the API's error code. Web and phone share them; no text from a URL or a body is ever shown. */
 export const NOT_SENT = 'Nothing was sent.';
@@ -32,3 +32,26 @@ export function ftrSendMessage(code: string | null | undefined): string {
   return code && Object.hasOwn(MESSAGES, code) ? MESSAGES[code as keyof typeof MESSAGES] : GENERIC;
 }
 
+
+const grouped = (n: number): string => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+const plural = (n: number, one: string, many: string): string => `${grouped(n)} ${n === 1 ? one : many}`;
+
+/**
+ * What a send would carry, in one or two sentences shared by the web and the phone. It counts
+ * exactly what the bundle holds: lines (one per deduction item, not per receipt), the receipts
+ * behind them and the work kilometres. Shop names, dates and images never go, so none is named.
+ */
+export function describeSendContents(year: string, c: FtrSendContents): string {
+  const parts: string[] = [];
+  if (c.lines > 0) {
+    parts.push(`${plural(c.lines, 'deduction line', 'deduction lines')} from ${plural(c.receipts, 'receipt', 'receipts')}`);
+  }
+  if (c.workKilometres > 0) parts.push(`${grouped(c.workKilometres)} work km`);
+  const ready =
+    parts.length > 0
+      ? `Ready to send for ${year}: ${parts.join(' and ')}.`
+      : `Nothing to send for ${year} yet. To include a receipt, open it and choose a work category.`;
+  if (c.toConfirm <= 0) return ready;
+  const one = c.toConfirm === 1;
+  return `${ready} ${plural(c.toConfirm, 'receipt was', 'receipts were')} filed in a work category because an earlier receipt from the same shop was; ${one ? 'it goes' : 'they go'} once you confirm ${one ? 'its' : 'their'} category.`;
+}

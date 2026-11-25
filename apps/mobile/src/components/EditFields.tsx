@@ -3,7 +3,7 @@ import { Alert, Pressable, View } from 'react-native';
 import { Text } from '@/theme/text';
 
 import { api, type DocumentView } from '@/api';
-import { Choice, Field, Sheet } from '@/components/form';
+import { Field, Sheet } from '@/components/form';
 import { Body, Small } from '@/components/ui';
 import { gstFromInclusive } from '@/lib/money';
 import { useMoney } from '@/lib/use-money';
@@ -24,30 +24,9 @@ import { space, usePalette } from '@/theme';
  * the arithmetic one.
  */
 
-const CATEGORIES_BUSINESS = [
-  'Fuel',
-  'Truck parts & maintenance',
-  'Meals on the road',
-  'Accommodation',
-  'Tolls',
-  'Phone & internet',
-  'Protective clothing',
-  'Truck cleaning supplies',
-  'Insurance',
-  'Laundry on the road',
-];
-
-const CATEGORIES_PERSONAL = [
-  'Groceries',
-  'Eating out',
-  'Transport',
-  'Fuel',
-  'Bills & utilities',
-  'Health',
-  'Shopping',
-  'Home',
-  'Fun',
-];
+// The category is filed from its own card (WorkExpenseCard), from the workspace's real
+// categories: this sheet only corrects what was read off the paper. It used to offer a
+// hardcoded list here and send it as `header.category`, which the server matched by name.
 
 export function EditFields({
   doc,
@@ -65,11 +44,7 @@ export function EditFields({
     issueDate: doc.issueDate,
     total: Number(doc.payableAmount).toFixed(money.decimals),
     gstFree: doc.gstFreeAmount ? Number(doc.gstFreeAmount).toFixed(money.decimals) : '',
-    category: doc.category,
   });
-
-  const categories = doc.workspace === 'business' ? CATEGORIES_BUSINESS : CATEGORIES_PERSONAL;
-  const options = categories.includes(doc.category) ? categories : [doc.category, ...categories];
 
   /** A date the app is willing to believe. */
   function dateProblem(value: string): string | null {
@@ -114,7 +89,6 @@ export function EditFields({
           'header.issue_date': draft.issueDate,
           'totals.payable': (Math.round(total * 100) / 100).toFixed(4),
           'totals.gst_free': draft.gstFree === '' ? null : (Math.round(gstFree * 100) / 100).toFixed(4),
-          'header.category': draft.category,
         },
       });
       next = next ?? doc;
@@ -156,7 +130,6 @@ export function EditFields({
               issueDate: doc.issueDate,
               total: Number(doc.payableAmount).toFixed(money.decimals),
               gstFree: doc.gstFreeAmount ? Number(doc.gstFreeAmount).toFixed(money.decimals) : '',
-              category: doc.category,
             });
             setOpen(true);
           }}
@@ -254,13 +227,6 @@ export function EditFields({
             figure is the arithmetic one.
           </Small>
         </View>
-
-        <Choice
-          label="Category"
-          value={draft.category}
-          onChange={(category) => setDraft({ ...draft, category })}
-          options={options.map((c) => ({ value: c, label: c }))}
-        />
       </Sheet>
     </>
   );

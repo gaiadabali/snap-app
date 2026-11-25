@@ -1,5 +1,8 @@
 import { Linking, View } from 'react-native';
 
+import type { FtrSendContents } from '@snap/api-contract';
+import { describeSendContents } from '@snap/api-contract/ftr-send';
+
 import { Body, Button, Card, Small } from '@/components/ui';
 import { FTR_SEND_COPY } from '@/lib/ftr-send';
 import { space } from '@/theme';
@@ -19,6 +22,7 @@ export function SendToFtrCard({
   onSendDirect,
   state = null,
   reviewUrl,
+  contents = null,
 }: {
   financialYear: string;
   busy: boolean;
@@ -27,7 +31,11 @@ export function SendToFtrCard({
   onSendDirect?: () => void;
   state?: FtrSendState;
   reviewUrl?: string;
+  /** What the send would carry (`GET /v1/deduction-bundle/contents`); null when not counted. */
+  contents?: FtrSendContents | null;
 }) {
+  // Exactly what goes, so nobody expects receipts the file does not hold.
+  const what = contents ? <Small muted={false}>{describeSendContents(financialYear, contents)}</Small> : null;
   if (!directSend) {
     return (
       <Card>
@@ -38,6 +46,7 @@ export function SendToFtrCard({
             deduction with its total and a fingerprint of each receipt. It has no merchant names and
             does not include the receipt images.
           </Small>
+          {what}
           <Button label={`Send ${financialYear} to Free Tax Returns`} busy={busy} onPress={onSend} />
         </View>
       </Card>
@@ -56,6 +65,7 @@ export function SendToFtrCard({
         {state?.kind === 'cancelled' ? <View accessibilityLiveRegion="polite"><Body strong>{FTR_SEND_COPY.cancelled}</Body></View> : null}
         {state?.kind === 'failed' ? <View accessibilityLiveRegion="assertive"><Body strong>{state.message}</Body></View> : null}
         <Small>{FTR_SEND_COPY.intro(financialYear)}</Small>
+        {what}
         <Button label={FTR_SEND_COPY.send} busy={busy} onPress={onSendDirect ?? onSend} />
         <Button tone="outline" label={FTR_SEND_COPY.file} disabled={busy} onPress={onSend} />
       </View>

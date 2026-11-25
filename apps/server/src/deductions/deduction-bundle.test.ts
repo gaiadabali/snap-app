@@ -129,3 +129,22 @@ describe('defaultFyStart', () => {
     expect(defaultFyStart('2020-01-01')).toBe(2025);
   });
 });
+
+describe('sendContents', () => {
+  it('counts the lines the bundle would hold, the receipts behind them, km and receipts to confirm', async () => {
+    const { sendContents } = await import('./deduction-bundle.controller.js');
+    const t = {
+      ...totals([item({}), item({ itemId: 'phoneDevices', workCents: 0n }), item({ label: 'D3', itemId: 'nope' })], 1150),
+      receiptCount: 4,
+      toReview: { receiptCount: 2, amountCents: 100n, foreignCurrencyCount: 1 },
+    } as DeductionTotals;
+    // Under a cent and unknown items are left out of the bundle, so they are not counted as lines.
+    expect(sendContents(t)).toEqual({ lines: 1, receipts: 4, workKilometres: 1150, toConfirm: 2 });
+  });
+  it('km only: no lines and no receipts', async () => {
+    const { sendContents } = await import('./deduction-bundle.controller.js');
+    expect(sendContents({ ...totals([], 1150), receiptCount: 0 } as DeductionTotals)).toEqual({
+      lines: 0, receipts: 0, workKilometres: 1150, toConfirm: 0,
+    });
+  });
+});

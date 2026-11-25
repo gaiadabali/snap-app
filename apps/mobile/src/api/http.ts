@@ -26,6 +26,7 @@ import type {
   Connection,
   CreateCaptureRequest,
   CreateCaptureResponse,
+  FtrSendContents,
   FtrSendFinished,
   FtrSendStarted,
   CreditBalance,
@@ -1126,6 +1127,13 @@ export class HttpApi implements SnapApi {
   async getDeductionYear(): Promise<{ financialYear: string; directSend: boolean }> {
     const r = await this.get<{ financialYear: string; directSend?: boolean }>('/v1/deduction-bundle/year', await this.idForKind('personal'));
     return { financialYear: r.financialYear, directSend: r.directSend === true };
+  }
+
+  async getDeductionContents(financialYear: string): Promise<FtrSendContents> {
+    return this.get<FtrSendContents>(
+      `/v1/deduction-bundle/contents?fy=${encodeURIComponent(financialYear)}`,
+      await this.idForKind('personal'),
+    );
   }
 
   /* Neither is queued: the flow is single-use and lasts ten minutes. */

@@ -148,6 +148,21 @@ describeIfDb('deduction totals', () => {
     expect(t.toReview).toEqual({ receiptCount: 2, amountCents: 4700n, foreignCurrencyCount: 1 });
   });
 
+  it('a receipt filed whole counts what was paid, not the sum of its lines', async () => {
+    const before = await deductionTotals(OWNER, TENANT, 2025);
+    const laundry = (t: typeof before) => t.items.find((i) => i.itemId === 'washPowder')?.workCents ?? 0n;
+    // A tax invoice listing its lines before GST (10 + 20, GST 3): the employee paid 33.00.
+    await addDoc(TENANT, { cat: cat.laundry, payable: '33.00', lines: [{ amount: '10.00' }, { amount: '20.00' }] });
+    // A reading that missed a line: still the 15.00 paid.
+    await addDoc(TENANT, { cat: cat.laundry, payable: '15.00', lines: [{ amount: '4.00' }] });
+    // Lines filed elsewhere that cover the whole total leave nothing for the receipt's category.
+    await addDoc(TENANT, { cat: cat.laundry, payable: '8.00', lines: [{ amount: '8.00', cat: cat.tools }] });
+    const after = await deductionTotals(OWNER, TENANT, 2025);
+    expect(laundry(after) - laundry(before)).toBe(4800n);
+    expect(after.totalCents - before.totalCents).toBe(5600n);
+    expect(after.receiptCount - before.receiptCount).toBe(3);
+  });
+
   it('puts 30 Jun and 1 Jul in different years', async () => {
     const y25 = (await deductionTotals(OWNER, TENANT, 2025)).totalCents;
     const y26 = (await deductionTotals(OWNER, TENANT, 2026)).totalCents;

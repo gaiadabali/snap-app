@@ -6,6 +6,7 @@ import { createCategory, setBudget, setCategoryActive } from '@/lib/panels/categ
 import { getPermissions } from '@/lib/panels/permissions';
 import { loadWorkspace } from '@/lib/panels/workspace';
 import { CategoriesTable } from './CategoriesTable';
+import type { FtrSendContents } from '@snap/api-contract';
 import { ftrResult } from './ftr-result';
 import { SendToFtr } from './SendToFtr';
 
@@ -25,6 +26,12 @@ export default async function CategoriesPage({ searchParams }: { searchParams: P
   // Named from the server, which decides the year the export covers.
   const ftr = await api<{ financialYear: string; directSend?: boolean }>('/v1/deduction-bundle/year', { workspaceId: workspace.id })
     .catch(() => null);
+  // What the send would carry, counted by the server; only an owner or manager gets it.
+  const contents = ftr
+    ? await api<FtrSendContents>(`/v1/deduction-bundle/contents?fy=${encodeURIComponent(ftr.financialYear)}`, {
+        workspaceId: workspace.id,
+      }).catch(() => null)
+    : null;
   const ftrBase = process.env.NEXT_PUBLIC_FREE_TAX_RETURNS_URL;
   const reviewUrl = ftrBase ? new URL('/account/import', ftrBase).toString() : undefined;
 
@@ -49,6 +56,7 @@ export default async function CategoriesPage({ searchParams }: { searchParams: P
           directSend={ftr.directSend === true}
           result={ftr.directSend ? ftrResult(query) : undefined}
           reviewUrl={reviewUrl}
+          contents={contents}
         />
       ) : null}
 

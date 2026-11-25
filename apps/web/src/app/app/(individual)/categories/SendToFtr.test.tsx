@@ -31,4 +31,15 @@ describe('SendToFtr', () => {
     expect(bad).toContain("Free Tax Returns isn&#x27;t answering right now");
     expect(renderToStaticMarkup(<SendToFtr financialYear="2025-26" directSend result={{ status: 'failed', code: '<b>x' }} />)).toContain('Something went wrong. Nothing was sent.');
   });
+
+  it('says exactly what will go, in both modes', () => {
+    const contents = { lines: 2, receipts: 3, workKilometres: 1150, toConfirm: 1 };
+    for (const directSend of [false, true]) {
+      const html = renderToStaticMarkup(<SendToFtr financialYear="2025-26" directSend={directSend} contents={contents} />);
+      expect(html).toContain('Ready to send for 2025-26: 2 deduction lines from 3 receipts and 1,150 work km.');
+      expect(html).toContain('once you confirm its category');
+    }
+    expect(renderToStaticMarkup(<SendToFtr financialYear="2025-26" />)).not.toContain('Ready to send');
+  });
 });
+

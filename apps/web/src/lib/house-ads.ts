@@ -122,8 +122,10 @@ export const HOUSE_ADS: readonly HouseAdEntry[] = [
   {
     id: 'free-tax-returns-2026-09',
     placements: ['individual-documents', 'individual-analytics', 'individual-categories'],
-    headline: 'your receipts are already the worksheet',
-    body: 'everything you scan here carries straight into free-tax-returns — nothing to re-type for the return itself.',
+    // Says exactly what goes (group plan, 2026-11-25): receipts filed in a work category and
+    // work trips, as deduction totals the person accepts in Free Tax Returns. Not "everything".
+    headline: 'Send your work receipts to Free Tax Returns',
+    body: 'File a receipt in a work category and its amount goes to Free Tax Returns with your work kilometres, as deduction totals you accept there.',
     href: FREE_TAX_RETURNS_URL ?? '',
     ctaLabel: 'Do your return',
     // Fails closed: an unconfigured destination must never render as a link to nowhere.

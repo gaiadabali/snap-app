@@ -11,10 +11,11 @@ import { fyLabel, foldTotals, receiptRefOf, type DeductionSourceLine, type Deduc
  * Which receipts count: not deleted, not rejected, dated inside the year by
  * `documents.issue_date` (an undated receipt cannot be placed in a year and is
  * left out), in a category that has both a label and an item (retired
- * categories still count; business legacy ones with no item do not). The
- * category of an amount is `coalesce(line.category_id, document.category_id)`,
- * as in `listCategories`; a document with no lines counts `payable_amount`
- * once under its own category. Amounts are as printed, GST included
+ * categories still count; business legacy ones with no item do not). A line
+ * filed in a category of its own (`document_lines.category_id`) counts its
+ * amount there; the receipt's own category (`documents.category_id`) counts the
+ * rest of `payable_amount`, i.e. the total less those lines (nothing when that
+ * is zero or less). Amounts are as printed, GST included
  * (employees: the GST is part of the cost). Only `category_source = 'user'`
  * counts as a deduction; supplier-filed ones are reported as "to review".
  * Deductible totals are AUD only: a categorised receipt in another currency is
@@ -46,17 +47,28 @@ export async function deductionTotals(
       storage_key: string | null;
     }>(sql`
       with amounts as (
-        select d.id as document_id, coalesce(l.category_id, d.category_id) as category_id,
+        -- A line filed in a category of its own counts under that category.
+        select d.id as document_id, l.category_id,
                d.category_source, d.currency::text as currency, l.line_net_amount as amount,
                d.capture_id
           from documents d
           join document_lines l on l.document_id = d.id
          where d.tenant_id = ${tenantId} and ${docFilter}
+           and l.category_id is not null
         union all
-        select d.id, d.category_id, d.category_source, d.currency::text, d.payable_amount, d.capture_id
+        -- The receipt's own category covers the rest of what was paid: the total
+        -- less the lines filed separately. Never the sum of its lines: a tax
+        -- invoice can list them before GST, and a reading can miss one, while an
+        -- employee claims what they paid (GST included).
+        select d.id, d.category_id, d.category_source, d.currency::text, r.amount, d.capture_id
           from documents d
+          cross join lateral (
+            select d.payable_amount - coalesce(
+                     (select sum(l.line_net_amount) from document_lines l
+                       where l.document_id = d.id and l.category_id is not null), 0) as amount
+          ) r
          where d.tenant_id = ${tenantId} and ${docFilter}
-           and not exists (select 1 from document_lines l where l.document_id = d.id)
+           and d.category_id is not null and r.amount > 0
       )
       select a.document_id, c.ato_deduction_code as label, c.engine_row_id as item_id,
              c.private_use_percent::int as private_use_percent, a.category_source as source,

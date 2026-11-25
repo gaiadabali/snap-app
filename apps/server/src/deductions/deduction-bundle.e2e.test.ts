@@ -170,6 +170,18 @@ describeIfDb('deduction bundle endpoint', () => {
     await admin.query(`insert into users (id, subject, email, display_name) values ($1,'test|db-member','m@db.test','M') on conflict do nothing`, [MEMBER]);
     await admin.query(`insert into memberships (tenant_id, user_id, role) values ($1,$2,'member') on conflict do nothing`, [TENANT, MEMBER]);
     await expect(get(MEMBER, TENANT, '2025-26')).rejects.toMatchObject({ status: 403 });
+    await expect(controller.contents(user(MEMBER), TENANT, reply, '2025-26')).rejects.toMatchObject({ status: 403 });
+  });
+
+  it('contents counts what the file carries: 3 lines from 6 receipts, 11 km, 1 supplier-filed to confirm', async () => {
+    expect(await controller.contents(user(OWNER), TENANT, reply, '2025-26')).toEqual({
+      lines: 3, receipts: 6, workKilometres: 11, toConfirm: 1,
+    });
+    const b = await get(OWNER, TENANT, '2025-26');
+    expect(b.lines.length).toBe(3);
+    expect(b.lines.reduce((n, l) => n + l.receiptCount, 0)).toBe(6);
+    await expect(controller.contents(user(BIZ_OWNER), BIZ, reply, '2025-26')).rejects.toMatchObject({ status: 403 });
+    await expect(controller.contents(user(OWNER), TENANT, reply, '2024-25')).rejects.toMatchObject({ status: 400 });
   });
 
   it('the file passes the validator after a JSON round trip', async () => {
