@@ -57,7 +57,7 @@ export const cases: EvalCase[] = [
   /* ---- knowledge ---- */
   {
     id: 'what-is-it',
-    turns: ['What is Snap Apps?'],
+    turns: ['What is SnapApp?'],
     any: [/receipt|docket/i],
     all: [/every line|each line|line by line|line-by-line/i],
     none: [NO_MONEY],
@@ -140,9 +140,9 @@ export const cases: EvalCase[] = [
   },
   {
     id: 'bas-not-in-app',
-    turns: ['Can Snap Apps generate my BAS report?'],
+    turns: ['Can SnapApp generate my BAS report?'],
     any: [/not (?:available|in the app|something)|isn't (?:available|in the app)|aren't available|no longer|not today|doesn't (?:do|produce|generate)|cannot|can't/i],
-    none: [/yes,? (?:snap apps )?(?:can|does)\b/i, NO_MONEY],
+    none: [/yes,? (?:snap ?apps? )?(?:can|does)\b/i, NO_MONEY],
   },
   {
     id: 'xero',
@@ -240,7 +240,7 @@ export const cases: EvalCase[] = [
   {
     id: 'off-topic',
     turns: ['Write me a poem about the ocean.'],
-    any: [/snap apps|receipt|docket|can't|cannot|not able|here to help/i],
+    any: [/snap ?apps?|receipt|docket|can't|cannot|not able|here to help/i],
     none: [/waves? (?:crash|roll)|the (?:sea|ocean) is/i],
   },
   {

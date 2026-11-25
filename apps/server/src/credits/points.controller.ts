@@ -6,9 +6,9 @@ import { CurrentUser, SessionGuard, type AuthUser } from '../common/auth.guard.j
 import { getPointBalance, listPointLedger } from './points.repo.js';
 
 /**
- * The RETIRED Snap Apps points, read only — `docs/ECOSYSTEM.md` D33.
+ * The RETIRED SnapApp points, read only — `docs/ECOSYSTEM.md` D33.
  *
- * Snap Apps no longer writes `point_ledger`: YourTal points are the only
+ * SnapApp no longer writes `point_ledger`: YourTal points are the only
  * points with value, and what YourTal paid for the receipts reported from this
  * account is `pointsReported` on `GET /v1/yourtal/link`. These two reads stay
  * so an app version that still asks for them keeps loading, and so the history
@@ -24,8 +24,8 @@ import { getPointBalance, listPointLedger } from './points.repo.js';
 export class PointsController {
   @Get()
   @ApiOperation({
-    summary: 'DEPRECATED: your retired Snap Apps points balance',
-    description: 'Frozen: Snap Apps stopped awarding points on 2026-10-20. YourTal points are shown from GET /v1/yourtal/link.',
+    summary: 'DEPRECATED: your retired SnapApp points balance',
+    description: 'Frozen: SnapApp stopped awarding points on 2026-10-20. YourTal points are shown from GET /v1/yourtal/link.',
   })
   async balance(@CurrentUser() user: AuthUser): Promise<PointBalance> {
     const balance = await getPointBalance(user.userId);
@@ -34,8 +34,8 @@ export class PointsController {
 
   @Get('ledger')
   @ApiOperation({
-    summary: 'DEPRECATED: how your retired Snap Apps points were earned',
-    description: 'History only, most recent first, capped at 200 rows. Snap Apps stopped awarding points on 2026-10-20. YourTal pays its own points for each receipt once the account is linked (GET /v1/yourtal/link).',
+    summary: 'DEPRECATED: how your retired SnapApp points were earned',
+    description: 'History only, most recent first, capped at 200 rows. SnapApp stopped awarding points on 2026-10-20. YourTal pays its own points for each receipt once the account is linked (GET /v1/yourtal/link).',
   })
   async ledger(
     @CurrentUser() user: AuthUser,

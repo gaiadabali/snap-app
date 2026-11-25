@@ -161,7 +161,7 @@ export function ReadingChapter() {
         <SectionHead
           align="split"
           title={<span id="reading-h">Milk and a flat white are not taxed the same.</span>}
-          lede="Plain food is GST-free. Hot food and soft drink are not. One docket can carry both, so Snap Apps reads each line's price, quantity and tax treatment instead of guessing from the total."
+          lede="Plain food is GST-free. Hot food and soft drink are not. One docket can carry both, so SnapApp reads each line's price, quantity and tax treatment instead of guessing from the total."
         />
 
         <div className="mt-16 grid items-center gap-12 lg:mt-20 lg:grid-cols-[290px_minmax(0,1fr)_260px] lg:gap-[60px] xl:grid-cols-[310px_minmax(0,1fr)_300px]">
@@ -218,7 +218,7 @@ export function ChecksChapter() {
             </Reveal>
             <Reveal delay={1}>
               <p className="lede mt-6 max-w-[40ch]">
-                A GST credit only holds if the invoice behind it follows the ATO&rsquo;s rules. Snap Apps checks
+                A GST credit only holds if the invoice behind it follows the ATO&rsquo;s rules. SnapApp checks
                 each one the moment a docket is read.
               </p>
             </Reveal>

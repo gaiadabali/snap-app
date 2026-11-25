@@ -6,7 +6,7 @@ kind: howto
 
 ## A blank rather than a guess
 
-When Snap Apps is not confident about a figure, it leaves the field empty and flags it for you to fill in. A wrong figure is worse than a missing one, because a missing field asks for your attention and a wrong one does not.
+When SnapApp is not confident about a figure, it leaves the field empty and flags it for you to fill in. A wrong figure is worse than a missing one, because a missing field asks for your attention and a wrong one does not.
 
 ## The review screen
 

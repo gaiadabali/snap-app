@@ -129,7 +129,7 @@ Related, outside this form: the Play Business/Finance policy expects a clear sta
 
 Rules applied: plain, honest, no earning or income claims, no "get paid", no promise of a refund amount, no tax advice, no ATO endorsement, no claim of accuracy percentages. Prices and the free-scan count must match `credit-packs.ts` at submission.
 
-**App name** (max 30): `Snap Apps: Receipts & Tax` (25 characters) **[confirm]** the Play name must not carry unverified claims; the plain alternative is `Snap Apps` (9).
+**App name** (max 30): `SnapApp: Receipts & Tax` (24 characters) **[confirm]** the Play name must not carry unverified claims; the plain alternative is `SnapApp` (7).
 
 **Short description** (max 80):
 
@@ -138,9 +138,9 @@ Rules applied: plain, honest, no earning or income claims, no "get paid", no pro
 **Full description** (max 4000; this draft is about 2,100 characters):
 
 ```
-Snap Apps helps Australian sole traders, tradies and small businesses keep their receipts and records in order.
+SnapApp helps Australian sole traders, tradies and small businesses keep their receipts and records in order.
 
-Take a photo of a receipt or tax invoice and Snap Apps reads it for you: the supplier, date, amount and GST. You check what it found, fix anything that looks wrong, and save it to your ledger. No more shoebox of faded dockets at tax time.
+Take a photo of a receipt or tax invoice and SnapApp reads it for you: the supplier, date, amount and GST. You check what it found, fix anything that looks wrong, and save it to your ledger. No more shoebox of faded dockets at tax time.
 
 WHAT YOU CAN DO
 - Capture receipts and tax invoices with your camera, or add a PDF or image from your phone
@@ -152,7 +152,7 @@ WHAT YOU CAN DO
 - Connect Xero if you use it, to send your confirmed transactions across
 
 HOW YOUR PHOTOS ARE READ
-Snap Apps can read a receipt on your phone, or send the image to our server, where an AI model reads it. When it is read on our server, the image is passed through OpenRouter in the United States to the company that runs the model, which may be in the United States or elsewhere. Our privacy policy explains this in full. We do not sell your data and we do not show ads.
+SnapApp can read a receipt on your phone, or send the image to our server, where an AI model reads it. When it is read on our server, the image is passed through OpenRouter in the United States to the company that runs the model, which may be in the United States or elsewhere. Our privacy policy explains this in full. We do not sell your data and we do not show ads.
 
 SIGN IN WITH YOURTAL
 Use your YourTal account to sign in. You stay in control of what is shared between YourTal apps.
@@ -161,7 +161,7 @@ CREDITS
 Reading a receipt uses one credit. New accounts start with free scans. You can buy more credits in the app; payments are handled by Google Play.
 
 FAMILIES
-A parent can invite a teenager into Snap Apps so they can track their own spending. The teen gets their own space, the parent who invited them can view it, and the teen is told so. Snap Apps is for adults; teen accounts exist only through a parent's invite.
+A parent can invite a teenager into SnapApp so they can track their own spending. The teen gets their own space, the parent who invited them can view it, and the teen is told so. SnapApp is for adults; teen accounts exist only through a parent's invite.
 
 YOUR DATA
 - Trip distance is measured only while the trip screen is open, and only the distance is saved, not your route
@@ -169,7 +169,7 @@ YOUR DATA
 - Business records are kept for five years to match the ATO's record-keeping period, unless you delete your account first. Export what you need before you do
 
 IMPORTANT
-Snap Apps gives general information and is not tax advice. It is not affiliated with the Australian Taxation Office. For your own situation, ask a registered tax agent. Readings by AI can be wrong, so always check the amounts before you rely on them.
+SnapApp gives general information and is not tax advice. It is not affiliated with the Australian Taxation Office. For your own situation, ask a registered tax agent. Readings by AI can be wrong, so always check the amounts before you rely on them.
 
 Questions: hansel@gaiada.com
 ```
@@ -188,7 +188,7 @@ Questions: hansel@gaiada.com
 6. **Target audience:** 18+ only, with teens by parent invite. Confirm; and the minimum age for a teen invite and parental-consent wording (legal).
 7. **Mascot Snapper:** confirm it is not in the Android app and not child-appealing; if it is added, recheck the audience answer.
 8. **Payments:** the Payment info "No" answer holds only after Play Billing replaces the in-app checkout (8.3.b). Check any cached "wallet" wording in the app (a Play reviewer may read it as stored value).
-9. **Listing name and category:** `Snap Apps: Receipts & Tax` vs `Snap Apps`; Business vs Finance. Trademark check on "Snap" (Snap Inc.) before the account is created.
+9. **Listing name and category:** `SnapApp: Receipts & Tax` vs `SnapApp`; Business vs Finance. Trademark check on "Snap" (Snap Inc.) before the account is created.
 10. **Operator details** for the Play page: company name, address, ABN, and whether the business is shown as a "trader" under EU rules (Play asks developers who distribute in the EU; the app is AU-only, so set AU as the sole country).
 11. **Support email:** hansel@gaiada.com is a stopgap (0.12.c); a support mailbox is needed before launch. The delete-account page and listing use it.
 12. **Fingerprint screen:** `fingerprint.tsx` is an enrolment ceremony that stores a local preference only and is behind `EXPERIMENTAL_FEATURES_ENABLED`; confirm it is off in the Play build so no biometric data claim is needed.

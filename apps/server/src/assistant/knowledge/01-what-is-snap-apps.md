@@ -1,12 +1,12 @@
 ---
-title: What Snap Apps is
+title: What SnapApp is
 url: /
 kind: about
 ---
 
-## What Snap Apps is
+## What SnapApp is
 
-Snap Apps is a receipt app that reads every line. You photograph a docket and Snap Apps reads each item and its price, splits GST-free lines from taxable ones, checks whether it is a valid tax invoice, and keeps a true copy of the original for five years. Then it shows you where the money went.
+SnapApp is a receipt app that reads every line. You photograph a docket and SnapApp reads each item and its price, splits GST-free lines from taxable ones, checks whether it is a valid tax invoice, and keeps a true copy of the original for five years. Then it shows you where the money went.
 
 It is built for Australians who want their receipts sorted properly, rather than a pile of photos in a camera roll.
 
@@ -33,11 +33,11 @@ The BAS report, tax pack, deduction estimates, invoices, bills, mileage tracking
 
 ## Frequently asked
 
-### Is Snap Apps free to try?
+### Is SnapApp free to try?
 Yes. Every new account starts with {{FREE_SCANS}} free scans, and you do not need a card to sign up.
 
 ### Where can I use it?
 There is an Android app you can download directly, and the web app works in any browser. The iPhone app is in development and cannot be installed yet.
 
-### Does Snap Apps give tax advice?
+### Does SnapApp give tax advice?
 No. It gives general information and checks dockets against published rules. For your own situation, a registered tax agent is the person to ask.

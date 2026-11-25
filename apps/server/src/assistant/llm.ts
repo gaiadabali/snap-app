@@ -150,7 +150,7 @@ export function createLlm({
                   'Content-Type': 'application/json',
                   Accept: 'text/event-stream',
                   'HTTP-Referer': 'https://snapapp.gaiada.com',
-                  'X-Title': 'Snap Apps',
+                  'X-Title': 'SnapApp',
                 },
                 body: JSON.stringify({
                   model: useModel,

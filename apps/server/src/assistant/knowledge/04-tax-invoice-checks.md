@@ -12,7 +12,7 @@ A tax invoice is only needed to claim a GST credit once a purchase reaches a set
 
 A plain till receipt without these details is often not a tax invoice.
 
-## What Snap Apps checks
+## What SnapApp checks
 
 On every docket it reads, the rules run in plain code, not as a guess from the model:
 

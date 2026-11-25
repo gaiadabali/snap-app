@@ -71,7 +71,7 @@ export function PanelShell({
             {switchLink ? <div className="px-3 py-2 sm:hidden">{switchLink}</div> : null}
           </MobileNav>
           <Link href="/" className="whitespace-nowrap text-[15px] font-bold text-[var(--color-ink)]">
-            Snap Apps
+            SnapApp
           </Link>
           <span className="hidden rounded-full bg-[var(--color-accent-soft)] px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--color-ink-muted)] sm:inline">
             {workspace.kind === 'business' ? 'Business' : 'Personal'}

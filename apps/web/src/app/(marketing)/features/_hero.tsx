@@ -28,7 +28,7 @@ export function FeaturesHero() {
 
             <Reveal delay={3}>
               <p className="lede mt-7 max-w-[34rem]">
-                Snap Apps reads every line, splits the GST, checks the tax invoice rules and keeps a true copy
+                SnapApp reads every line, splits the GST, checks the tax invoice rules and keeps a true copy
                 for five years. Then it works out what is safe to spend. Six chapters, everything the app does
                 now.
               </p>

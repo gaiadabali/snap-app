@@ -130,7 +130,7 @@ export async function queueReceiptReport(
       externalRef,
       // Kept by YourTal for audit and never parsed. The capture id lets the two
       // sides reconcile a disputed grant; nothing about the receipt's contents
-      // or the person leaves Snap Apps (lead decision 2026-10-20: minimum data).
+      // or the person leaves SnapApp (lead decision 2026-10-20: minimum data).
       evidence: { captureId: input.captureId },
     });
   const others = (input.sameReceiptCaptureIds ?? []).filter((id) => id !== input.captureId);

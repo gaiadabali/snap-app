@@ -791,7 +791,7 @@ export default function CaptureScreen() {
             Camera access
           </Figure>
           <Body style={{ color: 'rgba(255,255,255,0.75)' }}>
-            Snap Apps needs the camera to photograph receipts and tax invoices. The original image is
+            SnapApp needs the camera to photograph receipts and tax invoices. The original image is
             kept unmodified — the ATO only accepts an electronic copy of a receipt if it is a true
             and clear reproduction.
           </Body>

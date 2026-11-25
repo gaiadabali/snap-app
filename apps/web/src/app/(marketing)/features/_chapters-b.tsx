@@ -264,7 +264,7 @@ export function RecordsChapter() {
             </Reveal>
             <Reveal delay={1}>
               <p className="lede mt-6 max-w-[44ch]">
-                Records have to be kept for five years. Snap Apps keeps the original photo and what it read from
+                Records have to be kept for five years. SnapApp keeps the original photo and what it read from
                 it together, as a true copy.
               </p>
             </Reveal>

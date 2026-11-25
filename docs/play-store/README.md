@@ -7,7 +7,7 @@ Listing text lives in [`../PLAY-STORE.md`](../PLAY-STORE.md) section 4. Everythi
 | File | Size | Format | What it shows |
 |---|---|---|---|
 | `icon-512.png` | 512x512 | 32-bit PNG (RGBA, fully opaque), 24 KB | The app icon from `apps/mobile/assets/icon.png` (1024 px master, downscaled; not redrawn). Square, full bleed: Play applies its own rounded mask |
-| `feature-graphic-1024x500.png` | 1024x500 | 24-bit PNG, 81 KB | Brand blue gradient (#1878D8 to a deeper step), the icon, "Snap Apps", "Receipts into records" and "Photograph a receipt, check what was read." (both lines are the app's own sign-in copy). No prices, no device frame, no claims |
+| `feature-graphic-1024x500.png` | 1024x500 | 24-bit PNG, 81 KB | Brand blue gradient (#1878D8 to a deeper step), the icon, "SnapApp", "Receipts into records" and "Photograph a receipt, check what was read." (both lines are the app's own sign-in copy). No prices, no device frame, no claims |
 | `phone/1-home.png` | 1080x1920 | 24-bit PNG | Home: left to spend this month, credits left, YourTal points, shortcuts (Kate Marsh, seeded demo person) |
 | `phone/2-scan.png` | 1080x1920 | 24-bit PNG | Scan screen with framing guide and shutter. **The viewfinder is a mock feed** (see below) |
 | `phone/3-receipt.png` | 1080x1920 | 24-bit PNG | A read receipt: supplier, date, confidence, the stored original |
@@ -35,4 +35,4 @@ All sizes are checked by `python3 docs/play-store/tools/verify.py` (Play limits:
 5. **No tablet screenshots** (7-inch and 10-inch). Play only asks for them to feature on tablets; `app.json` has `supportsTablet` for iOS only. Capture a 600x1024 @2 and 800x1280 @2 set from the same script if wanted.
 6. **No promo video, no localised sets** (en-AU only). **Dark-mode** screenshots are possible with the toggle on Home if wanted.
 7. Screenshots come from the web build, not an Android device: fonts and the system status bar differ slightly. Re-shoot from the release APK on a device or emulator before submission if exact fidelity matters.
-8. Listing name wording (`Snap Apps: Receipts & Tax` vs `Snap Apps`) is an open item in PLAY-STORE.md; the feature graphic says "Snap Apps" only, so it works with either.
+8. Listing name wording (`SnapApp: Receipts & Tax` vs `SnapApp`) is an open item in PLAY-STORE.md; the feature graphic says "SnapApp" only, so it works with either.

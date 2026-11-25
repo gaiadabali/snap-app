@@ -402,7 +402,7 @@ function Lab() {
               <Slot size={72} reduced={reduced} register={register} style={{ margin: '-10px 0 -10px -8px' }} />
               <div>
                 <strong>Snapper</strong>
-                <span>The Snap Apps assistant</span>
+                <span>The SnapApp assistant</span>
               </div>
             </div>
             <figcaption>panel header · 72 px canvas</figcaption>

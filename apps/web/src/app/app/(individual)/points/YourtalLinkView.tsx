@@ -63,7 +63,7 @@ function StatRow({ label, value, hint }: { label: string; value: string; hint?: 
   );
 }
 
-/** Receipts scanned now will not earn: Snap Apps' receipt package at YourTal is used up. */
+/** Receipts scanned now will not earn: SnapApp's receipt package at YourTal is used up. */
 function PausedNotice() {
   return (
     <div

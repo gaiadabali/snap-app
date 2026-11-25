@@ -12,8 +12,8 @@ export default function TermsOfServicePage() {
       <section>
         <h2>1. Agreement</h2>
         <p>
-          These terms govern use of Snap Apps by individuals and businesses in Australia. By creating
-          an account you agree to them. If you use Snap Apps on behalf of a business, you confirm you
+          These terms govern use of SnapApp by individuals and businesses in Australia. By creating
+          an account you agree to them. If you use SnapApp on behalf of a business, you confirm you
           are authorised to accept these terms for it.
         </p>
       </section>
@@ -21,7 +21,7 @@ export default function TermsOfServicePage() {
       <section>
         <h2>2. The service</h2>
         <p>
-          Snap Apps captures photographs of receipts and tax invoices, extracts and validates the data
+          SnapApp captures photographs of receipts and tax invoices, extracts and validates the data
           on them, and — once you confirm a document — posts it as a transaction to a double-entry
           ledger. It produces GST figures for your BAS, an unclaimable-GST report, and a tax pack export from
           that ledger, and can sync posted transactions to Xero if you connect it.
@@ -31,7 +31,7 @@ export default function TermsOfServicePage() {
       <section>
         <h2>3. Plans, quotas, and billing</h2>
         <p>
-          Snap Apps is offered on a free tier with a monthly scan limit and shorter retention, and on
+          SnapApp is offered on a free tier with a monthly scan limit and shorter retention, and on
           paid plans — a direct plan for individuals and sole traders, and practice plans billed to an
           accounting or bookkeeping firm on behalf of its clients. Current plan details and pricing are
           published on the pricing page. If you reach your plan&apos;s scan quota, we will never
@@ -47,7 +47,7 @@ export default function TermsOfServicePage() {
       <section>
         <h2>4. Your content, your data</h2>
         <p>
-          You retain ownership of the receipts, invoices, and financial data you put into Snap Apps.
+          You retain ownership of the receipts, invoices, and financial data you put into SnapApp.
           You grant us the licence needed to process it in order to provide the service — extraction,
           storage, ledger posting, report generation, and sync to a service you&apos;ve connected. See
           the{' '}
@@ -61,7 +61,7 @@ export default function TermsOfServicePage() {
       <section>
         <h2>5. Accuracy of BAS and tax figures</h2>
         <p>
-          Snap Apps applies published Australian Taxation Office rules — GST arithmetic, tax invoice
+          SnapApp applies published Australian Taxation Office rules — GST arithmetic, tax invoice
           thresholds, deduction rates — through validated, tested calculations, and every field is
           checked before a document is treated as complete. It is a tool to help you prepare your BAS
           and tax records; it is <strong>not a substitute for advice from a registered tax agent or BAS
@@ -76,7 +76,7 @@ export default function TermsOfServicePage() {
       <section>
         <h2>6. Acceptable use</h2>
         <p>
-          Use Snap Apps only for your own genuine business or personal records. Don&apos;t attempt to
+          Use SnapApp only for your own genuine business or personal records. Don&apos;t attempt to
           access another workspace&apos;s data, interfere with the service, or use it to submit
           fraudulent or falsified documents.
         </p>

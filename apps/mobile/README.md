@@ -1,6 +1,6 @@
 # @snap/mobile
 
-Expo React Native client for Snap Apps. **Demo-ready.**
+Expo React Native client for SnapApp. **Demo-ready.**
 
 Thin by design: capture, review, read. It depends on `@snap/api-contract` (types only) and nothing
 else from this workspace — enforced by `test/boundaries.test.ts` at the repo root.

@@ -142,7 +142,7 @@ export function SignIn({
         >
           <GradientHero>
             <View style={{ gap: space.sm }}>
-              <HeroLabel>Snap Apps</HeroLabel>
+              <HeroLabel>SnapApp</HeroLabel>
               <Text style={{ ...type.h1, color: '#FFFFFF' }}>Receipts into records</Text>
               <HeroBody>
                 Photograph a receipt, check what was read, keep a record that holds up.
@@ -870,7 +870,7 @@ export function SessionLoading() {
             marginTop: 26,
           }}
         >
-          Snap Apps
+          SnapApp
         </Text>
         <Text style={{ ...type.input, color: 'rgba(255,255,255,0.87)', marginTop: space.sm }}>
           Receipts into records

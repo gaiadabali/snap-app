@@ -26,7 +26,7 @@ describe('authNotice', () => {
 
   it("words the teen refusal in SnapApp's own voice", () => {
     expect(authNotice('teen_invite_required')?.message).toBe(
-      'Teen YourTal accounts can use Snap Apps only with an invite from the parent or guardian who approved them.',
+      'Teen YourTal accounts can use SnapApp only with an invite from the parent or guardian who approved them.',
     );
   });
 

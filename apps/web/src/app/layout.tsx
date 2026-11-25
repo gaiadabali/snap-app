@@ -26,18 +26,18 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: 'Snap Apps — the receipt app that reads every line',
-    template: '%s · Snap Apps',
+    default: 'SnapApp — the receipt app that reads every line',
+    template: '%s · SnapApp',
   },
   description:
-    'Photograph a receipt and Snap Apps reads every line, splits GST-free from taxable, checks it is a valid tax invoice and keeps a true copy for five years. Then it shows you where the money went.',
+    'Photograph a receipt and SnapApp reads every line, splits GST-free from taxable, checks it is a valid tax invoice and keeps a true copy for five years. Then it shows you where the money went.',
   metadataBase: new URL(process.env.WEB_PUBLIC_URL ?? 'http://127.0.0.1:3000'),
   icons: { icon: '/brand/snap-icon.png', apple: '/brand/snap-icon.png' },
   openGraph: {
     type: 'website',
-    siteName: 'Snap Apps',
+    siteName: 'SnapApp',
     locale: 'en_AU',
-    images: [{ url: '/brand/og.jpg', width: 1200, height: 630, alt: 'Snap Apps — the receipt app that reads every line' }],
+    images: [{ url: '/brand/og.jpg', width: 1200, height: 630, alt: 'SnapApp — the receipt app that reads every line' }],
   },
   twitter: { card: 'summary_large_image', images: ['/brand/og.jpg'] },
 };

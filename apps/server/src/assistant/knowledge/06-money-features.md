@@ -10,7 +10,7 @@ Every receipt you snap is filed under a category and counted in your spending. S
 
 ## Budgets and safe to spend a day
 
-Set a budget and Snap Apps shows what is left to spend. It also works out a safe-to-spend figure for each day, based on what is left in the budget and how many days remain in the month. The figure stays current as you scan.
+Set a budget and SnapApp shows what is left to spend. It also works out a safe-to-spend figure for each day, based on what is left in the budget and how many days remain in the month. The figure stays current as you scan.
 
 ## Recurring
 
@@ -32,5 +32,5 @@ It is what is left in your budget spread across the days left in the month. It u
 ### Can I search my receipts?
 Yes. Search by merchant, category or amount.
 
-### Does Snap Apps find my subscriptions?
+### Does SnapApp find my subscriptions?
 It finds recurring payments and standing bills in your receipts and lists them as recurring.

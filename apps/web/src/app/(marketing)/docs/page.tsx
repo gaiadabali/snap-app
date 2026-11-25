@@ -13,7 +13,7 @@ export default function DocsIndexPage() {
     <div className="docs-hub">
       <header className="docs-hero">
         <div className="kicker">Documentation</div>
-        <h1 className="docs-title docs-title-hub">How Snap Apps works</h1>
+        <h1 className="docs-title docs-title-hub">How SnapApp works</h1>
         <p className="lede">
           Guides for using the product day to day — capturing receipts, correcting what the model
           got wrong,{BUSINESS_SURFACES_ENABLED ? ' understanding your BAS position,' : ''} and getting

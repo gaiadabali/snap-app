@@ -637,7 +637,7 @@ const usageByMonth: Record<UsageKind, Record<string, UsageItem[]>> = {
       { id: 'u22', label: 'Bulk import, four receipts', occurredAt: '2026-07-02', amount: 4 },
     ],
   },
-  // Snap Apps points are retired (D33); YourTal's points are not itemised here.
+  // SnapApp points are retired (D33); YourTal's points are not itemised here.
   points: {},
 };
 

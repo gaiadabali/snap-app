@@ -87,7 +87,7 @@ export default function FingerprintScreen() {
         <ScreenHeader title="Set up fingerprint" onBack={() => router.back()} />
 
         <Text style={[type.body, { color: p.inkMuted }]}>
-          Hold your finger on the reader below. The phone registers the print; Snap Apps only
+          Hold your finger on the reader below. The phone registers the print; SnapApp only
           stores whether it matched.
         </Text>
 
@@ -157,7 +157,7 @@ export default function FingerprintScreen() {
           onPress={() => router.back()}
         />
         <Small style={{ textAlign: 'center' }}>
-          Your fingerprint never leaves the phone. Snap Apps receives a yes or a no, nothing else.
+          Your fingerprint never leaves the phone. SnapApp receives a yes or a no, nothing else.
         </Small>
       </ScrollView>
     </Screen>

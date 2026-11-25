@@ -25,7 +25,7 @@ export const GST_SHARE_OF_INCLUSIVE = 1 / 11;
 export const CARD_FEE_RATE = 0.0175;
 export const CARD_FEE_FIXED_AUD = 0.3;
 
-/** What Snap Apps pays YourTal for the point a bought-credit receipt earns. */
+/** What SnapApp pays YourTal for the point a bought-credit receipt earns. */
 export const POINT_COST_AUD = 0.03;
 
 /** One price, with everything already in it. */

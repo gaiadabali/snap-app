@@ -16,10 +16,10 @@ const LINKS = yourtalLinks(YOURTAL_WEB_URL);
 /**
  * Points: YourTal's, paid in YourTal (`docs/ECOSYSTEM.md` D33).
  *
- * Snap Apps used to keep its own point per scan. The founder retired that
+ * SnapApp used to keep its own point per scan. The founder retired that
  * (2026-10-20): YourTal points are the only points with value, so this screen
  * is the link to a YourTal account and what YourTal said it paid, not a
- * Snap Apps balance. The balance itself lives in the person's YourTal wallet.
+ * SnapApp balance. The balance itself lives in the person's YourTal wallet.
  *
  * Reads and writes `GET / POST / DELETE /v1/yourtal/link`, none of which sends
  * a workspace header: the link belongs to the person. When the server has no

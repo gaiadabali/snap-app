@@ -26,13 +26,13 @@ export default async function InviteNotForYouPage({
         <div>
           <h1 className="auth-title">This invite isn’t for you</h1>
           <p className="auth-lede">
-            This link is for a teen whose parent invited them to Snap Apps. You’ve signed in with an adult
+            This link is for a teen whose parent invited them to SnapApp. You’ve signed in with an adult
             YourTal account, so nothing was shared. If you meant to sign up for yourself, you can carry on.
           </p>
         </div>
         <div className="auth-form">
           <Link href={carryOn} className="btn btn-primary btn-lg w-full">
-            Continue to Snap Apps
+            Continue to SnapApp
           </Link>
           <form action="/auth/sign-out" method="post">
             <button type="submit" className="btn btn-secondary btn-lg w-full">

@@ -24,7 +24,7 @@ import { heroGradient, numeric, radius, shadow, space, type, usePalette, useThem
  * balances sit on the brand gradient because they are the only numbers here,
  * and both are tappable: a balance nobody can explain is a support ticket, so
  * credits lead to the usage that produced them and YourTal points lead to the
- * link. The points tile is YourTal's, not a Snap Apps balance (D33), and is
+ * link. The points tile is YourTal's, not a SnapApp balance (D33), and is
  * absent when the server has the link off.
  */
 export default function ProfileScreen() {

@@ -7,7 +7,7 @@ import './assistant.css';
 import { mountAssistant, type AssistantHandle } from './index';
 
 /**
- * Snapper, the Snap Apps assistant (docs/ASSISTANT.md §10).
+ * Snapper, the SnapApp assistant (docs/ASSISTANT.md §10).
  *
  * A thin island: the widget is framework-agnostic TypeScript that builds its own
  * DOM, so this renders nothing and mounts it once. Server HTML is untouched,

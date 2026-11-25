@@ -2,7 +2,7 @@ import { receiptStatus, type YourtalPartnerClient } from './client.js';
 import type { YourtalRegion } from './links.repo.js';
 
 /**
- * Whether YourTal is paying points for receipts right now (F127: Snap Apps'
+ * Whether YourTal is paying points for receipts right now (F127: SnapApp'
  * receipt package may be used up), held in this API process's memory.
  *
  * Not needed for correctness: a receipt refused while paused is refused by

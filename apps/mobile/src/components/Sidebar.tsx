@@ -176,7 +176,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
             <MenuContent onNavigate={onClose} />
 
             <Small style={{ textAlign: 'center' }}>
-              Snap Apps · {isBusiness ? 'business' : 'personal'}
+              SnapApp · {isBusiness ? 'business' : 'personal'}
               {IS_DEMO ? ' · demo data' : ''}
             </Small>
           </ScrollView>

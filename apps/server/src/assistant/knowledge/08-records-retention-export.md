@@ -6,7 +6,7 @@ kind: policy
 
 ## The five-year rule
 
-The ATO requires most business records to be kept for five years from when they were prepared or obtained, or from when the transaction was completed, whichever is later. Snap Apps keeps the original photo and what was read from it together as a true copy for that period.
+The ATO requires most business records to be kept for five years from when they were prepared or obtained, or from when the transaction was completed, whichever is later. SnapApp keeps the original photo and what was read from it together as a true copy for that period.
 
 ## Why the original is kept as taken
 
@@ -18,7 +18,7 @@ Once a record's retention period has passed, an automated job removes it rather 
 
 ## Deleting your account
 
-In the app, go to Settings, then Delete account: your Snap Apps account and the workspaces only you run are deleted, including your receipts, within minutes, and your YourTal account is left alone. If you delete your YourTal account instead, your Snap Apps data is deleted too, within 72 hours. Export your receipts as a CSV first if you need a copy.
+In the app, go to Settings, then Delete account: your SnapApp account and the workspaces only you run are deleted, including your receipts, within minutes, and your YourTal account is left alone. If you delete your YourTal account instead, your SnapApp data is deleted too, within 72 hours. Export your receipts as a CSV first if you need a copy.
 
 A workspace you belong to where someone else still owns or manages it keeps its records, with your name removed.
 
@@ -43,4 +43,4 @@ Five years, the ATO's record-keeping period.
 Yes. Export your receipts as a CSV whenever you like.
 
 ### Can I delete my account?
-Yes. In the app, go to Settings, then Delete account and your Snap Apps data, including your receipts, is deleted. Deleting your YourTal account does the same within 72 hours. Export your receipts as a CSV first if you need a copy. A shared workspace keeps its records, with your name removed.
+Yes. In the app, go to Settings, then Delete account and your SnapApp data, including your receipts, is deleted. Deleting your YourTal account does the same within 72 hours. Export your receipts as a CSV first if you need a copy. A shared workspace keeps its records, with your name removed.

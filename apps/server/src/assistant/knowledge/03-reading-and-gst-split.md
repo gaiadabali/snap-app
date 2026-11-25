@@ -6,13 +6,13 @@ kind: product
 
 ## Every line, not just the total
 
-Snap Apps reads each line of a docket: the item, its price, its quantity and whether it carries GST. That matters because a total on its own cannot tell a carton of milk from a hot pie.
+SnapApp reads each line of a docket: the item, its price, its quantity and whether it carries GST. That matters because a total on its own cannot tell a carton of milk from a hot pie.
 
 ## GST-free and taxable on one docket
 
 Plain food is GST-free. Hot food and soft drink are not. One docket can carry both, so reading only the total would treat everything as taxable.
 
-The demo docket on the site shows it. Milk, bread and eggs are GST-free. A hot pie, a soft drink and a flat white are taxable. Snap Apps adds the GST-free lines and the taxable lines separately and works out the GST on the taxable lines only.
+The demo docket on the site shows it. Milk, bread and eggs are GST-free. A hot pie, a soft drink and a flat white are taxable. SnapApp adds the GST-free lines and the taxable lines separately and works out the GST on the taxable lines only.
 
 ## How the GST is worked out
 

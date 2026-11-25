@@ -55,7 +55,7 @@ export class LinkYourtalDto {
 
 /**
  * Per user, because every exchange spends part of YourTal's per-IP limit
- * (60 a minute) and every Snap Apps user shares this server's IP. A person
+ * (60 a minute) and every SnapApp user shares this server's IP. A person
  * typing a code wrong a few times is well inside this; a script guessing
  * codes is not.
  */
@@ -66,7 +66,7 @@ function refuse(status: HttpStatus, error: string, message: string): HttpExcepti
 }
 
 /**
- * The YourTal points link, Snap Apps' side (group plan 2.4).
+ * The YourTal points link, SnapApp's side (group plan 2.4).
  *
  *   GET    /v1/yourtal/link   the state the screens show (2.6 builds them)
  *   POST   /v1/yourtal/link   { code } → link this account to a YourTal account
@@ -178,14 +178,14 @@ export class YourtalLinkController {
         throw refuse(
           HttpStatus.CONFLICT,
           'linked_to_another_account',
-          'That YourTal account is already linked to another Snap Apps account. Unlink it there first.',
+          'That YourTal account is already linked to another SnapApp account. Unlink it there first.',
         );
       }
       // Lost a race with another link request from this same account (two
       // taps, two devices). The same YourTal account is simply success. A
       // different one was linked by the other request: the link YourTal just
       // issued to THIS request is an orphan nothing will ever use, so end it
-      // rather than leave a live link at YourTal that Snap Apps has forgotten.
+      // rather than leave a live link at YourTal that SnapApp has forgotten.
       const current = await liveLink(user.userId);
       if (current?.link_id === exchanged.linkId) return this.statusFor(user.userId);
       const orphan = await revokeLinkAtYourtal(client, exchanged.linkId);

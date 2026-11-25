@@ -48,7 +48,7 @@ export function HomeHero() {
               suppressHydrationWarning
               style={{ ['--d' as string]: 3 }}
             >
-              Photograph a docket. Snap Apps reads each line, splits GST-free from taxable, checks
+              Photograph a docket. SnapApp reads each line, splits GST-free from taxable, checks
               it is a valid tax invoice and keeps a true copy for five years. Then it shows you
               where the money went.
             </p>

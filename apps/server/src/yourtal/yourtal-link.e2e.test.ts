@@ -164,7 +164,7 @@ describeIfDb('the YourTal link endpoints (2.4)', () => {
     ).rejects.toThrow();
   });
 
-  it('refuses a YourTal account already linked to another Snap Apps account', async () => {
+  it('refuses a YourTal account already linked to another SnapApp account', async () => {
     // YourTal hands the same linkId back for the same YourTal user.
     const code = fake.issueCode({ id: 'yt-ana', region: 'AU' });
     expect(await refusal(controller.link(person(BEN, 'Ben'), session, { code }))).toEqual({

@@ -137,7 +137,7 @@ export default function HelpScreen() {
               onPress={() =>
                 void Linking.openURL(
                   `mailto:hello@snap-apps.com.au?subject=${encodeURIComponent(
-                    `Problem report (Snap Apps ${buildLabel()}${BUILD.commit ? ` · ${BUILD.commit.slice(0, 7)}` : ''})`,
+                    `Problem report (SnapApp ${buildLabel()}${BUILD.commit ? ` · ${BUILD.commit.slice(0, 7)}` : ''})`,
                   )}`,
                 )
               }
@@ -146,7 +146,7 @@ export default function HelpScreen() {
         </View>
 
         <Small style={{ textAlign: 'center' }}>
-          Snap Apps {buildLabel()} · your receipts stay in this space while we look into anything you
+          SnapApp {buildLabel()} · your receipts stay in this space while we look into anything you
           report.
         </Small>
       </ScrollView>

@@ -10,7 +10,7 @@ export default function PrivacyPolicyPage() {
       <LegalHeader title={<>Privacy Policy</>} meta={<>Draft — last updated 20 October 2026</>} />
 
       <p>
-        Snap Apps (&quot;we&quot;, &quot;us&quot;) provides receipt capture, extraction, ledger, and
+        SnapApp (&quot;we&quot;, &quot;us&quot;) provides receipt capture, extraction, ledger, and
         Australian tax export services to Australian sole traders, tradies, and the accounting and
         bookkeeping practices that act for them. This policy explains what personal and financial
         information we collect, why, where it is processed and stored, and the rights you have over

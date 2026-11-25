@@ -161,7 +161,7 @@ export default function PersonalHome() {
             <View style={{ minWidth: 0, flex: 1 }}>
               <Text style={[type.tiny, { color: p.inkMuted }]}>{greeting()}</Text>
               <Text style={[type.bodyStrong, { color: p.ink }]} numberOfLines={1}>
-                {session?.user.displayName ?? 'Snap Apps'}
+                {session?.user.displayName ?? 'SnapApp'}
               </Text>
             </View>
           </Pressable>
@@ -315,7 +315,7 @@ export default function PersonalHome() {
             {points ? (
               <>
                 <Divider />
-                {/* YourTal's points, not a Snap Apps balance (D33): the number
+                {/* YourTal's points, not a SnapApp balance (D33): the number
                     is what YourTal said it paid for receipts reported from
                     this account, and the wallet itself is in YourTal. Not
                     derived from the document count: duplicates and receipts

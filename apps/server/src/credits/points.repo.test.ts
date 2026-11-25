@@ -8,7 +8,7 @@ import { getPointBalance, listPointLedger } from './points.repo.js';
 
 /**
  * `points.repo.ts` — against a real Postgres, as the real application role.
- * The module is READ ONLY since the retirement of Snap Apps points
+ * The module is READ ONLY since the retirement of SnapApp points
  * (`docs/ECOSYSTEM.md` D33), so the fixtures here are history rows inserted
  * with the owner connection, the way the old scan path wrote them.
  *
@@ -84,7 +84,7 @@ describeIfDb('points.repo', () => {
     expect(await getPointBalance(OTHER_USER)).toBe(balanceBefore + 3);
   });
 
-  it('exports no writer: Snap Apps points are retired', async () => {
+  it('exports no writer: SnapApp points are retired', async () => {
     const mod = await import('./points.repo.js');
     expect(Object.keys(mod).sort()).toEqual(['getPointBalance', 'listPointLedger']);
   });

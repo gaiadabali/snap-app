@@ -6,7 +6,7 @@ import { RefusalPanel } from '../_components/RefusalPanel';
 import { AddSettingForm } from './_components/AddSettingForm';
 import { SettingRow } from './_components/SettingRow';
 
-export const metadata = { title: 'Platform settings · Snap Apps admin' };
+export const metadata = { title: 'Platform settings · SnapApp admin' };
 
 export default async function SettingsPage() {
   const gated = await getPlatformSettings();

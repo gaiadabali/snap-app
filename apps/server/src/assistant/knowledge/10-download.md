@@ -13,7 +13,7 @@ Android is a direct download today. It is an APK, and it is not on Google Play y
 Android calls an app that does not come from a store an app from an unknown source. That only means it is not from a store, not that anything is wrong.
 
 1. When the download finishes, Android warns that it blocks installs from unknown sources. Tap Settings on that warning, then turn on "Allow from this source" for your browser. You only do this once.
-2. Open the downloaded file. Find "Snap Apps" in your Downloads or the notification shade and tap it. Android shows the permissions the app asks for, such as the camera for photographing receipts, then tap Install.
+2. Open the downloaded file. Find "SnapApp" in your Downloads or the notification shade and tap it. Android shows the permissions the app asks for, such as the camera for photographing receipts, then tap Install.
 3. Optional: if your file manager can show a file's SHA-256, compare it with the checksum on the download page before installing. They should match exactly. Skipping this is fine, and most people do.
 
 ## iPhone

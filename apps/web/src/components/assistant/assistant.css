@@ -1,5 +1,5 @@
 /*
- * Snapper, the Snap Apps assistant: the launcher, the teaser and the panel.
+ * Snapper, the SnapApp assistant: the launcher, the teaser and the panel.
  *
  * ONE file, imported by Assistant.tsx. Every class starts `sa-` (the kit's
  * `chip`, `btn`, `card` and Tailwind's `h-*` are never reused here). Colour comes

@@ -11,7 +11,7 @@ import './features.css';
 export const metadata: Metadata = {
   title: 'Features',
   description:
-    'Snap a docket and Snap Apps reads every line, splits GST-free from taxable, checks the tax invoice rules, keeps a five-year true copy and shows what is safe to spend.',
+    'Snap a docket and SnapApp reads every line, splits GST-free from taxable, checks the tax invoice rules, keeps a five-year true copy and shows what is safe to spend.',
 };
 
 /**
