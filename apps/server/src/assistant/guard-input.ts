@@ -135,7 +135,7 @@ const INJECTION = [
   /^\s*#{1,6}\s*(system|instructions?)\b/im,
   /^\s*(system|developer)\s*:/im,
   /\b(pretend|imagine|roleplay|role-play)\b[^.?!\n]{0,20}\b(you are|you're|to be)\b[^.?!\n]{0,40}\b(not|no longer|unrestricted|without (?:rules|limits|restrictions)|another|different|evil|jailbroken)\b/i,
-  /\byou are (now|no longer)\b[^.?!\n]{0,40}\b(assistant|ai|bot|model|snapper|snap apps|chatgpt|gpt|free|unrestricted)\b/i,
+  /\byou are (now|no longer)\b[^.?!\n]{0,40}\b(assistant|ai|bot|model|snapper|snap ?apps?|chatgpt|gpt|free|unrestricted)\b/i,
 ];
 
 const ABUSE = [

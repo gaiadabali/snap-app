@@ -105,7 +105,7 @@ export const listMembers = (workspaceId: string) =>
 /* ── Credits, and the YourTal points link — docs/ECOSYSTEM.md D27, D33 ───
  *
  * Credits are tenant-scoped, like everything above. YourTal points are not
- * Snap Apps' to keep: they are paid and held by YourTal, so the only call is
+ * SnapApp's to keep: they are paid and held by YourTal, so the only call is
  * the link status. It is USER-scoped (a link belongs to a person), so it takes
  * no `workspaceId`: the server's `YourtalLinkController` uses `SessionGuard`
  * alone and never reads `X-Workspace-Id`.

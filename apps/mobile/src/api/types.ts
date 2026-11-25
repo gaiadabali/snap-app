@@ -127,7 +127,7 @@ import type {
  *   - credits     — `CreditBalance`/`CreditPack`/`CreditPurchase`, tenant,
  *                    bought or granted, never reset.
  *   - points      — YourTal points, USER-scoped, paid and held by YourTal;
- *                    `YourtalLinkStatus` says what it reported. Snap Apps keeps
+ *                    `YourtalLinkStatus` says what it reported. SnapApp keeps
  *                    no balance (D33).
  *
  * There is no grant-level breakdown endpoint (e.g. "free-to-start: 7 of 10

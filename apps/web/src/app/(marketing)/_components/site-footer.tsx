@@ -54,9 +54,9 @@ export function SiteFooter() {
       <div className="shell pt-20 pb-10">
         <div className="grid gap-14 lg:grid-cols-[1.35fr_1.65fr]">
           <div>
-            <Link href="/" className="inline-flex items-center gap-3" aria-label="Snap Apps, home">
+            <Link href="/" className="inline-flex items-center gap-3" aria-label="SnapApp, home">
               <SnapMark size={40} className="rounded-[11px]" />
-              <span className="text-[1.35rem] font-[650] tracking-[-0.035em]">Snap Apps</span>
+              <span className="text-[1.35rem] font-[650] tracking-[-0.035em]">SnapApp</span>
             </Link>
             <p className="body mt-5 max-w-[34ch]">
               The receipt app that reads every line. Built in Australia, for the way Australians are taxed.
@@ -88,7 +88,7 @@ export function SiteFooter() {
         </div>
 
         <div className="mt-16 flex flex-col gap-3 border-t border-[var(--s-edge)] pt-8 text-[0.8125rem] text-[var(--s-ink-4)] sm:flex-row sm:items-center sm:justify-between">
-          <span>© {new Date().getFullYear()} Snap Apps. Made in Australia.</span>
+          <span>© {new Date().getFullYear()} SnapApp. Made in Australia.</span>
           <span>{ILLUSTRATIVE_NOTE} Not tax advice.</span>
         </div>
       </div>
@@ -99,7 +99,7 @@ export function SiteFooter() {
         className="pointer-events-none select-none px-3 text-center font-[700] leading-[0.78] tracking-[-0.07em] text-[var(--s-mist-2)]"
         style={{ fontSize: 'clamp(4.5rem, 19vw, 17rem)', marginBottom: '-0.12em' }}
       >
-        Snap Apps
+        SnapApp
       </div>
     </footer>
   );

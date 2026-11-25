@@ -17,7 +17,7 @@ import { numeric, radius, shadow, space, type, usePalette, useTheme } from '@/th
  * the chosen month, itemised. The two are one control: tapping a bar changes
  * the month, which is why the bars are buttons rather than a drawing.
  *
- * Credits only: Snap Apps points are retired (`docs/ECOSYSTEM.md` D33).
+ * Credits only: SnapApp points are retired (`docs/ECOSYSTEM.md` D33).
  */
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -29,7 +29,7 @@ export default function UsageScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  // Credits only. Snap Apps points are retired (D33); YourTal's points are paid
+  // Credits only. SnapApp points are retired (D33); YourTal's points are paid
   // and held in YourTal and are shown on the Points screen.
   const kind: UsageKind = 'credits';
   const [months, setMonths] = useState<string[]>([]);

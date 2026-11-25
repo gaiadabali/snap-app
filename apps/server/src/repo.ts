@@ -1946,7 +1946,7 @@ export async function saveExtraction(
     return { documentId, uploadedBy, receiptOriginal, sameReceiptCaptureIds, receiptContent, paidScan };
   });
 
-  // No Snap Apps point is written here any more (docs/ECOSYSTEM.md D33: local
+  // No SnapApp point is written here any more (docs/ECOSYSTEM.md D33: local
   // points are retired; YourTal points are the only ones with value, and the
   // report queued below is what earns them). `point_ledger` keeps its history.
 

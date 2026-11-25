@@ -25,7 +25,7 @@ const STEPS = [
   {
     n: 1,
     title: 'Snap it',
-    body: 'Point the camera at the docket. Snap Apps frames the paper and takes the shot, and the photo is kept exactly as taken: it is your true copy for five years. No signal at the servo? The scan waits and uploads when you are back online.',
+    body: 'Point the camera at the docket. SnapApp frames the paper and takes the shot, and the photo is kept exactly as taken: it is your true copy for five years. No signal at the servo? The scan waits and uploads when you are back online.',
     chips: [
       { icon: 'camera', label: 'Auto-capture' },
       { icon: 'lock', label: 'Original kept as taken' },

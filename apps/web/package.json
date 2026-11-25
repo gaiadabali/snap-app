@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Snap Apps website: marketing, downloads, registration, and the individual / business / platform-admin panels.",
+  "description": "SnapApp website: marketing, downloads, registration, and the individual / business / platform-admin panels.",
   "scripts": {
     "dev": "next dev -p 3000",
     "build": "next build",

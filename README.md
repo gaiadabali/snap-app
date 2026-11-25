@@ -1,4 +1,4 @@
-# Snap Apps
+# SnapApp
 
 **A BAS and deduction-compliance layer for Australian sole traders and tradies,
 sold through accounting practices.**
@@ -22,7 +22,7 @@ picture and a total, and leaves the tax treatment to you.
 
 One supermarket docket for site lunch mixes GST-free fresh food with taxable
 packaged goods. Hubdoc, Dext, ATO myDeductions and Ozly all read header totals
-only, so none of them can tell you which half is claimable. Snap Apps splits it
+only, so none of them can tell you which half is claimable. SnapApp splits it
 per line, using `document_tax_subtotals` (Peppol BG-23) and BAS label mapping
 through `tax_codes`.
 

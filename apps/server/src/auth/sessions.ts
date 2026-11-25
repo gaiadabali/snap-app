@@ -19,7 +19,7 @@ import { readSession, signSessionToken } from '../tokens.js';
  * ── The lifetimes, and why ─────────────────────────────────────────────────
  *
  * ABSOLUTE: 30 days. NIST SP 800-63B asks an AAL1 verifier (a password, or a
- * link to an inbox — which is what Snap Apps has) to re-authenticate at least
+ * link to an inbox — which is what SnapApp has) to re-authenticate at least
  * every 30 days. Nothing extends it: a stolen token is useful for at most a
  * month, whatever its holder does with it.
  *

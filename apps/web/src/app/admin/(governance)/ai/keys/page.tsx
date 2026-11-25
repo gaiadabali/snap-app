@@ -9,7 +9,7 @@ import { AddProviderForm } from './_components/AddProviderForm';
 import { KeyForm } from './_components/KeyForm';
 import { setProviderActiveAction } from './actions';
 
-export const metadata = { title: 'API keys · Snap Apps admin' };
+export const metadata = { title: 'API keys · SnapApp admin' };
 
 export default async function KeysPage() {
   const gated = await getAiProviders();

@@ -107,7 +107,7 @@ export function Icon({
 }
 
 /**
- * The Snap Apps mark — the app icon itself: a viewfinder around an S on the
+ * The SnapApp mark — the app icon itself: a viewfinder around an S on the
  * brand gradient. Drawn as SVG so it is sharp at 24px in the header and at
  * 120px in the final call to action; the corner brackets are the camera's
  * framing guides, the same ones the capture screen shows.

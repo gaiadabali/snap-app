@@ -102,15 +102,15 @@ const SIGNIN_MESSAGES: Record<SignInErrorCode, string> = {
     'Your YourTal account uses a different email. Use the YourTal account with your SnapApp email, or change your SnapApp email first.',
   region_not_supported: 'YourTal sign-in is only open to accounts in Australia and Indonesia for now.',
   teen_invite_required:
-    'A teen YourTal account can use Snap Apps only with an invite from the parent or guardian who approved it. Ask them to invite you.',
-  teen_access_ended: 'Your access to Snap Apps ended, so your Snap Apps space is being deleted. You can use Snap Apps again once it has been deleted, within 30 days of your access ending.',
+    'A teen YourTal account can use SnapApp only with an invite from the parent or guardian who approved it. Ask them to invite you.',
+  teen_access_ended: 'Your access to SnapApp ended, so your SnapApp space is being deleted. You can use SnapApp again once it has been deleted, within 30 days of your access ending.',
   email_unverified: 'Confirm your email address in YourTal first, then sign in here.',
   staff_strong_auth_required:
     'Staff accounts must sign in to YourTal with a passkey or an authenticator code. Set one up in YourTal, then try again.',
   staff_reauth_required:
     'For your security, staff must have signed in to YourTal in the last 12 hours. Sign in again to continue.',
   account_review:
-    'We could not match this YourTal account to a Snap Apps account automatically. We have flagged it for a person to check.',
+    'We could not match this YourTal account to a SnapApp account automatically. We have flagged it for a person to check.',
   try_again: 'Something went wrong on our side. Try again in a moment.',
   rate_limited: 'Too many tries. Wait a few minutes and try again.',
   not_configured: "Signing in with YourTal isn't available right now.",

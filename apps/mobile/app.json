@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Snap Apps",
+    "name": "SnapApp",
     "slug": "snap-apps",
     "version": "0.1.0",
     "orientation": "portrait",
@@ -13,8 +13,8 @@
       "supportsTablet": true,
       "bundleIdentifier": "au.com.snapapps.app",
       "infoPlist": {
-        "NSCameraUsageDescription": "Snap Apps uses the camera to capture receipts and tax invoices.",
-        "NSLocationWhenInUseUsageDescription": "Snap Apps measures the distance of a work trip while you are recording it, so your logbook does not depend on remembering an odometer reading. Location is used only while the trip screen is open."
+        "NSCameraUsageDescription": "SnapApp uses the camera to capture receipts and tax invoices.",
+        "NSLocationWhenInUseUsageDescription": "SnapApp measures the distance of a work trip while you are recording it, so your logbook does not depend on remembering an odometer reading. Location is used only while the trip screen is open."
       },
       "icon": "./assets/icon.png"
     },
@@ -44,7 +44,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Snap Apps uses the camera to capture receipts and tax invoices.",
+          "cameraPermission": "SnapApp uses the camera to capture receipts and tax invoices.",
           "recordAudioAndroid": false
         }
       ],

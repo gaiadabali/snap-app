@@ -1,5 +1,5 @@
 /**
- * Snapper, the Snap Apps assistant's 3D mascot (docs/ASSISTANT.md §11).
+ * Snapper, the SnapApp assistant's 3D mascot (docs/ASSISTANT.md §11).
  *
  * This file is the contract the widget is built against, and it is tiny on
  * purpose: it imports nothing from three.js. `createMascot` loads the renderer

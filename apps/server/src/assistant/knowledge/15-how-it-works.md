@@ -6,7 +6,7 @@ kind: product
 
 ## Five stops
 
-Take one photo and Snap Apps keeps it as taken, reads every line, checks the tax invoice rules and files the result.
+Take one photo and SnapApp keeps it as taken, reads every line, checks the tax invoice rules and files the result.
 
 ## 1. One photo, kept exactly as taken
 

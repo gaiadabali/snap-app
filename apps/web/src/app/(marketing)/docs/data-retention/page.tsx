@@ -19,7 +19,7 @@ export default function DataRetentionPage() {
         <DocHeader title={<>Data retention and deletion</>} />
         <p className="docs-lead">
           How long records are kept is a rule with a specific source, not a general policy — the ATO
-          sets it, and Snap Apps enforces it as data rather than as a document nobody reads.
+          sets it, and SnapApp enforces it as data rather than as a document nobody reads.
         </p>
 
         <h2 id="the-five-year-rule">
@@ -28,7 +28,7 @@ export default function DataRetentionPage() {
         <p>
           The ATO requires most business records to be kept for five years from the date they were
           prepared or obtained, or from when the relevant transaction was completed — whichever is
-          later. Every document in Snap Apps carries its own retention date calculated this way, and the
+          later. Every document in SnapApp carries its own retention date calculated this way, and the
           automated purge does not remove it before that date passes. Deleting your own account is
           the exception: see below.
         </p>
@@ -61,7 +61,7 @@ export default function DataRetentionPage() {
           or ask by email on the{' '}
           <a href="/delete-account">delete your account</a> page. Your receipts go with it, even
           inside the five-year window, because the duty to keep them is yours as the taxpayer, not
-          Snap Apps&apos;. Export what you need first. A workspace where someone else still owns or
+          SnapApp&apos;s. Export what you need first. A workspace where someone else still owns or
           manages it keeps its records, with your name removed. See{' '}
           <a href="/legal/privacy">
             Privacy Policy

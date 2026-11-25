@@ -1,7 +1,7 @@
 /*
  * The comparison table. Every class is `compare-` prefixed.
  *
- * The Snap Apps column is a raised card drawn with pseudo-elements: a gradient
+ * The SnapApp column is a raised card drawn with pseudo-elements: a gradient
  * cap above the header row, a tinted body, a rounded foot below the last row.
  * The scroller's block padding is the room those extensions grow into.
  * Marks pop in once the table is seen; without `.motion` nothing is hidden.
@@ -69,7 +69,7 @@
     background: var(--s-mist);
   }
 
-  /* ── The Snap Apps column ──────────────────────────────────────────────── */
+  /* ── The SnapApp column ──────────────────────────────────────────────── */
 
   .compare-us {
     position: relative;

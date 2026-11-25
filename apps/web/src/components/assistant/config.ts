@@ -1,5 +1,5 @@
 /**
- * Snapper, the Snap Apps assistant: every word the widget shows, the page-aware
+ * Snapper, the SnapApp assistant: every word the widget shows, the page-aware
  * starters, and the three call-to-action cards (docs/ASSISTANT.md §3, §10).
  *
  * No prices and no free-scan counts are typed here (docs/WEB.md §4.0, the
@@ -20,12 +20,12 @@ export interface Starter {
 }
 
 export const S = {
-  sub: 'Snap Apps assistant',
+  sub: 'SnapApp assistant',
   pill: 'Ask Snapper',
-  launcher: 'Ask Snapper, the Snap Apps assistant',
+  launcher: 'Ask Snapper, the SnapApp assistant',
   greet: "G'day, I'm Snapper.",
   intro: 'Ask me how capture works, what GST means on a docket, what a scan costs, or how to get the app.',
-  placeholder: 'Ask about Snap Apps…',
+  placeholder: 'Ask about SnapApp…',
   composerLabel: 'Your question for Snapper',
   send: 'Send',
   stop: 'Stop',
@@ -50,7 +50,7 @@ export const S = {
   eDown: 'I cannot reach my brain right now. Try again in a moment.',
   eNet: 'The connection dropped. Check it and try again.',
   eBad: 'I could not make sense of that one. Try putting it another way.',
-  eBlocked: 'I cannot help with that one. Ask me about Snap Apps and I will give it a go.',
+  eBlocked: 'I cannot help with that one. Ask me about SnapApp and I will give it a go.',
 } as const;
 
 export interface CtaCard {
@@ -64,7 +64,7 @@ export interface CtaCard {
 export const CTAS: Record<Cta, CtaCard> = {
   app: {
     title: 'Get the Android app',
-    text: 'Snap Apps installs on Android today. The iPhone app is in development.',
+    text: 'SnapApp installs on Android today. The iPhone app is in development.',
     label: 'Get the Android app',
     href: '/download',
   },
@@ -105,7 +105,7 @@ const PAGE_STARTERS: [prefix: string, label: string, icon: IconName][] = [
 ];
 
 const GENERIC: Starter[] = [
-  { kind: 'ask', label: 'What makes Snap Apps different?', icon: 'spark' },
+  { kind: 'ask', label: 'What makes SnapApp different?', icon: 'spark' },
   { kind: 'ask', label: 'Is a docket a valid tax invoice?', icon: 'receipt' },
   { kind: 'ask', label: 'Is there an iPhone app?', icon: 'phone' },
 ];

@@ -36,9 +36,9 @@ export default function ConnectingXeroPage() {
           How the connection works
         </h2>
         <p>
-          You connect via Xero&apos;s own sign-in (OAuth) — Snap Apps never sees or stores your Xero
+          You connect via Xero&apos;s own sign-in (OAuth) — SnapApp never sees or stores your Xero
           password. The access token Xero issues is encrypted at rest, tied to your workspace only, and
-          can be revoked from within Snap Apps at any time, which immediately stops any further sync.
+          can be revoked from within SnapApp at any time, which immediately stops any further sync.
         </p>
 
         <h2 id="why-a-queue">
@@ -56,8 +56,8 @@ export default function ConnectingXeroPage() {
         </h2>
         <p>
           Disconnecting revokes the stored token immediately and stops all future sync. It does not
-          remove anything already pushed to Xero, and it does not affect your records inside Snap
-          Apps.
+          remove anything already pushed to Xero, and it does not affect your records inside
+          SnapApp.
         </p>
       </article>
       <Toc items={sections} />

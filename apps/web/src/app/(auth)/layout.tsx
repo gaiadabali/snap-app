@@ -19,9 +19,9 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
     <div className="site auth-split">
       <div className="auth-form-col">
         <header className="auth-top">
-          <Link href="/" aria-label="Snap Apps, home" className="auth-logo">
+          <Link href="/" aria-label="SnapApp, home" className="auth-logo">
             <SnapMark size={32} className="rounded-[9px]" />
-            Snap Apps
+            SnapApp
           </Link>
         </header>
         <main className="auth-main">
@@ -29,7 +29,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
         </main>
       </div>
 
-      <aside className="auth-brand" aria-label="About Snap Apps">
+      <aside className="auth-brand" aria-label="About SnapApp">
         <div className="auth-brand-glow" aria-hidden />
         <div className="auth-brand-phone">
           <Phone className="[--pw:290] xl:[--pw:320]">
@@ -37,7 +37,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           </Phone>
         </div>
         <p className="auth-brand-line">
-          Photograph a docket. Snap Apps reads every line. {FREE_SCANS_AT_SIGNUP} free scans to
+          Photograph a docket. SnapApp reads every line. {FREE_SCANS_AT_SIGNUP} free scans to
           start, no card.
         </p>
       </aside>

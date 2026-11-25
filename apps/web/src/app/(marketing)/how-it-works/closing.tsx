@@ -45,7 +45,7 @@ export function Closing() {
             <Reveal variant="right" className="mx-auto w-full max-w-[400px]">
               <div className="paper hiw-ticket px-7 pb-14 pt-8 text-[0.8125rem] leading-[1.7]">
                 <div className="text-center">
-                  <div className="text-[0.9375rem] font-semibold uppercase tracking-[0.14em]">Snap Apps</div>
+                  <div className="text-[0.9375rem] font-semibold uppercase tracking-[0.14em]">SnapApp</div>
                   <div className="text-[0.6875rem] uppercase tracking-[0.18em] opacity-60">Next steps</div>
                 </div>
                 <div className="my-3.5 border-t border-dashed border-black/25" />

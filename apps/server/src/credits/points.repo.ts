@@ -4,9 +4,9 @@ import { sql } from 'drizzle-orm';
 import { getDb } from '../db.js';
 
 /**
- * The retired Snap Apps points — READ ONLY.
+ * The retired SnapApp points — READ ONLY.
  *
- * Snap Apps used to write one point per scan here. The founder retired that on
+ * SnapApp used to write one point per scan here. The founder retired that on
  * 2026-10-20 (`docs/ECOSYSTEM.md` D33): YourTal points are the only points
  * with value, and what YourTal paid is shown from `GET /v1/yourtal/link`. No
  * code writes `point_ledger` any more. The table and its history stay (it is

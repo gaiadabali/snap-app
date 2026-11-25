@@ -1625,7 +1625,7 @@ export interface AdminAuditLogQuery {
  *                (a credit buys a scan, and a scan happens inside a
  *                workspace) and never reset.
  *   POINTS     — earned by scanning, redeemed in a different ecosystem app
- *                (YourTal; linking it to Snap Apps is not built yet). USER-scoped: earned by a person, not a
+ *                (YourTal; linking it to SnapApp is not built yet). USER-scoped: earned by a person, not a
  *                workspace, and redeemed somewhere a workspace means nothing.
  *
  * Conflating any two of these is exactly how a customer ends up billed for
@@ -1736,7 +1736,7 @@ export interface CheckoutSession {
 }
 
 /**
- * `GET /v1/points` — DEPRECATED. The retired Snap Apps points, frozen at what
+ * `GET /v1/points` — DEPRECATED. The retired SnapApp points, frozen at what
  * they were on 2026-10-20 (`docs/ECOSYSTEM.md` D33). YourTal points are shown
  * from `YourtalLinkStatus`. Kept so older installed apps keep loading.
  */
@@ -1748,8 +1748,8 @@ export interface PointBalance {
  * `GET /v1/yourtal/link`, and the answer to linking or unlinking — the
  * YourTal points link (group plan 2.4). USER-scoped, like points.
  *
- * YourTal pays its own points for each receipt Snap Apps reports (10 in AU,
- * 100 in ID, once per receipt, adults only). Snap Apps never holds a YourTal
+ * YourTal pays its own points for each receipt SnapApp reports (10 in AU,
+ * 100 in ID, once per receipt, adults only). SnapApp never holds a YourTal
  * balance: `pointsReported` is only what YourTal said it granted for the
  * receipts reported from this account, and the user's balance lives in
  * YourTal.
@@ -1784,7 +1784,7 @@ export interface YourtalLinkStatus {
      */
     refused: number;
     /**
-     * Refused because Snap Apps' receipt package was used up when they were
+     * Refused because SnapApp's receipt package was used up when they were
      * reported (YourTal `allocation_exhausted`). Final: a receipt refused
      * while paused never earns, even after points are topped up. Also counted
      * in `refused`.
@@ -1812,10 +1812,10 @@ export interface YourtalLinkStatus {
   pointsReported: number;
   /**
    * Whether receipts earn right now. Present only for a linked account in a
-   * region that earns. `paused`: Snap Apps' receipt package at YourTal is used
+   * region that earns. `paused`: SnapApp's receipt package at YourTal is used
    * up, so receipts scanned now will not earn (group F127). `unknown`: YourTal
    * could not be asked; show nothing. Never carries how many points remain:
-   * that is YourTal's business data about Snap Apps' package.
+   * that is YourTal's business data about SnapApp's package.
    */
   receiptPoints?: {
     state: 'earning' | 'paused' | 'unknown';

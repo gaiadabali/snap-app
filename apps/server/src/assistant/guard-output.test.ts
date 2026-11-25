@@ -87,7 +87,7 @@ describe('the guarantee guard', () => {
   it.each([
     'We guarantee every receipt is read correctly.',
     'I promise it will be accepted by the ATO.',
-    'Snap Apps is 100% accurate.',
+    'SnapApp is 100% accurate.',
     'It is never wrong about GST.',
   ])('replaces: %s', (text) => {
     const r = run(text);

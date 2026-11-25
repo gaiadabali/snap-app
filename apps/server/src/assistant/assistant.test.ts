@@ -77,7 +77,7 @@ function chatReq(content: string | Array<{ role: 'user' | 'assistant'; content: 
   const messages = typeof content === 'string' ? [{ role: 'user', content }] : content;
   return {
     headers: extra.headers ?? headers(),
-    body: { sessionId: SID, page: { path: extra.path ?? '/', title: 'Snap Apps' }, messages, ...extra.body },
+    body: { sessionId: SID, page: { path: extra.path ?? '/', title: 'SnapApp' }, messages, ...extra.body },
     socketIp: '172.18.0.5',
   };
 }
@@ -182,7 +182,7 @@ describe('answers the server gives itself (no model call)', () => {
     expect(frames.map((f) => f.event)).toEqual(['meta', ...Array(ev(frames, 'delta').length).fill('delta'), 'actions', 'done']);
     expect(frames[0]?.data.intent).toBe('greeting');
     expect(ev(frames, 'delta').length).toBeGreaterThan(5);
-    expect(deltas(frames)).toContain("I'm Snapper, the Snap Apps assistant");
+    expect(deltas(frames)).toContain("I'm Snapper, the SnapApp assistant");
     expect(s.calls).toHaveLength(0);
   });
 

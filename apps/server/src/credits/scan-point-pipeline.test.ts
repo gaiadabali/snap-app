@@ -14,7 +14,7 @@ import { getPointBalance, listPointLedger } from './points.repo.js';
 import type { ValidatedExtraction } from '../extraction/types.js';
 
 /**
- * Proves Snap Apps points are retired (`docs/ECOSYSTEM.md` D33): a real
+ * Proves SnapApp points are retired (`docs/ECOSYSTEM.md` D33): a real
  * `saveExtraction` call — the exact function the worker (`worker.ts`) calls on
  * a successful extraction — writes NO `point_ledger` row, for the person who
  * captured the receipt or anyone else, on the first extraction or a
@@ -93,7 +93,7 @@ async function makeCapture(): Promise<string> {
   return id;
 }
 
-describeIfDb('saveExtraction writes no Snap Apps point', () => {
+describeIfDb('saveExtraction writes no SnapApp point', () => {
   let admin: Client;
   let worker: WorkerDb;
 

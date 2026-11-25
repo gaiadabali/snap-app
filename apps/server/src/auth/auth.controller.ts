@@ -356,7 +356,7 @@ export class AuthController {
     // design.
     const result = await sendAndRecord('magic_link', {
       to: email,
-      subject: 'Sign in to Snap Apps',
+      subject: 'Sign in to SnapApp',
       text:
         `Tap to sign in — this link expires in 15 minutes and works once:\n\n${link}\n\n` +
         'If you did not request this, you can ignore it.',

@@ -4,7 +4,7 @@ import { useId, useState, type ReactNode } from 'react';
 
 /**
  * "Same docket, read two ways". A two-state switch between what a reader sees
- * if it only has the total and what Snap Apps sees line by line. Both panels
+ * if it only has the total and what SnapApp sees line by line. Both panels
  * are rendered on the server and passed in, so the figures (all from demo.ts)
  * are never typed here; this file only decides which one shows.
  */

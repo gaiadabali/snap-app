@@ -17,8 +17,8 @@ const CHUNKS: KbChunk[] = [
   chunk('p#2', '/pricing', 'Packs', 'Credits come in packs. Every pack has the same rate per scan.', 'Pricing and credits'),
   chunk('d#0', '/download', 'Android', 'Download the Android app as an APK from the download page.', 'Download and install'),
   chunk('d#1', '/download', 'iPhone', 'The iPhone app is in development. Use the web app in Safari until it ships.', 'Download and install'),
-  chunk('r#0', '/docs/data-retention', 'Five-year retention', 'Snap Apps keeps the original photo of every receipt as a true copy for five years.', 'Records'),
-  chunk('g#0', '/features', 'GST split', 'Snap Apps reads every line of a docket and splits GST-free items from taxable ones.', 'Reading every line'),
+  chunk('r#0', '/docs/data-retention', 'Five-year retention', 'SnapApp keeps the original photo of every receipt as a true copy for five years.', 'Records'),
+  chunk('g#0', '/features', 'GST split', 'SnapApp reads every line of a docket and splits GST-free items from taxable ones.', 'Reading every line'),
 ];
 
 describe('BM25 retrieval', () => {
@@ -46,7 +46,7 @@ describe('BM25 retrieval', () => {
   it('returns at most two hits per URL and at most k', () => {
     const hits = r.search('credits pack scan price cost', { k: 6 });
     expect(hits.filter((h) => h.chunk.url === '/pricing').length).toBeLessThanOrEqual(2);
-    expect(r.search('snap apps receipt scan credit app', { k: 3 }).length).toBeLessThanOrEqual(3);
+    expect(r.search('snapapp receipt scan credit app', { k: 3 }).length).toBeLessThanOrEqual(3);
   });
 
   it('boosts the page the visitor is on', () => {

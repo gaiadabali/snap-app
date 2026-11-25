@@ -103,7 +103,7 @@ const ALL_CATEGORIES: SupportCategory[] = [
       },
       {
         q: 'Why are some lines on one docket GST-free?',
-        a: 'Basic food such as milk, bread and eggs is GST-free; hot food, soft drinks and most other goods carry GST. Snap Apps reads each line, so a mixed docket is split into its GST-free and taxable parts instead of being treated as one taxable total.',
+        a: 'Basic food such as milk, bread and eggs is GST-free; hot food, soft drinks and most other goods carry GST. SnapApp reads each line, so a mixed docket is split into its GST-free and taxable parts instead of being treated as one taxable total.',
       },
       {
         q: 'My BAS labels look different to what my bookkeeper expects',

@@ -79,7 +79,7 @@ describe('selectHouseAd', () => {
   it('the yourtal ad says only what is true now: link, then earn in YourTal', () => {
     const yourtal = HOUSE_ADS.find((a) => a.id === 'yourtal-points-2026-09')!;
     const copy = `${yourtal.headline} ${yourtal.body}`.toLowerCase();
-    // Retired claims: a Snap Apps point per scan, and spending "coming soon".
+    // Retired claims: a SnapApp point per scan, and spending "coming soon".
     expect(copy).not.toMatch(/coming|one point per|building quietly|already earning/);
     expect(copy).toMatch(/link your yourtal account/);
     expect(copy).toMatch(/1 yourtal point/);

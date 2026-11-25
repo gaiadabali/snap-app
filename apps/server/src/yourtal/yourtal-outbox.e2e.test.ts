@@ -360,7 +360,7 @@ describeIfDb('the YourTal outbox (2.5)', () => {
       expect(d.external_ref).toMatch(/^rcpt:v1:[0-9a-f]{64}$/);
       expect(fr.external_ref).toBe(d.external_ref);
       expect(JSON.parse(d.body).externalRef).toBe(d.external_ref);
-      // Nothing about the receipt or its image leaves Snap Apps beside the keyed ref.
+      // Nothing about the receipt or its image leaves SnapApp beside the keyed ref.
       expect(d.body).not.toContain(dani.pageSha);
       expect(JSON.parse(d.body).evidence).toEqual({ captureId: dani.captureId });
 
@@ -780,7 +780,7 @@ describeIfDb('the YourTal outbox (2.5)', () => {
     });
   });
 
-  // Group 2.10.c (F127): YourTal says Snap Apps' receipt package is used up.
+  // Group 2.10.c (F127): YourTal says SnapApp's receipt package is used up.
   // FRAN is the user here; DANI's counts are asserted elsewhere in this file.
   describe('receipt points paused (2.10.c)', () => {
     const franUser = { userId: FRAN, email: 'fran@yourtal-outbox.test', displayName: 'Fran', initials: 'FR', emailVerified: true };

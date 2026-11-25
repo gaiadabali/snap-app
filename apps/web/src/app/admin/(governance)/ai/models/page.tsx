@@ -5,7 +5,7 @@ import { computeChain, getModelRegistry } from '../../../_data/governance';
 import { ComputedChain } from './_components/ComputedChain';
 import { RegistryTable } from './_components/RegistryTable';
 
-export const metadata = { title: 'Models & routing · Snap Apps admin' };
+export const metadata = { title: 'Models & routing · SnapApp admin' };
 
 export default function ModelsPage() {
   const models = getModelRegistry();

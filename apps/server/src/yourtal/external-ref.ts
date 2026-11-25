@@ -154,7 +154,7 @@ function canonicalAmount(raw: string | null): string | null {
  * HMAC, not a plain hash: the inputs are low-entropy (a known shop, a date, a
  * small total), so a plain hash would let anyone holding the ref, YourTal or a
  * leaked table, confirm a guess of where, when and for how much a person
- * shopped. The key is Snap Apps' own (`YOURTAL_RECEIPT_REF_KEY`) and is never
+ * shopped. The key is SnapApp's own (`YOURTAL_RECEIPT_REF_KEY`) and is never
  * shared with YourTal. It must never be rotated: a new key gives every old
  * receipt a new ref, and they could all be paid again.
  *

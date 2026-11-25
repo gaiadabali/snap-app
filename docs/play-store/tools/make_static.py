@@ -42,7 +42,7 @@ semi = ImageFont.truetype(str(fonts / "600SemiBold/Geist_600SemiBold.ttf"), 26 *
 reg = ImageFont.truetype(str(fonts / "400Regular/Geist_400Regular.ttf"), 27 * S)
 d = ImageDraw.Draw(bg)
 x = 300 * S
-d.text((x, 150 * S), "Snap Apps", font=semi, fill=(214, 232, 252))
+d.text((x, 150 * S), "SnapApp", font=semi, fill=(214, 232, 252))
 d.text((x, 186 * S), "Receipts into records", font=bold, fill=(255, 255, 255))
 d.text((x, 268 * S), "Photograph a receipt, check what was read.", font=reg, fill=(226, 238, 252))
 bg.resize((1024, 500), Image.LANCZOS).save(out / "feature-graphic-1024x500.png", optimize=True)

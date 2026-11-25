@@ -2,7 +2,7 @@ import { yourtalApiUrl, yourtalMerchantCredential } from '../config.js';
 import { MERCHANT_IDEMPOTENCY_HEADER, MERCHANT_SIGNATURE_HEADER, signMerchantRequest } from './merchant-signing.js';
 
 /**
- * Snap Apps as a merchant of YourTal's voucher API (`POST /v1/vouchers/...`),
+ * SnapApp as a merchant of YourTal's voucher API (`POST /v1/vouchers/...`),
  * signed with `X-YourTal-Signature` (see `merchant-signing.ts`).
  *
  * Thin like the partner client: it signs and sends the bytes it is given, and

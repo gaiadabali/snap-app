@@ -112,7 +112,7 @@ export class YourtalPartnerClient {
 /**
  * What YourTal's `POST /api/partners/receipts/status` says about whether a
  * receipt would earn now (F127: SnapApp's receipt package is used up or not).
- * `remainingPoints` is YourTal's business data about Snap Apps' package: it is
+ * `remainingPoints` is YourTal's business data about SnapApp's package: it is
  * read here and deliberately NOT carried any further.
  */
 export interface ReceiptStatusAnswer {

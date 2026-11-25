@@ -9,7 +9,7 @@ import { FakeVoucherStore } from './fake-yourtal-vouchers.js';
  * A fake YourTal partner API, in-process, for tests (group plan 2.5.d).
  *
  * It behaves like `yourtal/docs/developers/partner-api.md` on the points the
- * Snap Apps side depends on, and it CHECKS rather than trusts:
+ * SnapApp side depends on, and it CHECKS rather than trusts:
  *
  *   - every request's HMAC is verified over the raw bytes received, with the
  *     independent verifier, so a body re-serialised after signing fails here

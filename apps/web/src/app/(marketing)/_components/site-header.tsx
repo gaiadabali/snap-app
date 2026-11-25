@@ -32,11 +32,11 @@ export function Wordmark({ className }: { className?: string }) {
   return (
     <Link
       href="/"
-      aria-label="Snap Apps, home"
+      aria-label="SnapApp, home"
       className={cx('flex items-center gap-2.5 text-[1.0625rem] font-[650] tracking-[-0.03em] text-[var(--s-ink)]', className)}
     >
       <SnapMark size={30} className="rounded-[9px] shadow-[0_4px_12px_-4px_rgb(24_120_216_/_0.6)]" />
-      Snap Apps
+      SnapApp
     </Link>
   );
 }

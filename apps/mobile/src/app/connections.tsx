@@ -156,8 +156,8 @@ export default function ConnectionsScreen() {
             </Card>
 
             <Small style={{ textAlign: 'center' }}>
-              Connecting opens {connections[0]?.name ?? 'the provider'} to authorise access. Snap
-              Apps never sees your ledger password.
+              Connecting opens {connections[0]?.name ?? 'the provider'} to authorise access. SnapApp
+              never sees your ledger password.
             </Small>
           </>
         )}

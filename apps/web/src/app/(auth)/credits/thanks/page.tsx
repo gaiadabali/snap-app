@@ -14,7 +14,7 @@ export default function CreditsThanksPage() {
       <h1 className="auth-title">Thanks, your payment went through</h1>
       <p className="auth-lede">
         Your scans are added to your account as soon as the payment is confirmed, usually within a few
-        seconds. If you paid in the Snap Apps phone app, close this page to go back to it.
+        seconds. If you paid in the SnapApp phone app, close this page to go back to it.
       </p>
       <p className="auth-switch">
         <Link href="/app/credits">See your credits</Link>

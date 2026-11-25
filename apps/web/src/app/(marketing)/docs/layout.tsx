@@ -5,8 +5,8 @@ import { DocsNav } from './_components/DocsNav';
 import './docs.css';
 
 export const metadata: Metadata = {
-  title: { default: 'Docs', template: '%s · Docs · Snap Apps' },
-  description: 'User guides for Snap Apps: capture, review, the ledger, BAS, the tax pack, and Xero.',
+  title: { default: 'Docs', template: '%s · Docs · SnapApp' },
+  description: 'User guides for SnapApp: capture, review, the ledger, BAS, the tax pack, and Xero.',
 };
 
 /**

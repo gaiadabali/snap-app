@@ -19,7 +19,7 @@ export default function LedgerAndPostedPage() {
       <article className="docs-prose">
         <DocHeader title={<>The ledger and what &quot;posted&quot; means</>} />
         <p className="docs-lead">
-          Snap Apps keeps a real double-entry ledger underneath the receipts, not a flat list of
+          SnapApp keeps a real double-entry ledger underneath the receipts, not a flat list of
           categorised amounts. That is what lets a BAS reconcile, and what an accountant expects to
           see.
         </p>

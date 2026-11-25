@@ -10,7 +10,7 @@
 export const SITE_URL = 'https://snapapp.gaiada.com';
 
 export const SITE_PAGES: Readonly<Record<string, string>> = Object.freeze({
-  '/': 'Snap Apps',
+  '/': 'SnapApp',
   '/features': 'Features',
   '/how-it-works': 'How it works',
   '/pricing': 'Pricing',

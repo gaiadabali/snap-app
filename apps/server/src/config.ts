@@ -563,7 +563,7 @@ export const RECEIPT_REF_KEY_MIN_LENGTH = 32;
 /**
  * The key for the receipt content ref (`yourtal/external-ref.ts`):
  * `YOURTAL_RECEIPT_REF_KEY` in the environment, or the line of that name in
- * `YOURTAL_ENV_FILE`, read exactly like the partner secret. Snap Apps' own,
+ * `YOURTAL_ENV_FILE`, read exactly like the partner secret. SnapApp's own,
  * never sent to YourTal, and never to be rotated (a new key gives every old
  * receipt a new ref, so they could be paid again). A value shorter than 32
  * characters counts as unset, and then the content ref is not used. Never

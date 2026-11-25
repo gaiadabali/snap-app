@@ -14,7 +14,7 @@
 type Entry = { message: string; quiet?: boolean };
 
 const TEEN_INVITE =
-  'Teen YourTal accounts can use Snap Apps only with an invite from the parent or guardian who approved them.';
+  'Teen YourTal accounts can use SnapApp only with an invite from the parent or guardian who approved them.';
 
 export const AUTH_ERRORS = {
   // Generic
@@ -42,32 +42,32 @@ export const AUTH_ERRORS = {
       "This invite isn't for this account. It was made for a teen whose parent or guardian invited them. Ask your parent to check they sent it to the right YourTal account.",
   },
   teen_access_ended: {
-    message: 'Your access to Snap Apps ended, so your Snap Apps space is being deleted. You can use Snap Apps again once it has been deleted, within 30 days of your access ending.',
+    message: 'Your access to SnapApp ended, so your SnapApp space is being deleted. You can use SnapApp again once it has been deleted, within 30 days of your access ending.',
   },
   teen_account_in_use: {
     message:
-      "This teen account is already used with other Snap Apps workspaces, so it can't join a parent's invite. Contact Snap Apps support.",
+      "This teen account is already used with other SnapApp workspaces, so it can't join a parent's invite. Contact SnapApp support.",
   },
   region_not_supported: {
-    message: "Snap Apps is for YourTal accounts in Australia and Indonesia, so you can't use this account here.",
+    message: "SnapApp is for YourTal accounts in Australia and Indonesia, so you can't use this account here.",
   },
   account_on_hold: {
     message:
-      "Your YourTal account is on hold, so you can't use it to sign in to Snap Apps right now. Contact YourTal support.",
+      "Your YourTal account is on hold, so you can't use it to sign in to SnapApp right now. Contact YourTal support.",
   },
   email_unverified: {
     message: "Your YourTal email address isn't confirmed yet. Confirm it in YourTal, then try again.",
   },
   staff_strong_auth_required: {
-    message: 'Snap Apps staff must sign in to YourTal with a passkey. Add a passkey, then sign in again.',
+    message: 'SnapApp staff must sign in to YourTal with a passkey. Add a passkey, then sign in again.',
   },
   staff_reauth_required: {
     message:
-      'Snap Apps staff must have signed in to YourTal in the last 12 hours. Sign in again to continue.',
+      'SnapApp staff must have signed in to YourTal in the last 12 hours. Sign in again to continue.',
   },
   account_review: {
     message:
-      "We can't connect this YourTal account automatically. Contact Snap Apps support and we'll sort it out.",
+      "We can't connect this YourTal account automatically. Contact SnapApp support and we'll sort it out.",
   },
 
   // Google and the demo sign-in

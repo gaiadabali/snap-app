@@ -6,7 +6,7 @@
  *     thanks): instant, and no model call;
  *   - the call to action an answer carries when the model names none;
  *   - the label in the logs and in the `meta` event.
- * It never decides WHAT is said about Snap Apps: that is the model's job,
+ * It never decides WHAT is said about SnapApp: that is the model's job,
  * inside the harness's rules.
  */
 
@@ -27,7 +27,7 @@ export type Cta = 'app' | 'start' | 'human';
 const SHORT = 6;
 
 const GREETING =
-  /^(?:hi+|hello+|hey+|hiya|howdy|yo|g'?day(?: mate)?|good (?:morning|afternoon|evening|day)|morning|afternoon|evening)(?:\s+(?:there|snapper|snap apps|team|all|mate|guys))?[\s!.,?~]*$/i;
+  /^(?:hi+|hello+|hey+|hiya|howdy|yo|g'?day(?: mate)?|good (?:morning|afternoon|evening|day)|morning|afternoon|evening)(?:\s+(?:there|snapper|snap ?apps?|team|all|mate|guys))?[\s!.,?~]*$/i;
 
 const THANKS =
   /^(?:(?:ok(?:ay)?|great|perfect|cool|nice|sweet|awesome|good stuff|legend|beauty|no worries)[\s,!.]*)?(?:thanks?(?: you)?(?: so much| a lot| very much| heaps| mate)?|thank u|thx|ty|ta|cheers(?: mate)?|bye|goodbye|see ya|see you|catch ya|that'?s all)(?:[\s,!.]+(?:snapper|mate))?(?:[\s,!.]+(?:that(?:'s| is)? (?:helps?|helped|helpful|great|perfect|all)|appreciate it|much appreciated))?[\s!.~]*$/i;
@@ -48,12 +48,12 @@ const APP =
   /\b(download|install|apk|android|google play|play store|app store|iphone|ios|ipad|get the app|mobile app|phone app|on my phone)\b/i;
 
 const START =
-  /\b(sign ?up|signup|register|create (?:an |my )?account|get started|start (?:using|now|free)|try (?:it|snap apps|for free|free)|free trial|join)\b/i;
+  /\b(sign ?up|signup|register|create (?:an |my )?account|get started|start (?:using|now|free)|try (?:it|snap ?apps?|for free|free)|free trial|join)\b/i;
 
 const PRICING =
-  /\b(price[sd]?|pricing|cost[s]?|how much (?:is|does|do|are) (?:it|snap apps|the app|a scan|scans|credits?)|fee[s]?|credits?|packs?|per scan|afford|expensive|cheap|subscription|plans?)\b/i;
+  /\b(price[sd]?|pricing|cost[s]?|how much (?:is|does|do|are) (?:it|snap ?apps?|the app|a scan|scans|credits?)|fee[s]?|credits?|packs?|per scan|afford|expensive|cheap|subscription|plans?)\b/i;
 
-const CONTACT = /\b(contact|support|help ?desk|where are you|address|office|located|location|who (?:makes|built|runs) (?:it|this|snap apps))\b/i;
+const CONTACT = /\b(contact|support|help ?desk|where are you|address|office|located|location|who (?:makes|built|runs) (?:it|this|snap ?apps?))\b/i;
 
 export function classify(text: string): Intent {
   const t = text.trim();

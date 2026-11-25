@@ -6,7 +6,7 @@ kind: howto
 
 ## Auto-capture
 
-Point the camera at a docket and Snap Apps finds the edges of the paper and takes the shot when you hold steady. Before a photo is uploaded, the app checks on your phone that it is not blurry and that it looks like a document, so an obvious retake is caught on the spot rather than after a wait.
+Point the camera at a docket and SnapApp finds the edges of the paper and takes the shot when you hold steady. Before a photo is uploaded, the app checks on your phone that it is not blurry and that it looks like a document, so an obvious retake is caught on the spot rather than after a wait.
 
 ## The original is kept untouched
 

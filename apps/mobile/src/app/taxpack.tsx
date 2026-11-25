@@ -136,7 +136,7 @@ export default function TaxPackScreen() {
                 <Label>Why the images are in it</Label>
                 <Body>{pack.retentionNote}</Body>
                 <Small>
-                  Snap Apps keeps the original bytes exactly as captured — never cropped,
+                  SnapApp keeps the original bytes exactly as captured — never cropped,
                   re-encoded or &ldquo;enhanced&rdquo; — so the copy in this pack is the record,
                   not a picture of one.
                 </Small>

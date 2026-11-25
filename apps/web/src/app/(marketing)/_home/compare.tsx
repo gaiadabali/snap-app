@@ -20,7 +20,7 @@ import './compare-styles.css';
  * things the shipped personal app does not show, so they render only behind
  * BUSINESS_SURFACES_ENABLED.
  *
- * Snap Apps sits next to the row labels, not at the far right: on a phone
+ * SnapApp sits next to the row labels, not at the far right: on a phone
  * the table scrolls sideways under a pinned first column, and the product the
  * reader came for is the first thing they see.
  */
@@ -114,7 +114,7 @@ export function HomeCompare() {
           >
             <table className="compare-table">
               <caption className="sr-only">
-                Capability comparison between Snap Apps and other Australian receipt tools, as at{' '}
+                Capability comparison between SnapApp and other Australian receipt tools, as at{' '}
                 {AS_AT}. Capability, not quality.
               </caption>
               <thead>
@@ -129,7 +129,7 @@ export function HomeCompare() {
                     scope="col"
                     className="compare-us w-[8.5rem] px-3 pb-5 pt-4 text-center text-[1.0625rem] font-[650] tracking-[-0.02em]"
                   >
-                    Snap Apps
+                    SnapApp
                   </th>
                   {COMPETITORS.map((c) => (
                     <th
