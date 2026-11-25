@@ -87,6 +87,30 @@ describe('Sign in with YourTal against the API client', () => {
     expect(await new HttpApi(BASE).getYourtalSignInAvailable()).toBe(false);
   });
 
+  it('in a browser (the PWA), needs the server to offer the PWA return page too', async () => {
+    serve({ '/v1/auth/yourtal': () => json(200, { web: true, mobile: true }) });
+    expect(await new HttpApi(BASE, 'web').getYourtalSignInAvailable()).toBe(false);
+    serve({ '/v1/auth/yourtal': () => json(200, { web: true, mobile: true, mobileWeb: false }) });
+    expect(await new HttpApi(BASE, 'web').getYourtalSignInAvailable()).toBe(false);
+    serve({ '/v1/auth/yourtal': () => json(200, { web: false, mobile: true, mobileWeb: true }) });
+    expect(await new HttpApi(BASE, 'web').getYourtalSignInAvailable()).toBe(true);
+    // The installed app ignores it.
+    serve({ '/v1/auth/yourtal': () => json(200, { web: false, mobile: true, mobileWeb: false }) });
+    expect(await new HttpApi(BASE, 'native').getYourtalSignInAvailable()).toBe(true);
+  });
+
+  it('the PWA says platform web on every YourTal start; the installed app sends no platform', async () => {
+    serve({
+      '/v1/auth/yourtal/start': () => json(200, { url: 'https://id.test/a?state=s', flowId: 'f1', expiresAt: 'x' }),
+    });
+    await new HttpApi(BASE, 'web').startYourtalSignIn({ signUp: true });
+    await new HttpApi(BASE, 'web').startYourtalSignIn({ signUp: false, moveCurrentAccount: true });
+    await new HttpApi(BASE, 'native').startYourtalSignIn({ signUp: true });
+    expect(calls[0]!.body).toEqual({ client: 'mobile', signUp: true, platform: 'web' });
+    expect(calls[1]!.body).toEqual({ client: 'mobile', signUp: false, moveCurrentAccount: true, platform: 'web' });
+    expect(calls[2]!.body).toEqual({ client: 'mobile', signUp: true });
+  });
+
   it('start asks as the mobile client, unauthenticated, and returns the URL and flow id', async () => {
     serve({
       '/v1/auth/yourtal/start': () => json(200, { url: 'https://id.test/a?state=s', flowId: 'f1', expiresAt: 'x' }),

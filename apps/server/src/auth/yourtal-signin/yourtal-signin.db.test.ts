@@ -73,6 +73,8 @@ describeIfDb('Sign in with YourTal — real database, real provider', () => {
     who: FakePerson,
     options: {
       client?: 'web' | 'mobile';
+      /** The phone client's platform: `web` is the PWA. */
+      platform?: 'native' | 'web';
       amr?: string[];
       authTime?: number;
       returnTo?: string;
@@ -86,6 +88,7 @@ describeIfDb('Sign in with YourTal — real database, real provider', () => {
         client: options.client ?? 'web',
         returnTo: options.returnTo,
         signUp: options.signUp,
+        ...(options.platform ? { platform: options.platform } : {}),
         ...(options.moveToken ? { moveCurrentAccount: true } : {}),
       },
       { ...caller(), ...(options.moveToken ? { headers: { authorization: `Bearer ${options.moveToken}` } } : {}) },
@@ -121,6 +124,7 @@ describeIfDb('Sign in with YourTal — real database, real provider', () => {
     process.env.YOURTAL_OIDC_ISSUER = yt.issuer;
     process.env.YOURTAL_OIDC_WEB_CLIENT_ID = yt.webClientId;
     process.env.YOURTAL_OIDC_MOBILE_CLIENT_ID = yt.mobileClientId;
+    process.env.YOURTAL_OIDC_MOBILE_WEB_REDIRECT_URI = yt.mobileWebRedirectUri;
     process.env.YOURTAL_OIDC_WEB_REDIRECT_URI = yt.webRedirectUri;
     process.env.YOURTAL_OIDC_KEY_FILE = keyFile;
 
@@ -166,8 +170,8 @@ describeIfDb('Sign in with YourTal — real database, real provider', () => {
     yt.nextSignIn = null;
   });
 
-  it('reports both clients as available', () => {
-    expect(controller.status()).toEqual({ web: true, mobile: true });
+  it('reports both clients as available, and the phone client in a browser too', () => {
+    expect(controller.status()).toEqual({ web: true, mobile: true, mobileWeb: true });
   });
 
   it('builds the authorization request docs/26 asks for', async () => {
@@ -642,6 +646,27 @@ describeIfDb('Sign in with YourTal — real database, real provider', () => {
     expect(yt.lastAuthorizationParams?.get('redirect_uri')).toBe(yt.mobileRedirectUri);
   });
 
+  it('the PWA signs in with the phone client, returning to its own page, onto the SAME account', async () => {
+    const who = person('pwa');
+    const fromPhone = await signIn(who, { client: 'mobile' });
+    const fromPwa = await signIn(who, { client: 'mobile', platform: 'web' });
+    expect(fromPwa.outcome).toBe('signed_in');
+    expect(fromPwa.user.userId).toBe(fromPhone.user.userId);
+    expect(yt.lastAuthorizationParams?.get('client_id')).toBe(yt.mobileClientId);
+    expect(yt.lastAuthorizationParams?.get('redirect_uri')).toBe(yt.mobileWebRedirectUri);
+  });
+
+  it('a PWA return cannot finish a native phone flow: the redirect is the flow’s, not the caller’s', async () => {
+    const started = await controller.start({ client: 'mobile' }, caller());
+    const response = await authorizeAltered(started, person('pwa-bind'), { redirect_uri: yt.mobileWebRedirectUri });
+    const before = yt.grantErrors.length;
+    await expect(controller.finish({ flowId: started.flowId, ...response }, caller())).rejects.toMatchObject({
+      status: 401,
+      response: { error: 'yourtal_failed' },
+    });
+    expect(yt.grantErrors.length).toBeGreaterThan(before);
+  });
+
   /**
    * Run a started flow's OWN authorization request (its state, nonce and PKCE
    * challenge) with some parameters changed, as an attacker relaying it would.
@@ -889,7 +914,7 @@ describeIfDb('Sign in with YourTal — real database, real provider', () => {
     it('answers status, validates bodies, and completes a sign-in', async () => {
       const status = await app.getHttpAdapter().getInstance().inject({ method: 'GET', url: '/v1/auth/yourtal' });
       expect(status.statusCode).toBe(200);
-      expect(status.json()).toEqual({ web: true, mobile: true });
+      expect(status.json()).toEqual({ web: true, mobile: true, mobileWeb: true });
 
       expect((await post('/v1/auth/yourtal/start', { client: 'desktop' })).statusCode).toBe(400);
       expect((await post('/v1/auth/yourtal/finish', { flowId: 'nope', code: 'c', state: 's', iss: 'i' })).statusCode).toBe(400);

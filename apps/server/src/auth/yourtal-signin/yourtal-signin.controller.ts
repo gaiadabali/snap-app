@@ -12,7 +12,7 @@ import { identityFromClaims, refusal, refusalCode, sameOriginPath } from './clai
 import { isClientConfigured, redeemCode, startAuthorization } from './oidc.js';
 import { moveMismatch, openFlow, setFlowMoveUser, signInWithYourTal, takeFlow } from './repo.js';
 import { authenticateSession } from '../sessions.js';
-import { yourtalSignInSettings, type YourTalClientKind } from './settings.js';
+import { yourtalSignInSettings, type ReturnPlatform, type YourTalClientKind } from './settings.js';
 import { readTeenInvite, teenInvitesConfigured } from '../../teens/invite-api.js';
 import {
   attachInviteToFlow,
@@ -28,6 +28,14 @@ import { availableRules, installRulesFor } from '../../taxrules/taxrules.repo.js
 export class YourTalStartDto {
   @IsIn(['web', 'mobile'], { message: 'client must be "web" or "mobile".' })
   client!: YourTalClientKind;
+
+  /**
+   * The phone client only: `web` when it runs in a browser (the PWA), so YourTal returns to
+   * the PWA's own page. Picks one of this server's configured redirects; default `native`.
+   */
+  @IsOptional()
+  @IsIn(['native', 'web'], { message: 'platform must be "native" or "web".' })
+  platform?: ReturnPlatform;
 
   /** A same-origin path for the website to go to afterwards. */
   @IsOptional()
@@ -137,10 +145,16 @@ export class YourTalSignInController {
   @Get()
   @ApiOperation({
     summary: 'Whether Sign in with YourTal is available, per client',
-    description: 'Public. `web` and `mobile` are true when that client is configured on this server.',
+    description:
+      'Public. `web` and `mobile` are true when that client is configured on this server; ' +
+      '`mobileWeb` when the phone client can also return to its browser build (the PWA, platform=web).',
   })
-  status(): { web: boolean; mobile: boolean } {
-    return { web: isClientConfigured('web'), mobile: isClientConfigured('mobile') };
+  status(): { web: boolean; mobile: boolean; mobileWeb: boolean } {
+    return {
+      web: isClientConfigured('web'),
+      mobile: isClientConfigured('mobile'),
+      mobileWeb: isClientConfigured('mobile', 'web'),
+    };
   }
 
   @Post('start')
@@ -150,7 +164,8 @@ export class YourTalSignInController {
     description:
       'Returns YourTal’s authorization URL (state, nonce, PKCE S256, scopes openid email profile account, ' +
       'ui_locales, prompt=create when signUp, prompt=login when freshSignIn) and a flow id that finish needs within 10 minutes. ' +
-      '501 not_configured when this client is off. With teenInvite (a parent’s join link), 403 teen_invite_expired ' +
+      'platform=web (phone client only) returns to the PWA’s configured page. ' +
+      '501 not_configured when this client (or, for platform=web, the PWA return page) is off. With teenInvite (a parent’s join link), 403 teen_invite_expired ' +
       'when the code is unknown here or past its expiry.',
   })
   async start(
@@ -158,7 +173,7 @@ export class YourTalSignInController {
     @Req() request: IpAwareRequest & { headers?: Record<string, string | undefined> } = {},
   ): Promise<{ url: string; flowId: string; expiresAt: string }> {
     if (!(await startPerIp.consume(`yt-start:ip:${clientIp(request)}`))) throw refusal('rate_limited');
-    if (!isClientConfigured(body.client)) throw refusal('not_configured');
+    if (!isClientConfigured(body.client, body.platform)) throw refusal('not_configured');
 
     // The account to keep comes from the caller's own session, checked here.
     let moveUserId: string | null = null;
@@ -182,6 +197,7 @@ export class YourTalSignInController {
       locale: body.locale ?? 'en-AU',
       freshSignIn: body.freshSignIn === true,
       ...(body.teenInvite ? { teenInvite: body.teenInvite } : {}),
+      ...(body.platform ? { platform: body.platform } : {}),
     });
     const flow = await openFlow({
       client: body.client,

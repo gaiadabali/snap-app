@@ -256,6 +256,7 @@ const schema = z.object({
    *   YOURTAL_OIDC_MOBILE_CLIENT_ID    snapapp-staging-mobile (public, PKCE)
    *   YOURTAL_OIDC_WEB_REDIRECT_URI    default <WEB_PUBLIC_URL>/auth/yourtal/callback
    *   YOURTAL_OIDC_MOBILE_REDIRECT_URI default au.com.snapapps.app:/oauth/yourtal
+   *   YOURTAL_OIDC_MOBILE_WEB_REDIRECT_URI  the PWA's return page; unset = no YourTal in the PWA
    *   YOURTAL_OIDC_KEY_FILE            in-container path of the web client's
    *                                    PRIVATE key (host:
    *                                    /etc/snap-apps/secrets/yourtal-oidc-web.jwk,
@@ -299,6 +300,28 @@ const schema = z.object({
           {
             message: 'YOURTAL_OIDC_MOBILE_REDIRECT_URI must be the old scheme or the https App Link (docs/AUTH.md)',
           },
+        )
+        .optional(),
+    ),
+  /**
+   * Where YourTal returns to the phone app's browser build (the PWA): its own
+   * same-origin page, which hands the URL back to the tab that opened YourTal.
+   * One of these values only (YourTal registers each on snapapp-staging-mobile).
+   * Unset: the PWA does not offer YourTal and shows the email form.
+   */
+  YOURTAL_OIDC_MOBILE_WEB_REDIRECT_URI: z
+    .string()
+    .optional()
+    .transform((v) => (v ?? '').trim() || undefined)
+    .pipe(
+      z
+        .enum(
+          [
+            'https://snapapp.app.gaiada.com/oauth/yourtal',
+            // `expo start --web` on a developer's machine; refused in production below.
+            'http://localhost:8081/oauth/yourtal',
+          ],
+          { message: 'YOURTAL_OIDC_MOBILE_WEB_REDIRECT_URI must be the PWA return page (docs/AUTH.md)' },
         )
         .optional(),
     ),
@@ -449,6 +472,12 @@ const schema = z.object({
   }
   if (settings.YOURTAL_OIDC_WEB_REDIRECT_URI && !settings.YOURTAL_OIDC_WEB_REDIRECT_URI.startsWith('https://')) {
     ctx.addIssue({ code: 'custom', path: ['YOURTAL_OIDC_WEB_REDIRECT_URI'], message: 'must be https in production' });
+  }
+  if (
+    settings.YOURTAL_OIDC_MOBILE_WEB_REDIRECT_URI &&
+    !settings.YOURTAL_OIDC_MOBILE_WEB_REDIRECT_URI.startsWith('https://')
+  ) {
+    ctx.addIssue({ code: 'custom', path: ['YOURTAL_OIDC_MOBILE_WEB_REDIRECT_URI'], message: 'must be https in production' });
   }
 });
 

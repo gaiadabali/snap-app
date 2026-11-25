@@ -9,7 +9,7 @@ import { RateLimiter } from '../auth/rate-limit.js';
 import { identityFromClaims, refusal, sameOriginPath } from '../auth/yourtal-signin/claims.js';
 import { isClientConfigured, redeemCode, startAuthorization } from '../auth/yourtal-signin/oidc.js';
 import { openFlow, setFlowFtrSend, takeFtrSendFlow } from '../auth/yourtal-signin/repo.js';
-import { yourtalSignInSettings, type YourTalClientKind } from '../auth/yourtal-signin/settings.js';
+import { yourtalSignInSettings, type ReturnPlatform, type YourTalClientKind } from '../auth/yourtal-signin/settings.js';
 import { getDb } from '../db.js';
 import { listMembers, readTenant } from '../repo.js';
 import { isTeen, isTeenSpace } from '../teens/teens.repo.js';
@@ -227,6 +227,8 @@ export type StartSendInput = {
   financialYear?: string;
   returnTo?: string;
   locale: 'en-AU' | 'id-ID';
+  /** The phone client in a browser (the PWA). */
+  platform?: ReturnPlatform;
 };
 
 export type StartedSend = { url: string; flowId: string; sendId: string; expiresAt: string };
@@ -239,7 +241,7 @@ export async function startSend(
 ): Promise<StartedSend> {
   const eligible = await sendEligibility(user, tenantId, impersonated);
   if (!eligible.ok) throw sendRefusal(eligible.code);
-  if (!isClientConfigured(input.client)) throw sendRefusal('not_configured');
+  if (!isClientConfigured(input.client, input.platform)) throw sendRefusal('not_configured');
 
   const fyStart = parseFy(input.financialYear, sydneyToday());
   if (fyStart === null) throw new BadRequestException('`financialYear` must be a financial year we support, like 2025-26.');
@@ -282,6 +284,7 @@ export async function startSend(
       signUp: false,
       locale: input.locale,
       transfer: transferId,
+      ...(input.platform ? { platform: input.platform } : {}),
     });
     const flow = await openFlow({
       client: input.client,

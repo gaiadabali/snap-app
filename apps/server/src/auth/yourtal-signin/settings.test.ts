@@ -25,6 +25,7 @@ const NAMES = [
   'YOURTAL_OIDC_MOBILE_CLIENT_ID',
   'YOURTAL_OIDC_WEB_REDIRECT_URI',
   'YOURTAL_OIDC_MOBILE_REDIRECT_URI',
+  'YOURTAL_OIDC_MOBILE_WEB_REDIRECT_URI',
   'YOURTAL_OIDC_KEY_FILE',
   'NODE_ENV',
 ];
@@ -97,6 +98,36 @@ describe('Sign in with YourTal settings', () => {
     vi.stubEnv('YOURTAL_OIDC_MOBILE_REDIRECT_URI', 'https://evil.example/cb');
     const { settings } = await load();
     expect(() => settings.yourtalSignInSettings()).toThrow(/YOURTAL_OIDC_MOBILE_REDIRECT_URI/);
+  });
+
+  it('gives the phone client a PWA return page only when the env names an allowed one', async () => {
+    vi.stubEnv('YOURTAL_OIDC_ISSUER', 'https://yourtal.gaiada.com/oidc');
+    vi.stubEnv('YOURTAL_OIDC_MOBILE_CLIENT_ID', 'snapapp-staging-mobile');
+    let { settings, oidc } = await load();
+    expect(settings.yourtalSignInSettings()?.mobile?.webRedirectUri).toBeUndefined();
+    expect(oidc.isClientConfigured('mobile', 'web')).toBe(false);
+    expect(oidc.isClientConfigured('mobile', 'native')).toBe(true);
+
+    vi.stubEnv('YOURTAL_OIDC_MOBILE_WEB_REDIRECT_URI', 'https://snapapp.app.gaiada.com/oauth/yourtal');
+    ({ settings, oidc } = await load());
+    expect(settings.yourtalSignInSettings()?.mobile).toEqual({
+      kind: 'mobile',
+      clientId: 'snapapp-staging-mobile',
+      redirectUri: 'au.com.snapapps.app:/oauth/yourtal',
+      webRedirectUri: 'https://snapapp.app.gaiada.com/oauth/yourtal',
+    });
+    expect(oidc.isClientConfigured('mobile', 'web')).toBe(true);
+  });
+
+  it('refuses any other PWA return page at boot, and http in production', async () => {
+    vi.stubEnv('YOURTAL_OIDC_MOBILE_WEB_REDIRECT_URI', 'https://evil.example/oauth/yourtal');
+    let { config } = await load();
+    expect(() => config.config()).toThrow(/YOURTAL_OIDC_MOBILE_WEB_REDIRECT_URI/);
+
+    vi.stubEnv('NODE_ENV', 'production');
+    vi.stubEnv('YOURTAL_OIDC_MOBILE_WEB_REDIRECT_URI', 'http://localhost:8081/oauth/yourtal');
+    ({ config } = await load());
+    expect(() => config.config()).toThrow(/YOURTAL_OIDC_MOBILE_WEB_REDIRECT_URI: must be https/);
   });
 
   it('derives the website redirect URI from WEB_PUBLIC_URL (docs/26 §1.9)', async () => {

@@ -1,3 +1,5 @@
+import { Platform } from 'react-native';
+
 import { HttpApi } from './http';
 import { createApi } from './mock';
 import type { SnapApi } from './types';
@@ -22,7 +24,7 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '') ?? '';
 let instance: SnapApi | null = null;
 
 export function api(): SnapApi {
-  instance ??= API_URL ? new HttpApi(API_URL) : createApi();
+  instance ??= API_URL ? new HttpApi(API_URL, Platform.OS === 'web' ? 'web' : 'native') : createApi();
   return instance;
 }
 
