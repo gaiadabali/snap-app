@@ -47,6 +47,7 @@ COPY packages/api-contract/package.json packages/api-contract/package.json
 COPY packages/db/package.json packages/db/package.json
 COPY packages/docai/package.json packages/docai/package.json
 COPY packages/tax-engine/package.json packages/tax-engine/package.json
+COPY packages/mail-engine/package.json packages/mail-engine/package.json
 COPY packages/tax-rules/package.json packages/tax-rules/package.json
 COPY packages/tax-rules/package.json packages/tax-rules/package.json
 COPY packages/docai-preview/package.json packages/docai-preview/package.json

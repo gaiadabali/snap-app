@@ -38,6 +38,7 @@ COPY packages/api-contract/package.json packages/api-contract/package.json
 COPY packages/db/package.json packages/db/package.json
 COPY packages/docai/package.json packages/docai/package.json
 COPY packages/tax-engine/package.json packages/tax-engine/package.json
+COPY packages/mail-engine/package.json packages/mail-engine/package.json
 COPY packages/docai-preview/package.json packages/docai-preview/package.json
 RUN pnpm install --frozen-lockfile --filter "@snap/mobile..."
 
@@ -54,6 +55,8 @@ COPY packages/api-contract packages/api-contract
 # repo, where the package is simply present. The image is the only place it is
 # absent, and nothing in CI runs the image.
 COPY packages/docai-preview packages/docai-preview
+# apps/mobile declares @snap/mail-engine (Spambank mail screens, BUILD.md T14).
+COPY packages/mail-engine packages/mail-engine
 COPY apps/mobile apps/mobile
 
 # Empty by default = the fixture/demo build, which is the safe thing to get if

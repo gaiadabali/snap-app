@@ -44,7 +44,15 @@ const CLIENTS = ['@snap/mobile', '@snap/web'];
 //
 // The assertion below that it has no runtime deps is what keeps that true. If
 // it ever grows one, this exception stops being justified and the test says so.
-const ALLOWED_FOR_MOBILE = ['@snap/api-contract', '@snap/docai-preview'];
+//
+// `@snap/mail-engine` is the second named exception (Spambank mail, spambank/BUILD.md
+// B4/T10). It is the client side of the mail protocol: JMAP over `fetch` to the
+// YourTal proxy, with no tax, database or extraction weight, and no runtime
+// dependency at all. It must run on a phone, which is why it is allowed here, and
+// the assertions below keep it that way: zero dependencies, no @snap/* imports.
+const ALLOWED_FOR_MOBILE = ['@snap/api-contract', '@snap/docai-preview', '@snap/mail-engine'];
+/** The same exception for the website; web otherwise shares only the contract types. */
+const ALLOWED_FOR_WEB = ['@snap/api-contract', '@snap/mail-engine'];
 
 type Pkg = {
   name?: string;
@@ -74,6 +82,7 @@ const WORKSPACE_DIRS = [
   // list can acquire any dependency at all without anything noticing.
   'packages/docai',
   'packages/docai-preview',
+  'packages/mail-engine',
   'packages/tax-engine',
   // `@snap/tax-rules` is deliberately NOT in FORBIDDEN_FOR_CLIENTS, and the
   // reason is the reason this file gives for banning `@snap/tax-engine`:
@@ -149,13 +158,14 @@ describe('workspace boundaries', () => {
     ).toBe(false);
   });
 
-  it('web depends only on the api-contract from this workspace', () => {
+  it('web depends only on the api-contract and the mail engine from this workspace', () => {
     const web = readPkg('apps/web');
     const snapDeps = Object.keys(web?.dependencies ?? {}).filter((d) => d.startsWith('@snap/'));
     expect(
       snapDeps.sort(),
-      'The website is a browser client. It talks to the server over HTTP and shares TYPES only.',
-    ).toEqual(['@snap/api-contract']);
+      'The website is a browser client. It talks to the server over HTTP and shares TYPES only, ' +
+        'plus the mail engine, which is itself only a client of the YourTal mail proxy.',
+    ).toEqual([...ALLOWED_FOR_WEB].sort());
   });
 
   it('mobile depends only on the api-contract from this workspace', () => {
@@ -208,6 +218,33 @@ describe('workspace boundaries', () => {
     for (const forbidden of ['@snap/db', '@snap/docai', '@snap/tax-engine', '@snap/server']) {
       expect(reachable.has(forbidden), `docai-preview must not reach ${forbidden}`).toBe(false);
     }
+  });
+
+  it('mail-engine is a pure client: no dependencies, no workspace imports, nothing heavy reachable', () => {
+    // It is the one package both clients import that is real code, so the reason it
+    // is allowed is checked rather than remembered. react is a peer dependency of
+    // its ./react entry only (optional); nothing is bundled with it.
+    const pkg = readPkg('packages/mail-engine');
+    expect(Object.keys(pkg?.dependencies ?? {})).toEqual([]);
+    expect(Object.keys(pkg?.peerDependencies ?? {})).toEqual(['react']);
+    const reachable = closure('@snap/mail-engine');
+    expect([...reachable], 'mail-engine must not depend on any other @snap package').toEqual([]);
+
+    // And no source file may import a workspace package (the YourTal and FTR copies
+    // have no @snap/* to resolve).
+    const stack = [join(ROOT, 'packages/mail-engine/src')];
+    const offenders: string[] = [];
+    while (stack.length > 0) {
+      const current = stack.pop() as string;
+      for (const entry of readdirSync(current, { withFileTypes: true })) {
+        const full = join(current, entry.name);
+        if (entry.isDirectory()) stack.push(full);
+        else if (/from\s+["']@snap\//.test(readFileSync(full, 'utf8'))) {
+          offenders.push(full.slice(ROOT.length + 1));
+        }
+      }
+    }
+    expect(offenders).toEqual([]);
   });
 
   it('DocDOM is declared exactly once in the workspace', () => {
