@@ -2364,3 +2364,123 @@ export type FtrSendErrorCode =
   | 'ftr_unavailable'
   | 'invalid_return_to'
   | 'internal';
+
+// ── Spambank mail (spambank/BUILD.md §5.1, §5.6) ─────────────────────────────
+//
+// SnapApp's side of Spambank: a bridge to YourTal's machine API (`/api/oidc-
+// clients/spambank/*`), which owns the mailbox. Every route is USER-scoped and
+// needs the person's OWN session (staff acting as a user are refused: a mail
+// token opens someone's inbox). Errors are `{ error, message }` with `error`
+// one of `MailErrorCode`.
+
+/** The `error` of a refusal from `/v1/mail/*`. */
+export type MailErrorCode =
+  /** 404: `SPAMBANK_ENABLED=0`, or this server has no YourTal client credentials. */
+  | 'mail_unavailable'
+  /** 409: the person did not sign in with YourTal (or YourTal does not know them): offer Sign in with YourTal. */
+  | 'yourtal_not_linked'
+  /** 403: a teen, a suspended account, or consent to SnapApp ended at YourTal. */
+  | 'not_allowed'
+  /** 409: no mailbox yet; call `POST /v1/mail/enable`. */
+  | 'not_enabled'
+  /** 403: the workspace is not one the person owns or administers. */
+  | 'not_workspace_admin'
+  /** 429. */
+  | 'rate_limited'
+  /** 503: YourTal did not answer. */
+  | 'yourtal_unavailable'
+  /** 503: YourTal answered but its mail server is down. */
+  | 'spambank_unavailable'
+  /** 502: YourTal refused SnapApp's request (a bug or a misconfiguration, not the person's doing). */
+  | 'yourtal_rejected';
+
+/** The mailbox as YourTal reports it (`GET /api/spambank/me`). */
+export interface MailMailbox {
+  state: 'off' | 'on' | 'suspended' | 'not_allowed';
+  /** `geewizduck@yourtal.gaiada.com`. Present once there is a mailbox. */
+  address?: string;
+  quota?: { limitBytes: number; usedBytes: number };
+  createdAt?: IsoDateTime;
+}
+
+/** What SnapApp and YourTal keep about this person's mailbox. */
+export interface MailSettingsView {
+  /** Mailed statements are imported into SnapApp (kept at YourTal). */
+  statements: boolean;
+  /** The workspace they are imported into; null until chosen. */
+  workspaceId: string | null;
+  /** New-mail notifications on the phone. */
+  alerts: boolean;
+}
+
+/** `GET /v1/mail/status`. */
+export interface MailStatus {
+  /** False when mail is switched off or not configured here: hide every mail entry. */
+  available: boolean;
+  /** False when the person did not sign in with YourTal: show Sign in with YourTal instead of Mail. */
+  linked: boolean;
+  mailbox: MailMailbox | null;
+  settings: MailSettingsView;
+}
+
+/** `POST /v1/mail/enable`: 201 for a new mailbox, 200 when it already existed. */
+export interface MailEnableResult {
+  state: 'on';
+  address: string;
+  created: boolean;
+}
+
+/**
+ * `POST /v1/mail/session`: a 30-minute mail token for the shared engine
+ * (`@snap/mail-engine`'s `MailSession`, field for field). Never cached, never logged.
+ */
+export interface MailSessionToken {
+  token: string;
+  expiresAt: IsoDateTime;
+  sessionUrl: string;
+  helpersBase: string;
+  address: string;
+}
+
+/** `PATCH /v1/mail/settings`. `workspaceId: null` clears the choice. */
+export interface UpdateMailSettingsRequest {
+  statements?: boolean;
+  workspaceId?: string | null;
+  alerts?: boolean;
+}
+
+export interface MailAppPassword {
+  id: string;
+  name: string;
+  createdAt: IsoDateTime;
+}
+
+/** `GET /v1/mail/app-passwords`. */
+export interface MailAppPasswordList {
+  items: MailAppPassword[];
+}
+
+/** `POST /v1/mail/app-passwords`. */
+export interface CreateMailAppPasswordRequest {
+  /** 1 to 40 characters. */
+  name: string;
+}
+
+/** The 201 answer: `secret` is shown ONCE, with the settings a phone mail app needs. */
+export interface MailAppPasswordCreated extends MailAppPassword {
+  secret: string;
+  username: string;
+  imap: { host: string; port: number; security: 'ssl' };
+  smtp: { host: string; port: number; security: 'ssl' };
+}
+
+/** `POST /v1/devices/push-token`: the phone's Firebase Cloud Messaging registration token. */
+export interface RegisterPushTokenRequest {
+  token: string;
+  platform: 'android';
+}
+
+/** `DELETE /v1/devices/push-token` (on sign-out, or when the person turns alerts off on the phone). */
+export interface UnregisterPushTokenRequest {
+  token: string;
+}

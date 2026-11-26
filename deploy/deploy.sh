@@ -146,6 +146,15 @@ if [[ -n "${GOOGLE_PLAY_SERVICE_ACCOUNT_FILE_HOST:-}" && ! -f "${GOOGLE_PLAY_SER
   export GOOGLE_PLAY_SERVICE_ACCOUNT_FILE_HOST=
 fi
 
+# The FCM service-account key (Spambank new-mail notifications, T11): optional too.
+# Missing, it is UNSET: the compose file names the key to the worker only when this
+# is set, and an empty key would select the real sender.
+if [[ -n "${FCM_SERVICE_ACCOUNT_FILE_HOST:-}" && ! -f "${FCM_SERVICE_ACCOUNT_FILE_HOST}" ]]; then
+  log "WARNING: FCM_SERVICE_ACCOUNT_FILE_HOST=${FCM_SERVICE_ACCOUNT_FILE_HOST} is not a file on this host;"
+  log "         new-mail push notifications stay OFF for this deploy."
+  export FCM_SERVICE_ACCOUNT_FILE_HOST=
+fi
+
 if [[ -n "${CALLER_IMAGE_TAG}" ]]; then
   IMAGE_TAG="${CALLER_IMAGE_TAG}"
   export IMAGE_TAG

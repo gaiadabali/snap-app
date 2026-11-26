@@ -67,17 +67,17 @@ async function accessToken(scope: string): Promise<string> {
 export type Answer = { status: number; body: Record<string, unknown> } | null;
 
 /**
- * One call with the bearer token for `scope`; a 401 drops that token and tries
- * once more. Null when YourTal is unreachable. May throw when no token can be
- * had: callers treat a throw as unavailable.
+ * The shared request: one call with the bearer token for `scope`; a 401 drops
+ * that token and tries once more. Null when YourTal is unreachable or no token
+ * could be had.
  */
-export async function oidcApiCall(
+async function request(
   scope: string,
   method: 'GET' | 'POST',
   path: string,
   body?: object,
   idempotencyKey?: string,
-): Promise<Answer> {
+): Promise<Response | null> {
   for (let attempt = 0; attempt < 2; attempt += 1) {
     let response: Response;
     try {
@@ -97,16 +97,89 @@ export async function oidcApiCall(
     }
     if (response.status === 401 && attempt === 0) {
       tokens.delete(scope);
+      // Not read: the connection is released when the body is dropped.
+      await response.body?.cancel().catch(() => undefined);
       continue;
     }
-    let parsed: unknown = null;
-    try {
-      parsed = await response.json();
-    } catch {
-      parsed = null;
-    }
-    const record = parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? (parsed as Record<string, unknown>) : {};
-    return { status: response.status, body: record };
+    return response;
   }
   return null;
+}
+
+/**
+ * One call with the bearer token for `scope`; a 401 drops that token and tries
+ * once more. Null when YourTal is unreachable. Callers treat a missing token
+ * (also null) as unavailable.
+ */
+export async function oidcApiCall(
+  scope: string,
+  method: 'GET' | 'POST',
+  path: string,
+  body?: object,
+  idempotencyKey?: string,
+): Promise<Answer> {
+  const response = await request(scope, method, path, body, idempotencyKey);
+  if (!response) return null;
+  let parsed: unknown = null;
+  try {
+    parsed = await response.json();
+  } catch {
+    parsed = null;
+  }
+  const record = parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? (parsed as Record<string, unknown>) : {};
+  return { status: response.status, body: record };
+}
+
+export type BytesAnswer = { status: number; bytes: Buffer; contentType: string | null } | null;
+
+/** The most a binary answer may be: a mailed statement is at most 10 MB (spambank/BUILD.md §4.8). */
+export const OIDC_BYTES_MAX = 12 * 1024 * 1024;
+
+/**
+ * Like `oidcApiCall`, for an answer that is a file (YourTal's
+ * `/api/oidc-clients/spambank/attachments/fetch`): the raw bytes and their
+ * `Content-Type`. Null when YourTal is unreachable, and also when the answer is
+ * larger than `maxBytes`, which is read no further than the limit. An error
+ * answer (a 404 with a small JSON body) comes back as bytes too: look at
+ * `status` first.
+ */
+export async function oidcApiBytes(
+  scope: string,
+  method: 'GET' | 'POST',
+  path: string,
+  body?: object,
+  options: { maxBytes?: number; idempotencyKey?: string } = {},
+): Promise<BytesAnswer> {
+  const maxBytes = options.maxBytes ?? OIDC_BYTES_MAX;
+  const response = await request(scope, method, path, body, options.idempotencyKey);
+  if (!response) return null;
+  const declared = Number(response.headers.get('content-length'));
+  if (Number.isFinite(declared) && declared > maxBytes) {
+    await response.body?.cancel().catch(() => undefined);
+    return null;
+  }
+  try {
+    const chunks: Uint8Array[] = [];
+    let total = 0;
+    const reader = response.body?.getReader();
+    if (reader) {
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        total += value.byteLength;
+        if (total > maxBytes) {
+          await reader.cancel().catch(() => undefined);
+          return null;
+        }
+        chunks.push(value);
+      }
+    }
+    return {
+      status: response.status,
+      bytes: Buffer.concat(chunks, total),
+      contentType: response.headers.get('content-type'),
+    };
+  } catch {
+    return null;
+  }
 }

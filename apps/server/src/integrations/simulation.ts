@@ -53,7 +53,7 @@
  * test below possible without touching the process environment.
  */
 
-export type IntegrationId = 'kms' | 'mailer' | 'stripe' | 'googleplay' | 'xero' | 'powersync';
+export type IntegrationId = 'kms' | 'mailer' | 'stripe' | 'googleplay' | 'xero' | 'powersync' | 'fcm';
 
 export type SimulationMode = 'real' | 'simulated' | 'absent';
 
@@ -129,6 +129,16 @@ export const INTEGRATIONS: readonly IntegrationSpec[] = [
     simulatorVar: 'POWERSYNC_SIMULATOR',
     credentialVars: ['POWERSYNC_URL'],
     protocol: "PowerSync's sync-rules and token endpoints",
+  },
+  {
+    id: 'fcm',
+    label: 'Firebase Cloud Messaging',
+    simulatorVar: 'FCM_SIMULATOR',
+    // A path under /etc/snap-apps/secrets on the host, never the key itself.
+    // `FCM_PROJECT_ID` is not a credential: it names the project, and `push/fcm.ts`
+    // refuses to run a half-configured pair.
+    credentialVars: ['FCM_SERVICE_ACCOUNT_FILE'],
+    protocol: "FCM HTTP v1's messages:send (an in-process sender that records what it would send)",
   },
 ] as const;
 

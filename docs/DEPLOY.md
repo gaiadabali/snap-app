@@ -569,6 +569,37 @@ client-credentials assertion with it). The worker also needs
 `YOURTAL_OIDC_ISSUER` (deploy/.env) and `YOURTAL_OIDC_SERVER_CLIENT_ID` (in
 `yourtal.env`); without the key the job stays queued.
 
+### Spambank mail: the YourTal bridge and new-mail notifications (Spambank ticket T11)
+
+SnapApp's `/v1/mail/*` calls YourTal's Spambank machine API
+(`/api/oidc-clients/spambank/*`) as the server client
+(`snapapp-staging-server`), naming the person by their YourTal `sub`. It needs
+nothing new beyond what Sign in with YourTal already has (`YOURTAL_OIDC_ISSUER`,
+`YOURTAL_OIDC_KEY_FILE_HOST`, `YOURTAL_OIDC_SERVER_CLIENT_ID`), plus YourTal
+allowing that client the `spambank` scope.
+
+- `SPAMBANK_ENABLED` (deploy/.env): **unset means ON** (owner decision). Only
+  `0`, `false`, `off` or `no` turn it off. `GET /v1/mail/status` says
+  `"available": false` when off or when the YourTal server client is not
+  configured, and every other mail route answers 404 `mail_unavailable`.
+- Migration `0060_mail_push.sql` runs with the deploy (`push_tokens`,
+  `mail_settings`, three functions). Nothing to do by hand.
+- **Push (Firebase Cloud Messaging), optional.** The worker sends "You have N new
+  emails" when YourTal's `spambank-mail` event arrives. Needs the Firebase
+  project and a service-account key with the FCM sender role:
+  1. `FCM_PROJECT_ID=<project id>` in deploy/.env.
+  2. The key at `/etc/snap-apps/secrets/fcm-service-account.json` (0600, owner
+     1001:1001), and `FCM_SERVICE_ACCOUNT_FILE_HOST=` that path in deploy/.env.
+     Same rules as the Google Play key: `deploy.sh` unsets it for the run when the
+     file is missing, and compose mounts it into the **worker** only.
+  3. Recreate the worker: `docker compose up -d --no-deps --no-build worker </dev/null`.
+  Unset (the default), an alert is acknowledged and dropped and nothing else is
+  affected. Check it took: the worker's log has no `fcm: ... push notifications
+  stay off` line, and a `spambank-mail` event logs `N notification(s) sent`
+  instead of `dropped (not_configured)`. `FCM_SIMULATOR=true` (non-production or
+  `DEMO_ENV=staging` only) records the sends in-process instead; a production
+  host asking for it is refused at boot like every simulator.
+
 ### YourTal scans voucher: merchant settings, turning it on, rollback (group plan 2.8)
 
 A person buys "50 SnapApp scans" in YourTal for 200 points and types the code
