@@ -60,7 +60,7 @@ export function SettingsForm({
             </>
           ) : null}
 
-          <Field label="Occupation profile" hint="Decides which deduction rows your scans can be matched against.">
+          <Field label="Occupation profile" hint="Decides which deduction rows your scans can be matched against. FIFO or DIDO? Pick your trade.">
             <Select name="occupationProfileId" defaultValue={settings.occupationProfileId ?? ''} disabled={!canEdit}>
               <option value="">Not set</option>
               {occupations.map((group) => (
