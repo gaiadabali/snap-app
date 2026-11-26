@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { OccupationsCatalogueController } from './settings.controller.js';
-import { occupationGroupsFor } from './occupation.js';
+import { OCCUPATION_GROUPS, PROFILES } from '@snap/tax-engine';
+import { occupationAllowed, occupationGroupsFor } from './occupation.js';
 
 const ids = (kind: 'personal' | 'business') =>
   occupationGroupsFor(kind).flatMap((g) => g.profiles.map((p) => p.id));
@@ -16,6 +17,30 @@ describe('occupationGroupsFor', () => {
   it('offers the sole trader to a business only', () => {
     expect(ids('personal')).not.toContain('sole');
     expect(ids('business')).toContain('sole');
+  });
+});
+
+describe('occupationGroupsFor de-duplication', () => {
+  it('never offers the same id twice', () => {
+    for (const kind of ['personal', 'business'] as const) {
+      const all = ids(kind);
+      expect(all.filter((id, i) => all.indexOf(id) !== i)).toEqual([]);
+    }
+  });
+  it('still offers every id that was offered before', () => {
+    for (const kind of ['personal', 'business'] as const) {
+      const before = new Set(
+        OCCUPATION_GROUPS.flatMap((g) => g.ids).filter(
+          (id: string) => PROFILES[id] !== undefined && occupationAllowed(kind, id),
+        ),
+      );
+      expect(new Set(ids(kind))).toEqual(before);
+    }
+  });
+  it('drops the FIFO and DIDO groups, whose jobs live under their trades', () => {
+    const labels = occupationGroupsFor('business').map((g) => g.group);
+    expect(labels.some((l) => /FIFO|DIDO/.test(l))).toBe(false);
+    expect(ids('business')).toContain('miner');
   });
 });
 

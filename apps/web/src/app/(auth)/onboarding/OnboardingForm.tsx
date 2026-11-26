@@ -167,7 +167,7 @@ export function OnboardingForm({
             <Field
               label="What best describes this work?"
               htmlFor="occupationProfileId"
-              hint="Targets the right deduction rows on your tax worksheet. Change it later in settings."
+              hint="Targets the right deduction rows on your tax worksheet. FIFO or DIDO? Pick your trade. Change it later in settings."
             >
               <Select id="occupationProfileId" name="occupationProfileId" defaultValue="">
                 <option value="">Not sure yet</option>
