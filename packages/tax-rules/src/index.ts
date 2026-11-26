@@ -76,4 +76,5 @@ export type {
   RulesStamp,
 } from './interpreter.js';
 
+export { AU_2026 } from './rules/au-2026.js';
 export { ID_2026 } from './rules/id-2026.js';

@@ -437,6 +437,17 @@ export function inspectRules(rules: unknown): RulesProblem[] {
       if (!tc.note) {
         p.push({ path: `taxCodes[${i}].note`, message: 'required — it is shown in the category picker' });
       }
+      if (tc.treatment !== undefined && !['standard', 'exempt', 'out_of_scope'].includes(tc.treatment)) {
+        p.push({ path: `taxCodes[${i}].treatment`, message: "'standard', 'exempt' or 'out_of_scope', or omitted" });
+      }
+      // A zero-rated code cannot be the standard rate, and a code carrying a
+      // rate cannot be exempt: either would put tax in the wrong total.
+      if (tc.treatment === 'standard' && tc.ratePercent === 0) {
+        p.push({ path: `taxCodes[${i}].treatment`, message: 'a standard-rated code must carry a rate' });
+      }
+      if (tc.treatment === 'exempt' && tc.ratePercent !== 0) {
+        p.push({ path: `taxCodes[${i}].treatment`, message: 'an exempt code must have a rate of 0' });
+      }
       // The cross-check that keeps five rows in step with one flag.
       if (tc.claimsCredit === true && ct && ct.recoverable === false) {
         p.push({

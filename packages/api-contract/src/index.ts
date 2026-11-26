@@ -1226,12 +1226,15 @@ export interface OnboardingInput {
   /** Personal only: what the household intends to spend each month. */
   monthlyBudget?: string | null;
   /**
-   * The tax engine to install, e.g. `au-2026` or `id-2026` (migration 0026).
+   * The tax engine to install: `au-2026` or `id-2026`, one of
+   * `GET /v1/tax-rules-catalogue`. An id the server cannot install is refused
+   * with 400 before any workspace is created.
    *
-   * Absent means "no engine", NOT "Australia": a workspace without one refuses
-   * every tax calculation rather than computing plausible numbers under the
-   * wrong law. The mobile client asks for the country at registration and
-   * sends the answer through here.
+   * Absent installs nothing and keeps the old Australian column defaults (AU,
+   * AUD, July) — every client now sends a country. The mobile client asks at
+   * registration, or in onboarding when the person came in another way; the
+   * web form defaults to Australia. An Australian BUSINESS is not given
+   * `au-2026` (a personal rule set): it keeps the built-in BAS engine.
    *
    * `OnboardingDto` on the server has accepted this since the engine landed;
    * it was simply missing from this contract, so no client could send it.

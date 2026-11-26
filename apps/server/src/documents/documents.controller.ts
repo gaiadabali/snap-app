@@ -59,7 +59,7 @@ import {
   type TenantRow,
 } from '../repo.js';
 import { abnIsValid, expectedGst, validate } from '../extraction/validators.js';
-import { rulesFor } from '../taxrules/taxrules.repo.js';
+import { readerRulesFor } from '../taxrules/taxrules.repo.js';
 import { getCaptureForDocument } from '../repo.js';
 import { get as readObject } from '../storage.js';
 import { issueImageToken } from '../tokens.js';
@@ -235,7 +235,7 @@ export function consumptionTaxFromRules(
 export async function consumptionTaxFor(
   tenant: TenantRow | null,
 ): Promise<Pick<ConsumptionTaxSpec, 'inclusiveFraction' | 'baseFraction'>> {
-  const rules = tenant?.tax_rules_id ? await rulesFor(tenant) : null;
+  const rules = await readerRulesFor(tenant);
   return consumptionTaxFromRules(rules);
 }
 
@@ -518,7 +518,7 @@ export class DocumentsController {
     // re-derivation below, because the divisor is the jurisdiction: 1/11 in
     // Australia, 11/111 in Indonesia (docs/INDONESIA.md §2.2).
     const tenant = await readTenant(user.userId, tenantId);
-    const taxRules = tenant?.tax_rules_id ? await rulesFor(tenant) : null;
+    const taxRules = await readerRulesFor(tenant);
 
     // Correcting the total re-derives the tax. Tax is never taken from the
     // client: it is a function of the taxable part, and accepting both invites

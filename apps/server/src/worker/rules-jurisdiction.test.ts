@@ -129,8 +129,8 @@ describeIfDb('worker jurisdiction gate (tax rules must match the workspace count
 
   async function setTenant(fields: { country?: string; taxRulesId?: string | null }) {
     // `tenants_tax_rules_complete` (0026): tax_rules_id and tax_rules_version
-    // are set or cleared together — and the version must be the REAL id-2026
-    // one, or `rulesFor` refuses as a version mismatch, which is a different
+    // are set or cleared together — and the version must be the REAL one
+    // (id-2026 and au-2026 are both 2026.1.0), or `rulesFor` refuses as a version mismatch, which is a different
     // (and correct) behaviour than what these tests exercise.
     await admin.query(
       `update tenants set country = coalesce($2, country), tax_rules_id = $3, tax_rules_version = $4 where id = $1`,
@@ -166,6 +166,35 @@ describeIfDb('worker jurisdiction gate (tax rules must match the workspace count
     const { job } = await jobState(jobId);
     // Reached the provider stage — the rules gate did not stop an AU workspace.
     expect(job.last_error).toMatch(/No extraction provider key/);
+  });
+
+  it('an AU workspace with au-2026 installed (an email sign-up) proceeds, like one with none', async () => {
+    await setTenant({ country: 'AU', taxRulesId: 'au-2026' });
+    delete process.env.OLLAMA_API_KEY;
+    delete process.env.OLLAMA_CLOUD_API_KEY;
+    delete process.env.OLLAMA_ENV_FILE;
+
+    const { jobId } = await enqueueReceipt();
+    expect(await worker.runOnce(1)).toBe(1);
+
+    const { job } = await jobState(jobId);
+    expect(job.last_error).toMatch(/No extraction provider key/);
+  });
+
+  it('an ID workspace carrying au-2026 is RELEASED — Australian law on an Indonesian docket', async () => {
+    await setTenant({ country: 'ID', taxRulesId: 'au-2026' });
+    delete process.env.OLLAMA_API_KEY;
+    delete process.env.OLLAMA_CLOUD_API_KEY;
+    delete process.env.OLLAMA_ENV_FILE;
+
+    const { jobId } = await enqueueReceipt();
+    expect(await worker.runOnce(1)).toBe(1);
+
+    const { job, runs, documents } = await jobState(jobId);
+    expect(job.completed_at).toBeNull();
+    expect(job.last_error).toMatch(/does not match its installed rule set au-2026/);
+    expect(runs).toHaveLength(0);
+    expect(documents).toHaveLength(0);
   });
 
   it('an ID workspace with id-2026 installed proceeds, under Indonesian rules', async () => {

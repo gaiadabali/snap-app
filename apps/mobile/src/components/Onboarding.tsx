@@ -4,10 +4,12 @@ import { Pressable, ScrollView, View } from 'react-native';
 import { Text, TextInput } from '@/theme/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { api, type Session } from '@/api';
+import { api, type AvailableTaxRules, type Session } from '@/api';
 import { currencyDecimals, formatMoney } from '@/lib/format';
 import { onboardingBudgets } from '@/lib/onboarding-budget';
-import { peekPendingCurrency, takePendingCountry } from '@/lib/pending-country';
+import { defaultCountry } from '@/lib/default-country';
+import { peekPendingCountry, peekPendingCurrency, takePendingCountry } from '@/lib/pending-country';
+import { CountryPicker } from '@/components/CountryPicker';
 import { Icon, type IconName } from '@/components/Icon';
 import { GradientHero } from '@/components/rich';
 import {
@@ -36,6 +38,10 @@ import { control, numeric, radius, space, type, usePalette } from '@/theme';
  *
  *   - the household's NAME, folded into step 0 rather than given a step of its
  *     own. `completeOnboarding` will not create a workspace without it.
+ *   - the COUNTRY, also in step 0, but only when registration did not ask it.
+ *     A password registration does; an emailed sign-in link, Google and
+ *     YourTal arrive here without it, and without it the workspace would be
+ *     created with no tax engine at all (build plan 1.38).
  *   - nothing else. Occupation, GST and the ABN are business-side and do not
  *     apply; the old screen's fields for them are deleted rather than hidden.
  *
@@ -89,9 +95,31 @@ export function Onboarding({
   const [focus, setFocus] = useState<string | null>(null);
   // The workspace does not exist yet, so its currency is the one picked at sign-up.
   const [currency, setCurrency] = useState<string>('AUD');
+  // Asked here only when registration did not ask it: `null` until known,
+  // then the catalogue to choose from (empty when registration already chose).
+  const [countries, setCountries] = useState<AvailableTaxRules[] | null>(null);
+  const [country, setCountry] = useState<AvailableTaxRules | null>(null);
   useEffect(() => {
     void peekPendingCurrency().then((c) => c && setCurrency(c));
+    void (async () => {
+      if (await peekPendingCountry()) {
+        setCountries([]);
+        return;
+      }
+      try {
+        const options = await api().listAvailableTaxRules();
+        setCountries(options);
+        const suggested = defaultCountry(options);
+        setCountry(suggested);
+        if (suggested) setCurrency(suggested.currency);
+      } catch {
+        // No catalogue: the step stays hidden and the workspace is created
+        // with the old Australian defaults, as before. Never block signup.
+        setCountries([]);
+      }
+    })();
   }, []);
+  const asksCountry = (countries?.length ?? 0) > 0;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -103,10 +131,10 @@ export function Onboarding({
     setError(null);
     setBusy(true);
     try {
-      /* The country picked at registration. Absent means no engine is
-         installed, which is a real state the server models honestly — every
-         tax figure then refuses rather than defaulting to Australian law. */
-      const taxRulesId = await takePendingCountry();
+      /* The country picked at registration, or here when registration did
+         not ask. Absent only when there was no catalogue to pick from; the
+         server then keeps the old Australian defaults with no rule set. */
+      const taxRulesId = (await takePendingCountry()) ?? country?.rulesId ?? null;
 
       const session = await api().completeOnboarding({
         workspaceName: household.trim(),
@@ -142,7 +170,11 @@ export function Onboarding({
   }
 
   const canAdvance =
-    step === 0 ? household.trim().length > 1 : step === 2 ? drafts.every(isUsable) : true;
+    step === 0
+      ? household.trim().length > 1 && countries !== null && (!asksCountry || country !== null)
+      : step === 2
+        ? drafts.every(isUsable)
+        : true;
 
   const cta = step === 3 ? 'Take your first receipt' : step === 2 && named.length === 0 ? 'Skip for now' : 'Continue';
 
@@ -238,6 +270,16 @@ export function Onboarding({
               />
               <Small>Only the people you invite ever see this.</Small>
             </View>
+            {asksCountry ? (
+              <CountryPicker
+                options={countries!}
+                value={country}
+                onChange={(c) => {
+                  setCountry(c);
+                  setCurrency(c.currency);
+                }}
+              />
+            ) : null}
           </View>
         ) : null}
 

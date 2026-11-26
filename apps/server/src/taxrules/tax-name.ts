@@ -1,7 +1,7 @@
-import { ID_2026, type TaxRules } from '@snap/tax-rules';
+import { AU_2026, ID_2026, type TaxRules } from '@snap/tax-rules';
 
 /** Rule sets compiled into this binary (see `taxrules.repo.ts` for why they are built in). */
-export const BUILTIN: TaxRules[] = [ID_2026];
+export const BUILTIN: TaxRules[] = [AU_2026, ID_2026];
 
 /**
  * The consumption tax's local name for a workspace country: the installed rule

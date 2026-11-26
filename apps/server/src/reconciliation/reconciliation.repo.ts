@@ -12,7 +12,7 @@ import type {
 
 import { getDb } from '../db.js';
 import { readTenant } from '../repo.js';
-import { rulesFor } from '../taxrules/taxrules.repo.js';
+import { readerRulesFor } from '../taxrules/taxrules.repo.js';
 import { supersedeAndPost, type SupersedeOutcome } from '../transactions/transactions.repo.js';
 import { evaluateCandidate, evaluateManualLinkFacts, rankCandidates, type CandidatePairInput } from './matcher.js';
 
@@ -123,11 +123,11 @@ export async function listCandidates(
   params: ListCandidatesParams,
 ): Promise<ListCandidatesOutcome> {
   const tenant = await readTenant(userId, tenantId);
-  // Same convention as `transactions.repo.ts`: `tax_rules_id` null means no
-  // engine installed (every Australian tenant, today) — `rulesFor` would
-  // throw, so it is simply never called. `rules: null` is what makes
+  // Same convention as `transactions.repo.ts`: an Australian workspace (no
+  // rule set, or `au-2026`) resolves to `null` through `readerRulesFor`, so
+  // both kinds rank candidates identically. `rules: null` is what makes
   // `within_posting_lag: null` real rather than a caught exception.
-  const rules = tenant?.tax_rules_id ? await rulesFor(tenant) : null;
+  const rules = await readerRulesFor(tenant);
 
   return withTenantAs(getDb(), userId, tenantId, async (t) => {
     if (params.statementId) {
@@ -427,7 +427,7 @@ export async function manualLink(
   input: { statementLineId: string; documentId: string; variance?: { kind: MatchVarianceKind } },
 ): Promise<DecideOutcome | { ok: false; reason: 'missing_statement_line' } | { ok: false; reason: 'missing_document' }> {
   const tenant = await readTenant(userId, tenantId);
-  const rules = tenant?.tax_rules_id ? await rulesFor(tenant) : null;
+  const rules = await readerRulesFor(tenant);
 
   const facts = await withTenantAs(getDb(), userId, tenantId, async (t) => {
     const rows = await t.execute<{

@@ -174,9 +174,10 @@ export async function completeOnboardingAction(formData: FormData): Promise<void
   const occupationProfileId = String(formData.get('occupationProfileId') ?? '').trim();
   if (occupationProfileId) body.occupationProfileId = occupationProfileId;
 
-  // The tax engine. Absent means Australia's existing behaviour — no rule set
-  // installed, which is exactly what every workspace created before migration
-  // 0026 has, and what the settings screen can change later.
+  // The tax engine the person picked: `au-2026` or `id-2026`. The server
+  // refuses an id it cannot install before creating anything. Absent only
+  // when the catalogue could not be read, which keeps the old Australian
+  // defaults (no rule set installed).
   const taxRulesId = String(formData.get('rulesId') ?? '').trim();
   if (taxRulesId) body.taxRulesId = taxRulesId;
 

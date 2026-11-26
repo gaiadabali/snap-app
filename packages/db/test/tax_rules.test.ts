@@ -1,7 +1,7 @@
 import { Pool } from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { ID_2026 } from '@snap/tax-rules';
+import { AU_2026, ID_2026 } from '@snap/tax-rules';
 
 /**
  * TAX PACKS (migration 0026) — the checked duplication.
@@ -87,6 +87,28 @@ describeIfDb('tax rules (0026)', () => {
       expect(idRows.every((r) => r.purchase_labels.length === 0)).toBe(true);
       expect(idRows.every((r) => r.sale_labels.length === 0)).toBe(true);
     });
+  });
+
+  describe('au-2026 and the Australian rows agree', () => {
+    /*
+     * The Australian rows predate rule sets (0005) and are shared by every
+     * Australian workspace, GST-registered businesses included, so they carry
+     * BAS labels and `claims_credit` for the business case. `au-2026` is the
+     * PERSONAL view of the same codes, where nothing is claimable and there
+     * is no BAS. So the check is the part both state — the code exists and
+     * charges the same rate — not the business-only columns.
+     */
+    it.each(AU_2026.taxCodes.map((c) => [c.code, c] as const))(
+      '%s exists as an AU system row at the same rate',
+      async (code, packCode) => {
+        const { rows } = await pool.query<{ rate: string }>(
+          `SELECT rate FROM tax_codes WHERE tenant_id IS NULL AND country = 'AU' AND code = $1`,
+          [code],
+        );
+        expect(rows, `tax_codes has no AU row for ${code}`).toHaveLength(1);
+        expect(Number(rows[0]!.rate)).toBe(packCode.ratePercent);
+      },
+    );
   });
 
   describe('jurisdictions do not collide', () => {

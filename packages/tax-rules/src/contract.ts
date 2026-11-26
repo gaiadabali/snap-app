@@ -469,6 +469,17 @@ export interface PackTaxCode {
    * to keep two places in step.
    */
   claimsCredit: boolean;
+  /**
+   * How a spending report groups this code. Optional: a rule set that omits
+   * it is classified by the older heuristic in the server's consumption-tax
+   * report (`id-2026` predates the field and does not carry it).
+   *
+   * Declared rather than guessed from the code's name, because Australia's
+   * GST-free code is `FRE` and no string match written for Indonesia's
+   * `PPN-BEBAS` would find it. A code listed in `otherTaxes` is always
+   * reported as another tax, whatever this says.
+   */
+  treatment?: 'standard' | 'exempt' | 'out_of_scope';
   /** Why this code exists, in a sentence. Shown in the category picker. */
   note: string;
 }

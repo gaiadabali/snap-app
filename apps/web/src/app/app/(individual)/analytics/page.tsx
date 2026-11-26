@@ -20,11 +20,12 @@ const RANGES: Array<{ value: AnalyticsRange; label: string }> = [
 /**
  * The selected range as calendar dates, for the consumption-tax read.
  *
- * Calendar-based, and that is correct for every rule set that ships today:
- * Indonesia's tax year IS the calendar year (`taxYearStartMonth: 1`). If a rule
- * set with a mid-year tax year is ever installed here, this needs to ask the
- * engine for the period rather than assuming — `periodOf()` in
- * `@snap/tax-rules` is the function that knows.
+ * Calendar-based. Right for Indonesia, whose tax year IS the calendar year
+ * (`taxYearStartMonth: 1`). NOT yet right for `au-2026` (July year): for an
+ * Australian workspace the "year" figure is calendar year-to-date, not
+ * financial year-to-date. Fixing it means asking the engine for the period —
+ * `periodOf()` in `@snap/tax-rules` knows — which needs the start month on
+ * `GET /v1/tax-rules`. Open follow-up from build plan 1.38.
  */
 function rangeDates(range: AnalyticsRange, today = new Date()): { from: string; to: string } {
   const iso = (d: Date) =>
