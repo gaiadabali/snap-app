@@ -76,5 +76,10 @@ export type {
   RulesStamp,
 } from './interpreter.js';
 
+export { currentRules, familiesOf, familyKey, familyOf, inspectFamily, rulesForDate } from './years.js';
+export type { RulesForDate, RulesMatch } from './years.js';
+
+export { AU_2025 } from './rules/au-2025.js';
 export { AU_2026 } from './rules/au-2026.js';
+export { AU_2027 } from './rules/au-2027.js';
 export { ID_2026 } from './rules/id-2026.js';

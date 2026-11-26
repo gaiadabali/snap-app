@@ -4,7 +4,7 @@ import type { TaxRules } from '@snap/tax-rules';
 
 import { readTenant } from '../repo.js';
 import { actorUserId, type TenantActor } from '../tenant-entry.js';
-import { rulesFor } from '../taxrules/taxrules.repo.js';
+import { rulesFor, todayIso } from '../taxrules/taxrules.repo.js';
 import { runStatementExtraction, type StitchedStatementLine } from '../extraction/statement-run.js';
 import type { StatementChunkProvider } from '../extraction/statement-provider.js';
 import { evaluateBalanceCheck, type CandidateLine } from './balance-check.js';
@@ -184,7 +184,13 @@ export async function importPdfStatement(
 
   let rules: TaxRules;
   try {
-    rules = await rulesFor(tenant);
+    // Resolved for TODAY, before a single line is read: the amount format is
+    // needed to read the lines, so the statement's own dates are not known
+    // yet. What an import reads from a rule set — separators, date order,
+    // posting lag, bank-interest treatment — is identical across a country's
+    // years (`years.test.ts` asserts it for Australia), and nothing an import
+    // stores is stamped with a rule-set version.
+    rules = await rulesFor(tenant, todayIso());
   } catch (error) {
     return { ok: false, stage: 'unreadable', reason: `Cannot import a statement: ${(error as Error).message}` };
   }

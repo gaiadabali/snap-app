@@ -40,9 +40,12 @@ and the interpreter**. A rule set that needs its own logic has become code.
 | `money.ts` | Exact BigInt decimal + rational arithmetic, and local-format parsing |
 | `verify.ts` | Refusing a bad rule set, with every reason — never partial acceptance |
 | `registry.ts` | The installed-engine store. One at a time, atomic replace, no fallback |
+| `years.ts` | Which year's rule set a date belongs to, and checking a country's years fit together |
 | `interpreter.ts` | The engine. The only code that computes |
 | `rules/id-2026.ts` | Indonesia, personal taxpayer, tax year 2026 |
+| `rules/au-2025.ts` | Australia, personal taxpayer, financial year 2025–26 (1 Jul 2025 – 30 Jun 2026) |
 | `rules/au-2026.ts` | Australia, personal taxpayer, financial year 2026–27 (1 Jul 2026 – 30 Jun 2027) |
+| `rules/au-2027.ts` | Australia, personal taxpayer, financial year 2027–28 (1 Jul 2027 – 30 Jun 2028) |
 
 ```ts
 import { TaxRulesRegistry, ID_2026, incomeTax } from '@snap/tax-rules';
@@ -58,6 +61,39 @@ const result = incomeTax(rule set, {
 });
 // result.taxPayable === '27975000.000000', stamped with rulesVersion '2026.1.0'
 ```
+
+---
+
+## One country, several years
+
+A workspace picks a **country**; each document is assessed under the **year
+its own date falls in**. The id a workspace stored (`au-2026`) names its
+country family, and `years.ts` chooses the year per date, after Free Tax
+Returns' `ratesFor(fy)`:
+
+1. the held rule set whose `effectiveFrom..effectiveTo` covers the date;
+2. a date after every held year: the **latest** held year (`match: 'latest_held'`);
+3. a date before every held year: the **earliest** held year (`match: 'earliest_held'`).
+
+```ts
+import { AU_2025, AU_2026, AU_2027, familyOf, rulesForDate } from '@snap/tax-rules';
+
+const au = familyOf([AU_2025, AU_2026, AU_2027], 'au-2026');
+rulesForDate(au, '2026-03-15'); // { rules: AU_2025, match: 'exact' }  -> stamped 2025.1.0
+rulesForDate(au, '2030-01-01'); // { rules: AU_2027, match: 'latest_held' }
+```
+
+**History is immutable.** A year's file is never edited once results are
+stamped with it: a correction is a new `version`, a new year is a new file.
+`inspectFamily()` refuses years that overlap, leave a gap, or share a version,
+and `years.test.ts` asserts the Australian years differ only in their
+income-tax scale (16% / 15% / 14% on $18,201–$45,000), because the server
+picks a reader rule set before a document's date is read.
+
+The catalogue shows **one** choice per country, the year covering today
+(`currentRules()`), so nobody is asked to pick between three Australias.
+`registry.requireFor()` stays strict — the fallback lives only in
+`rulesForDate()`, whose answer says when it is one.
 
 ---
 
@@ -119,21 +155,22 @@ coercing. Fail closed: a number we cannot read is not a number we may assume.
   spending analytic carrying a `disclosure` sentence stating that it is not a
   claim.
 - **It does not replace `@snap/tax-engine`.** Australia stays where it is, with
-  its 217 golden tests untouched. `au-2026` (build plan 1.38) exists so a person
-  can PICK Australia at sign-up: it puts Australia in the catalogue and records
-  country, AUD and the July year on the workspace. The server's receipt reader
-  still reads an Australian workspace with its built-in Australian path
-  (`readerRulesFor` in `apps/server/src/taxrules/taxrules.repo.ts`), whether
-  `au-2026` is installed or not, and `validators.au.test.ts` keeps the two
-  statements of Australia in agreement. Moving the Australian reader onto the
-  interpreter is still a separate decision.
+  its 217 golden tests untouched. The `au-*` years (build plan 1.38) exist so a
+  person can PICK Australia at sign-up: they put Australia in the catalogue and
+  record country, AUD and the July year on the workspace. The server's receipt
+  reader still reads an Australian workspace with its built-in Australian path
+  (`readerRulesFor` in `apps/server/src/taxrules/taxrules.repo.ts`), whichever
+  `au-*` year is installed or none, and `validators.au.test.ts` keeps every
+  Australian year in agreement with it. An extraction run records the year
+  its document belongs to (`extraction_runs.validator_report.rules`). Moving
+  the Australian reader onto the interpreter is still a separate decision.
 
 ---
 
 ## Checks
 
 ```bash
-pnpm --filter @snap/tax-rules test        # 115 tests
+pnpm --filter @snap/tax-rules test        # 159 tests
 pnpm --filter @snap/tax-rules typecheck
 pnpm test:boundaries                      # the package must be declared there
 ```

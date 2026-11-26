@@ -59,7 +59,7 @@ import {
   type TenantRow,
 } from '../repo.js';
 import { abnIsValid, expectedGst, validate } from '../extraction/validators.js';
-import { readerRulesFor } from '../taxrules/taxrules.repo.js';
+import { assessmentDate, readerRulesFor, readerRulesResolver } from '../taxrules/taxrules.repo.js';
 import { getCaptureForDocument } from '../repo.js';
 import { get as readObject } from '../storage.js';
 import { issueImageToken } from '../tokens.js';
@@ -231,12 +231,26 @@ export function consumptionTaxFromRules(
   return { inclusiveFraction: rules.consumptionTax.inclusiveFraction, baseFraction: rules.consumptionTax.baseFraction };
 }
 
-/** The tenant's installed rule set, or Australia when none is installed. */
+/**
+ * The date a stored document is assessed on: its own date, else the day the
+ * server recorded it, else today (`assessmentDate`).
+ */
+export function documentAssessmentDate(doc: Pick<DocumentRow, 'issue_date' | 'created_on'>): string {
+  return assessmentDate(doc.issue_date, doc.created_on);
+}
+
+/**
+ * The tenant's consumption tax for each document, by the year of that
+ * document's own date — or Australia when no rule set is installed.
+ *
+ * Returns a function so a list resolves the workspace ONCE and then each row
+ * by its date: one workspace can hold receipts from more than one tax year.
+ */
 export async function consumptionTaxFor(
   tenant: TenantRow | null,
-): Promise<Pick<ConsumptionTaxSpec, 'inclusiveFraction' | 'baseFraction'>> {
-  const rules = await readerRulesFor(tenant);
-  return consumptionTaxFromRules(rules);
+): Promise<(doc: Pick<DocumentRow, 'issue_date' | 'created_on'>) => Pick<ConsumptionTaxSpec, 'inclusiveFraction' | 'baseFraction'>> {
+  const rulesOn = await readerRulesResolver(tenant);
+  return (doc) => consumptionTaxFromRules(rulesOn(documentAssessmentDate(doc)));
 }
 
 /**
@@ -383,8 +397,8 @@ export class DocumentsController {
       ? (filter as (typeof allowed)[number])
       : 'all';
     const rows = await listDocuments(user.userId, tenantId, chosen);
-    // One resolution for the whole list, not one per row: the rule set is the
-    // same for every document in a workspace.
+    // One resolution of the workspace for the whole list; each row then takes
+    // the year of its own date.
     const tenant = await readTenant(user.userId, tenantId);
     const consumptionTax = await consumptionTaxFor(tenant);
     // Lines and pages are not fetched for a list, for the same reason: 500
@@ -392,7 +406,7 @@ export class DocumentsController {
     // scrolls, and the review screen fetches both on open. The list view
     // never pages through a document, so there is no reader here for the
     // "never empty" invariant on `pages` to protect.
-    return rows.map((row) => toWire(row, [], [], consumptionTax));
+    return rows.map((row) => toWire(row, [], [], consumptionTax(row)));
   }
 
   @Get(':id')
@@ -407,7 +421,7 @@ export class DocumentsController {
     const pages = await listCapturePages(user.userId, tenantId, found.document.capture_id);
     const tenant = await readTenant(user.userId, tenantId);
     const consumptionTax = await consumptionTaxFor(tenant);
-    const view = toWire(found.document, found.lines, pages, consumptionTax);
+    const view = toWire(found.document, found.lines, pages, consumptionTax(found.document));
     // OD-12 (docs/ON-DEVICE.md §11 Stage 2): additive — appended onto whatever
     // `toWire` already put in `findings` from `ato_compliance`, never
     // replacing it. See `device-agreement.ts`'s header for why this is
@@ -489,7 +503,7 @@ export class DocumentsController {
     const pages = await listCapturePages(user.userId, tenantId, after.document.capture_id);
     const tenant = await readTenant(user.userId, tenantId);
     const consumptionTax = await consumptionTaxFor(tenant);
-    return toWire(after.document, after.lines, pages, consumptionTax);
+    return toWire(after.document, after.lines, pages, consumptionTax(after.document));
   }
 
   @Patch(':id')
@@ -517,8 +531,13 @@ export class DocumentsController {
     // The workspace's tax rule set, or null for Australia. Resolved before the
     // re-derivation below, because the divisor is the jurisdiction: 1/11 in
     // Australia, 11/111 in Indonesia (docs/INDONESIA.md §2.2).
+    // Resolved for the year of the document's date AFTER this correction —
+    // a corrected date can move a receipt into another financial year.
     const tenant = await readTenant(user.userId, tenantId);
-    const taxRules = await readerRulesFor(tenant);
+    const taxRules = await readerRulesFor(
+      tenant,
+      assessmentDate(edit.issueDate ?? before.document.issue_date, before.document.created_on),
+    );
 
     // Correcting the total re-derives the tax. Tax is never taken from the
     // client: it is a function of the taxable part, and accepting both invites
@@ -625,7 +644,7 @@ export class DocumentsController {
     const pages = await listCapturePages(user.userId, tenantId, after.document.capture_id);
     const tenant = await readTenant(user.userId, tenantId);
     const consumptionTax = await consumptionTaxFor(tenant);
-    return toWire(after.document, after.lines, pages, consumptionTax);
+    return toWire(after.document, after.lines, pages, consumptionTax(after.document));
   }
 
   @Patch(':id/lines/categories')
@@ -660,7 +679,7 @@ export class DocumentsController {
     if (!after) throw new NotFoundException('No such document.');
     const pages = await listCapturePages(user.userId, tenantId, after.document.capture_id);
     const tenant = await readTenant(user.userId, tenantId);
-    return toWire(after.document, after.lines, pages, await consumptionTaxFor(tenant));
+    return toWire(after.document, after.lines, pages, (await consumptionTaxFor(tenant))(after.document));
   }
 
   @Post(':id/confirm')
@@ -692,7 +711,7 @@ export class DocumentsController {
     const pages = await listCapturePages(user.userId, tenantId, after!.document.capture_id);
     const tenant = await readTenant(user.userId, tenantId);
     const consumptionTax = await consumptionTaxFor(tenant);
-    return toWire(after!.document, after!.lines, pages, consumptionTax);
+    return toWire(after!.document, after!.lines, pages, consumptionTax(after!.document));
   }
 
   @Post(':id/reject')

@@ -38,11 +38,28 @@ export type ExtractionRun = {
   /** Total bytes across every page read, not just the first. */
   byteSize: number;
   result: ValidatedExtraction;
+  /**
+   * The rule set `validate()` actually ran under (null: the Australian
+   * reader). When the caller passed a per-date resolver this is the year of
+   * the document's own date, so whatever is written from this run — the tax
+   * split, the stamp — uses the same law the verdict did.
+   */
+  rules: TaxRules | null;
+  /** The document date the rule set was chosen for, or null when none was read. */
+  rulesDate: string | null;
   meta: ProviderResult['meta'] & {
     /** Total including validation, which is microseconds but recorded anyway. */
     totalMs: number;
   };
 };
+
+/**
+ * The rule set for a document, chosen by the document's own date once it has
+ * been read — `null` date when none was read. Lets one job read receipts from
+ * more than one tax year without guessing the year before the model has
+ * returned the date.
+ */
+export type RulesForDocumentDate = (issueDate: string | null) => TaxRules | null;
 
 /** Mirrors `captures.original_sha256`'s rule — see `ExtractionRun.sha256`. */
 function multiPageHash(pages: readonly PageImage[]): string {
@@ -193,8 +210,12 @@ export async function runExtraction(
    * stored image has to be able to supply the rule set the original run used,
    * and a function that looked one up from the database could not be replayed
    * at all.
+   *
+   * Or a per-date resolver (`RulesForDocumentDate`): the date order used to
+   * read the printed date comes from `rules(null)` (a country fact, the same
+   * in every year), and `validate()` runs under `rules(<the date read>)`.
    */
-  rules?: TaxRules | null,
+  rules?: TaxRules | null | RulesForDocumentDate,
   /**
    * The stored grounding report for this capture, if any.
    *
@@ -247,14 +268,21 @@ export async function runExtraction(
     };
   }
 
+  const rulesOn: RulesForDocumentDate = typeof rules === 'function' ? rules : () => rules ?? null;
+
   // The country decides a numeric date's day/month order, not the model — see
   // printed-date.ts. No rule set means Australia, which prints day first.
   provided = {
     ...provided,
-    extraction: reconcileIssueDate(provided.extraction, rules?.documentRules.dateOrder ?? 'day_first'),
+    extraction: reconcileIssueDate(provided.extraction, rulesOn(null)?.documentRules.dateOrder ?? 'day_first'),
   };
 
-  const result = applyGroundingGate(validate(provided.extraction, now, rules), grounding);
+  // Now the date is known: the year it falls in is the law it is read under.
+  const rawDate = provided.extraction.issueDate?.value ?? null;
+  const rulesDate = typeof rawDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(rawDate) ? rawDate : null;
+  const applied = rulesOn(rulesDate);
+
+  const result = applyGroundingGate(validate(provided.extraction, now, applied), grounding);
 
   return {
     ok: true,
@@ -262,6 +290,8 @@ export async function runExtraction(
       sha256,
       byteSize,
       result,
+      rules: applied,
+      rulesDate,
       meta: { ...provided.meta, totalMs: Date.now() - started },
     },
   };

@@ -4,8 +4,13 @@ import {
   TaxRulesRegistry,
   add,
   consumptionTaxDisclosure,
+  currentRules,
+  familyOf,
   roundToCurrency,
+  rulesForDate,
   rulesIdFor,
+  type RulesForDate,
+  type RulesMatch,
   type TaxRules,
 } from '@snap/tax-rules';
 import { sql } from 'drizzle-orm';
@@ -57,8 +62,47 @@ export type AvailableRules = {
   currency: string;
 };
 
-export function availableRules(): AvailableRules[] {
-  return BUILTIN.map((r) => ({
+/**
+ * Today as `YYYY-MM-DD`, in UTC.
+ *
+ * Only the last resort of `assessmentDate`, and the "current year" of the
+ * catalogue and the settings screen. UTC rather than a local zone because the
+ * server has no single local zone; it only matters for a document with no
+ * date of its own read in the first hours of 1 July in Australia.
+ */
+export function todayIso(now: Date = new Date()): string {
+  return now.toISOString().slice(0, 10);
+}
+
+/**
+ * The date a document is assessed on: the first candidate that is a date.
+ *
+ * Callers pass, in order, the document's own date (invoice or receipt date),
+ * then the capture date, and get today when neither is known. A timestamp
+ * (`2026-03-15T04:00:00Z`, `2026-03-15 04:00:00+00`) counts by its date part.
+ */
+export function assessmentDate(...candidates: (string | Date | null | undefined)[]): string {
+  for (const c of candidates) {
+    if (c instanceof Date) {
+      if (!Number.isNaN(c.getTime())) return c.toISOString().slice(0, 10);
+      continue;
+    }
+    if (typeof c === 'string' && /^\d{4}-\d{2}-\d{2}/.test(c)) return c.slice(0, 10);
+  }
+  return todayIso();
+}
+
+/**
+ * The catalogue: ONE rule set per country, the year covering `onDate` (today).
+ *
+ * The binary holds every year it knows (`au-2025`, `au-2026`, `au-2027`), but
+ * a person picks a country, not a year — three Australias in a sign-up list
+ * would be a question nobody can answer. Whichever year they install, the
+ * workspace's documents are each assessed under the year of their own date
+ * (`tenantRulesFor`).
+ */
+export function availableRules(onDate: string = todayIso()): AvailableRules[] {
+  return currentRules(BUILTIN, onDate).map((r) => ({
     rulesId: r.id,
     country: r.country,
     countryName: r.countryName,
@@ -70,64 +114,152 @@ export function availableRules(): AvailableRules[] {
   }));
 }
 
+/** A rule set this binary holds, of any year, or undefined. */
+export function heldRules(rulesId: string): TaxRules | undefined {
+  return BUILTIN.find((r) => r.id === rulesId);
+}
+
 /**
- * The rule set installed for this workspace.
+ * A workspace's tax law, per date.
+ *
+ * `installed` is what the workspace stored: since several years exist it
+ * identifies the COUNTRY (and the version the workspace was told it has), not
+ * the year a figure is computed under. `on(date)` is the year that date
+ * belongs to — what every figure is computed under and stamped with.
+ */
+export type TenantRules = {
+  installed: TaxRules;
+  on(isoDate: string): RulesForDate;
+};
+
+/**
+ * The workspace's rule-set family, verified once.
  *
  * Throws `NoRulesInstalled` when the column is null. That is not an error
  * condition to be smoothed over — it is the honest answer between "the user
  * picked a country" and "the engine for it was installed".
  */
-export async function rulesFor(tenant: TenantRow): Promise<TaxRules> {
+export async function tenantRulesFor(tenant: TenantRow): Promise<TenantRules> {
   const registry = new TaxRulesRegistry({ builtin: BUILTIN });
   if (!tenant.tax_rules_id) {
     throw new NoRulesInstalled(`a tax calculation for ${tenant.name}`);
   }
   await registry.install(tenant.tax_rules_id);
-  const rules = registry.require();
+  const installed = registry.require();
 
   // The stored version is what the workspace was last told it had. If the
   // binary now carries a different one, the workspace is computing under law
   // it never agreed to — surfaced rather than silently upgraded, because a
   // figure stored under 2026.1.0 must stay re-derivable under 2026.1.0.
-  if (tenant.tax_rules_version && tenant.tax_rules_version !== rules.version) {
+  // Checked against the STORED id: adding a year beside it is not an upgrade
+  // of it.
+  if (tenant.tax_rules_version && tenant.tax_rules_version !== installed.version) {
     throw new NoRulesInstalled(
       `a tax calculation: this workspace has ${tenant.tax_rules_id} ` +
-        `${tenant.tax_rules_version} installed, but this server carries ${rules.version}. ` +
+        `${tenant.tax_rules_version} installed, but this server carries ${installed.version}. ` +
         'Reinstall the tax engine from settings to move to the current rules.',
     );
   }
-  return rules;
+
+  const family = familyOf(BUILTIN, installed);
+  return { installed, on: (isoDate) => rulesForDate(family, isoDate) };
 }
 
 /**
- * The rule set the RECEIPT READER should apply for this workspace, or `null`
- * for Australia.
+ * The rule set for this workspace on `onDate`: the year that date falls in.
+ *
+ * `onDate` is required, not defaulted, so every caller says which date it
+ * means — a document's own date, a period's, or today for a screen that shows
+ * "the current year".
+ */
+export async function rulesFor(tenant: TenantRow, onDate: string): Promise<TaxRules> {
+  return (await tenantRulesFor(tenant)).on(onDate).rules;
+}
+
+/** The receipt reader's rule set on a date, or `null` for the Australian reader. */
+export type ReaderRulesOn = (isoDate: string) => TaxRules | null;
+
+/**
+ * The same mapping `readerRulesResolver` applies, from an already-verified
+ * family — shared with `worker.ts`, which must see the installed rule set
+ * itself first (its country check) and then resolves per document.
+ */
+export function readerRulesOf(tenantRules: TenantRules): ReaderRulesOn {
+  return (isoDate) => {
+    const rules = tenantRules.on(isoDate).rules;
+    return rules.country === 'AU' ? null : rules;
+  };
+}
+
+/**
+ * The rule set the RECEIPT READER should apply for this workspace on a date,
+ * or `null` for Australia — as a function of the date, so a list of documents
+ * resolves the workspace once and each document by its own date.
  *
  * Australia's reader predates rule sets: `jurisdictionOf(null)` in
  * `extraction/validators.ts` (GST exactly 1/11, the ABN checksum, the $82.50
  * tax-invoice and $1,000 buyer-ABN thresholds), the tuned Australian
- * extraction prompt, and `@snap/tax-engine` behind them. `au-2026` declares
- * Australia so a person can pick it; it does not replace that reader. So an
- * Australian workspace reads a receipt the same way whether it installed
- * `au-2026` at sign-up or predates it with no rule set at all — two classes of
- * Australian workspace reading the same docket differently is the outcome
- * this exists to prevent. `validators.au.test.ts` checks that every figure
- * both of them state agrees.
+ * extraction prompt, and `@snap/tax-engine` behind them. The `au-*` rule sets
+ * declare Australia so a person can pick it; they do not replace that reader.
+ * So an Australian workspace reads a receipt the same way whether it installed
+ * an `au-*` rule set at sign-up or predates them with no rule set at all —
+ * two classes of Australian workspace reading the same docket differently is
+ * the outcome this exists to prevent. `validators.au.test.ts` checks that
+ * every figure both of them state agrees, for every Australian year.
  *
  * This is not a fallback. A workspace with NO rule set gets `null` only by the
  * same rule every caller already used (`tax_rules_id` null); one whose rule
- * set fails to load or is the wrong version still throws through `rulesFor`,
- * Australian or not; and only a rule set that loaded AND is Australian maps to
- * the Australian reader.
+ * set fails to load or is the wrong version still throws through
+ * `tenantRulesFor`, Australian or not; and only a rule set that loaded AND is
+ * Australian maps to the Australian reader.
  *
  * Statement imports do not use this: they need a real rule set (posting lag,
  * bank interest, the amount format) and have no Australian built-in, so they
  * call `rulesFor` directly.
  */
-export async function readerRulesFor(tenant: TenantRow | null | undefined): Promise<TaxRules | null> {
-  if (!tenant?.tax_rules_id) return null;
-  const rules = await rulesFor(tenant);
-  return rules.country === 'AU' ? null : rules;
+export async function readerRulesResolver(tenant: TenantRow | null | undefined): Promise<ReaderRulesOn> {
+  if (!tenant?.tax_rules_id) return () => null;
+  return readerRulesOf(await tenantRulesFor(tenant));
+}
+
+/** `readerRulesResolver` for one date. */
+export async function readerRulesFor(
+  tenant: TenantRow | null | undefined,
+  onDate: string,
+): Promise<TaxRules | null> {
+  return (await readerRulesResolver(tenant))(onDate);
+}
+
+/**
+ * What an extraction run records about the law it was assessed under, in
+ * `extraction_runs.validator_report.rules`.
+ *
+ * README principle 2: a stored result must name the rule set and version it
+ * was computed under, so it can be re-derived after more years are added.
+ * `reader` says which code read it: an Australian receipt is still read by the
+ * built-in Australian reader (`readerRulesFor` maps it to `null`), which
+ * `validators.au.test.ts` keeps in agreement with every `au-*` year, so the
+ * stamp names the Australian year in force on the document's date.
+ */
+export type RulesStampRecord = {
+  rulesId: string;
+  rulesVersion: string;
+  /** The date the rule set was chosen for, `YYYY-MM-DD`. */
+  onDate: string;
+  /** `exact`, or which fallback chose it (`years.ts`). */
+  match: RulesMatch;
+  reader: 'rule_set' | 'au_builtin';
+};
+
+export function rulesStampOf(tenantRules: TenantRules, onDate: string): RulesStampRecord {
+  const { rules, match } = tenantRules.on(onDate);
+  return {
+    rulesId: rules.id,
+    rulesVersion: rules.version,
+    onDate,
+    match,
+    reader: rules.country === 'AU' ? 'au_builtin' : 'rule_set',
+  };
 }
 
 /** Install (or replace) the rule set for a workspace. */
@@ -232,7 +364,13 @@ export async function consumptionTaxReport(
 ): Promise<ConsumptionTaxReport> {
   const tenant = await readTenant(userId, tenantId);
   if (!tenant) throw new NoRulesInstalled('a tax calculation for an unknown workspace');
-  const rules = await rulesFor(tenant);
+  // A period, not one document: resolved by the period's END date, and the
+  // report stamps the year it chose (`rulesId` / `rulesVersion`). The figures
+  // themselves are summed from the ledger, and what the rule set adds here —
+  // the tax's name, the code classification, the disclosure — is identical
+  // across the Australian years (`years.test.ts` asserts it), so a period
+  // that straddles 30 June is classified the same under either year.
+  const rules = await rulesFor(tenant, to);
 
   const rows = await withTenantAs(getDb(), userId, tenantId, async (tx) => {
     const r = await tx.execute<Row>(sql`

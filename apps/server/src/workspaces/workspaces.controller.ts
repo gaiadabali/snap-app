@@ -34,7 +34,7 @@ import { seedDefaultCategories } from '../settings/settings.repo.js';
 import { occupationProblem } from '../settings/occupation.js';
 import { setBudget } from '../business/business.repo.js';
 import { abnIsValid } from '../extraction/validators.js';
-import { availableRules, installRulesFor } from '../taxrules/taxrules.repo.js';
+import { availableRules, heldRules, installRulesFor } from '../taxrules/taxrules.repo.js';
 
 const ROLES = ['owner', 'admin', 'bookkeeper', 'member', 'readonly'] as const;
 type Role = (typeof ROLES)[number];
@@ -198,8 +198,14 @@ export class WorkspacesController {
     // anything is created. An unknown id used to be found out by
     // `installRulesFor` AFTER the workspace existed, leaving one behind with
     // no engine and a 500 for the person who asked for it.
+    //
+    // Any year this binary holds is accepted, not only the one the catalogue
+    // shows today: the id names the COUNTRY the workspace is in (each document
+    // is assessed under the year of its own date), and an app that loaded the
+    // catalogue on 30 June must not be refused on 1 July for sending the year
+    // it was shown.
     const taxRulesId = (body.taxRulesId ?? '').trim();
-    const chosenRules = taxRulesId === '' ? null : availableRules().find((r) => r.rulesId === taxRulesId);
+    const chosenRules = taxRulesId === '' ? null : heldRules(taxRulesId);
     if (chosenRules === undefined) {
       throw new BadRequestException(
         `We do not have tax rules for ${JSON.stringify(taxRulesId)}. Choose one of: ` +
@@ -238,8 +244,8 @@ export class WorkspacesController {
     // them in front of a tracker that refuses every tax figure with no
     // explanation of why.
     //
-    // One exception, and it changes nothing for the workspace: `au-2026` is a
-    // PERSONAL rule set (GST is a cost, not a credit). An Australian BUSINESS
+    // One exception, and it changes nothing for the workspace: every `au-*`
+    // year is a PERSONAL rule set (GST is a cost, not a credit). An Australian BUSINESS
     // keeps the BAS engine every Australian business has always run on —
     // `@snap/tax-engine` with no rule set installed — rather than being told
     // by a personal rule set that it cannot recover GST. It is already AU,
@@ -247,7 +253,7 @@ export class WorkspacesController {
     const businessOnPersonalAu =
       chosenRules !== null && chosenRules.country === 'AU' && chosenRules.scope === 'personal' && body.kind === 'business';
     if (chosenRules && !businessOnPersonalAu) {
-      await installRulesFor(user.userId, created.id, chosenRules.rulesId);
+      await installRulesFor(user.userId, created.id, chosenRules.id);
     }
 
     // A household that said what it intends to spend gets that recorded now,

@@ -12,7 +12,7 @@ import type {
 
 import { getDb } from '../db.js';
 import { readTenant } from '../repo.js';
-import { readerRulesFor } from '../taxrules/taxrules.repo.js';
+import { assessmentDate, readerRulesFor, readerRulesResolver } from '../taxrules/taxrules.repo.js';
 import { supersedeAndPost, type SupersedeOutcome } from '../transactions/transactions.repo.js';
 import { evaluateCandidate, evaluateManualLinkFacts, rankCandidates, type CandidatePairInput } from './matcher.js';
 
@@ -124,10 +124,12 @@ export async function listCandidates(
 ): Promise<ListCandidatesOutcome> {
   const tenant = await readTenant(userId, tenantId);
   // Same convention as `transactions.repo.ts`: an Australian workspace (no
-  // rule set, or `au-2026`) resolves to `null` through `readerRulesFor`, so
-  // both kinds rank candidates identically. `rules: null` is what makes
-  // `within_posting_lag: null` real rather than a caught exception.
-  const rules = await readerRulesFor(tenant);
+  // rule set, or an `au-*` one) resolves to `null` through `readerRulesFor`,
+  // so both kinds rank candidates identically. `rules: null` is what makes
+  // `within_posting_lag: null` real rather than a caught exception. Resolved
+  // once for the workspace, then per pair by the receipt's date (else the
+  // bank line's): one statement can hold both sides of 30 June.
+  const rulesOn = await readerRulesResolver(tenant);
 
   return withTenantAs(getDb(), userId, tenantId, async (t) => {
     if (params.statementId) {
@@ -217,7 +219,7 @@ export async function listCandidates(
         documentCardLast4: r.document_card_last4,
         merchantSimilarity: r.merchant_similarity,
       }))
-      .map((input) => evaluateCandidate(input, rules))
+      .map((input) => evaluateCandidate(input, rulesOn(assessmentDate(input.documentIssueDate, input.linePostedDate))))
       .filter((c): c is NonNullable<typeof c> => c !== null);
 
     // 3. Idempotent insert. `ON CONFLICT DO NOTHING` on `match_candidates`'s
@@ -427,7 +429,6 @@ export async function manualLink(
   input: { statementLineId: string; documentId: string; variance?: { kind: MatchVarianceKind } },
 ): Promise<DecideOutcome | { ok: false; reason: 'missing_statement_line' } | { ok: false; reason: 'missing_document' }> {
   const tenant = await readTenant(userId, tenantId);
-  const rules = await readerRulesFor(tenant);
 
   const facts = await withTenantAs(getDb(), userId, tenantId, async (t) => {
     const rows = await t.execute<{
@@ -475,6 +476,9 @@ export async function manualLink(
     money.money(facts.document_payable_amount ?? '0'),
     money.negate(money.money(facts.line_amount_signed)),
   ) === 0;
+
+  // The year of the receipt's date, else the bank line's.
+  const rules = await readerRulesFor(tenant, assessmentDate(facts.document_issue_date, facts.line_posted_date));
 
   const evidence = evaluateManualLinkFacts(
     {

@@ -2,12 +2,17 @@ import { randomBytes, randomUUID } from 'node:crypto';
 
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
-import { AU_2026, ID_2026 } from '@snap/tax-rules';
+import { AU_2026, ID_2026, familyOf, rulesForDate } from '@snap/tax-rules';
 import { Client } from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import type { MailMessage } from '../auth/mailer.js';
+import { BUILTIN } from '../taxrules/tax-name.js';
+import { todayIso } from '../taxrules/taxrules.repo.js';
 import { makeAccount, wipeTenant } from '../test-support/tenant.js';
+
+/** The Australian year covering today: what the catalogue and settings show. */
+const AU_NOW = rulesForDate(familyOf(BUILTIN, 'au-2026'), todayIso()).rules;
 
 /**
  * AN AUSTRALIAN SIGNS UP BY EMAIL — through real HTTP, against a real database.
@@ -147,7 +152,9 @@ describeIfDb('onboarding by email, by country — real HTTP, real database', () 
     const res = await call('GET', '/v1/tax-rules-catalogue');
     expect(res.statusCode).toBe(200);
     const catalogue = res.json() as { rulesId: string; country: string; currency: string; consumptionTaxName: string }[];
-    expect(catalogue.map((r) => r.rulesId)).toEqual(['au-2026', 'id-2026']);
+    // One Australia — the year covering today (au-2026 until 30 June 2027) —
+    // never one entry per year held.
+    expect(catalogue.map((r) => r.rulesId)).toEqual([AU_NOW.id, 'id-2026']);
     expect(catalogue[0]).toMatchObject({ country: 'AU', currency: 'AUD', consumptionTaxName: 'GST' });
   });
 
@@ -162,7 +169,7 @@ describeIfDb('onboarding by email, by country — real HTTP, real database', () 
     it('is refused a country this deployment does not have, and nothing is created', async () => {
       const res = await onboard(token, { workspaceName: 'Nowhere', kind: 'personal', taxRulesId: 'nz-2026' });
       expect(res.statusCode).toBe(400);
-      expect(res.json().message).toMatch(/Australia \(au-2026\)/);
+      expect(res.json().message).toContain(`Australia (${AU_NOW.id})`);
       const session = await call('GET', '/v1/auth/session', { token });
       expect(session.json().workspaces).toEqual([]);
     });
@@ -196,11 +203,12 @@ describeIfDb('onboarding by email, by country — real HTTP, real database', () 
     it('reports the installed engine as Australia — not "no engine installed"', async () => {
       const res = await call('GET', '/v1/tax-rules', { token, workspaceId });
       expect(res.statusCode).toBe(200);
+      // The year covering today, whichever year was installed.
       expect(res.json()).toMatchObject({
-        rulesId: 'au-2026',
-        rulesVersion: AU_2026.version,
+        rulesId: AU_NOW.id,
+        rulesVersion: AU_NOW.version,
         countryName: 'Australia',
-        taxYear: '2026-27',
+        taxYear: AU_NOW.taxYear,
         consumptionTaxName: 'GST',
         currency: 'AUD',
         annualReturnName: 'Individual tax return',

@@ -67,12 +67,13 @@ export class SummariesController {
     tenantId: string,
   ): Promise<{ docs: DocumentView[]; foreign: DocumentView[] }> {
     const rows = await listDocuments(user.userId, tenantId, 'all');
-    // One resolution for the whole workspace, not one per row.
+    // One resolution of the workspace; each row then takes the year of its
+    // own date.
     const tenant = await readTenant(user.userId, tenantId);
     const consumptionTax = await consumptionTaxFor(tenant);
     // Aggregation reads amounts and dates only; it never displays a document's
     // pages, so there is no reason to pay for `listCapturePages` per row here.
-    const all = rows.map((r) => toWire(r, [], [], consumptionTax));
+    const all = rows.map((r) => toWire(r, [], [], consumptionTax(r)));
     const inBase = (d: DocumentView) => !tenant || d.currency === tenant.base_currency;
     return { docs: all.filter(inBase), foreign: all.filter((d) => !inBase(d)) };
   }

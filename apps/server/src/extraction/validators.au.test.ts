@@ -1,4 +1,4 @@
-import { AU_2026, ID_2026, checkTaxId, rationalsEqual, taxFromInclusive } from '@snap/tax-rules';
+import { AU_2025, AU_2026, AU_2027, ID_2026, checkTaxId, rationalsEqual, taxFromInclusive } from '@snap/tax-rules';
 import { describe, expect, it } from 'vitest';
 
 import type { TenantRow } from '../repo.js';
@@ -19,44 +19,48 @@ import { BUYER_ABN_THRESHOLD, TAX_INVOICE_THRESHOLD, expectedGst, jurisdictionOf
 
 const AU = jurisdictionOf(null);
 
-describe('au-2026 agrees with the Australian reader', () => {
-  it('names the same tax, tax id, currency and tax-invoice wording', () => {
-    expect(AU_2026.consumptionTax.name).toBe(AU.taxName);
-    expect(AU_2026.taxId.name).toBe(AU.taxIdName);
-    expect(AU_2026.taxId.checksum !== null).toBe(AU.taxIdCheckable);
-    expect(AU_2026.currency.code).toBe(AU.currency);
-    expect(AU_2026.documentRules.taxInvoiceTokens).toEqual(AU.taxInvoiceTokens);
-    expect(AU_2026.documentRules.validityDecidableFromDocument).toBe(AU.validityDecidable);
-    expect(AU_2026.documentRules.plausibleAgeYears).toBe(AU.plausibleAgeYears);
-    expect(AU_2026.otherTaxes).toEqual([]);
-    expect(AU.otherTaxes).toEqual([]);
-  });
+// Every Australian year, not only the current one: an Australian receipt is
+// read by the reader whichever year its date falls in.
+for (const YEAR of [AU_2025, AU_2026, AU_2027]) {
+  describe(`${YEAR.id} agrees with the Australian reader`, () => {
+    it('names the same tax, tax id, currency and tax-invoice wording', () => {
+      expect(YEAR.consumptionTax.name).toBe(AU.taxName);
+      expect(YEAR.taxId.name).toBe(AU.taxIdName);
+      expect(YEAR.taxId.checksum !== null).toBe(AU.taxIdCheckable);
+      expect(YEAR.currency.code).toBe(AU.currency);
+      expect(YEAR.documentRules.taxInvoiceTokens).toEqual(AU.taxInvoiceTokens);
+      expect(YEAR.documentRules.validityDecidableFromDocument).toBe(AU.validityDecidable);
+      expect(YEAR.documentRules.plausibleAgeYears).toBe(AU.plausibleAgeYears);
+      expect(YEAR.otherTaxes).toEqual([]);
+      expect(AU.otherTaxes).toEqual([]);
+    });
 
-  it('takes exactly 1/11, as "Exactly 1/11 of the taxable amount" promises', () => {
-    expect(rationalsEqual(AU_2026.consumptionTax.inclusiveFraction, { n: 1, d: 11 })).toBe(true);
-    // The reader keeps four decimal places; the rule set rounds to the cent.
-    // Same fraction, so the two agree to the cent on any amount.
-    for (const inclusive of ['110.00', '266.91', '84.20', '0.99', '12345.67']) {
-      const reader = Number(expectedGst(inclusive));
-      const rules = Number(taxFromInclusive(AU_2026, inclusive).taxAmount);
-      expect(Math.abs(reader - rules)).toBeLessThanOrEqual(0.005);
-    }
-  });
+    it('takes exactly 1/11, as "Exactly 1/11 of the taxable amount" promises', () => {
+      expect(rationalsEqual(YEAR.consumptionTax.inclusiveFraction, { n: 1, d: 11 })).toBe(true);
+      // The reader keeps four decimal places; the rule set rounds to the cent.
+      // Same fraction, so the two agree to the cent on any amount.
+      for (const inclusive of ['110.00', '266.91', '84.20', '0.99', '12345.67']) {
+        const reader = Number(expectedGst(inclusive));
+        const rules = Number(taxFromInclusive(YEAR, inclusive).taxAmount);
+        expect(Math.abs(reader - rules)).toBeLessThanOrEqual(0.005);
+      }
+    });
 
-  it('keeps the tax-invoice thresholds in the reader, where the contract has no slot', () => {
-    // GST Act s 29-70: a tax invoice above $82.50 incl. GST; the buyer named
-    // at $1,000. A rule-set-built jurisdiction would drop these, which is one
-    // reason an Australian workspace never gets one.
-    expect(AU.taxInvoiceThreshold).toBe(TAX_INVOICE_THRESHOLD);
-    expect(AU.buyerIdThreshold).toBe(BUYER_ABN_THRESHOLD);
-    expect(jurisdictionOf(AU_2026).taxInvoiceThreshold).toBeNull();
-  });
+    it('keeps the tax-invoice thresholds in the reader, where the contract has no slot', () => {
+      // GST Act s 29-70: a tax invoice above $82.50 incl. GST; the buyer named
+      // at $1,000. A rule-set-built jurisdiction would drop these, which is one
+      // reason an Australian workspace never gets one.
+      expect(AU.taxInvoiceThreshold).toBe(TAX_INVOICE_THRESHOLD);
+      expect(AU.buyerIdThreshold).toBe(BUYER_ABN_THRESHOLD);
+      expect(jurisdictionOf(YEAR).taxInvoiceThreshold).toBeNull();
+    });
 
-  it('checks the same ABN the same way', () => {
-    expect(checkTaxId(AU_2026, '51824753556').ok).toBe(true);
-    expect(checkTaxId(AU_2026, '51824753557').ok).toBe(false);
+    it('checks the same ABN the same way', () => {
+      expect(checkTaxId(YEAR, '51824753556').ok).toBe(true);
+      expect(checkTaxId(YEAR, '51824753557').ok).toBe(false);
+    });
   });
-});
+}
 
 describe('the catalogue and the reader mapping', () => {
   const tenant = (over: Partial<TenantRow>): TenantRow => ({
@@ -77,28 +81,31 @@ describe('the catalogue and the reader mapping', () => {
     ...over,
   });
 
-  it('ships Australia and Indonesia', () => {
-    expect(BUILTIN.map((r) => r.id)).toEqual(['au-2026', 'id-2026']);
+  it('ships three Australian years and Indonesia', () => {
+    expect(BUILTIN.map((r) => r.id)).toEqual(['au-2025', 'au-2026', 'au-2027', 'id-2026']);
     expect(taxNameForCountry('AU')).toBe('GST');
     expect(taxNameForCountry('ID')).toBe('PPN');
   });
 
-  it('reads an Australian workspace with au-2026 exactly as one with no rule set', async () => {
-    expect(await readerRulesFor(tenant({}))).toBeNull();
-    expect(
-      await readerRulesFor(tenant({ tax_rules_id: 'au-2026', tax_rules_version: AU_2026.version })),
-    ).toBeNull();
+  it('reads an Australian workspace with au-2026 exactly as one with no rule set, in every year', async () => {
+    for (const date of ['2025-03-01', '2026-03-15', '2026-11-26', '2027-07-01', '2030-01-01']) {
+      expect(await readerRulesFor(tenant({}), date)).toBeNull();
+      expect(
+        await readerRulesFor(tenant({ tax_rules_id: 'au-2026', tax_rules_version: AU_2026.version }), date),
+      ).toBeNull();
+    }
   });
 
   it('still refuses an Australian workspace whose rule set is the wrong version', async () => {
     await expect(
-      readerRulesFor(tenant({ tax_rules_id: 'au-2026', tax_rules_version: '2025.9.9' })),
+      readerRulesFor(tenant({ tax_rules_id: 'au-2026', tax_rules_version: '2025.9.9' }), '2026-11-26'),
     ).rejects.toThrow(/2025\.9\.9 installed/);
   });
 
   it('hands Indonesia its own rule set, never Australia', async () => {
     const rules = await readerRulesFor(
       tenant({ country: 'ID', base_currency: 'IDR', tax_rules_id: 'id-2026', tax_rules_version: ID_2026.version }),
+      '2026-11-26',
     );
     expect(rules?.id).toBe('id-2026');
   });
