@@ -90,7 +90,8 @@ const GST_NUM = 1n;
 const GST_DEN = 10n;
 
 export function toUnits(value: string): bigint {
-  const m = /^\s*(-?)(\d*)(?:\.(\d*))?\s*$/.exec(value);
+  // Trimmed first: whitespace in the pattern around the optional parts is polynomial (CodeQL).
+  const m = /^(-?)(\d*)(?:\.(\d*))?$/.exec(value.trim());
   if (!m || (m[2] === '' && (m[3] ?? '') === '')) throw new Error(`not a decimal amount: ${JSON.stringify(value)}`);
   const frac = (m[3] ?? '').padEnd(4, '0');
   // Beyond 4 dp (the database's scale) is rounded half away from zero, never truncated.
