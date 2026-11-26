@@ -14,41 +14,8 @@ import { space, type, usePalette } from '@/theme';
  * reimbursement), not "between the 3rd and the 19th".
  */
 
-export type Period = 'all' | 'month' | 'lastMonth' | 'quarter' | 'year';
-
-export const PERIODS: Array<{ key: Period; label: string }> = [
-  { key: 'month', label: 'This month' },
-  { key: 'lastMonth', label: 'Last month' },
-  { key: 'quarter', label: 'This quarter' },
-  { key: 'year', label: '12 months' },
-  { key: 'all', label: 'All' },
-];
-
-/** Inclusive [from, to] for a period, as ISO dates. */
-export function periodRange(period: Period, now = new Date()): { from: string; to: string } {
-  const iso = (d: Date) =>
-    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  const end = iso(new Date(now.getFullYear(), now.getMonth() + 1, 0));
-
-  switch (period) {
-    case 'month':
-      return { from: iso(new Date(now.getFullYear(), now.getMonth(), 1)), to: end };
-    case 'lastMonth':
-      return {
-        from: iso(new Date(now.getFullYear(), now.getMonth() - 1, 1)),
-        to: iso(new Date(now.getFullYear(), now.getMonth(), 0)),
-      };
-    case 'quarter':
-      return {
-        from: iso(new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1)),
-        to: end,
-      };
-    case 'year':
-      return { from: iso(new Date(now.getFullYear(), now.getMonth() - 11, 1)), to: end };
-    default:
-      return { from: '0000-01-01', to: '9999-12-31' };
-  }
-}
+export { PERIODS, periodRange, taxYearPeriods, type Period } from '@/lib/period';
+import { PERIODS, type Period } from '@/lib/period';
 
 export function SearchBar({
   value,
