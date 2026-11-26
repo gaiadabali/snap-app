@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { htmlToText } from "../src/text";
 import { defaultSeeds, MEMORY_ADDRESS } from "../src/testing/fixtures";
 import type { MemoryMessageSeed } from "../src/testing/fixtures";
 import type { MailSession } from "../src/model";
@@ -145,7 +146,7 @@ function seedToEmail(s: MemoryMessageSeed): FakeEmail {
 }
 
 function preview(e: FakeEmail): string {
-  const body = e.text ?? (e.html ? e.html.replace(/<[^>]*>/g, " ") : "");
+  const body = e.text ?? (e.html ? htmlToText(e.html) : "");
   return body.replace(/\s+/g, " ").trim().slice(0, 140);
 }
 
@@ -295,7 +296,7 @@ export function createFakeProxy(options?: { seeds?: MemoryMessageSeed[]; address
 
   function matchesText(e: FakeEmail, needle: string): boolean {
     const n = needle.toLowerCase();
-    return [e.subject, e.text ?? "", e.html ? e.html.replace(/<[^>]*>/g, " ") : "", e.from[0]?.email ?? "", e.from[0]?.name ?? ""]
+    return [e.subject, e.text ?? "", e.html ? htmlToText(e.html) : "", e.from[0]?.email ?? "", e.from[0]?.name ?? ""]
       .join("\n")
       .toLowerCase()
       .includes(n);

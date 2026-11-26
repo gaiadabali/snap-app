@@ -166,14 +166,3 @@ export function toDetail(e: Record<string, unknown>, lookup: FolderLookup): Mess
     unsubscribe: unsubscribeKind(e),
   };
 }
-
-/** `<mark>` and other tags in a search snippet, entity-decoded, as plain text. */
-export function snippetToText(html: string): string {
-  return html
-    .replace(/<[^>]*>/g, "")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;|&apos;/g, "'")
-    .replace(/&amp;/g, "&");
-}

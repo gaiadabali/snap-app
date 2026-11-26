@@ -3,7 +3,8 @@ import type { FolderKey, MessageDetail, MessageSummary, Page } from "../model";
 import { assertSet, isRecord } from "../jmap/transport";
 import type { Transport } from "../jmap/transport";
 import type { FolderService } from "./folders";
-import { DETAIL_PROPERTIES, MAX_BODY_VALUE_BYTES, SUMMARY_PROPERTIES, snippetToText, toDetail, toSummary } from "./mapping";
+import { DETAIL_PROPERTIES, MAX_BODY_VALUE_BYTES, SUMMARY_PROPERTIES, toDetail, toSummary } from "./mapping";
+import { snippetToText } from "../text";
 
 // Reading and changing messages: list, search, get, flags, move, remove
 // (BUILD.md §7, "Clients"). Every method here is on the proxy's allow-list (§4.3).

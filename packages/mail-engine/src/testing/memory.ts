@@ -14,6 +14,7 @@ import type {
   UnsubscribeResult,
 } from "../model";
 import { assertSendable, draftFrom } from "../ops/compose";
+import { htmlToText } from "../text";
 import { MEMORY_ADDRESS, defaultSeeds } from "./fixtures";
 import type { MemoryMessageSeed } from "./fixtures";
 
@@ -88,12 +89,8 @@ function normalise(raw: unknown, index: number): MemoryMessageSeed | null {
   return seed;
 }
 
-function stripTags(html: string): string {
-  return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
-}
-
 function previewOf(row: MemoryMessageSeed): string {
-  const body = row.text ?? (row.html ? stripTags(row.html) : "");
+  const body = row.text ?? (row.html ? htmlToText(row.html) : "");
   return body.replace(/\s+/g, " ").trim().slice(0, 140);
 }
 
@@ -262,7 +259,7 @@ export function createMemoryMailClient(seed?: { messages?: unknown[] }): MemoryM
         const needle = text.trim().toLowerCase();
         if (needle === "") return { items: [], total: 0 };
         const hit = (r: Row) =>
-          [r.subject, r.text ?? "", r.html ? stripTags(r.html) : "", r.from?.email ?? "", r.from?.name ?? ""]
+          [r.subject, r.text ?? "", r.html ? htmlToText(r.html) : "", r.from?.email ?? "", r.from?.name ?? ""]
             .join("\n")
             .toLowerCase()
             .includes(needle);

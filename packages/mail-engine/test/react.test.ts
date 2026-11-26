@@ -157,7 +157,9 @@ describe("hooks, rendered to markup", () => {
 
   it("renders the loading state first and an idle state for a null id or a disabled body", () => {
     const html = render(createElement(Probe, { client: createMemoryMailClient() }));
-    const json = JSON.parse(html.replace(/<[^>]+>/g, "").replace(/&quot;/g, '"')) as Record<string, unknown>;
+    // The probe renders one <pre>: take its text and undo the attribute-style escaping.
+    const inner = html.slice(html.indexOf(">") + 1, html.lastIndexOf("<"));
+    const json = JSON.parse(inner.split("&quot;").join('"')) as Record<string, unknown>;
     expect(json).toEqual({
       folders: true,
       list: [true, 0],
