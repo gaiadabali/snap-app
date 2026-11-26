@@ -20,6 +20,8 @@ export const EVENT = {
   accountDeleted: 'urn:yourtal:event:account-deleted',
   accessEnded: 'urn:yourtal:event:access-ended',
   becameAdult: 'urn:yourtal:event:became-adult',
+  /** Spambank (spambank/BUILD.md §5.5): new mail in the person's Inbox, for the phone's notification. */
+  spambankMail: 'urn:yourtal:event:spambank-mail',
 } as const;
 
 /** The job the worker acts from (docs/29 D2: SnapApp's inbox is `jobs`, keyed by the SET's jti). */

@@ -4,3 +4,4 @@ export * from './admin-plane';
 export * from './credits-points';
 export * from './yourtal';
 export * from './teens';
+export * from './mail';

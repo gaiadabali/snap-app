@@ -289,6 +289,11 @@ services:
       # key as the api. YOURTAL_OIDC_ISSUER comes from .env (env_file above),
       # YOURTAL_OIDC_SERVER_CLIENT_ID from the YOURTAL_ENV_FILE above.
       YOURTAL_OIDC_KEY_FILE: /run/secrets/yourtal-oidc-web.jwk
+      # Spambank new-mail notifications (T11, spambank/BUILD.md B9, 4.9): the worker
+      # sends them over FCM HTTP v1 as a service account. Named only when the host
+      # key is set, so an unset key leaves push OFF rather than selecting the real
+      # sender with an empty file. FCM_PROJECT_ID comes from .env (env_file above).
+      FCM_SERVICE_ACCOUNT_FILE: ${FCM_SERVICE_ACCOUNT_FILE_HOST:+/run/secrets/fcm-service-account.json}
     volumes:
       - ${STORAGE_HOST_DIR:?set STORAGE_HOST_DIR in .env — where original captures persist on the host}:/data/storage
       # NO `:-/dev/null` DEFAULT. It used to read
@@ -321,6 +326,17 @@ services:
       - type: bind
         source: ${YOURTAL_OIDC_KEY_FILE_HOST:-/dev/null}
         target: /run/secrets/yourtal-oidc-web.jwk
+        read_only: true
+        bind:
+          create_host_path: false
+      # ── The FCM service-account key (new-mail notifications), OPTIONAL ───
+      # Host: /etc/snap-apps/secrets/fcm-service-account.json, mode 0600,
+      # readable by uid 1001. Same rules as the Google Play key on the api: unset
+      # mounts /dev/null and push stays off; deploy.sh unsets it when the named
+      # file is missing.
+      - type: bind
+        source: ${FCM_SERVICE_ACCOUNT_FILE_HOST:-/dev/null}
+        target: /run/secrets/fcm-service-account.json
         read_only: true
         bind:
           create_host_path: false

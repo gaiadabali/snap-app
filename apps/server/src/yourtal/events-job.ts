@@ -8,6 +8,7 @@ import { sendAndRecord } from '../auth/mail-delivery.js';
 import { config } from '../config.js';
 import { getDb } from '../db.js';
 import { EVENT, verifySet, YOURTAL_EVENT_JOB, yourtalEventsSettings } from './events-verify.js';
+import { sendNewMailAlert } from '../push/mail-alert.js';
 import { endTeenInvite, teenInvitesConfigured } from '../teens/invite-api.js';
 
 /**
@@ -21,6 +22,8 @@ import { endTeenInvite, teenInvitesConfigured } from '../teens/invite-api.js';
  *                   then erase_person on the user id THAT returns — never an
  *                   id from the payload — with the members' notices queued in
  *                   the same transaction (erase_person returns them once).
+ *                   For `spambank-mail`: the phone's new-mail notification
+ *                   (push/mail-alert.ts, Spambank BUILD.md §4.9).
  *   storage_purge   queued by erase_workspace (0043): removes {STORAGE_DIR}/
  *                   {tenantId}/, only for a uuid, and only once that
  *                   workspace no longer exists.
@@ -144,6 +147,16 @@ async function handleEvent(db: Db, job: Job, log: Log): Promise<void> {
           ? 'teen space is held after access ended; its erasure stands'
           : 'no teen space';
     log.log(`yourtal event ${jti} became-adult: ${said}`);
+    return;
+  }
+
+  if (type === EVENT.spambankMail) {
+    // BUILD.md §4.9: the phone's "You have N new emails". A throw (FCM down, nothing
+    // delivered yet) retries the job; every other outcome, a dropped alert included, is done.
+    const outcome = await sendNewMailAlert(db, { sub, iat, body }, log);
+    log.log(
+      `yourtal event ${jti} spambank-mail: ${outcome.state === 'sent' ? `${outcome.sent} notification(s) sent` : `dropped (${outcome.reason})`}`,
+    );
     return;
   }
 

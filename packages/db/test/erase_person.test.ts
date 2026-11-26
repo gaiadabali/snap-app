@@ -317,6 +317,10 @@ describeIfDb('erase_person (migration 0043)', () => {
     expect(rows.map((r) => r.fk)).toEqual([
       // Staff rows; the evidence of each impersonation is in audit_log.
       'impersonation_sessions.subject_tenant_id -> tenants',
+      // Spambank mail (0060): the workspace a person's mailed statements go into. A
+      // user-scoped row with no tenant_id, ON DELETE SET NULL: erasing the workspace
+      // clears the choice, and nothing can point the other way.
+      'mail_settings.import_tenant_id -> tenants',
       // Teen spaces (0045): an invite and a teen's spends reach the parent's
       // workspace on purpose. Each cascades or is nulled when either
       // workspace is erased, and none makes the guard refuse (0045's header).

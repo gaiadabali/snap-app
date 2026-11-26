@@ -39,6 +39,12 @@ import Provider, { interactionPolicy } from 'oidc-provider';
  * the app's own `sub` check can be proved), and its assertion is an opaque
  * string. And the teen invite API (`/api/oidc-clients/teen-invites`) for
  * the server client, behind a client-credentials token with `teen_invites`.
+ *
+ * And Spambank's machine API (`/api/oidc-clients/spambank/*`, scope `spambank`,
+ * spambank/BUILD.md §5.2) for the mail bridge: people are added with
+ * `spambank.addPerson(sub)`, each `sub` is switched on at `/enable`, and the
+ * answers follow BUILD.md (404 `unknown_subject`, 403 `not_allowed`, 409
+ * `not_enabled`).
  */
 
 export type FakePerson = {
@@ -72,6 +78,32 @@ export type FakeTransfer = {
   approvedBy: string | null;
   /** The assertion handed out, once approved. */
   assertion: string | null;
+};
+
+export type FakeSpambankPerson = {
+  sub: string;
+  /** Set once `/enable` ran. */
+  address: string | null;
+  statementsToSnapApp: boolean;
+  newMailAlerts: boolean;
+  appPasswords: Array<{ id: string; name: string; createdAt: string }>;
+  /** What every call answers for this person instead of serving them (YourTal: a teen, suspended, consent ended). */
+  refusal: 'not_allowed' | null;
+};
+
+export type FakeSpambank = {
+  /** Every call, `METHOD path`, in order. */
+  calls: string[];
+  /** The bodies of the calls, parallel to `calls`. */
+  bodies: Array<Record<string, unknown>>;
+  /** Answer 503 to everything (YourTal down), or 503 `spambank_unavailable` (its mail server down). */
+  down: 'yourtal' | 'spambank' | null;
+  /** `/session` answers a body that is not the contract's shape. */
+  malformedSession: boolean;
+  people: Map<string, FakeSpambankPerson>;
+  /** Files `/attachments/fetch` serves, by `emailId/blobId`. */
+  attachments: Map<string, { bytes: Buffer; type: string }>;
+  addPerson(sub: string, over?: Partial<FakeSpambankPerson>): FakeSpambankPerson;
 };
 
 export type NextSignIn =
@@ -136,6 +168,8 @@ export type FakeYourTalOidc = {
   assertionRefusal: 'not_approved' | 'not_allowed' | null;
   /** The transfer API answers 503 to everything. */
   transferApiDown: boolean;
+  /** Spambank's machine API (scope `spambank`). */
+  spambank: FakeSpambank;
   /** Follow an authorization URL like a browser; returns the URL YourTal redirected to. */
   authorize(url: string): Promise<URL>;
   close(): Promise<void>;
@@ -193,6 +227,27 @@ export async function startFakeYourTalOidc(): Promise<FakeYourTalOidc> {
     transferCalls: [],
     assertionRefusal: null,
     transferApiDown: false,
+    spambank: {
+      calls: [],
+      bodies: [],
+      down: null,
+      malformedSession: false,
+      people: new Map(),
+      attachments: new Map(),
+      addPerson(sub, over = {}) {
+        const person: FakeSpambankPerson = {
+          sub,
+          address: null,
+          statementsToSnapApp: false,
+          newMailAlerts: true,
+          appPasswords: [],
+          refusal: null,
+          ...over,
+        };
+        fake.spambank.people.set(sub, person);
+        return person;
+      },
+    },
     signSet: (payload, options = {}) =>
       new SignJWT(payload)
         .setProtectedHeader({ typ: 'secevent+jwt', alg: 'RS256', kid: providerJwk.kid, ...options.header } as never)
@@ -235,7 +290,7 @@ export async function startFakeYourTalOidc(): Promise<FakeYourTalOidc> {
         redirect_uris: [],
         grant_types: ['client_credentials'],
         response_types: [],
-        scope: 'teen_invites app_transfers',
+        scope: 'teen_invites app_transfers spambank',
         subject_type: 'public',
       },
     ],
@@ -247,7 +302,7 @@ export async function startFakeYourTalOidc(): Promise<FakeYourTalOidc> {
     pairwiseIdentifier: async (_ctx, accountId) => subFor(accountId),
     sectorIdentifierUriValidate: () => false,
     clientAuthMethods: ['private_key_jwt', 'none'],
-    scopes: ['openid', 'email', 'profile', 'account', 'teen_invites', 'app_transfers'],
+    scopes: ['openid', 'email', 'profile', 'account', 'teen_invites', 'app_transfers', 'spambank'],
     claims: {
       // `amr` and `auth_time` only reach the ID token when a requested scope
       // maps to them: the library masks everything else out. docs/26 §1.3
@@ -296,6 +351,7 @@ export async function startFakeYourTalOidc(): Promise<FakeYourTalOidc> {
       if (url.startsWith('/oidc/interaction/')) return interaction(req, res);
       if (url.startsWith('/api/oidc-clients/teen-invites')) return inviteApi(req, res, url);
       if (url.startsWith('/api/oidc-clients/transfers')) return transferApi(req, res, url);
+      if (url.startsWith('/api/oidc-clients/spambank')) return spambankApi(req, res, url);
       if (!url.startsWith('/oidc')) {
         res.statusCode = 404;
         return res.end();
@@ -418,6 +474,106 @@ export async function startFakeYourTalOidc(): Promise<FakeYourTalOidc> {
     if (!transfer.approvedBy) return send(409, { code: 'not_approved' });
     transfer.assertion ??= `fake-assertion.${randomBytes(24).toString('base64url')}`;
     return send(200, { assertion: transfer.assertion, expiresAt: new Date(Date.now() + 15 * 60_000).toISOString() });
+  }
+
+  async function spambankApi(req: IncomingMessage, res: ServerResponse, url: string): Promise<void> {
+    const send = (status: number, body?: Record<string, unknown>): void => {
+      res.statusCode = status;
+      if (body === undefined) {
+        res.end();
+        return;
+      }
+      res.setHeader('content-type', 'application/json');
+      res.end(JSON.stringify(body));
+    };
+    const bearer = req.headers.authorization?.startsWith('Bearer ') ? req.headers.authorization.slice(7) : '';
+    const token = bearer ? await provider.ClientCredentials.find(bearer) : undefined;
+    if (!token || token.clientId !== fake.serverClientId) return send(401, { code: 'invalid_token' });
+    if (!String(token.scope ?? '').split(' ').includes('spambank')) return send(403, { code: 'insufficient_scope' });
+
+    const chunks: Buffer[] = [];
+    for await (const chunk of req) chunks.push(chunk as Buffer);
+    const body = chunks.length ? (JSON.parse(Buffer.concat(chunks).toString('utf8')) as Record<string, unknown>) : {};
+    const path = url.slice('/api/oidc-clients/spambank'.length).split('?')[0]!;
+    fake.spambank.calls.push(`${req.method} ${path}`);
+    fake.spambank.bodies.push(body);
+    if (fake.spambank.down === 'yourtal') return send(503, { code: 'unavailable' });
+    if (fake.spambank.down === 'spambank') return send(503, { code: 'spambank_unavailable' });
+    if (req.method !== 'POST') return send(405, { code: 'method_not_allowed' });
+
+    const person = typeof body.sub === 'string' ? fake.spambank.people.get(body.sub) : undefined;
+    if (!person) return send(404, { code: 'unknown_subject' });
+    if (person.refusal) return send(403, { code: person.refusal });
+    const now = new Date().toISOString();
+
+    const status = () => ({
+      available: true,
+      state: person.address ? 'on' : 'off',
+      ...(person.address ? { address: person.address, quota: { limitBytes: 2147483648, usedBytes: 1234 }, createdAt: now } : {}),
+      settings: { statementsToSnapApp: person.statementsToSnapApp, newMailAlerts: person.newMailAlerts },
+    });
+
+    switch (path) {
+      case '/status':
+        return send(200, status());
+      case '/enable': {
+        const created = !person.address;
+        person.address ??= `fakeduck${fake.spambank.people.size}@yourtal.test`;
+        return send(created ? 201 : 200, { state: 'on', address: person.address, created });
+      }
+      case '/session':
+        if (!person.address) return send(409, { code: 'not_enabled' });
+        if (fake.spambank.malformedSession) return send(200, { token: 'sbm1.only-a-token' });
+        return send(200, {
+          token: `sbm1.${randomBytes(24).toString('base64url')}`,
+          expiresAt: new Date(Date.now() + 30 * 60_000).toISOString(),
+          sessionUrl: 'https://yourtal.test/api/spambank/jmap/session',
+          helpersBase: 'https://yourtal.test/api/spambank/mail',
+          address: person.address,
+          // YourTal may add fields; SnapApp must not pass them on.
+          internalNote: 'not for clients',
+        });
+      case '/settings':
+        if (typeof body.statementsToSnapApp === 'boolean') person.statementsToSnapApp = body.statementsToSnapApp;
+        if (typeof body.newMailAlerts === 'boolean') person.newMailAlerts = body.newMailAlerts;
+        return send(200, { statementsToSnapApp: person.statementsToSnapApp, newMailAlerts: person.newMailAlerts });
+      case '/app-passwords/list':
+        if (!person.address) return send(409, { code: 'not_enabled' });
+        return send(200, { items: person.appPasswords });
+      case '/app-passwords': {
+        if (!person.address) return send(409, { code: 'not_enabled' });
+        if (person.appPasswords.length >= 5) return send(409, { code: 'too_many_app_passwords' });
+        const made = {
+          id: `ap${person.appPasswords.length + 1}${randomBytes(3).toString('hex')}`,
+          name: String(body.name),
+          createdAt: now,
+        };
+        person.appPasswords.push(made);
+        return send(201, {
+          ...made,
+          secret: `app_${randomBytes(18).toString('base64url')}`,
+          username: person.address,
+          imap: { host: 'mail.yourtal.test', port: 993, security: 'ssl' },
+          smtp: { host: 'mail.yourtal.test', port: 465, security: 'ssl' },
+        });
+      }
+      case '/app-passwords/revoke': {
+        const at = person.appPasswords.findIndex((p) => p.id === body.id);
+        if (at === -1) return send(404, { code: 'unknown_app_password' });
+        person.appPasswords.splice(at, 1);
+        return send(204);
+      }
+      case '/attachments/fetch': {
+        const file = fake.spambank.attachments.get(`${String(body.emailId)}/${String(body.blobId)}`);
+        if (!file) return send(404, { code: 'not_found' });
+        res.statusCode = 200;
+        res.setHeader('content-type', file.type);
+        res.end(file.bytes);
+        return;
+      }
+      default:
+        return send(404, { code: 'not_found' });
+    }
   }
 
   async function inviteApi(req: IncomingMessage, res: ServerResponse, url: string): Promise<void> {

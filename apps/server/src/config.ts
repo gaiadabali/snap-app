@@ -342,6 +342,43 @@ const schema = z.object({
     .transform((v) => (v ?? '').trim() || undefined)
     .pipe(z.string().url('FTR_TRANSFER_URL must be a URL').optional()),
 
+  /**
+   * Spambank mail (spambank/BUILD.md §4.12, owner answer Q6): the mail entries
+   * in the app, and `/v1/mail/*`. DEFAULT ON, the reverse of the usual rule
+   * here, by the owner's decision: UNSET OR BLANK MEANS ON. Only `0`, `false`,
+   * `off` or `no` turn it off. It is still inert until SnapApp's YourTal server
+   * client is configured (`oidcClientConfigured()`), so a deployment without
+   * YourTal does not grow a mail screen that cannot work. See `mail/enabled.ts`.
+   */
+  SPAMBANK_ENABLED: z
+    .string()
+    .optional()
+    .transform((v) => !['0', 'false', 'off', 'no'].includes((v ?? '').trim().toLowerCase())),
+
+  /**
+   * Firebase Cloud Messaging, for the phone's new-mail notification (BUILD.md
+   * B9, §4.9). `push/fcm.ts` sends over FCM HTTP v1 as a service account:
+   *
+   *   FCM_PROJECT_ID             the Firebase project id
+   *   FCM_SERVICE_ACCOUNT_FILE   in-container path of the service-account JSON
+   *                              (host: /etc/snap-apps/secrets/fcm-service-account.json,
+   *                              mounted read-only). The key is never in the environment.
+   *   FCM_SIMULATOR              `true` on a non-production or demo host: an
+   *                              in-process sender that records what it would
+   *                              send (integrations/simulation.ts)
+   *
+   * Both of the first two, or no push at all: a new-mail alert is then
+   * acknowledged and dropped, and nothing else is affected. Blank reads as unset.
+   */
+  FCM_PROJECT_ID: z
+    .string()
+    .optional()
+    .transform((v) => (v ?? '').trim() || undefined),
+  FCM_SERVICE_ACCOUNT_FILE: z
+    .string()
+    .optional()
+    .transform((v) => (v ?? '').trim() || undefined),
+
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
 
   /**
