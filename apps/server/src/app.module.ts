@@ -30,7 +30,7 @@ import {
   UsageController,
 } from './redesign/redesign.controller.js';
 import { ReconciliationController } from './reconciliation/reconciliation.controller.js';
-import { SettingsController } from './settings/settings.controller.js';
+import { OccupationsCatalogueController, SettingsController } from './settings/settings.controller.js';
 import { StatementsController } from './statements/statements.controller.js';
 import { DeductionBundleController } from './deductions/deduction-bundle.controller.js';
 import { FtrSendController } from './deductions/ftr-send.controller.js';
@@ -118,6 +118,7 @@ export class HealthController {
     DeductionBundleController,
     FtrSendController,
     SettingsController,
+    OccupationsCatalogueController,
     DownloadsController,
     ReleasesController,
     ImagesController,

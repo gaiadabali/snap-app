@@ -10,6 +10,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -21,7 +22,7 @@ import type {
   PlanUsage,
   TaxPack,
 } from '@snap/api-contract';
-import { OCCUPATION_GROUPS, PROFILES } from '@snap/tax-engine';
+import { PROFILES } from '@snap/tax-engine';
 import { ATO_LABELS } from '@snap/api-contract/deduction-bundle';
 import { IsBoolean, IsIn, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 
@@ -37,7 +38,7 @@ import { requireOwnerOrAdmin } from '../common/roles.js';
 import { ValidBody } from '../common/valid-body.decorator.js';
 import { readPlan, readTenant, updateTenant } from '../repo.js';
 import { abnIsValid } from '../extraction/validators.js';
-import { occupationAllowed, occupationProblem } from './occupation.js';
+import { occupationAllowed, occupationGroupsFor, occupationProblem, type OccupationGroupView } from './occupation.js';
 import { isAtoLabel } from './deduction-categories.js';
 import {
   createCategory,
@@ -181,21 +182,7 @@ export class SettingsController {
   ): Promise<Array<{ group: string; profiles: Array<{ id: string; label: string }> }>> {
     const tenant = await readTenant(user.userId, tenantId);
     if (!tenant) throw new NotFoundException('No such workspace.');
-    return (
-      OCCUPATION_GROUPS.map((g) => ({
-        group: g.label,
-        // '--' is a spacer in the source data, and a group can name a profile
-        // that has no worksheet of its own (FIFO maps onto a base profile), so
-        // both are filtered rather than rendered as an empty row. A personal
-        // workspace is also not offered the sole trader (`sole`): it is scoped
-        // to employee deductions and rentals.
-        profiles: g.ids
-          .filter((id: string) => PROFILES[id] !== undefined && occupationAllowed(tenant.kind, id))
-          .map((id: string) => ({ id, label: PROFILES[id]!.label })),
-      }))
-        // A group left with nothing to offer is not shown as an empty heading.
-        .filter((g) => g.profiles.length > 0)
-    );
+    return occupationGroupsFor(tenant.kind);
   }
 
   @Get('settings/categories')
@@ -516,4 +503,28 @@ function financialYear(now = new Date()): {
     toDate: `${startYear + 1}-06-30`,
     periodLabel: `FY${String(startYear + 1).slice(2)} (1 Jul ${startYear} – 30 Jun ${startYear + 1})`,
   };
+}
+
+/**
+ * The occupations a workspace of a given kind may choose, before any
+ * workspace exists.
+ *
+ * DELIBERATELY UNGUARDED, like `/v1/tax-rules-catalogue`. Onboarding is
+ * where the first workspace is created, so `GET /v1/settings/occupations`
+ * (workspace-scoped, behind `MembershipGuard`) cannot serve it: that was the
+ * 401 that left the onboarding picker at "Not sure yet". This is fixed
+ * reference data (profile ids and labels from the tax engine), identical for
+ * every caller and containing nothing about any tenant.
+ */
+@ApiTags('settings')
+@Controller('v1/occupations')
+export class OccupationsCatalogueController {
+  @Get()
+  @ApiOperation({
+    summary: 'Occupations a new workspace can choose',
+    description: 'Not workspace-scoped. `?kind=business` includes the sole trader; the default (personal) does not.',
+  })
+  list(@Query('kind') kind?: string): OccupationGroupView[] {
+    return occupationGroupsFor(kind === 'business' ? 'business' : 'personal');
+  }
 }

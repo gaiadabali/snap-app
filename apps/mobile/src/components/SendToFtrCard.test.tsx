@@ -22,7 +22,7 @@ describe('SendToFtrCard', () => {
   });
 
   it('shows sent (with Review them), cancelled and failed', () => {
-    const sent = direct({ state: { kind: 'sent', year: '2025-26' }, reviewUrl: 'https://ftr.test/account/import' });
+    const sent = direct({ state: { kind: 'sent', year: '2025-26' }, reviewUrl: 'https://ftr.test/worksheet' });
     expect(sent).toContain('Sent. Your 2025-26 deductions are waiting in Free Tax Returns.');
     expect(sent).toContain('Review them');
     expect(direct({ state: { kind: 'cancelled' } })).toContain('Nothing was sent.');

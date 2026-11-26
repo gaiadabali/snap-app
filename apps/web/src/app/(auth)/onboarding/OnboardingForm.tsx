@@ -24,7 +24,7 @@ export function OnboardingForm({
   initialKind,
   error,
 }: {
-  occupationGroups: OccupationGroup[];
+  occupationGroups: Record<'personal' | 'business', OccupationGroup[]>;
   taxRules: AvailableTaxRules[];
   initialKind: 'business' | 'personal';
   error?: string;
@@ -165,7 +165,7 @@ export function OnboardingForm({
             >
               <Select id="occupationProfileId" name="occupationProfileId" defaultValue="">
                 <option value="">Not sure yet</option>
-                {occupationGroups.map((group) => (
+                {occupationGroups[kind].map((group) => (
                   <optgroup key={group.group} label={group.group}>
                     {group.profiles.map((profile) => (
                       <option key={profile.id} value={profile.id}>

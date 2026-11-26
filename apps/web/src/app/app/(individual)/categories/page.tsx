@@ -33,7 +33,7 @@ export default async function CategoriesPage({ searchParams }: { searchParams: P
       }).catch(() => null)
     : null;
   const ftrBase = process.env.NEXT_PUBLIC_FREE_TAX_RETURNS_URL;
-  const reviewUrl = ftrBase ? new URL('/account/import', ftrBase).toString() : undefined;
+  const reviewUrl = ftrBase ? new URL('/worksheet', ftrBase).toString() : undefined;
 
   return (
     <div className="flex flex-col gap-6">
