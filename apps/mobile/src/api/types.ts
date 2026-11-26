@@ -58,6 +58,7 @@ import type {
   DocumentFilter,
   DocumentLine,
   DocumentView,
+  SetLineCategoriesRequest,
   Goal,
   GoalContribution,
   Invitation,
@@ -187,6 +188,12 @@ export interface SnapApi {
   getDocument(id: string): Promise<DocumentView | null>;
   /** Edits a document. Does NOT post it — editing and posting are separate acts. */
   updateDocument(id: string, body: UpdateDocumentRequest): Promise<DocumentView>;
+  /**
+   * Files single lines on their own (a work item on a supermarket docket) or puts them back
+   * with the receipt (`categoryId: null`). Work and other tax categories of a personal space
+   * only. Not a correction: nothing else on the receipt changes. docs/DEDUCTIONS.md.
+   */
+  setLineCategories(id: string, body: SetLineCategoriesRequest): Promise<DocumentView>;
   /**
    * Corrects a document that may not exist yet (OD-11, `docs/ON-DEVICE.md`
    * §7.2). For a Stage 2 edit made against the on-device preview, before the
