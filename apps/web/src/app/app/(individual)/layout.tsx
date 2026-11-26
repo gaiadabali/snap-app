@@ -17,6 +17,8 @@ import { PanelShell } from '../_shell/PanelShell';
 import { YourtalMovePrompt } from '../_shell/YourtalMovePrompt';
 import { individualNavFor } from '../_shell/nav';
 import { getFamily, getYourtalLink } from '@/lib/panels/data';
+import { getMailGate } from '@/lib/panels/mail-status';
+import { MailRoot } from './mail/MailRoot';
 import { TeenNotice, ViewOnlyNotice } from './family/FamilyView';
 
 export default async function IndividualLayout({ children }: { children: ReactNode }) {
@@ -26,7 +28,14 @@ export default async function IndividualLayout({ children }: { children: ReactNo
   // offered only while the server has the link on. A failed read hides both
   // rather than failing the whole panel: fail closed.
   const yourtalAvailable = await getYourtalLink().then((s) => s.available, () => false);
-  const nav = individualNavFor(yourtalAvailable);
+  // Mail (Spambank): offered to an adult who is not being impersonated (a person's mail is
+  // private, and a mail token minted under impersonation would open it). `unlinked` still
+  // lists the entry, because that page explains how to move to YourTal; `unavailable` and
+  // a failed read leave the nav alone.
+  const mailGate = impersonation ? null : await getMailGate();
+  const mailListed = mailGate?.kind === 'ready' || mailGate?.kind === 'unlinked';
+  const mailOn = mailGate?.kind === 'ready' && mailGate.status.mailbox?.state === 'on';
+  const nav = individualNavFor(yourtalAvailable, false, mailListed);
 
   if (impersonation) {
     // Pinned to the EXACT tenant the session was opened for
@@ -124,7 +133,7 @@ export default async function IndividualLayout({ children }: { children: ReactNo
     dismissed: (await cookies()).has(YOURTAL_MOVE_COOKIE),
   });
 
-  return (
+  const shell = (
     <PanelShell
       user={user}
       workspace={workspace}
@@ -138,4 +147,8 @@ export default async function IndividualLayout({ children }: { children: ReactNo
       <HouseAdProvider context={{ yourtalAvailable, noAds: teen }}>{children}</HouseAdProvider>
     </PanelShell>
   );
+
+  // One mail client for the whole panel, above the shell so the sidebar's unread badge and
+  // the mail screens share it. Only for someone with a mailbox, and never in a teen's space.
+  return mailOn && !teen ? <MailRoot>{shell}</MailRoot> : shell;
 }
