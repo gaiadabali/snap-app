@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 import { cx } from '@/design/primitives';
+import { MailNavBadge } from './MailNavBadge';
 import type { NavItem } from './nav';
 
 /**
@@ -29,13 +30,14 @@ export function Sidebar({ items }: { items: NavItem[] }) {
             href={item.href}
             aria-current={active ? 'page' : undefined}
             className={cx(
-              'rounded-[var(--radius-md)] px-3 py-2 text-[14px] transition-colors',
+              'flex items-center justify-between gap-2 rounded-[var(--radius-md)] px-3 py-2 text-[14px] transition-colors',
               active
                 ? 'bg-[var(--color-accent-soft)] font-semibold text-[var(--color-ink)]'
                 : 'font-medium text-[var(--color-ink-muted)] hover:bg-[var(--color-surface-alt)] hover:text-[var(--color-ink)]',
             )}
           >
             {item.label}
+            {item.badge === 'mail' ? <MailNavBadge /> : null}
           </Link>
         );
       })}

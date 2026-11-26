@@ -4,10 +4,19 @@
  * Plain data — no fetching, no auth — so it can be imported from both a
  * server layout and the client-side sidebar that highlights the active link.
  */
-export type NavItem = { href: string; label: string };
+export type NavItem = {
+  href: string;
+  label: string;
+  /** A live count drawn beside the label by the sidebar (the Mail entry's unread count). */
+  badge?: 'mail';
+};
 
 /** The YourTal points page. Shown only while the server has the YourTal link on. */
 export const POINTS_HREF = '/app/points';
+
+/** Spambank mail. Shown only while the server offers it to this person. */
+export const MAIL_HREF = '/app/mail';
+const MAIL_ITEM: NavItem = { href: MAIL_HREF, label: 'Mail', badge: 'mail' };
 
 export const INDIVIDUAL_NAV: NavItem[] = [
   { href: '/app', label: 'Overview' },
@@ -25,15 +34,21 @@ export const INDIVIDUAL_NAV: NavItem[] = [
 ];
 
 /** What a teen's own space leaves out (group 3.10): its credits are the parent's, and teens earn no points. */
-const NOT_FOR_TEENS = new Set(['/app/plan', '/app/credits', POINTS_HREF]);
+const NOT_FOR_TEENS = new Set(['/app/plan', '/app/credits', POINTS_HREF, MAIL_HREF]);
 
 /**
  * The individual nav, without the points entry when the YourTal link is off
- * (`available: false`), and without plan, credits and points in a teen's own space.
+ * (`available: false`), without plan, credits, points and mail in a teen's own space
+ * (mail is adults-only), and with the Mail entry, after Documents, only while the server
+ * offers mail to this person (`mailAvailable`: the switch is on and they are not
+ * impersonated).
  */
-export function individualNavFor(yourtalAvailable: boolean, teenSpace = false): NavItem[] {
+export function individualNavFor(yourtalAvailable: boolean, teenSpace = false, mailAvailable = false): NavItem[] {
   if (teenSpace) return INDIVIDUAL_NAV.filter((item) => !NOT_FOR_TEENS.has(item.href));
-  return yourtalAvailable ? INDIVIDUAL_NAV : INDIVIDUAL_NAV.filter((item) => item.href !== POINTS_HREF);
+  const base = yourtalAvailable ? INDIVIDUAL_NAV : INDIVIDUAL_NAV.filter((item) => item.href !== POINTS_HREF);
+  if (!mailAvailable) return base;
+  const at = base.findIndex((item) => item.href === '/app/documents');
+  return [...base.slice(0, at + 1), MAIL_ITEM, ...base.slice(at + 1)];
 }
 
 export const BUSINESS_NAV: NavItem[] = [
