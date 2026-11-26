@@ -60,7 +60,8 @@ export async function fetchMailSession(): Promise<MailSession> {
     if (!(e instanceof MailApiFailure)) throw e;
     let code: MailErrorCode = 'unavailable';
     if (e.status === 401) code = 'unauthorized';
-    else if (e.code === 'not_enabled' || e.status === 409) code = 'not_enabled';
+    else if (e.code === 'not_enabled') code = 'not_enabled';
+    else if (e.code === 'yourtal_not_linked') code = 'unauthorized';
     else if (e.status === 429) code = 'rate_limited';
     else if (e.code === 'network') code = 'network';
     throw new MailError(code, e.message, { status: e.status });

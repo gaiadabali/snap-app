@@ -265,8 +265,8 @@ describe('AppPasswordSecret', () => {
     createdAt: '2026-11-28T01:00:00Z',
     secret: 'app_abc123',
     username: 'geewizduck@yourtal.gaiada.com',
-    imap: { host: 'mail.yourtal.gaiada.com', port: 993, security: 'ssl' },
-    smtp: { host: 'mail.yourtal.gaiada.com', port: 465, security: 'ssl' },
+    imap: { host: 'mail.yourtal.gaiada.com', port: 993, security: 'ssl' as const },
+    smtp: { host: 'mail.yourtal.gaiada.com', port: 465, security: 'ssl' as const },
   };
   const markup = renderToStaticMarkup(<AppPasswordSecret created={created} onDone={noop} />);
   const t = text(markup);

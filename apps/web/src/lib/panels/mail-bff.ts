@@ -2,6 +2,8 @@ import 'server-only';
 
 import type { MailSession } from '@snap/mail-engine';
 
+import type { MailBridgeErrorCode } from './mail-types';
+
 import { api, ApiError, getImpersonation, newIdempotencyKey } from '@/lib/api/server';
 import { crossSite } from '@/lib/http/same-origin';
 
@@ -44,17 +46,20 @@ export function upstreamCode(body: unknown): string {
 }
 
 /** A sentence for each code the screens act on; the server's own wording is never passed through. */
-const MESSAGES: Record<string, string> = {
+const MESSAGES: Record<MailBridgeErrorCode, string> = {
+  mail_unavailable: 'Mail is not available here.',
   yourtal_not_linked: 'Sign in with YourTal to use mail.',
   not_allowed: 'Mail is not available for this account.',
   not_enabled: 'Mail is not switched on yet.',
-  spambank_unavailable: 'Mail is not available right now. Try again in a moment.',
+  not_workspace_admin: 'Choose a workspace you own or administer.',
   rate_limited: 'Too many requests. Wait a minute and try again.',
-  too_many_app_passwords: 'You have reached the limit of app passwords. Revoke one first.',
+  yourtal_unavailable: 'Mail is not available right now. Try again in a moment.',
+  spambank_unavailable: 'Mail is not available right now. Try again in a moment.',
+  yourtal_rejected: 'Mail is not available right now. Try again in a moment.',
 };
 
 export function messageFor(code: string): string {
-  return MESSAGES[code] ?? 'Something went wrong. Try again in a moment.';
+  return (MESSAGES as Record<string, string>)[code] ?? 'Something went wrong. Try again in a moment.';
 }
 
 export interface ForwardSpec {
