@@ -31,7 +31,7 @@ import {
   readTenant,
   updateDocument,
 } from '../repo.js';
-import { readerRulesFor } from '../taxrules/taxrules.repo.js';
+import { assessmentDate, readerRulesFor } from '../taxrules/taxrules.repo.js';
 
 /**
  * A correction made before the server's own document exists yet.
@@ -191,8 +191,13 @@ export class CaptureDocumentController {
     // Resolved unconditionally (not just when the total is edited): the reply
     // below re-serialises the document via `toWire`, which needs the same
     // rule set to restate the per-category tax subtotals.
+    // For the year of the document's date after this correction: a corrected
+    // date can move a receipt into another financial year.
     const tenant = await readTenant(user.userId, tenantId);
-    const taxRules = await readerRulesFor(tenant);
+    const taxRules = await readerRulesFor(
+      tenant,
+      assessmentDate(edit.issueDate ?? before.document.issue_date, before.document.created_on),
+    );
 
     let taxAmount: string | undefined;
     let taxExclusiveAmount: string | undefined;

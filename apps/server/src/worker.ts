@@ -40,7 +40,13 @@ import {
   failedModelsFor,
 } from './repo.js';
 import { importPdfStatement, StatementPageCapError } from './statements/pdf-statement-import.js';
-import { rulesFor } from './taxrules/taxrules.repo.js';
+import {
+  assessmentDate,
+  readerRulesOf,
+  rulesStampOf,
+  tenantRulesFor,
+  type TenantRules,
+} from './taxrules/taxrules.repo.js';
 import { get as readObject } from './storage.js';
 import { enterTenantAsWorker, workerActor } from './tenant-entry.js';
 import { runErasureLoop } from './yourtal/events-job.js';
@@ -518,9 +524,10 @@ async function handle(job: Job): Promise<HandleOutcome> {
   if (!tenant) {
     throw new Error(`job ${job.id}: tenant ${job.tenantId} does not exist`);
   }
-  let taxRules: TaxRules | null = null;
+  let tenantRules: TenantRules | null = null;
   if (tenant.tax_rules_id) {
-    const installed = await rulesFor(tenant);
+    tenantRules = await tenantRulesFor(tenant);
+    const installed = tenantRules.installed;
     if (installed.country !== tenant.country) {
       throw new Error(
         `job ${job.id}: workspace country ${tenant.country} does not match its installed ` +
@@ -528,17 +535,37 @@ async function handle(job: Job): Promise<HandleOutcome> {
           `the wrong jurisdiction`,
       );
     }
-    // `au-2026` loaded and matches an Australian workspace: read with the
-    // Australian reader, exactly as a workspace with no rule set does. See
-    // `readerRulesFor` — the same mapping, kept inline here because the
-    // country check above has to see the loaded rule set first.
-    taxRules = installed.country === 'AU' ? null : installed;
+    // An `au-*` rule set loaded and matches an Australian workspace: read
+    // with the Australian reader, exactly as a workspace with no rule set
+    // does. The mapping is `readerRulesOf`, shared with `readerRulesFor`;
+    // only the country check above is the worker's own, because it has to
+    // see the installed rule set first.
   } else if (tenant.country !== 'AU') {
     throw new Error(
       `job ${job.id}: workspace country ${tenant.country} has no rule set installed — ` +
         `refusing to validate under Australian rules`,
     );
   }
+
+  /**
+   * Which year's law each reading is assessed under: the year of the
+   * document's own date, which the model has not returned yet. Until it has,
+   * the capture's date stands in (then today) — `runExtraction` re-chooses
+   * the year once the date is read, so a March 2026 receipt photographed in
+   * November is read under 2025–26, not 2026–27.
+   */
+  const captureDate = await enterTenantAsWorker(WORKER, job.tenantId, async (tx) => {
+    const rows = await tx.execute<{ d: string | null }>(sql`
+      select coalesce(captured_at, received_at)::date::text as d from captures where id = ${captureId} limit 1
+    `);
+    return rows.rows[0]?.d ?? null;
+  });
+  const readerOn = tenantRules ? readerRulesOf(tenantRules) : null;
+  const rulesForDocument = (issueDate: string | null): TaxRules | null =>
+    readerOn ? readerOn(assessmentDate(issueDate, captureDate)) : null;
+  // The prompt is chosen before anything is read, so by the capture date. A
+  // prompt is per country (Indonesian or Australian wording), not per year.
+  const taxRules = rulesForDocument(null);
 
   const models = await modelsForAttempt(job, 'vision', captureId);
 
@@ -596,7 +623,7 @@ async function handle(job: Job): Promise<HandleOutcome> {
       provider,
       pages,
       new Date(),
-      taxRules,
+      rulesForDocument,
       storedGrounding,
       modelCopy.pages,
     );
@@ -616,11 +643,17 @@ async function handle(job: Job): Promise<HandleOutcome> {
           outputTokens: run.meta.outputTokens,
           costMicros: run.meta.costMicros,
           raw: run.meta.raw,
+          // The year's rule set this reading was assessed under, by the
+          // document's own date (else the capture's): stored on the run so it
+          // can be re-derived under the same law after more years are added.
+          rules: tenantRules
+            ? rulesStampOf(tenantRules, assessmentDate(run.rulesDate, captureDate))
+            : null,
         },
-        // The same rule set (or null) just resolved above for `validate()` —
-        // the per-category tax split this writes must agree with the law the
-        // extraction was validated under.
-        taxRules,
+        // The same rule set (or null) `validate()` ran under in
+        // `runExtraction` — the per-category tax split this writes must agree
+        // with the law the extraction was validated under.
+        run.rules,
       );
       console.log(
         `job ${job.id}: ${spec.id} → ${run.result.reviewStatus}` +

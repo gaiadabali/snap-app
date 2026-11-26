@@ -21,7 +21,7 @@ import { money as moneyNs } from '@snap/db';
 import type { TaxRules } from '@snap/tax-rules';
 
 import { readTenant } from '../repo.js';
-import { rulesFor } from '../taxrules/taxrules.repo.js';
+import { rulesFor, todayIso } from '../taxrules/taxrules.repo.js';
 import { parseAmount, type AmountFormat } from './csv-amounts.js';
 import { evaluateBalanceCheck, type CandidateLine } from './balance-check.js';
 import { detectColumnMapping, type ColumnMapping } from './csv-columns.js';
@@ -135,7 +135,13 @@ export async function importCsvStatement(
 
   let rules: TaxRules;
   try {
-    rules = await rulesFor(tenant);
+    // Resolved for TODAY, before a single line is read: the amount format is
+    // needed to read the lines, so the statement's own dates are not known
+    // yet. What an import reads from a rule set — separators, date order,
+    // posting lag, bank-interest treatment — is identical across a country's
+    // years (`years.test.ts` asserts it for Australia), and nothing an import
+    // stores is stamped with a rule-set version.
+    rules = await rulesFor(tenant, todayIso());
   } catch (error) {
     return {
       ok: false,

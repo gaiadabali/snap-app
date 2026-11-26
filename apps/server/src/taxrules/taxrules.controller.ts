@@ -26,6 +26,7 @@ import {
   consumptionTaxReport,
   installRulesFor,
   rulesFor,
+  todayIso,
   type AvailableRules,
   type ConsumptionTaxReport,
 } from './taxrules.repo.js';
@@ -129,14 +130,22 @@ export class TaxRulesController {
     const tenant = await readTenant(user.userId, tenantId);
     if (!tenant) throw new BadRequestException('No such workspace.');
 
+    // One date for both halves, so the installed year and the catalogue can
+    // never disagree about which year is "now" (the web settings card compares
+    // the two ids to decide whether a change is pending).
+    const today = todayIso();
     const base = {
       country: tenant.country,
       currency: tenant.base_currency,
-      available: availableRules(),
+      available: availableRules(today),
     };
 
     try {
-      const rules = await rulesFor(tenant);
+      // The year covering TODAY. The workspace stored a country (its
+      // installed rule set); which year that country's law is in is a fact
+      // about the calendar, so a workspace that installed `au-2026` shows
+      // 2027–28 from 1 July 2027 without being reinstalled.
+      const rules = await rulesFor(tenant, today);
       return {
         ...base,
         rulesId: rules.id,

@@ -12,7 +12,7 @@ import {
 import { getDb } from '../db.js';
 import { taxSubtotalsFromLines } from '../extraction/tax-subtotals';
 import { readTenant } from '../repo.js';
-import { readerRulesFor } from '../taxrules/taxrules.repo.js';
+import { assessmentDate, readerRulesResolver, type ReaderRulesOn } from '../taxrules/taxrules.repo.js';
 import {
   mergeObservations,
   taxCodeFor,
@@ -36,6 +36,22 @@ const AU_CONSUMPTION_TAX: Pick<ConsumptionTaxSpec, 'inclusiveFraction' | 'baseFr
   inclusiveFraction: { n: 1, d: 11 },
   baseFraction: { n: 1, d: 1 },
 };
+
+/**
+ * The consumption-tax divisor per document date, from the reader's per-date
+ * rule set: `null` (Australia) is 1/11. An undated document is assessed on
+ * today (`assessmentDate`).
+ */
+function consumptionTaxOn(
+  rulesOn: ReaderRulesOn,
+): (issueDate: string | null) => Pick<ConsumptionTaxSpec, 'inclusiveFraction' | 'baseFraction'> {
+  return (issueDate) => {
+    const rules = rulesOn(assessmentDate(issueDate));
+    return rules
+      ? { inclusiveFraction: rules.consumptionTax.inclusiveFraction, baseFraction: rules.consumptionTax.baseFraction }
+      : AU_CONSUMPTION_TAX;
+  };
+}
 
 /**
  * Where a confirmed scan becomes a posted, balanced ledger entry.
@@ -225,7 +241,8 @@ async function loadDocumentEvidence(
   t: Tx,
   tenantId: string,
   documentId: string,
-  consumptionTax: Pick<ConsumptionTaxSpec, 'inclusiveFraction' | 'baseFraction'>,
+  /** The jurisdiction's divisor for a document dated `issueDate` (null: undated). */
+  consumptionTaxFor: (issueDate: string | null) => Pick<ConsumptionTaxSpec, 'inclusiveFraction' | 'baseFraction'>,
 ): Promise<DocumentEvidenceResult> {
   // Locks the document for the life of the caller's transaction, so two
   // concurrent posts/merges of the same scan cannot both proceed.
@@ -264,6 +281,9 @@ async function loadDocumentEvidence(
   if (doc.review_status !== 'auto_accepted' && doc.review_status !== 'reviewed') {
     return { ok: false, reason: 'not_confirmed', reviewStatus: doc.review_status };
   }
+
+  // The year this document's own date falls in.
+  const consumptionTax = consumptionTaxFor(doc.issue_date);
 
   const subtotals = await t.execute<{
     category_code: string;
@@ -612,13 +632,9 @@ export async function draftTransactionFromDocument(
   // `documents.controller.ts`'s `update()`: the divisor is the jurisdiction,
   // 1/11 in Australia and 11/111 in Indonesia (docs/INDONESIA.md §2.2).
   const tenant = await readTenant(userId, tenantId);
-  const taxRules = await readerRulesFor(tenant);
-  const consumptionTax: Pick<ConsumptionTaxSpec, 'inclusiveFraction' | 'baseFraction'> = taxRules
-    ? {
-        inclusiveFraction: taxRules.consumptionTax.inclusiveFraction,
-        baseFraction: taxRules.consumptionTax.baseFraction,
-      }
-    : AU_CONSUMPTION_TAX;
+  // Per date: the document's issue date is read under the lock below, and
+  // the divisor is taken for the year that date falls in.
+  const consumptionTax = consumptionTaxOn(await readerRulesResolver(tenant));
 
   return tx(getDb(), userId, tenantId, async (t) => {
     // Rule 3, deliberately ahead of everything `loadDocumentEvidence` checks:
@@ -751,13 +767,9 @@ export async function supersedeAndPost(
   }
 
   const tenant = await readTenant(userId, tenantId);
-  const taxRules = await readerRulesFor(tenant);
-  const consumptionTax: Pick<ConsumptionTaxSpec, 'inclusiveFraction' | 'baseFraction'> = taxRules
-    ? {
-        inclusiveFraction: taxRules.consumptionTax.inclusiveFraction,
-        baseFraction: taxRules.consumptionTax.baseFraction,
-      }
-    : AU_CONSUMPTION_TAX;
+  // Per date: the document's issue date is read under the lock below, and
+  // the divisor is taken for the year that date falls in.
+  const consumptionTax = consumptionTaxOn(await readerRulesResolver(tenant));
 
   return tx(getDb(), userId, tenantId, async (t) => {
     let docLoaded: DocumentEvidenceResult | null = null;

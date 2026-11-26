@@ -14,6 +14,7 @@ import { sql } from 'drizzle-orm';
 import { creditsLeft, QuotaExhaustedError, readPaidScan, spendScanCredit } from './credits/spend.js';
 import { getDb } from './db.js';
 import { taxNameForCountry } from './taxrules/tax-name.js';
+import type { RulesStampRecord } from './taxrules/taxrules.repo.js';
 import type { ReceiptContent, ReceiptOriginal } from './yourtal/external-ref.js';
 import { queueReceiptReport } from './yourtal/outbox.repo.js';
 import type { ModelCall } from './extraction/call-cost.js';
@@ -765,6 +766,13 @@ export type DocumentRow = {
   category_source: 'user' | 'supplier' | null;
   category_tax_label: string | null;
   category_engine_row_id: string | null;
+  /**
+   * The day the server recorded the document (`created_at`, UTC date): the
+   * fallback a document with no printed date is assessed on, after its own
+   * `issue_date` (`documentAssessmentDate`). Optional because hand-built rows
+   * in tests predate it; absent reads as unknown, which means today.
+   */
+  created_on?: string | null;
 };
 
 const DOCUMENT_COLUMNS = sql`
@@ -793,7 +801,8 @@ const DOCUMENT_COLUMNS = sql`
   cat.name as category_name,
   d.category_source,
   cat.ato_deduction_code as category_tax_label,
-  cat.engine_row_id as category_engine_row_id
+  cat.engine_row_id as category_engine_row_id,
+  d.created_at::date::text as created_on
 `;
 
 export async function listDocuments(
@@ -1581,6 +1590,13 @@ export async function saveExtraction(
     /** AUD micros the call cost, when the provider reports it (plan 7.2). */
     costMicros?: number | null;
     raw: string;
+    /**
+     * The year's rule set this reading was assessed under, written to
+     * `extraction_runs.validator_report.rules` so the run names the law it
+     * was checked against (README principle 2). Null or absent for a
+     * workspace with no rule set installed: there is nothing to name.
+     */
+    rules?: RulesStampRecord | null;
   },
   // The same rule set `worker.ts` already resolved to run `validate()` against
   // this result — threaded through rather than re-resolved here, so the tax
@@ -1686,12 +1702,13 @@ export async function saveExtraction(
       insert into extraction_runs (
         id, tenant_id, capture_id, engine, model_id, prompt_version, schema_version,
         tier, status, started_at, finished_at, latency_ms, input_tokens, output_tokens,
-        cost_micros, raw_response
+        cost_micros, raw_response, validator_report
       ) values (
         ${runId}, ${tenantId}, ${captureId}, ${engineFor(meta.model)}, ${meta.model}, ${meta.promptVersion},
         ${e.schemaVersion}, 1, 'succeeded', now(), now(), ${meta.latencyMs},
         ${meta.inputTokens}, ${meta.outputTokens}, ${meta.costMicros ?? null},
-        ${JSON.stringify({ raw: meta.raw })}::jsonb
+        ${JSON.stringify({ raw: meta.raw })}::jsonb,
+        ${meta.rules ? JSON.stringify({ rules: meta.rules }) : null}::jsonb
       )
     `);
 
