@@ -1,5 +1,10 @@
 [
   {
+    "id": "personal-workspace-valid-invoice-copy",
+    "date": "2026-11-26",
+    "notes": "A valid receipt in a personal or household workspace no longer says its GST credit is claimable. Personal workspaces cannot claim GST, so it now just says the receipt meets the ATO requirements for a tax invoice. Business workspaces still show the credit."
+  },
+  {
     "id": "work-receipts-to-free-tax-returns",
     "date": "2026-11-26",
     "notes": "Your work receipts can now go to Free Tax Returns. Open a receipt and choose a work category on the new Tax return card, and it counts in your deductions for that financial year. Bought something for work with your other shopping? Tick just that line and pick its category. Sign in with YourTal now works in the web app too, and Mileage shows the rate per kilometre correctly."

@@ -20,6 +20,7 @@ import { WorkExpenseCard } from '@/components/WorkExpenseCard';
 import { Findings } from '@/components/Findings';
 import { LineItems } from '@/components/LineItems';
 import { BalanceNote, OriginalDocument } from '@/components/receipt';
+import { ValidInvoiceNotice } from '@/components/ValidInvoiceNotice';
 import {
   Body,
   Button,
@@ -461,11 +462,12 @@ export default function DocumentScreen() {
             </View>
           </Card>
         ) : (
-          <Notice tone="good" icon="check">
-            <Text style={{ fontWeight: '700' }}>Valid tax invoice{'\n'}</Text>
-            Meets the ATO requirements, so the {money.fmt(doc.taxAmount)} GST credit is claimable at
-            label 1B.
-          </Notice>
+          <ValidInvoiceNotice
+            workspace={doc.workspace}
+            taxName={money.taxName}
+            taxAmount={doc.taxAmount}
+            fmt={money.fmt}
+          />
         )}
 
         {/* Correcting a field is the point of this screen, so the control sits
