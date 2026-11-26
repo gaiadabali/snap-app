@@ -32,6 +32,7 @@ import {
 import { listBudgets, listInvoices, listTrips } from '../business/business.repo.js';
 import { consumptionTaxFor, toWire } from '../documents/documents.controller.js';
 import { listDocuments, readPlan, readTenant, type PlanRow } from '../repo.js';
+import { taxYearStartMonthFor } from '../taxrules/taxrules.repo.js';
 import { deductionTotals } from '../deductions/deductions.repo.js';
 import { foldTotals, fyLabel, fyStartYear, type DeductionTotals } from '../deductions/deduction-totals.js';
 import { add, ZERO } from '@snap/api-contract/money';
@@ -191,7 +192,7 @@ export class SummariesController {
   @ApiOperation({
     summary: 'Charts for a period',
     description:
-      'range is month, quarter or year. The previous-period comparison stops at the SAME DAY of the earlier period, and is withheld entirely when the earlier window predates the data.',
+      'range is month, quarter or year. "year" is the TAX year to date of the workspace (1 July for an Australian one, 1 January for an Indonesian one), from the installed rule set, and its comparison is the previous tax year to the same day. The previous-period comparison stops at the SAME DAY of the earlier period, and is withheld entirely when the earlier window predates the data.',
   })
   async analytics(
     @CurrentUser() user: AuthUser,
@@ -208,9 +209,13 @@ export class SummariesController {
       listBudgets(user.userId, tenantId),
     ]);
     const workspace = tenant?.kind === 'personal' ? 'personal' : 'business';
-    const window = buckets(chosen);
+    // Only "year" reads it, but it is returned for every range so a client
+    // can draw the same tax-year window beside the figures.
+    const startMonth = tenant ? await taxYearStartMonthFor(tenant) : undefined;
+    const now = new Date();
+    const window = buckets(chosen, now, startMonth);
     return {
-      ...analyticsSummary(documents, workspace, chosen, budgets),
+      ...analyticsSummary(documents, workspace, chosen, budgets, now, startMonth),
       otherCurrencies: totalsByCurrency(foreign, window[0]!.from, window[window.length - 1]!.to),
     };
   }

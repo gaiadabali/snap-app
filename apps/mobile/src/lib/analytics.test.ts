@@ -8,6 +8,8 @@ import {
   divide,
   personalSummary,
   series,
+  startOfTaxYear,
+  taxYearName,
   topMerchants,
   total,
 } from './analytics';
@@ -24,6 +26,9 @@ import {
  * `now` is injected everywhere so the suite does not change behaviour on the
  * first of the month.
  */
+
+const iso = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
 const NOW = new Date(2026, 8, 10); // 10 September 2026, a Thursday.
 
@@ -254,5 +259,109 @@ describe('analytics summary', () => {
   it('has no change to report when there is no history', () => {
     const only = [doc({ issueDate: '2026-09-04', payableAmount: '10.00', ...ws('business') })];
     expect(analyticsSummary(only, 'business', 'month', [], NOW).changePct).toBeNull();
+  });
+});
+
+/**
+ * "Year" is the workspace's TAX year to date, not the calendar year and not a
+ * rolling twelve months: 1 July for Australia (taxYearStartMonth 7), 1 January
+ * for Indonesia (1). The month comes from the rule set, so nothing here is a
+ * country check.
+ */
+describe('tax-year ranges', () => {
+  const at = (y: number, m: number, d: number) => new Date(y, m - 1, d);
+
+  it('starts the Australian year on 1 July of the year that contains today', () => {
+    expect(iso(startOfTaxYear(at(2026, 11, 26), 7))).toBe('2026-07-01');
+    expect(iso(startOfTaxYear(at(2026, 6, 30), 7))).toBe('2025-07-01');
+    expect(iso(startOfTaxYear(at(2026, 7, 1), 7))).toBe('2026-07-01');
+  });
+
+  it('starts the Indonesian year on 1 January', () => {
+    expect(iso(startOfTaxYear(at(2026, 11, 26), 1))).toBe('2026-01-01');
+    expect(iso(startOfTaxYear(at(2026, 1, 1), 1))).toBe('2026-01-01');
+  });
+
+  it('names the year the way the country does', () => {
+    expect(taxYearName(at(2026, 11, 26), 7)).toBe('2026-27');
+    expect(taxYearName(at(2026, 6, 30), 7)).toBe('2025-26');
+    expect(taxYearName(at(2026, 11, 26), 1)).toBe('2026');
+  });
+
+  it('draws the Australian year as July to the current month, the last bar partial', () => {
+    const b = buckets('year', at(2026, 11, 26), 7);
+    expect(b.map((x) => x.label)).toEqual(['Jul', 'Aug', 'Sep', 'Oct', 'Nov']);
+    expect(b[0]!.from).toBe('2026-07-01');
+    expect(b[4]!.to).toBe('2026-11-30');
+    expect(b.filter((x) => x.partial)).toHaveLength(1);
+    expect(b[4]!.partial).toBe(true);
+  });
+
+  it('on 30 June the year is all twelve months, ending in June', () => {
+    const b = buckets('year', at(2026, 6, 30), 7);
+    expect(b).toHaveLength(12);
+    expect(b[0]!.from).toBe('2025-07-01');
+    expect(b[11]!.label).toBe('Jun');
+  });
+
+  it('on 1 July a new year has begun: one month, the first of the new year', () => {
+    const b = buckets('year', at(2026, 7, 1), 7);
+    expect(b).toHaveLength(1);
+    expect(b[0]!.from).toBe('2026-07-01');
+  });
+
+  it('draws the Indonesian year as January to the current month', () => {
+    const b = buckets('year', at(2026, 11, 26), 1);
+    expect(b).toHaveLength(11);
+    expect(b[0]!.from).toBe('2026-01-01');
+  });
+
+  it('keeps the rolling twelve months when no start month is given', () => {
+    expect(buckets('year', at(2026, 11, 26))).toHaveLength(12);
+    expect(analyticsSummary([], 'personal', 'year', [], at(2026, 11, 26)).rangeLabel).toBe('Last 12 months');
+  });
+
+  it('labels the year', () => {
+    const au = analyticsSummary([], 'personal', 'year', [], at(2026, 11, 26), 7);
+    expect(au.rangeLabel).toBe('2026-27 financial year to date');
+    expect(au.taxYearStartMonth).toBe(7);
+    expect(analyticsSummary([], 'personal', 'year', [], at(2026, 11, 26), 1).rangeLabel).toBe('2026 year to date');
+    expect(analyticsSummary([], 'personal', 'year', [], at(2026, 6, 30), 7).rangeLabel).toBe('2025-26 financial year to date');
+  });
+
+  it('leaves month and quarter alone', () => {
+    expect(analyticsSummary([], 'personal', 'month', [], at(2026, 11, 26), 7).rangeLabel).toBe('This month');
+    expect(analyticsSummary([], 'personal', 'quarter', [], at(2026, 11, 26), 7).rangeLabel).toBe('Last 3 months');
+    expect(buckets('quarter', at(2026, 11, 26), 7)).toEqual(buckets('quarter', at(2026, 11, 26)));
+  });
+
+  describe('the comparison is the previous tax year to the same day', () => {
+    const now = at(2026, 11, 26);
+    const ws = { workspace: 'personal' as Workspace };
+    const docs = [
+      // The previous year's history reaches back far enough to compare against.
+      doc({ issueDate: '2025-06-10', payableAmount: '1.00', ...ws }),
+      doc({ issueDate: '2025-07-01', payableAmount: '100.00', ...ws }), // first day of last FY
+      doc({ issueDate: '2025-11-26', payableAmount: '50.00', ...ws }), // same day last FY: counted
+      doc({ issueDate: '2025-11-27', payableAmount: '999.00', ...ws }), // after the same day: not counted
+      doc({ issueDate: '2025-06-30', payableAmount: '888.00', ...ws }), // the FY before that: not counted
+      doc({ issueDate: '2026-07-01', payableAmount: '300.00', ...ws }),
+      doc({ issueDate: '2026-06-30', payableAmount: '777.00', ...ws }), // last FY, outside this one
+    ];
+
+    it('totals this financial year to date and last one to the same day', () => {
+      const a = analyticsSummary(docs, 'personal', 'year', [], now, 7);
+      expect(a.total).toBe('300.0000');
+      // 100 + 50: 2025-07-01..2025-11-26 only.
+      expect(a.previousTotal).toBe('150.0000');
+      expect(a.changePct).toBeCloseTo(1, 5);
+    });
+
+    it('does not count last financial year in this one (calendar-year bug)', () => {
+      // The 30 June 2026 receipt belongs to FY 2025-26, not to 2026-27 and not
+      // to a calendar 2026 either way round.
+      const a = analyticsSummary(docs, 'personal', 'year', [], now, 7);
+      expect(a.largest?.amount).toBe('300.00');
+    });
   });
 });

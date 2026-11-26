@@ -8,6 +8,7 @@ import { getAnalytics, getConsumptionTax } from '@/lib/panels/data';
 import { loadWorkspace } from '@/lib/panels/workspace';
 import { ConsumptionTaxCard } from '../../_shell/ConsumptionTaxCard';
 import { OtherCurrencies } from '../../_shell/OtherCurrencies';
+import { rangeDates } from './range';
 
 export const metadata = { title: 'Analytics' };
 
@@ -16,30 +17,6 @@ const RANGES: Array<{ value: AnalyticsRange; label: string }> = [
   { value: 'quarter', label: 'Quarter' },
   { value: 'year', label: 'Year' },
 ];
-
-/**
- * The selected range as calendar dates, for the consumption-tax read.
- *
- * Calendar-based. Right for Indonesia, whose tax year IS the calendar year
- * (`taxYearStartMonth: 1`). NOT yet right for `au-2026` (July year): for an
- * Australian workspace the "year" figure is calendar year-to-date, not
- * financial year-to-date. Fixing it means asking the engine for the period —
- * `periodOf()` in `@snap/tax-rules` knows — which needs the start month on
- * `GET /v1/tax-rules`. Open follow-up from build plan 1.38.
- */
-function rangeDates(range: AnalyticsRange, today = new Date()): { from: string; to: string } {
-  const iso = (d: Date) =>
-    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  const y = today.getFullYear();
-  const m = today.getMonth();
-  const start =
-    range === 'month'
-      ? new Date(y, m, 1)
-      : range === 'quarter'
-        ? new Date(y, Math.floor(m / 3) * 3, 1)
-        : new Date(y, 0, 1);
-  return { from: iso(start), to: iso(today) };
-}
 
 export default async function AnalyticsPage({
   searchParams,
@@ -51,15 +28,15 @@ export default async function AnalyticsPage({
 
   const { range: rangeParam } = await searchParams;
   const range: AnalyticsRange = RANGES.some((r) => r.value === rangeParam) ? (rangeParam as AnalyticsRange) : 'quarter';
-  const { from, to } = rangeDates(range);
-  const [analytics, consumptionTax] = await Promise.all([
-    getAnalytics(workspace.id, range),
-    // `null` when no tax engine is installed. The API answers 422 rather than
-    // zeros there, and this page renders nothing rather than an empty card —
-    // a workspace with no engine has no consumption tax to report, not a
-    // consumption tax of nought.
-    getConsumptionTax(workspace.id, from, to),
-  ]);
+  // Analytics first: it carries the tax-year start month the consumption-tax
+  // card's "year" must use, so the two cards cover the same days.
+  const analytics = await getAnalytics(workspace.id, range);
+  const { from, to } = rangeDates(range, analytics.taxYearStartMonth);
+  // `null` when no tax engine is installed. The API answers 422 rather than
+  // zeros there, and this page renders nothing rather than an empty card —
+  // a workspace with no engine has no consumption tax to report, not a
+  // consumption tax of nought.
+  const consumptionTax = await getConsumptionTax(workspace.id, from, to);
 
   const maxSeries = Math.max(1, ...analytics.series.map((p) => Number(p.value) || 0));
 

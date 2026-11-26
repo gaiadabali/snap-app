@@ -43,6 +43,26 @@ export function startOfQuarter(now: Date): string {
   return iso(new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1));
 }
 
+/**
+ * The first day of the tax year `now` falls in, for a tax year that starts in
+ * `startMonth` (1 = January, 7 = July). Australia's runs 1 July - 30 June;
+ * Indonesia's is the calendar year. The month comes from the workspace's tax
+ * rule set (`periods.taxYearStartMonth`), never from a country check.
+ */
+export function startOfTaxYear(now: Date, startMonth: number): Date {
+  const year = now.getMonth() + 1 >= startMonth ? now.getFullYear() : now.getFullYear() - 1;
+  return new Date(year, startMonth - 1, 1);
+}
+
+/**
+ * What a tax year is called: `2026` when it starts in January, `2026-27` when
+ * it straddles two calendar years.
+ */
+export function taxYearName(now: Date, startMonth: number): string {
+  const y = startOfTaxYear(now, startMonth).getFullYear();
+  return startMonth === 1 ? String(y) : `${y}-${String(y + 1).slice(2)}`;
+}
+
 export function daysInMonth(now: Date): number {
   return new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
 }
@@ -149,10 +169,20 @@ type Bucket = { label: string; from: string; to: string; partial?: boolean };
  * A month is drawn in weeks rather than days: 30 bars on a phone are stripes,
  * and nobody reads a single Tuesday off a chart anyway.
  */
-export function buckets(range: AnalyticsRange, now = new Date()): Bucket[] {
+export function buckets(
+  range: AnalyticsRange,
+  now = new Date(),
+  taxYearStartMonth?: number,
+): Bucket[] {
   const out: Bucket[] = [];
   if (range === 'year') {
-    for (let i = 11; i >= 0; i--) {
+    // With a tax year start month, "year" is the tax year to date: its first
+    // month through the current one. Without one it stays the rolling twelve
+    // months (the offline demo, which has no workspace to ask).
+    const months = taxYearStartMonth
+      ? (now.getMonth() + 1 - taxYearStartMonth + 12) % 12 + 1
+      : 12;
+    for (let i = months - 1; i >= 0; i--) {
       const start = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const end = new Date(now.getFullYear(), now.getMonth() - i + 1, 0);
       out.push({
@@ -199,8 +229,13 @@ export function inRange(d: DocumentView, from: string, to: string): boolean {
   return d.issueDate >= from && d.issueDate <= to;
 }
 
-export function series(docs: DocumentView[], range: AnalyticsRange, now = new Date()): SeriesPoint[] {
-  return buckets(range, now).map((b) => ({
+export function series(
+  docs: DocumentView[],
+  range: AnalyticsRange,
+  now = new Date(),
+  taxYearStartMonth?: number,
+): SeriesPoint[] {
+  return buckets(range, now, taxYearStartMonth).map((b) => ({
     label: b.label,
     value: total(docs.filter((d) => inRange(d, b.from, b.to))),
     ...(b.partial ? { partial: true as const } : {}),
@@ -259,15 +294,25 @@ const RANGE_LABEL: Record<AnalyticsRange, string> = {
   year: 'Last 12 months',
 };
 
+function rangeLabelOf(range: AnalyticsRange, now: Date, taxYearStartMonth?: number): string {
+  if (range === 'year' && taxYearStartMonth) {
+    return taxYearStartMonth === 1
+      ? `${taxYearName(now, 1)} year to date`
+      : `${taxYearName(now, taxYearStartMonth)} financial year to date`;
+  }
+  return RANGE_LABEL[range];
+}
+
 export function analyticsSummary(
   all: DocumentView[],
   workspace: Workspace,
   range: AnalyticsRange,
   budgets: Budget[] = [],
   now = new Date(),
+  taxYearStartMonth?: number,
 ): AnalyticsSummary {
   const mine = all.filter((d) => d.workspace === workspace);
-  const bs = buckets(range, now);
+  const bs = buckets(range, now, taxYearStartMonth);
   const from = bs[0]!.from;
   const to = bs[bs.length - 1]!.to;
   const inside = mine.filter((d) => inRange(d, from, to));
@@ -281,15 +326,27 @@ export function analyticsSummary(
   // spending was down 62% on the 10th of the month while it was in fact
   // running 23% ahead.
   const spanMonths = range === 'year' ? 12 : range === 'quarter' ? 3 : 1;
-  const prevFrom = iso(new Date(now.getFullYear(), now.getMonth() - spanMonths * 2 + 1, 1));
-  const prevEndMonth = new Date(now.getFullYear(), now.getMonth() - spanMonths + 1, 0);
-  const prevTo = iso(
-    new Date(
-      prevEndMonth.getFullYear(),
-      prevEndMonth.getMonth(),
-      Math.min(now.getDate(), prevEndMonth.getDate()),
-    ),
-  );
+  let prevFrom = iso(new Date(now.getFullYear(), now.getMonth() - spanMonths * 2 + 1, 1));
+  let prevTo: string;
+  if (range === 'year' && taxYearStartMonth) {
+    // The previous tax year, to the same day of it: 1 July 2025 - 26 Nov 2025
+    // against 1 July 2026 - 26 Nov 2026. A whole previous year would report a
+    // fall every time, for the reason given above.
+    const start = startOfTaxYear(now, taxYearStartMonth);
+    prevFrom = iso(new Date(start.getFullYear() - 1, start.getMonth(), 1));
+    const month = new Date(now.getFullYear() - 1, now.getMonth(), 1);
+    const last = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
+    prevTo = iso(new Date(month.getFullYear(), month.getMonth(), Math.min(now.getDate(), last)));
+  } else {
+    const prevEndMonth = new Date(now.getFullYear(), now.getMonth() - spanMonths + 1, 0);
+    prevTo = iso(
+      new Date(
+        prevEndMonth.getFullYear(),
+        prevEndMonth.getMonth(),
+        Math.min(now.getDate(), prevEndMonth.getDate()),
+      ),
+    );
+  }
   const previous = mine.filter((d) => inRange(d, prevFrom, prevTo));
 
   const t = total(inside);
@@ -309,7 +366,7 @@ export function analyticsSummary(
   const covered = earliest !== null && earliest.slice(0, 7) <= prevFrom.slice(0, 7);
   const changePct = !covered || Number(prev) === 0 ? null : (Number(t) - Number(prev)) / Number(prev);
 
-  const points = series(mine, range, now);
+  const points = series(mine, range, now, taxYearStartMonth);
   const completed = points.filter((pt) => !pt.partial);
 
   const biggest = [...inside].sort((a, b) => Number(b.payableAmount) - Number(a.payableAmount))[0];
@@ -317,7 +374,8 @@ export function analyticsSummary(
 
   return {
     range,
-    rangeLabel: RANGE_LABEL[range],
+    rangeLabel: rangeLabelOf(range, now, taxYearStartMonth),
+    ...(taxYearStartMonth ? { taxYearStartMonth } : {}),
     total: t,
     previousTotal: prev,
     changePct,

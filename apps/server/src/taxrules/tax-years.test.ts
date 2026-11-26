@@ -13,6 +13,7 @@ import {
   readerRulesResolver,
   rulesFor,
   rulesStampOf,
+  taxYearStartMonthFor,
   tenantRulesFor,
   todayIso,
 } from './taxrules.repo.js';
@@ -210,5 +211,30 @@ describe('runExtraction chooses the year from the date it read', () => {
     const on = readerRulesOf(await tenantRulesFor(tenant()));
     expect(on('2026-03-15')).toBeNull();
     expect(on('2027-07-01')).toBeNull();
+  });
+});
+
+describe('taxYearStartMonthFor: which month "Year" analytics starts from', () => {
+  it('is July for an installed Australian rule set and January for Indonesia', async () => {
+    expect(await taxYearStartMonthFor(tenant())).toBe(7);
+    const id = tenant({
+      country: 'ID',
+      base_currency: 'IDR',
+      financial_year_start_month: 1,
+      tax_rules_id: 'id-2026',
+      tax_rules_version: ID_2026.version,
+    });
+    expect(await taxYearStartMonthFor(id)).toBe(1);
+  });
+
+  it('reads the rule set, not the stored column, when an engine is installed', async () => {
+    // A stale column must not win: the engine is the authority.
+    expect(await taxYearStartMonthFor(tenant({ financial_year_start_month: 1 }))).toBe(7);
+  });
+
+  it('falls back to the stored month for an Australian business on the BAS engine (no rule set)', async () => {
+    const biz = tenant({ kind: 'business', tax_rules_id: null, tax_rules_version: null });
+    expect(await taxYearStartMonthFor(biz)).toBe(7);
+    expect(await taxYearStartMonthFor({ ...biz, financial_year_start_month: 1 })).toBe(1);
   });
 });
