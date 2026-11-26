@@ -520,14 +520,19 @@ async function handle(job: Job): Promise<HandleOutcome> {
   }
   let taxRules: TaxRules | null = null;
   if (tenant.tax_rules_id) {
-    taxRules = await rulesFor(tenant);
-    if (taxRules.country !== tenant.country) {
+    const installed = await rulesFor(tenant);
+    if (installed.country !== tenant.country) {
       throw new Error(
         `job ${job.id}: workspace country ${tenant.country} does not match its installed ` +
-          `rule set ${taxRules.id} (${taxRules.country}) — refusing to validate under ` +
+          `rule set ${installed.id} (${installed.country}) — refusing to validate under ` +
           `the wrong jurisdiction`,
       );
     }
+    // `au-2026` loaded and matches an Australian workspace: read with the
+    // Australian reader, exactly as a workspace with no rule set does. See
+    // `readerRulesFor` — the same mapping, kept inline here because the
+    // country check above has to see the loaded rule set first.
+    taxRules = installed.country === 'AU' ? null : installed;
   } else if (tenant.country !== 'AU') {
     throw new Error(
       `job ${job.id}: workspace country ${tenant.country} has no rule set installed — ` +

@@ -31,7 +31,7 @@ import {
   readTenant,
   updateDocument,
 } from '../repo.js';
-import { rulesFor } from '../taxrules/taxrules.repo.js';
+import { readerRulesFor } from '../taxrules/taxrules.repo.js';
 
 /**
  * A correction made before the server's own document exists yet.
@@ -192,7 +192,7 @@ export class CaptureDocumentController {
     // below re-serialises the document via `toWire`, which needs the same
     // rule set to restate the per-category tax subtotals.
     const tenant = await readTenant(user.userId, tenantId);
-    const taxRules = tenant?.tax_rules_id ? await rulesFor(tenant) : null;
+    const taxRules = await readerRulesFor(tenant);
 
     let taxAmount: string | undefined;
     let taxExclusiveAmount: string | undefined;

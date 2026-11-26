@@ -42,6 +42,7 @@ and the interpreter**. A rule set that needs its own logic has become code.
 | `registry.ts` | The installed-engine store. One at a time, atomic replace, no fallback |
 | `interpreter.ts` | The engine. The only code that computes |
 | `rules/id-2026.ts` | Indonesia, personal taxpayer, tax year 2026 |
+| `rules/au-2026.ts` | Australia, personal taxpayer, financial year 2026–27 (1 Jul 2026 – 30 Jun 2027) |
 
 ```ts
 import { TaxRulesRegistry, ID_2026, incomeTax } from '@snap/tax-rules';
@@ -118,14 +119,21 @@ coercing. Fail closed: a number we cannot read is not a number we may assume.
   spending analytic carrying a `disclosure` sentence stating that it is not a
   claim.
 - **It does not replace `@snap/tax-engine`.** Australia stays where it is, with
-  its 217 golden tests untouched. Wrapping AU as a rule set is a separate decision.
+  its 217 golden tests untouched. `au-2026` (build plan 1.38) exists so a person
+  can PICK Australia at sign-up: it puts Australia in the catalogue and records
+  country, AUD and the July year on the workspace. The server's receipt reader
+  still reads an Australian workspace with its built-in Australian path
+  (`readerRulesFor` in `apps/server/src/taxrules/taxrules.repo.ts`), whether
+  `au-2026` is installed or not, and `validators.au.test.ts` keeps the two
+  statements of Australia in agreement. Moving the Australian reader onto the
+  interpreter is still a separate decision.
 
 ---
 
 ## Checks
 
 ```bash
-pnpm --filter @snap/tax-rules test        # 78 tests
+pnpm --filter @snap/tax-rules test        # 115 tests
 pnpm --filter @snap/tax-rules typecheck
 pnpm test:boundaries                      # the package must be declared there
 ```

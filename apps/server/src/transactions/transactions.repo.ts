@@ -12,7 +12,7 @@ import {
 import { getDb } from '../db.js';
 import { taxSubtotalsFromLines } from '../extraction/tax-subtotals';
 import { readTenant } from '../repo.js';
-import { rulesFor } from '../taxrules/taxrules.repo.js';
+import { readerRulesFor } from '../taxrules/taxrules.repo.js';
 import {
   mergeObservations,
   taxCodeFor,
@@ -612,7 +612,7 @@ export async function draftTransactionFromDocument(
   // `documents.controller.ts`'s `update()`: the divisor is the jurisdiction,
   // 1/11 in Australia and 11/111 in Indonesia (docs/INDONESIA.md §2.2).
   const tenant = await readTenant(userId, tenantId);
-  const taxRules = tenant?.tax_rules_id ? await rulesFor(tenant) : null;
+  const taxRules = await readerRulesFor(tenant);
   const consumptionTax: Pick<ConsumptionTaxSpec, 'inclusiveFraction' | 'baseFraction'> = taxRules
     ? {
         inclusiveFraction: taxRules.consumptionTax.inclusiveFraction,
@@ -751,7 +751,7 @@ export async function supersedeAndPost(
   }
 
   const tenant = await readTenant(userId, tenantId);
-  const taxRules = tenant?.tax_rules_id ? await rulesFor(tenant) : null;
+  const taxRules = await readerRulesFor(tenant);
   const consumptionTax: Pick<ConsumptionTaxSpec, 'inclusiveFraction' | 'baseFraction'> = taxRules
     ? {
         inclusiveFraction: taxRules.consumptionTax.inclusiveFraction,

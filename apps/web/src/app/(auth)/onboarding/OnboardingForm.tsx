@@ -30,7 +30,14 @@ export function OnboardingForm({
   error?: string;
 }) {
   const [kind, setKind] = useState<'business' | 'personal'>(initialKind);
-  const [rulesId, setRulesId] = useState('');
+  // Australia first, as it has always been the default here — now as the
+  // `au-2026` rule set from the catalogue rather than an empty value that meant
+  // "no engine". An Indonesian picks Indonesia. If the catalogue could not be
+  // read the step is hidden and the workspace gets the old Australian
+  // defaults, so a broken catalogue never blocks sign-up.
+  const [rulesId, setRulesId] = useState(
+    () => taxRules.find((r) => r.country === 'AU')?.rulesId ?? taxRules[0]?.rulesId ?? '',
+  );
 
   const chosen = taxRules.find((r) => r.rulesId === rulesId) ?? null;
 
@@ -43,8 +50,8 @@ export function OnboardingForm({
    * at all (`docs/INDONESIA.md` §1). Asking anyway would tell a new user this
    * software will do something for them that it cannot.
    *
-   * Until a country is chosen this stays true, which keeps the form exactly as
-   * it was for every existing Australian signup.
+   * Australia is the default choice, so the form opens exactly as it always
+   * has for an Australian signup.
    */
   const isAustralian = chosen === null || chosen.country === 'AU';
 
@@ -111,7 +118,6 @@ export function OnboardingForm({
                 value={rulesId}
                 onChange={(e) => setRulesId(e.target.value)}
               >
-                <option value="">Australia</option>
                 {taxRules.map((r) => (
                   <option key={r.rulesId} value={r.rulesId}>
                     {r.countryName} ({r.consumptionTaxName}, {r.currency})

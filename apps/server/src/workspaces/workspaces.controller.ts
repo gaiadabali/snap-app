@@ -34,7 +34,7 @@ import { seedDefaultCategories } from '../settings/settings.repo.js';
 import { occupationProblem } from '../settings/occupation.js';
 import { setBudget } from '../business/business.repo.js';
 import { abnIsValid } from '../extraction/validators.js';
-import { installRulesFor } from '../taxrules/taxrules.repo.js';
+import { availableRules, installRulesFor } from '../taxrules/taxrules.repo.js';
 
 const ROLES = ['owner', 'admin', 'bookkeeper', 'member', 'readonly'] as const;
 type Role = (typeof ROLES)[number];
@@ -64,11 +64,14 @@ export class OnboardingDto {
   @IsOptional() @IsString() occupationProfileId?: string | null;
   @IsOptional() @IsString() monthlyBudget?: string | null;
   /**
-   * The tax engine to install, e.g. `id-2026` (migration 0026).
+   * The tax engine to install: `au-2026` or `id-2026` (migration 0026), one
+   * of `GET /v1/tax-rules-catalogue`. Anything else is refused with 400
+   * before a workspace is created.
    *
-   * Optional, and its absence means "no engine" rather than "Australia" — a
-   * workspace without one refuses every tax calculation, which is the honest
-   * state and the one the settings screen can fix.
+   * Optional. Its absence installs nothing: the workspace keeps the column
+   * defaults (AU, AUD, July) and Australia's built-in reader, which is what
+   * every workspace made before rule sets has. A country other than
+   * Australia always has to be chosen.
    */
   @IsOptional() @IsString() taxRulesId?: string | null;
 }
@@ -191,6 +194,19 @@ export class WorkspacesController {
     const occupationIssue = occupationProblem(body.kind, body.occupationProfileId);
     if (occupationIssue) throw new BadRequestException(occupationIssue);
 
+    // The country, checked against what this deployment can install before
+    // anything is created. An unknown id used to be found out by
+    // `installRulesFor` AFTER the workspace existed, leaving one behind with
+    // no engine and a 500 for the person who asked for it.
+    const taxRulesId = (body.taxRulesId ?? '').trim();
+    const chosenRules = taxRulesId === '' ? null : availableRules().find((r) => r.rulesId === taxRulesId);
+    if (chosenRules === undefined) {
+      throw new BadRequestException(
+        `We do not have tax rules for ${JSON.stringify(taxRulesId)}. Choose one of: ` +
+          `${availableRules().map((r) => `${r.countryName} (${r.rulesId})`).join(', ')}.`,
+      );
+    }
+
     const created = await this.create(user, {
       name,
       kind: body.kind,
@@ -221,9 +237,17 @@ export class WorkspacesController {
     // workspace with no engine, after the person picked a country, would put
     // them in front of a tracker that refuses every tax figure with no
     // explanation of why.
-    const taxRulesId = (body.taxRulesId ?? '').trim();
-    if (taxRulesId !== '') {
-      await installRulesFor(user.userId, created.id, taxRulesId);
+    //
+    // One exception, and it changes nothing for the workspace: `au-2026` is a
+    // PERSONAL rule set (GST is a cost, not a credit). An Australian BUSINESS
+    // keeps the BAS engine every Australian business has always run on —
+    // `@snap/tax-engine` with no rule set installed — rather than being told
+    // by a personal rule set that it cannot recover GST. It is already AU,
+    // AUD and July from the column defaults.
+    const businessOnPersonalAu =
+      chosenRules !== null && chosenRules.country === 'AU' && chosenRules.scope === 'personal' && body.kind === 'business';
+    if (chosenRules && !businessOnPersonalAu) {
+      await installRulesFor(user.userId, created.id, chosenRules.rulesId);
     }
 
     // A household that said what it intends to spend gets that recorded now,

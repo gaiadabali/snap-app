@@ -2,7 +2,9 @@ import { withTenantAs } from '@snap/db';
 import {
   NoRulesInstalled,
   TaxRulesRegistry,
+  add,
   consumptionTaxDisclosure,
+  roundToCurrency,
   rulesIdFor,
   type TaxRules,
 } from '@snap/tax-rules';
@@ -95,6 +97,37 @@ export async function rulesFor(tenant: TenantRow): Promise<TaxRules> {
     );
   }
   return rules;
+}
+
+/**
+ * The rule set the RECEIPT READER should apply for this workspace, or `null`
+ * for Australia.
+ *
+ * Australia's reader predates rule sets: `jurisdictionOf(null)` in
+ * `extraction/validators.ts` (GST exactly 1/11, the ABN checksum, the $82.50
+ * tax-invoice and $1,000 buyer-ABN thresholds), the tuned Australian
+ * extraction prompt, and `@snap/tax-engine` behind them. `au-2026` declares
+ * Australia so a person can pick it; it does not replace that reader. So an
+ * Australian workspace reads a receipt the same way whether it installed
+ * `au-2026` at sign-up or predates it with no rule set at all — two classes of
+ * Australian workspace reading the same docket differently is the outcome
+ * this exists to prevent. `validators.au.test.ts` checks that every figure
+ * both of them state agrees.
+ *
+ * This is not a fallback. A workspace with NO rule set gets `null` only by the
+ * same rule every caller already used (`tax_rules_id` null); one whose rule
+ * set fails to load or is the wrong version still throws through `rulesFor`,
+ * Australian or not; and only a rule set that loaded AND is Australian maps to
+ * the Australian reader.
+ *
+ * Statement imports do not use this: they need a real rule set (posting lag,
+ * bank interest, the amount format) and have no Australian built-in, so they
+ * call `rulesFor` directly.
+ */
+export async function readerRulesFor(tenant: TenantRow | null | undefined): Promise<TaxRules | null> {
+  if (!tenant?.tax_rules_id) return null;
+  const rules = await rulesFor(tenant);
+  return rules.country === 'AU' ? null : rules;
 }
 
 /** Install (or replace) the rule set for a workspace. */
@@ -229,6 +262,12 @@ export async function consumptionTaxReport(
   // file. An `otherTaxes` code is PB1-shaped: it prints like the main tax, is
   // never recoverable, and must never be added into `taxPaid`.
   const otherTaxCodes = new Set(rules.otherTaxes.map((t) => t.code));
+  // A code's own declared treatment wins (`au-2026` declares every one —
+  // Australia's GST-free code is `FRE`, which no name match would find). A
+  // rule set that predates the field (`id-2026`) keeps the older heuristic.
+  const declared = new Map(
+    rules.taxCodes.filter((c) => c.treatment).map((c) => [c.code, c.treatment!] as const),
+  );
   const exemptCodes = new Set(
     rules.taxCodes.filter((c) => c.ratePercent === 0 && c.code.includes('BEBAS')).map((c) => c.code),
   );
@@ -241,21 +280,21 @@ export async function consumptionTaxReport(
     name: row.name,
     treatment: otherTaxCodes.has(row.code)
       ? 'other_tax'
-      : exemptCodes.has(row.code)
-        ? 'exempt'
-        : row.code === standardRate
-          ? 'standard'
-          : 'out_of_scope',
+      : (declared.get(row.code) ??
+        (exemptCodes.has(row.code)
+          ? 'exempt'
+          : row.code === standardRate
+            ? 'standard'
+            : 'out_of_scope')),
     grossAmount: row.gross,
     taxAmount: row.tax,
     transactionCount: Number(row.txn_count),
   }));
 
+  // Exact decimal sums (BigInt in `@snap/tax-rules`), rounded once at the end.
+  // Float addition was close enough for whole rupiah and is not for cents.
   const sum = (pick: (l: ConsumptionTaxLine) => string, where: (l: ConsumptionTaxLine) => boolean) =>
-    lines
-      .filter(where)
-      .reduce((acc, l) => acc + Number(pick(l)), 0)
-      .toFixed(rules.currency.minorUnits);
+    toMinorUnits(roundToCurrency(add('0', ...lines.filter(where).map(pick)), rules.currency), rules.currency.minorUnits);
 
   return {
     from,
@@ -275,6 +314,17 @@ export async function consumptionTaxReport(
     filingPeriod: rules.periods.consumptionTaxPeriod,
     lines,
   };
+}
+
+/**
+ * An already-rounded decimal string printed with exactly `minorUnits` places,
+ * the shape this report has always answered with (`110000`, `24.50`).
+ */
+function toMinorUnits(amount: string, minorUnits: number): string {
+  const neg = amount.startsWith('-');
+  const [whole = '0', frac = ''] = (neg ? amount.slice(1) : amount).split('.');
+  const digits = minorUnits === 0 ? whole : `${whole}.${frac.padEnd(minorUnits, '0').slice(0, minorUnits)}`;
+  return neg && /[1-9]/.test(digits) ? `-${digits}` : digits;
 }
 
 /** The rule set id a country would install, for the settings screen. */

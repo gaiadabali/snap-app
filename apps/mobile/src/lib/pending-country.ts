@@ -48,3 +48,16 @@ export async function peekPendingCurrency(): Promise<string | null> {
     return null;
   }
 }
+
+/**
+ * The rule set picked at registration, without spending it. Null when none —
+ * every way in except a password registration (an emailed link, Google,
+ * YourTal), and onboarding then asks the country itself.
+ */
+export async function peekPendingCountry(): Promise<string | null> {
+  try {
+    return await AsyncStorage.getItem(KEY);
+  } catch {
+    return null;
+  }
+}
