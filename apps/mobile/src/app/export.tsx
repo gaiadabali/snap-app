@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, type DocumentView } from '@/api';
 import { Icon } from '@/components/Icon';
-import { PERIODS, periodRange, type Period } from '@/components/SearchBar';
+import { periodRange, taxYearPeriods, type Period } from '@/components/SearchBar';
 import {
   Body,
   Button,
@@ -41,6 +41,10 @@ export default function ExportScreen() {
 
   const [docs, setDocs] = useState<DocumentView[] | null>(null);
   const [period, setPeriod] = useState<Period>('year');
+  // The month the workspace's tax year starts in (7 for Australia, 1 for
+  // Indonesia), as the server resolved it from the tax rule set. Until it
+  // answers, or if it cannot, "Year" is the calendar year.
+  const [taxYearStartMonth, setTaxYearStartMonth] = useState(1);
   const [busy, setBusy] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -52,6 +56,10 @@ export default function ExportScreen() {
         .listDocuments('all')
         .then((x) => live && setDocs(x))
         .catch(() => live && setDocs([]));
+      void api()
+        .getAnalytics('personal', 'year')
+        .then((a) => live && a.taxYearStartMonth && setTaxYearStartMonth(a.taxYearStartMonth))
+        .catch(() => undefined);
       return () => {
         live = false;
       };
@@ -62,9 +70,9 @@ export default function ExportScreen() {
   // `listDocuments` — the receipts screen does the same, from the same range.
   const selected = useMemo(() => {
     if (!docs) return [];
-    const { from, to } = periodRange(period);
+    const { from, to } = periodRange(period, new Date(), taxYearStartMonth);
     return period === 'all' ? docs : docs.filter((d) => d.issueDate >= from && d.issueDate <= to);
-  }, [docs, period]);
+  }, [docs, period, taxYearStartMonth]);
 
   const total = useMemo(() => formatTotals(selected, money.currency), [selected, money.currency]);
   const empty = docs !== null && selected.length === 0;
@@ -105,7 +113,7 @@ export default function ExportScreen() {
 
         <View style={{ gap: space.md }}>
           <SectionHeader title="Period" />
-          <PeriodCards value={period} onChange={setPeriod} />
+          <PeriodCards value={period} onChange={setPeriod} periods={taxYearPeriods(taxYearStartMonth)} />
         </View>
 
         <Card style={{ gap: space.md }}>
@@ -169,12 +177,20 @@ export default function ExportScreen() {
  * one never nudges its neighbours. The choice is what the export is about to
  * contain, which earns more weight than a filter chip.
  */
-function PeriodCards({ value, onChange }: { value: Period; onChange: (v: Period) => void }) {
+function PeriodCards({
+  value,
+  onChange,
+  periods,
+}: {
+  value: Period;
+  onChange: (v: Period) => void;
+  periods: Array<{ key: Period; label: string }>;
+}) {
   const p = usePalette();
   const { scheme } = useTheme();
   return (
     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.md }}>
-      {PERIODS.map((x) => {
+      {periods.map((x) => {
         const on = value === x.key;
         return (
           <Pressable

@@ -1,6 +1,7 @@
 import { withTenantAs } from '@snap/db';
 import {
   NoRulesInstalled,
+  RulesRejected,
   TaxRulesRegistry,
   add,
   consumptionTaxDisclosure,
@@ -174,6 +175,31 @@ export async function tenantRulesFor(tenant: TenantRow): Promise<TenantRules> {
  */
 export async function rulesFor(tenant: TenantRow, onDate: string): Promise<TaxRules> {
   return (await tenantRulesFor(tenant)).on(onDate).rules;
+}
+
+/**
+ * The month (1-12) this workspace's tax year starts in: 7 for an Australian
+ * one, 1 for an Indonesian one.
+ *
+ * From the installed rule set's `periods.taxYearStartMonth`, the same field
+ * `periodOf()` reads. A workspace with no rule set installed (an Australian
+ * business on the BAS engine, `tax_rules_id` null) falls back to
+ * `tenants.financial_year_start_month`, which `installRulesFor` copies from
+ * that very field and which defaults to 7, so the two cannot name different
+ * years for a workspace that has an engine.
+ */
+export async function taxYearStartMonthFor(
+  tenant: TenantRow,
+  onDate: string = todayIso(),
+): Promise<number> {
+  try {
+    return (await tenantRulesFor(tenant)).on(onDate).rules.periods.taxYearStartMonth;
+  } catch (e) {
+    if (e instanceof NoRulesInstalled || e instanceof RulesRejected) {
+      return tenant.financial_year_start_month;
+    }
+    throw e;
+  }
 }
 
 /** The receipt reader's rule set on a date, or `null` for the Australian reader. */

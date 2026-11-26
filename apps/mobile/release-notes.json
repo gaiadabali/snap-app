@@ -1,5 +1,10 @@
 [
   {
+    "id": "export-year-follows-tax-year",
+    "date": "2026-11-26",
+    "notes": "Year in Analytics and Export receipts now follows your tax year. In an Australian workspace it runs from 1 July to today, labelled like 2026-27 financial year, so an export lines up with your tax return. Indonesian workspaces keep the calendar year."
+  },
+  {
     "id": "personal-workspace-valid-invoice-copy",
     "date": "2026-11-26",
     "notes": "A valid receipt in a personal or household workspace no longer says its GST credit is claimable. Personal workspaces cannot claim GST, so it now just says the receipt meets the ATO requirements for a tax invoice. Business workspaces still show the credit."

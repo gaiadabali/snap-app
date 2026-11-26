@@ -5,6 +5,7 @@ import type { Client } from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { withTenantAs } from '@snap/db';
+import { ID_2026 } from '@snap/tax-rules';
 
 import { closeDb, getDb } from '../db.js';
 import { saveExtraction } from '../repo.js';
@@ -93,7 +94,13 @@ describeIfDb('GET /v1/personal: totals never mix currencies', () => {
       `update tenants set kind = 'personal', abn = NULL, gst_registered = false where id = any($1)`,
       [[AUD_WS, IDR_WS]],
     );
-    await admin.query(`update tenants set country = 'ID', base_currency = 'IDR' where id = $1`, [IDR_WS]);
+    // What installing id-2026 stores (installRulesFor): country, currency AND
+    // the tax-year start month move with the engine.
+    await admin.query(
+      `update tenants set country = 'ID', base_currency = 'IDR', financial_year_start_month = 1,
+                          tax_rules_id = $2, tax_rules_version = $3 where id = $1`,
+      [IDR_WS, ID_2026.id, ID_2026.version],
+    );
     worker = openWorkerDb(WORKER);
 
     await addDoc(AUD_WS, 'A-1', 'AUD', '12.50');
@@ -143,6 +150,21 @@ describeIfDb('GET /v1/personal: totals never mix currencies', () => {
     const o = await controller.overview(owner, AUD_WS);
     expect(o.otherCurrencies).toEqual([{ currency: 'IDR', total: '70920.0000', count: 2 }]);
     expect((await controller.analytics(owner, IDR_WS, 'quarter')).otherCurrencies).toEqual([]);
+  });
+
+  it("'year' is the tax year to date: July for the AUD workspace, January for the IDR one", async () => {
+    // Asserted on the shape, not on a date, because the controller reads the
+    // real clock. The date arithmetic itself is pinned in api-contract's tests.
+    const aud = await controller.analytics(owner, AUD_WS, 'year');
+    expect(aud.taxYearStartMonth).toBe(7);
+    expect(aud.rangeLabel).toMatch(/^\d{4}-\d{2} financial year to date$/);
+    expect(aud.series[0]!.label).toBe('Jul');
+    expect(aud.series.at(-1)!.partial).toBe(true);
+
+    const idr = await controller.analytics(owner, IDR_WS, 'year');
+    expect(idr.taxYearStartMonth).toBe(1);
+    expect(idr.rangeLabel).toMatch(/^\d{4} year to date$/);
+    expect(idr.series[0]!.label).toBe('Jan');
   });
 
   it('recurring keeps old clients on workspace-currency rows; other currencies only on request', async () => {

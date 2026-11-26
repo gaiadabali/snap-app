@@ -689,6 +689,13 @@ export interface SeriesPoint {
 export interface AnalyticsSummary {
   range: AnalyticsRange;
   rangeLabel: string;
+  /**
+   * The month (1-12) the workspace's tax year starts in, when the server
+   * resolved one: 7 for Australia, 1 for Indonesia. "Year" is then the tax
+   * year to date from that month. Absent from a server that predates it, and
+   * "year" is then the last twelve months.
+   */
+  taxYearStartMonth?: number;
   total: string;
   /** The same length of time immediately before this one. */
   previousTotal: string;

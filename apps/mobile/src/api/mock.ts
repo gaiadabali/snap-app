@@ -1207,7 +1207,9 @@ export class MockApi implements SnapApi {
     // Slower than the other reads on purpose: in production this is a real
     // aggregation over a year of documents, not a local array scan.
     await settle(240);
-    return analyticsSummary(docs, workspace, range, budgets);
+    // The demo household is Australian: "Year" is the financial year to date,
+    // as the server answers for an AU workspace (taxYearStartMonth 7).
+    return analyticsSummary(docs, workspace, range, budgets, new Date(), 7);
   }
 
   // ── Business side ──
