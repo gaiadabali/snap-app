@@ -28,12 +28,18 @@ export default async function OnboardingPage({
   const params = await searchParams;
   const initialKind = params.kind === 'business' ? 'business' : 'personal';
 
-  // Public endpoint — no session needed — so it is fetched anonymously
-  // rather than depending on whatever the session cookie happens to resolve
-  // to right now.
-  const occupations = await api<OccupationGroup[]>('/v1/settings/occupations', {
-    anonymous: true,
-  }).catch(() => [] as OccupationGroup[]);
+  // Reference data, not workspace data: there is no workspace yet, so the
+  // workspace-scoped `/v1/settings/occupations` would 401 here (that left the
+  // picker at "Not sure yet"). `/v1/occupations` is unguarded, so it is
+  // fetched anonymously. Both kinds are loaded because the form can switch
+  // between them client-side and a personal workspace is not offered `sole`.
+  const [personalOccupations, businessOccupations] = await Promise.all(
+    (['personal', 'business'] as const).map((kind) =>
+      api<OccupationGroup[]>(`/v1/occupations?kind=${kind}`, { anonymous: true }).catch(
+        () => [] as OccupationGroup[],
+      ),
+    ),
+  );
 
   // The catalogue of installable tax engines. Signed-in but NOT
   // workspace-scoped — there is no workspace yet, which is the whole reason
@@ -48,7 +54,7 @@ export default async function OnboardingPage({
 
   return (
     <OnboardingForm
-      occupationGroups={occupations}
+      occupationGroups={{ personal: personalOccupations!, business: businessOccupations! }}
       taxRules={taxRules}
       initialKind={initialKind}
       error={authNotice(params.error)?.message}

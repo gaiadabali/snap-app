@@ -12,6 +12,7 @@ import { Body, Card, Chip, Divider, Label, Screen, Small } from '@/components/ui
 import { BUSINESS_FEATURES_ENABLED } from '@/config';
 import { formatShortDate, space, usePalette } from '@/theme';
 import { useMoney } from '@/lib/use-money';
+import { formatCentsPerKm } from '@/lib/mileage-rate';
 
 /**
  * The trip log behind a D1 car claim.
@@ -99,7 +100,7 @@ export default function MileageScreen() {
           <>
             <GradientHero>
               <View style={{ gap: space.xs }}>
-                <HeroLabel>Claimable at {data.centsPerKmRate * 100}c per km</HeroLabel>
+                <HeroLabel>Claimable at {formatCentsPerKm(data.centsPerKmRate).replace("/km", " per km")}</HeroLabel>
                 <HeroFigure>{money.fmt(data.claimAtCentsPerKm)}</HeroFigure>
                 <HeroBody>
                   {data.workKm.toLocaleString('en-AU')} work km of{' '}

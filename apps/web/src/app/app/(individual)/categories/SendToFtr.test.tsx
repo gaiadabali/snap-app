@@ -20,10 +20,10 @@ describe('SendToFtr', () => {
 
   it('shows Sent with the review link, Nothing was sent, and a fixed failure message', () => {
     const sent = renderToStaticMarkup(
-      <SendToFtr financialYear="2026-27" directSend result={{ status: 'sent', year: '2025-26' }} reviewUrl="https://ftr.example/account/import" />,
+      <SendToFtr financialYear="2026-27" directSend result={{ status: 'sent', year: '2025-26' }} reviewUrl="https://ftr.example/worksheet" />,
     );
     expect(sent).toContain('Sent. Your 2025-26 deductions are waiting in Free Tax Returns.');
-    expect(sent).toContain('href="https://ftr.example/account/import"');
+    expect(sent).toContain('href="https://ftr.example/worksheet"');
     const no = renderToStaticMarkup(<SendToFtr financialYear="2025-26" directSend result={{ status: 'cancelled' }} />);
     expect(no).toContain('Nothing was sent.');
     expect(no).toContain('Save as a file instead');

@@ -3,6 +3,7 @@ import { Card, Empty, Money, SectionTitle, Stat } from '@/design/primitives';
 import { getMileage } from '@/lib/panels/data';
 import { addTrip, deleteTrip } from '@/lib/panels/mileage-actions';
 import { loadWorkspace } from '@/lib/panels/workspace';
+import { formatCentsPerKm } from '@/lib/mileage-rate';
 import { MileageClient } from './MileageClient';
 
 export const metadata = { title: 'Mileage' };
@@ -33,7 +34,7 @@ export default async function MileagePage() {
           <Stat
             label="Claim at cents/km"
             value={<Money currency="AUD" amount={mileage.claimAtCentsPerKm} />}
-            hint={`${mileage.centsPerKmRate}¢/km, capped at ${mileage.centsPerKmCapKm.toLocaleString()} km`}
+            hint={`${formatCentsPerKm(mileage.centsPerKmRate)}, capped at ${mileage.centsPerKmCapKm.toLocaleString()} km`}
           />
         </Card>
         <Card tone={mileage.overCentsPerKmCap ? 'accent' : 'surface'}>
