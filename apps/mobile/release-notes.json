@@ -1,5 +1,10 @@
 [
   {
+    "id": "work-receipts-to-free-tax-returns",
+    "date": "2026-11-26",
+    "notes": "Your work receipts can now go to Free Tax Returns. Open a receipt and choose a work category on the new Tax return card, and it counts in your deductions for that financial year. Bought something for work with your other shopping? Tick just that line and pick its category. Sign in with YourTal now works in the web app too, and Mileage shows the rate per kilometre correctly."
+  },
+  {
     "id": "continue-with-yourtal",
     "date": "2026-11-24",
     "notes": "Signing in is simpler: one Continue with YourTal button takes you in, whether you are new or already have an account. If you signed up with your email, choose Sign in with email instead. Snap Apps now lives at snapapp.gaiada.com, and coming back from YourTal opens the app again."
