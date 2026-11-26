@@ -34,11 +34,15 @@ COPY packages/api-contract/package.json packages/api-contract/package.json
 COPY packages/db/package.json packages/db/package.json
 COPY packages/docai/package.json packages/docai/package.json
 COPY packages/tax-engine/package.json packages/tax-engine/package.json
+COPY packages/mail-engine/package.json packages/mail-engine/package.json
 RUN pnpm install --frozen-lockfile --filter "@snap/web..."
 
 # ── build ────────────────────────────────────────────────────────────────────
 FROM deps AS build
 COPY packages/api-contract packages/api-contract
+# apps/web declares @snap/mail-engine (Spambank mail UI, spambank/BUILD.md T13);
+# test/dockerfile-deps.test.ts fails without this line.
+COPY packages/mail-engine packages/mail-engine
 COPY apps/web apps/web
 # `outputFileTracingRoot` in next.config.ts points at the repo root, so the
 # workspace layout has to match what it will be at runtime.

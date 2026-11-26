@@ -89,6 +89,13 @@ jobs:
       - name: Mobile suite
         run: pnpm --filter @snap/mobile test
 
+      # The shared Spambank mail engine (packages/mail-engine). It has no suite of
+      # its own anywhere else in CI, and YourTal and FTR vendor its source, so a
+      # regression here ships to three repos. Pure Node: a fake fetch, a fake JMAP
+      # proxy and react-dom/server; no database, device or browser.
+      - name: Mail engine suite
+        run: pnpm --filter @snap/mail-engine test
+
       # The whole directory, not one named file. `test/dockerfile-deps.test.ts`
       # was added to catch a workspace dependency missing from an app image —
       # the failure that took production down twice in one day — and naming

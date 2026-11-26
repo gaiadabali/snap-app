@@ -1,0 +1,41 @@
+{
+  "name": "@snap/mail-engine",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Shared Spambank mail engine: JMAP over the YourTal proxy with a mail token, for Next (web) and Expo React Native. SOURCE OF TRUTH lives here; YourTal and Free Tax Returns carry byte-for-byte copies of src/ (spambank/BUILD.md B4). Change it only here.",
+  "license": "UNLICENSED",
+  "exports": {
+    ".": "./src/index.ts",
+    "./react": "./src/react.ts",
+    "./testing": "./src/testing.ts"
+  },
+  "types": "./src/index.ts",
+  "sideEffects": false,
+  "files": [
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
+    "smoke": "tsx smoke/smoke.ts"
+  },
+  "peerDependencies": {
+    "react": ">=18.2.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.43",
+    "@types/react": "^19.1.10",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "tsx": "^4.20.3",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.9"
+  }
+}

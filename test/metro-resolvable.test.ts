@@ -50,7 +50,8 @@ function jsSpecifiersIn(paths: string[]): string[] {
   try {
     const out = execFileSync(
       'git',
-      ['grep', '-nE', String.raw`from '\.{1,2}/[^']*\.js'`, '--', ...paths],
+      // Both quote styles: packages/mail-engine is written with double quotes.
+      ['grep', '-nE', String.raw`from ['"]\.{1,2}/[^'"]*\.js['"]`, '--', ...paths],
       { cwd: REPO, encoding: 'utf8' },
     );
     return out.split('\n').filter(Boolean);
@@ -71,6 +72,7 @@ describe('everything Metro bundles resolves without a .js extension', () => {
     // the parser has drifted rather than the dependency graph.
     expect(packages.length).toBeGreaterThan(0);
     expect(packages).toContain('docai-preview');
+    expect(packages).toContain('mail-engine');
   });
 
   it('finds no .js relative specifier in the mobile app or the packages it imports', () => {

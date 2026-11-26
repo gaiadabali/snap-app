@@ -29,7 +29,7 @@ const config: NextConfig = {
   /* This repo is a pnpm workspace nested under a home directory that also has a
      lockfile. Without this, Next picks the wrong root and traces the wrong files. */
   outputFileTracingRoot: join(import.meta.dirname, '../..'),
-  transpilePackages: ['@snap/api-contract'],
+  transpilePackages: ['@snap/api-contract', '@snap/mail-engine'],
   eslint: { ignoreDuringBuilds: true },
   typedRoutes: false,
   /* Several agents build against this one checkout at once. Two `next dev` (or
