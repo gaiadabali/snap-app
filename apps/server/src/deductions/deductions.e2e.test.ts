@@ -29,7 +29,8 @@ describeIfDb('deduction totals', () => {
 
   async function addDoc(tenant: string, o: {
     date?: string | null; cat?: string | null; source?: string | null; payable?: string;
-    status?: string; deleted?: boolean; currency?: string; docType?: string; lines?: Array<{ amount: string; cat?: string | null }>;
+    status?: string; deleted?: boolean; currency?: string; docType?: string; tax?: string | null;
+    lines?: Array<{ amount: string; cat?: string | null; gst?: string }>;
   }) {
     const capture = randomUUID();
     const id = randomUUID();
@@ -42,17 +43,17 @@ describeIfDb('deduction totals', () => {
     );
     await admin.query(
       `insert into documents (id, tenant_id, capture_id, issue_date, payable_amount, category_id, category_source,
-                              review_status, deleted_at, currency, doc_type)
-       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+                              review_status, deleted_at, currency, doc_type, tax_amount)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
       [id, tenant, capture, o.date === undefined ? '2025-09-01' : o.date, o.payable ?? '0', o.cat ?? null,
-       o.source === undefined ? (o.cat ? 'user' : null) : o.source, o.status ?? 'reviewed', o.deleted ? new Date() : null, o.currency ?? 'AUD', o.docType ?? 'receipt'],
+       o.source === undefined ? (o.cat ? 'user' : null) : o.source, o.status ?? 'reviewed', o.deleted ? new Date() : null, o.currency ?? 'AUD', o.docType ?? 'receipt', o.tax ?? null],
     );
     let n = 1;
     for (const l of o.lines ?? []) {
       await admin.query(
-        `insert into document_lines (id, tenant_id, document_id, line_number, line_net_amount, category_id)
-         values ($1,$2,$3,$4,$5,$6)`,
-        [randomUUID(), tenant, id, n++, l.amount, l.cat ?? null],
+        `insert into document_lines (id, tenant_id, document_id, line_number, line_net_amount, category_id, gst_category_code)
+         values ($1,$2,$3,$4,$5,$6,$7)`,
+        [randomUUID(), tenant, id, n++, l.amount, l.cat ?? null, l.gst ?? 'S'],
       );
     }
     return id;
@@ -161,6 +162,42 @@ describeIfDb('deduction totals', () => {
     expect(laundry(after) - laundry(before)).toBe(4800n);
     expect(after.totalCents - before.totalCents).toBe(5600n);
     expect(after.receiptCount - before.receiptCount).toBe(3);
+  });
+
+  it('split lines count what was paid for them, GST included, and the parts add up to the total', async () => {
+    const before = await deductionTotals(OWNER, TENANT, 2025);
+    const item = (t: typeof before, id: string) => t.items.find((i) => i.itemId === id)?.workCents ?? 0n;
+    // A supermarket docket: lines printed with GST in them. The hammer is the work item;
+    // the food (GST-free) stays out because the receipt itself has no category.
+    await addDoc(TENANT, {
+      cat: null, payable: '64.30', tax: '2.27',
+      lines: [{ amount: '3.10', gst: 'Z' }, { amount: '25.00', cat: cat.tools }, { amount: '36.20', gst: 'Z' }],
+    });
+    // A tax invoice printed before GST (100 + 50, GST 15): the split line is 110.00, not
+    // 100.00 (the bug), and the receipt's own category keeps 55.00, not 65.00.
+    await addDoc(TENANT, {
+      cat: cat.laundry, payable: '165.00', tax: '15.00',
+      lines: [{ amount: '100.00', cat: cat.tools }, { amount: '50.00' }],
+    });
+    // A GST-free line on such an invoice: its amount, no GST added.
+    await addDoc(TENANT, {
+      cat: null, payable: '185.00', tax: '15.00',
+      lines: [{ amount: '100.00' }, { amount: '50.00' }, { amount: '20.00', gst: 'Z', cat: cat.tools }],
+    });
+    // Thirds of a cent: the split line takes its share, the rest the remainder, to the cent.
+    await addDoc(TENANT, {
+      cat: cat.laundry, payable: '110.00', tax: '10.00',
+      lines: [{ amount: '33.33', cat: cat.tools }, { amount: '33.33' }, { amount: '33.34' }],
+    });
+    // A supplier-filed receipt: the person's split line counts, the rest only waits.
+    await addDoc(TENANT, { cat: cat.laundry, source: 'supplier', payable: '30.00', lines: [{ amount: '10.00', cat: cat.tools }, { amount: '20.00' }] });
+
+    const after = await deductionTotals(OWNER, TENANT, 2025);
+    expect(item(after, 'tools') - item(before, 'tools')).toBe(2500n + 11000n + 2000n + 3666n + 1000n);
+    expect(item(after, 'washPowder') - item(before, 'washPowder')).toBe(5500n + 7334n);
+    expect(after.receiptCount - before.receiptCount).toBe(5);
+    expect(after.toReview.amountCents - before.toReview.amountCents).toBe(2000n);
+    expect(after.toReview.receiptCount - before.toReview.receiptCount).toBe(1);
   });
 
   it('puts 30 Jun and 1 Jul in different years', async () => {

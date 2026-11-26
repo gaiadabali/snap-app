@@ -5,6 +5,7 @@ import type {
   FtrSendContents,
   FtrSendFinished,
   PatchCaptureDocumentRequest,
+  SetLineCategoriesRequest,
   UpdateDocumentRequest,
 } from '@snap/api-contract';
 
@@ -1012,6 +1013,22 @@ export class MockApi implements SnapApi {
       reviewStatus: body.confirm ? 'reviewed' : next.reviewStatus,
     });
 
+    docs = docs.map((d, i) => (i === idx ? next : d));
+    return next;
+  }
+
+  async setLineCategories(id: string, body: SetLineCategoriesRequest): Promise<DocumentView> {
+    await settle(180);
+    const idx = docs.findIndex((d) => d.id === id);
+    if (idx < 0) throw new Error(`No document ${id}`);
+    const current = docs[idx]!;
+    const lines = current.lines.map((l) => {
+      const change = body.lines.find((c) => c.lineNumber === l.lineNumber);
+      if (!change) return l;
+      // The demo's ids are names (listCategorySettings).
+      return { ...l, categoryId: change.categoryId, category: change.categoryId };
+    });
+    const next: DocumentView = { ...current, lines };
     docs = docs.map((d, i) => (i === idx ? next : d));
     return next;
   }

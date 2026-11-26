@@ -70,6 +70,7 @@ import type {
   TaxPack,
   TaxPackFile,
   Trip,
+  SetLineCategoriesRequest,
   UpdateDocumentRequest,
   Workspace,
   WorkspaceSummary,
@@ -621,6 +622,11 @@ export class HttpApi implements SnapApi {
 
   async updateDocument(id: string, body: UpdateDocumentRequest): Promise<DocumentView> {
     const doc = await this.request<DocumentView>('PATCH', `/v1/documents/${id}`, { body });
+    return this.hydrateDocument(doc);
+  }
+
+  async setLineCategories(id: string, body: SetLineCategoriesRequest): Promise<DocumentView> {
+    const doc = await this.request<DocumentView>('PATCH', `/v1/documents/${id}/lines/categories`, { body });
     return this.hydrateDocument(doc);
   }
 

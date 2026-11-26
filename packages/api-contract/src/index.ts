@@ -341,13 +341,29 @@ export interface DocumentLine {
   quantity: number;
   /** GST-inclusive price for one unit. */
   unitPrice: string;
-  /** GST-inclusive line total. */
+  /**
+   * The line total as printed: GST included on a retail docket, before GST on a commercial tax
+   * invoice that prints its lines that way (`receipt-split.ts` works out which).
+   */
   amount: string;
   /** Fresh food, most health items: no GST in the line at all. */
   gstFree: boolean;
-  /** Per-line category. A single receipt can legitimately span two. */
+  /** The name of the category this line is filed in on its own, or null (it goes with the receipt). */
   category: string | null;
+  /**
+   * The category this line is filed in on its own (a work item on a supermarket docket), or null.
+   * Only a person files a line: `PATCH /v1/documents/:id/lines/categories`, work and other tax
+   * categories only. Optional on input; the server always sends it.
+   */
+  categoryId?: string | null;
   confidence: number;
+}
+
+/** `PATCH /v1/documents/:id/lines/categories`: file lines on their own, or put them back with the receipt (null). */
+export interface SetLineCategoriesRequest {
+  lines: Array<{ lineNumber: number; categoryId: string | null }>;
+  /** The version the client last read; a stale one is a 409. */
+  version?: number;
 }
 
 export interface DocumentView {

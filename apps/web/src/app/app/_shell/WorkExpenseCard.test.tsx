@@ -2,7 +2,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 import type { CategorySetting, DocumentView } from '@snap/api-contract';
 
-vi.mock('@/lib/panels/document-actions', () => ({ setDocumentCategory: vi.fn() }));
+vi.mock('@/lib/panels/document-actions', () => ({ setDocumentCategory: vi.fn(), setLineCategories: vi.fn() }));
 
 import { WorkExpenseCard } from './WorkExpenseCard';
 
@@ -42,5 +42,28 @@ describe('WorkExpenseCard (web)', () => {
     const supplier = doc({ category: 'Work car: fuel', categoryId: 'f', categorySource: 'supplier', taxLabel: 'D1', engineRowId: 'fuelReceiptTotal' });
     expect(render(supplier)).toContain('Confirm category');
     expect(render(supplier, false)).not.toContain('<select');
+  });
+  it('work lines: each line with what it cost, the filed one ticked with its category, and the running total', () => {
+    const line = (lineNumber: number, description: string, amount: string, gstFree: boolean, categoryId: string | null) => ({
+      lineNumber, description, quantity: 1, unitPrice: amount, amount, gstFree, category: categoryId ? 'Work tools and equipment' : null, categoryId, confidence: 1,
+    });
+    const docket = doc({
+      category: 'Groceries', categoryId: 'g', categorySource: 'user', payableAmount: '64.30', taxAmount: '2.27',
+      lines: [line(1, 'Milk 2L', '3.10', true, null), line(2, 'Hammer 450g', '25.00', false, 't'), line(3, 'Fruit and veg', '36.20', true, null)],
+    });
+    const html = render(docket);
+    expect(html).toContain('Work lines');
+    expect(html).toContain('Hammer 450g');
+    expect(html).toContain('$25.00');
+    expect(html.match(/type="checkbox"/g)?.length).toBe(3);
+    expect(html.match(/checked=""/g)?.length).toBe(1);
+    expect(html).toContain('aria-label="Work category for Hammer 450g"');
+    expect(html).toContain('Marked for work: $25.00');
+    // The card's status says what goes, GST included, for which year, and that the rest stays out.
+    expect(html).toContain('1 work line ($25.00, GST included) included in your 2025-26 deductions for Free Tax Returns. The rest of the receipt stays out.');
+    // Read-only: the marked line is listed, nothing to tick.
+    const ro = render(docket, false);
+    expect(ro).toContain('Hammer 450g · $25.00 · Work tools and equipment');
+    expect(ro).not.toContain('type="checkbox"');
   });
 });

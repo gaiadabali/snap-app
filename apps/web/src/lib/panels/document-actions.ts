@@ -184,6 +184,32 @@ function messageOf(error: unknown): string {
  * confirms one the supplier memory chose. Only `header.category_id` is sent, so nothing that
  * was read off the paper is touched.
  */
+/**
+ * Files single lines of a receipt on their own (a work item on a supermarket docket), or puts
+ * them back with the receipt (`categoryId: null`). Work and other tax categories only; not a
+ * correction, so nothing else on the receipt changes. docs/DEDUCTIONS.md.
+ */
+export async function setLineCategories(
+  workspaceId: string,
+  documentId: string,
+  path: string,
+  lines: Array<{ lineNumber: number; categoryId: string | null }>,
+  version?: number,
+): Promise<ActionResult> {
+  try {
+    await api(`/v1/documents/${documentId}/lines/categories`, {
+      method: 'PATCH',
+      body: { lines, ...(version ? { version } : {}) },
+      workspaceId,
+      idempotencyKey: newIdempotencyKey(),
+    });
+  } catch (error) {
+    return { ok: false, message: messageOf(error) };
+  }
+  revalidatePath(path);
+  return { ok: true };
+}
+
 export async function setDocumentCategory(
   workspaceId: string,
   documentId: string,

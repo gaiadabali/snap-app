@@ -19,6 +19,7 @@ import { queueReceiptReport } from './yourtal/outbox.repo.js';
 import type { ModelCall } from './extraction/call-cost.js';
 import { maskCardLast4, type ValidatedExtraction } from './extraction/types.js';
 import { enterTenant, enterTenantAsWorker, type TenantActor, type WorkerActor } from './tenant-entry.js';
+import { applyCarriedCategories, readFiledLines, requireTaxCategories, type FiledLine } from './documents/line-categories.js';
 
 /**
  * Every database access the API makes.
@@ -850,16 +851,21 @@ export type LineRow = {
   line_net_amount: string | null;
   gst_category_code: string | null;
   line_confidence: string | null;
+  /** The category the line is filed in on its own (a person's choice), and its name. */
+  category_id?: string | null;
+  category_name?: string | null;
 };
 
 async function readLines(tx: Tx, documentId: string): Promise<LineRow[]> {
   const rows = await tx.execute<LineRow>(sql`
-    select line_number, description, quantity::text as quantity,
-           unit_price::text as unit_price, line_net_amount::text as line_net_amount,
-           gst_category_code, line_confidence::text as line_confidence
-      from document_lines
-     where document_id = ${documentId}
-     order by line_number
+    select l.line_number, l.description, l.quantity::text as quantity,
+           l.unit_price::text as unit_price, l.line_net_amount::text as line_net_amount,
+           l.gst_category_code, l.line_confidence::text as line_confidence,
+           l.category_id::text as category_id, c.name as category_name
+      from document_lines l
+      left join categories c on c.id = l.category_id and c.tenant_id = l.tenant_id
+     where l.document_id = ${documentId}
+     order by l.line_number
   `);
   return rows.rows;
 }
@@ -1373,7 +1379,14 @@ export async function applySupplierMemory(
   return categoryId;
 }
 
-/** Replaces a document's lines as a set. They only mean anything together. */
+/**
+ * Replaces a document's lines as a set. They only mean anything together.
+ *
+ * A line's own category (a work item filed on its own): `categoryId` when the client sends it
+ * (null unfiles it; an id must be a work or tax category, else `BadLineCategoryError`), and
+ * otherwise carried over from the old line with the same description (`carryLineCategories`),
+ * so a client that does not know about filed lines does not unfile them by editing a price.
+ */
 export async function replaceLines(
   userId: string,
   tenantId: string,
@@ -1384,9 +1397,19 @@ export async function replaceLines(
     unitPrice: string;
     amount: string;
     gstFree: boolean;
+    categoryId?: string | null;
   }>,
 ): Promise<void> {
   await withTenantAs(getDb(), userId, tenantId, async (tx) => {
+    const filed = await readFiledLines(tx, documentId);
+    // A category a line is already filed in may stay (even if it has since lost its label);
+    // a new one must be a work or tax category.
+    const already = new Set(filed.map((f) => f.categoryId.toLowerCase()));
+    await requireTaxCategories(
+      tx,
+      tenantId,
+      lines.flatMap((l) => (l.categoryId && !already.has(l.categoryId.toLowerCase()) ? [l.categoryId] : [])),
+    );
     await tx.execute(sql`delete from document_lines where document_id = ${documentId}`);
     let n = 0;
     for (const line of lines) {
@@ -1400,6 +1423,16 @@ export async function replaceLines(
           ${line.quantity}, ${line.unitPrice}, ${line.amount},
           ${line.gstFree ? 'Z' : 'S'}, 1
         )
+      `);
+    }
+    // Carry the old filings to lines the client said nothing about; then apply what it said.
+    const silent = new Set(lines.flatMap((l, i) => (l.categoryId === undefined ? [i + 1] : [])));
+    await applyCarriedCategories(tx, documentId, filed, silent);
+    for (const [i, line] of lines.entries()) {
+      if (line.categoryId === undefined) continue;
+      await tx.execute(sql`
+        update document_lines set category_id = ${line.categoryId}::uuid
+         where document_id = ${documentId} and line_number = ${i + 1}
       `);
     }
   });
@@ -1767,6 +1800,8 @@ export async function saveExtraction(
       locked.has(field) ? sql.raw(column) : sql`${proposed}`;
 
     let documentId: string;
+    // Lines a person filed on their own, carried to the new reading's lines (re-extraction).
+    let filedLines: FiledLine[] = [];
     if (before) {
       documentId = before.id;
       // `locked_fields` is deliberately absent from this UPDATE. The trigger in
@@ -1814,7 +1849,9 @@ export async function saveExtraction(
 
       // Lines are replaced as a set, exactly as `replaceLines` does: they only
       // mean anything together, and overlaying a new reading onto an old one is
-      // not a document anybody can audit.
+      // not a document anybody can audit. A line a person filed on its own keeps
+      // its category when the new reading has a line with the same description.
+      filedLines = await readFiledLines(tx, documentId);
       await tx.execute(sql`delete from document_lines where document_id = ${documentId}`);
     } else {
       documentId = randomUUID();
@@ -1911,6 +1948,7 @@ export async function saveExtraction(
         )
       `);
     }
+    await applyCarriedCategories(tx, documentId, filedLines);
 
     // ── Per-category tax subtotals (Peppol BG-23) ─────────────────────────
     //

@@ -19,6 +19,8 @@ import type { DocumentView, ExtractionFinding, PageSource } from '@snap/api-cont
 import { money } from '@snap/db';
 import type { ConsumptionTaxSpec, TaxRules } from '@snap/tax-rules';
 import {
+  ArrayMaxSize,
+  ArrayMinSize,
   IsArray,
   IsBoolean,
   IsIn,
@@ -29,6 +31,7 @@ import {
   IsString,
   Matches,
   Min,
+  ValidateIf,
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -62,6 +65,8 @@ import { get as readObject } from '../storage.js';
 import { issueImageToken } from '../tokens.js';
 import { gstFreeAmount, taxSubtotalsFromLines } from '../extraction/tax-subtotals';
 import { deviceAgreementFindings } from './device-agreement.js';
+import { requireNotReadonly } from '../common/roles.js';
+import { BadLineCategoryError, setLineCategories } from './line-categories.js';
 import { CATEGORY_PATHS, UNCATEGORISED, resolveCategoryEdit } from './category-edit.js';
 
 /* ── DTOs ────────────────────────────────────────────────────────────────── */
@@ -157,6 +162,38 @@ export class LineDto {
   @Matches(/^-?\d+(\.\d{1,4})?$/) unitPrice!: string;
   @Matches(/^-?\d+(\.\d{1,4})?$/) amount!: string;
   @IsBoolean() gstFree!: boolean;
+  /**
+   * The category this line is filed in on its own (work and other tax categories only), null
+   * to unfile it. Left out: the old line with the same description keeps its filing.
+   */
+  @IsOptional() @ValidateIf((o: LineDto) => o.categoryId !== null) @IsString() categoryId?: string | null;
+  /*
+   * The rest of `DocumentLine` as the review screens hold it. Both clients send their lines
+   * back whole, so these are accepted and ignored: the position is the line number, and the
+   * category NAME and confidence are the server's to say. Without them the whitelist refused
+   * every line edit from a client that sent the lines it was given.
+   */
+  @IsOptional() @IsInt() lineNumber?: number;
+  @IsOptional() @ValidateIf((o: LineDto) => o.category !== null) @IsString() category?: string | null;
+  @IsOptional() @IsNumber() confidence?: number;
+}
+
+/** One line to file on its own (`categoryId`) or to put back with the receipt (`null`). */
+export class LineCategoryDto {
+  @IsInt() @Min(1) lineNumber!: number;
+  @ValidateIf((o: LineCategoryDto) => o.categoryId !== null) @IsString() categoryId!: string | null;
+}
+
+/** `PATCH /v1/documents/:id/lines/categories` (`SetLineCategoriesRequest`). */
+export class SetLineCategoriesDto {
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(500)
+  @ValidateNested({ each: true })
+  @Type(() => LineCategoryDto)
+  lines!: LineCategoryDto[];
+
+  @IsOptional() @IsInt() @Min(1) version?: number;
 }
 
 export class ReplaceLinesDto {
@@ -241,7 +278,9 @@ export function toWire(
     unitPrice: l.unit_price ?? '0.0000',
     amount: l.line_net_amount ?? '0.0000',
     gstFree: l.gst_category_code === 'Z',
-    category: null,
+    // A line filed on its own (a work item on a docket): docs/DEDUCTIONS.md.
+    category: l.category_id ? (l.category_name ?? null) : null,
+    categoryId: l.category_id ?? null,
     confidence: Number(l.line_confidence ?? 1),
   }));
 
@@ -574,13 +613,54 @@ export class DocumentsController {
     @Param('id') id: string,
     @ValidBody(ReplaceLinesDto) body: ReplaceLinesDto,
   ) {
-    await replaceLines(user.userId, tenantId, id, body.lines);
+    if (body.lines.some((l) => l.categoryId !== undefined)) await requireNotReadonly(user.userId, tenantId);
+    try {
+      await replaceLines(user.userId, tenantId, id, body.lines);
+    } catch (e) {
+      if (e instanceof BadLineCategoryError) throw new BadRequestException(e.message);
+      throw e;
+    }
     const after = await getDocument(user.userId, tenantId, id);
     if (!after) throw new NotFoundException('No such document.');
     const pages = await listCapturePages(user.userId, tenantId, after.document.capture_id);
     const tenant = await readTenant(user.userId, tenantId);
     const consumptionTax = await consumptionTaxFor(tenant);
     return toWire(after.document, after.lines, pages, consumptionTax);
+  }
+
+  @Patch(':id/lines/categories')
+  @ApiOperation({
+    summary: 'File single lines on their own, as work expenses',
+    description:
+      'Each named line goes in a work or other tax category of this personal space (`categoryId`), or back with the ' +
+      'receipt (`null`); other lines are left alone. What a filed line counts, GST included, and how the rest of the ' +
+      'receipt is worked out: docs/DEDUCTIONS.md. Not a correction: the compliance verdict and every field stay as ' +
+      'they are. A read-only member is refused (403). Send `version` to get a 409 instead of overwriting a colleague.',
+  })
+  async lineCategories(
+    @CurrentUser() user: AuthUser,
+    @WorkspaceId() tenantId: string,
+    @Param('id') id: string,
+    @ValidBody(SetLineCategoriesDto) body: SetLineCategoriesDto,
+  ): Promise<DocumentView> {
+    await requireNotReadonly(user.userId, tenantId);
+    let outcome;
+    try {
+      outcome = await setLineCategories(user.userId, tenantId, id, body.lines, body.version);
+    } catch (e) {
+      if (e instanceof BadLineCategoryError) throw new BadRequestException(e.message);
+      throw e;
+    }
+    if (!outcome.ok) {
+      if (outcome.reason === 'missing') throw new NotFoundException('No such document.');
+      if (outcome.reason === 'bad_line') throw new BadRequestException(`Line ${outcome.lineNumber} is not on this receipt.`);
+      throw new ConflictException('Someone else changed this receipt while you were editing it. Reload and try again.');
+    }
+    const after = await getDocument(user.userId, tenantId, id);
+    if (!after) throw new NotFoundException('No such document.');
+    const pages = await listCapturePages(user.userId, tenantId, after.document.capture_id);
+    const tenant = await readTenant(user.userId, tenantId);
+    return toWire(after.document, after.lines, pages, await consumptionTaxFor(tenant));
   }
 
   @Post(':id/confirm')
