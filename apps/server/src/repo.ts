@@ -1713,6 +1713,32 @@ export async function saveExtraction(
       )
     `);
 
+    // Where the merchant trades (plan tasks 9.5.h and 9.5.i). Re-normalised
+    // here, at the write boundary, for the same reason `maskCardLast4` is: a
+    // `ValidatedExtraction` can be built by hand, and "the model was told to"
+    // is not a control. Australian workspaces only — the rules in
+    // `merchant-address.ts` are Australian, and `taxRules == null` means
+    // Australia (see `AU_CONSUMPTION_TAX` above). Null when nothing usable was
+    // printed.
+    //
+    // It goes to TWO places, for two different questions:
+    //   - the RECEIPT (`documents.merchant_*`, below): where THIS purchase was
+    //     made. Each receipt records its own, so two branches of a chain differ.
+    //     Computed here, outside the supplier block, so a receipt whose
+    //     business name could not be read still records where it was bought.
+    //   - the SUPPLIER (`parties.address_*`, below): one address per business
+    //     name, fill-only-empty, the first branch seen (9.5.h, unchanged).
+    const printed = e.supplierAddress;
+    const address =
+      taxRules == null || taxRules.country === 'AU'
+        ? normaliseMerchantAddress({
+            line1: printed?.line1.value,
+            city: printed?.city.value,
+            state: printed?.state.value,
+            postcode: printed?.postcode.value,
+          })
+        : null;
+
     // The supplier is a party. Deduplicated on the normalised name so a
     // hundred fuel dockets do not become a hundred suppliers.
     let supplierId: string | null = null;
@@ -1721,24 +1747,6 @@ export async function saveExtraction(
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, ' ')
         .trim();
-      // Where the merchant trades (plan task 9.5.h). Re-normalised here, at the
-      // write boundary, for the same reason `maskCardLast4` is: a
-      // `ValidatedExtraction` can be built by hand, and "the model was told to"
-      // is not a control. Australian workspaces only — the rules in
-      // `merchant-address.ts` are Australian, and `taxRules == null` means
-      // Australia (see `AU_CONSUMPTION_TAX` above). Null when nothing usable
-      // was printed, in which case the four columns are written NULL and the
-      // fill-only-empty clause below leaves whatever the supplier already has.
-      const printed = e.supplierAddress;
-      const address =
-        taxRules == null || taxRules.country === 'AU'
-          ? normaliseMerchantAddress({
-              line1: printed?.line1.value,
-              city: printed?.city.value,
-              state: printed?.state.value,
-              postcode: printed?.postcode.value,
-            })
-          : null;
       // FILL ONLY EMPTY. The supplier is shared by every capture with the same
       // normalised name, so a chain's second branch must not overwrite the
       // first, and a later worse read must never replace a good value (or one a
@@ -1887,6 +1895,14 @@ export async function saveExtraction(
           payment_method       = ${paymentMethod},
           card_last4           = ${cardLast4},
           card_brand           = ${cardBrand},
+          -- Where this receipt was bought (9.5.i). A re-extraction that read an
+          -- address replaces all four parts together (one reading is internally
+          -- consistent; a mix of two is not). One that read NONE keeps what the
+          -- receipt already has: a worse model must not erase a good location.
+          merchant_line1       = ${address ? sql`${address.line1}` : sql.raw('merchant_line1')},
+          merchant_city        = ${address ? sql`${address.city}` : sql.raw('merchant_city')},
+          merchant_state       = ${address ? sql`${address.state}` : sql.raw('merchant_state')},
+          merchant_postcode    = ${address ? sql`${address.postcode}` : sql.raw('merchant_postcode')},
           review_status        = ${contested.length > 0 ? 'needs_review' : result.reviewStatus},
           confidence_overall   = ${result.confidenceOverall},
           updated_at           = now()
@@ -1917,6 +1933,7 @@ export async function saveExtraction(
           ato_compliance, document_number, issue_date, due_date, currency, supplier_id,
           tax_exclusive_amount, tax_amount, tax_inclusive_amount, payable_amount,
           rounding_amount, payment_method, card_last4, card_brand,
+          merchant_line1, merchant_city, merchant_state, merchant_postcode,
           review_status, confidence_overall, created_by, retention_until
         ) values (
           ${documentId}, ${tenantId}, ${captureId}, ${runId},
@@ -1927,6 +1944,8 @@ export async function saveExtraction(
           ${e.taxExclusiveAmount.value}, ${e.taxAmount.value},
           ${e.payableAmount.value}, ${e.payableAmount.value},
           ${roundingAmount}, ${paymentMethod}, ${cardLast4}, ${cardBrand},
+          ${address?.line1 ?? null}, ${address?.city ?? null},
+          ${address?.state ?? null}, ${address?.postcode ?? null},
           ${result.reviewStatus}, ${result.confidenceOverall}, ${worker.userId},
           -- Five years from the issue date: the ATO's retention period, computed
           -- now so a purge job never has to guess.
