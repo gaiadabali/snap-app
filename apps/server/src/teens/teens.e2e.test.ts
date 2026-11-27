@@ -141,7 +141,7 @@ describeIfDb('teen spaces — real database, real provider', () => {
 
     parent = person('parent', { name: 'Pat' });
     parentToken = (await signIn(parent)).token;
-    const created = await http('POST', '/v1/workspaces', parentToken, undefined, { name: 'Pat household', kind: 'personal' });
+    const created = await http('POST', '/v1/workspaces', parentToken, undefined, { name: 'Pat household', kind: 'personal', acceptedGodNotice: true });
     expect(created.statusCode).toBe(201);
     household = (created.json() as { id: string }).id;
   });
@@ -522,7 +522,7 @@ describeIfDb('teen spaces — real database, real provider', () => {
       });
       const legacy = await repo.upsertUserByEmail(teen.email, 'Old account');
       if (shape === 'with a workspace') {
-        const ws = await http('POST', '/v1/workspaces', await issueSession(legacy.userId), undefined, { name: 'Old', kind: 'personal' });
+        const ws = await http('POST', '/v1/workspaces', await issueSession(legacy.userId), undefined, { name: 'Old', kind: 'personal', acceptedGodNotice: true });
         expect(ws.statusCode).toBe(201);
       }
       const live = await issueSession(legacy.userId);

@@ -171,6 +171,34 @@ describeIfDb('GOD group consent — real HTTP, real database', () => {
       expect(await state(token)).toMatchObject({ status: null, prompt: 'required' });
     });
 
+    it('creating the first workspace directly is a sign-up too: refused without the tick, allowed with it', async () => {
+      const { token, userId } = await signUp('direct');
+      const refused = await call('POST', '/v1/workspaces', { token, body: { name: 'Direct', kind: 'personal' } });
+      expect(refused.statusCode).toBe(400);
+      expect(refused.json()).toMatchObject({ error: 'god_notice_required' });
+      expect(await events(userId)).toEqual([]);
+      expect((await call('GET', '/v1/auth/session', { token })).json().workspaces).toEqual([]);
+
+      const ok = await call('POST', '/v1/workspaces', {
+        token,
+        body: { name: 'Direct', kind: 'personal', acceptedGodNotice: true },
+      });
+      expect(ok.statusCode).toBe(201);
+      tenants.push(ok.json().id);
+      expect(await events(userId)).toEqual([
+        { decision: 'accepted', notice_version: '1.0', method: 'registration', guardian_user_id: null },
+      ]);
+    });
+
+    it('an existing user creating another workspace is unaffected', async () => {
+      const { token, userId } = await signUpAndOnboard('another');
+      await forgetAnswer(userId);
+      const res = await call('POST', '/v1/workspaces', { token, body: { name: 'Second', kind: 'personal' } });
+      expect(res.statusCode).toBe(201);
+      tenants.push(res.json().id);
+      expect(await events(userId)).toEqual([]);
+    });
+
     it('a new sign-up cannot use "Not now": the answer is required', async () => {
       const { token, userId } = await signUp('nodecline');
       const res = await call('POST', '/v1/god-consent', { token, body: { decision: 'declined', version: GOD_NOTICE.version } });
