@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
+import { AU_2026 } from '@snap/tax-rules';
+import { reconcileIssueDate } from './printed-date.js';
 import type { Extraction, ExtractedLine } from './types.js';
 import {
   abnIsValid,
@@ -141,6 +143,46 @@ describe('day/month ambiguity', () => {
     // and there is nothing worth interrupting anyone for.
     const r = validate(good({ issueDate: f('2026-06-05') }), NOW);
     expect(r.findings.some((x) => x.code === 'date_order_ambiguous')).toBe(false);
+  });
+
+  describe('workspace locale decides a printed numeric date (10.7.e)', () => {
+    const ambiguousCode = (r: ReturnType<typeof validate>) =>
+      r.findings.some((x) => x.code === 'date_order_ambiguous');
+    // No month-first rule set ships, so build the US/unknown case from AU's.
+    const US_LIKE = { ...AU_2026, documentRules: { ...AU_2026.documentRules, dateOrder: 'month_first' as const } };
+
+    it('AU: 06/09/2026 is 6 September and is not flagged', () => {
+      const e = reconcileIssueDate(good({ issueDate: f('2026-06-09'), issueDatePrinted: f('06/09/2026') }), 'day_first');
+      expect(e.issueDate.value).toBe('2026-09-06');
+      expect(ambiguousCode(validate(e, NOW))).toBe(false);
+      expect(ambiguousCode(validate(e, NOW, AU_2026))).toBe(false);
+    });
+
+    it('AU: a model that read it month-first is corrected, not flagged', () => {
+      const e = reconcileIssueDate(good({ issueDate: f('2026-06-09'), issueDatePrinted: f('06/09/26') }), 'day_first');
+      expect(e.issueDate.value).toBe('2026-09-06');
+      expect(ambiguousCode(validate(e, NOW, AU_2026))).toBe(false);
+    });
+
+    it('US-style workspace: the same string stays ambiguous (month-first)', () => {
+      const e = reconcileIssueDate(good({ issueDate: f('2026-09-06'), issueDatePrinted: f('06/09/2026') }), 'month_first');
+      expect(e.issueDate.value).toBe('2026-06-09');
+      const r = validate(e, NOW, US_LIKE);
+      expect(ambiguousCode(r)).toBe(true);
+      expect(r.reviewStatus).toBe('needs_review');
+    });
+
+    it('AU with no printed text to check keeps the flag', () => {
+      expect(ambiguousCode(validate(good({ issueDate: f('2026-06-09') }), NOW, AU_2026))).toBe(true);
+    });
+
+    it('an unambiguous date (13/09/2026) is never flagged, in any locale', () => {
+      for (const [order, rules] of [['day_first', AU_2026], ['month_first', US_LIKE]] as const) {
+        const e = reconcileIssueDate(good({ issueDate: f('2026-09-13'), issueDatePrinted: f('13/09/2026') }), order);
+        expect(e.issueDate.value).toBe('2026-09-13');
+        expect(ambiguousCode(validate(e, NOW, rules))).toBe(false);
+      }
+    });
   });
 
   it('groups dates into Australian BAS quarters', () => {
