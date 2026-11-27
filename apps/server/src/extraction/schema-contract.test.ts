@@ -93,6 +93,12 @@ const FULL_RAW_RESPONSE = JSON.stringify({
   currency: { value: 'AUD', confidence: 0.9 },
   supplierName: { value: 'Test Pty Ltd', confidence: 0.9 },
   supplierAbn: { value: '85129887341', confidence: 0.9 },
+  supplierAddress: {
+    line1: { value: '245 Parramatta Rd', confidence: 0.9 },
+    city: { value: 'HAYMARKET', confidence: 0.9 },
+    state: { value: 'New South Wales', confidence: 0.9 },
+    postcode: { value: '2000', confidence: 0.9 },
+  },
   buyerIdentified: { value: true, confidence: 0.9 },
   taxExclusiveAmount: { value: '100.00', confidence: 0.9 },
   taxAmount: { value: '10.00', confidence: 0.9 },
@@ -168,10 +174,14 @@ const DECISIONS: Record<string, Decision> = {
     status: 'excluded',
     reason: 'Only legal_name feeds the party record today; trading_name is Peppol export detail.',
   },
-  'header.supplier.address': {
-    status: 'excluded',
-    reason: 'No address field anywhere downstream — not read by validators, the ledger, or any export today.',
-  },
+  // Plan task 9.5.h. WAS 'excluded' ("unread downstream"): 0 of 74 live receipts
+  // carried a merchant location, and GOD's activity maps and catchments need
+  // one. Now read from the docket header, normalised in `parseExtraction`
+  // (`merchant-address.ts`) and stored on `parties.address_line1 / city / state /
+  // postcode` by `saveExtraction`. The schema's `address.country` is not asked
+  // for (the pipeline is Australian here); `line2` is not kept. The four parts
+  // that ARE kept are each proven below, not just the object.
+  'header.supplier.address': { status: 'mapped', tsPath: 'supplierAddress.city' },
   'header.supplier.email': { status: 'excluded', reason: 'Same as address: unread downstream.' },
   'header.supplier.phone': { status: 'excluded', reason: 'Same as address: unread downstream.' },
   'header.buyer.legal_name': {
@@ -264,6 +274,21 @@ describe('the extraction schema and the implemented type agree (S0)', () => {
       if (decision.status !== 'excluded') continue;
       expect(decision.reason.length, `${schemaPath} has no real reason recorded`).toBeGreaterThan(20);
     }
+  });
+
+  // 9.5.h: the schema's Party.address is { line1, city, state, postcode, ... };
+  // the mapped decision above only proves the object exists, so each kept part
+  // is pinned to its schema name AND to its normalised value.
+  it('maps Party.address line1/city/state/postcode to supplierAddress, normalised', () => {
+    const address = (schema.$defs as unknown as { Party: { properties: { address: { properties: Record<string, unknown> } } } })
+      .Party.properties.address.properties;
+    for (const part of ['line1', 'city', 'state', 'postcode']) {
+      expect(address[part], `schema Party.address.${part}`).toBeDefined();
+    }
+    expect(sample.supplierAddress?.line1.value).toBe('245 Parramatta Rd');
+    expect(sample.supplierAddress?.city.value).toBe('Haymarket'); // title case
+    expect(sample.supplierAddress?.state.value).toBe('NSW'); // mapped from full name
+    expect(sample.supplierAddress?.postcode.value).toBe('2000');
   });
 
   // Ticket S1's specific claim, spelt out on its own: card_last4 and
