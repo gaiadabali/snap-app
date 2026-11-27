@@ -6,6 +6,7 @@ import { HomeCompare } from './_home/compare';
 import { HomeCta } from './_home/cta';
 import { HomeFaq } from './_home/faq';
 import { HomeHero } from './_home/hero';
+import { HomePartOfGod } from './_home/part-of-god';
 import { HomePricing } from './_home/pricing-teaser';
 import { HomeSplit } from './_home/split';
 import { HomeStory } from './_home/story';
@@ -30,6 +31,7 @@ export const metadata: Metadata = {
  *   what does it cost     → pricing
  *   the leftovers         → faq
  *   go                    → cta
+ *   who is behind it      → part of GOD (links to the group and its sister sites)
  *
  * POSITIONING (2026-10-20). The app ships as the personal release
  * (docs/ECOSYSTEM.md D34): business surfaces — BAS, tax pack, deductions,
@@ -64,6 +66,7 @@ export default function HomePage() {
       <HomePricing />
       <HomeFaq />
       <HomeCta />
+      <HomePartOfGod />
     </>
   );
 }

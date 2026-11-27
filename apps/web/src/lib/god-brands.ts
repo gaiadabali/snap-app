@@ -125,3 +125,16 @@ export function switcherTiles(opts: { adultBrands: boolean }): SwitcherTile[] {
   }
   return tiles;
 }
+
+export type OtherBrand = { key: GodBrandKey; name: string; purpose: string; href: string; icon: string };
+
+/**
+ * The other GOD brands' public WEBSITES (the `url` field, not `appUrl`), for the "Part of GOD" home section.
+ * Every brand except this one, in canonical order. Spambank is included: its website is public, and the card
+ * only names it and says what it is.
+ */
+export function otherBrandSites(): OtherBrand[] {
+  return (GOD_BRANDS.brands as readonly GodBrand[])
+    .filter((b) => b.key !== CURRENT_BRAND)
+    .map((b) => ({ key: b.key, name: b.name, purpose: b.purpose, href: b.url, icon: ICONS[b.key] }));
+}
