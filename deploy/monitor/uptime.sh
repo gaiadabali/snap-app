@@ -22,9 +22,9 @@ for url in \
 done
 
 # TLS expiry: refuse a certificate inside two weeks of dying (1209600 s).
-# snapapp.gaiada.com is the old website name: still the mail domain and the Android App Link
-# host, so its certificate matters as much as the new one.
-for host in snapapps.gaiada.com snapapp.gaiada.com; do
+# snapapp.gaiada.com (the old website name, the Android App Link host before 2026-11-27) no longer
+# resolves, so only the new host is checked. Its mail TXT records live on without a web host.
+for host in snapapps.gaiada.com; do
   if ! openssl s_client -connect "$host:443" -servername "$host" </dev/null 2>/dev/null \
     | openssl x509 -checkend 1209600 >/dev/null 2>&1; then
     echo "FAILED TLS certificate for $host expires within 14 days"

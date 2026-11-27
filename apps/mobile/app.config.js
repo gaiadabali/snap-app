@@ -68,12 +68,14 @@ module.exports = ({ config }) => {
           : [...(config.android?.blockedPermissions ?? []), 'com.android.vending.BILLING'],
       // Sign in with YourTal returns here (3.3.e). Android verifies it against
       // https://<host>/.well-known/assetlinks.json. Keep in step with
-      // YOURTAL_REDIRECT_URI in src/lib/yourtal-signin.ts.
+      // YOURTAL_OIDC_MOBILE_REDIRECT_URI on the server. One host only: on older Android,
+      // autoVerify needs every listed host to verify. snapapp.gaiada.com (the host before
+      // 2026-11-27) no longer resolves, so it must not be listed.
       intentFilters: [
         {
           action: 'VIEW',
           autoVerify: true,
-          data: [{ scheme: 'https', host: 'snapapp.gaiada.com', path: '/oauth/yourtal' }],
+          data: [{ scheme: 'https', host: 'snapapps.gaiada.com', path: '/oauth/yourtal' }],
           category: ['BROWSABLE', 'DEFAULT'],
         },
       ],
