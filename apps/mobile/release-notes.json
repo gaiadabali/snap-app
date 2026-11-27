@@ -1,5 +1,10 @@
 [
   {
+    "id": "part-of-god",
+    "date": "2026-11-27",
+    "notes": "SnapApps is part of GOD (Global Omni Data), and Settings now has an About GOD section with a link to god.gaiada.com. Tap GOD apps there to jump to YourTal and Free Tax Returns, or to your Spambank inbox if you have one. Nothing about you is sent when you tap."
+  },
+  {
     "id": "snapapps-rename",
     "date": "2026-11-27",
     "notes": "SnapApp is now called SnapApps, to match our logo. Nothing else changes: your account, receipts and settings are exactly as they were."

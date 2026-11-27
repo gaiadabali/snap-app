@@ -4,10 +4,11 @@ import type { WorkspaceSummary } from '@snap/api-contract';
 
 import { Container, cx, WorkspaceCurrency } from '@/design/primitives';
 import { SnapMark } from '@/design/site/icons';
+import { GodSwitcher } from '@/components/god/GodSwitcher';
 import { signOut } from '@/lib/panels/actions';
 import type { ImpersonationBannerInfo } from '@/lib/panels/impersonation';
 import { ImpersonationBanner } from './ImpersonationBanner';
-import type { NavItem } from './nav';
+import { mailListedIn, type NavItem } from './nav';
 import { MobileNav } from './MobileNav';
 import { Sidebar } from './Sidebar';
 import { WorkspaceSwitcher } from './WorkspaceSwitcher';
@@ -99,6 +100,8 @@ export function PanelShell({
           )}
 
           <div className="ml-auto flex items-center gap-3">
+            {/* The GOD app switcher. Spambank is offered on the same signal as the Mail nav entry (an adult, not impersonated). */}
+            <GodSwitcher adultBrands={mailListedIn(nav)} />
             {switchLink ? <span className="hidden sm:inline">{switchLink}</span> : null}
             <div
               className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-accent)] text-[12px] font-bold text-[var(--color-accent-ink)]"
