@@ -11,7 +11,7 @@ set -u
 fail=0
 
 for url in \
-  https://snapapp.gaiada.com \
+  https://snapapps.gaiada.com \
   https://snap-apps-api.gaiada.com/v1/ready \
   https://app.snapapps.gaiada.com; do
   body=$(curl -fsS --max-time 15 "$url" 2>&1) || { echo "FAILED unreachable: $url"; fail=1; continue; }
@@ -22,10 +22,14 @@ for url in \
 done
 
 # TLS expiry: refuse a certificate inside two weeks of dying (1209600 s).
-if ! openssl s_client -connect snapapp.gaiada.com:443 -servername snapapp.gaiada.com </dev/null 2>/dev/null \
-  | openssl x509 -checkend 1209600 >/dev/null 2>&1; then
-  echo "FAILED TLS certificate for snapapp.gaiada.com expires within 14 days"
-  fail=1
-fi
+# snapapp.gaiada.com is the old website name: still the mail domain and the Android App Link
+# host, so its certificate matters as much as the new one.
+for host in snapapps.gaiada.com snapapp.gaiada.com; do
+  if ! openssl s_client -connect "$host:443" -servername "$host" </dev/null 2>/dev/null \
+    | openssl x509 -checkend 1209600 >/dev/null 2>&1; then
+    echo "FAILED TLS certificate for $host expires within 14 days"
+    fail=1
+  fi
+done
 
 exit $fail

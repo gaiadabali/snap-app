@@ -21,7 +21,7 @@ All three hosts answer 200. Checked by request, not by assumption.
 
 | Address | State | Evidence |
 |---|---|---|
-| `snapapp.gaiada.com` | **Live** | 200; marketing, docs, legal, panels |
+| `snapapps.gaiada.com` | **Live** (was `snapapp.gaiada.com` until 2026-11-27, now a 301 plus mail and App Link) | 200; marketing, docs, legal, panels |
 | `snap-apps-api.gaiada.com` | **Live** | `/v1/ready` → `rlsEnforced: true`, role `snap_app` |
 | `snapapp.app.gaiada.com` | **Live** | 200; the Expo web build of the phone app |
 

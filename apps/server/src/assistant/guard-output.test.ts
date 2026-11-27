@@ -108,7 +108,10 @@ describe('links and contacts', () => {
   it('keeps site links (with anchors) and the support mailto, drops the rest to their words', () => {
     expect(allowedHref('/pricing', official)).toBe('/pricing');
     expect(allowedHref('/docs/data-retention#csv', official)).toBe('/docs/data-retention#csv');
+    expect(allowedHref('https://snapapps.gaiada.com/download/', official)).toBe('/download');
+    // The pre-2026-11-27 host still means this site (old links in saved answers).
     expect(allowedHref('https://snapapp.gaiada.com/download/', official)).toBe('/download');
+    expect(allowedHref('https://app.snapapps.gaiada.com/download', official)).toBeNull();
     expect(allowedHref('mailto:support@snapapps.com.au', official)).toBe('mailto:support@snapapps.com.au');
     expect(allowedHref('mailto:someone@else.com', official)).toBeNull();
     expect(allowedHref('/admin', official)).toBeNull();
@@ -127,6 +130,13 @@ describe('links and contacts', () => {
     const r = run('Try https://scam.example/free or www.other.com, or visit snapapp.gaiada.com/download today.');
     expect(r.shown).not.toMatch(/scam|other\.com/);
     expect(r.shown).toContain('snapapp.gaiada.com/download');
+    expect(r.end.flags).toContain('url-dropped');
+  });
+
+  it('keeps the new domain readable too, and still drops a made-up path on it', () => {
+    const r = run('Visit snapapps.gaiada.com/download today, not snapapps.gaiada.com/secret-admin.');
+    expect(r.shown).toContain('snapapps.gaiada.com/download');
+    expect(r.shown).not.toContain('secret-admin');
     expect(r.end.flags).toContain('url-dropped');
   });
 

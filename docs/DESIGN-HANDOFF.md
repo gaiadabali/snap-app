@@ -2,7 +2,7 @@
 
 **For:** continuing the UI in Claude Design (claude.ai/design)
 **Generated:** 2026-09-15 · from `apps/web` as deployed at commit `f21bcd3`
-**Live:** https://snapapp.gaiada.com/
+**Live:** https://snapapps.gaiada.com/
 
 Every value here is **resolved from the shipping code**, not proposed. Paste
 this whole file into Claude Design as context. It is self-contained — nothing
