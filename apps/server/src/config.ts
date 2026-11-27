@@ -293,6 +293,9 @@ const schema = z.object({
         .enum(
           [
             'au.com.snapapps.app:/oauth/yourtal',
+            'https://snapapps.gaiada.com/oauth/yourtal',
+            // The App Link host of APKs before 2026-11-27 (its DNS is gone), kept so a server
+            // whose .env still names it validates during the switch.
             'https://snapapp.gaiada.com/oauth/yourtal',
             // Pre-2026-11-24 host, kept so a server whose .env still names it validates during the switch.
             'https://snap-apps.gaiada.com/oauth/yourtal',

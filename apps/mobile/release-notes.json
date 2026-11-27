@@ -1,5 +1,10 @@
 [
   {
+    "id": "yourtal-signin-new-address",
+    "date": "2026-11-27",
+    "notes": "Signing in with YourTal works again. SnapApps' web address is now snapapps.gaiada.com."
+  },
+  {
     "id": "signin-screen-readers",
     "date": "2026-11-27",
     "notes": "The sign-in screen on the web app is easier to use with a screen reader. It now has a proper page heading and a main area, so you can jump straight to the sign-in form. Nothing changes in how you sign in."

@@ -770,13 +770,22 @@ meant the offline outbox could queue writes it could never send.
 
 ### The website's host move (2026-11-27: snapapp.gaiada.com to snapapps.gaiada.com)
 
-The website's address is now `https://snapapps.gaiada.com`. The old name stays alive
-for three reasons, so it is never switched off:
+The website's address is now `https://snapapps.gaiada.com`. **Update 2026-11-27 (owner):
+the DNS name `snapapp.gaiada.com` is permanently gone**; only `snapapps.gaiada.com` resolves.
+The bullets below describe the first plan and are superseded where they say the old host
+stays alive: its web role, its 301 and its App Link are gone (see the App Link bullet).
+The mail domain is the exception: its SPF and DKIM TXT records still exist.
 
 - **Mail.** `snapapp.gaiada.com` is the mail domain: SPF, DKIM, the relay name
   (`SMTP_URL=smtp://snapapp.gaiada.com:587`) and its certificate all live there.
   `MAIL_FROM` stays `no-reply@snapapp.gaiada.com`.
-- **The Android App Link.** Installed APKs verify `snapapp.gaiada.com` against
+- **The Android App Link (moved 2026-11-27).** New builds declare
+  `https://snapapps.gaiada.com/oauth/yourtal` (the only host in `intentFilters`, with
+  `autoVerify`), and `YOURTAL_OIDC_MOBILE_REDIRECT_URI` on Helios is set to it. Android
+  verifies it against `https://snapapps.gaiada.com/.well-known/assetlinks.json` (200, JSON,
+  no redirect; package `au.com.snapapps.app`, the private release key fingerprint, or
+  `ANDROID_CERT_SHA256`). Builds before this one still carry the dead host and cannot sign
+  in with YourTal until updated. Superseded text: installed APKs verify `snapapp.gaiada.com` against
   `/.well-known/assetlinks.json` and return from YourTal on
   `https://snapapp.gaiada.com/oauth/yourtal`. That URL stays registered at YourTal and
   stays valid in `YOURTAL_OIDC_MOBILE_REDIRECT_URI` for as long as any such APK is out
@@ -821,7 +830,7 @@ hPanel. The three A records point at helios:
 
 ```
 snapapps.gaiada.com       A   187.77.116.133
-snapapp.gaiada.com        A   187.77.116.133   (old name: 301 to snapapps, plus the exceptions below)
+(snapapp.gaiada.com: no record since 2026-11-27, except the mail TXT records)
 snap-apps-api.gaiada.com  A   187.77.116.133
 app.snapapps.gaiada.com   A   187.77.116.133
 ```

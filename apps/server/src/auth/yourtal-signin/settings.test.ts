@@ -86,22 +86,30 @@ describe('Sign in with YourTal settings', () => {
     });
   });
 
-  it('follows WEB_PUBLIC_URL for the website redirect, while the phone App Link stays on the old host (2026-11-27 move)', async () => {
+  it('follows WEB_PUBLIC_URL for the website redirect, and the phone App Link follows to the same host (2026-11-27 move)', async () => {
     const file = await privateJwkFile('host-move.jwk');
     vi.stubEnv('YOURTAL_OIDC_ISSUER', 'https://member.yourtal.gaiada.com/oidc');
     vi.stubEnv('YOURTAL_OIDC_WEB_CLIENT_ID', 'snapapp-staging-web');
     vi.stubEnv('YOURTAL_OIDC_MOBILE_CLIENT_ID', 'snapapp-staging-mobile');
     vi.stubEnv('YOURTAL_OIDC_KEY_FILE', file);
     vi.stubEnv('WEB_PUBLIC_URL', 'https://snapapps.gaiada.com');
-    vi.stubEnv('YOURTAL_OIDC_MOBILE_REDIRECT_URI', 'https://snapapp.gaiada.com/oauth/yourtal');
+    vi.stubEnv('YOURTAL_OIDC_MOBILE_REDIRECT_URI', 'https://snapapps.gaiada.com/oauth/yourtal');
     const { config, settings } = await load();
     expect(() => config.config()).not.toThrow();
     const s = settings.yourtalSignInSettings();
     expect(s?.web?.redirectUri).toBe('https://snapapps.gaiada.com/auth/yourtal/callback');
-    expect(s?.mobile?.redirectUri).toBe('https://snapapp.gaiada.com/oauth/yourtal');
+    expect(s?.mobile?.redirectUri).toBe('https://snapapps.gaiada.com/oauth/yourtal');
   });
 
   it('switches the phone redirect to the App Link only when the env names it', async () => {
+    vi.stubEnv('YOURTAL_OIDC_ISSUER', 'https://yourtal.gaiada.com/oidc');
+    vi.stubEnv('YOURTAL_OIDC_MOBILE_CLIENT_ID', 'snapapp-staging-mobile');
+    vi.stubEnv('YOURTAL_OIDC_MOBILE_REDIRECT_URI', 'https://snapapps.gaiada.com/oauth/yourtal');
+    const { settings } = await load();
+    expect(settings.yourtalSignInSettings()?.mobile?.redirectUri).toBe('https://snapapps.gaiada.com/oauth/yourtal');
+  });
+
+  it('still boots on the pre-2026-11-27 App Link host, so a server whose .env is not yet switched keeps starting', async () => {
     vi.stubEnv('YOURTAL_OIDC_ISSUER', 'https://yourtal.gaiada.com/oidc');
     vi.stubEnv('YOURTAL_OIDC_MOBILE_CLIENT_ID', 'snapapp-staging-mobile');
     vi.stubEnv('YOURTAL_OIDC_MOBILE_REDIRECT_URI', 'https://snapapp.gaiada.com/oauth/yourtal');
