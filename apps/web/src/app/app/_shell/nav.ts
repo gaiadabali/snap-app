@@ -18,6 +18,9 @@ export const POINTS_HREF = '/app/points';
 export const MAIL_HREF = '/app/mail';
 const MAIL_ITEM: NavItem = { href: MAIL_HREF, label: 'Mail', badge: 'mail' };
 
+/** Whether the nav lists Mail: the signal that also decides whether the GOD switcher offers Spambank. */
+export const mailListedIn = (items: readonly NavItem[]): boolean => items.some((item) => item.href === MAIL_HREF);
+
 export const INDIVIDUAL_NAV: NavItem[] = [
   { href: '/app', label: 'Overview' },
   { href: '/app/documents', label: 'Documents' },

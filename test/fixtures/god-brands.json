@@ -1,0 +1,46 @@
+{
+  "$comment": "Canonical GOD brand list for the app switcher and the 'A GOD company' link (TASKS 9.13, god-holding/GOD-BAR-PLAN.md). Each app keeps a copy and a CI check fails on drift. Change names and URLs here first.",
+  "version": 1,
+  "updated": "2026-11-27",
+  "god": {
+    "name": "GOD",
+    "fullName": "Global Omni Data",
+    "label": "A GOD company",
+    "url": "https://god.gaiada.com"
+  },
+  "brands": [
+    {
+      "key": "yourtal",
+      "name": "YourTal",
+      "purpose": "Watch, earn and spend locally",
+      "url": "https://yourtal.gaiada.com",
+      "appUrl": "https://yourtal.gaiada.com",
+      "adultsOnly": false
+    },
+    {
+      "key": "snapapp",
+      "name": "SnapApps",
+      "purpose": "Scan and keep every receipt",
+      "url": "https://snapapp.gaiada.com",
+      "appUrl": "https://app.snapapps.gaiada.com",
+      "adultsOnly": false
+    },
+    {
+      "key": "ftr",
+      "name": "Free Tax Returns",
+      "purpose": "Your free deduction worksheet",
+      "url": "https://freetaxreturns.com.au",
+      "appUrl": "https://freetaxreturns.com.au",
+      "adultsOnly": false
+    },
+    {
+      "key": "spambank",
+      "name": "Spambank",
+      "purpose": "A spam-free address for sign-ups",
+      "url": "https://god.gaiada.com/brands/spambank/",
+      "appUrl": null,
+      "inApp": "mail",
+      "adultsOnly": true
+    }
+  ]
+}

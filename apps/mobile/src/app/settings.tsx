@@ -1,6 +1,6 @@
 import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Alert, Pressable, ScrollView, View } from 'react-native';
+import { Alert, Linking, Pressable, ScrollView, View } from 'react-native';
 import { Text } from '@/theme/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -9,6 +9,10 @@ import { currentDevice, deviceReadAvailable } from '@/lib/device-read';
 import { BUILD } from '@/lib/updates';
 import { Icon } from '@/components/Icon';
 import { GodWithdrawCard } from '@/components/GodConsent';
+import { GodAboutCard, GodSwitcherSheet } from '@/components/GodSwitcher';
+import { useMailStatus } from '@/components/mail/useMailStatus';
+import { GOD_BRANDS } from '@/lib/god-brands';
+import { mailEntryListed } from '@/lib/mail-gate';
 import { YourtalMovePrompt } from '@/components/YourtalMovePrompt';
 import { Avatar, Choice, Field, Loading, Sheet, Toggle } from '@/components/form';
 import { Body, Button, Card, Divider, Figure, Notice, Screen, SectionHeader, Small } from '@/components/ui';
@@ -41,6 +45,11 @@ export default function SettingsScreen() {
   const [plan, setPlan] = useState<PlanUsage | null>(null);
   const [editing, setEditing] = useState<null | 'details'>(null);
   const [picking, setPicking] = useState(false);
+  const [godOpen, setGodOpen] = useState(false);
+  // The GOD switcher offers Spambank on the signal that already lists Mail in the menu: an adult account
+  // with mail offered by the server. A teen's space, an ineligible account and a failed read hide it.
+  const { status: mailStatus } = useMailStatus();
+  const adultBrands = mailEntryListed(mailStatus, active.teenSpace);
   const [draft, setDraft] = useState({ name: '', abn: '' });
   const [error, setError] = useState<string | null>(null);
 
@@ -287,6 +296,21 @@ export default function SettingsScreen() {
                 preview while it waits, and somebody who never sees that
                 preview deserves to know it exists rather than assume the app
                 is slow. */}
+            {/* About GOD: the "A GOD company" link, and the sheet that goes to our other apps. */}
+            <View style={{ gap: space.md }}>
+              <SectionHeader title="About GOD" />
+              <GodAboutCard
+                onOpenSwitcher={() => setGodOpen(true)}
+                onOpenGod={() => void Linking.openURL(GOD_BRANDS.god.url)}
+              />
+            </View>
+            <GodSwitcherSheet
+              open={godOpen}
+              adultBrands={adultBrands}
+              onClose={() => setGodOpen(false)}
+              onOpenRoute={(route) => router.push(route as Href)}
+            />
+
             <AppVersion />
             <DeviceSupport />
 

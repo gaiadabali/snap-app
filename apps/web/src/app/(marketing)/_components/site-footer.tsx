@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { BUSINESS_SURFACES_ENABLED } from '@/lib/features';
 import { ILLUSTRATIVE_NOTE, StoreButtons } from '@/design/site';
 import { SnapLockup } from '@/design/site/icons';
+import { GOD_BRANDS } from '@/lib/god-brands';
 
 const COLUMNS: Array<{ heading: string; links: Array<{ href: string; label: string }> }> = [
   {
@@ -60,6 +61,9 @@ export function SiteFooter() {
             <p className="body mt-5 max-w-[34ch]">
               The receipt app that reads every line. Built in Australia, for the way Australians are taxed.
             </p>
+            <p className="mt-4 max-w-[34ch] text-[0.8125rem] text-[var(--s-ink-4)]">
+              SnapApps is part of {GOD_BRANDS.god.name} ({GOD_BRANDS.god.fullName}), with YourTal, Free Tax Returns and Spambank.
+            </p>
             <StoreButtons className="mt-8" compact />
           </div>
 
@@ -87,7 +91,15 @@ export function SiteFooter() {
         </div>
 
         <div className="mt-16 flex flex-col gap-3 border-t border-[var(--s-edge)] pt-8 text-[0.8125rem] text-[var(--s-ink-4)] sm:flex-row sm:items-center sm:justify-between">
-          <span>© {new Date().getFullYear()} SnapApps. Made in Australia.</span>
+          <span>
+            © {new Date().getFullYear()} SnapApps. Made in Australia.{' '}
+            <a
+              href={GOD_BRANDS.god.url}
+              className="font-medium text-[var(--s-ink-3)] underline-offset-2 transition-colors hover:text-[var(--s-ink)] hover:underline"
+            >
+              {GOD_BRANDS.god.label}
+            </a>
+          </span>
           <span>{ILLUSTRATIVE_NOTE} Not tax advice.</span>
         </div>
       </div>
