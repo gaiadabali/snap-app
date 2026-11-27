@@ -8,7 +8,7 @@
 --
 --   notice id  `god-group-notice`, version `1.0` (effective 2026-11-27)
 --   decision   accepted | declined | withdrawn
---   method     registration | next_sign_in | guardian
+--   method     registration | next_sign_in | guardian | request (a withdrawal asked for)
 --
 -- Two tables, both USER-scoped:
 --
@@ -63,7 +63,7 @@ CREATE TABLE IF NOT EXISTS god_consent_events (
   created_at       timestamptz NOT NULL DEFAULT now(),
 
   CONSTRAINT god_consent_events_decision CHECK (decision IN ('accepted', 'declined', 'withdrawn')),
-  CONSTRAINT god_consent_events_method   CHECK (method IN ('registration', 'next_sign_in', 'guardian')),
+  CONSTRAINT god_consent_events_method   CHECK (method IN ('registration', 'next_sign_in', 'guardian', 'request')),
   CONSTRAINT god_consent_events_notice   CHECK (notice_id = 'god-group-notice'),
   CONSTRAINT god_consent_events_version  CHECK (notice_version ~ '^[0-9]+(\.[0-9]+)*$'),
   -- A parent's decision names the parent, and only a parent's decision does.
@@ -83,7 +83,7 @@ CREATE TABLE IF NOT EXISTS god_consent_status (
   event_id         uuid NOT NULL,
 
   CONSTRAINT god_consent_status_decision CHECK (decision IN ('accepted', 'declined', 'withdrawn')),
-  CONSTRAINT god_consent_status_method   CHECK (method IN ('registration', 'next_sign_in', 'guardian'))
+  CONSTRAINT god_consent_status_method   CHECK (method IN ('registration', 'next_sign_in', 'guardian', 'request'))
 );
 
 -- "Who is in right now": a partial index over the only rows that matter to GOD.
@@ -154,8 +154,7 @@ END $fn$;
 -- acceptance again, or a withdrawal when they are not in), true when recorded.
 --   accepted   registration (finishing sign-up) or next_sign_in (the prompt)
 --   declined   next_sign_in only: a new sign-up cannot decline, it must accept
---   withdrawn  from an accepted status only; recorded as next_sign_in, the
---              closest of the three methods (the request is made in the app)
+--   withdrawn  `request` only, and from an accepted status only
 -- GC001: a teen cannot accept; the parent does (god_consent_record_for_teen).
 CREATE OR REPLACE FUNCTION god_consent_record(p_version text, p_decision text, p_method text)
 RETURNS boolean
@@ -168,10 +167,11 @@ BEGIN
     RAISE EXCEPTION 'god_consent_record: no signed-in user' USING ERRCODE = 'insufficient_privilege';
   END IF;
   IF p_decision NOT IN ('accepted', 'declined', 'withdrawn')
-     OR p_method NOT IN ('registration', 'next_sign_in')
+     OR p_method NOT IN ('registration', 'next_sign_in', 'request')
      OR p_version IS NULL OR p_version !~ '^[0-9]+(\.[0-9]+)*$'
      OR (p_decision = 'declined'  AND p_method <> 'next_sign_in')
-     OR (p_decision = 'withdrawn' AND p_method <> 'next_sign_in') THEN
+     OR (p_decision = 'withdrawn' AND p_method <> 'request')
+     OR (p_method = 'request' AND p_decision <> 'withdrawn') THEN
     RAISE EXCEPTION 'god_consent_record: bad decision, method or version' USING ERRCODE = 'invalid_parameter_value';
   END IF;
   IF p_decision = 'accepted' AND EXISTS (SELECT 1 FROM teen_spaces t WHERE t.teen_user_id = v_user) THEN

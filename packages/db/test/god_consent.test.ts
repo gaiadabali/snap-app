@@ -122,6 +122,8 @@ describeIfDb('GOD group consent (migration 0062)', () => {
     await as(u);
     await expect(record('1.0', 'declined', 'registration')).rejects.toThrow(/bad decision, method or version/);
     await expect(record('1.0', 'accepted', 'guardian')).rejects.toThrow(/bad decision, method or version/);
+    await expect(record('1.0', 'withdrawn', 'next_sign_in')).rejects.toThrow(/bad decision, method or version/);
+    await expect(record('1.0', 'accepted', 'request')).rejects.toThrow(/bad decision, method or version/);
     await expect(record('banana', 'accepted', 'registration')).rejects.toThrow(/bad decision, method or version/);
     expect(await events()).toEqual([]);
   });
@@ -129,11 +131,11 @@ describeIfDb('GOD group consent (migration 0062)', () => {
   it('withdraws only from accepted, and records it', async () => {
     const u = await user();
     await as(u);
-    expect(await record('1.0', 'withdrawn', 'next_sign_in')).toBe(false); // never accepted: nothing to withdraw
+    expect(await record('1.0', 'withdrawn', 'request')).toBe(false); // never accepted: nothing to withdraw
     await record('1.0', 'accepted', 'registration');
-    expect(await record('1.0', 'withdrawn', 'next_sign_in')).toBe(true);
-    expect(await record('1.0', 'withdrawn', 'next_sign_in')).toBe(false);
-    expect(await status()).toEqual([{ notice_version: '1.0', decision: 'withdrawn', method: 'next_sign_in' }]);
+    expect(await record('1.0', 'withdrawn', 'request')).toBe(true);
+    expect(await record('1.0', 'withdrawn', 'request')).toBe(false);
+    expect(await status()).toEqual([{ notice_version: '1.0', decision: 'withdrawn', method: 'request' }]);
     expect((await events()).map((e) => e.decision)).toEqual(['accepted', 'withdrawn']);
   });
 

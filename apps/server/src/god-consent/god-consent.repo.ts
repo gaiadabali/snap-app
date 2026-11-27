@@ -38,7 +38,7 @@ export async function getGodConsentStatus(userId: string, db: Db = getDb()): Pro
 /** Records the caller's own decision. False when it changed nothing (a repeat, or nothing to withdraw). */
 export async function recordGodConsent(
   userId: string,
-  input: { version: string; decision: GodConsentDecision; method: 'registration' | 'next_sign_in' },
+  input: { version: string; decision: GodConsentDecision; method: 'registration' | 'next_sign_in' | 'request' },
   db: Db = getDb(),
 ): Promise<boolean> {
   return asUser(db, userId, async (tx) => {

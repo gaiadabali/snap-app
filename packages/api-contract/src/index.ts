@@ -2496,7 +2496,7 @@ export interface UnregisterPushTokenRequest {
 /* ── GOD group consent (migration 0062, god/TASKS.md 9.1.d) ─────────────────── */
 
 export type GodConsentDecision = 'accepted' | 'declined' | 'withdrawn';
-export type GodConsentMethod = 'registration' | 'next_sign_in' | 'guardian';
+export type GodConsentMethod = 'registration' | 'next_sign_in' | 'guardian' | 'request';
 
 /**
  * What to show the caller about the GOD Group Privacy Notice.

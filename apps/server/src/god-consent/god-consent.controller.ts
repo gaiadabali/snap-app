@@ -114,7 +114,7 @@ export class GodConsentController {
     const withdrawn = await recordGodConsent(user.userId, {
       version: GOD_NOTICE.version,
       decision: 'withdrawn',
-      method: 'next_sign_in',
+      method: 'request',
     });
     return { withdrawn, state: await godConsentState(user.userId) };
   }

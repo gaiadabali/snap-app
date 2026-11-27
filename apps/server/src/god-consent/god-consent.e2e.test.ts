@@ -269,7 +269,7 @@ describeIfDb('GOD group consent — real HTTP, real database', () => {
       });
       const again = await call('POST', '/v1/god-consent/withdraw', { token });
       expect(again.json()).toMatchObject({ withdrawn: false });
-      expect((await events(userId)).map((e) => e.decision)).toEqual(['accepted', 'withdrawn']);
+      expect((await events(userId)).map((e) => `${e.decision}/${e.method}`)).toEqual(['accepted/registration', 'withdrawn/request']);
       // The account and workspace are untouched.
       expect((await call('GET', '/v1/workspaces', { token })).json().map((w: { id: string }) => w.id)).toContain(workspaceId);
     });
