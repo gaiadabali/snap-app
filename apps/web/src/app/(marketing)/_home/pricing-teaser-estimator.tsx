@@ -83,8 +83,8 @@ export function PricingEstimator() {
         </p>
       </div>
 
-      <div className="flex flex-col justify-center border-t border-[var(--s-edge)] bg-[var(--s-blue-soft)] p-7 sm:p-9 md:border-l md:border-t-0">
-        <p className="text-[0.875rem] font-[600] text-[var(--s-blue-text)]">Your month</p>
+      <div className="flex flex-col justify-center border-t border-[var(--s-edge)] bg-[var(--s-brand-soft)] p-7 sm:p-9 md:border-l md:border-t-0">
+        <p className="text-[0.875rem] font-[600] text-[var(--s-brand-text)]">Your month</p>
         <output
           htmlFor={id}
           className="figure mt-2 block text-[clamp(2.75rem,6vw,4rem)] font-[650] leading-none text-[var(--s-ink)]"

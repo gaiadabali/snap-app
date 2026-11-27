@@ -199,7 +199,7 @@ export function HouseholdVisual() {
   return (
     <div className={`${PANEL} flex h-full flex-col justify-center gap-5 p-5 md:flex-row md:items-center md:gap-8 lg:flex-col lg:items-start lg:gap-5`}>
       <div className="flex shrink-0 items-center pr-3">
-        <span className="bento-av grid size-[60px] place-items-center rounded-full bg-[var(--s-blue-soft)] text-[1.0625rem] font-bold text-[var(--s-blue-text)] ring-4 ring-[var(--s-mist)]">
+        <span className="bento-av grid size-[60px] place-items-center rounded-full bg-[var(--s-brand-soft)] text-[1.0625rem] font-bold text-[var(--s-brand-text)] ring-4 ring-[var(--s-mist)]">
           {DEMO_PERSON.initials}
         </span>
         <span className="bento-av bento-av-b -ml-3 grid size-[60px] place-items-center rounded-full bg-[image:var(--s-grad)] text-[1.0625rem] font-bold text-white ring-4 ring-[var(--s-mist)]">
@@ -218,7 +218,7 @@ export function HouseholdVisual() {
         </li>
       </ul>
 
-      <span className="inline-flex h-9 items-center rounded-full border-[1.5px] border-dashed border-[var(--s-edge-2)] px-4 text-[0.8125rem] font-semibold text-[var(--s-blue-text)]">
+      <span className="inline-flex h-9 items-center rounded-full border-[1.5px] border-dashed border-[var(--s-edge-2)] px-4 text-[0.8125rem] font-semibold text-[var(--s-brand-text)]">
         + Invite someone
       </span>
     </div>
@@ -263,7 +263,7 @@ export function ExportVisual() {
           >
             <span className="truncate text-[var(--s-ink-3)] max-sm:hidden">{DOCKET.merchant}</span>
             <span className="truncate">{l.label}</span>
-            <span className={l.taxable ? 'text-[var(--s-blue-text)]' : 'text-[var(--s-green)]'}>
+            <span className={l.taxable ? 'text-[var(--s-brand-text)]' : 'text-[var(--s-green)]'}>
               {l.taxable ? 'no' : 'yes'}
             </span>
             <span className="text-right font-semibold">{l.amount}</span>

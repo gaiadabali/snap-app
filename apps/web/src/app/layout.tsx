@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
+import localFont from 'next/font/local';
 
 import './globals.css';
 
@@ -24,6 +25,23 @@ const geistMono = Geist_Mono({
   display: 'swap',
 });
 
+/**
+ * Audiowide, the Snap Apps brand face (GOD Ecosystem Brand Guidelines p16;
+ * Google Fonts, SIL Open Font License, licence in src/fonts/OFL.txt). It has
+ * one weight and is wide and display-shaped, so it is used for brand display
+ * and headings only (`--font-brand`); everything you read or type stays in
+ * Geist, because a whole UI in Audiowide would be hard to read.
+ *
+ * Bundled rather than fetched from Google at build time: the build runs on
+ * server-f with no guarantee of reaching fonts.googleapis.com.
+ */
+const audiowide = localFont({
+  src: '../fonts/Audiowide-Regular.ttf',
+  weight: '400',
+  variable: '--font-audiowide',
+  display: 'swap',
+});
+
 export const metadata: Metadata = {
   title: {
     default: 'SnapApp — the receipt app that reads every line',
@@ -32,7 +50,13 @@ export const metadata: Metadata = {
   description:
     'Photograph a receipt and SnapApp reads every line, splits GST-free from taxable, checks it is a valid tax invoice and keeps a true copy for five years. Then it shows you where the money went.',
   metadataBase: new URL(process.env.WEB_PUBLIC_URL ?? 'http://127.0.0.1:3000'),
-  icons: { icon: '/brand/snap-icon.png', apple: '/brand/snap-icon.png' },
+  icons: {
+    icon: [
+      { url: '/brand/snapapp-mark.svg', type: 'image/svg+xml' },
+      { url: '/brand/favicon-48.png', sizes: '48x48', type: 'image/png' },
+    ],
+    apple: { url: '/brand/apple-touch-icon.png', sizes: '180x180' },
+  },
   openGraph: {
     type: 'website',
     siteName: 'SnapApp',
@@ -44,8 +68,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#FFFFFF' },
-    { media: '(prefers-color-scheme: dark)', color: '#080C13' },
+    { media: '(prefers-color-scheme: light)', color: '#F6F5F0' },
+    { media: '(prefers-color-scheme: dark)', color: '#0E1320' },
   ],
 };
 
@@ -129,7 +153,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html
       lang="en-AU"
       suppressHydrationWarning
-      className={`${geist.variable} ${geistMono.variable}`}
+      className={`${geist.variable} ${geistMono.variable} ${audiowide.variable}`}
     >
       <head>
         <script suppressHydrationWarning dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />

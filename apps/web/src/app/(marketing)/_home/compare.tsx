@@ -95,7 +95,7 @@ export function HomeCompare() {
           lede="Plenty of apps photograph a receipt and file the total. This is what each one does with the lines."
         >
           <p className="mt-6 flex max-w-[46ch] items-start gap-2.5 text-[0.875rem] leading-snug text-[var(--s-ink-3)]">
-            <Icon name="calendar" size={17} className="mt-px shrink-0 text-[var(--s-blue-text)]" />
+            <Icon name="calendar" size={17} className="mt-px shrink-0 text-[var(--s-brand-text)]" />
             <span>
               <span className="font-[600] text-[var(--s-ink-2)]">
                 As at <time dateTime={AS_AT_ISO}>{AS_AT}</time>
@@ -161,7 +161,7 @@ export function HomeCompare() {
                         </span>
                       ) : null}
                       {row.headline ? (
-                        <span className="mt-2 inline-flex h-6 items-center rounded-full bg-[var(--s-blue-soft)] px-2.5 text-[0.6875rem] font-[650] uppercase tracking-[0.06em] text-[var(--s-blue-text)]">
+                        <span className="mt-2 inline-flex h-6 items-center rounded-full bg-[var(--s-brand-soft)] px-2.5 text-[0.6875rem] font-[650] uppercase tracking-[0.06em] text-[var(--s-brand-text)]">
                           Only column with a tick
                         </span>
                       ) : null}

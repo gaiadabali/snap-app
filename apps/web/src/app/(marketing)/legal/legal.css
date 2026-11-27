@@ -148,10 +148,10 @@
 }
 
 .legal-prose a {
-  color: var(--s-blue-text);
+  color: var(--s-brand-text);
   font-weight: 540;
   text-decoration: underline;
-  text-decoration-color: color-mix(in srgb, var(--s-blue) 35%, transparent);
+  text-decoration-color: color-mix(in srgb, var(--s-brand) 35%, transparent);
   text-underline-offset: 3px;
 }
 
@@ -181,7 +181,7 @@
   width: 6px;
   height: 6px;
   border-radius: 999px;
-  background: var(--s-blue);
+  background: var(--s-brand);
 }
 
 .legal-prose ol {
@@ -200,7 +200,7 @@
   left: 0;
   font-weight: 640;
   font-variant-numeric: tabular-nums;
-  color: var(--s-blue-text);
+  color: var(--s-brand-text);
 }
 
 .legal-prose code {

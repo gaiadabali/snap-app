@@ -360,7 +360,7 @@ export function AddButton({ label, onPress }: { label: string; onPress: () => vo
       })}
     >
       <Icon name="plus" size={18} color={p.accent} />
-      <Body strong style={{ color: p.accent }}>
+      <Body strong style={{ color: p.accentText }}>
         {label}
       </Body>
     </Pressable>
@@ -391,7 +391,7 @@ export function Avatar({ initials, size = 32 }: { initials: string; size?: numbe
   const p = usePalette();
   // Hue from the initials so a person keeps the same colour everywhere,
   // without needing an avatar service or a stored preference.
-  const hues = ['#1878D8', '#27AE60', '#9B6BF2', '#F2994A', '#EF6C7E', '#1CA8DB'];
+  const hues = ['#EA542D', '#27AE60', '#9B6BF2', '#F2994A', '#EF6C7E', '#1CA8DB'];
   const hue = hues[(initials.charCodeAt(0) + (initials.charCodeAt(1) || 0)) % hues.length]!;
   return (
     <View

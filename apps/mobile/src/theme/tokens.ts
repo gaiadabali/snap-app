@@ -3,9 +3,25 @@ import { Platform, type TextStyle } from 'react-native';
 /**
  * Sampled from "Snap Apps Prototype.dc.html" (redesign brief, 2026-09-19).
  *
- * The identity colours are still the measured ones from the launch film:
- * `accent` #1878D8, `scan` #1CA8DB, and the risk/warn/good hues. Those did not
- * move and must not.
+ * REBRAND 2026-11-27 (owner request): the identity colour is now the official
+ * Snap Apps orange, #EA542D, sampled from the owner's logo ("Snap apps.png").
+ * It replaces the launch-film blue (#1878D8) everywhere. What that forced:
+ *
+ *   - `accent` is the brand fill. Per the GOD Ecosystem Brand Guidelines (p20)
+ *     INK on orange is 4.9:1 (AA, all text) while white on it is 3.6:1 (large
+ *     text only), so every label on an orange fill is `accentInk` = Ink
+ *     #0F172A, never white. Orange itself is never body text on Paper (3.3:1);
+ *     orange text uses `accentText`, a darker orange derived from the brand
+ *     hue (#B2300F, 5.8:1 on Paper).
+ *   - the neutrals are the guide's: Ink #0F172A, Slate #5B6375, Mist #E4E3DC,
+ *     Paper #F6F5F0, Orange tint #FBE0D9. The dark scheme is ours (the guide
+ *     defines none): Ink-derived navy-slates.
+ *   - `risk` moved from #C4322A to a crimson (#B3123F) and `warn` from #95590A
+ *     to a golden brown (#8A6100): the old values sat one step from orange.
+ *   - `scan` is a warm apricot now, not cyan.
+ *
+ * (Earlier history, kept for the record: the identity colours were the
+ * measured ones from the launch film, `accent` #1878D8, `scan` #1CA8DB.)
  *
  * The NEUTRALS did move, and the move is deliberate rather than drift. History,
  * so nobody re-litigates it from half the story:
@@ -38,7 +54,8 @@ export interface Palette {
   inkStrong: string;
   inkMuted: string;
   inkFaint: string;
-  /** Brand fill. White sits on this in both schemes, so it does not theme. */
+  /** Brand fill (#EA542D). Icons, borders, indicators, the logo. White on it is
+   *  3.62:1: never put body text on it, use `accentStrong`. */
   accent: string;
   /** Accent as TEXT or as a tinted icon — `accent` itself is too dark on a
    *  dark ground and too light on a light one to read at body size. */
@@ -79,68 +96,68 @@ export interface Palette {
 }
 
 const light: Palette = {
-  ground: '#F7F9FC',
-  surface: '#EAF0F8',
-  surfaceAlt: '#DCE5F2',
-  ink: '#14181D',
-  inkStrong: '#3F464E',
-  inkMuted: '#5A6068',
-  inkFaint: '#858B93',
-  accent: '#1878D8',
-  accentText: '#0F5BB5',
-  accentSoft: 'rgba(24,120,216,0.13)',
-  accentInk: '#FFFFFF',
-  scan: '#1CA8DB',
-  risk: '#C4322A',
-  riskSoft: '#F8E7E5',
-  riskInk: '#8A2A22',
-  riskRule: '#E0BCB8',
-  warn: '#95590A',
-  warnSoft: '#F7EEDC',
-  warnInk: '#5A2F05',
+  ground: '#F6F5F0',
+  surface: '#EFEEE8',
+  surfaceAlt: '#E4E3DC',
+  ink: '#0F172A',
+  inkStrong: '#3B4256',
+  inkMuted: '#5B6375',
+  inkFaint: '#656C7C',
+  accent: '#EA542D',
+  accentText: '#B2300F',
+  accentSoft: 'rgba(234,84,45,0.18)',
+  accentInk: '#0F172A',
+  scan: '#E8801F',
+  risk: '#B3123F',
+  riskSoft: '#FBE6EC',
+  riskInk: '#7E0F2D',
+  riskRule: '#E8B8C6',
+  warn: '#8A6100',
+  warnSoft: '#F8F0D6',
+  warnInk: '#4F3700',
   good: '#1B6E4F',
   goodSoft: '#E2EFE9',
   goodInk: '#12452F',
   info: '#14507F',
   infoSoft: '#E4EEF9',
-  rule: '#DCE3EE',
-  ruleStrong: '#C2CEDF',
-  overlay: 'rgba(20,24,29,0.55)',
-  chrome: '#FAF9F7',
+  rule: '#E4E3DC',
+  ruleStrong: '#CFCEC5',
+  overlay: 'rgba(15,23,42,0.55)',
+  chrome: '#F6F5F0',
   card: '#FFFFFF',
-  cardEdge: 'rgba(15,30,49,0.05)',
+  cardEdge: 'rgba(15,23,42,0.05)',
 };
 
 const dark: Palette = {
-  ground: '#121820',
-  surface: '#1B222C',
-  surfaceAlt: '#242C38',
-  ink: '#F4F3F0',
-  inkStrong: '#D3D7DB',
-  inkMuted: '#9AA2AA',
-  inkFaint: '#7C848D',
-  accent: '#1878D8',
-  accentText: '#7FB4EE',
-  accentSoft: 'rgba(127,180,238,0.18)',
-  accentInk: '#FFFFFF',
-  scan: '#3FC6EE',
-  risk: '#F0897F',
-  riskSoft: '#2E1C1B',
-  riskInk: '#F4C3BD',
-  riskRule: '#5A302C',
-  warn: '#E8B45C',
+  ground: '#0E1320',
+  surface: '#161C2B',
+  surfaceAlt: '#202739',
+  ink: '#F6F5F0',
+  inkStrong: '#D5D8E0',
+  inkMuted: '#A4ABBB',
+  inkFaint: '#7F8799',
+  accent: '#EA542D',
+  accentText: '#FF8A66',
+  accentSoft: 'rgba(255,138,102,0.16)',
+  accentInk: '#0F172A',
+  scan: '#FFB27A',
+  risk: '#F58AA5',
+  riskSoft: '#34161F',
+  riskInk: '#F9C6D3',
+  riskRule: '#5E2A3A',
+  warn: '#E8C25C',
   warnSoft: '#2E2617',
-  warnInk: '#F0DCB4',
+  warnInk: '#F3E2B0',
   good: '#6FD3AC',
   goodSoft: '#182C23',
   goodInk: '#BCE7D2',
   info: '#C4DDF7',
   infoSoft: '#16283A',
-  rule: '#2C3542',
-  ruleStrong: '#3A4452',
-  overlay: 'rgba(6,8,9,0.72)',
-  chrome: '#14181D',
-  card: '#1B222C',
+  rule: '#262D3E',
+  ruleStrong: '#353D52',
+  overlay: 'rgba(5,8,16,0.72)',
+  chrome: '#0E1320',
+  card: '#161C2B',
   cardEdge: 'rgba(255,255,255,0.06)',
 };
 
@@ -151,7 +168,7 @@ export const palettes: Record<Scheme, Palette> = { light, dark };
  * Three stops, 135°. Consumed by `<Hero>` in components/ui.tsx.
  */
 export const heroGradient = {
-  colors: ['#0F5BB5', '#1569BE', '#0A4A96'] as const,
+  colors: ['#C43512', '#D13A14', '#9E2E0F'] as const,
   locations: [0, 0.52, 1] as const,
   start: { x: 0, y: 0 },
   end: { x: 1, y: 1 },
@@ -265,6 +282,13 @@ export const control = {
  */
 export const font = {
   body: 'Geist',
+  /**
+   * Audiowide, the Snap Apps brand face (GOD Ecosystem Brand Guidelines p16).
+   * One weight, wide and display-sized, so it is for the brand voice only: the
+   * splash, the sign-in hero and screen titles. Everything you read or type
+   * stays in Geist. Registered in `theme/text.tsx` under this name.
+   */
+  brand: 'Audiowide_400Regular',
   mono: Platform.select({ ios: 'Menlo', android: 'monospace', default: 'monospace' }),
 } as const;
 
@@ -298,6 +322,10 @@ export const type = {
   label: { fontSize: 12, lineHeight: 16, fontWeight: '600' },
 } as const;
 
+/** Spread into a Text style to set it in Audiowide. `fontWeight: 'normal'`
+ *  because the face has one weight and anything else would be synthesised. */
+export const brandFace = { fontFamily: font.brand, fontWeight: 'normal' } as const;
+
 /** Figures that line up in columns. Money should always use this.
  *  Not `as const`: RN's TextStyle wants a mutable FontVariant[]. */
 export const numeric: { fontVariant: TextStyle['fontVariant'] } = {
@@ -313,7 +341,7 @@ export const numeric: { fontVariant: TextStyle['fontVariant'] } = {
 export const shadow = {
   /** Cards and list groups sitting on the page. */
   card: {
-    shadowColor: '#0F1E31',
+    shadowColor: '#0F172A',
     shadowOpacity: 0.07,
     shadowRadius: 14,
     shadowOffset: { width: 0, height: 4 },
@@ -321,7 +349,7 @@ export const shadow = {
   },
   /** The hero and anything that should feel lifted off the page. */
   lift: {
-    shadowColor: '#0A4A96',
+    shadowColor: '#9E2E0F',
     shadowOpacity: 0.28,
     shadowRadius: 22,
     shadowOffset: { width: 0, height: 12 },

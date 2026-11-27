@@ -59,7 +59,7 @@ export function FolderRailView({
               <span
                 className={cx(
                   'ml-auto rounded-full px-1.5 py-px font-mono text-[11px] tabular',
-                  key === 'drafts' ? 'text-[var(--color-ink-muted)]' : 'bg-[var(--color-accent-strong)] text-[var(--color-accent-ink)]',
+                  key === 'drafts' ? 'text-[var(--color-ink-muted)]' : 'bg-[var(--color-accent)] text-[var(--color-accent-ink)]',
                 )}
               >
                 <span aria-hidden>{countLabel(count)}</span>

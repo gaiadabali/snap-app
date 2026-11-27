@@ -74,7 +74,7 @@
   .compare-us {
     position: relative;
     z-index: 1;
-    border-inline: 1px solid rgb(24 120 216 / 0.3);
+    border-inline: 1px solid rgb(234 84 45 / 0.3);
     background: transparent;
   }
 
@@ -83,11 +83,11 @@
     position: absolute;
     inset: 0;
     z-index: -1;
-    background: var(--s-blue-soft);
+    background: var(--s-brand-soft);
   }
 
   .compare-headline > .compare-us::before {
-    background: color-mix(in srgb, var(--s-blue) 17%, var(--s-bg));
+    background: color-mix(in srgb, var(--s-brand) 17%, var(--s-bg));
   }
 
   thead .compare-us {
@@ -104,13 +104,13 @@
   }
 
   tbody tr:last-child > .compare-us {
-    border-bottom: 1px solid rgb(24 120 216 / 0.3);
+    border-bottom: 1px solid rgb(234 84 45 / 0.3);
   }
 
   tbody tr:last-child > .compare-us::before {
     bottom: calc(var(--cap) * -1);
     border-radius: 0 0 22px 22px;
-    box-shadow: inset 0 0 0 1px rgb(24 120 216 / 0.3);
+    box-shadow: inset 0 0 0 1px rgb(234 84 45 / 0.3);
   }
 
   /* ── Marks ─────────────────────────────────────────────────────────────── */

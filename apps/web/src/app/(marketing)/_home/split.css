@@ -81,7 +81,7 @@
 }
 
 .split-in:focus-visible + .split-opt {
-  outline: 2px solid var(--s-blue);
+  outline: 2px solid var(--s-brand);
   outline-offset: 2px;
 }
 
@@ -192,9 +192,9 @@
 }
 
 .split-group[data-tone="taxable"] {
-  --tone: var(--s-blue-text);
-  --tone-soft: var(--s-blue-soft);
-  --tone-edge: color-mix(in srgb, var(--s-blue) 26%, transparent);
+  --tone: var(--s-brand-text);
+  --tone-soft: var(--s-brand-soft);
+  --tone-edge: color-mix(in srgb, var(--s-brand) 26%, transparent);
 }
 
 .split-head,

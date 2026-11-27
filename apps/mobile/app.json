@@ -26,7 +26,7 @@
       ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#1878D8"
+        "backgroundColor": "#EA542D"
       },
       "blockedPermissions": [
         "android.permission.RECORD_AUDIO",
@@ -52,7 +52,7 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#1878D8",
+          "backgroundColor": "#EA542D",
           "image": "./assets/splash-icon.png",
           "imageWidth": 180
         }
@@ -61,7 +61,7 @@
       [
         "expo-notifications",
         {
-          "color": "#1878D8",
+          "color": "#EA542D",
           "defaultChannel": "mail"
         }
       ]

@@ -5,7 +5,7 @@ import { cx } from '@/design/primitives/cx';
 
 import { Icon } from './icons';
 
-export { Icon, SnapMark } from './icons';
+export { Icon, SnapLockup, SnapMark } from './icons';
 export type { IconName } from './icons';
 
 /**
@@ -342,7 +342,7 @@ export function IconTile({
   className?: string;
 }) {
   const tones: Record<string, string> = {
-    blue: 'bg-[var(--s-blue-soft)] text-[var(--s-blue-text)]',
+    blue: 'bg-[var(--s-brand-soft)] text-[var(--s-brand-text)]',
     green: 'bg-[var(--s-green-soft)] text-[var(--s-green)]',
     red: 'bg-[var(--s-red-soft)] text-[var(--s-red)]',
     amber: 'bg-[var(--s-amber-soft)] text-[var(--s-amber)]',
@@ -366,7 +366,7 @@ export function TextLink({ href, children, className }: { href: string; children
     <Link
       href={href}
       className={cx(
-        'group inline-flex items-center gap-1.5 text-[0.9375rem] font-semibold tracking-[-0.01em] text-[var(--s-blue-text)]',
+        'group inline-flex items-center gap-1.5 text-[0.9375rem] font-semibold tracking-[-0.01em] text-[var(--s-brand-text)]',
         className,
       )}
     >

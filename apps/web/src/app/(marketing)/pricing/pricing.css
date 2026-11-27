@@ -29,8 +29,8 @@
   inset: 0;
   pointer-events: none;
   background:
-    radial-gradient(60% 55% at 88% 0%, rgb(24 120 216 / 0.14), transparent 70%),
-    radial-gradient(50% 45% at 0% 100%, rgb(28 168 219 / 0.08), transparent 70%);
+    radial-gradient(60% 55% at 88% 0%, rgb(234 84 45 / 0.14), transparent 70%),
+    radial-gradient(50% 45% at 0% 100%, rgb(232 128 31 / 0.08), transparent 70%);
 }
 
 .price-stage > * {
@@ -87,8 +87,8 @@
   height: 2px;
   opacity: 0;
   pointer-events: none;
-  background: linear-gradient(90deg, transparent, var(--s-cyan) 25%, #a8ecff 50%, var(--s-cyan) 75%, transparent);
-  box-shadow: 0 0 16px 3px rgb(28 168 219 / 0.45);
+  background: linear-gradient(90deg, transparent, var(--s-scan) 25%, #ffe2c8 50%, var(--s-scan) 75%, transparent);
+  box-shadow: 0 0 16px 3px rgb(232 128 31 / 0.45);
 }
 
 /* ── The free-then-paid strip ───────────────────────────────────────────── */
@@ -122,8 +122,8 @@
 }
 
 .price-slot[data-kind="paid"] {
-  background: var(--s-blue-soft);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--s-blue-text) 26%, transparent);
+  background: var(--s-brand-soft);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--s-brand-text) 26%, transparent);
 }
 
 /* The paid scans run on past the edge: there is no last one. */
@@ -144,7 +144,7 @@
 }
 
 .price-group[data-kind="paid"] .price-group-label {
-  color: var(--s-blue-text);
+  color: var(--s-brand-text);
 }
 
 /* ── The estimator's slider ─────────────────────────────────────────────── */
@@ -168,13 +168,13 @@
 .price-range::-webkit-slider-runnable-track {
   height: 10px;
   border-radius: 999px;
-  background: linear-gradient(90deg, var(--s-blue) var(--fill), var(--s-mist-2) var(--fill));
+  background: linear-gradient(90deg, var(--s-brand) var(--fill), var(--s-mist-2) var(--fill));
 }
 
 .price-range::-moz-range-track {
   height: 10px;
   border-radius: 999px;
-  background: linear-gradient(90deg, var(--s-blue) var(--fill), var(--s-mist-2) var(--fill));
+  background: linear-gradient(90deg, var(--s-brand) var(--fill), var(--s-mist-2) var(--fill));
 }
 
 .price-range::-webkit-slider-thumb {
@@ -217,11 +217,11 @@
 }
 
 .price-range:focus-visible::-webkit-slider-thumb {
-  box-shadow: 0 0 0 3px var(--s-bg), 0 0 0 5.5px var(--s-blue), var(--s-shadow-2);
+  box-shadow: 0 0 0 3px var(--s-bg), 0 0 0 5.5px var(--s-brand), var(--s-shadow-2);
 }
 
 .price-range:focus-visible::-moz-range-thumb {
-  box-shadow: 0 0 0 3px var(--s-bg), 0 0 0 5.5px var(--s-blue), var(--s-shadow-2);
+  box-shadow: 0 0 0 3px var(--s-bg), 0 0 0 5.5px var(--s-brand), var(--s-shadow-2);
 }
 
 /* How long a pack lasts, drawn against a year. */
@@ -241,8 +241,8 @@
 }
 
 .price-lasts[data-best] {
-  background: var(--s-blue-soft);
-  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--s-blue) 55%, transparent);
+  background: var(--s-brand-soft);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--s-brand) 55%, transparent);
 }
 
 /* ── The closing card's watermark ───────────────────────────────────────── */

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { FREE_SCANS_AT_SIGNUP } from '@/app/(marketing)/pricing/credit-packs';
 import { Phone } from '@/design/site';
 import { HomeScreen } from '@/design/site/app-ui';
-import { SnapMark } from '@/design/site/icons';
+import { SnapLockup } from '@/design/site/icons';
 import '@/design/site/site.css';
 
 import './auth.css';
@@ -20,8 +20,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
       <div className="auth-form-col">
         <header className="auth-top">
           <Link href="/" aria-label="SnapApp, home" className="auth-logo">
-            <SnapMark size={32} className="rounded-[9px]" />
-            SnapApp
+            <SnapLockup height={41} />
           </Link>
         </header>
         <main className="auth-main">

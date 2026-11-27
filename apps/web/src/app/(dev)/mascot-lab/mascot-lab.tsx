@@ -423,7 +423,7 @@ function Group({ title, children }: { title: string; children: ReactNode }) {
 }
 
 const LAB_CSS = `
-.lab { --bg: #ffffff; --card: #f4f7fb; --ink: #0b111a; --ink-3: #67707b; --edge: rgb(15 30 49 / 0.1);
+.lab { --bg: #ffffff; --card: #f4f7fb; --ink: #0b111a; --ink-3: #67707b; --edge: rgb(15 23 42 / 0.1);
   min-height: 100dvh; background: var(--bg); color: var(--ink); font-family: var(--font-geist, system-ui), system-ui, sans-serif;
   padding: 24px clamp(16px, 4vw, 40px) 64px; box-sizing: border-box; }
 .lab[data-dark] { --bg: #080c13; --card: #111824; --ink: #f2f5f9; --ink-3: #8f99a6; --edge: rgb(255 255 255 / 0.1); }
@@ -436,9 +436,9 @@ const LAB_CSS = `
 .lab-group legend { font-size: 12px; color: var(--ink-3); padding: 0 4px; }
 .lab-group button { font: inherit; font-size: 13px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--edge);
   background: var(--card); color: var(--ink); cursor: pointer; }
-.lab-group button:hover { border-color: #1878d8; }
-.lab-group button:focus-visible { outline: 2px solid #1878d8; outline-offset: 2px; }
-.lab-group button[aria-pressed='true'] { background: #1878d8; border-color: #1878d8; color: #fff; }
+.lab-group button:hover { border-color: #ea542d; }
+.lab-group button:focus-visible { outline: 2px solid #ea542d; outline-offset: 2px; }
+.lab-group button[aria-pressed='true'] { background: #ea542d; border-color: #ea542d; color: #0f172a; }
 .lab-group label { font-size: 13px; display: inline-flex; gap: 6px; align-items: center; margin-right: 12px; }
 .lab-log { margin: 0; font-size: 12px; color: var(--ink-3); min-height: 6em; white-space: pre-wrap; }
 .lab-grid { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-end; }

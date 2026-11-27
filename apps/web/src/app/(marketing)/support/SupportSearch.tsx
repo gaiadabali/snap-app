@@ -41,7 +41,7 @@ export function SupportSearch({ index }: { index: SearchableTopic[] }) {
           {results.length === 0 ? (
             <p className="small text-center">
               No topic matches &quot;{query}&quot;. Browse the categories below, or{' '}
-              <a href="#contact" className="font-semibold text-[var(--s-blue-text)] hover:underline">
+              <a href="#contact" className="font-semibold text-[var(--s-brand-text)] hover:underline">
                 contact support
               </a>
               .
@@ -49,7 +49,7 @@ export function SupportSearch({ index }: { index: SearchableTopic[] }) {
           ) : (
             results.map((topic, i) => (
               <a key={i} href={topic.categoryHref} className="sup-result">
-                <span className="block text-[0.75rem] font-semibold uppercase tracking-[0.06em] text-[var(--s-blue-text)]">
+                <span className="block text-[0.75rem] font-semibold uppercase tracking-[0.06em] text-[var(--s-brand-text)]">
                   {topic.category}
                 </span>
                 <span className="mt-1 block text-[1.0625rem] font-semibold tracking-[-0.015em] text-[var(--s-ink)]">

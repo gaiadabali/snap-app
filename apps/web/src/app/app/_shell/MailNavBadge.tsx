@@ -11,7 +11,7 @@ function UnreadCount() {
   return (
     <span
       data-testid="mail-unread-badge"
-      className="rounded-full bg-[var(--color-accent-strong)] px-1.5 py-px font-mono text-[11px] font-semibold text-[var(--color-accent-ink)] tabular"
+      className="rounded-full bg-[var(--color-accent)] px-1.5 py-px font-mono text-[11px] font-semibold text-[var(--color-accent-ink)] tabular"
     >
       <span aria-hidden>{countLabel(unread)}</span>
       <span className="sr-only">{` unread ${unread === 1 ? 'message' : 'messages'}`}</span>

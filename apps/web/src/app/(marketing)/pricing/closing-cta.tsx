@@ -15,7 +15,7 @@ export function ClosingCta() {
         <Reveal variant="scale">
           <div
             className="relative overflow-hidden rounded-[40px] px-7 py-16 text-white sm:px-14 sm:py-24"
-            style={{ background: 'var(--s-grad)', boxShadow: '0 30px 60px -30px rgb(10 74 150 / 0.6)' }}
+            style={{ background: 'var(--s-grad)', boxShadow: '0 30px 60px -30px rgb(164 47 16 / 0.6)' }}
           >
             <div
               aria-hidden

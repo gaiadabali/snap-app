@@ -139,7 +139,7 @@ export function HomeStory() {
                     <div className="story-chips mt-6">
                       {s.chips.map((c) => (
                         <Chip key={c.label}>
-                          <Icon name={c.icon} size={15} className="text-[var(--s-blue-text)]" />
+                          <Icon name={c.icon} size={15} className="text-[var(--s-brand-text)]" />
                           {c.label}
                         </Chip>
                       ))}

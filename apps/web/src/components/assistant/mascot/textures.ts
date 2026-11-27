@@ -109,7 +109,7 @@ export function plateTexture(): CanvasTexture {
   bar(26, 218, 66);
   bar(w - 26 - 38, 218, 38);
   bar(26, 232, 44);
-  g.fillStyle = 'rgba(11, 17, 26, 0.15)';
+  g.fillStyle = 'rgba(15, 23, 42, 0.15)';
   bar(w - 26 - 52, 232, 52);
   g.strokeStyle = PAPER.ruleStrong;
   g.setLineDash([5, 5]);
@@ -138,7 +138,7 @@ export function plateShadowTexture(): CanvasTexture {
   const off = w * 2;
   g.save();
   g.translate(-off, 0);
-  g.shadowColor = 'rgba(2, 22, 60, 0.85)';
+  g.shadowColor = 'rgba(60, 16, 4, 0.85)';
   g.shadowBlur = 14;
   g.shadowOffsetX = off;
   docketPath(g, 14, 6);
@@ -162,21 +162,21 @@ export function blushTexture(): CanvasTexture {
 export function shadowTexture(): CanvasTexture {
   const [c, g] = canvas(128, 128);
   const r = g.createRadialGradient(64, 64, 0, 64, 64, 64);
-  r.addColorStop(0, 'rgba(6, 26, 64, 0.55)');
-  r.addColorStop(0.35, 'rgba(6, 26, 64, 0.3)');
-  r.addColorStop(0.65, 'rgba(6, 26, 64, 0.07)');
-  r.addColorStop(0.9, 'rgba(6, 26, 64, 0)');
+  r.addColorStop(0, 'rgba(74, 20, 6, 0.55)');
+  r.addColorStop(0.35, 'rgba(74, 20, 6, 0.3)');
+  r.addColorStop(0.65, 'rgba(74, 20, 6, 0.07)');
+  r.addColorStop(0.9, 'rgba(74, 20, 6, 0)');
   g.fillStyle = r;
   g.fillRect(0, 0, 128, 128);
   return texture(c);
 }
 
-/** A small glowing dot. White dots get a blue-grey underside so they read on white. */
+/** A small glowing dot. White dots get a warm-grey underside so they read on white. */
 export function orbTexture(colour: string): CanvasTexture {
   const S = 64;
   const [c, g] = canvas(S, S);
   const white = colour.toUpperCase() === '#FFFFFF';
-  const glowColour = white ? '#7FD8FF' : colour;
+  const glowColour = white ? '#FFB27A' : colour;
   const glow = g.createRadialGradient(32, 32, 8, 32, 32, 32);
   glow.addColorStop(0, hexA(glowColour, 0.42));
   glow.addColorStop(1, hexA(glowColour, 0));
@@ -186,7 +186,7 @@ export function orbTexture(colour: string): CanvasTexture {
   ball.addColorStop(0, '#ffffff');
   ball.addColorStop(0.3, mix(colour, '#ffffff', 0.35));
   ball.addColorStop(0.8, colour);
-  ball.addColorStop(1, white ? '#B9D3EA' : mix(colour, '#000000', 0.25));
+  ball.addColorStop(1, white ? '#EBC9B8' : mix(colour, '#000000', 0.25));
   g.fillStyle = ball;
   g.beginPath();
   g.arc(32, 32, 12.5, 0, Math.PI * 2);
@@ -198,9 +198,9 @@ export function sparkleTexture(): CanvasTexture {
   const S = 64;
   const [c, g] = canvas(S, S);
   const glow = g.createRadialGradient(32, 32, 0, 32, 32, 30);
-  glow.addColorStop(0, 'rgba(225, 248, 255, 0.9)');
-  glow.addColorStop(0.25, 'rgba(63, 198, 238, 0.35)');
-  glow.addColorStop(1, 'rgba(63, 198, 238, 0)');
+  glow.addColorStop(0, 'rgba(255, 240, 230, 0.9)');
+  glow.addColorStop(0.25, 'rgba(255, 178, 122, 0.35)');
+  glow.addColorStop(1, 'rgba(255, 178, 122, 0)');
   g.fillStyle = glow;
   g.fillRect(0, 0, S, S);
   g.fillStyle = '#ffffff';
@@ -224,15 +224,15 @@ export function flashTexture(): CanvasTexture {
   const halo = g.createRadialGradient(64, 64, 0, 64, 64, 64);
   halo.addColorStop(0, 'rgba(255, 255, 255, 1)');
   halo.addColorStop(0.16, 'rgba(255, 255, 255, 0.95)');
-  halo.addColorStop(0.4, 'rgba(127, 216, 255, 0.4)');
-  halo.addColorStop(1, 'rgba(127, 216, 255, 0)');
+  halo.addColorStop(0.4, 'rgba(255, 190, 150, 0.4)');
+  halo.addColorStop(1, 'rgba(255, 190, 150, 0)');
   g.fillStyle = halo;
   g.fillRect(0, 0, S, S);
-  // Rays fade from white to the scan cyan, so the flash still reads on a white page.
+  // Rays fade from white to the scan apricot, so the flash still reads on a white page.
   const rays = g.createRadialGradient(64, 64, 6, 64, 64, 62);
   rays.addColorStop(0, 'rgba(255, 255, 255, 1)');
-  rays.addColorStop(0.45, 'rgba(160, 228, 250, 0.95)');
-  rays.addColorStop(1, 'rgba(63, 198, 238, 0.85)');
+  rays.addColorStop(0.45, 'rgba(255, 214, 184, 0.95)');
+  rays.addColorStop(1, 'rgba(255, 178, 122, 0.85)');
   g.fillStyle = rays;
   for (let i = 0; i < 6; i++) {
     const a = (i / 6) * Math.PI * 2 + 0.26;
@@ -249,7 +249,7 @@ export function flashTexture(): CanvasTexture {
 
 /**
  * The scan line: a bright core with a glow trailing above it (it sweeps down),
- * fading out at both ends. White on transparent; the material tints it cyan.
+ * fading out at both ends. White on transparent; the material tints it apricot.
  */
 export function scanTexture(): CanvasTexture {
   const W = 128;

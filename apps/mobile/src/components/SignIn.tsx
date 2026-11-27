@@ -1,9 +1,11 @@
 import { Fragment, useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Animated, Easing, Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Text, TextInput } from '@/theme/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api, ApiError, type AuthUser, type AvailableTaxRules, type Session } from '@/api';
+import { BrandLockup } from '@/components/BrandLogo';
+import splashGlyph from '../../assets/splash-icon.png';
 import { Icon } from '@/components/Icon';
 import { Avatar } from '@/components/form';
 import { GradientHero, HeroBody, HeroLabel } from '@/components/rich';
@@ -23,7 +25,7 @@ import { CountryPicker } from '@/components/CountryPicker';
 import { defaultCountry } from '@/lib/default-country';
 import { rememberCountry } from '@/lib/pending-country';
 import { isUseYourtal, showEmailForm, SIGNIN_COPY } from '@/lib/yourtal-signin';
-import { control, radius, space, type, usePalette } from '@/theme';
+import { brandFace, control, radius, space, type, usePalette } from '@/theme';
 
 /**
  * Everything before there is a session, rebuilt against the 2026-09-19
@@ -150,10 +152,11 @@ export function SignIn({
           contentContainerStyle={{ ...pad, paddingTop: insets.top + space.xxl, gap: space.xl }}
           keyboardShouldPersistTaps="handled"
         >
+          <BrandLockup width={176} style={{ alignSelf: 'flex-start' }} />
           <GradientHero>
             <View style={{ gap: space.sm }}>
               <HeroLabel>SnapApp</HeroLabel>
-              <Text style={{ ...type.h1, color: '#FFFFFF' }}>Receipts into records</Text>
+              <Text style={{ ...type.h1, ...brandFace, color: '#FFFFFF' }}>Receipts into records</Text>
               <HeroBody>
                 Photograph a receipt, check what was read, keep a record that holds up.
               </HeroBody>
@@ -323,7 +326,7 @@ export function SignIn({
                 justifyContent: 'center',
               }}
             >
-              {agreed ? <Icon name="check" size={16} color="#FFFFFF" /> : null}
+              {agreed ? <Icon name="check" size={16} color={p.accentInk} /> : null}
             </View>
             <Text style={[type.small, { flex: 1, color: p.inkStrong }]}>
               I agree to the terms of use and the privacy policy.
@@ -727,8 +730,9 @@ function Resend({ onResend }: { onResend: () => void }) {
 /**
  * The splash, shown while the stored session is being read.
  *
- * Full-bleed brand blue with the mark assembling out of quadrants, which is
- * the prototype's one piece of real choreography. It is also honest: this
+ * Full-bleed Shutter Orange with the shutter glyph fading up, which is the
+ * prototype's one piece of real choreography (it was a blue screen before the
+ * 2026-11-27 rebrand). It is also honest: this
  * screen exists because reading the token off disk takes a moment, and a
  * wordmark that is doing something reads as loading where a static one reads
  * as stuck.
@@ -759,29 +763,26 @@ export function SessionLoading() {
     <View
       style={{
         flex: 1,
-        backgroundColor: '#1878D8',
+        backgroundColor: '#EA542D',
         alignItems: 'center',
         justifyContent: 'center',
         overflow: 'hidden',
       }}
     >
       <Animated.View style={{ opacity: fade, transform: [{ translateY: rise }], alignItems: 'center' }}>
-        <Icon name="scan" size={96} color="#FFFFFF" />
-        <Text
-          style={{
-            fontSize: 34,
-            lineHeight: 40,
-            fontWeight: '700',
-            color: '#FFFFFF',
-            letterSpacing: -0.7,
-            marginTop: 26,
-          }}
-        >
+        <Image
+          source={splashGlyph}
+          accessibilityRole="image"
+          accessibilityLabel="SnapApp"
+          style={{ width: 132, height: 132 }}
+          resizeMode="contain"
+        />
+        {/* White on orange is 3.6:1, so only this large wordmark is white; the
+            small line under it is Ink (4.9:1), per the brand guide p20. */}
+        <Text style={{ ...type.splash, ...brandFace, letterSpacing: 0.5, color: '#FFFFFF', marginTop: 22 }}>
           SnapApp
         </Text>
-        <Text style={{ ...type.input, color: 'rgba(255,255,255,0.87)', marginTop: space.sm }}>
-          Receipts into records
-        </Text>
+        <Text style={{ ...type.input, color: '#0F172A', marginTop: space.sm }}>Receipts into records</Text>
       </Animated.View>
     </View>
   );

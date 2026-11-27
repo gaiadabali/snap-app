@@ -129,7 +129,7 @@ export function Journey() {
 
                 <Reveal className="col-start-2 row-start-1 pt-1.5">
                   <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                    <span className="text-[0.9375rem] font-semibold tracking-[-0.01em] text-[var(--s-blue-text)]">
+                    <span className="text-[0.9375rem] font-semibold tracking-[-0.01em] text-[var(--s-brand-text)]">
                       {s.name}
                     </span>
                     <span className="font-mono text-[0.6875rem] text-[var(--s-ink-4)]">{s.caption}</span>

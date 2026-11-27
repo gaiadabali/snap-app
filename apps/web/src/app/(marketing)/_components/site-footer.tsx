@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 import { BUSINESS_SURFACES_ENABLED } from '@/lib/features';
 import { ILLUSTRATIVE_NOTE, StoreButtons } from '@/design/site';
-import { SnapMark } from '@/design/site/icons';
+import { SnapLockup } from '@/design/site/icons';
 
 const COLUMNS: Array<{ heading: string; links: Array<{ href: string; label: string }> }> = [
   {
@@ -54,9 +54,8 @@ export function SiteFooter() {
       <div className="shell pt-20 pb-10">
         <div className="grid gap-14 lg:grid-cols-[1.35fr_1.65fr]">
           <div>
-            <Link href="/" className="inline-flex items-center gap-3" aria-label="SnapApp, home">
-              <SnapMark size={40} className="rounded-[11px]" />
-              <span className="text-[1.35rem] font-[650] tracking-[-0.035em]">SnapApp</span>
+            <Link href="/" className="inline-flex items-center" aria-label="SnapApp, home">
+              <SnapLockup height={52} />
             </Link>
             <p className="body mt-5 max-w-[34ch]">
               The receipt app that reads every line. Built in Australia, for the way Australians are taxed.

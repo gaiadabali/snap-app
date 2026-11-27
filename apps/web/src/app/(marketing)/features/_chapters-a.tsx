@@ -105,12 +105,12 @@ function Row({
     tone === 'green'
       ? 'bg-[var(--s-green-2)]'
       : tone === 'blue'
-        ? 'bg-[var(--s-blue)]'
+        ? 'bg-[var(--s-brand)]'
         : tone === 'red'
           ? 'bg-[var(--s-red)]'
           : 'bg-[var(--s-ink-4)]';
   const text =
-    tone === 'green' ? 'text-[var(--s-green)]' : tone === 'blue' ? 'text-[var(--s-blue-text)]' : tone === 'red' ? 'text-[var(--s-red)]' : '';
+    tone === 'green' ? 'text-[var(--s-green)]' : tone === 'blue' ? 'text-[var(--s-brand-text)]' : tone === 'red' ? 'text-[var(--s-red)]' : '';
   return (
     <div className="flex items-stretch gap-4 rounded-[18px] bg-[var(--s-card)] p-4 shadow-[var(--s-shadow-1)] ring-1 ring-[var(--s-edge)]">
       <span className={`w-1 shrink-0 rounded-full ${bar}`} aria-hidden />
@@ -236,7 +236,7 @@ export function ChecksChapter() {
                 </li>
               ))}
               <li className="flex items-start gap-4 py-5">
-                <span className="mt-0.5 grid size-7 shrink-0 place-items-center rounded-full bg-[var(--s-blue-soft)] text-[var(--s-blue-text)]">
+                <span className="mt-0.5 grid size-7 shrink-0 place-items-center rounded-full bg-[var(--s-brand-soft)] text-[var(--s-brand-text)]">
                   <Icon name="user" size={15} strokeWidth={2.2} />
                 </span>
                 <div>

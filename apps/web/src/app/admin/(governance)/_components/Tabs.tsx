@@ -27,7 +27,7 @@ export function Tabs({ items }: { items: TabItem[] }) {
             className={cx(
               'relative px-4 py-2.5 text-[14px] font-semibold transition-colors duration-150',
               active
-                ? 'text-[var(--color-accent)]'
+                ? 'text-[var(--color-accent-strong)]'
                 : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]',
             )}
           >

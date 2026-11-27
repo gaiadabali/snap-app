@@ -57,6 +57,16 @@ price on the face of each.
 
 Things a redesign may not quietly change:
 
+> **Superseded 2026-11-27 (orange rebrand).** The identity colour is now the
+> official Shutter Orange `#EA542D` with the GOD Ecosystem Brand Guidelines
+> neutrals (Ink `#0F172A`, Slate `#5B6375`, Mist `#E4E3DC`, Paper `#F6F5F0`);
+> everything below that names `#1878D8` and the blue grounds is the history.
+> Current tokens, contrast table and rules: the header comment of
+> `apps/web/src/app/globals.css` and `apps/mobile/src/theme/tokens.ts`.
+> In short: a label on an orange fill is Ink (4.9:1), never white (3.6:1);
+> orange text uses the darker `--color-accent-strong` (`#B2300F`); Audiowide is
+> the brand display face (headings, splash), Geist stays for reading and UI.
+
 1. **The identity colours are measured, not chosen.** `#1878D8`, `#0060C0` and
    the `#1CA8DB` scan cyan are sampled from the launch film and shared
    byte-for-byte with the mobile app. Restyle everything around them; do not

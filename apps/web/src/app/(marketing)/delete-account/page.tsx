@@ -52,7 +52,7 @@ export default function DeleteAccountPage() {
         </h2>
         <p className="body mt-4">
           Can&apos;t get into the app? Email{' '}
-          <a className="font-semibold text-[var(--s-blue-text)] underline" href={REQUEST_MAILTO}>
+          <a className="font-semibold text-[var(--s-brand-text)] underline" href={REQUEST_MAILTO}>
             {REQUEST_EMAIL}
           </a>{' '}
           from the address your account uses, with the subject &ldquo;Delete my SnapApp
@@ -70,7 +70,7 @@ export default function DeleteAccountPage() {
           If you accepted the GOD Group Privacy Notice and only want your data to stop being combined
           with the group, you do not have to delete anything. In the app, go to{' '}
           <strong>Settings</strong> and choose <strong>Stop combining my data with GOD</strong>. Or email{' '}
-          <a className="font-semibold text-[var(--s-blue-text)] underline" href={REQUEST_MAILTO}>
+          <a className="font-semibold text-[var(--s-brand-text)] underline" href={REQUEST_MAILTO}>
             {REQUEST_EMAIL}
           </a>{' '}
           from the address your account uses and say so. Your account and its data stay as they are.

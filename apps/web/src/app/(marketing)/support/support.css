@@ -35,8 +35,8 @@
 
   .sup-search input:focus-visible {
     outline: none;
-    border-color: var(--s-blue);
-    box-shadow: 0 0 0 4px var(--s-blue-soft), var(--s-shadow-2);
+    border-color: var(--s-brand);
+    box-shadow: 0 0 0 4px var(--s-brand-soft), var(--s-shadow-2);
   }
 
   .sup-result {
@@ -71,7 +71,7 @@
   }
 
   .sup-faq summary:hover {
-    color: var(--s-blue-text);
+    color: var(--s-brand-text);
   }
 
   .sup-faq p {

@@ -113,7 +113,7 @@ export default function SupportPage() {
                 <IconTile name={CATEGORY_ICONS[category.id] ?? 'help'} size={48} />
                 <h3 className="hd-4 mt-6">{category.title}</h3>
                 <p className="small mt-2 flex-1">{category.intro}</p>
-                <span className="mt-5 text-[0.875rem] font-semibold text-[var(--s-blue-text)]">
+                <span className="mt-5 text-[0.875rem] font-semibold text-[var(--s-brand-text)]">
                   {category.issues.length} {category.issues.length === 1 ? 'article' : 'articles'}
                 </span>
               </a>
@@ -134,7 +134,7 @@ export default function SupportPage() {
                 {popular.map(({ category, issue }) => (
                   <li key={issue.q} className="border-b border-[var(--s-edge-2)] last:border-b-0">
                     <a href={`#${category.id}`} className="group block py-5">
-                      <span className="text-[0.75rem] font-semibold uppercase tracking-[0.06em] text-[var(--s-blue-text)]">
+                      <span className="text-[0.75rem] font-semibold uppercase tracking-[0.06em] text-[var(--s-brand-text)]">
                         {category.title}
                       </span>
                       <span className="mt-1 flex items-center justify-between gap-4 text-[1.125rem] font-semibold tracking-[-0.02em]">
@@ -208,7 +208,7 @@ export default function SupportPage() {
                 Couldn&apos;t find your answer above? Email{' '}
                 <a
                   href="mailto:support@snapapps.com.au"
-                  className="font-semibold text-[var(--s-blue-text)] hover:underline"
+                  className="font-semibold text-[var(--s-brand-text)] hover:underline"
                 >
                   support@snapapps.com.au
                 </a>{' '}
@@ -250,7 +250,7 @@ export default function SupportPage() {
               </div>
               <p className="small mt-3">
                 These are targets, not a contractual guarantee — see the{' '}
-                <a href="/legal/terms" className="font-semibold text-[var(--s-blue-text)] hover:underline">
+                <a href="/legal/terms" className="font-semibold text-[var(--s-brand-text)] hover:underline">
                   Terms of Service
                 </a>
                 .

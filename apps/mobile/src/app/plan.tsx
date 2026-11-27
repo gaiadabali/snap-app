@@ -89,7 +89,7 @@ export default function PlanScreen() {
             {plan.firmName ? (
               <Card tone="accent">
                 <View style={{ gap: space.xs }}>
-                  <Label style={{ color: p.accent }}>Through your accountant</Label>
+                  <Label style={{ color: p.accentText }}>Through your accountant</Label>
                   <Body>
                     {plan.firmName} manages this workspace, and can see what you have shared with
                     them.

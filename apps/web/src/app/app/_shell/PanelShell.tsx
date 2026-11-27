@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import type { WorkspaceSummary } from '@snap/api-contract';
 
 import { Container, cx, WorkspaceCurrency } from '@/design/primitives';
+import { SnapMark } from '@/design/site/icons';
 import { signOut } from '@/lib/panels/actions';
 import type { ImpersonationBannerInfo } from '@/lib/panels/impersonation';
 import { ImpersonationBanner } from './ImpersonationBanner';
@@ -70,7 +71,8 @@ export function PanelShell({
             ) : null}
             {switchLink ? <div className="px-3 py-2 sm:hidden">{switchLink}</div> : null}
           </MobileNav>
-          <Link href="/" className="whitespace-nowrap text-[15px] font-bold text-[var(--color-ink)]">
+          <Link href="/" className="inline-flex items-center gap-2 whitespace-nowrap text-[15px] font-bold text-[var(--color-ink)]">
+            <SnapMark size={28} />
             SnapApp
           </Link>
           <span className="hidden rounded-full bg-[var(--color-accent-soft)] px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--color-ink-muted)] sm:inline">
@@ -99,7 +101,7 @@ export function PanelShell({
           <div className="ml-auto flex items-center gap-3">
             {switchLink ? <span className="hidden sm:inline">{switchLink}</span> : null}
             <div
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-accent-strong)] text-[12px] font-bold text-[var(--color-accent-ink)]"
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-accent)] text-[12px] font-bold text-[var(--color-accent-ink)]"
               title={`${user.displayName} · ${user.email}`}
             >
               {user.initials}

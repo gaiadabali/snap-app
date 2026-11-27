@@ -73,7 +73,7 @@ export function FeaturesHero() {
               delay={6}
               className="float-card absolute left-[-2%] bottom-[2%] z-10 max-sm:hidden"
             >
-              <span className="grid size-9 place-items-center rounded-[11px] bg-[var(--s-blue-soft)] text-[var(--s-blue-text)]">
+              <span className="grid size-9 place-items-center rounded-[11px] bg-[var(--s-brand-soft)] text-[var(--s-brand-text)]">
                 <Icon name="cloud-off" size={18} />
               </span>
               <span className="pr-1">

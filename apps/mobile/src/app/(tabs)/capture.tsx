@@ -1132,7 +1132,7 @@ export default function CaptureScreen() {
                 })}
               >
                 {pages.length > 0 ? (
-                  <Text style={{ color: p.accent, fontWeight: '800', fontSize: 13 }}>
+                  <Text style={{ color: p.accentText, fontWeight: '800', fontSize: 13 }}>
                     {pages.length + 1}
                   </Text>
                 ) : null}

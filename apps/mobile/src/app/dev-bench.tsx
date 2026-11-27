@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
   },
   hint: { fontSize: 11, color: '#6B7280' },
   warn: { fontSize: 13, color: '#8A5A00', backgroundColor: '#FFF6E5', padding: 12 },
-  button: { backgroundColor: '#1878D8', paddingVertical: 14, alignItems: 'center' },
+  button: { backgroundColor: '#EA542D', paddingVertical: 14, alignItems: 'center' },
   buttonOff: { backgroundColor: '#9CA3AF' },
   buttonText: { color: '#fff', fontSize: 15, fontWeight: '600' },
   logBox: { backgroundColor: '#14181D', padding: 12, gap: 2 },

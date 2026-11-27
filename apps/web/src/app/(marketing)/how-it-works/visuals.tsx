@@ -21,7 +21,7 @@ type Tone = 'green' | 'amber' | 'blue' | 'ink';
 const PILL: Record<Tone, string> = {
   green: 'bg-[var(--s-green-soft)] text-[var(--s-green)]',
   amber: 'bg-[var(--s-amber-soft)] text-[var(--s-amber)]',
-  blue: 'bg-[var(--s-blue-soft)] text-[var(--s-blue-text)]',
+  blue: 'bg-[var(--s-brand-soft)] text-[var(--s-brand-text)]',
   ink: 'bg-[var(--s-mist-2)] text-[var(--s-ink-2)]',
 };
 
@@ -85,7 +85,7 @@ function DocTile({ label, note, original = false }: { label: string; note: strin
           ))}
         </div>
         {original ? (
-          <span className="absolute -right-2.5 -top-2.5 grid size-7 place-items-center rounded-full bg-[var(--s-blue)] text-white shadow-[var(--s-shadow-blue)]">
+          <span className="absolute -right-2.5 -top-2.5 grid size-7 place-items-center rounded-full bg-[var(--s-brand)] text-[var(--s-on-brand)] shadow-[var(--s-shadow-blue)]">
             <Icon name="lock" size={14} strokeWidth={2.2} />
           </span>
         ) : null}
@@ -172,7 +172,7 @@ export function UploadVisual() {
       </ul>
 
       <div className="mt-2 flex items-start gap-2.5 rounded-[14px] bg-[var(--s-mist)] px-3.5 py-3 text-[0.8125rem] leading-snug text-[var(--s-ink-2)]">
-        <Icon name="repeat" size={16} className="mt-0.5 shrink-0 text-[var(--s-blue-text)]" />
+        <Icon name="repeat" size={16} className="mt-0.5 shrink-0 text-[var(--s-brand-text)]" />
         Dropped mid-send? It tries again with the same key and the server counts the docket once.
       </div>
     </VCard>
@@ -313,7 +313,7 @@ export function RecordVisual() {
 
       <div className="mt-5 flex flex-col gap-3">
         {[
-          { label: 'Spent on Groceries', sign: '+', tone: 'var(--s-blue)' },
+          { label: 'Spent on Groceries', sign: '+', tone: 'var(--s-brand)' },
           { label: 'Paid out', sign: '−', tone: 'var(--s-ink-4)' },
         ].map((row) => (
           <div key={row.label}>
@@ -349,8 +349,8 @@ const DGM_LABEL = 'font-mono text-[0.6875rem] tracking-[0.01em] text-[var(--s-in
 export function OriginalDiagram() {
   return (
     <div aria-hidden className="flex flex-col gap-3">
-      <div className="relative flex h-11 items-center gap-3 rounded-[14px] border border-[rgb(127_180_238/0.4)] bg-[rgb(24_120_216/0.16)] px-4 text-[0.8125rem] font-semibold text-[var(--s-ink)]">
-        <Icon name="lock" size={16} className="text-[var(--s-blue-text)]" />
+      <div className="relative flex h-11 items-center gap-3 rounded-[14px] border border-[rgb(255_138_102/0.4)] bg-[rgb(24_120_216/0.16)] px-4 text-[0.8125rem] font-semibold text-[var(--s-ink)]">
+        <Icon name="lock" size={16} className="text-[var(--s-brand-text)]" />
         Original · byte for byte
       </div>
       <div className="flex items-center justify-between px-1">
@@ -391,10 +391,10 @@ export function VersionsDiagram() {
             <div className="h-2 flex-1 overflow-hidden rounded-full bg-[var(--s-edge)]">
               <div
                 className="grow-x h-full rounded-full"
-                style={{ width: `${r.w}%`, background: r.latest ? 'var(--s-blue)' : 'var(--s-ink-4)' }}
+                style={{ width: `${r.w}%`, background: r.latest ? 'var(--s-brand)' : 'var(--s-ink-4)' }}
               />
             </div>
-            <span className="w-[3.1rem] text-right text-[0.6875rem] font-semibold text-[var(--s-blue-text)]">
+            <span className="w-[3.1rem] text-right text-[0.6875rem] font-semibold text-[var(--s-brand-text)]">
               {r.latest ? 'latest' : ''}
             </span>
           </div>
@@ -409,8 +409,8 @@ export function BalanceDiagram() {
   return (
     <div aria-hidden className="flex flex-col gap-3.5">
       {[
-        { label: 'In', value: `+${DOCKET.total}`, color: 'var(--s-blue)' },
-        { label: 'Out', value: `−${DOCKET.total}`, color: 'var(--s-cyan)' },
+        { label: 'In', value: `+${DOCKET.total}`, color: 'var(--s-brand)' },
+        { label: 'Out', value: `−${DOCKET.total}`, color: 'var(--s-scan)' },
       ].map((r) => (
         <div key={r.label} className="flex items-center gap-3">
           <span className={`${DGM_LABEL} w-7`}>{r.label}</span>
@@ -438,7 +438,7 @@ export function DecimalDiagram() {
           const edge = c === '"';
           const dot = c === '.';
           const style: CSSProperties = dot
-            ? { background: 'var(--s-blue)', color: '#fff', borderColor: 'var(--s-blue)' }
+            ? { background: 'var(--s-brand)', color: '#fff', borderColor: 'var(--s-brand)' }
             : {};
           return (
             <span
@@ -456,7 +456,7 @@ export function DecimalDiagram() {
         })}
       </div>
       <div className="flex items-center gap-2.5 text-[0.75rem] text-[var(--s-ink-3)]">
-        <span className="rounded-full bg-[var(--s-blue-soft)] px-2.5 py-1 font-mono font-semibold text-[var(--s-blue-text)]">
+        <span className="rounded-full bg-[var(--s-brand-soft)] px-2.5 py-1 font-mono font-semibold text-[var(--s-brand-text)]">
           decimal string
         </span>
         kept as text from the camera to the screen

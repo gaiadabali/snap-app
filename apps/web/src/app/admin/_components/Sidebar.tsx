@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import type { PlatformCapability } from '@snap/api-contract';
 
 import { cx } from '@/design/primitives';
+import { SnapMark } from '@/design/site/icons';
 
 import { PRIMARY_NAV } from './nav';
 
@@ -30,9 +31,7 @@ export function Sidebar({ capabilities }: { capabilities: PlatformCapability[] |
       className="flex h-full w-[220px] shrink-0 flex-col border-r border-[var(--color-rule)] bg-[var(--color-surface)]"
     >
       <div className="flex h-14 items-center gap-2 border-b border-[var(--color-rule)] px-4">
-        <span className="grid h-6 w-6 place-items-center rounded-[var(--radius-sm)] bg-[var(--color-accent)] text-[11px] font-bold text-[var(--color-accent-ink)]">
-          S
-        </span>
+        <SnapMark size={28} />
         <div className="leading-tight">
           <div className="text-[13px] font-bold tracking-[0.02em] text-[var(--color-ink)]">Snap Ops</div>
           <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--color-ink-faint)]">
@@ -50,7 +49,7 @@ export function Sidebar({ capabilities }: { capabilities: PlatformCapability[] |
                 className={cx(
                   'flex items-center justify-between rounded-[var(--radius-md)] px-3 py-2 text-[13px] font-semibold transition-colors',
                   active
-                    ? 'bg-[var(--color-accent-soft)] text-[var(--color-accent)]'
+                    ? 'bg-[var(--color-accent-soft)] text-[var(--color-accent-strong)]'
                     : 'text-[var(--color-ink-muted)] hover:bg-[var(--color-surface-alt)] hover:text-[var(--color-ink)]',
                 )}
               >

@@ -284,7 +284,7 @@ export function OriginalDocument({
           accessibilityLabel="Open the original PDF"
           onPress={() => void Linking.openURL(doc.imageUrl as string)}
         >
-          <Text style={[type.small, { color: p.accent, fontWeight: '700' }]}>Open original PDF</Text>
+          <Text style={[type.small, { color: p.accentText, fontWeight: '700' }]}>Open original PDF</Text>
         </Pressable>
       ) : null}
 
