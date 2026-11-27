@@ -1,6 +1,7 @@
-import type { FamilyStatus, TeenInviteCreated } from '@snap/api-contract';
+import type { FamilyStatus, GodConsentState, TeenInviteCreated } from '@snap/api-contract';
 import { View } from 'react-native';
 
+import { GuardianConsentBox } from '@/components/GodConsent';
 import { Body, Button, Card, Notice, Small } from '@/components/ui';
 import { space } from '@/theme';
 
@@ -23,6 +24,9 @@ export interface FamilyPanelProps {
   onAskEnd: (workspaceId: string) => void;
   onCancelEnd: () => void;
   onConfirmEnd: (workspaceId: string) => void;
+  /** The GOD Group Privacy Notice, for the parent's tick per teen (9.1.d). Absent: not offered. */
+  godNotice?: GodConsentState['notice'] | null;
+  onGodConsent?: (workspaceId: string, decision: 'accepted' | 'withdrawn') => void;
 }
 
 const day = (iso: string) =>
@@ -99,6 +103,15 @@ export function FamilyPanel(props: FamilyPanelProps) {
                 <>
                   <Small>{name} joined SnapApp on {day(teen.joinedAt)}. Switch to their space to see it.</Small>
                   <Button label="End access" tone="outline" disabled={busy} onPress={() => props.onAskEnd(teen.workspaceId)} />
+                  {props.godNotice && props.onGodConsent ? (
+                    <GuardianConsentBox
+                      notice={props.godNotice}
+                      teenName={name}
+                      accepted={teen.godConsent.accepted}
+                      busy={busy}
+                      onAnswer={(decision) => props.onGodConsent?.(teen.workspaceId, decision)}
+                    />
+                  ) : null}
                 </>
               )}
             </View>

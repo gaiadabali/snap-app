@@ -38,6 +38,7 @@ import { SummariesController } from './summaries/summaries.controller.js';
 import { TransactionsController } from './transactions/transactions.controller.js';
 import { WorkspacesController } from './workspaces/workspaces.controller.js';
 import { FamilyController } from './teens/family.controller.js';
+import { GodConsentController } from './god-consent/god-consent.controller.js';
 import { DevicesController, MailController } from './mail/mail.controller.js';
 import { YourtalEventsController } from './yourtal/events.controller.js';
 import { YourtalLinkController } from './yourtal/yourtal.controller.js';
@@ -110,6 +111,7 @@ export class HealthController {
     AccountController,
     WorkspacesController,
     FamilyController,
+    GodConsentController,
     CapturesController,
     DeviceReadingController,
     CaptureDocumentController,

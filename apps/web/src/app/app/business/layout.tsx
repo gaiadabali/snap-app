@@ -5,6 +5,9 @@ import { Container, Empty } from '@/design/primitives';
 import { getActiveWorkspaceId } from '@/lib/api/server';
 import { BUSINESS_SURFACES_ENABLED } from '@/lib/features';
 import { panelRootFor, resolveImpersonatedWorkspace } from '@/lib/panels/impersonation';
+import { GodConsentPrompt } from '@/components/god-consent/GodConsent';
+import { getGodConsent } from '@/lib/panels/data';
+import { answerGodConsent } from '@/lib/panels/god-consent-actions';
 import { requireSession } from '@/lib/panels/session';
 import { resolveActiveWorkspace } from '@/lib/panels/workspace';
 import { CreateWorkspaceForm } from '../_shell/CreateWorkspaceForm';
@@ -60,6 +63,7 @@ export default async function BusinessLayout({ children }: { children: ReactNode
   }
 
   const personalWorkspace = resolveActiveWorkspace(workspaces, 'personal', activeId);
+  const god = await getGodConsent().catch(() => null);
 
   return (
     <PanelShell
@@ -69,6 +73,7 @@ export default async function BusinessLayout({ children }: { children: ReactNode
       otherKindHref={personalWorkspace ? '/app' : null}
       nav={BUSINESS_NAV}
     >
+      {god?.prompt === 'ask' ? <GodConsentPrompt notice={god.notice} onAnswer={answerGodConsent} /> : null}
       {children}
     </PanelShell>
   );

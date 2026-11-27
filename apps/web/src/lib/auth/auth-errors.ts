@@ -81,6 +81,7 @@ export const AUTH_ERRORS = {
   // Forms
   email_required: { message: 'Enter your email address.' },
   workspace_name_required: { message: 'Give your workspace a name.' },
+  god_notice_required: { message: 'Tick the box to accept the GOD Group Privacy Notice to finish setting up.' },
   setup_failed: { message: 'Something went wrong finishing setup. Try again.' },
   passwords_mismatch: { message: 'The two passwords are not the same.' },
   password_rejected: { message: 'That password was not accepted. Use at least ten characters.' },

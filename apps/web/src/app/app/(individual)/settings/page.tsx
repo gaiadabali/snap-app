@@ -1,5 +1,7 @@
 import { Empty } from '@/design/primitives';
-import { getBusinessSettings, getInstalledTaxRules, listOccupations } from '@/lib/panels/data';
+import { GodWithdraw } from '@/components/god-consent/GodConsent';
+import { getBusinessSettings, getGodConsent, getInstalledTaxRules, listOccupations } from '@/lib/panels/data';
+import { withdrawGodConsent } from '@/lib/panels/god-consent-actions';
 import { getPermissions } from '@/lib/panels/permissions';
 import { updateSettings } from '@/lib/panels/settings-actions';
 import { installTaxRules } from '@/lib/panels/taxrules-actions';
@@ -14,7 +16,7 @@ export default async function PersonalSettingsPage() {
   if (!workspace) return <Empty title="No personal workspace yet" />;
 
   const path = '/app/settings';
-  const [settings, occupations, permissions, taxRules] = await Promise.all([
+  const [settings, occupations, permissions, taxRules, god] = await Promise.all([
     getBusinessSettings(workspace.id),
     listOccupations(workspace.id),
     getPermissions(workspace.id),
@@ -22,6 +24,7 @@ export default async function PersonalSettingsPage() {
     // `problem`, because this screen has to render the state and offer the
     // list to install from.
     getInstalledTaxRules(workspace.id),
+    getGodConsent().catch(() => null),
   ]);
 
   return (
@@ -38,6 +41,7 @@ export default async function PersonalSettingsPage() {
         canEdit={permissions.canManageBudgets}
         onInstall={installTaxRules.bind(null, workspace.id, path)}
       />
+      {god?.accepted ? <GodWithdraw onWithdraw={withdrawGodConsent} /> : null}
     </div>
   );
 }

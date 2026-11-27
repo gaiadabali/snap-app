@@ -1247,6 +1247,12 @@ export interface OnboardingInput {
    * it was simply missing from this contract, so no client could send it.
    */
   taxRulesId?: string | null;
+  /**
+   * The new sign-up's tick: "I have read and accept the GOD Group Privacy Notice..." (9.1.d).
+   * Required: onboarding is refused with 400 `god_notice_required` unless this is `true`, and
+   * the acceptance is recorded (`registration`) before the workspace is made.
+   */
+  acceptedGodNotice?: boolean;
 }
 
 // ── The platform admin plane (docs/WEB.md §6) ──────────────────────────────
@@ -2279,6 +2285,8 @@ export interface FamilyTeen {
   joinedAt: IsoDateTime;
   /** Set once the parent ended access; the space is then held, not usable. */
   accessEndedAt: IsoDateTime | null;
+  /** Whether the parent has accepted the GOD Group Privacy Notice for this teen (9.1.d). */
+  godConsent: GodTeenConsent;
 }
 
 /** `GET /v1/family`: the caller as a parent, and as a teen. */
@@ -2483,4 +2491,61 @@ export interface RegisterPushTokenRequest {
 /** `DELETE /v1/devices/push-token` (on sign-out, or when the person turns alerts off on the phone). */
 export interface UnregisterPushTokenRequest {
   token: string;
+}
+
+/* ── GOD group consent (migration 0062, god/TASKS.md 9.1.d) ─────────────────── */
+
+export type GodConsentDecision = 'accepted' | 'declined' | 'withdrawn';
+export type GodConsentMethod = 'registration' | 'next_sign_in' | 'guardian';
+
+/**
+ * What to show the caller about the GOD Group Privacy Notice.
+ *
+ *   `required`  a new sign-up: the box must be ticked to finish setup (no "Not now").
+ *   `ask`       an existing account with no answer for the current version: Accept or "Not now".
+ *   `none`      nothing to show: answered for this version, or a teen (their parent answers).
+ */
+export type GodConsentPrompt = 'required' | 'ask' | 'none';
+
+/** `GET /v1/god-consent`. The wording comes from the server so every client shows the same words. */
+export interface GodConsentState {
+  notice: {
+    id: 'god-group-notice';
+    version: string;
+    /** `YYYY-MM-DD`. */
+    effective: IsoDate;
+    url: string;
+    teenUrl: string;
+    /** The adult tick box, verbatim. "GOD Group Privacy Notice" in it is the link. */
+    adultText: string;
+    /** The parent's tick box for a teen, verbatim. "GOD Group Privacy Notice for teens" in it is the link. */
+    guardianText: string;
+  };
+  /** The caller's current answer, or null when they have never answered. Never hides an older version. */
+  status: { decision: GodConsentDecision; version: string; method: GodConsentMethod; decidedAt: IsoDateTime } | null;
+  prompt: GodConsentPrompt;
+  /** The caller is a teen: they cannot answer, their parent does. */
+  teen: boolean;
+  /** Counted as accepted (at any version, not since declined or withdrawn): the one state in which a withdrawal is offered. */
+  accepted: boolean;
+}
+
+/** `POST /v1/god-consent`. `version` must be the one the client was shown (409 `version_changed` otherwise). */
+export interface GodConsentAnswer {
+  decision: 'accepted' | 'declined';
+  version: string;
+}
+
+/** `POST /v1/family/teens/:workspaceId/god-consent`. */
+export interface GodGuardianAnswer {
+  decision: 'accepted' | 'withdrawn';
+  version: string;
+}
+
+/** A teen's consent as the parent sees it, on `FamilyTeen.godConsent`. */
+export interface GodTeenConsent {
+  /** accepted for the current version. */
+  accepted: boolean;
+  /** The version the parent last answered for, or null. */
+  version: string | null;
 }

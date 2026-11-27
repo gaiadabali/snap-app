@@ -13,16 +13,36 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
-import type { FamilyStatus, TeenInviteCreated } from '@snap/api-contract';
+import { IsIn, IsString } from 'class-validator';
+import type { FamilyStatus, GodTeenConsent, TeenInviteCreated } from '@snap/api-contract';
 import { withTenantAs } from '@snap/db';
 import { sql } from 'drizzle-orm';
 
-import { CurrentUser, MembershipGuard, SessionGuard, WorkspaceId, type AuthUser } from '../common/auth.guard.js';
+import {
+  CurrentSession,
+  CurrentUser,
+  MembershipGuard,
+  SessionGuard,
+  WorkspaceId,
+  type AuthUser,
+  type CurrentSessionInfo,
+} from '../common/auth.guard.js';
 import { config } from '../config.js';
+import { ValidBody } from '../common/valid-body.decorator.js';
 import { getDb } from '../db.js';
+import { consentErrorCode, recordGodConsentForTeen } from '../god-consent/god-consent.repo.js';
+import { GOD_NOTICE } from '../god-consent/notice.js';
 import { listMembers } from '../repo.js';
 import { createTeenInvite, endTeenInvite, teenInvitesConfigured } from './invite-api.js';
 import { endTeenSpace, familyOf, isTeen, markYourtalEnded, recordInvite, spaceOfParent } from './teens.repo.js';
+
+export class GodGuardianAnswerDto {
+  @IsIn(['accepted', 'withdrawn'], { message: 'Answer accepted or withdrawn.' })
+  decision!: 'accepted' | 'withdrawn';
+
+  @IsString({ message: 'Say which version of the notice you were shown.' })
+  version!: string;
+}
 
 const refuse = (status: HttpStatus, error: string, message: string) => new HttpException({ error, message }, status);
 
@@ -149,5 +169,40 @@ export class FamilyController {
     if (atYourTal === 'ended') await markYourtalEnded(user.userId, space.inviteId);
     this.logger.log(`teen access ended: space=${workspaceId} user=${user.userId} yourtal=${atYourTal}`);
     return { ended: true };
+  }
+
+  @Post('teens/:workspaceId/god-consent')
+  @HttpCode(200)
+  @ApiOperation({
+    summary: 'Accept, or withdraw, the GOD Group Privacy Notice for your teen',
+    description:
+      'The parent who invited the teen accepts for them (recorded as `guardian`, naming the parent); a teen cannot accept ' +
+      'for themselves. Withdrawing is allowed after access has ended. 409 version_changed when `version` is not the ' +
+      'current one; 404 for a space you did not invite; 403 teen_access_ended to accept for a teen whose access ended.',
+  })
+  async godConsent(
+    @CurrentUser() user: AuthUser,
+    // Their own session: staff acting as a parent cannot accept for the parent's teen.
+    @CurrentSession() _session: CurrentSessionInfo,
+    @Param('workspaceId', new ParseUUIDPipe()) workspaceId: string,
+    @ValidBody(GodGuardianAnswerDto) body: GodGuardianAnswerDto,
+  ): Promise<GodTeenConsent> {
+    if (body.version !== GOD_NOTICE.version) {
+      throw refuse(HttpStatus.CONFLICT, 'version_changed', 'The privacy notice has changed. Read the new version first.');
+    }
+    try {
+      await recordGodConsentForTeen(user.userId, workspaceId, { version: body.version, decision: body.decision });
+    } catch (error) {
+      if (consentErrorCode(error) === 'GC003') {
+        const space = await spaceOfParent(user.userId, workspaceId);
+        if (space?.accessEndedAt && body.decision === 'accepted') {
+          throw refuse(HttpStatus.FORBIDDEN, 'teen_access_ended', 'This teen’s access has ended.');
+        }
+        throw new NotFoundException({ error: 'not_found', message: 'No such teen space.' });
+      }
+      throw error;
+    }
+    const mine = (await familyOf(user.userId)).teens.find((t) => t.workspaceId === workspaceId);
+    return mine?.godConsent ?? { accepted: false, version: null };
   }
 }

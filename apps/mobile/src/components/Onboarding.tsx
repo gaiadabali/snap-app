@@ -4,12 +4,15 @@ import { Pressable, ScrollView, View } from 'react-native';
 import { Text, TextInput } from '@/theme/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import type { GodConsentState } from '@snap/api-contract';
+
 import { api, type AvailableTaxRules, type Session } from '@/api';
 import { currencyDecimals, formatMoney } from '@/lib/format';
 import { onboardingBudgets } from '@/lib/onboarding-budget';
 import { defaultCountry } from '@/lib/default-country';
 import { peekPendingCountry, peekPendingCurrency, takePendingCountry } from '@/lib/pending-country';
 import { CountryPicker } from '@/components/CountryPicker';
+import { GodNoticeBox } from '@/components/GodConsent';
 import { Icon, type IconName } from '@/components/Icon';
 import { GradientHero } from '@/components/rich';
 import {
@@ -120,6 +123,20 @@ export function Onboarding({
     })();
   }, []);
   const asksCountry = (countries?.length ?? 0) > 0;
+  // The GOD Group Privacy Notice (9.1.d): a new sign-up ticks it to finish, and the server refuses
+  // setup without it. `null` until read; a failed read offers a retry rather than letting sign-up through.
+  const [god, setGod] = useState<GodConsentState | null>(null);
+  const [godFailed, setGodFailed] = useState(false);
+  const [godTicked, setGodTicked] = useState(false);
+  const loadGod = () => {
+    setGodFailed(false);
+    api()
+      .getGodConsent()
+      .then(setGod)
+      .catch(() => setGodFailed(true));
+  };
+  useEffect(loadGod, []);
+  const needsGodTick = god?.prompt === 'required';
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -147,6 +164,7 @@ export function Onboarding({
         // are the whole budget, and a total would be counted a second time.
         monthlyBudget: budgets.monthlyBudget,
         taxRulesId,
+        acceptedGodNotice: godTicked,
       });
 
       /* Now that there is a workspace, write the per-category budgets.
@@ -171,7 +189,11 @@ export function Onboarding({
 
   const canAdvance =
     step === 0
-      ? household.trim().length > 1 && countries !== null && (!asksCountry || country !== null)
+      ? household.trim().length > 1 &&
+        countries !== null &&
+        (!asksCountry || country !== null) &&
+        god !== null &&
+        (!needsGodTick || godTicked)
       : step === 2
         ? drafts.every(isUsable)
         : true;
@@ -279,6 +301,17 @@ export function Onboarding({
                   setCurrency(c.currency);
                 }}
               />
+            ) : null}
+            {needsGodTick && god ? (
+              <GodNoticeBox notice={god.notice} ticked={godTicked} onToggle={() => setGodTicked((v) => !v)} />
+            ) : null}
+            {godFailed ? (
+              <View style={{ gap: space.sm }}>
+                <Notice tone="risk" icon="alert">
+                  Could not load the privacy notice. Check your connection and try again.
+                </Notice>
+                <Button label="Try again" tone="outline" onPress={loadGod} />
+              </View>
             ) : null}
           </View>
         ) : null}

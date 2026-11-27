@@ -6,7 +6,9 @@ import { completeOnboardingAction } from '@/lib/auth/actions';
 
 import { AuthField as Field, AuthInput as Input, AuthSelect as Select } from '../_components/ui';
 
-import type { AvailableTaxRules } from '@snap/api-contract';
+import { ADULT_LINK_TEXT, NoticeSentence } from '@/components/god-consent/NoticeSentence';
+
+import type { AvailableTaxRules, GodConsentState } from '@snap/api-contract';
 
 type OccupationGroup = { group: string; profiles: Array<{ id: string; label: string }> };
 
@@ -22,11 +24,14 @@ export function OnboardingForm({
   occupationGroups,
   taxRules,
   initialKind,
+  godNotice = null,
   error,
 }: {
   occupationGroups: Record<'personal' | 'business', OccupationGroup[]>;
   taxRules: AvailableTaxRules[];
   initialKind: 'business' | 'personal';
+  /** The GOD Group Privacy Notice, when it still has to be accepted to finish sign-up (9.1.d). */
+  godNotice?: GodConsentState['notice'] | null;
   error?: string;
 }) {
   const [kind, setKind] = useState<'business' | 'personal'>(initialKind);
@@ -200,6 +205,16 @@ export function OnboardingForm({
             </p>
           </fieldset>
         )}
+
+        {godNotice ? (
+          <label className="auth-check" style={{ alignItems: 'flex-start' }}>
+            {/* Unticked by default, and required: the server refuses setup without it too. */}
+            <input type="checkbox" name="acceptedGodNotice" required defaultChecked={false} />
+            <span>
+              <NoticeSentence text={godNotice.adultText} linkText={ADULT_LINK_TEXT} href={godNotice.url} />
+            </span>
+          </label>
+        ) : null}
 
         <button type="submit" className="btn btn-primary btn-lg w-full">
           Finish setup

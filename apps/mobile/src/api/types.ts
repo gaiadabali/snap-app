@@ -107,6 +107,8 @@ import type {
   PrivacySettings,
   YourtalLinkStatus,
   FamilyStatus,
+  GodConsentState,
+  GodTeenConsent,
   TeenInviteCreated,
   RedeemYourtalVoucherResult,
   FtrSendContents,
@@ -508,6 +510,18 @@ export interface SnapApi {
   createTeenInvite(): Promise<TeenInviteCreated>;
   /** `POST /v1/family/teens/:id/end`: ends a teen's access. Throws `ApiError` with `code`. */
   endTeenAccess(teenWorkspaceId: string): Promise<void>;
+
+  /**
+   * `GET /v1/god-consent` (9.1.d): the GOD Group Privacy Notice, with the two sentences verbatim,
+   * the person's answer, and what to show (`prompt`). USER-scoped.
+   */
+  getGodConsent(): Promise<GodConsentState>;
+  /** `POST /v1/god-consent`: an existing account's answer at next sign-in. Throws `ApiError` with `code`. */
+  answerGodConsent(decision: 'accepted' | 'declined', version: string): Promise<GodConsentState>;
+  /** `POST /v1/god-consent/withdraw`: "Stop combining my data with GOD". */
+  withdrawGodConsent(): Promise<GodConsentState>;
+  /** `POST /v1/family/teens/:id/god-consent`: the parent's answer for their teen. Throws `ApiError` with `code`. */
+  answerGodConsentForTeen(teenWorkspaceId: string, decision: 'accepted' | 'withdrawn', version: string): Promise<GodTeenConsent>;
 
   /**
    * `GET /v1/tax-rules-catalogue` — the rule sets this deployment can install,

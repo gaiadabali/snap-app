@@ -60,6 +60,8 @@ import type {
   PrivacySettings,
   YourtalLinkStatus,
   FamilyStatus,
+  GodConsentState,
+  GodTeenConsent,
   TeenInviteCreated,
   RedeemYourtalVoucherResult,
   Recurring,
@@ -1370,6 +1372,39 @@ export class HttpApi implements SnapApi {
   /* Never queued offline: the link is shown once, and a replay would make a second invite. */
   createTeenInvite(): Promise<TeenInviteCreated> {
     return this.request<TeenInviteCreated>('POST', '/v1/family/invites', { queue: false });
+  }
+
+  getGodConsent(): Promise<GodConsentState> {
+    return this.get<GodConsentState>('/v1/god-consent', null);
+  }
+
+  /* Never queued offline: an answer to a notice is made now, with the version the person was shown. */
+  answerGodConsent(decision: 'accepted' | 'declined', version: string): Promise<GodConsentState> {
+    return this.request<GodConsentState>('POST', '/v1/god-consent', {
+      body: { decision, version },
+      workspaceId: null,
+      queue: false,
+    });
+  }
+
+  async withdrawGodConsent(): Promise<GodConsentState> {
+    const out = await this.request<{ withdrawn: boolean; state: GodConsentState }>('POST', '/v1/god-consent/withdraw', {
+      workspaceId: null,
+      queue: false,
+    });
+    return out.state;
+  }
+
+  answerGodConsentForTeen(
+    teenWorkspaceId: string,
+    decision: 'accepted' | 'withdrawn',
+    version: string,
+  ): Promise<GodTeenConsent> {
+    return this.request<GodTeenConsent>('POST', `/v1/family/teens/${encodeURIComponent(teenWorkspaceId)}/god-consent`, {
+      body: { decision, version },
+      workspaceId: null,
+      queue: false,
+    });
   }
 
   async endTeenAccess(teenWorkspaceId: string): Promise<void> {

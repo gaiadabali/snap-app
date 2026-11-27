@@ -1,7 +1,8 @@
 import type { FamilyStatus } from '@snap/api-contract';
 
 import { Empty, SectionTitle } from '@/design/primitives';
-import { getFamily } from '@/lib/panels/data';
+import { getFamily, getGodConsent } from '@/lib/panels/data';
+import { answerGodConsentForTeen } from '@/lib/panels/god-consent-actions';
 import { createTeenInvite, endTeenAccess } from '@/lib/panels/family-actions';
 import { loadWorkspace } from '@/lib/panels/workspace';
 import { FamilyClient } from './FamilyClient';
@@ -21,6 +22,8 @@ export default async function FamilyPage() {
   } catch {
     // Shown as an error below, never as "no teens".
   }
+  // The notice for the parent's per-teen tick; unreadable means the tick is simply not offered.
+  const god = await getGodConsent().catch(() => null);
   if (!status) return <Empty title="Family isn’t available right now" body="Try again in a minute." />;
 
   return (
@@ -31,6 +34,8 @@ export default async function FamilyPage() {
         canInvite={workspace.role === 'owner' && !workspace.teenSpace}
         onCreate={createTeenInvite.bind(null, workspace.id, PATH)}
         onEnd={endTeenAccess.bind(null, PATH)}
+        godNotice={god?.notice ?? null}
+        onGodConsent={answerGodConsentForTeen.bind(null, PATH)}
       />
     </div>
   );

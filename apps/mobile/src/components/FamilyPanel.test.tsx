@@ -7,7 +7,13 @@ import { FamilyPanel, TeenNotice, ViewOnlyNotice, type FamilyPanelProps } from '
 
 const noop = () => {};
 const STATUS: FamilyStatus = { invitesAvailable: true, teens: [], pendingInvites: [], asTeen: null };
-const TEEN = { workspaceId: 'ws-teen', teenName: 'Tia', joinedAt: '2026-11-01T01:00:00.000Z', accessEndedAt: null };
+const TEEN = {
+  workspaceId: 'ws-teen',
+  teenName: 'Tia',
+  joinedAt: '2026-11-01T01:00:00.000Z',
+  accessEndedAt: null,
+  godConsent: { accepted: false, version: null },
+};
 
 function text(over: Partial<Omit<FamilyPanelProps, 'status'>> & { status?: Partial<FamilyStatus> } = {}): string {
   const { status, ...rest } = over;

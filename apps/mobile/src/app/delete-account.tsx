@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { api } from '@/api';
 import { DELETE_WORD, DeleteAccountPanel } from '@/components/DeleteAccountPanel';
+import { GodWithdrawCard } from '@/components/GodConsent';
 import { Screen, ScreenHeader } from '@/components/ui';
 import { useSession } from '@/session';
 import { useWorkspace } from '@/workspace';
@@ -54,6 +55,8 @@ export default function DeleteAccountScreen() {
           <View style={{ gap: space.xs }}>
             <ScreenHeader title="Delete account" onBack={() => router.back()} />
           </View>
+          {/* The request flow also offers the lighter step: stop sharing with GOD without deleting anything. */}
+          <GodWithdrawCard />
           <DeleteAccountPanel
             yourtalLinked={session?.yourtalLinked}
             teenRole={teenRole}

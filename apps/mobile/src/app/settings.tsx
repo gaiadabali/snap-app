@@ -8,6 +8,7 @@ import { IS_DEMO, abnIsValid, api, resetDemoData, type BusinessSettings, type Pl
 import { currentDevice, deviceReadAvailable } from '@/lib/device-read';
 import { BUILD } from '@/lib/updates';
 import { Icon } from '@/components/Icon';
+import { GodWithdrawCard } from '@/components/GodConsent';
 import { YourtalMovePrompt } from '@/components/YourtalMovePrompt';
 import { Avatar, Choice, Field, Loading, Sheet, Toggle } from '@/components/form';
 import { Body, Button, Card, Divider, Figure, Notice, Screen, SectionHeader, Small } from '@/components/ui';
@@ -270,6 +271,7 @@ export default function SettingsScreen() {
                   the ATO requires of business records. Originals are stored in Australia.
                 </Body>
               </Card>
+              <GodWithdrawCard />
               <Small>
                 Everyone in this workspace can see everything in it. Removing someone revokes their
                 access but does not remove what they captured — those records belong to the

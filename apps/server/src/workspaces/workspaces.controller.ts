@@ -27,6 +27,7 @@ import {
   type AuthUser,
 } from '../common/auth.guard.js';
 import { ValidBody } from '../common/valid-body.decorator.js';
+import { requireGodNoticeAtSignUp } from '../god-consent/sign-up.js';
 import { grantSignupBonusIfFirst } from '../credits/credits.repo.js';
 import { getDb } from '../db.js';
 import { listMembers, listWorkspacesFor, updateTenant } from '../repo.js';
@@ -74,6 +75,12 @@ export class OnboardingDto {
    * Australia always has to be chosen.
    */
   @IsOptional() @IsString() taxRulesId?: string | null;
+  /**
+   * The new sign-up's tick for the GOD Group Privacy Notice (9.1.d). Onboarding is
+   * refused without it (400 `god_notice_required`), unless the person already
+   * accepted the current version. Recorded as `registration` before anything is made.
+   */
+  @IsOptional() @IsBoolean() acceptedGodNotice?: boolean;
 }
 
 export class RoleDto {
@@ -175,6 +182,11 @@ export class WorkspacesController {
   ) {
     const name = body.workspaceName.trim();
     if (name === '') throw new BadRequestException('Your workspace needs a name.');
+
+    // The GOD Group Privacy Notice is part of finishing sign-up, and it is checked HERE, not
+    // only in the form: no tick, no workspace. Recorded before anything is created, so a
+    // refused setup leaves nothing behind. A teen never reaches this (their parent accepts).
+    await requireGodNoticeAtSignUp(user.userId, body.acceptedGodNotice === true);
 
     const digits = (body.abn ?? '').replace(/\D/g, '');
     if (body.kind === 'personal' && (digits !== '' || body.gstRegistered)) {

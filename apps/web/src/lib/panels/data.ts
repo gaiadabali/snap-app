@@ -2,6 +2,7 @@ import 'server-only';
 
 import type {
   FamilyStatus,
+  GodConsentState,
   AnalyticsRange,
   AnalyticsSummary,
   Bill,
@@ -121,6 +122,9 @@ export const listCreditPurchases = (workspaceId: string) =>
 /** `workspaceId` only adds that workspace's voucher history (`vouchers.redemptions`). */
 /** `GET /v1/family`: the caller's teens and open invites, or, for a teen, who can see their space. */
 export const getFamily = () => api<FamilyStatus>('/v1/family');
+
+/** `GET /v1/god-consent`: the GOD Group Privacy Notice, the caller's answer, and what to show (9.1.d). */
+export const getGodConsent = () => api<GodConsentState>('/v1/god-consent');
 
 export const getYourtalLink = (workspaceId?: string) =>
   api<YourtalLinkStatus>('/v1/yourtal/link', workspaceId ? { workspaceId } : undefined);
