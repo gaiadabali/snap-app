@@ -66,7 +66,7 @@ describe.each(Object.entries(THEMES))('.story-num contrast (%s)', (_name, t) => 
 
 describe('story.css .story-num uses those tokens', () => {
   const rules = STORY.replace(/\/\*[\s\S]*?\*\//g, '');
-  const numRules = [...rules.matchAll(/\.story-num\s*\{([^}]*(?:\([^)]*\)[^}]*)*)\}/g)].map((m) => m[1]!);
+  const numRules = [...rules.matchAll(/\.story-num\s*\{([^}]*)\}/g)].map((m) => m[1]!);
   it('sets only solid token colours (no ink wash, no fill orange)', () => {
     const colours = numRules.join('\n').match(/color:[^;]+;/g) ?? [];
     expect(colours.length).toBeGreaterThan(0);
