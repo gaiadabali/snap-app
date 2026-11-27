@@ -25,15 +25,12 @@ import { SwitchOnView, switchOnMessage } from './SwitchOn';
 import { UnsubscribeBar } from './UnsubscribeBar';
 
 const noop = () => {};
-/** Markup escapes quotes and ampersands; compare on plain text. */
+const ENTITIES: Record<string, string> = { '&#x27;': "'", '&quot;': '"', '&amp;': '&', '&lt;': '<', '&gt;': '>' };
+/** Markup escapes quotes, ampersands and angle brackets; compare on plain text. One pass, so `&amp;lt;` stays `&lt;`. */
 const text = (markup: string) =>
   markup
     .replace(/<[^>]+>/g, ' ')
-    .replace(/&#x27;/g, "'")
-    .replace(/&quot;/g, '"')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
+    .replace(/&(?:#x27|quot|amp|lt|gt);/g, (m) => ENTITIES[m] ?? m)
     .replace(/\s+/g, ' ');
 const render = (node: Parameters<typeof renderToStaticMarkup>[0]) => renderToStaticMarkup(node);
 
