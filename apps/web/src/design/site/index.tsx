@@ -216,9 +216,10 @@ export function Btn({
  * The get-the-app pair.
  *
  * Android is real: a direct APK from /download. iPhone is not installable,
- * and says so — present, focusable and announced as unavailable, never a
- * `<button disabled>` (dropped from the accessibility tree) and never an `<a>`
- * without an href (docs/WEB.md §7). Never the stores' own badge artwork:
+ * and says so as plain visible text: a non-interactive element, not a
+ * `role="button"` (nothing to activate, and a role=button whose aria-label
+ * differs from its visible text fails axe label-content-name-mismatch), and
+ * never an `<a>` without an href (docs/WEB.md §7). Never the stores' own badge artwork:
  * there is no store listing for it to point at.
  *
  * Takes no release data on purpose. Reading the manifest would make every
@@ -235,19 +236,13 @@ export function StoreButtons({ className, compact = false }: { className?: strin
           <span className="store-name">Download the app</span>
         </span>
       </Link>
-      <span
-        role="button"
-        tabIndex={0}
-        aria-disabled="true"
-        aria-label="iPhone app: in development, not yet installable"
-        className="store"
-      >
+      <div className="store" data-unavailable>
         <Icon name="phone" size={24} strokeWidth={1.6} />
         <span>
           <span className="store-meta">iPhone · in development</span>
           <span className="store-name">Not yet on iOS</span>
         </span>
-      </span>
+      </div>
     </div>
   );
 }

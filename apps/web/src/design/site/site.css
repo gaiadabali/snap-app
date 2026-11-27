@@ -542,7 +542,7 @@
   line-height: 1.15;
 }
 
-.store[aria-disabled="true"] {
+.store[data-unavailable] {
   background: transparent;
   color: var(--s-ink-2);
   border: 1.5px dashed var(--s-edge-2);
@@ -550,7 +550,7 @@
   cursor: not-allowed;
 }
 
-.store[aria-disabled="true"]:hover {
+.store[data-unavailable]:hover {
   transform: none;
 }
 
@@ -559,7 +559,7 @@
   color: #0f172a;
 }
 
-.night .store[aria-disabled="true"] {
+.night .store[data-unavailable] {
   background: transparent;
   color: var(--s-night-ink-2);
   border-color: rgb(255 255 255 / 0.22);
