@@ -33,7 +33,7 @@ async function request(path: string, init: RequestInit = {}): Promise<{ status: 
       headers: { accept: 'application/json', ...(init.body ? { 'content-type': 'application/json' } : {}) },
     });
   } catch {
-    throw new MailApiFailure('network', 'Could not reach SnapApp. Check your connection and try again.', 0);
+    throw new MailApiFailure('network', 'Could not reach SnapApps. Check your connection and try again.', 0);
   }
   const text = await res.text();
   let body: unknown;

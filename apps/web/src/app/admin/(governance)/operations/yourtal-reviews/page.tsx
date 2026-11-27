@@ -5,7 +5,7 @@ import { getYourtalReviews, type AdminYourtalReview } from '../../../_data/gover
 import { RefusalPanel } from '../../_components/RefusalPanel';
 import { ResolveForm } from './_components/ResolveForm';
 
-export const metadata = { title: 'Sign-in reviews · SnapApp admin' };
+export const metadata = { title: 'Sign-in reviews · SnapApps admin' };
 
 const KIND: Record<AdminYourtalReview['kind'], { label: string; what: string }> = {
   second_sub: {

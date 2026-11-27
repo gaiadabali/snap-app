@@ -20,12 +20,12 @@ export interface Starter {
 }
 
 export const S = {
-  sub: 'SnapApp assistant',
+  sub: 'SnapApps assistant',
   pill: 'Ask Snapper',
-  launcher: 'Ask Snapper, the SnapApp assistant',
+  launcher: 'Ask Snapper, the SnapApps assistant',
   greet: "G'day, I'm Snapper.",
   intro: 'Ask me how capture works, what GST means on a docket, what a scan costs, or how to get the app.',
-  placeholder: 'Ask about SnapApp…',
+  placeholder: 'Ask about SnapApps…',
   composerLabel: 'Your question for Snapper',
   send: 'Send',
   stop: 'Stop',
@@ -50,7 +50,7 @@ export const S = {
   eDown: 'I cannot reach my brain right now. Try again in a moment.',
   eNet: 'The connection dropped. Check it and try again.',
   eBad: 'I could not make sense of that one. Try putting it another way.',
-  eBlocked: 'I cannot help with that one. Ask me about SnapApp and I will give it a go.',
+  eBlocked: 'I cannot help with that one. Ask me about SnapApps and I will give it a go.',
 } as const;
 
 export interface CtaCard {
@@ -64,7 +64,7 @@ export interface CtaCard {
 export const CTAS: Record<Cta, CtaCard> = {
   app: {
     title: 'Get the Android app',
-    text: 'SnapApp installs on Android today. The iPhone app is in development.',
+    text: 'SnapApps installs on Android today. The iPhone app is in development.',
     label: 'Get the Android app',
     href: '/download',
   },
@@ -105,7 +105,7 @@ const PAGE_STARTERS: [prefix: string, label: string, icon: IconName][] = [
 ];
 
 const GENERIC: Starter[] = [
-  { kind: 'ask', label: 'What makes SnapApp different?', icon: 'spark' },
+  { kind: 'ask', label: 'What makes SnapApps different?', icon: 'spark' },
   { kind: 'ask', label: 'Is a docket a valid tax invoice?', icon: 'receipt' },
   { kind: 'ask', label: 'Is there an iPhone app?', icon: 'phone' },
 ];

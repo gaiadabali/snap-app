@@ -65,7 +65,7 @@ const SEND_REFUSALS = {
   yourtal_unavailable: [HttpStatus.SERVICE_UNAVAILABLE, 'YourTal isn’t answering right now. Nothing was sent.'],
   wrong_account: [
     HttpStatus.FORBIDDEN,
-    'This was confirmed with another YourTal account. Switch back to the one you use in SnapApp. Nothing was sent.',
+    'This was confirmed with another YourTal account. Switch back to the one you use in SnapApps. Nothing was sent.',
   ],
   not_allowed: [HttpStatus.FORBIDDEN, 'Free Tax Returns is for adults in Australia. Nothing was sent.'],
   not_approved: [HttpStatus.CONFLICT, 'The send wasn’t confirmed at YourTal. Nothing was sent.'],

@@ -16,7 +16,7 @@ export const GOD_NOTICE: GodConsentState['notice'] = {
   url: 'https://god.gaiada.com/privacy-notice/',
   teenUrl: 'https://god.gaiada.com/privacy-notice/#teens',
   adultText:
-    'I have read and accept the GOD Group Privacy Notice. I understand that my activity in YourTal, SnapApp and Free Tax Returns is combined into one profile, and that businesses receive reports about groups of people, never about me.',
+    'I have read and accept the GOD Group Privacy Notice. I understand that my activity in YourTal, SnapApps and Free Tax Returns is combined into one profile, and that businesses receive reports about groups of people, never about me.',
   guardianText:
     "I am this teen's parent or guardian. I have read the GOD Group Privacy Notice for teens and agree that my teen's activity may be combined and used, in groups of 20 or more, to give businesses insight about young people. No business receives anything about my teen individually.",
 };

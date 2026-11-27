@@ -174,11 +174,11 @@ export function alertsStatusLine(outcome: 'on' | 'denied' | 'unavailable' | 'uns
     case 'on':
       return 'This phone will be told when new mail arrives.';
     case 'denied':
-      return 'Notifications are turned off for SnapApp on this phone. Turn them on in the phone’s settings to get alerts.';
+      return 'Notifications are turned off for SnapApps on this phone. Turn them on in the phone’s settings to get alerts.';
     case 'unavailable':
       return 'Alerts are not available in this version of the app yet. Your mail still arrives as usual.';
     case 'unsupported':
-      return 'Alerts are for the SnapApp Android app.';
+      return 'Alerts are for the SnapApps Android app.';
     case 'failed':
       return 'Could not set up alerts on this phone just now. Check your connection and try again.';
     case null:

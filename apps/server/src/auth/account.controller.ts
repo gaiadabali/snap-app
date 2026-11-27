@@ -258,14 +258,14 @@ export class AccountController {
   @UseGuards(SessionGuard)
   @HttpCode(200)
   @ApiOperation({
-    summary: 'Delete your SnapApp account',
+    summary: 'Delete your SnapApps account',
     description:
       'Body {confirm: "DELETE", password?}. The password is needed when the account has one (an account ' +
       'that signs in with YourTal has none). Queues the erasure for the worker (erase_person: workspaces ' +
       'you run alone and everything in them, your attribution elsewhere, your sign-in) and ends EVERY ' +
       'session at once, this one included. A parent\'s teen spaces are ended first (30-day hold, YourTal told); ' +
       'a teen\'s own request is that same hold, and the space and account are erased after 30 days. ' +
-      'Deletes SnapApp only, never the YourTal account. Not available ' +
+      'Deletes SnapApps only, never the YourTal account. Not available ' +
       'to staff acting as a user, nor to staff accounts (403 staff_cannot_self_delete). An account with no password ' +
       'needs a sign-in from the last 10 minutes (403 recent_sign_in_required). 403 wrong_password when the password is wrong. 429 past 5 tries per account in 15 minutes.',
   })

@@ -3,12 +3,12 @@ import type { Metadata } from 'next';
 export const metadata: Metadata = {
   title: 'Delete your account',
   description:
-    'How to delete your SnapApp account from the app, how to ask us to do it by email, and what is deleted and what is kept.',
+    'How to delete your SnapApps account from the app, how to ask us to do it by email, and what is deleted and what is kept.',
 };
 
 /** The mailbox for deletion requests and the store listing (group 0.12.c: hansel@gaiada.com until a support mailbox exists). */
 const REQUEST_EMAIL = 'hansel@gaiada.com';
-const REQUEST_MAILTO = `mailto:${REQUEST_EMAIL}?subject=${encodeURIComponent('Delete my SnapApp account')}`;
+const REQUEST_MAILTO = `mailto:${REQUEST_EMAIL}?subject=${encodeURIComponent('Delete my SnapApps account')}`;
 
 /**
  * The public page Google Play's listing links to, so it needs no sign-in and no script.
@@ -18,7 +18,7 @@ const REQUEST_MAILTO = `mailto:${REQUEST_EMAIL}?subject=${encodeURIComponent('De
 export default function DeleteAccountPage() {
   return (
     <div className="shell-narrow pt-12 pb-20 sm:pt-16 sm:pb-28">
-      <h1 className="hd-1">Delete your SnapApp account</h1>
+      <h1 className="hd-1">Delete your SnapApps account</h1>
       <p className="lede mt-6">
         You can delete your account yourself in the app, or ask us to do it by email. Either way your
         sign-in and the workspaces you run on your own are erased, receipts included.
@@ -29,7 +29,7 @@ export default function DeleteAccountPage() {
           Delete it in the app
         </h2>
         <ol className="body mt-4 list-decimal space-y-2 pl-6">
-          <li>Open SnapApp on your phone and sign in.</li>
+          <li>Open SnapApps on your phone and sign in.</li>
           <li>
             Go to <strong>Settings</strong> and choose <strong>Delete account</strong>, near the
             bottom.
@@ -55,7 +55,7 @@ export default function DeleteAccountPage() {
           <a className="font-semibold text-[var(--s-brand-text)] underline" href={REQUEST_MAILTO}>
             {REQUEST_EMAIL}
           </a>{' '}
-          from the address your account uses, with the subject &ldquo;Delete my SnapApp
+          from the address your account uses, with the subject &ldquo;Delete my SnapApps
           account&rdquo;. We reply to confirm it is you, then delete the account the same way the app
           does, and we handle emailed requests within 30 days. If you write from a different address,
           tell us the one on the account so we can check.
@@ -90,7 +90,7 @@ export default function DeleteAccountPage() {
             keep for five years: <strong>export what you need first</strong>, because we cannot get
             it back afterwards.
           </li>
-          <li>Your YourTal points history in SnapApp, and the emails we kept a record of sending you.</li>
+          <li>Your YourTal points history in SnapApps, and the emails we kept a record of sending you.</li>
         </ul>
       </section>
 
@@ -125,7 +125,7 @@ export default function DeleteAccountPage() {
           Parents and teens
         </h2>
         <p className="body mt-4">
-          If you are a parent with a teen in SnapApp, deleting your account first ends your
+          If you are a parent with a teen in SnapApps, deleting your account first ends your
           teen&apos;s access. A teen&apos;s space is deleted 30 days after access ends, and both of
           you are told. If you are the teen and delete your own account, the same 30 days apply: your
           access ends now, and your space is deleted within 30 days.
@@ -137,10 +137,10 @@ export default function DeleteAccountPage() {
           If you sign in with YourTal
         </h2>
         <p className="body mt-4">
-          Deleting your SnapApp account does <strong>not</strong> delete your YourTal account, and
-          YourTal keeps its own records. To remove SnapApp from your YourTal account, go to{' '}
+          Deleting your SnapApps account does <strong>not</strong> delete your YourTal account, and
+          YourTal keeps its own records. To remove SnapApps from your YourTal account, go to{' '}
           <strong>Me, then Linked apps</strong> in YourTal. If you delete your YourTal account,
-          YourTal tells SnapApp, and we delete everything described above within 3 days.
+          YourTal tells SnapApps, and we delete everything described above within 3 days.
         </p>
       </section>
 

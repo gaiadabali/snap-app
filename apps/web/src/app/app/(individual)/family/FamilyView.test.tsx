@@ -40,9 +40,9 @@ const TEEN = {
 describe('FamilyView: a parent', () => {
   it('explains the invite and offers Create invite link', () => {
     const t = text();
-    expect(t).toContain('Invite your teen to SnapApp');
+    expect(t).toContain('Invite your teen to SnapApps');
     expect(t).toContain('the teen account you approved');
-    expect(t).toContain('see everything in their SnapApp space: receipts, amounts and notes');
+    expect(t).toContain('see everything in their SnapApps space: receipts, amounts and notes');
     expect(t).toContain('We’ll tell them that you can see it.');
     expect(t).toContain('They won’t earn YourTal points for receipts.');
     expect(t).toContain('Their scans use this workspace’s credits.');
@@ -81,11 +81,11 @@ describe('FamilyView: a parent', () => {
   });
 
   it('lists a teen with End access, and asks before ending it', () => {
-    expect(text({ status: { teens: [TEEN] } })).toContain('Tia joined SnapApp on 1 November 2026.');
+    expect(text({ status: { teens: [TEEN] } })).toContain('Tia joined SnapApps on 1 November 2026.');
     const confirm = text({ status: { teens: [TEEN] }, confirming: 'ws-teen' });
-    expect(confirm).toContain('End Tia’s access to SnapApp?');
-    expect(confirm).toContain('their SnapApp space will be deleted after 30 days, including their receipts. Download anything you want to keep first.');
-    expect(text()).toContain('Ending it deletes their SnapApp space after 30 days.');
+    expect(confirm).toContain('End Tia’s access to SnapApps?');
+    expect(confirm).toContain('their SnapApps space will be deleted after 30 days, including their receipts. Download anything you want to keep first.');
+    expect(text()).toContain('Ending it deletes their SnapApps space after 30 days.');
     expect(confirm).toContain('Cancel');
   });
 

@@ -59,7 +59,7 @@ export default async function GoogleSimulatorPage({
             href="/"
             className="text-[15px] font-semibold tracking-tight text-[var(--color-ink)]"
           >
-            SnapApp
+            SnapApps
           </Link>
         </Container>
       </header>

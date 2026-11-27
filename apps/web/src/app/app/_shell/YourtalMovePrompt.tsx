@@ -26,7 +26,7 @@ export function YourtalMovePromptView({
     >
       <h2 className="text-[16px] font-bold">Sign in with YourTal to keep your account</h2>
       <p className="mt-1">
-        SnapApp now uses YourTal to sign in. Use the same email address as this account and everything stays yours:
+        SnapApps now uses YourTal to sign in. Use the same email address as this account and everything stays yours:
         your receipts, budgets and points. From then on you sign in with YourTal.
       </p>
       {mismatchEmail ? (

@@ -29,7 +29,7 @@ const ALL_DOCS: DocsNavItem[] = [
     href: '/docs/getting-started',
     group: 'Start here',
     title: 'Getting started',
-    summary: 'What SnapApp does, and the shortest path from install to your first posted transaction.',
+    summary: 'What SnapApps does, and the shortest path from install to your first posted transaction.',
   },
   {
     href: '/docs/capturing-receipts',

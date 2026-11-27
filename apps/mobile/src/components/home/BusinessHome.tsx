@@ -91,7 +91,7 @@ export default function BusinessHome() {
               <Small>{greeting()}</Small>
               {IS_DEMO ? <Chip tone="warn">Demo</Chip> : null}
             </View>
-            <Figure size="h1">{overview?.tenantName ?? 'SnapApp'}</Figure>
+            <Figure size="h1">{overview?.tenantName ?? 'SnapApps'}</Figure>
           </View>
           <WorkspaceSwitch />
         </View>

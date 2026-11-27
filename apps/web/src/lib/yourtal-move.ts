@@ -14,7 +14,7 @@ export const YOURTAL_MOVE_MISMATCH = 'email_mismatch';
 
 /** The person's own address, shown only to them in their own signed-in page. */
 export const moveMismatchMessage = (email: string): string =>
-  `Your YourTal account uses a different email. Use the YourTal account with ${email}, or change your SnapApp email first.`;
+  `Your YourTal account uses a different email. Use the YourTal account with ${email}, or change your SnapApps email first.`;
 
 export function showYourtalMove(input: {
   yourtalLinked: boolean | undefined;

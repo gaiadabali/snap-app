@@ -48,7 +48,7 @@ export default async function VerifyEmailPage({
           <form action={confirmEmailAction} className="auth-form">
             <input type="hidden" name="token" value={token} />
             <p className="auth-lede">
-              Only confirm if you created a SnapApp account with this address. If you did not,
+              Only confirm if you created a SnapApps account with this address. If you did not,
               close this page.
             </p>
             <button type="submit" className="btn btn-primary btn-lg w-full">

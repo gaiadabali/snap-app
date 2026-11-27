@@ -10,14 +10,14 @@ export const YOURTAL_MOVE_KEY = 'snap.yourtalMoveDismissed';
 export const MOVE_COPY = {
   title: 'Sign in with YourTal to keep your account',
   body:
-    'SnapApp now uses YourTal to sign in. Use the same email address as this account and everything stays yours: your receipts, budgets and points. From then on you sign in with YourTal.',
+    'SnapApps now uses YourTal to sign in. Use the same email address as this account and everything stays yours: your receipts, budgets and points. From then on you sign in with YourTal.',
   action: 'Sign in with YourTal',
   notNow: 'Not now',
 } as const;
 
 /** The person's own address, shown only to them in their own Settings. */
 export const moveMismatchMessage = (email: string): string =>
-  `Your YourTal account uses a different email. Use the YourTal account with ${email}, or change your SnapApp email first.`;
+  `Your YourTal account uses a different email. Use the YourTal account with ${email}, or change your SnapApps email first.`;
 
 export function showYourtalMove(input: {
   yourtalLinked: boolean | undefined;

@@ -5,7 +5,7 @@ import { getAiCostDaily, getAiUsage } from '../../../_data/governance';
 import { NotWired } from '../../_components/NotWired';
 import { RefusalPanel } from '../../_components/RefusalPanel';
 
-export const metadata = { title: 'Usage & spend · SnapApp admin' };
+export const metadata = { title: 'Usage & spend · SnapApps admin' };
 
 // Sub-cent figures: a scan costs about A$0.0005, so the shared 2-place Money would show A$0.00.
 const aud = (amount: string) => `A$${amount}`;

@@ -32,7 +32,7 @@ export default function BasAndGstPage() {
           Most businesses report under <strong>Simpler BAS</strong> — GST turnover under $10 million —
           which only needs three labels: <strong>G1</strong> (total sales), <strong>1A</strong> (GST on
           sales), and <strong>1B</strong> (GST on purchases). Larger businesses, and input-taxed
-          businesses, use the full seven-label method (G1, G2, G3, G10, G11, 1A, 1B). SnapApp
+          businesses, use the full seven-label method (G1, G2, G3, G10, G11, 1A, 1B). SnapApps
           supports both and defaults to Simpler BAS.
         </p>
 

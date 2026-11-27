@@ -17,7 +17,7 @@ export type SwitchOnPhase =
 const POINTS: { icon: 'inbox' | 'ban' | 'file'; text: string }[] = [
   { icon: 'inbox', text: 'You get a friendly generated address, such as geewizduck@yourtal.gaiada.com. It is chosen for you and stays yours.' },
   { icon: 'ban', text: 'Marketing and bulk mail is filed into Spam and Junk, so your Inbox is left for people and bills.' },
-  { icon: 'file', text: 'Statements sent to this address can be imported into SnapApp. That is off until you turn it on in Mail settings.' },
+  { icon: 'file', text: 'Statements sent to this address can be imported into SnapApps. That is off until you turn it on in Mail settings.' },
 ];
 
 /** The words and buttons, with no state of their own (`SwitchOn.test.tsx`). */
@@ -33,7 +33,7 @@ export function SwitchOnView({
   if (phase.step === 'done') {
     return (
       <div className="max-w-[620px]">
-        <SectionTitle as="h1" eyebrow="Spambank" title="Your inbox is ready" lede="This is your new address. It works in SnapApp, YourTal and Free Tax Returns." />
+        <SectionTitle as="h1" eyebrow="Spambank" title="Your inbox is ready" lede="This is your new address. It works in SnapApps, YourTal and Free Tax Returns." />
         <Card tone="accent" className="mt-6">
           <div className="t-label text-[var(--color-ink-muted)]">Your address</div>
           <div className="mt-2 flex items-center gap-1">
@@ -59,7 +59,7 @@ export function SwitchOnView({
         as="h1"
         eyebrow="Spambank"
         title="Get your own Spambank inbox"
-        lede="A real email address that keeps marketing mail out of your way. One inbox, shared by SnapApp, YourTal and Free Tax Returns."
+        lede="A real email address that keeps marketing mail out of your way. One inbox, shared by SnapApps, YourTal and Free Tax Returns."
       />
       <ul className="mt-6 space-y-4">
         {POINTS.map((p) => (

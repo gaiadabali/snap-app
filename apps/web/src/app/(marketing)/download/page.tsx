@@ -19,9 +19,9 @@ import { InertDownloadControl } from './inert-control';
 const PUBLIC_URL = process.env.WEB_PUBLIC_URL ?? 'http://127.0.0.1:3000';
 const PAGE_URL = `${PUBLIC_URL}/download`;
 
-const TITLE = 'Download SnapApp for Android and iPhone (iOS in development)';
+const TITLE = 'Download SnapApps for Android and iPhone (iOS in development)';
 const DESCRIPTION =
-  'Get the SnapApp Android APK today, with a verifiable SHA-256 checksum and step-by-step install instructions. The iPhone (iOS) app is in active development — see what it will do and get notified at launch.';
+  'Get the SnapApps Android APK today, with a verifiable SHA-256 checksum and step-by-step install instructions. The iPhone (iOS) app is in active development — see what it will do and get notified at launch.';
 
 export const metadata: Metadata = {
   title: 'Download',
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     title: TITLE,
     description: DESCRIPTION,
     url: PAGE_URL,
-    siteName: 'SnapApp',
+    siteName: 'SnapApps',
     type: 'website',
     locale: 'en_AU',
   },
@@ -50,7 +50,7 @@ const ANDROID_STEPS = [
   },
   {
     title: 'Open the downloaded file',
-    body: 'Find "SnapApp" in your Downloads or notification shade and tap it. Android will show the permissions the app asks for — camera, for photographing receipts — then tap Install.',
+    body: 'Find "SnapApps" in your Downloads or notification shade and tap it. Android will show the permissions the app asks for — camera, for photographing receipts — then tap Install.',
     optional: false,
   },
   {
@@ -86,7 +86,7 @@ function buildJsonLd(android: ReturnType<typeof getRelease>, ios: ReturnType<typ
     '@graph': [
       {
         '@type': 'SoftwareApplication',
-        name: 'SnapApp',
+        name: 'SnapApps',
         operatingSystem: 'ANDROID',
         applicationCategory: 'BusinessApplication',
         applicationSubCategory: 'Tax and expense compliance',
@@ -107,7 +107,7 @@ function buildJsonLd(android: ReturnType<typeof getRelease>, ios: ReturnType<typ
       },
       {
         '@type': 'SoftwareApplication',
-        name: 'SnapApp',
+        name: 'SnapApps',
         operatingSystem: 'IOS',
         applicationCategory: 'BusinessApplication',
         applicationSubCategory: 'Tax and expense compliance',
@@ -174,7 +174,7 @@ export default async function DownloadPage() {
                 suppressHydrationWarning
                 style={{ ['--d' as string]: 1 }}
               >
-                Get SnapApp on <span className="ink-grad">Android.</span>
+                Get SnapApps on <span className="ink-grad">Android.</span>
               </h1>
 
               <p
@@ -331,7 +331,7 @@ export default async function DownloadPage() {
             <Reveal className="h-full">
               <ReleaseCard
                 platform="iPhone"
-                title="SnapApp for iPhone"
+                title="SnapApps for iPhone"
                 status="In development"
                 statusTone="warn"
                 lede={

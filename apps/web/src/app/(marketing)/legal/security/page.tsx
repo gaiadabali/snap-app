@@ -10,7 +10,7 @@ export default function DataHandlingSecurityPage() {
       <LegalHeader title={<>Data handling &amp; security</>} meta={<>Draft — last updated 20 October 2026</>} />
 
       <p>
-        This page describes, in plain terms, the technical measures SnapApp uses to protect your
+        This page describes, in plain terms, the technical measures SnapApps uses to protect your
         data. It is written to be accurate to the system as built, not aspirational.
       </p>
 
@@ -64,7 +64,7 @@ export default function DataHandlingSecurityPage() {
         <p>
           Some receipts print a partially masked card number. Any card number is reduced, at the point
           a receipt is captured, to only the last four digits and the card brand — the full number is
-          never stored. This keeps SnapApp out of card-data handling scope entirely, since there is
+          never stored. This keeps SnapApps out of card-data handling scope entirely, since there is
           nothing sensitive left to protect.
         </p>
       </section>

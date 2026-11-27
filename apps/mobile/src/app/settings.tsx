@@ -379,7 +379,7 @@ export default function SettingsScreen() {
               </Card>
             ) : null}
 
-            {IS_DEMO ? <Small style={{ textAlign: 'center' }}>SnapApp · demo build</Small> : null}
+            {IS_DEMO ? <Small style={{ textAlign: 'center' }}>SnapApps · demo build</Small> : null}
           </>
         )}
       </ScrollView>

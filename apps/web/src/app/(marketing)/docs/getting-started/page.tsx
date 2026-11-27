@@ -6,7 +6,7 @@ import { Toc } from '../_components/Toc';
 export const metadata: Metadata = { title: 'Getting started' };
 
 const sections = [
-  { id: 'what-it-is', label: 'What SnapApp does' },
+  { id: 'what-it-is', label: 'What SnapApps does' },
   { id: 'the-shortest-path', label: 'The shortest path' },
   { id: 'personal-and-business', label: 'Personal vs. business' },
   { id: 'what-happens-to-a-photo', label: 'What happens to a photo' },
@@ -18,7 +18,7 @@ export default function GettingStartedPage() {
       <article className="docs-prose">
         <DocHeader title={<>Getting started</>} />
         <p className="docs-lead">
-          SnapApp turns a photo of a receipt or tax invoice into a checked, categorised record —
+          SnapApps turns a photo of a receipt or tax invoice into a checked, categorised record —
           and, once you confirm it, a balanced ledger entry. It is built for Australian sole traders,
           tradies, and the accountants and bookkeepers who look after them.
         </p>

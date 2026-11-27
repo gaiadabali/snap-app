@@ -113,7 +113,7 @@ export function GodConsentPromptView({
       <View style={{ gap: space.sm }}>
         <Title level="h1">Our group privacy notice</Title>
         <Small>
-          SnapApp is part of a group of apps. Please read the notice and tell us your choice. You can keep using SnapApp
+          SnapApps is part of a group of apps. Please read the notice and tell us your choice. You can keep using SnapApps
           either way.
         </Small>
       </View>
@@ -148,7 +148,7 @@ export function GodWithdrawView({
         <Body strong>Your data and GOD</Body>
         {done ? (
           <Small>
-            Done. We have recorded your request and will stop combining your data with GOD. Your SnapApp account and its
+            Done. We have recorded your request and will stop combining your data with GOD. Your SnapApps account and its
             data are unchanged.
           </Small>
         ) : (

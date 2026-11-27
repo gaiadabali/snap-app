@@ -20,7 +20,7 @@ describe('YourtalMovePromptView', () => {
     expect(markup).not.toContain('different email');
     const refused = renderToStaticMarkup(<YourtalMovePromptView onDismiss={() => {}} mismatchEmail="me@example.com" />);
     expect(refused).toContain(
-      'Your YourTal account uses a different email. Use the YourTal account with me@example.com, or change your SnapApp email first.',
+      'Your YourTal account uses a different email. Use the YourTal account with me@example.com, or change your SnapApps email first.',
     );
   });
 });

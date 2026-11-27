@@ -70,7 +70,7 @@ describeIfDb('onboarding by email, by country — real HTTP, real database', () 
 
     const mail = [...sent].reverse().find((m) => m.to === email);
     expect(mail, `no sign-in mail to ${email}`).toBeDefined();
-    expect(mail!.subject).toBe('Sign in to SnapApp');
+    expect(mail!.subject).toBe('Sign in to SnapApps');
     const linkToken = decodeURIComponent(mail!.text.match(/token=([^\s&]+)/)![1]!);
 
     const opened = await call('POST', '/v1/auth/magic-link/consume', { body: { token: linkToken } });

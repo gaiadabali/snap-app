@@ -264,17 +264,17 @@ export async function runErasureSweepsOnce(
 
 const NOTICE = {
   erased: {
-    subject: 'A SnapApp workspace you belonged to has been deleted',
+    subject: 'A SnapApps workspace you belonged to has been deleted',
     text:
-      'Hello,\n\nThe person who ran a SnapApp workspace you belonged to has deleted their account, and no other ' +
+      'Hello,\n\nThe person who ran a SnapApps workspace you belonged to has deleted their account, and no other ' +
       'owner or admin was left. So the workspace and everything in it, including its receipts, files and ' +
-      'records, have been deleted, and SnapApp cannot restore them.\n\nYour own SnapApp account and any other ' +
+      'records, have been deleted, and SnapApps cannot restore them.\n\nYour own SnapApps account and any other ' +
       'workspaces are unchanged.\n\nSnapApp',
   },
   handed_over: {
-    subject: 'You are now the owner of a SnapApp workspace',
+    subject: 'You are now the owner of a SnapApps workspace',
     text:
-      'Hello,\n\nThe only owner of a SnapApp workspace you are an admin of has deleted their account. As its ' +
+      'Hello,\n\nThe only owner of a SnapApps workspace you are an admin of has deleted their account. As its ' +
       'longest-serving admin, you are now its owner. Nothing in the workspace has been deleted.\n\nSnapApp',
   },
 } as const;
@@ -288,27 +288,27 @@ export function teenNotice(outcome: string, name: string | null, date: string | 
     case 'teen_ended_parent': {
       const teen = name ?? 'Your teen';
       return {
-        subject: `${teen}’s access to SnapApp has ended`,
+        subject: `${teen}’s access to SnapApps has ended`,
         text:
-          `Hello,\n\n${teen} can no longer use SnapApp, and you can no longer see their SnapApp space.\n\n` +
+          `Hello,\n\n${teen} can no longer use SnapApps, and you can no longer see their SnapApps space.\n\n` +
           `Their space, including their receipts, will be deleted on ${day}. If you invite ${name ?? 'them'} again ` +
           'from Family before then, their space comes back as it was.\n\nSnapApp',
       };
     }
     case 'teen_ended_teen':
       return {
-        subject: 'Your access to SnapApp has ended',
+        subject: 'Your access to SnapApps has ended',
         text:
-          'Hello,\n\nYou can no longer sign in to SnapApp. Your SnapApp space, including your receipts, will be ' +
+          'Hello,\n\nYou can no longer sign in to SnapApps. Your SnapApps space, including your receipts, will be ' +
           `deleted on ${day}.\n\nIf ${name ?? 'your parent'} invites you again before then, your space comes back ` +
           'as it was.\n\nSnapApp',
       };
     case 'teen_ended_parent_deleted': // 0057: the parent's own account is gone, so no invite can restore the space
       return {
-        subject: 'Your access to SnapApp has ended',
+        subject: 'Your access to SnapApps has ended',
         text:
-          `Hello,\n\nYou can no longer sign in to SnapApp, because ${name ?? 'your parent'} has deleted their SnapApp ` +
-          `account. Your SnapApp space, including your receipts, will be deleted on ${day}, and it can't be ` +
+          `Hello,\n\nYou can no longer sign in to SnapApps, because ${name ?? 'your parent'} has deleted their SnapApps ` +
+          `account. Your SnapApps space, including your receipts, will be deleted on ${day}, and it can't be ` +
           'restored.\n\nSnapApp',
       };
     case 'teen_adult_parent': {
@@ -316,14 +316,14 @@ export function teenNotice(outcome: string, name: string | null, date: string | 
       return {
         subject: `${teen} is 18 now`,
         text:
-          `Hello,\n\n${teen} is 18 now, so you can no longer see their SnapApp space. Their scans no longer use ` +
+          `Hello,\n\n${teen} is 18 now, so you can no longer see their SnapApps space. Their scans no longer use ` +
           'your credits.\n\nSnapApp',
       };
     }
     case 'teen_adult_teen': {
       const parent = name ?? 'Your parent';
       return {
-        subject: 'Your SnapApp space is now just yours',
+        subject: 'Your SnapApps space is now just yours',
         text:
           `Hello,\n\nYou're 18 now, so this space is just yours. ${parent} can't see it any more, and your scans ` +
           `no longer use ${name ? `${name}’s` : 'their'} credits.\n\nSnapApp`,

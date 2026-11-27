@@ -20,7 +20,7 @@ const posix = (p: string) => p.replace(/^([A-Za-z]):[\\/]/, (_, d: string) => `/
 
 const KEY = 're_SECRETKEY_0123456789';
 const SMTP_URL = `smtp://resend:${KEY}@smtp.resend.com:587`;
-const FROM = 'SnapApp <no-reply@freetaxreturns.com.au>';
+const FROM = 'SnapApps <no-reply@freetaxreturns.com.au>';
 
 // The script under test sits beside a fake uptime.sh that reports what the test says.
 const SCRIPT_DIR = join(root, 'monitor');

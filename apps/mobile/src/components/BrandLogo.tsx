@@ -20,7 +20,7 @@ export function BrandLockup({ width = 168, style }: { width?: number; style?: St
     <Image
       source={lockup}
       accessibilityRole="image"
-      accessibilityLabel="SnapApp"
+      accessibilityLabel="SnapApps"
       style={[{ width: w, height: Math.round(w / LOCKUP_RATIO) }, style]}
       resizeMode="contain"
     />
@@ -33,7 +33,7 @@ export function BrandMark({ size = 40, style }: { size?: number; style?: StylePr
     <Image
       source={mark}
       accessibilityRole="image"
-      accessibilityLabel="SnapApp"
+      accessibilityLabel="SnapApps"
       style={[{ width: s, height: s }, style]}
       resizeMode="contain"
     />

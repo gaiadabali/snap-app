@@ -155,7 +155,7 @@ export function SignIn({
           <BrandLockup width={176} style={{ alignSelf: 'flex-start' }} />
           <GradientHero>
             <View style={{ gap: space.sm }}>
-              <HeroLabel>SnapApp</HeroLabel>
+              <HeroLabel>SnapApps</HeroLabel>
               <Text style={{ ...type.h1, ...brandFace, color: '#FFFFFF' }}>Receipts into records</Text>
               <HeroBody>
                 Photograph a receipt, check what was read, keep a record that holds up.
@@ -773,14 +773,14 @@ export function SessionLoading() {
         <Image
           source={splashGlyph}
           accessibilityRole="image"
-          accessibilityLabel="SnapApp"
+          accessibilityLabel="SnapApps"
           style={{ width: 132, height: 132 }}
           resizeMode="contain"
         />
         {/* White on orange is 3.6:1, so only this large wordmark is white; the
             small line under it is Ink (4.9:1), per the brand guide p20. */}
         <Text style={{ ...type.splash, ...brandFace, letterSpacing: 0.5, color: '#FFFFFF', marginTop: 22 }}>
-          SnapApp
+          SnapApps
         </Text>
         <Text style={{ ...type.input, color: '#0F172A', marginTop: space.sm }}>Receipts into records</Text>
       </Animated.View>

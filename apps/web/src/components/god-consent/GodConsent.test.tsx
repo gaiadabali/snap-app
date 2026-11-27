@@ -8,7 +8,7 @@ import { ADULT_LINK_TEXT, GUARDIAN_LINK_TEXT, NoticeSentence } from './NoticeSen
 
 // The two sentences exactly as the founder approved them (god/TASKS.md 9.1.d).
 const ADULT =
-  'I have read and accept the GOD Group Privacy Notice. I understand that my activity in YourTal, SnapApp and Free Tax Returns is combined into one profile, and that businesses receive reports about groups of people, never about me.';
+  'I have read and accept the GOD Group Privacy Notice. I understand that my activity in YourTal, SnapApps and Free Tax Returns is combined into one profile, and that businesses receive reports about groups of people, never about me.';
 const GUARDIAN =
   "I am this teen's parent or guardian. I have read the GOD Group Privacy Notice for teens and agree that my teen's activity may be combined and used, in groups of 20 or more, to give businesses insight about young people. No business receives anything about my teen individually.";
 
@@ -86,7 +86,7 @@ describe('GodConsentPromptView (existing accounts, next sign-in)', () => {
   });
 
   it('says normal use continues either way', () => {
-    expect(words(view())).toContain('You can keep using SnapApp either way.');
+    expect(words(view())).toContain('You can keep using SnapApps either way.');
   });
 });
 

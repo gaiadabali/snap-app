@@ -38,9 +38,9 @@ export function passwordResetMessage(to: string, secret: string): MailMessage {
   const link = `${web()}/reset-password?token=${encodeURIComponent(secret)}`;
   return {
     to,
-    subject: 'Reset your SnapApp password',
+    subject: 'Reset your SnapApps password',
     text:
-      `Someone asked to reset the password for this SnapApp account. If it was you, open this link ` +
+      `Someone asked to reset the password for this SnapApps account. If it was you, open this link ` +
       `to choose a new one. It works once and expires in 30 minutes:\n\n${link}\n\n` +
       'Choosing a new password signs you out on every other device.\n\n' +
       'If you did not ask for this, ignore this email. Your password has not changed.',
@@ -50,9 +50,9 @@ export function passwordResetMessage(to: string, secret: string): MailMessage {
 export function passwordChangedMessage(to: string): MailMessage {
   return {
     to,
-    subject: 'Your SnapApp password was changed',
+    subject: 'Your SnapApps password was changed',
     text:
-      'The password for your SnapApp account was just changed, and every other device signed in ' +
+      'The password for your SnapApps account was just changed, and every other device signed in ' +
       'to it has been signed out.\n\n' +
       `If this was you, there is nothing to do. If it was not, reset your password now:\n\n` +
       `${web()}/forgot-password\n\n` +
@@ -64,11 +64,11 @@ export function emailVerificationMessage(to: string, secret: string): MailMessag
   const link = `${web()}/verify-email?token=${encodeURIComponent(secret)}`;
   return {
     to,
-    subject: 'Confirm your email for SnapApp',
+    subject: 'Confirm your email for SnapApps',
     text:
-      `Confirm that this is your address. Until you do, you can use SnapApp as normal, but you ` +
+      `Confirm that this is your address. Until you do, you can use SnapApps as normal, but you ` +
       `cannot invite people, accept an invitation or link another service. The link works once ` +
       `and expires in 24 hours:\n\n${link}\n\n` +
-      'If you did not create a SnapApp account, ignore this email.',
+      'If you did not create a SnapApps account, ignore this email.',
   };
 }

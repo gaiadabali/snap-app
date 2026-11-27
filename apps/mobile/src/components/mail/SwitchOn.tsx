@@ -23,7 +23,7 @@ const POINTS: { icon: IconName; text: string }[] = [
   { icon: 'ban', text: 'Marketing and bulk mail is filed into Spam and Junk, so your Inbox is left for people and bills.' },
   {
     icon: 'doc',
-    text: 'Statements sent to this address can be imported into SnapApp. That is off until you turn it on in Mail settings.',
+    text: 'Statements sent to this address can be imported into SnapApps. That is off until you turn it on in Mail settings.',
   },
 ];
 
@@ -44,7 +44,7 @@ export function SwitchOnView({
         <View style={{ gap: space.xs }}>
           <Label style={{ color: p.accentText }}>Spambank</Label>
           <Title>Your inbox is ready</Title>
-          <Body muted>This is your new address. It works in SnapApp, YourTal and Free Tax Returns.</Body>
+          <Body muted>This is your new address. It works in SnapApps, YourTal and Free Tax Returns.</Body>
         </View>
         <Card tone="accent" style={{ gap: space.sm }}>
           <Label>Your address</Label>
@@ -65,7 +65,7 @@ export function SwitchOnView({
         <Label style={{ color: p.accentText }}>Spambank</Label>
         <Title>Get your own Spambank inbox</Title>
         <Body muted>
-          A real email address that keeps marketing mail out of your way. One inbox, shared by SnapApp, YourTal and Free
+          A real email address that keeps marketing mail out of your way. One inbox, shared by SnapApps, YourTal and Free
           Tax Returns.
         </Body>
       </View>

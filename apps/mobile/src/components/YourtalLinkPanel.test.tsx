@@ -114,7 +114,7 @@ describe('YourtalLinkPanel: linked', () => {
     };
     const t = text(html({ status: paused }));
     expect(t).toContain(
-      "Receipt points are paused. Receipts you scan now won't earn YourTal points. They start again once SnapApp tops up.",
+      "Receipt points are paused. Receipts you scan now won't earn YourTal points. They start again once SnapApps tops up.",
     );
     expect(t.indexOf('Receipt points are paused.')).toBeLessThan(t.indexOf('Linked to YourTal'));
     expect(t).toMatch(/Paused while points were topped up 3/);

@@ -54,7 +54,7 @@ export function SiteFooter() {
       <div className="shell pt-20 pb-10">
         <div className="grid gap-14 lg:grid-cols-[1.35fr_1.65fr]">
           <div>
-            <Link href="/" className="inline-flex items-center" aria-label="SnapApp, home">
+            <Link href="/" className="inline-flex items-center" aria-label="SnapApps, home">
               <SnapLockup height={52} />
             </Link>
             <p className="body mt-5 max-w-[34ch]">
@@ -87,7 +87,7 @@ export function SiteFooter() {
         </div>
 
         <div className="mt-16 flex flex-col gap-3 border-t border-[var(--s-edge)] pt-8 text-[0.8125rem] text-[var(--s-ink-4)] sm:flex-row sm:items-center sm:justify-between">
-          <span>© {new Date().getFullYear()} SnapApp. Made in Australia.</span>
+          <span>© {new Date().getFullYear()} SnapApps. Made in Australia.</span>
           <span>{ILLUSTRATIVE_NOTE} Not tax advice.</span>
         </div>
       </div>
@@ -98,7 +98,7 @@ export function SiteFooter() {
         className="pointer-events-none select-none px-3 text-center font-[700] leading-[0.78] tracking-[-0.07em] text-[var(--s-mist-2)]"
         style={{ fontSize: 'clamp(4.5rem, 19vw, 17rem)', marginBottom: '-0.12em' }}
       >
-        SnapApp
+        SnapApps
       </div>
     </footer>
   );

@@ -35,8 +35,8 @@ export function handBackAuthReturn(page: {
 
 export const AUTH_RETURN_COPY = {
   handedBackTitle: 'Signing you in…',
-  handedBackBody: 'This window closes by itself. If it stays open, close it and go back to SnapApp.',
+  handedBackBody: 'This window closes by itself. If it stays open, close it and go back to SnapApps.',
   nothingTitle: 'This sign-in has finished',
-  nothingBody: 'Go back to the SnapApp tab you started from, or open SnapApp here and sign in again.',
-  open: 'Open SnapApp',
+  nothingBody: 'Go back to the SnapApps tab you started from, or open SnapApps here and sign in again.',
+  open: 'Open SnapApps',
 } as const;

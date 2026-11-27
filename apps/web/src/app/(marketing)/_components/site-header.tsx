@@ -32,7 +32,7 @@ export function Wordmark({ className }: { className?: string }) {
   return (
     <Link
       href="/"
-      aria-label="SnapApp, home"
+      aria-label="SnapApps, home"
       className={cx('flex items-center', className)}
     >
       <SnapLockup height={41} />

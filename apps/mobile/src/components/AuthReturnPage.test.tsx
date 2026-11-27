@@ -11,12 +11,12 @@ describe('AuthReturnPage', () => {
   it('while handing back: says it is signing in, with no button', () => {
     const t = html('handed-back');
     expect(t).toContain('Signing you in…');
-    expect(t).not.toContain('Open SnapApp');
+    expect(t).not.toContain('Open SnapApps');
   });
 
   it('with nothing waiting: says so and offers to open the app', () => {
     const t = html('nothing-waiting');
     expect(t).toContain('This sign-in has finished');
-    expect(t).toContain('Open SnapApp');
+    expect(t).toContain('Open SnapApps');
   });
 });

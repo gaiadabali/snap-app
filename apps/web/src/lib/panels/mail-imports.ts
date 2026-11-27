@@ -13,14 +13,14 @@ const SKIPPED: Record<string, string> = {
   not_workspace_admin: 'You no longer own or administer the chosen workspace.',
   unsupported_type: 'Only PDF and CSV files are imported.',
   too_large: 'The file is larger than 10 MB.',
-  password_protected: 'The PDF is password-protected. Download it from the email and upload it in SnapApp.',
+  password_protected: 'The PDF is password-protected. Download it from the email and upload it in SnapApps.',
   too_many_pages: 'The PDF has more than 40 pages.',
   not_a_statement: 'The PDF does not look like a bank or card statement.',
   no_credits: 'You were out of scan credits. A PDF statement uses one credit.',
   daily_limit: 'The workspace had reached its daily limit for reading documents.',
   teen_space_unfunded: 'The workspace cannot pay for scans right now.',
   not_allowed: 'Mail is not available for this account any more.',
-  no_account: 'There was no SnapApp account to import into.',
+  no_account: 'There was no SnapApps account to import into.',
 };
 
 const FAILED: Record<string, string> = {
@@ -34,7 +34,7 @@ export function importLine(item: Pick<MailStatementImport, 'status' | 'reason' |
   const reason = item.reason ?? '';
   switch (item.status) {
     case 'pending':
-      return { label: 'Importing', tone: 'neutral', sentence: 'SnapApp is importing this file.' };
+      return { label: 'Importing', tone: 'neutral', sentence: 'SnapApps is importing this file.' };
     case 'imported':
       if (reason === 'waiting_for_credits') {
         return { label: 'Waiting', tone: 'warn', sentence: 'Saved. It will be read once you have scan credits again.' };

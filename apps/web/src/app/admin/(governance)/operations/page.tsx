@@ -6,7 +6,7 @@ import { NotWired } from '../_components/NotWired';
 import { RefusalPanel } from '../_components/RefusalPanel';
 import { ReextractionForm } from './_components/ReextractionForm';
 
-export const metadata = { title: 'Operations · SnapApp admin' };
+export const metadata = { title: 'Operations · SnapApps admin' };
 
 export default async function OperationsPage() {
   const [queues, retention] = await Promise.all([getQueueStats(), getRetentionStatus()]);

@@ -58,7 +58,7 @@ export function SendToFtr({
       }
       setError(body?.message ?? ftrSendMessage(null));
     } catch {
-      setError('Could not reach SnapApp. Check your connection and try again. Nothing was sent.');
+      setError('Could not reach SnapApps. Check your connection and try again. Nothing was sent.');
     }
     setBusy(false);
   }

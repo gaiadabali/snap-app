@@ -114,7 +114,7 @@ export function HomeCompare() {
           >
             <table className="compare-table">
               <caption className="sr-only">
-                Capability comparison between SnapApp and other Australian receipt tools, as at{' '}
+                Capability comparison between SnapApps and other Australian receipt tools, as at{' '}
                 {AS_AT}. Capability, not quality.
               </caption>
               <thead>
@@ -129,7 +129,7 @@ export function HomeCompare() {
                     scope="col"
                     className="compare-us w-[8.5rem] px-3 pb-5 pt-4 text-center text-[1.0625rem] font-[650] tracking-[-0.02em]"
                   >
-                    SnapApp
+                    SnapApps
                   </th>
                   {COMPETITORS.map((c) => (
                     <th

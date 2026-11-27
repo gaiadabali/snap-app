@@ -14,7 +14,7 @@
 type Entry = { message: string; quiet?: boolean };
 
 const TEEN_INVITE =
-  'Teen YourTal accounts can use SnapApp only with an invite from the parent or guardian who approved them.';
+  'Teen YourTal accounts can use SnapApps only with an invite from the parent or guardian who approved them.';
 
 export const AUTH_ERRORS = {
   // Generic
@@ -33,7 +33,7 @@ export const AUTH_ERRORS = {
   use_yourtal: { message: 'This account signs in with YourTal. Use the Continue with YourTal button.' },
   yourtal_email_mismatch: {
     message:
-      'Your YourTal account uses a different email. Use the YourTal account with your SnapApp email, or change your SnapApp email first.',
+      'Your YourTal account uses a different email. Use the YourTal account with your SnapApps email, or change your SnapApps email first.',
   },
   teen_invite_required: { message: TEEN_INVITE },
   teen_invite_expired: { message: 'This invite has expired or has already been used. Ask your parent for a new one.' },
@@ -42,32 +42,32 @@ export const AUTH_ERRORS = {
       "This invite isn't for this account. It was made for a teen whose parent or guardian invited them. Ask your parent to check they sent it to the right YourTal account.",
   },
   teen_access_ended: {
-    message: 'Your access to SnapApp ended, so your SnapApp space is being deleted. You can use SnapApp again once it has been deleted, within 30 days of your access ending.',
+    message: 'Your access to SnapApps ended, so your SnapApps space is being deleted. You can use SnapApps again once it has been deleted, within 30 days of your access ending.',
   },
   teen_account_in_use: {
     message:
-      "This teen account is already used with other SnapApp workspaces, so it can't join a parent's invite. Contact SnapApp support.",
+      "This teen account is already used with other SnapApps workspaces, so it can't join a parent's invite. Contact SnapApps support.",
   },
   region_not_supported: {
-    message: "SnapApp is for YourTal accounts in Australia and Indonesia, so you can't use this account here.",
+    message: "SnapApps is for YourTal accounts in Australia and Indonesia, so you can't use this account here.",
   },
   account_on_hold: {
     message:
-      "Your YourTal account is on hold, so you can't use it to sign in to SnapApp right now. Contact YourTal support.",
+      "Your YourTal account is on hold, so you can't use it to sign in to SnapApps right now. Contact YourTal support.",
   },
   email_unverified: {
     message: "Your YourTal email address isn't confirmed yet. Confirm it in YourTal, then try again.",
   },
   staff_strong_auth_required: {
-    message: 'SnapApp staff must sign in to YourTal with a passkey. Add a passkey, then sign in again.',
+    message: 'SnapApps staff must sign in to YourTal with a passkey. Add a passkey, then sign in again.',
   },
   staff_reauth_required: {
     message:
-      'SnapApp staff must have signed in to YourTal in the last 12 hours. Sign in again to continue.',
+      'SnapApps staff must have signed in to YourTal in the last 12 hours. Sign in again to continue.',
   },
   account_review: {
     message:
-      "We can't connect this YourTal account automatically. Contact SnapApp support and we'll sort it out.",
+      "We can't connect this YourTal account automatically. Contact SnapApps support and we'll sort it out.",
   },
 
   // Google and the demo sign-in

@@ -149,7 +149,7 @@ export class YourtalVouchersController {
       throw refuse(HttpStatus.CONFLICT, error, message);
     }
     if (owner.faceValueMinor !== SCANS_VOUCHER.faceMinor || owner.currency !== SCANS_VOUCHER.currency) {
-      throw refuse(HttpStatus.CONFLICT, 'not_a_scans_voucher', "That voucher isn't a SnapApp scans voucher.");
+      throw refuse(HttpStatus.CONFLICT, 'not_a_scans_voucher', "That voucher isn't a SnapApps scans voucher.");
     }
 
     // Committed before any value-moving call; held by this request.
@@ -191,11 +191,11 @@ export class YourtalVouchersController {
     );
 
     if (row.status === 'granted') return { state: 'granted', redemption: publicRedemption(row) };
-    if (mismatch) throw refuse(HttpStatus.CONFLICT, 'not_a_scans_voucher', "That voucher isn't a SnapApp scans voucher. Nothing was taken.");
+    if (mismatch) throw refuse(HttpStatus.CONFLICT, 'not_a_scans_voucher', "That voucher isn't a SnapApps scans voucher. Nothing was taken.");
     switch (row.status) {
       case 'refused':
         if (row.last_code === 'currency_mismatch') {
-          throw refuse(HttpStatus.CONFLICT, 'not_a_scans_voucher', "That voucher isn't a SnapApp scans voucher.");
+          throw refuse(HttpStatus.CONFLICT, 'not_a_scans_voucher', "That voucher isn't a SnapApps scans voucher.");
         }
         throw refuse(HttpStatus.CONFLICT, 'voucher_refused', "YourTal wouldn't accept this voucher. Nothing was taken.");
       case 'failed':

@@ -83,7 +83,7 @@ function UpdateRequired({ state }: { state: Extract<MinimumState, { status: 'req
 
         <View style={{ gap: space.sm }}>
           <Body>
-            This version of SnapApp is too old to keep working with the server. Install the
+            This version of SnapApps is too old to keep working with the server. Install the
             latest build{size ? ` (${size})` : ''} to carry on.
           </Body>
           <Body>

@@ -34,7 +34,7 @@ describe('AuthMethods: YourTal first on sign-in', () => {
     const markup = html();
     expect(markup).toContain('Continue with YourTal');
     expect(markup).not.toContain('Sign in with YourTal');
-    expect(markup).toContain('One account for SnapApp, YourTal and our other apps.');
+    expect(markup).toContain('One account for SnapApps, YourTal and our other apps.');
     expect(markup).toContain('Sign in with email instead');
     // Collapsed: a native <details> without the `open` attribute, holding Google.
     expect(markup).toMatch(/<details class="auth-more">/);

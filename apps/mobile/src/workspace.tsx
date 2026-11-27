@@ -219,7 +219,7 @@ function PersonalOnlyGate({
         </Figure>
         <Body muted style={{ textAlign: 'center' }}>
           {hadBusinessOnly
-            ? 'Your account is set up for a business workspace, which is not part of SnapApp right now. Start a personal space to track what you spend — it is entirely separate.'
+            ? 'Your account is set up for a business workspace, which is not part of SnapApps right now. Start a personal space to track what you spend — it is entirely separate.'
             : 'Create a personal space to start tracking what you spend.'}
         </Body>
         {error ? (

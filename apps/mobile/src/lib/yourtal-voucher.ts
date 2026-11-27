@@ -41,7 +41,7 @@ const MESSAGES: Record<(typeof VOUCHER_ERROR_CODES)[number], string> = {
   voucher_used: 'This voucher has already been used.',
   voucher_expired: 'This voucher has expired.',
   voucher_busy: 'This voucher is being used right now. Try again in 15 minutes.',
-  not_a_scans_voucher: "That voucher isn't a SnapApp scans voucher.",
+  not_a_scans_voucher: "That voucher isn't a SnapApps scans voucher.",
   voucher_refused: "YourTal wouldn't accept this voucher. Nothing was taken.",
   rate_limited: 'Too many attempts. Try again in a few minutes.',
   yourtal_not_configured: "Vouchers aren't available right now. Try again later.",
@@ -98,7 +98,7 @@ export function grantedMessage(credits: number, workspace: string): string {
 
 export const VOUCHER_COPY = {
   title: 'Use a YourTal voucher',
-  intro: 'Have a SnapApp scans voucher in your YourTal wallet? Use it to add scans.',
+  intro: 'Have a SnapApps scans voucher in your YourTal wallet? Use it to add scans.',
   codeLabel: 'Voucher code',
   codePlaceholder: 'XXXX-XXXX-XXXX-XXXX-X',
   button: 'Add scans',

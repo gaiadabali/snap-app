@@ -24,8 +24,8 @@ import { getPointBalance, listPointLedger } from './points.repo.js';
 export class PointsController {
   @Get()
   @ApiOperation({
-    summary: 'DEPRECATED: your retired SnapApp points balance',
-    description: 'Frozen: SnapApp stopped awarding points on 2026-10-20. YourTal points are shown from GET /v1/yourtal/link.',
+    summary: 'DEPRECATED: your retired SnapApps points balance',
+    description: 'Frozen: SnapApps stopped awarding points on 2026-10-20. YourTal points are shown from GET /v1/yourtal/link.',
   })
   async balance(@CurrentUser() user: AuthUser): Promise<PointBalance> {
     const balance = await getPointBalance(user.userId);
@@ -34,8 +34,8 @@ export class PointsController {
 
   @Get('ledger')
   @ApiOperation({
-    summary: 'DEPRECATED: how your retired SnapApp points were earned',
-    description: 'History only, most recent first, capped at 200 rows. SnapApp stopped awarding points on 2026-10-20. YourTal pays its own points for each receipt once the account is linked (GET /v1/yourtal/link).',
+    summary: 'DEPRECATED: how your retired SnapApps points were earned',
+    description: 'History only, most recent first, capped at 200 rows. SnapApps stopped awarding points on 2026-10-20. YourTal pays its own points for each receipt once the account is linked (GET /v1/yourtal/link).',
   })
   async ledger(
     @CurrentUser() user: AuthUser,

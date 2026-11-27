@@ -73,7 +73,7 @@ export function PanelShell({
           </MobileNav>
           <Link href="/" className="inline-flex items-center gap-2 whitespace-nowrap text-[15px] font-bold text-[var(--color-ink)]">
             <SnapMark size={28} />
-            SnapApp
+            SnapApps
           </Link>
           <span className="hidden rounded-full bg-[var(--color-accent-soft)] px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--color-ink-muted)] sm:inline">
             {workspace.kind === 'business' ? 'Business' : 'Personal'}
