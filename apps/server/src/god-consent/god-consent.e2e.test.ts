@@ -142,7 +142,7 @@ describeIfDb('GOD group consent — real HTTP, real database', () => {
     const s = await state(token);
     expect(s.notice).toEqual({
       id: 'god-group-notice',
-      version: '1.0',
+      version: '1.1',
       effective: '2026-11-27',
       url: 'https://god.gaiada.com/privacy-notice/',
       teenUrl: 'https://god.gaiada.com/privacy-notice/#teens',
@@ -186,7 +186,7 @@ describeIfDb('GOD group consent — real HTTP, real database', () => {
       expect(ok.statusCode).toBe(201);
       tenants.push(ok.json().id);
       expect(await events(userId)).toEqual([
-        { decision: 'accepted', notice_version: '1.0', method: 'registration', guardian_user_id: null },
+        { decision: 'accepted', notice_version: '1.1', method: 'registration', guardian_user_id: null },
       ]);
     });
 
@@ -210,10 +210,10 @@ describeIfDb('GOD group consent — real HTTP, real database', () => {
     it('with the tick, finishes and records accepted by registration', async () => {
       const { token, userId } = await signUpAndOnboard('tick');
       expect(await events(userId)).toEqual([
-        { decision: 'accepted', notice_version: '1.0', method: 'registration', guardian_user_id: null },
+        { decision: 'accepted', notice_version: '1.1', method: 'registration', guardian_user_id: null },
       ]);
       expect(await state(token)).toMatchObject({
-        status: { decision: 'accepted', version: '1.0', method: 'registration' },
+        status: { decision: 'accepted', version: '1.1', method: 'registration' },
         prompt: 'none',
         accepted: true,
       });
@@ -227,11 +227,11 @@ describeIfDb('GOD group consent — real HTTP, real database', () => {
 
       expect(await state(token)).toMatchObject({ status: null, prompt: 'ask' });
 
-      const res = await call('POST', '/v1/god-consent', { token, body: { decision: 'declined', version: '1.0' } });
+      const res = await call('POST', '/v1/god-consent', { token, body: { decision: 'declined', version: '1.1' } });
       expect(res.statusCode).toBe(200);
       expect(res.json()).toMatchObject({ status: { decision: 'declined', method: 'next_sign_in' }, prompt: 'none', accepted: false });
       expect(await events(userId)).toEqual([
-        { decision: 'declined', notice_version: '1.0', method: 'next_sign_in', guardian_user_id: null },
+        { decision: 'declined', notice_version: '1.1', method: 'next_sign_in', guardian_user_id: null },
       ]);
 
       // Normal use is untouched: the session, the workspace list and a workspace read all work.
@@ -241,7 +241,7 @@ describeIfDb('GOD group consent — real HTTP, real database', () => {
       expect(list.json().map((w: { id: string }) => w.id)).toContain(workspaceId);
 
       // Asking again changes nothing (idempotent); the decline is not re-asked.
-      await call('POST', '/v1/god-consent', { token, body: { decision: 'declined', version: '1.0' } });
+      await call('POST', '/v1/god-consent', { token, body: { decision: 'declined', version: '1.1' } });
       expect(await events(userId)).toHaveLength(1);
       expect(await state(token)).toMatchObject({ prompt: 'none' });
     });
@@ -249,7 +249,7 @@ describeIfDb('GOD group consent — real HTTP, real database', () => {
     it('accepts at next sign-in', async () => {
       const { token, userId } = await signUpAndOnboard('accept-later');
       await forgetAnswer(userId);
-      const res = await call('POST', '/v1/god-consent', { token, body: { decision: 'accepted', version: '1.0' } });
+      const res = await call('POST', '/v1/god-consent', { token, body: { decision: 'accepted', version: '1.1' } });
       expect(res.statusCode).toBe(200);
       expect(res.json()).toMatchObject({ status: { decision: 'accepted', method: 'next_sign_in' }, accepted: true, prompt: 'none' });
     });
@@ -257,7 +257,7 @@ describeIfDb('GOD group consent — real HTTP, real database', () => {
     it('is asked again when the version changes, and a stale version cannot be answered', async () => {
       const { token, userId } = await signUpAndOnboard('bump');
       await forgetAnswer(userId);
-      // An answer given to an OLDER notice (0.9, as if 1.0 were the bump).
+      // An answer given to an OLDER notice (0.9, as if 1.1 were the bump).
       const ev = await admin.query(
         `insert into god_consent_events (user_id, notice_version, decision, method) values ($1, '0.9', 'declined', 'next_sign_in') returning id, created_at`,
         [userId],
@@ -273,14 +273,45 @@ describeIfDb('GOD group consent — real HTTP, real database', () => {
       expect(stale.statusCode).toBe(409);
       expect(stale.json()).toMatchObject({ error: 'version_changed' });
 
-      const ok = await call('POST', '/v1/god-consent', { token, body: { decision: 'accepted', version: '1.0' } });
+      const ok = await call('POST', '/v1/god-consent', { token, body: { decision: 'accepted', version: '1.1' } });
       expect(ok.statusCode).toBe(200);
-      expect((await events(userId)).map((e) => `${e.decision}@${e.notice_version}`)).toEqual(['declined@0.9', 'accepted@1.0']);
+      expect((await events(userId)).map((e) => `${e.decision}@${e.notice_version}`)).toEqual(['declined@0.9', 'accepted@1.1']);
+    });
+
+    it('v1.1: an acceptance of 1.0 is asked again, 1.0 can no longer be answered, and 1.1 is recorded next to it', async () => {
+      const { token, userId } = await signUpAndOnboard('v10-to-v11');
+      await forgetAnswer(userId);
+      // What every existing account looked like before 1.1: an acceptance of the 1.0 notice.
+      const ev = await admin.query(
+        `insert into god_consent_events (user_id, notice_version, decision, method) values ($1, '1.0', 'accepted', 'registration') returning id, created_at`,
+        [userId],
+      );
+      await admin.query(
+        `insert into god_consent_status (user_id, notice_version, decision, method, decided_at, event_id)
+         values ($1, '1.0', 'accepted', 'registration', $2, $3)`,
+        [userId, ev.rows[0].created_at, ev.rows[0].id],
+      );
+      // Still counted as accepted (a withdrawal is offered), but asked again for the current notice.
+      expect(await state(token)).toMatchObject({
+        notice: { version: '1.1' },
+        status: { decision: 'accepted', version: '1.0' },
+        accepted: true,
+        prompt: 'ask',
+      });
+
+      const stale = await call('POST', '/v1/god-consent', { token, body: { decision: 'accepted', version: '1.0' } });
+      expect(stale.statusCode).toBe(409);
+      expect(stale.json()).toMatchObject({ error: 'version_changed' });
+
+      const ok = await call('POST', '/v1/god-consent', { token, body: { decision: 'accepted', version: '1.1' } });
+      expect(ok.statusCode).toBe(200);
+      expect(ok.json()).toMatchObject({ status: { decision: 'accepted', version: '1.1' }, prompt: 'none' });
+      expect((await events(userId)).map((e) => `${e.decision}@${e.notice_version}`)).toEqual(['accepted@1.0', 'accepted@1.1']);
     });
 
     it('cannot decline after accepting: withdrawing is the way', async () => {
       const { token } = await signUpAndOnboard('no-flip');
-      const res = await call('POST', '/v1/god-consent', { token, body: { decision: 'declined', version: '1.0' } });
+      const res = await call('POST', '/v1/god-consent', { token, body: { decision: 'declined', version: '1.1' } });
       expect(res.statusCode).toBe(409);
       expect(res.json()).toMatchObject({ error: 'already_accepted' });
     });
@@ -332,7 +363,7 @@ describeIfDb('GOD group consent — real HTTP, real database', () => {
       const { teen } = await teenAndParent('t1');
       await forgetAnswer(teen.userId);
       expect(await state(teen.token)).toMatchObject({ teen: true, prompt: 'none', status: null });
-      const res = await call('POST', '/v1/god-consent', { token: teen.token, body: { decision: 'accepted', version: '1.0' } });
+      const res = await call('POST', '/v1/god-consent', { token: teen.token, body: { decision: 'accepted', version: '1.1' } });
       expect(res.statusCode).toBe(403);
       expect(res.json()).toMatchObject({ error: 'teen_parent_accepts' });
       expect(await events(teen.userId)).toEqual([]);
@@ -347,21 +378,21 @@ describeIfDb('GOD group consent — real HTTP, real database', () => {
 
       const ok = await call('POST', `/v1/family/teens/${teen.workspaceId}/god-consent`, {
         token: parent.token,
-        body: { decision: 'accepted', version: '1.0' },
+        body: { decision: 'accepted', version: '1.1' },
       });
       expect(ok.statusCode).toBe(200);
-      expect(ok.json()).toEqual({ accepted: true, version: '1.0' });
+      expect(ok.json()).toEqual({ accepted: true, version: '1.1' });
       expect(await events(teen.userId)).toEqual([
-        { decision: 'accepted', notice_version: '1.0', method: 'guardian', guardian_user_id: parent.userId },
+        { decision: 'accepted', notice_version: '1.1', method: 'guardian', guardian_user_id: parent.userId },
       ]);
       expect((await call('GET', '/v1/family', { token: parent.token })).json().teens[0].godConsent).toEqual({
         accepted: true,
-        version: '1.0',
+        version: '1.1',
       });
 
       const out = await call('POST', `/v1/family/teens/${teen.workspaceId}/god-consent`, {
         token: parent.token,
-        body: { decision: 'withdrawn', version: '1.0' },
+        body: { decision: 'withdrawn', version: '1.1' },
       });
       expect(out.json()).toEqual({ accepted: false, version: null });
       expect((await events(teen.userId)).map((e) => e.decision)).toEqual(['accepted', 'withdrawn']);
@@ -372,7 +403,7 @@ describeIfDb('GOD group consent — real HTTP, real database', () => {
       const stranger = await signUpAndOnboard('t3-stranger');
       const refused = await call('POST', `/v1/family/teens/${teen.workspaceId}/god-consent`, {
         token: stranger.token,
-        body: { decision: 'accepted', version: '1.0' },
+        body: { decision: 'accepted', version: '1.1' },
       });
       expect(refused.statusCode).toBe(404);
       const stale = await call('POST', `/v1/family/teens/${teen.workspaceId}/god-consent`, {

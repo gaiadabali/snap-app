@@ -101,7 +101,7 @@ export default function PrivacyScreen() {
           <Card>
             <Body>
               Records are kept for {years} years, which is at or above what the ATO requires.
-              Originals are stored in Australia.
+              Originals are stored on a server in Indonesia.
             </Body>
           </Card>
           <Small>

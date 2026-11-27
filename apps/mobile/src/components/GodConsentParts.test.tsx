@@ -22,7 +22,7 @@ const GUARDIAN =
 
 const NOTICE: GodConsentState['notice'] = {
   id: 'god-group-notice',
-  version: '1.0',
+  version: '1.1',
   effective: '2026-11-27',
   url: 'https://god.gaiada.com/privacy-notice/',
   teenUrl: 'https://god.gaiada.com/privacy-notice/#teens',
