@@ -223,7 +223,7 @@ describeIfDb('GOD group consent (migration 0062)', () => {
       await as(parent);
       await forTeen(tenant, '1.0', 'accepted');
       await owner();
-      await c.query(`UPDATE teen_spaces SET access_ended_at = now() WHERE tenant_id = $1`, [tenant]);
+      await c.query(`UPDATE teen_spaces SET access_ended_at = now(), erase_after = now() + interval '30 days' WHERE tenant_id = $1`, [tenant]);
       await as(parent);
       await expect(forTeen(tenant, '1.1', 'accepted')).rejects.toMatchObject({ code: 'GC003' });
       expect(await forTeen(tenant, '1.0', 'withdrawn')).toBe(true);
