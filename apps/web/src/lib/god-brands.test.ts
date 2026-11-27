@@ -23,7 +23,7 @@ describe('switcherTiles', () => {
 
   it('links the others to their app URL, and Spambank to this app’s own Mail screen', () => {
     const byKey = Object.fromEntries(switcherTiles({ adultBrands: true }).map((t) => [t.key, t]));
-    expect(byKey.yourtal).toMatchObject({ href: 'https://yourtal.gaiada.com', external: true });
+    expect(byKey.yourtal).toMatchObject({ href: 'https://member.yourtal.gaiada.com', external: true });
     expect(byKey.ftr).toMatchObject({ href: 'https://freetaxreturns.com.au', external: true });
     expect(byKey.spambank).toMatchObject({ href: '/app/mail', external: false });
   });
