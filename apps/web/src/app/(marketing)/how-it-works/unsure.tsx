@@ -60,7 +60,7 @@ export function Unsure() {
             <Reveal stagger as="ul" className="mt-10 flex flex-col gap-3">
               {RULES.map((r) => (
                 <li key={r.title} className="card flex gap-4 p-5">
-                  <span className="mt-0.5 grid size-10 shrink-0 place-items-center rounded-[12px] bg-[var(--s-blue-soft)] text-[var(--s-blue-text)]">
+                  <span className="mt-0.5 grid size-10 shrink-0 place-items-center rounded-[12px] bg-[var(--s-brand-soft)] text-[var(--s-brand-text)]">
                     <Icon name={r.icon} size={20} />
                   </span>
                   <div>
@@ -146,7 +146,7 @@ function UnsureScreen() {
             It was not confident about the last price, so it left it empty rather than guess. Check the paper and fill it in.
           </p>
           <div className="mt-[12px] flex gap-[8px]">
-            <span className="flex-1 rounded-[14px] bg-[var(--a-accent)] py-[11px] text-center text-[14.5px] font-semibold text-white">
+            <span className="flex-1 rounded-[14px] bg-[var(--a-accent)] py-[11px] text-center text-[14.5px] font-semibold text-[var(--a-accent-ink)]">
               Fill it in
             </span>
           </div>

@@ -17,7 +17,7 @@ This file is the contract. Several people build sections in parallel on it.
 | `index.tsx` | Server components: `Shell`, `Reveal`, `SectionHead`, `Btn`, `StoreButtons`, `Assurances`, `Phone`, `Chip`, `IconTile`, `TextLink`, `aud()`, `ILLUSTRATIVE_NOTE` | Owner only |
 | `client.tsx` | Client islands: `CountUp` | Owner only |
 | `app-ui.tsx` | The phone app drawn in code: screens + building blocks | Owner only |
-| `icons.tsx` | `Icon` (one stroke set) and `SnapMark` (the app icon) | Owner only |
+| `icons.tsx` | `Icon` (one stroke set) and `SnapMark` + `SnapLockup` (the official Snap Apps logo) | Owner only |
 | `demo.ts` | **Every figure on the site.** One household, one October | Owner only — `demo.test.ts` proves it adds up |
 
 Need something the kit does not have? Build it in **your own file** next to
@@ -29,7 +29,7 @@ Use the CSS variables, which carry light, dark, and the night register:
 
 - Ground and surfaces: `--s-bg`, `--s-mist`, `--s-mist-2`, `--s-card`, `--s-edge`, `--s-edge-2`
 - Ink, strongest to faintest: `--s-ink`, `--s-ink-2`, `--s-ink-3`, `--s-ink-4`
-- Brand: `--s-blue`, `--s-blue-2`, `--s-blue-deep`, `--s-blue-text` (blue as TEXT), `--s-blue-soft` (tint fill), `--s-cyan` (scan line only)
+- Brand: `--s-brand`, `--s-brand-2`, `--s-brand-deep`, `--s-brand-text` (blue as TEXT), `--s-brand-soft` (tint fill), `--s-scan` (scan line only)
 - Meaning: `--s-green` / `--s-green-soft` (valid, GST-free), `--s-red` / `--s-red-soft` (**money at risk only**), `--s-amber` / `--s-amber-soft`
 - Gradients: `--s-grad` (the app's hero card), `--s-grad-bright` (primary button)
 - Shadows: `--s-shadow-1/2/3`; easing: `--s-ease`, `--s-spring`

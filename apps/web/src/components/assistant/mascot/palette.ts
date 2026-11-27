@@ -1,23 +1,26 @@
 /**
- * Snapper's colours (sRGB hex). The body is the app icon's blue, from the
- * bright crown (`--s-grad-bright` starts at #1E9DE0) down to `--s-blue-deep`
- * underneath; the face is docket paper; the brackets are the icon's white.
+ * Snapper's colours (sRGB hex). Recoloured 2026-11-27 for the orange rebrand:
+ * the body is Shutter Orange (#EA542D, `--s-brand`) from a bright crown
+ * (`--s-grad-bright` starts at #F26A44) down to the deep orange underneath;
+ * the face is docket paper; the brackets are the logo's white. It was the old
+ * app icon's blue (#1878D8 with a #1E9DE0 crown and a cyan rim); shapes,
+ * expressions and the rig are unchanged, only fills, rim light and shadows.
  */
-export const BLUE = {
-  crown: 0x1e9de0,
-  upper: 0x1878d8, // --s-blue
-  lower: 0x0f5bb5, // --s-blue-2
-  under: 0x0a4a96, // --s-blue-deep
-  arm: 0x1670d0,
-  rim: 0x7fd8ff, // the cyan fresnel glow at the silhouette
-  emissive: 0x08306e, // keeps the shadow side blue instead of navy-black
+export const BODY = {
+  crown: 0xff7a4d,
+  upper: 0xea542d, // --s-brand
+  lower: 0xc43512, // --s-brand-2
+  under: 0xa42f10, // --s-brand-deep
+  arm: 0xdc4a22,
+  rim: 0xffb89a, // the peach fresnel glow at the silhouette
+  emissive: 0x4a1406, // keeps the shadow side warm instead of brown-black
 };
 
 export const PAPER = {
   sheet: '#FFFDF8',
   shade: '#F3EFE6',
-  rule: 'rgba(15, 91, 181, 0.10)',
-  ruleStrong: 'rgba(15, 91, 181, 0.16)',
+  rule: 'rgba(178, 48, 15, 0.10)',
+  ruleStrong: 'rgba(178, 48, 15, 0.16)',
   print: 'rgba(11, 17, 26, 0.10)',
 };
 
@@ -30,11 +33,11 @@ export const BRACKET = 0xffffff;
 /** The shutter's silver collar (its cap is the brackets' white). */
 export const SHUTTER = { ring: 0xc9d3de };
 
-/** The thinking scan line. */
-export const SCAN = '#3FC6EE';
+/** The thinking scan line (apricot, the same hue as --s-scan in dark). */
+export const SCAN = '#FFB27A';
 
-/** Thinking dots: brand blue, cyan, white, twice round the ring. */
-export const DOT_COLOURS = ['#1878D8', '#1CA8DB', '#FFFFFF', '#1878D8', '#1CA8DB', '#FFFFFF'];
+/** Thinking dots: brand orange, apricot, white, twice round the ring. */
+export const DOT_COLOURS = ['#EA542D', '#FFB27A', '#FFFFFF', '#EA542D', '#FFB27A', '#FFFFFF'];
 
-/** Sparkle tints (happy): cyan and white. */
-export const SPARK_TINTS = [0xffffff, 0x7fd8ff, 0xffffff, 0x3fc6ee, 0xe8f8ff, 0x7fd8ff, 0xffffff, 0x3fc6ee];
+/** Sparkle tints (happy): apricot and white. */
+export const SPARK_TINTS = [0xffffff, 0xffc8a8, 0xffffff, 0xffb27a, 0xfff0e6, 0xffc8a8, 0xffffff, 0xffb27a];

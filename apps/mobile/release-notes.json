@@ -1,5 +1,10 @@
 [
   {
+    "id": "snapapp-orange-brand",
+    "date": "2026-11-27",
+    "notes": "SnapApp has a new look. The app icon is now the orange Snap Apps shutter with a receipt inside, and the app is orange throughout, in light and dark mode. Orange text and buttons are tuned so they stay easy to read, and the colours for danger and warnings are now easy to tell apart from the brand orange."
+  },
+  {
     "id": "spambank-mail",
     "date": "2026-11-27",
     "notes": "Your own Spambank inbox is now in the app. Open Mail from the menu, switch it on to get your own address, then read, write, search and sort your email without leaving SnapApp. Marketing mail is filed into Spam and Junk, and Unsubscribe stops a sender in one tap. Turn on alerts in Mail settings and your phone tells you when new mail arrives, without saying who it is from."

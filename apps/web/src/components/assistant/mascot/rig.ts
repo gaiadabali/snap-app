@@ -36,7 +36,7 @@ import {
   type WebGLProgramParametersWithUniforms,
 } from 'three';
 import type { Pose } from './motion';
-import { BLUE, BRACKET, DOT_COLOURS, INK, SCAN, SHUTTER, SPARK_TINTS } from './palette';
+import { BODY, BRACKET, DOT_COLOURS, INK, SCAN, SHUTTER, SPARK_TINTS } from './palette';
 import {
   BODY_H,
   castFromCentre,
@@ -92,7 +92,7 @@ export interface Rig {
 
 type Uniform<T> = { value: T };
 
-/** A cyan fresnel glow at the silhouette, so the cushion holds its edge on a dark page. */
+/** A peach fresnel glow at the silhouette, so the cushion holds its edge on a dark page. */
 function addRim(mat: MeshPhysicalMaterial, colour: Color, power: number): void {
   const uRim: Uniform<Color> = { value: colour };
   const uRimPow: Uniform<number> = { value: power };
@@ -112,7 +112,7 @@ function addRim(mat: MeshPhysicalMaterial, colour: Color, power: number): void {
 }
 
 /**
- * White parts (brackets, shutter cap) tint toward pale blue at grazing angles,
+ * White parts (brackets, shutter cap) tint toward pale peach at grazing angles,
  * so their outline still reads on a white page.
  */
 function addEdgeTint(mat: MeshPhysicalMaterial, tint: Color): void {
@@ -191,8 +191,8 @@ function eyeMaterial(side: number): [MeshPhysicalMaterial, EyeUniforms] {
         float vis = smoothstep( lidBot - fw, lidBot + fw, p.y ) * ( 1.0 - smoothstep( lidTop - fw, lidTop + fw, p.y ) );
         float lash = ( 1.0 - smoothstep( 0.08 - fw, 0.08 + fw, abs( p.y - meetY ) ) )
           * smoothstep( 0.7, 1.0, shut ) * ( 1.0 - smoothstep( 0.9 - fw, 0.9 + fw, abs( p.x ) ) );
-        // A blue sheen low in the eye, as if the paper and the cushion were reflected in it.
-        gl_FragColor.rgb = mix( gl_FragColor.rgb, vec3( 0.09, 0.27, 0.55 ), 0.5 * smoothstep( 0.1, -1.0, p.y ) * ( 1.0 - uHappy ) * ( 1.0 - uSwirl ) );
+        // A warm sheen low in the eye, as if the paper and the cushion were reflected in it.
+        gl_FragColor.rgb = mix( gl_FragColor.rgb, vec3( 0.55, 0.2, 0.09 ), 0.5 * smoothstep( 0.1, -1.0, p.y ) * ( 1.0 - uHappy ) * ( 1.0 - uSwirl ) );
         // Dizzy: an ink spiral, mirrored left to right, turning.
         float ang = atan( p.y, xo );
         float ph = rr * 2.4 - ( ang + uSwirlSpin ) * 0.1591549;
@@ -263,10 +263,10 @@ function cushionGeometry(): BufferGeometry {
   const pos = geo.getAttribute('position');
   const nrm = geo.getAttribute('normal');
   const col = new Float32Array(pos.count * 3);
-  const under = new Color(BLUE.under);
-  const lower = new Color(BLUE.lower);
-  const upper = new Color(BLUE.upper);
-  const crown = new Color(BLUE.crown);
+  const under = new Color(BODY.under);
+  const lower = new Color(BODY.lower);
+  const upper = new Color(BODY.upper);
+  const crown = new Color(BODY.crown);
   const c = new Color();
   const p: Vec3 = { x: 0, y: 0, z: 0 };
   const n: Vec3 = { x: 0, y: 0, z: 0 };
@@ -325,7 +325,7 @@ export function buildRig(): Rig {
   turn.add(body);
 
   // ── The cushion ───────────────────────────────────────────────────────
-  const blue = keep(
+  const shell = keep(
     new MeshPhysicalMaterial({
       color: 0xffffff,
       vertexColors: true,
@@ -333,26 +333,26 @@ export function buildRig(): Rig {
       metalness: 0,
       clearcoat: 1,
       clearcoatRoughness: 0.06,
-      emissive: new Color(BLUE.emissive),
+      emissive: new Color(BODY.emissive),
       emissiveIntensity: 0.26,
     }),
   );
-  const baseEmissive = new Color(BLUE.emissive);
-  const flashEmissive = new Color(0x9fdcff);
-  addRim(blue, new Color(BLUE.rim).multiplyScalar(0.5), 2.6);
-  body.add(new Mesh(track(cushionGeometry()), blue));
+  const baseEmissive = new Color(BODY.emissive);
+  const flashEmissive = new Color(0xffc9a8);
+  addRim(shell, new Color(BODY.rim).multiplyScalar(0.5), 2.6);
+  body.add(new Mesh(track(cushionGeometry()), shell));
 
-  // ── Arms: little blue capsules on the flat sides ──────────────────────
+  // ── Arms: little orange capsules on the flat sides ──────────────────────
   const armGeo = track(new CapsuleGeometry(ARM.radius, ARM.length, 4, 12));
   armGeo.translate(0, -ARM.length / 2 - ARM.radius * 0.35, 0);
-  solidColour(armGeo, BLUE.arm);
+  solidColour(armGeo, BODY.arm);
   const arms: Group[] = [];
   const armX = (y: number) => sideX(y) - ARM.inset;
   for (const side of [-1, 1]) {
     const pivot = new Group();
     pivot.position.set(side * armX(ARM.y), ARM.y, 0.02);
     pivot.rotation.y = -side * 0.12; // a hint forward; the raise stays in the screen plane
-    pivot.add(new Mesh(armGeo, blue));
+    pivot.add(new Mesh(armGeo, shell));
     body.add(pivot);
     arms.push(pivot);
   }
@@ -451,7 +451,7 @@ export function buildRig(): Rig {
       emissiveIntensity: 0.12,
     }),
   );
-  addEdgeTint(white, new Color(0x8fb8e6));
+  addEdgeTint(white, new Color(0xe6b8a0));
 
   // ── Shutter button ────────────────────────────────────────────────────
   const shutter = new Group();
@@ -597,7 +597,7 @@ export function buildRig(): Rig {
     flashMat.opacity = p.flash;
     flash.scale.setScalar(0.2 + 0.26 * p.flash);
     flashMat.rotation = p.flash * 0.6;
-    blue.emissive.copy(baseEmissive).lerp(flashEmissive, p.flash * 0.35);
+    shell.emissive.copy(baseEmissive).lerp(flashEmissive, p.flash * 0.35);
     paper.emissiveIntensity = 0.46 + 0.3 * p.flash;
 
     // Arms. Waving: the shoulder slides up the side so the hand waves at head height.

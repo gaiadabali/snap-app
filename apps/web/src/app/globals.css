@@ -3,63 +3,70 @@
 /**
  * SnapApp — web design tokens.
  *
- * IDENTITY COLOURS ARE MEASURED, NOT INVENTED. #1878D8 dominant, #0060C0 deep,
- * #1CA8DB scan line — sampled from the launch teaser and shared byte-for-byte
- * with apps/mobile/src/theme/tokens.ts. Those do not change here.
+ * REBRAND 2026-11-27 (owner request): the identity colour is the official
+ * Snap Apps Shutter Orange, #EA542D, sampled from the owner's logo, and the
+ * neutrals are the GOD Ecosystem Brand Guidelines' (Ink #0F172A, Slate
+ * #5B6375, Mist #E4E3DC, Paper #F6F5F0, Orange tint #FBE0D9). It replaces the
+ * launch-teaser blue (#1878D8) that was here until now.
  *
- * What DID change, twice, is the grounds.
+ * Contrast, from the guide p20 and re-measured here:
+ *   Ink on orange   4.9:1  AA for all text    -> a label on an orange fill is
+ *                                                --color-accent-ink (Ink)
+ *   White on orange 3.6:1  large text only    -> never a button label
+ *   Orange on Paper 3.3:1  logo / large only  -> never body text
+ * So `--color-accent` is a FILL (and a border, a focus ring, a glyph), and
+ * orange as TEXT is `--color-accent-strong`, a darker orange from the same hue
+ * (#B2300F: 5.8:1 on Paper, 6.3:1 on white; in dark, #FF8A66: 8.0:1).
  *
- * 2026-09-14 moved them from blue (#F2F7FE / #E5EFFC) to docket paper
- * (#FAF9F7 / #F2F0EC) on the argument that an accent sitting on a tinted
- * version of itself stops reading as an accent.
+ * Semantic colours had to move away from the new primary. Red is still
+ * reserved for money at risk, but it is a crimson now (#B3123F, hue 343deg)
+ * because the old #C4322A sat one step from orange; warn went from #95590A to
+ * a golden brown (#8A6100). Green and the info blue are unchanged.
  *
- * 2026-09-19 moved them back to a cool set (#F7F9FC / #EAF0F8), sampled from
- * "Snap Apps Prototype.dc.html". The earlier argument was sound about the OLD
- * blues, which were saturated enough to compete; these are not. #F7F9FC is
- * two points off neutral, so the accent still lands, and the cool cast is what
- * ties the UI to the brand blue instead of leaving it a lone warm surface.
+ * Dark has no brand definition, so it is derived: Ink-family navy-slates for
+ * the grounds, Paper for text.
  *
- * Mobile moved on the same day. Keep the two in step: these neutrals are
- * shared, and `apps/mobile/src/theme/tokens.ts` carries the same history.
- *
- * Red is reserved for money at risk. It is never decorative.
+ * History, so nobody re-litigates it: through 2026-11-26 the identity was
+ * blue (#1878D8 / #0060C0 / #1CA8DB, "measured from the launch teaser") on
+ * cool paper (#F7F9FC / #EAF0F8). Mobile carries the same palette in
+ * `apps/mobile/src/theme/tokens.ts`; keep the two in step.
  */
 
 @theme {
   /* ── Light: cool paper ───────────────────────────────────────────────── */
-  --color-ground:      #F7F9FC;
-  --color-surface:     #EAF0F8;
-  --color-surface-alt: #DCE5F2;
-  --color-ink:         #14181D;
-  --color-ink-muted:   #5A6068;
-  --color-ink-faint:   #858B93;
+  --color-ground:      #F6F5F0;
+  --color-surface:     #EFEEE8;
+  --color-surface-alt: #E4E3DC;
+  --color-ink:         #0F172A;
+  --color-ink-muted:   #5B6375;
+  --color-ink-faint:   #656C7C;
 
-  /* Identity — measured from the teaser. Do not drift from mobile.
-     Exception, 1.33: the primary Button fill and accent text use
-     --color-accent-strong (below), the deep blue in light, because white on
-     --color-accent is 4.45:1, under AA. --color-accent itself is unchanged. */
-  --color-accent:      #1878D8;
-  --color-accent-deep: #0060C0;
-  --color-accent-soft: #E4EEFA;
-  --color-accent-ink:  #FFFFFF;
-  --color-scan:        #1CA8DB;
+  /* Identity — the official Shutter Orange. Do not drift from mobile.
+     --color-accent is a FILL: labels on it are --color-accent-ink (Ink).
+     Orange as TEXT is --color-accent-strong (bottom of this file). */
+  --color-accent:      #EA542D;
+  --color-accent-hover:#F26A44;
+  --color-accent-deep: #A42F10;
+  --color-accent-soft: #FBE0D9;
+  --color-accent-ink:  #0F172A;
+  --color-scan:        #E8801F;
 
-  --color-risk:        #C4322A;
-  --color-risk-soft:   #F8E7E5;
-  --color-warn:        #95590A;
-  --color-warn-soft:   #F7EEDC;
+  --color-risk:        #B3123F;
+  --color-risk-soft:   #FBE6EC;
+  --color-warn:        #8A6100;
+  --color-warn-soft:   #F8F0D6;
   --color-good:        #1B6E4F;
   --color-good-soft:   #E2EFE9;
 
   /* True hairlines. A ruled book, not a stack of boxes. */
-  --color-rule:        #DCE3EE;
-  --color-rule-strong: #C2CEDF;
+  --color-rule:        #E4E3DC;
+  --color-rule-strong: #CFCEC5;
 
-  /* Inverted band — the one dark moment on the page. */
-  --color-void:        #101319;
-  --color-void-ink:    #F4F2EE;
-  --color-void-muted:  #8E949E;
-  --color-void-rule:   #2A2F38;
+  /* Inverted band — the one dark moment on the page. Brand Ink. */
+  --color-void:        #0F172A;
+  --color-void-ink:    #F6F5F0;
+  --color-void-muted:  #9AA2B4;
+  --color-void-rule:   #262E44;
 
   /* 4pt base scale, matching the app. */
   --spacing: 0.25rem;
@@ -79,10 +86,12 @@
    * the type roles below are re-cut for Geist's weights.
    */
   --font-sans: var(--font-geist), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* Brand display face (Audiowide): headings and the wordmark voice only. */
+  --font-brand: var(--font-audiowide), "Audiowide", var(--font-geist), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, Menlo, Consolas, monospace;
 
-  --shadow-card: 0 1px 2px rgb(20 24 29 / 0.04), 0 8px 24px -12px rgb(20 24 29 / 0.10);
-  --shadow-lift: 0 2px 4px rgb(20 24 29 / 0.05), 0 24px 48px -20px rgb(20 24 29 / 0.18);
+  --shadow-card: 0 1px 2px rgb(15 23 42 / 0.04), 0 8px 24px -12px rgb(15 23 42 / 0.10);
+  --shadow-lift: 0 2px 4px rgb(15 23 42 / 0.05), 0 24px 48px -20px rgb(15 23 42 / 0.18);
 }
 
 /* Dark. Redefined as raw custom properties so a token never has its ONLY
@@ -91,29 +100,30 @@
 :root[data-theme="dark"],
 :root:not([data-theme="light"]) {
   @media (prefers-color-scheme: dark) {
-    --color-ground:      #121820;
-    --color-surface:     #1B222C;
-    --color-surface-alt: #242C38;
-    --color-ink:         #F4F3F0;
-    --color-ink-muted:   #9AA2AA;
-    --color-ink-faint:   #7C848D;
-    --color-accent:      #4DA3F5;
-    --color-accent-deep: #1878D8;
-    --color-accent-soft: #13243A;
-    --color-accent-ink:  #05101E;
-    --color-scan:        #3FC6EE;
-    --color-risk:        #F08B80;
-    --color-risk-soft:   #2C1A18;
-    --color-warn:        #E5B871;
+    --color-ground:      #0E1320;
+    --color-surface:     #161C2B;
+    --color-surface-alt: #202739;
+    --color-ink:         #F6F5F0;
+    --color-ink-muted:   #A4ABBB;
+    --color-ink-faint:   #7F8799;
+    --color-accent:      #EA542D;
+    --color-accent-hover:#F26A44;
+    --color-accent-deep: #EA542D;
+    --color-accent-soft: #2E1C1F;
+    --color-accent-ink:  #0F172A;
+    --color-scan:        #FFB27A;
+    --color-risk:        #F58AA5;
+    --color-risk-soft:   #34161F;
+    --color-warn:        #E8C25C;
     --color-warn-soft:   #2A2114;
     --color-good:        #6FD3AC;
     --color-good-soft:   #11241D;
-    --color-rule:        #2C3542;
-    --color-rule-strong: #3A4452;
-    --color-void:        #060809;
-    --color-void-ink:    #EDEBE7;
-    --color-void-muted:  #8E949E;
-    --color-void-rule:   #1E232A;
+    --color-rule:        #262D3E;
+    --color-rule-strong: #353D52;
+    --color-void:        #070A12;
+    --color-void-ink:    #F6F5F0;
+    --color-void-muted:  #9AA2B4;
+    --color-void-rule:   #1C2233;
 
     --bed-wash: 1;
     --bed-lamp: 1;
@@ -121,29 +131,30 @@
 }
 
 :root[data-theme="dark"] {
-  --color-ground:      #121820;
-  --color-surface:     #1B222C;
-  --color-surface-alt: #242C38;
-  --color-ink:         #F4F3F0;
-  --color-ink-muted:   #9AA2AA;
-  --color-ink-faint:   #7C848D;
-  --color-accent:      #4DA3F5;
-  --color-accent-deep: #1878D8;
-  --color-accent-soft: #13243A;
-  --color-accent-ink:  #05101E;
-  --color-scan:        #3FC6EE;
-  --color-risk:        #F08B80;
-  --color-risk-soft:   #2C1A18;
-  --color-warn:        #E5B871;
+  --color-ground:      #0E1320;
+  --color-surface:     #161C2B;
+  --color-surface-alt: #202739;
+  --color-ink:         #F6F5F0;
+  --color-ink-muted:   #A4ABBB;
+  --color-ink-faint:   #7F8799;
+  --color-accent:      #EA542D;
+  --color-accent-hover:#F26A44;
+  --color-accent-deep: #EA542D;
+  --color-accent-soft: #2E1C1F;
+  --color-accent-ink:  #0F172A;
+  --color-scan:        #FFB27A;
+  --color-risk:        #F58AA5;
+  --color-risk-soft:   #34161F;
+  --color-warn:        #E8C25C;
   --color-warn-soft:   #2A2114;
   --color-good:        #6FD3AC;
   --color-good-soft:   #11241D;
-  --color-rule:        #2C3542;
-  --color-rule-strong: #3A4452;
-  --color-void:        #060809;
-  --color-void-ink:    #EDEBE7;
-  --color-void-muted:  #8E949E;
-  --color-void-rule:   #1E232A;
+  --color-rule:        #262D3E;
+  --color-rule-strong: #353D52;
+  --color-void:        #070A12;
+  --color-void-ink:    #F6F5F0;
+  --color-void-muted:  #9AA2B4;
+  --color-void-rule:   #1C2233;
 
   --bed-wash: 1;
   --bed-lamp: 1;
@@ -161,12 +172,10 @@ html {
    * `--color-ink` and invert for free; light does not, and these are the
    * light-theme values.
    *
-   * The grounds are warm off-white on purpose — the note at the top of this
-   * file records that they were changed from blue precisely so #1878D8 would
-   * have somewhere to land. A blue wash at dark-theme strength puts the tint
-   * straight back and turns docket paper grey, which is the one thing the
-   * palette was rewritten to stop. Dark has no such problem: there the same
-   * light is the only thing separating the ground from a black rectangle.
+   * The grounds are Paper (#F6F5F0), a warm off-white, and a brand-coloured
+   * wash at dark-theme strength would tint it peach, which reads as a mistake
+   * on a ledger page. Dark has no such problem: there the same light is the
+   * only thing separating the ground from a black rectangle.
    */
   --bed-wash: 0.34;
   --bed-lamp: 0.42;
@@ -187,10 +196,13 @@ body {
 .tabular { font-variant-numeric: tabular-nums; }
 
 .t-head {
-  font-size: clamp(1.75rem, 3.4vw, 2.75rem);
-  font-weight: 600;
-  line-height: 1.08;
-  letter-spacing: -0.035em;
+  /* Audiowide runs wide and has one weight: a step smaller than the Geist
+     heading it replaced, no negative tracking. */
+  font-family: var(--font-brand);
+  font-size: clamp(1.5rem, 2.8vw, 2.25rem);
+  font-weight: 400;
+  line-height: 1.15;
+  letter-spacing: 0;
 }
 
 /** The ledger label. Mono, small, widely tracked — a real account code. */
@@ -428,19 +440,19 @@ body {
   pointer-events: auto;
 }
 
-/* Accent for TEXT and button fills, at AA contrast in both themes: the deep
-   blue on light, the bright blue on dark (--color-accent itself is 4.2:1 as
-   text on a light ground). Appended here, away from the token blocks above;
-   the same token is defined on feat/ftr-send-ui, so dedupe when the second
-   branch lands. */
+/* Orange as TEXT (links, small labels, outline text), at AA in both themes:
+   the deeper orange on light (5.8:1 on Paper), a light orange on dark (8.0:1
+   on the dark ground). --color-accent itself is a fill: it is 3.3:1 as text
+   on Paper, which the brand guide forbids for body copy. Appended here, away
+   from the token blocks above. */
 :root {
-  --color-accent-strong: var(--color-accent-deep);
+  --color-accent-strong: #B2300F;
 }
 :root[data-theme="dark"] {
-  --color-accent-strong: var(--color-accent);
+  --color-accent-strong: #FF8A66;
 }
 :root:not([data-theme="light"]) {
   @media (prefers-color-scheme: dark) {
-    --color-accent-strong: var(--color-accent);
+    --color-accent-strong: #FF8A66;
   }
 }

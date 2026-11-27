@@ -30,7 +30,7 @@ function CtaLink({
 }) {
   const variants = {
     primary:
-      'bg-[var(--color-accent)] text-[var(--color-accent-ink)] hover:bg-[var(--color-accent-deep)]',
+      'bg-[var(--color-accent)] text-[var(--color-accent-ink)] hover:bg-[var(--color-accent-hover)]',
     secondary:
       'bg-transparent text-[var(--color-ink)] border border-[var(--color-rule-strong)] hover:bg-[var(--color-surface-alt)]',
   } as const;
@@ -131,7 +131,7 @@ export function PricingPlans() {
           <Card className="flex flex-col">
             <div className="flex items-start justify-between">
               <div>
-                <div className="text-[13px] font-semibold uppercase tracking-[0.06em] text-[var(--color-accent)]">
+                <div className="text-[13px] font-semibold uppercase tracking-[0.06em] text-[var(--color-accent-strong)]">
                   Practice
                 </div>
                 <div className="mt-1 text-[13px] text-[var(--color-ink-muted)]">
@@ -154,7 +154,7 @@ export function PricingPlans() {
           <Card tone="accent" className="flex flex-col">
             <div className="flex items-start justify-between">
               <div>
-                <div className="text-[13px] font-semibold uppercase tracking-[0.06em] text-[var(--color-accent)]">
+                <div className="text-[13px] font-semibold uppercase tracking-[0.06em] text-[var(--color-accent-strong)]">
                   Practice Plus
                 </div>
                 <div className="mt-1 text-[13px] text-[var(--color-ink-muted)]">
@@ -240,7 +240,7 @@ export function PricingPlans() {
           </Card>
 
           <Card tone="accent" className="flex flex-col">
-            <div className="text-[13px] font-semibold uppercase tracking-[0.06em] text-[var(--color-accent)]">
+            <div className="text-[13px] font-semibold uppercase tracking-[0.06em] text-[var(--color-accent-strong)]">
               Sole Trader
             </div>
             <div className="mt-4">

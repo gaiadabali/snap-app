@@ -193,7 +193,7 @@ function TabButton({
     transform: [{ scaleX: 0.6 + on.value * 0.4 }],
   }));
 
-  const activeFg = dark ? '#FFFFFF' : p.accent;
+  const activeFg = dark ? '#FFFFFF' : p.accentText;
   const idleFg = dark ? 'rgba(255,255,255,0.62)' : p.inkMuted;
 
   return (
@@ -332,7 +332,7 @@ const styles = StyleSheet.create({
     borderRadius: FAB / 2,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#0F5BB5',
+    shadowColor: '#9E2E0F',
     shadowOpacity: 0.4,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 },
@@ -340,7 +340,7 @@ const styles = StyleSheet.create({
   },
   fabActive: {
     borderWidth: 2,
-    borderColor: '#3FC6EE',
+    borderColor: '#FFB27A',
   },
 });
 

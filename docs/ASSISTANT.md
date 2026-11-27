@@ -18,6 +18,13 @@ specifics (Indonesian, leads, agency pricing, WhatsApp).
 
 ---
 
+> **Recoloured 2026-11-27 (orange rebrand).** Snapper keeps its shape, rig and
+> expressions; its blue cushion, cyan rim and scan colours below are now the
+> orange palette in `apps/web/src/components/assistant/mascot/palette.ts`
+> (`BODY`: crown `#FF7A4D`, upper `#EA542D`, lower `#C43512`, under `#A42F10`;
+> scan and sparkles apricot `#FFB27A`). The posters in `public/assistant/` were
+> re-rendered from it. Hex values quoted below are the historical blue.
+
 ## 1. Who Snapper is
 
 - **Name:** Snapper. Someone who snaps photos; an echo of "Snap Apps"; and a

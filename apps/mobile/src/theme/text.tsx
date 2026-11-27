@@ -39,6 +39,8 @@ import {
 type Weight = 400 | 500 | 600 | 700;
 
 export const FONT_SOURCES = {
+  // The brand face; see `font.brand` in tokens.ts. Bundled (OFL, assets/fonts).
+  Audiowide_400Regular: require('../../assets/fonts/Audiowide-Regular.ttf'),
   Geist_400Regular,
   Geist_500Medium,
   Geist_600SemiBold,

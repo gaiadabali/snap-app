@@ -185,8 +185,8 @@
     width: 7px;
     height: 7px;
     border-radius: 99px;
-    background: #3fc6ee;
-    box-shadow: 0 0 0 4px rgb(63 198 238 / 0.18);
+    background: #ffb27a;
+    box-shadow: 0 0 0 4px rgb(255 178 122 / 0.18);
   }
 }
 
@@ -212,7 +212,7 @@
     width: 8px;
     height: 8px;
     border-radius: 99px;
-    background: var(--s-blue);
+    background: var(--s-brand);
   }
 
   .feat-link-l {
@@ -271,8 +271,8 @@
 /* ── Records: the search box ────────────────────────────────────────────── */
 
 .feat-search:focus-within {
-  border-color: var(--s-blue);
-  box-shadow: 0 0 0 4px var(--s-blue-tint);
+  border-color: var(--s-brand);
+  box-shadow: 0 0 0 4px var(--s-brand-tint);
 }
 
 .feat-search input:focus-visible {
@@ -292,8 +292,8 @@
 }
 
 .feat-chip:hover {
-  border-color: var(--s-blue);
-  color: var(--s-blue-text);
+  border-color: var(--s-brand);
+  color: var(--s-brand-text);
 }
 
 } /* @layer components */

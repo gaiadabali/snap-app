@@ -81,7 +81,7 @@ export function MoneyChapter() {
                       style={{
                         height: `${w.pct}%`,
                         ['--i' as string]: i,
-                        background: w.pct === 100 ? 'var(--s-blue)' : 'color-mix(in srgb, var(--s-blue) 32%, transparent)',
+                        background: w.pct === 100 ? 'var(--s-brand)' : 'color-mix(in srgb, var(--s-brand) 32%, transparent)',
                       }}
                     />
                   </div>
@@ -183,7 +183,7 @@ export function HouseholdChapter() {
           <div>
             <Reveal>
               <div className="mb-8 flex -space-x-3" aria-hidden>
-                <span className="grid size-16 place-items-center rounded-full bg-[var(--s-blue-soft)] text-[1.125rem] font-[700] text-[var(--s-blue-text)] ring-4 ring-[var(--s-bg)]">
+                <span className="grid size-16 place-items-center rounded-full bg-[var(--s-brand-soft)] text-[1.125rem] font-[700] text-[var(--s-brand-text)] ring-4 ring-[var(--s-bg)]">
                   {DEMO_PERSON.initials}
                 </span>
                 <span className="grid size-16 place-items-center rounded-full bg-[var(--s-green-soft)] text-[1.125rem] font-[700] text-[var(--s-green)] ring-4 ring-[var(--s-bg)]">

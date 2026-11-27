@@ -22,7 +22,7 @@ export function toSandboxDocument(safe: SafeHtml, opts?: { dark?: boolean }): st
   const dark = opts?.dark === true;
   const fg = dark ? "#e8e8ea" : "#1b1b1f";
   const bg = dark ? "#16161a" : "#ffffff";
-  const link = dark ? "#8ab4f8" : "#1a56c4";
+  const link = dark ? "#ff8a66" : "#b2300f";
   const css =
     `:root{color-scheme:${dark ? "dark" : "light"}}` +
     `html,body{margin:0;padding:0;background:${bg};color:${fg}}` +

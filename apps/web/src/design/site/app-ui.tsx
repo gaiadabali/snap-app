@@ -369,8 +369,8 @@ export function DocketPaper({
                 className="seq-lock pointer-events-none absolute -inset-x-[7px] -inset-y-[2px] rounded-[4px] border-[1.5px]"
                 style={{
                   ['--i' as string]: i,
-                  borderColor: l.taxable ? 'rgb(24 120 216 / 0.85)' : 'rgb(44 155 108 / 0.85)',
-                  background: l.taxable ? 'rgb(24 120 216 / 0.08)' : 'rgb(44 155 108 / 0.08)',
+                  borderColor: l.taxable ? 'rgb(234 84 45 / 0.85)' : 'rgb(44 155 108 / 0.85)',
+                  background: l.taxable ? 'rgb(234 84 45 / 0.08)' : 'rgb(44 155 108 / 0.08)',
                 }}
               />
             ) : null}
@@ -574,7 +574,7 @@ export function FindingScreen() {
             Add the ABN from the docket, or ask the supplier for a compliant tax invoice.
           </div>
           <div className="mt-[12px] flex gap-[8px]">
-            <span className="flex-1 rounded-[14px] bg-[var(--a-accent)] py-[12px] text-center text-[14.5px] font-semibold text-white">
+            <span className="flex-1 rounded-[14px] bg-[var(--a-accent)] py-[12px] text-center text-[14.5px] font-semibold text-[var(--a-accent-ink)]">
               Add the ABN
             </span>
             <span className="flex-1 rounded-[14px] bg-[var(--a-card)] py-[12px] text-center text-[14.5px] font-semibold">
@@ -619,7 +619,7 @@ export function ReceiptsScreen() {
               key={c}
               className={cx(
                 'shrink-0 rounded-full px-[14px] py-[7px] text-[13.5px] font-semibold',
-                i === 0 ? 'bg-[var(--a-accent)] text-white' : 'border border-[var(--a-rule)] bg-[var(--a-card)]',
+                i === 0 ? 'bg-[var(--a-accent)] text-[var(--a-accent-ink)]' : 'border border-[var(--a-rule)] bg-[var(--a-card)]',
               )}
             >
               {c}

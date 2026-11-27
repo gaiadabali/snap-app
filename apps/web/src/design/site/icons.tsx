@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import type { SVGProps } from 'react';
 
 /**
@@ -107,38 +108,36 @@ export function Icon({
 }
 
 /**
- * The SnapApp mark — the app icon itself: a viewfinder around an S on the
- * brand gradient. Drawn as SVG so it is sharp at 24px in the header and at
- * 120px in the final call to action; the corner brackets are the camera's
- * framing guides, the same ones the capture screen shows.
+ * The official Snap Apps logo (owner's artwork, 2026-11-27): the shutter
+ * submark and the primary lockup, served from /public/brand. They are the
+ * owner's PNG traced to SVG, never redrawn, stretched, recoloured or given
+ * effects (brand guide p11); the white behind the shutter cut-outs is part of
+ * the file, so they read the same on light and dark grounds. The images are
+ * decorative here (`alt=""`): the link or heading that holds one carries the
+ * accessible name, "SnapApp".
+ *
+ * Guide minimums (p9): the lockup is never under 120px wide, the submark
+ * never under 24px. Both clamp.
  */
 export function SnapMark({ size = 32, className }: { size?: number; className?: string }) {
+  const s = Math.max(24, size);
   return (
-    <svg
-      viewBox="0 0 64 64"
-      width={size}
-      height={size}
+    <Image src="/brand/snapapp-mark.svg" width={s} height={s} alt="" aria-hidden unoptimized className={className} />
+  );
+}
+
+/** The primary lockup: submark plus the SNAP APPS wordmark. */
+export function SnapLockup({ height = 41, className }: { height?: number; className?: string }) {
+  const h = Math.max(41, height);
+  return (
+    <Image
+      src="/brand/snapapp-lockup.svg"
+      width={Math.round((h * 1392) / 471)}
+      height={h}
+      alt=""
       aria-hidden
-      focusable="false"
+      unoptimized
       className={className}
-    >
-      <defs>
-        <linearGradient id="snapmark-g" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#1E9DE0" />
-          <stop offset="1" stopColor="#1F72C2" />
-        </linearGradient>
-      </defs>
-      <rect width="64" height="64" rx="15" fill="url(#snapmark-g)" />
-      <g fill="none" stroke="#fff" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M13 20.5v-5a2.5 2.5 0 0 1 2.5-2.5h5" />
-        <path d="M43.5 13h5a2.5 2.5 0 0 1 2.5 2.5v5" />
-        <path d="M51 43.5v5a2.5 2.5 0 0 1-2.5 2.5h-5" />
-        <path d="M20.5 51h-5a2.5 2.5 0 0 1-2.5-2.5v-5" />
-      </g>
-      <path
-        fill="#fff"
-        d="M38.9 23.4c-1.9-1-3.9-1.6-5.9-1.6-1.6 0-2.6.6-2.6 1.6 0 1 .9 1.5 3.3 2.5 4 1.6 6 3.6 6 6.9 0 4.3-3.4 6.9-8.6 6.9-2.8 0-5.2-.6-6.9-1.4v-5.2c2 1.4 4.3 2.2 6.4 2.2 1.8 0 2.8-.6 2.8-1.7 0-1-.8-1.6-3.3-2.6-3.9-1.5-5.9-3.6-5.9-6.8 0-4.1 3.3-6.7 8.2-6.7 2.6 0 4.6.4 6.5 1.1z"
-      />
-    </svg>
+    />
   );
 }

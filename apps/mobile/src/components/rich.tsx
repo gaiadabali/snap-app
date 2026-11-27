@@ -176,7 +176,7 @@ export function GradientHero({
 
 export function HeroLabel({ children }: { children: ReactNode }) {
   return (
-    <Text style={[type.label, { color: 'rgba(255,255,255,0.82)' }]}>{children}</Text>
+    <Text style={[type.label, { color: 'rgba(255,255,255,0.95)' }]}>{children}</Text>
   );
 }
 
@@ -269,7 +269,7 @@ export function Tile({
   wide?: boolean;
 }) {
   const p = usePalette();
-  const fg = tone === 'risk' ? p.risk : tone === 'accent' ? p.accent : p.ink;
+  const fg = tone === 'risk' ? p.risk : tone === 'accent' ? p.accentText : p.ink;
   const bg = tone === 'risk' ? p.riskSoft : tone === 'accent' ? p.accentSoft : p.card;
   return (
     <View

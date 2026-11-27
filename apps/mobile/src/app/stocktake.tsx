@@ -172,7 +172,7 @@ export default function StockTakeScreen() {
                       <Figure
                         size="body"
                         style={{
-                          color: m.quantity < 0 ? p.risk : m.quantity > 0 ? p.accent : p.inkMuted,
+                          color: m.quantity < 0 ? p.risk : m.quantity > 0 ? p.accentText : p.inkMuted,
                           fontWeight: '700',
                         }}
                       >

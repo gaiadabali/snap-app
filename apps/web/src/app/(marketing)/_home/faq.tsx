@@ -23,7 +23,7 @@ const RATE_CENTS = +(CREDIT_PRICE_AUD * 100).toFixed(1);
 const FIRST_PACK = CREDIT_PACKS[0];
 const LAST_PACK = CREDIT_PACKS[CREDIT_PACKS.length - 1];
 
-const link = 'font-[600] text-[var(--s-blue-text)] underline decoration-[var(--s-blue-text)]/35 underline-offset-[3px] hover:decoration-current';
+const link = 'font-[600] text-[var(--s-brand-text)] underline decoration-[var(--s-brand-text)]/35 underline-offset-[3px] hover:decoration-current';
 
 const FAQS: ReadonlyArray<{ q: string; a: ReactNode }> = [
   {
@@ -119,7 +119,7 @@ export function HomeFaq() {
               Short answers to the things that come up before someone scans a first receipt.
             </p>
             <div className="mt-7 flex items-center gap-3">
-              <span className="grid size-10 place-items-center rounded-[12px] bg-[var(--s-blue-soft)] text-[var(--s-blue-text)]">
+              <span className="grid size-10 place-items-center rounded-[12px] bg-[var(--s-brand-soft)] text-[var(--s-brand-text)]">
                 <Icon name="help" size={20} />
               </span>
               <TextLink href="/support">More answers in support</TextLink>
@@ -129,9 +129,9 @@ export function HomeFaq() {
           <Reveal stagger className="border-t border-[var(--s-edge-2)]">
             {FAQS.map((item) => (
               <details key={item.q} className="faq group border-b border-[var(--s-edge-2)]">
-                <summary className="flex items-center justify-between gap-6 py-6 text-[1.0625rem] font-[600] leading-snug tracking-[-0.02em] text-[var(--s-ink)] transition-colors hover:text-[var(--s-blue-text)] sm:text-[1.1875rem]">
+                <summary className="flex items-center justify-between gap-6 py-6 text-[1.0625rem] font-[600] leading-snug tracking-[-0.02em] text-[var(--s-ink)] transition-colors hover:text-[var(--s-brand-text)] sm:text-[1.1875rem]">
                   {item.q}
-                  <span className="faq-icon grid size-9 shrink-0 place-items-center rounded-full bg-[var(--s-mist-2)] text-[var(--s-ink-2)] transition-colors group-open:bg-[var(--s-blue-soft)] group-open:text-[var(--s-blue-text)]">
+                  <span className="faq-icon grid size-9 shrink-0 place-items-center rounded-full bg-[var(--s-mist-2)] text-[var(--s-ink-2)] transition-colors group-open:bg-[var(--s-brand-soft)] group-open:text-[var(--s-brand-text)]">
                     <Icon name="plus" size={18} strokeWidth={2} />
                   </span>
                 </summary>

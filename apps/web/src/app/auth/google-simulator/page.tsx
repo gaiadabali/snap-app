@@ -141,7 +141,7 @@ export default async function GoogleSimulatorPage({
             <p className="text-center text-[13px] text-[var(--color-ink-muted)]">
               <Link
                 href={`/sign-in?returnTo=${encodeURIComponent(returnTo)}`}
-                className="font-semibold text-[var(--color-accent)] hover:underline"
+                className="font-semibold text-[var(--color-accent-strong)] hover:underline"
               >
                 Back to sign in
               </Link>

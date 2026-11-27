@@ -200,6 +200,16 @@ Use `Section`, `SectionHead`, `Rule`, `LedgerRow`, `Reveal` and `ArrowLink` from
 `src/design/primitives`. `Card` survives for the **panels**, where a bounded box
 genuinely helps a dense queue.
 
+> **Superseded 2026-11-27 (orange rebrand).** The identity colour is now the
+> official Shutter Orange `#EA542D` with the GOD Ecosystem Brand Guidelines
+> neutrals (Ink `#0F172A`, Slate `#5B6375`, Mist `#E4E3DC`, Paper `#F6F5F0`);
+> everything below that names `#1878D8` and the blue grounds is the history.
+> Current tokens, contrast table and rules: the header comment of
+> `apps/web/src/app/globals.css` and `apps/mobile/src/theme/tokens.ts`.
+> In short: a label on an orange fill is Ink (4.9:1), never white (3.6:1);
+> orange text uses the darker `--color-accent-strong` (`#B2300F`); Audiowide is
+> the brand display face (headings, splash), Geist stays for reading and UI.
+
 ### 4.2 Colour — identity blues on docket paper
 
 The identity colours are still **measured, not invented**: `#1878D8` dominant,

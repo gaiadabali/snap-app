@@ -68,7 +68,7 @@ export function GuardianConsent({
           type="button"
           onClick={() => onAnswer('accepted')}
           disabled={!ticked || busy}
-          className="inline-flex items-center rounded-[var(--radius-sm)] bg-[var(--color-accent-strong)] px-4 py-2 text-[14px] font-semibold text-[var(--color-accent-ink)] disabled:opacity-50"
+          className="inline-flex items-center rounded-[var(--radius-sm)] bg-[var(--color-accent)] px-4 py-2 text-[14px] font-semibold text-[var(--color-accent-ink)] disabled:opacity-50"
         >
           Accept for {teenName}
         </button>

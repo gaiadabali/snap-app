@@ -42,7 +42,7 @@ export default async function PersonDetailPage({ params }: { params: Promise<{ i
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex items-center gap-3">
-          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[var(--color-accent-soft)] text-[15px] font-bold text-[var(--color-accent)]">
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[var(--color-accent-soft)] text-[15px] font-bold text-[var(--color-accent-strong)]">
             {initialsOf(user.displayName ?? user.email)}
           </span>
           <div>

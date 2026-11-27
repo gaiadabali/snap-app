@@ -66,7 +66,7 @@ export function HowHero() {
                   style={{
                     ['--i' as string]: i,
                     ['--y' as string]: `${30 + i * 7}%`,
-                    ['--c' as string]: l.taxable ? 'var(--s-blue)' : 'var(--s-green-2)',
+                    ['--c' as string]: l.taxable ? 'var(--s-brand)' : 'var(--s-green-2)',
                   }}
                 />
               ))}
@@ -122,7 +122,7 @@ function StageFact({
 }) {
   return (
     <div className={`float-card absolute z-10 max-lg:hidden ${className}`}>
-      <span className="grid size-9 place-items-center rounded-[11px] bg-[var(--s-blue-soft)] text-[var(--s-blue-text)]">
+      <span className="grid size-9 place-items-center rounded-[11px] bg-[var(--s-brand-soft)] text-[var(--s-brand-text)]">
         <Icon name={icon} size={18} />
       </span>
       <span className="pr-1">

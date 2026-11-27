@@ -221,7 +221,7 @@ export function WorkLineOptions({
                 }}
               >
                 {/* White on the brand fill in both schemes (tokens.ts). */}
-                {on ? <Body style={{ color: '#fff', fontWeight: '700' }}>✓</Body> : null}
+                {on ? <Body style={{ color: p.accentInk, fontWeight: '700' }}>✓</Body> : null}
               </View>
               <View style={{ flex: 1 }}>
                 <Body strong={on}>{l.description}</Body>

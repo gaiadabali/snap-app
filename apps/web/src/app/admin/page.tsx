@@ -22,7 +22,7 @@ export default async function AdminOverviewPage() {
   return (
     <div className="space-y-6">
       <div>
-        <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--color-accent)]">
+        <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--color-accent-strong)]">
           Platform overview
         </div>
         <h1 className="mt-1 text-[24px] font-bold text-[var(--color-ink)]">Operator dashboard</h1>

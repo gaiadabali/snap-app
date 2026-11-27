@@ -69,7 +69,7 @@ export function MessageRow({
       <Link href={href} className="flex min-w-0 flex-1 items-center gap-3 py-3 pl-1 pr-3 sm:pr-4">
         <span
           aria-hidden
-          className={cx('size-2 shrink-0 rounded-full', message.unread ? 'bg-[var(--color-accent-strong)]' : 'bg-transparent')}
+          className={cx('size-2 shrink-0 rounded-full', message.unread ? 'bg-[var(--color-accent)]' : 'bg-transparent')}
         />
         <span className="flex min-w-0 flex-1 flex-col gap-0.5 sm:flex-row sm:items-baseline sm:gap-4">
           <span

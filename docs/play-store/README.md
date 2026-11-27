@@ -36,3 +36,5 @@ All sizes are checked by `python3 docs/play-store/tools/verify.py` (Play limits:
 6. **No promo video, no localised sets** (en-AU only). **Dark-mode** screenshots are possible with the toggle on Home if wanted.
 7. Screenshots come from the web build, not an Android device: fonts and the system status bar differ slightly. Re-shoot from the release APK on a device or emulator before submission if exact fidelity matters.
 8. Listing name wording (`SnapApp: Receipts & Tax` vs `SnapApp`) is an open item in PLAY-STORE.md; the feature graphic says "SnapApp" only, so it works with either.
+
+> **Follow-up (2026-11-27):** the store listing graphics above (feature graphic and screenshots) are still the old blue brand. The app icon, in-app colours and website moved to the official orange in the orange rebrand; regenerate these in a separate listing update.

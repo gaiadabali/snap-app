@@ -128,7 +128,7 @@ export function HomeHero() {
         >
           {FACTS.map((f) => (
             <li key={f.value} className="flex items-start gap-4 bg-[var(--s-bg)] p-5 sm:p-6">
-              <span className="mt-0.5 grid size-10 shrink-0 place-items-center rounded-[12px] bg-[var(--s-blue-soft)] text-[var(--s-blue-text)]">
+              <span className="mt-0.5 grid size-10 shrink-0 place-items-center rounded-[12px] bg-[var(--s-brand-soft)] text-[var(--s-brand-text)]">
                 <Icon name={f.icon} size={20} />
               </span>
               <span>
@@ -162,7 +162,7 @@ function FloatCard({
     tone === 'green'
       ? 'bg-[var(--s-green-soft)] text-[var(--s-green)]'
       : tone === 'blue'
-        ? 'bg-[var(--s-blue-soft)] text-[var(--s-blue-text)]'
+        ? 'bg-[var(--s-brand-soft)] text-[var(--s-brand-text)]'
         : 'bg-[var(--s-mist-2)] text-[var(--s-ink)]';
   return (
     <div

@@ -74,7 +74,7 @@ export default async function PeoplePage({
                 >
                   <td className="px-3 py-2">
                     <Link href={`/admin/people/${u.userId}`} className="flex items-center gap-2 font-semibold text-[var(--color-ink)]">
-                      <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[var(--color-accent-soft)] text-[10px] font-bold text-[var(--color-accent)]">
+                      <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[var(--color-accent-soft)] text-[10px] font-bold text-[var(--color-accent-strong)]">
                         {initialsOf(u.displayName)}
                       </span>
                       {u.displayName ?? <span className="italic text-[var(--color-ink-faint)]">No display name</span>}

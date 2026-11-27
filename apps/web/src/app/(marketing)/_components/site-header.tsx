@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import { cx } from '@/design/primitives/cx';
-import { Icon, SnapMark } from '@/design/site/icons';
+import { Icon, SnapLockup } from '@/design/site/icons';
 
 import { ThemeToggle } from './theme-toggle';
 
@@ -33,10 +33,9 @@ export function Wordmark({ className }: { className?: string }) {
     <Link
       href="/"
       aria-label="SnapApp, home"
-      className={cx('flex items-center gap-2.5 text-[1.0625rem] font-[650] tracking-[-0.03em] text-[var(--s-ink)]', className)}
+      className={cx('flex items-center', className)}
     >
-      <SnapMark size={30} className="rounded-[9px] shadow-[0_4px_12px_-4px_rgb(24_120_216_/_0.6)]" />
-      SnapApp
+      <SnapLockup height={41} />
     </Link>
   );
 }
@@ -141,7 +140,7 @@ export function SiteHeader() {
                   aria-current={isActive(pathname, item.href) ? 'page' : undefined}
                   className={cx(
                     'flex items-center justify-between border-b border-[var(--s-edge)] py-4 text-[1.6rem] font-[620] tracking-[-0.035em]',
-                    isActive(pathname, item.href) ? 'text-[var(--s-blue-text)]' : 'text-[var(--s-ink)]',
+                    isActive(pathname, item.href) ? 'text-[var(--s-brand-text)]' : 'text-[var(--s-ink)]',
                   )}
                 >
                   {item.label}

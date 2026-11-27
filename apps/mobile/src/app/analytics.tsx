@@ -91,7 +91,7 @@ export default function AnalyticsScreen() {
                   <Small>{data.receiptCount} receipts · no earlier period to compare</Small>
                 ) : (
                   <Small>
-                    <Small muted={false} style={{ color: up ? p.risk : p.accent, fontWeight: '700' }}>
+                    <Small muted={false} style={{ color: up ? p.risk : p.accentText, fontWeight: '700' }}>
                       {up ? '▲' : '▼'} {Math.abs(Math.round(change * 100))}%
                     </Small>
                     {`  vs ${money.fmt(data.previousTotal, { cents: false })} the period before`}

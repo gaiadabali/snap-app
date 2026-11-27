@@ -55,7 +55,7 @@ export function PackScale() {
             </div>
 
             <div className="max-sm:hidden">
-              <span className="inline-flex h-9 items-center gap-2 rounded-full bg-[var(--s-blue-soft)] px-4 text-[0.875rem] font-semibold tracking-[-0.01em] text-[var(--s-blue-text)]">
+              <span className="inline-flex h-9 items-center gap-2 rounded-full bg-[var(--s-brand-soft)] px-4 text-[0.875rem] font-semibold tracking-[-0.01em] text-[var(--s-brand-text)]">
                 <span className="figure">{CENTS_PER_SCAN}¢</span> a scan
               </span>
             </div>

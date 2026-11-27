@@ -80,16 +80,16 @@ function makeCamera(): PerspectiveCamera {
 function makeLights(scene: Scene): void {
   // A clean white key from the upper left, a soft front fill so the docket
   // stays paper-white, two cool rims from behind so the silhouette holds on a
-  // dark page, and a sky/ground hemisphere that keeps the shadow side blue.
+  // dark page, and a sky/ground hemisphere that keeps the shadow side warm.
   const key = new DirectionalLight(0xfffaf2, 2.2);
   key.position.set(-2.4, 3.4, 3.2);
-  const fill = new DirectionalLight(0xf2f8ff, 0.55);
+  const fill = new DirectionalLight(0xfff4ec, 0.55);
   fill.position.set(2.2, 0.6, 3.4);
-  const rimCool = new DirectionalLight(0xcfeaff, 2.2);
+  const rimCool = new DirectionalLight(0xffd9c4, 2.2);
   rimCool.position.set(2.8, 2.2, -3.0);
-  const rimCyan = new DirectionalLight(0x8fdcff, 1.1);
+  const rimCyan = new DirectionalLight(0xffa878, 1.1);
   rimCyan.position.set(-3.0, 0.9, -2.4);
-  const hemi = new HemisphereLight(0xf2f8ff, 0x16335c, 0.7);
+  const hemi = new HemisphereLight(0xfff4ec, 0x5c2a14, 0.7);
   scene.add(key, fill, rimCool, rimCyan, hemi);
 }
 

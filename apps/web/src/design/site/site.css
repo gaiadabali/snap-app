@@ -28,48 +28,50 @@
 
 :root {
   --s-bg: #ffffff;
-  --s-mist: #f4f7fb;
-  --s-mist-2: #eaf0f8;
+  --s-mist: #f6f5f0;
+  --s-mist-2: #efeee8;
   --s-card: #ffffff;
-  --s-edge: rgb(15 30 49 / 0.08);
-  --s-edge-2: rgb(15 30 49 / 0.14);
-  --s-ink: #0b111a;
-  --s-ink-2: #3a434e;
-  --s-ink-3: #67707b;
-  --s-ink-4: #9aa2ac;
+  --s-edge: rgb(15 23 42 / 0.08);
+  --s-edge-2: rgb(15 23 42 / 0.14);
+  --s-ink: #0f172a;
+  --s-ink-2: #3b4256;
+  --s-ink-3: #5b6375;
+  --s-ink-4: #8a91a0;
 
-  --s-blue: #1878d8;
-  --s-blue-2: #0f5bb5;
-  --s-blue-deep: #0a4a96;
-  --s-blue-text: #0f5bb5;
-  --s-blue-soft: #e8f1fc;
-  --s-blue-tint: rgb(24 120 216 / 0.1);
-  --s-cyan: #1ca8db;
+  --s-brand: #ea542d;
+  --s-brand-2: #c43512;
+  --s-brand-deep: #a42f10;
+  --s-brand-text: #b2300f;
+  --s-brand-soft: #fdeee9;
+  --s-brand-tint: rgb(234 84 45 / 0.1);
+  --s-scan: #e8801f;
   --s-green: #1b6e4f;
   --s-green-2: #2c9b6c;
   --s-green-soft: #e3f2ea;
-  --s-red: #c4322a;
-  --s-red-soft: #fbe9e7;
-  --s-amber: #95590a;
-  --s-amber-soft: #f8efdc;
+  --s-red: #b3123f;
+  --s-red-soft: #fbe6ec;
+  --s-amber: #8a6100;
+  --s-amber-soft: #f8f0d6;
 
   /* Night: the one dark register, used for the same sections in both
      themes, so it is defined once and never redefined. */
-  --s-night: #060a12;
-  --s-night-2: #0c1320;
-  --s-night-3: #121b2b;
-  --s-night-ink: #f2f5f9;
-  --s-night-ink-2: #b7c0cc;
-  --s-night-ink-3: #7d8896;
+  --s-night: #090d18;
+  --s-night-2: #0f172a;
+  --s-night-3: #172036;
+  --s-night-ink: #f6f5f0;
+  --s-night-ink-2: #c4c9d6;
+  --s-night-ink-3: #8b93a6;
   --s-night-edge: rgb(255 255 255 / 0.08);
 
-  --s-grad: linear-gradient(135deg, #0f5bb5 0%, #1569be 52%, #0a4a96 100%);
-  --s-grad-bright: linear-gradient(135deg, #1e9de0 0%, #1878d8 55%, #0f5bb5 100%);
+  --s-grad: linear-gradient(135deg, #b2300f 0%, #d13a14 52%, #a42f10 100%);
+  --s-grad-bright: linear-gradient(135deg, #f26a44 0%, #ea542d 100%);
+  /* Label colour on any brand-orange fill: Ink, 4.9:1 (white is 3.6:1). Not themed. */
+  --s-on-brand: #0f172a;
 
   --s-shadow-1: 0 1px 2px rgb(11 17 26 / 0.04), 0 2px 10px -4px rgb(11 17 26 / 0.06);
   --s-shadow-2: 0 1px 2px rgb(11 17 26 / 0.04), 0 14px 34px -14px rgb(11 17 26 / 0.16);
   --s-shadow-3: 0 2px 6px rgb(11 17 26 / 0.05), 0 40px 80px -32px rgb(11 17 26 / 0.28);
-  --s-shadow-blue: 0 1px 0 rgb(255 255 255 / 0.25) inset, 0 12px 28px -12px rgb(24 120 216 / 0.7);
+  --s-shadow-blue: 0 1px 0 rgb(255 255 255 / 0.25) inset, 0 12px 28px -12px rgb(234 84 45 / 0.7);
 
   --s-ease: cubic-bezier(0.16, 1, 0.3, 1);
   --s-ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
@@ -82,140 +84,141 @@
 
   /* The phone app's palette, for the coded screens inside phone frames.
      Byte-for-byte from apps/mobile/src/theme/tokens.ts. */
-  --a-ground: #f7f9fc;
-  --a-surface: #eaf0f8;
+  --a-ground: #f6f5f0;
+  --a-surface: #efeee8;
   --a-card: #ffffff;
-  --a-edge: rgb(15 30 49 / 0.05);
-  --a-ink: #14181d;
-  --a-ink-2: #3f464e;
-  --a-ink-3: #5a6068;
-  --a-ink-4: #858b93;
-  --a-accent: #1878d8;
-  --a-accent-text: #0f5bb5;
-  --a-accent-soft: rgb(24 120 216 / 0.13);
-  --a-rule: #dce3ee;
+  --a-edge: rgb(15 23 42 / 0.05);
+  --a-ink: #0f172a;
+  --a-ink-2: #3b4256;
+  --a-ink-3: #5b6375;
+  --a-ink-4: #656c7c;
+  --a-accent: #ea542d;
+  --a-accent-ink: #0f172a;
+  --a-accent-text: #b2300f;
+  --a-accent-soft: rgb(234 84 45 / 0.18);
+  --a-rule: #e4e3dc;
   --a-good: #1b6e4f;
   --a-good-soft: #e2efe9;
-  --a-risk: #c4322a;
-  --a-risk-soft: #f8e7e5;
-  --a-warn: #95590a;
-  --a-warn-soft: #f7eedc;
+  --a-risk: #b3123f;
+  --a-risk-soft: #fbe6ec;
+  --a-warn: #8a6100;
+  --a-warn-soft: #f8f0d6;
   --a-tabbar: rgb(255 255 255 / 0.94);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --s-bg: #080c13;
-    --s-mist: #0d131d;
-    --s-mist-2: #131b27;
-    --s-card: #111824;
+    --s-bg: #0b1020;
+    --s-mist: #0f1626;
+    --s-mist-2: #151d2f;
+    --s-card: #121a2b;
     --s-edge: rgb(255 255 255 / 0.07);
     --s-edge-2: rgb(255 255 255 / 0.12);
-    --s-ink: #f2f5f9;
-    --s-ink-2: #c3cad3;
-    --s-ink-3: #8f99a6;
-    --s-ink-4: #66707d;
-    --s-blue-text: #7fb4ee;
-    --s-blue-soft: rgb(127 180 238 / 0.12);
-    --s-blue-tint: rgb(127 180 238 / 0.1);
+    --s-ink: #f6f5f0;
+    --s-ink-2: #c8cdd8;
+    --s-ink-3: #9aa2b4;
+    --s-ink-4: #6f7890;
+    --s-brand-text: #ff8a66;
+    --s-brand-soft: rgb(255 138 102 / 0.12);
+    --s-brand-tint: rgb(255 138 102 / 0.1);
     --s-green: #6fd3ac;
     --s-green-2: #6fd3ac;
     --s-green-soft: rgb(111 211 172 / 0.12);
-    --s-red: #f0897f;
-    --s-red-soft: rgb(240 137 127 / 0.12);
-    --s-amber: #e8b45c;
-    --s-amber-soft: rgb(232 180 92 / 0.12);
+    --s-red: #f58aa5;
+    --s-red-soft: rgb(245 138 165 / 0.12);
+    --s-amber: #e8c25c;
+    --s-amber-soft: rgb(232 194 92 / 0.12);
     --s-shadow-1: 0 1px 2px rgb(0 0 0 / 0.3);
     --s-shadow-2: 0 1px 2px rgb(0 0 0 / 0.3), 0 18px 40px -18px rgb(0 0 0 / 0.6);
     --s-shadow-3: 0 2px 6px rgb(0 0 0 / 0.3), 0 40px 90px -30px rgb(0 0 0 / 0.75);
 
-    --a-ground: #121820;
-    --a-surface: #1b222c;
-    --a-card: #1b222c;
+    --a-ground: #0e1320;
+    --a-surface: #161c2b;
+    --a-card: #161c2b;
     --a-edge: rgb(255 255 255 / 0.06);
-    --a-ink: #f4f3f0;
-    --a-ink-2: #d3d7db;
-    --a-ink-3: #9aa2aa;
-    --a-ink-4: #7c848d;
-    --a-accent-text: #7fb4ee;
-    --a-accent-soft: rgb(127 180 238 / 0.18);
-    --a-rule: #2c3542;
+    --a-ink: #f6f5f0;
+    --a-ink-2: #d5d8e0;
+    --a-ink-3: #a4abbb;
+    --a-ink-4: #7f8799;
+    --a-accent-text: #ff8a66;
+    --a-accent-soft: rgb(255 138 102 / 0.16);
+    --a-rule: #262d3e;
     --a-good: #6fd3ac;
     --a-good-soft: #182c23;
-    --a-risk: #f0897f;
-    --a-risk-soft: #2e1c1b;
-    --a-warn: #e8b45c;
+    --a-risk: #f58aa5;
+    --a-risk-soft: #34161f;
+    --a-warn: #e8c25c;
     --a-warn-soft: #2e2617;
-    --a-tabbar: rgb(27 34 44 / 0.94);
+    --a-tabbar: rgb(22 28 43 / 0.94);
   }
 }
 
 :root[data-theme="dark"] {
-  --s-bg: #080c13;
-  --s-mist: #0d131d;
-  --s-mist-2: #131b27;
-  --s-card: #111824;
+  --s-bg: #0b1020;
+  --s-mist: #0f1626;
+  --s-mist-2: #151d2f;
+  --s-card: #121a2b;
   --s-edge: rgb(255 255 255 / 0.07);
   --s-edge-2: rgb(255 255 255 / 0.12);
-  --s-ink: #f2f5f9;
-  --s-ink-2: #c3cad3;
-  --s-ink-3: #8f99a6;
-  --s-ink-4: #66707d;
-  --s-blue-text: #7fb4ee;
-  --s-blue-soft: rgb(127 180 238 / 0.12);
-  --s-blue-tint: rgb(127 180 238 / 0.1);
+  --s-ink: #f6f5f0;
+  --s-ink-2: #c8cdd8;
+  --s-ink-3: #9aa2b4;
+  --s-ink-4: #6f7890;
+  --s-brand-text: #ff8a66;
+  --s-brand-soft: rgb(255 138 102 / 0.12);
+  --s-brand-tint: rgb(255 138 102 / 0.1);
   --s-green: #6fd3ac;
   --s-green-2: #6fd3ac;
   --s-green-soft: rgb(111 211 172 / 0.12);
-  --s-red: #f0897f;
-  --s-red-soft: rgb(240 137 127 / 0.12);
-  --s-amber: #e8b45c;
-  --s-amber-soft: rgb(232 180 92 / 0.12);
+  --s-red: #f58aa5;
+  --s-red-soft: rgb(245 138 165 / 0.12);
+  --s-amber: #e8c25c;
+  --s-amber-soft: rgb(232 194 92 / 0.12);
   --s-shadow-1: 0 1px 2px rgb(0 0 0 / 0.3);
   --s-shadow-2: 0 1px 2px rgb(0 0 0 / 0.3), 0 18px 40px -18px rgb(0 0 0 / 0.6);
   --s-shadow-3: 0 2px 6px rgb(0 0 0 / 0.3), 0 40px 90px -30px rgb(0 0 0 / 0.75);
 
-  --a-ground: #121820;
-  --a-surface: #1b222c;
-  --a-card: #1b222c;
+  --a-ground: #0e1320;
+  --a-surface: #161c2b;
+  --a-card: #161c2b;
   --a-edge: rgb(255 255 255 / 0.06);
-  --a-ink: #f4f3f0;
-  --a-ink-2: #d3d7db;
-  --a-ink-3: #9aa2aa;
-  --a-ink-4: #7c848d;
-  --a-accent-text: #7fb4ee;
-  --a-accent-soft: rgb(127 180 238 / 0.18);
-  --a-rule: #2c3542;
+  --a-ink: #f6f5f0;
+  --a-ink-2: #d5d8e0;
+  --a-ink-3: #a4abbb;
+  --a-ink-4: #7f8799;
+  --a-accent-text: #ff8a66;
+  --a-accent-soft: rgb(255 138 102 / 0.16);
+  --a-rule: #262d3e;
   --a-good: #6fd3ac;
   --a-good-soft: #182c23;
-  --a-risk: #f0897f;
-  --a-risk-soft: #2e1c1b;
-  --a-warn: #e8b45c;
+  --a-risk: #f58aa5;
+  --a-risk-soft: #34161f;
+  --a-warn: #e8c25c;
   --a-warn-soft: #2e2617;
-  --a-tabbar: rgb(27 34 44 / 0.94);
+  --a-tabbar: rgb(22 28 43 / 0.94);
 }
 
 /* A phone inside a night section shows the app's dark scheme in both themes. */
 .night .app,
 .app[data-scheme="dark"] {
-  --a-ground: #121820;
-  --a-surface: #1b222c;
-  --a-card: #1b222c;
+  --a-ground: #0e1320;
+  --a-surface: #161c2b;
+  --a-card: #161c2b;
   --a-edge: rgb(255 255 255 / 0.06);
-  --a-ink: #f4f3f0;
-  --a-ink-2: #d3d7db;
-  --a-ink-3: #9aa2aa;
-  --a-ink-4: #7c848d;
-  --a-accent-text: #7fb4ee;
-  --a-accent-soft: rgb(127 180 238 / 0.18);
-  --a-rule: #2c3542;
+  --a-ink: #f6f5f0;
+  --a-ink-2: #d5d8e0;
+  --a-ink-3: #a4abbb;
+  --a-ink-4: #7f8799;
+  --a-accent-text: #ff8a66;
+  --a-accent-soft: rgb(255 138 102 / 0.16);
+  --a-rule: #262d3e;
   --a-good: #6fd3ac;
   --a-good-soft: #182c23;
-  --a-risk: #f0897f;
-  --a-risk-soft: #2e1c1b;
-  --a-warn: #e8b45c;
+  --a-risk: #f58aa5;
+  --a-risk-soft: #34161f;
+  --a-warn: #e8c25c;
   --a-warn-soft: #2e2617;
-  --a-tabbar: rgb(27 34 44 / 0.94);
+  --a-tabbar: rgb(22 28 43 / 0.94);
 }
 
 /* Component rules live in the `components` cascade layer, BELOW Tailwind's
@@ -235,11 +238,11 @@
 }
 
 .site ::selection {
-  background: rgb(24 120 216 / 0.22);
+  background: rgb(234 84 45 / 0.22);
 }
 
 .site :focus-visible {
-  outline: 2px solid var(--s-blue);
+  outline: 2px solid var(--s-brand);
   outline-offset: 3px;
   border-radius: 8px;
 }
@@ -273,35 +276,45 @@
  * heading classed `h-2` was silently given `height: 0.5rem` and spilled over
  * whatever followed it. */
 
+/* Audiowide (--font-brand) for the display headings and h3: the Snap Apps
+ * brand face, GOD Ecosystem Brand Guidelines p16. It is wide and has ONE
+ * weight, so each step is cut a size down from the Geist heading it replaced,
+ * with no negative tracking, and copy in these slots must stay short.
+ * `.hd-4`, the lede and all running text remain Geist. */
+
 .hd-hero {
-  font-size: clamp(2.75rem, 6.2vw, 5.25rem);
-  font-weight: 650;
-  line-height: 0.96;
-  letter-spacing: -0.052em;
+  font-family: var(--font-brand);
+  font-size: clamp(2.1rem, 4.6vw, 3.9rem);
+  font-weight: 400;
+  line-height: 1.06;
+  letter-spacing: 0;
   text-wrap: balance;
 }
 
 .hd-1 {
-  font-size: clamp(2.4rem, 5.6vw, 4.6rem);
-  font-weight: 650;
-  line-height: 1;
-  letter-spacing: -0.048em;
+  font-family: var(--font-brand);
+  font-size: clamp(1.95rem, 4.2vw, 3.4rem);
+  font-weight: 400;
+  line-height: 1.08;
+  letter-spacing: 0;
   text-wrap: balance;
 }
 
 .hd-2 {
-  font-size: clamp(2rem, 4.2vw, 3.5rem);
-  font-weight: 650;
-  line-height: 1.04;
-  letter-spacing: -0.042em;
+  font-family: var(--font-brand);
+  font-size: clamp(1.6rem, 3.3vw, 2.7rem);
+  font-weight: 400;
+  line-height: 1.12;
+  letter-spacing: 0;
   text-wrap: balance;
 }
 
 .hd-3 {
-  font-size: clamp(1.35rem, 2vw, 1.65rem);
-  font-weight: 620;
-  line-height: 1.18;
-  letter-spacing: -0.028em;
+  font-family: var(--font-brand);
+  font-size: clamp(1.15rem, 1.6vw, 1.35rem);
+  font-weight: 400;
+  line-height: 1.25;
+  letter-spacing: 0;
 }
 
 .hd-4 {
@@ -339,18 +352,18 @@
 
 /* The brand gradient set in type. Used on ONE phrase per page at most. */
 .ink-grad {
-  background: linear-gradient(100deg, #1e9de0 0%, #1878d8 45%, #0f5bb5 100%);
+  background: linear-gradient(100deg, #ff7a4d 0%, #ea542d 45%, #b2300f 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 
 :root[data-theme="dark"] .ink-grad {
-  background-image: linear-gradient(100deg, #6cc6f2 0%, #6aa9f0 50%, #4d8de6 100%);
+  background-image: linear-gradient(100deg, #ffb27a 0%, #ff9b78 50%, #f26a44 100%);
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .ink-grad {
-    background-image: linear-gradient(100deg, #6cc6f2 0%, #6aa9f0 50%, #4d8de6 100%);
+    background-image: linear-gradient(100deg, #ffb27a 0%, #ff9b78 50%, #f26a44 100%);
   }
 }
 
@@ -385,7 +398,7 @@
   font-size: 0.875rem;
   font-weight: 600;
   letter-spacing: -0.005em;
-  color: var(--s-blue-text);
+  color: var(--s-brand-text);
 }
 
 /* ── Buttons ────────────────────────────────────────────────────────────── */
@@ -430,7 +443,7 @@
 }
 
 .btn-primary {
-  color: #fff;
+  color: var(--s-on-brand);
   background: var(--s-grad-bright);
   box-shadow: var(--s-shadow-blue);
 }
@@ -439,7 +452,7 @@
   transform: translateY(-1px);
   box-shadow:
     0 1px 0 rgb(255 255 255 / 0.25) inset,
-    0 18px 36px -14px rgb(24 120 216 / 0.8);
+    0 18px 36px -14px rgb(234 84 45 / 0.8);
 }
 
 .btn-secondary {
@@ -460,11 +473,11 @@
 }
 
 .btn-ghost:hover {
-  color: var(--s-blue-text);
+  color: var(--s-brand-text);
 }
 
 .btn-light {
-  color: #0b111a;
+  color: #0f172a;
   background: #fff;
   box-shadow: 0 12px 30px -14px rgb(0 0 0 / 0.5);
 }
@@ -543,7 +556,7 @@
 
 .night .store {
   background: #fff;
-  color: #0b111a;
+  color: #0f172a;
 }
 
 .night .store[aria-disabled="true"] {
@@ -593,13 +606,13 @@
   --s-ink: var(--s-night-ink);
   --s-ink-2: var(--s-night-ink-2);
   --s-ink-3: var(--s-night-ink-3);
-  --s-ink-4: #5b6573;
+  --s-ink-4: #707a90;
   --s-edge: var(--s-night-edge);
   --s-edge-2: rgb(255 255 255 / 0.14);
   --s-card: var(--s-night-2);
   --s-mist: var(--s-night-2);
-  --s-blue-text: #7fb4ee;
-  --s-blue-soft: rgb(127 180 238 / 0.12);
+  --s-brand-text: #ff8a66;
+  --s-brand-soft: rgb(255 138 102 / 0.12);
   --s-green: #6fd3ac;
   --s-green-2: #6fd3ac;
   --s-green-soft: rgb(111 211 172 / 0.12);
@@ -614,8 +627,8 @@
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(60% 50% at 50% 0%, rgb(24 120 216 / 0.22), transparent 70%),
-    radial-gradient(40% 40% at 90% 100%, rgb(28 168 219 / 0.1), transparent 70%);
+    radial-gradient(60% 50% at 50% 0%, rgb(234 84 45 / 0.22), transparent 70%),
+    radial-gradient(40% 40% at 90% 100%, rgb(232 128 31 / 0.1), transparent 70%);
 }
 
 /* Fine grain over the night register — the difference between a flat
@@ -637,7 +650,7 @@
   inset: auto;
   border-radius: 999px;
   filter: blur(60px);
-  background: radial-gradient(closest-side, rgb(30 157 224 / 0.35), rgb(24 120 216 / 0.16) 55%, transparent);
+  background: radial-gradient(closest-side, rgb(255 122 77 / 0.35), rgb(234 84 45 / 0.16) 55%, transparent);
 }
 
 /* A dotted field that fades out — the camera's focusing grid. */
@@ -645,7 +658,7 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background-image: radial-gradient(rgb(15 30 49 / 0.13) 1px, transparent 1.2px);
+  background-image: radial-gradient(rgb(15 23 42 / 0.13) 1px, transparent 1.2px);
   background-size: 22px 22px;
   mask-image: radial-gradient(70% 60% at 50% 40%, #000 20%, transparent 75%);
 }
@@ -741,7 +754,7 @@
 .app-card {
   background: var(--a-card);
   border-radius: 20px;
-  box-shadow: 0 0 0 1px var(--a-edge), 0 4px 14px -4px rgb(15 30 49 / 0.09);
+  box-shadow: 0 0 0 1px var(--a-edge), 0 4px 14px -4px rgb(15 23 42 / 0.09);
 }
 
 .app-hero {
@@ -749,7 +762,7 @@
   border-radius: 24px;
   background: var(--s-grad);
   color: #fff;
-  box-shadow: 0 12px 22px -10px rgb(10 74 150 / 0.55);
+  box-shadow: 0 12px 22px -10px rgb(164 47 16 / 0.55);
   overflow: hidden;
 }
 
@@ -771,7 +784,7 @@
   height: 66px;
   border-radius: 26px;
   background: var(--a-tabbar);
-  box-shadow: 0 0 0 1px var(--a-edge), 0 10px 30px -10px rgb(15 30 49 / 0.25);
+  box-shadow: 0 0 0 1px var(--a-edge), 0 10px 30px -10px rgb(15 23 42 / 0.25);
   backdrop-filter: blur(14px);
 }
 
@@ -787,7 +800,7 @@
   color: #fff;
   display: grid;
   place-items: center;
-  box-shadow: 0 12px 22px -8px rgb(10 74 150 / 0.65), 0 0 0 5px var(--a-ground);
+  box-shadow: 0 12px 22px -8px rgb(164 47 16 / 0.65), 0 0 0 5px var(--a-ground);
 }
 
 /* Tilt. A phone held at an angle, not lying flat on the page. */
@@ -1054,8 +1067,8 @@
   height: 3px;
   opacity: 0;
   border-radius: 99px;
-  background: linear-gradient(90deg, transparent, #3fc6ee 18%, #a8ecff 50%, #3fc6ee 82%, transparent);
-  box-shadow: 0 0 18px 4px rgb(63 198 238 / 0.55), 0 0 60px 10px rgb(63 198 238 / 0.2);
+  background: linear-gradient(90deg, transparent, #ffb27a 18%, #ffe2c8 50%, #ffb27a 82%, transparent);
+  box-shadow: 0 0 18px 4px rgb(255 178 122 / 0.55), 0 0 60px 10px rgb(255 178 122 / 0.2);
 }
 
 @layer components {

@@ -11,7 +11,7 @@ import {
 import { Text } from '@/theme/text';
 
 import { Icon, type IconName } from '@/components/Icon';
-import { control, numeric, radius, shadow, space, type, usePalette, useTheme } from '@/theme';
+import { brandFace, control, numeric, radius, shadow, space, type, usePalette, useTheme } from '@/theme';
 
 /* Shared primitives, rebuilt against the 2026-09-19 prototype.
 
@@ -93,7 +93,9 @@ export function Title({
   style?: StyleProp<TextStyle>;
 }) {
   const p = usePalette();
-  return <Text style={[type[level], { color: p.ink }, style]}>{children}</Text>;
+  // Page titles (h1) are the brand voice, so they take Audiowide; smaller
+  // headings stay in Geist, which reads better at that size.
+  return <Text style={[type[level], level === 'h1' ? brandFace : null, { color: p.ink }, style]}>{children}</Text>;
 }
 
 /** Money and any other figure that lines up in a column. */

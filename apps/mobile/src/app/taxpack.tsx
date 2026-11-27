@@ -147,7 +147,7 @@ export default function TaxPackScreen() {
               <Card tone="accent">
                 <View style={{ gap: space.sm }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
-                    <Label style={{ color: p.accent }}>Pack ready</Label>
+                    <Label style={{ color: p.accentText }}>Pack ready</Label>
                     <Chip tone="accent">{mb(file.bytes)}</Chip>
                   </View>
                   <Body>

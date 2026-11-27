@@ -100,7 +100,7 @@
   gap: 6px;
   font-size: 0.8125rem;
   font-weight: 600;
-  color: var(--s-blue-text);
+  color: var(--s-brand-text);
 }
 
 .docs-side-mobile button {
@@ -198,8 +198,8 @@
 }
 
 .docs-toc a[aria-current="location"] {
-  color: var(--s-blue-text);
-  border-left-color: var(--s-blue);
+  color: var(--s-brand-text);
+  border-left-color: var(--s-brand);
   font-weight: 600;
 }
 
@@ -264,10 +264,10 @@
 }
 
 .docs-prose a {
-  color: var(--s-blue-text);
+  color: var(--s-brand-text);
   font-weight: 540;
   text-decoration: underline;
-  text-decoration-color: color-mix(in srgb, var(--s-blue) 35%, transparent);
+  text-decoration-color: color-mix(in srgb, var(--s-brand) 35%, transparent);
   text-underline-offset: 3px;
   transition: text-decoration-color 0.2s ease;
 }
@@ -298,7 +298,7 @@
   width: 6px;
   height: 6px;
   border-radius: 999px;
-  background: var(--s-blue);
+  background: var(--s-brand);
 }
 
 .docs-prose ol {
@@ -400,7 +400,7 @@
 }
 
 .docs-pager-link:hover {
-  border-color: var(--s-blue);
+  border-color: var(--s-brand);
   box-shadow: var(--s-shadow-1);
 }
 
@@ -461,7 +461,7 @@
 }
 
 .docs-search:hover {
-  border-color: var(--s-blue);
+  border-color: var(--s-brand);
   box-shadow: var(--s-shadow-2);
 }
 
@@ -470,7 +470,7 @@
 }
 
 .docs-search-go {
-  color: var(--s-blue-text);
+  color: var(--s-brand-text);
 }
 
 .docs-topic {
@@ -529,7 +529,7 @@
 }
 
 .docs-card:hover .docs-card-go {
-  color: var(--s-blue-text);
+  color: var(--s-brand-text);
   transform: translateX(3px);
 }
 

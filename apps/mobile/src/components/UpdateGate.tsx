@@ -114,7 +114,7 @@ function UpdateRequired({ state }: { state: Extract<MinimumState, { status: 'req
             opacity: pressed ? 0.85 : 1,
           })}
         >
-          <Body strong style={{ color: '#FFFFFF' }}>
+          <Body strong style={{ color: p.accentInk }}>
             Download update
           </Body>
         </Pressable>

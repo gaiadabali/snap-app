@@ -2,8 +2,8 @@
  * Reflections for the glossy cushion, baked once to a small PMREM: a
  * product-shot light box drawn with unlit panels. One large soft octabox
  * up-left (the clean window highlight on the clearcoat, like the gloss on an
- * app icon), a cool strip behind-right (the rim), a cyan kicker behind-left,
- * a soft overhead, a pale-blue bounce from below and a dim cool room.
+ * app icon), a warm strip behind-right (the rim), an apricot kicker behind-left,
+ * a soft overhead, an orange bounce from below and a dim warm room.
  * Unlit materials compile in a blink, so it never stalls the first frame.
  *
  * Ported from Tunas (gaiada-web-revamp, src/scripts/chat/mascot/env.ts), which
@@ -48,13 +48,13 @@ function studioScene(): { scene: Scene; dispose(): void } {
     scene.add(mesh);
   };
 
-  // The room: cool light grey above, a deeper blue-grey toward the floor.
+  // The room: warm light grey above, a deeper brown toward the floor.
   const room = new SphereGeometry(20, 24, 12);
   const pos = room.getAttribute('position');
   const col: number[] = [];
-  const top = new Color(0xc4d2e2).multiplyScalar(0.55);
-  const mid = new Color(0x8a9ab0).multiplyScalar(0.4);
-  const low = new Color(0x1c3a66).multiplyScalar(0.4);
+  const top = new Color(0xe2d6cc).multiplyScalar(0.55);
+  const mid = new Color(0xb0a090).multiplyScalar(0.4);
+  const low = new Color(0x5a2410).multiplyScalar(0.4);
   const c = new Color();
   for (let i = 0; i < pos.count; i++) {
     const t = pos.getY(i) / 20; // -1..1
@@ -69,10 +69,10 @@ function studioScene(): { scene: Scene; dispose(): void } {
   scene.add(new Mesh(room, roomMat));
 
   panel(7, 6, 0xfff8f0, 14, -6, 7, 8); // key octabox, up-left-front
-  panel(3, 9, 0xd8efff, 8, 9, 3, -6, false); // cool rim strip, behind-right
-  panel(3, 7, 0x9fe4ff, 3.5, -9, 2, -5, false); // cyan kicker, behind-left
-  panel(10, 10, 0xf4f9ff, 1.6, 0, 10, 0); // overhead fill
-  panel(14, 14, 0x6fb4ff, 0.45, 0, -6, 2); // pale-blue bounce from below
+  panel(3, 9, 0xffe3d4, 8, 9, 3, -6, false); // warm rim strip, behind-right
+  panel(3, 7, 0xffb48a, 3.5, -9, 2, -5, false); // apricot kicker, behind-left
+  panel(10, 10, 0xfff6f0, 1.6, 0, 10, 0); // overhead fill
+  panel(14, 14, 0xff9a6e, 0.45, 0, -6, 2); // orange bounce from below
   panel(1.6, 1.6, 0xffffff, 12, 6, 6, 7); // a small bright accent up-right: a second glint
 
   return {

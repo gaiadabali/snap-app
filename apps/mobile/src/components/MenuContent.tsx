@@ -40,7 +40,7 @@ const BUSINESS_GROUPS: Group[] = [
   {
     title: 'Money in',
     entries: [
-      { label: 'New invoice', hint: 'Bill a customer now', icon: 'edit', hue: '#1878D8', href: '/invoice/new' },
+      { label: 'New invoice', hint: 'Bill a customer now', icon: 'edit', hue: '#EA542D', href: '/invoice/new' },
       { label: 'Invoices', hint: 'Create, send and track', icon: 'doc', hue: '#2D9CDB', href: '/invoices' },
       { label: 'Estimates', hint: 'Quotes awaiting approval', icon: 'edit', hue: '#5B6EF5', href: '/invoices?kind=estimate' },
       { label: 'Customers', hint: 'Who owes you what', icon: 'users', hue: '#27AE60', href: '/parties?kind=customer' },
@@ -66,7 +66,7 @@ const BUSINESS_GROUPS: Group[] = [
   {
     title: 'Tax & reports',
     entries: [
-      { label: 'Tax & BAS', hint: 'GST position and deductions', icon: 'report', hue: '#1878D8', href: '/tax' },
+      { label: 'Tax & BAS', hint: 'GST position and deductions', icon: 'report', hue: '#EA542D', href: '/tax' },
       { label: 'Analytics', hint: 'Where the money went', icon: 'chart', hue: '#5B6EF5', href: '/analytics' },
       { label: 'Reports', hint: 'Profit, spending, daybook', icon: 'report', hue: '#27AE60', href: '/reports' },
       { label: 'Tax pack', hint: 'Export for your accountant', icon: 'upload', hue: '#9B6BF2', href: '/taxpack' },
@@ -76,10 +76,10 @@ const BUSINESS_GROUPS: Group[] = [
   {
     title: 'Workspace',
     entries: [
-      { label: 'People', hint: 'Who is in this workspace', icon: 'users', hue: '#1878D8', href: '/members' },
+      { label: 'People', hint: 'Who is in this workspace', icon: 'users', hue: '#EA542D', href: '/members' },
       { label: 'Business', hint: 'ABN, GST basis, occupation', icon: 'building', hue: '#55677E', href: '/settings' },
       { label: 'Categories', hint: 'How spending is sorted', icon: 'tag', hue: '#EF6C7E', href: '/categories' },
-      { label: 'Credits', hint: 'Scans this workspace has bought or been given', icon: 'card', hue: '#1878D8', href: '/credits' },
+      { label: 'Credits', hint: 'Scans this workspace has bought or been given', icon: 'card', hue: '#EA542D', href: '/credits' },
       { label: 'YourTal points', hint: 'Earned in YourTal from your receipts', icon: 'spark', hue: '#9B6BF2', href: '/points' },
       // NOT 'Credits'. `/credits` above is the balance, the packs and the
       // purchase history; this screen is THIS MONTH'S USAGE — scans used, and
@@ -111,7 +111,7 @@ const PERSONAL_GROUPS: Group[] = [
   {
     title: 'Your account',
     entries: [
-      { label: 'Credits', hint: 'Scans you have bought or been given', icon: 'card', hue: '#1878D8', href: '/credits' },
+      { label: 'Credits', hint: 'Scans you have bought or been given', icon: 'card', hue: '#EA542D', href: '/credits' },
       { label: 'YourTal points', hint: 'Earned in YourTal from your receipts', icon: 'spark', hue: '#9B6BF2', href: '/points' },
       { label: 'Purchases', hint: 'Every top up and its status', icon: 'doc', hue: '#2D9CDB', href: '/orders' },
       // NOT 'Credits'. `/credits` above is the balance, the packs and the
@@ -126,7 +126,7 @@ const PERSONAL_GROUPS: Group[] = [
   {
     title: 'Household',
     entries: [
-      { label: 'People', hint: 'Share with your family', icon: 'users', hue: '#1878D8', href: '/members' },
+      { label: 'People', hint: 'Share with your family', icon: 'users', hue: '#EA542D', href: '/members' },
       { label: 'Categories', hint: 'How spending is sorted', icon: 'tag', hue: '#9B6BF2', href: '/categories' },
       { label: 'Settings', hint: 'Workspace and privacy', icon: 'cog', hue: '#55677E', href: '/settings' },
     ],
@@ -163,7 +163,7 @@ const MAIL_ENTRY: Entry = {
   label: 'Mail',
   hint: 'Your Spambank inbox',
   icon: 'mail',
-  hue: '#1878D8',
+  hue: '#EA542D',
   href: '/mail',
 };
 const MAIL_GROUP_TITLES = ['Your account', 'Workspace'];

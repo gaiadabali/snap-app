@@ -141,7 +141,7 @@ export function HomeSplit() {
                 <li>
                   <span
                     className="split-legend-dot"
-                    style={{ borderColor: 'var(--s-blue)', background: 'var(--s-blue-soft)' }}
+                    style={{ borderColor: 'var(--s-brand)', background: 'var(--s-brand-soft)' }}
                     aria-hidden
                   />
                   Taxable, marked *

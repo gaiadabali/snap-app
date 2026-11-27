@@ -103,7 +103,7 @@ export function UpdateNotice() {
             opacity: pressed ? 0.85 : 1,
           })}
         >
-          <Body strong style={{ color: '#FFFFFF' }}>
+          <Body strong style={{ color: p.accentInk }}>
             Update
           </Body>
         </Pressable>

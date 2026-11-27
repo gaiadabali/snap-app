@@ -34,7 +34,7 @@ export function NoticeText({ text, linkText, href }: { text: string; linkText: s
       <Text
         accessibilityRole="link"
         onPress={() => void Linking.openURL(href)}
-        style={{ color: p.accent, textDecorationLine: 'underline', fontWeight: '600' }}
+        style={{ color: p.accentText, textDecorationLine: 'underline', fontWeight: '600' }}
       >
         {linkText}
       </Text>
@@ -66,7 +66,7 @@ function TickRow({ ticked, onToggle, children }: { ticked: boolean; onToggle: ()
           justifyContent: 'center',
         }}
       >
-        {ticked ? <Icon name="check" size={16} color="#FFFFFF" /> : null}
+        {ticked ? <Icon name="check" size={16} color={p.accentInk} /> : null}
       </Pressable>
       <View style={{ flex: 1 }}>{children}</View>
     </View>
