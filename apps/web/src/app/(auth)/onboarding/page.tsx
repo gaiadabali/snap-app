@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
-import type { AvailableTaxRules } from '@snap/api-contract';
+import type { AvailableTaxRules, GodConsentState } from '@snap/api-contract';
 
 import { api } from '@/lib/api/server';
 import { authNotice } from '@/lib/auth/auth-errors';
@@ -52,11 +52,17 @@ export default async function OnboardingPage({
     () => [] as AvailableTaxRules[],
   );
 
+  // The notice to tick. Null when already accepted for this version, or when it could not be read
+  // (the server then refuses the sign-up with `god_notice_required`, never lets it through).
+  const god = await api<GodConsentState>('/v1/god-consent').catch(() => null);
+  const godNotice = god && god.prompt === 'required' ? god.notice : null;
+
   return (
     <OnboardingForm
       occupationGroups={{ personal: personalOccupations!, business: businessOccupations! }}
       taxRules={taxRules}
       initialKind={initialKind}
+      godNotice={godNotice}
       error={authNotice(params.error)?.message}
     />
   );

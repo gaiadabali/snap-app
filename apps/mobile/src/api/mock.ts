@@ -61,6 +61,8 @@ import type {
   PlanUsage,
   YourtalLinkStatus,
   FamilyStatus,
+  GodConsentState,
+  GodTeenConsent,
   TeenInviteCreated,
   YourtalVoucherRedemption,
   MailAppPassword,
@@ -2097,6 +2099,40 @@ export class MockApi implements SnapApi {
   }
 
   async endTeenAccess(): Promise<void> {
+    throw new ApiError(404, 'No such teen space.', 'not_found');
+  }
+
+  /** The demo has no GOD group to join: nothing is shown, nothing is recorded. */
+  async getGodConsent(): Promise<GodConsentState> {
+    await settle(60);
+    return {
+      notice: {
+        id: 'god-group-notice',
+        version: '1.0',
+        effective: '2026-11-27',
+        url: 'https://god.gaiada.com/privacy-notice/',
+        teenUrl: 'https://god.gaiada.com/privacy-notice/#teens',
+        adultText:
+          'I have read and accept the GOD Group Privacy Notice. I understand that my activity in YourTal, SnapApp and Free Tax Returns is combined into one profile, and that businesses receive reports about groups of people, never about me.',
+        guardianText:
+          "I am this teen's parent or guardian. I have read the GOD Group Privacy Notice for teens and agree that my teen's activity may be combined and used, in groups of 20 or more, to give businesses insight about young people. No business receives anything about my teen individually.",
+      },
+      status: null,
+      prompt: 'none',
+      teen: false,
+      accepted: false,
+    };
+  }
+
+  async answerGodConsent(): Promise<GodConsentState> {
+    return this.getGodConsent();
+  }
+
+  async withdrawGodConsent(): Promise<GodConsentState> {
+    return this.getGodConsent();
+  }
+
+  async answerGodConsentForTeen(): Promise<GodTeenConsent> {
     throw new ApiError(404, 'No such teen space.', 'not_found');
   }
 

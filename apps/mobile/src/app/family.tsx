@@ -2,7 +2,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ScrollView, Share, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import type { FamilyStatus, TeenInviteCreated } from '@snap/api-contract';
+import type { FamilyStatus, GodConsentState, TeenInviteCreated } from '@snap/api-contract';
 
 import { api } from '@/api';
 import { useWorkspace } from '@/workspace';
@@ -15,6 +15,8 @@ export default function FamilyScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const [status, setStatus] = useState<FamilyStatus | null>(null);
+  // The notice for the parent's per-teen tick; unreadable means the tick is simply not offered.
+  const [godNotice, setGodNotice] = useState<GodConsentState['notice'] | null>(null);
   const [failed, setFailed] = useState(false);
   const [created, setCreated] = useState<TeenInviteCreated | null>(null);
   const [confirming, setConfirming] = useState<string | null>(null);
@@ -30,6 +32,10 @@ export default function FamilyScreen() {
         setFailed(false);
       })
       .catch(() => setFailed(true));
+    api()
+      .getGodConsent()
+      .then((g) => setGodNotice(g.notice))
+      .catch(() => {});
   }, []);
   useFocusEffect(load);
 
@@ -68,6 +74,14 @@ export default function FamilyScreen() {
             error={error}
             onCreate={() => void run(async () => setCreated(await api().createTeenInvite()))}
             onShare={(url) => void Share.share({ message: url })}
+            godNotice={godNotice}
+            onGodConsent={(id, decision) =>
+              void run(async () => {
+                if (!godNotice) return;
+                await api().answerGodConsentForTeen(id, decision, godNotice.version);
+                load();
+              })
+            }
             onAskEnd={setConfirming}
             onCancelEnd={() => setConfirming(null)}
             onConfirmEnd={(id) =>

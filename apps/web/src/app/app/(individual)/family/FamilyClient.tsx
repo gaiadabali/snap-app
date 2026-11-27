@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import type { FamilyStatus, TeenInviteCreated } from '@snap/api-contract';
+import type { FamilyStatus, GodConsentState, GodTeenConsent, TeenInviteCreated } from '@snap/api-contract';
 
 import type { FamilyActionResult } from '@/lib/panels/family-actions';
+import type { GodActionResult } from '@/lib/panels/god-consent-actions';
 import { FamilyView } from './FamilyView';
 
 /** Owns what changes on the page; everything shown is `FamilyView`. */
@@ -12,11 +13,19 @@ export function FamilyClient({
   canInvite,
   onCreate,
   onEnd,
+  godNotice = null,
+  onGodConsent,
 }: {
   status: FamilyStatus;
   canInvite: boolean;
   onCreate: () => Promise<FamilyActionResult<TeenInviteCreated>>;
   onEnd: (workspaceId: string) => Promise<FamilyActionResult<null>>;
+  godNotice?: GodConsentState['notice'] | null;
+  onGodConsent?: (
+    workspaceId: string,
+    decision: 'accepted' | 'withdrawn',
+    version: string,
+  ) => Promise<GodActionResult<GodTeenConsent>>;
 }) {
   const [created, setCreated] = useState<TeenInviteCreated | null>(null);
   const [confirming, setConfirming] = useState<string | null>(null);
@@ -37,6 +46,16 @@ export function FamilyClient({
           setError(result.ok ? null : result.message);
           if (result.ok) setCreated(result.value);
         })
+      }
+      godNotice={godNotice}
+      onGodConsent={
+        godNotice && onGodConsent
+          ? (workspaceId, decision) =>
+              startTransition(async () => {
+                const result = await onGodConsent(workspaceId, decision, godNotice.version);
+                setError(result.ok ? null : result.message);
+              })
+          : undefined
       }
       onAskEnd={setConfirming}
       onCancelEnd={() => setConfirming(null)}

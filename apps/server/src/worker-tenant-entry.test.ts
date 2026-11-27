@@ -162,7 +162,7 @@ describeIfDb('worker in a workspace created by a real sign-up (no worker members
 
     // The workspace, made by the same endpoint onboarding and the switcher use.
     const { WorkspacesController } = await import('./workspaces/workspaces.controller.js');
-    const created = await new WorkspacesController().create(owner, { name: 'New sign-up', kind: 'personal' } as never);
+    const created = await new WorkspacesController().create(owner, { name: 'New sign-up', kind: 'personal', acceptedGodNotice: true } as never);
     tenantId = created.id;
 
     worker = await import('./worker.js');

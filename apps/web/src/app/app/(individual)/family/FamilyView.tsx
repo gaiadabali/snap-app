@@ -1,5 +1,6 @@
-import type { FamilyStatus, TeenInviteCreated } from '@snap/api-contract';
+import type { FamilyStatus, GodConsentState, TeenInviteCreated } from '@snap/api-contract';
 
+import { GuardianConsent } from '@/components/god-consent/GuardianConsent';
 import { Button, Card, Input } from '@/design/primitives';
 
 /**
@@ -24,6 +25,9 @@ export type FamilyViewProps = {
   onAskEnd: (workspaceId: string) => void;
   onCancelEnd: () => void;
   onConfirmEnd: (workspaceId: string) => void;
+  /** The GOD Group Privacy Notice, for the parent's tick per teen (9.1.d). Absent: not offered. */
+  godNotice?: GodConsentState['notice'] | null;
+  onGodConsent?: (workspaceId: string, decision: 'accepted' | 'withdrawn') => void;
 };
 
 const day = (iso: string) =>
@@ -123,6 +127,15 @@ export function FamilyView(props: FamilyViewProps) {
                     End access
                   </Button>
                 </div>
+                {props.godNotice && props.onGodConsent ? (
+                  <GuardianConsent
+                    notice={props.godNotice}
+                    teenName={name}
+                    accepted={teen.godConsent.accepted}
+                    busy={busy}
+                    onAnswer={(decision) => props.onGodConsent?.(teen.workspaceId, decision)}
+                  />
+                ) : null}
               </div>
             )}
           </Card>

@@ -16,7 +16,9 @@ import { ImpersonationBanner } from '../_shell/ImpersonationBanner';
 import { PanelShell } from '../_shell/PanelShell';
 import { YourtalMovePrompt } from '../_shell/YourtalMovePrompt';
 import { individualNavFor } from '../_shell/nav';
-import { getFamily, getYourtalLink } from '@/lib/panels/data';
+import { getFamily, getGodConsent, getYourtalLink } from '@/lib/panels/data';
+import { GodConsentPrompt } from '@/components/god-consent/GodConsent';
+import { answerGodConsent } from '@/lib/panels/god-consent-actions';
 import { getMailGate } from '@/lib/panels/mail-status';
 import { MailRoot } from './mail/MailRoot';
 import { TeenNotice, ViewOnlyNotice } from './family/FamilyView';
@@ -133,6 +135,10 @@ export default async function IndividualLayout({ children }: { children: ReactNo
     dismissed: (await cookies()).has(YOURTAL_MOVE_COOKIE),
   });
 
+  // 9.1.d: an existing account is asked about the GOD Group Privacy Notice on its next sign-in.
+  // A failed read shows nothing (the answer stays "not consented"); staff never see or answer it.
+  const god = await getGodConsent().catch(() => null);
+
   const shell = (
     <PanelShell
       user={user}
@@ -141,6 +147,7 @@ export default async function IndividualLayout({ children }: { children: ReactNo
       otherKindHref={BUSINESS_SURFACES_ENABLED && businessWorkspace ? '/app/business' : null}
       nav={teen ? individualNavFor(yourtalAvailable, true) : nav}
     >
+      {god?.prompt === 'ask' ? <GodConsentPrompt notice={god.notice} onAnswer={answerGodConsent} /> : null}
       {moveYourtal ? <YourtalMovePrompt email={user.email} /> : null}
       {teen ? <TeenNotice parentName={parentName} /> : null}
       {workspace.teenSpace === 'parent' ? <ViewOnlyNotice spaceName={workspace.name} /> : null}

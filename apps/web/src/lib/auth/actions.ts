@@ -159,7 +159,9 @@ export async function completeOnboardingAction(formData: FormData): Promise<void
     redirect(`/onboarding?error=workspace_name_required&kind=${kind}`);
   }
 
-  const body: Record<string, unknown> = { workspaceName, kind };
+  // The GOD Group Privacy Notice tick (9.1.d). The server refuses a sign-up without it
+  // (`god_notice_required`), so this is the form's answer, never a default.
+  const body: Record<string, unknown> = { workspaceName, kind, acceptedGodNotice: formData.get('acceptedGodNotice') === 'on' };
   if (kind === 'business') {
     const abn = String(formData.get('abn') ?? '').replace(/\D/g, '');
     if (abn) body.abn = abn;

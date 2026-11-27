@@ -198,7 +198,7 @@ describeIfDb('the teen hold and turning 18 — real database, real provider', ()
     parent = person('parent', { name: 'Pat' });
     parentToken = (await signIn(parent)).token;
     parentId = await userIdOf(parent);
-    const created = await http('POST', '/v1/workspaces', parentToken, undefined, { name: 'Pat household', kind: 'personal' });
+    const created = await http('POST', '/v1/workspaces', parentToken, undefined, { name: 'Pat household', kind: 'personal', acceptedGodNotice: true });
     expect(created.statusCode).toBe(201);
     household = (created.json() as { id: string }).id;
   });

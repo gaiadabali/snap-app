@@ -29,7 +29,13 @@ function text(over: Partial<Omit<FamilyViewProps, 'status'>> & { status?: Partia
     .replace(/\s+/g, ' ');
 }
 
-const TEEN = { workspaceId: 'ws-teen', teenName: 'Tia', joinedAt: '2026-11-01T01:00:00.000Z', accessEndedAt: null };
+const TEEN = {
+  workspaceId: 'ws-teen',
+  teenName: 'Tia',
+  joinedAt: '2026-11-01T01:00:00.000Z',
+  accessEndedAt: null,
+  godConsent: { accepted: false, version: null },
+};
 
 describe('FamilyView: a parent', () => {
   it('explains the invite and offers Create invite link', () => {

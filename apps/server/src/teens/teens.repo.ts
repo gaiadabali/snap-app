@@ -4,6 +4,7 @@ import { asUser, withTenantAs } from '@snap/db';
 import { sql } from 'drizzle-orm';
 
 import { getDb } from '../db.js';
+import { GOD_NOTICE } from '../god-consent/notice.js';
 
 /**
  * The database half of teen spaces (migration 0045). Every write is one of
@@ -158,7 +159,13 @@ export async function endTeenSpace(parentUserId: string, tenantId: string): Prom
 }
 
 export type FamilyRows = {
-  teens: Array<{ workspaceId: string; teenName: string | null; joinedAt: string; accessEndedAt: string | null }>;
+  teens: Array<{
+    workspaceId: string;
+    teenName: string | null;
+    joinedAt: string;
+    accessEndedAt: string | null;
+    godConsent: { accepted: boolean; version: string | null };
+  }>;
   pendingInvites: Array<{ inviteId: string; expiresAt: string }>;
   asTeen: { workspaceId: string; parentName: string | null } | null;
 };
@@ -183,10 +190,14 @@ export async function familyOf(userId: string): Promise<FamilyRows> {
       created_at: string;
       access_ended_at: string | null;
       teen_name: string | null;
+      god_version: string | null;
     }>(sql`
       select tenant_id, teen_user_id, parent_user_id, to_json(created_at)#>>'{}' as created_at,
              to_json(access_ended_at)#>>'{}' as access_ended_at,
-             (select teen_name from teen_space_for_parent(tenant_id)) as teen_name
+             (select teen_name from teen_space_for_parent(tenant_id)) as teen_name,
+             -- 0062: the parent's acceptance for this teen (RLS shows a parent only the rows they decided).
+             (select g.notice_version from god_consent_status g
+               where g.user_id = teen_spaces.teen_user_id and g.decision = 'accepted') as god_version
         from teen_spaces
        where teen_user_id = current_user_id() or parent_user_id = current_user_id()
        order by created_at
@@ -205,7 +216,13 @@ export async function familyOf(userId: string): Promise<FamilyRows> {
   // name comes from teen_space_for_parent, not from inside the space.
   const teens = spaces
     .filter((s) => s.parent_user_id === userId)
-    .map((s) => ({ workspaceId: s.tenant_id, teenName: s.teen_name, joinedAt: s.created_at, accessEndedAt: s.access_ended_at }));
+    .map((s) => ({
+      workspaceId: s.tenant_id,
+      teenName: s.teen_name,
+      joinedAt: s.created_at,
+      accessEndedAt: s.access_ended_at,
+      godConsent: { accepted: s.god_version === GOD_NOTICE.version, version: s.god_version },
+    }));
   return {
     teens,
     pendingInvites: invites.map((i) => ({ inviteId: i.id, expiresAt: i.expires_at })),

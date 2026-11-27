@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 import { api, onSessionEnded, restoreAuthToken, type Session } from '@/api';
+import { GodConsentGate } from '@/components/GodConsent';
 import { Onboarding } from '@/components/Onboarding';
 import { SessionLoading, SignIn } from '@/components/SignIn';
 import { disableMailAlerts } from '@/lib/push';
@@ -108,5 +109,11 @@ export function SessionGate({ children }: { children: React.ReactNode }) {
     return <Onboarding displayName={session.user.displayName} onDone={setSession} />;
   }
 
-  return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
+  // 9.1.d: an existing account is asked about the GOD Group Privacy Notice on its next sign-in,
+  // with Accept and "Not now". Never a lock-out: a failed read shows the app.
+  return (
+    <SessionContext.Provider value={value}>
+      <GodConsentGate>{children}</GodConsentGate>
+    </SessionContext.Provider>
+  );
 }

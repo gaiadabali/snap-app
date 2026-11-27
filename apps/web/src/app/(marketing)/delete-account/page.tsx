@@ -62,6 +62,21 @@ export default function DeleteAccountPage() {
         </p>
       </section>
 
+      <section aria-labelledby="stop-god" className="mt-12">
+        <h2 id="stop-god" className="hd-3">
+          Or just stop sharing with GOD
+        </h2>
+        <p className="body mt-4">
+          If you accepted the GOD Group Privacy Notice and only want your data to stop being combined
+          with the group, you do not have to delete anything. In the app, go to{' '}
+          <strong>Settings</strong> and choose <strong>Stop combining my data with GOD</strong>. Or email{' '}
+          <a className="font-semibold text-[var(--s-blue-text)] underline" href={REQUEST_MAILTO}>
+            {REQUEST_EMAIL}
+          </a>{' '}
+          from the address your account uses and say so. Your account and its data stay as they are.
+        </p>
+      </section>
+
       <section aria-labelledby="deleted" className="mt-12">
         <h2 id="deleted" className="hd-3">
           What is deleted

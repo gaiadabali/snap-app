@@ -82,7 +82,8 @@ describeIfDb('onboarding by email, by country — real HTTP, real database', () 
   }
 
   async function onboard(token: string, body: Record<string, unknown>) {
-    const res = await call('POST', '/v1/workspaces/onboarding', { token, body });
+    // Finishing sign-up needs the GOD notice ticked (9.1.d); these tests are about the country.
+    const res = await call('POST', '/v1/workspaces/onboarding', { token, body: { acceptedGodNotice: true, ...body } });
     if (res.statusCode === 200) tenants.push(res.json().workspaceId);
     return res;
   }
