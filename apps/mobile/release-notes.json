@@ -1,5 +1,10 @@
 [
   {
+    "id": "signin-screen-readers",
+    "date": "2026-11-27",
+    "notes": "The sign-in screen on the web app is easier to use with a screen reader. It now has a proper page heading and a main area, so you can jump straight to the sign-in form. Nothing changes in how you sign in."
+  },
+  {
     "id": "snapapps-website-address",
     "date": "2026-11-27",
     "notes": "SnapApps now has its own web address, snapapps.gaiada.com. The old address keeps working and takes you to the new one. Your account, receipts and settings are exactly as they were."

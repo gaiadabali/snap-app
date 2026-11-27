@@ -82,7 +82,10 @@
   line-height: 0.9;
   letter-spacing: -0.06em;
   font-variant-numeric: tabular-nums;
-  color: color-mix(in srgb, var(--s-ink) 13%, transparent);
+  /* A solid, readable grey (--s-ink-3: 6.0:1 light, 7.5:1 dark on the page
+     ground). The old 13% ink wash was ~1.2:1 and failed axe color-contrast
+     even though the numeral is decorative (aria-hidden). */
+  color: var(--s-ink-3);
 }
 
 .story-chips {
@@ -99,12 +102,9 @@
 @media (min-width: 1024px) {
   .story-num {
     transition: color 0.5s ease;
-    /* Light ink; the active step warms to the brand blue. */
-    color: color-mix(
-      in srgb,
-      var(--s-brand) calc(var(--on) * 70%),
-      color-mix(in srgb, var(--s-ink) 13%, transparent)
-    );
+    /* Grey ink; the active step warms to the brand orange TEXT colour
+       (--s-brand-text), never the fill orange, which fails as text. */
+    color: color-mix(in srgb, var(--s-brand-text) calc(var(--on) * 100%), var(--s-ink-3));
   }
 
   /* Progress rail: a node at the centre of each panel, and a segment from

@@ -147,7 +147,7 @@ export function SignIn({
     // Folded behind the link while YourTal is on or still being asked; open when it is off, failed, or the link was pressed.
     const showEmail = showEmailForm(yourtal, emailOpen);
     return (
-      <Screen>
+      <AuthScreen>
         <ScrollView
           contentContainerStyle={{ ...pad, paddingTop: insets.top + space.xxl, gap: space.xl }}
           keyboardShouldPersistTaps="handled"
@@ -156,7 +156,9 @@ export function SignIn({
           <GradientHero>
             <View style={{ gap: space.sm }}>
               <HeroLabel>SnapApps</HeroLabel>
-              <Text style={{ ...type.h1, ...brandFace, color: '#FFFFFF' }}>Receipts into records</Text>
+              <Text accessibilityRole="header" aria-level={1} style={{ ...type.h1, ...brandFace, color: '#FFFFFF' }}>
+                Receipts into records
+              </Text>
               <HeroBody>
                 Photograph a receipt, check what was read, keep a record that holds up.
               </HeroBody>
@@ -270,7 +272,7 @@ export function SignIn({
             </>
           ) : null}
         </ScrollView>
-      </Screen>
+      </AuthScreen>
     );
   }
 
@@ -278,7 +280,7 @@ export function SignIn({
   if (step === 'register') {
     const canSubmit = name.trim().length > 1 && emailOk && pwOk && !!country && agreed;
     return (
-      <Screen>
+      <AuthScreen>
         <ScrollView contentContainerStyle={pad} keyboardShouldPersistTaps="handled">
           <AuthHeader title="Create your account">
             Your receipts and budgets stay tied to this account, on any phone you sign in from.
@@ -355,14 +357,14 @@ export function SignIn({
 
           <FootLink prompt="Already have an account?" action="Log in" onPress={() => go('login')} />
         </ScrollView>
-      </Screen>
+      </AuthScreen>
     );
   }
 
   /* ── Log in ─────────────────────────────────────────────────────────── */
   if (step === 'login') {
     return (
-      <Screen>
+      <AuthScreen>
         <ScrollView contentContainerStyle={pad} keyboardShouldPersistTaps="handled">
           <AuthHeader title="Welcome back">Sign in to pick up where you left off.</AuthHeader>
 
@@ -415,7 +417,7 @@ export function SignIn({
             onPress={() => go('register')}
           />
         </ScrollView>
-      </Screen>
+      </AuthScreen>
     );
   }
 
@@ -426,7 +428,7 @@ export function SignIn({
   // person comes back here to log in with the new password.
   const sent = sentTo !== null && sentTo === address;
   return (
-    <Screen>
+    <AuthScreen>
       <BackBar onPress={() => go('login')} />
       <ScrollView contentContainerStyle={{ ...pad, paddingTop: space.xs }} keyboardShouldPersistTaps="handled">
         <AuthHeader title="Reset your password">
@@ -472,11 +474,27 @@ export function SignIn({
           />
         )}
       </ScrollView>
-    </Screen>
+    </AuthScreen>
   );
 }
 
 /* ── Pieces ─────────────────────────────────────────────────────────────── */
+
+/**
+ * The screen shell for every sign-in step: the usual ground, with all content
+ * inside one `main` landmark. On the web build (react-native-web) `role="main"`
+ * renders `<main>`, so a screen reader can jump to it and no content sits
+ * outside a landmark (axe landmark-one-main, region). Native ignores it.
+ */
+function AuthScreen({ children }: { children: React.ReactNode }) {
+  return (
+    <Screen>
+      <View role="main" style={{ flex: 1 }}>
+        {children}
+      </View>
+    </Screen>
+  );
+}
 
 function AuthHeader({ title, children }: { title: string; children: React.ReactNode }) {
   const p = usePalette();
@@ -495,7 +513,7 @@ function AuthHeader({ title, children }: { title: string; children: React.ReactN
       >
         <Icon name="scan" size={30} color={p.accentText} />
       </View>
-      <Title level="h1" style={{ textAlign: 'center' }}>
+      <Title level="h1" heading style={{ textAlign: 'center' }}>
         {title}
       </Title>
       <Text style={[type.body, { color: p.inkMuted, textAlign: 'center', maxWidth: 320 }]}>

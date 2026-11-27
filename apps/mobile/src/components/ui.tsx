@@ -86,16 +86,26 @@ export function Small({
 export function Title({
   children,
   level = 'h1',
+  heading = false,
   style,
 }: {
   children: ReactNode;
   level?: 'h1' | 'h2' | 'h3';
+  /** Expose as a real heading (web: `<h1>`…`<h3>`). Off by default so other screens are unchanged. */
+  heading?: boolean;
   style?: StyleProp<TextStyle>;
 }) {
   const p = usePalette();
   // Page titles (h1) are the brand voice, so they take Audiowide; smaller
   // headings stay in Geist, which reads better at that size.
-  return <Text style={[type[level], level === 'h1' ? brandFace : null, { color: p.ink }, style]}>{children}</Text>;
+  return (
+    <Text
+      {...(heading ? { accessibilityRole: 'header' as const, 'aria-level': Number(level.slice(1)) as 1 | 2 | 3 } : null)}
+      style={[type[level], level === 'h1' ? brandFace : null, { color: p.ink }, style]}
+    >
+      {children}
+    </Text>
+  );
 }
 
 /** Money and any other figure that lines up in a column. */
