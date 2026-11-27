@@ -434,6 +434,18 @@ export const documents = pgTable('documents', {
   categoryId: uuid('category_id'),
   /** 'user' | 'supplier' (0042). A machine never overwrites 'user'. */
   categorySource: text('category_source'),
+  /**
+   * Where THIS receipt was bought (0061): the merchant branch's address as
+   * printed in the docket header. Per receipt, so a chain's branches differ;
+   * `parties.address_*` holds only the first branch seen. All four null when
+   * nothing usable was read.
+   */
+  merchantLine1: text('merchant_line1'),
+  merchantCity: text('merchant_city'),
+  /** NSW | VIC | QLD | WA | SA | TAS | ACT | NT. */
+  merchantState: text('merchant_state'),
+  /** Exactly four digits. */
+  merchantPostcode: text('merchant_postcode'),
   /** Optimistic concurrency: bumped by a trigger on every real change. */
   version: integer('version').notNull().default(1),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
