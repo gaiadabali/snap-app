@@ -22,11 +22,20 @@ const NOTICE: GodConsentState['notice'] = {
   guardianText: GUARDIAN,
 };
 
+/** The text between the tags, read character by character (no regex sanitising of markup). */
+function textOf(markup: string): string {
+  let out = '';
+  let inTag = false;
+  for (const ch of markup) {
+    if (ch === '<') inTag = true;
+    else if (ch === '>') inTag = false;
+    else if (!inTag) out += ch;
+  }
+  return out;
+}
+
 /** Markup to the words a person reads. */
-const words = (markup: string) =>
-  markup
-    .replace(/<[^>]+>/g, '')
-    .replace(/&#x27;/g, "'");
+const words = (markup: string) => textOf(markup).split('&#x27;').join("'");
 
 describe('NoticeSentence', () => {
   it('keeps the sentence verbatim and links only the notice name', () => {
