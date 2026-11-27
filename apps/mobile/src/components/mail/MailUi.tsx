@@ -10,6 +10,13 @@ export function flashNotice(text: string): void {
   flash = text;
 }
 
+/** The pending message, once. The list calls this when it is shown again (it stays mounted under the reader). */
+export function consumeFlash(): string | null {
+  const text = flash;
+  flash = null;
+  return text;
+}
+
 function takeFlash(): { tone: 'good'; text: string } | null {
   const text = flash;
   flash = null;

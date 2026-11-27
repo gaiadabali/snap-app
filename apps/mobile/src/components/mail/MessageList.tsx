@@ -13,7 +13,7 @@ import { space, usePalette } from '@/theme';
 import { Text } from '@/theme/text';
 import { MessageRow } from './MessageRow';
 import { MoveSheet } from './MoveSheet';
-import { ErrorBlock, useNotice } from './MailUi';
+import { ErrorBlock, consumeFlash, useNotice } from './MailUi';
 import { SpamBanner } from './SpamBanner';
 
 const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
@@ -87,11 +87,19 @@ export function MessageList({
   // get a new `refresh` and refresh again, for ever.
   const refreshRef = useRef(list.refresh);
   refreshRef.current = list.refresh;
+  const sayRef = useRef(say);
+  sayRef.current = say;
   const first = useRef(true);
   useFocusEffect(
     useCallback(() => {
-      if (first.current) first.current = false;
-      else refreshRef.current();
+      if (first.current) {
+        first.current = false;
+        return;
+      }
+      refreshRef.current();
+      // "Moved to Spam." from the reader: this list stayed mounted under it, so it takes the message now.
+      const flash = consumeFlash();
+      if (flash) sayRef.current(flash);
     }, []),
   );
 

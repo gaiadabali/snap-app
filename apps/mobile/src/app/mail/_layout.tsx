@@ -1,5 +1,5 @@
 import { Stack } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 import { MailGate } from '@/components/mail/MailGate';
 import { useMailAccount } from '@/components/mail/MailRoot';
@@ -13,9 +13,12 @@ import { usePalette } from '@/theme';
  */
 function AlertsOnOpen() {
   const { settings } = useMailAccount();
+  // Once per opening of Mail. Turning alerts on in settings registers the phone itself (and asks
+  // the permission itself); reacting to that change here as well would ask twice.
+  const wasOn = useRef(settings.alerts);
   useEffect(() => {
-    if (settings.alerts) void enableMailAlertsOnOpen().catch(() => undefined);
-  }, [settings.alerts]);
+    if (wasOn.current) void enableMailAlertsOnOpen().catch(() => undefined);
+  }, []);
   return null;
 }
 
