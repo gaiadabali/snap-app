@@ -4,7 +4,15 @@ import { MODELS } from '../ai/router.js';
 
 import { usdToAudMicros, type CallLog, type ModelCall } from './call-cost.js';
 import { EXTRACTION_PROMPT, PROMPT_VERSION } from './prompt.js';
-import { maskCardLast4, type Extraction, type ExtractedLine, type Field, type Payment } from './types.js';
+import { addressFromFields } from './merchant-address.js';
+import {
+  maskCardLast4,
+  type Extraction,
+  type ExtractedLine,
+  type Field,
+  type Payment,
+  type SupplierAddress,
+} from './types.js';
 
 /**
  * Where the reading happens.
@@ -221,6 +229,29 @@ export function parseExtraction(text: string): Extraction {
     cardBrand: asField(paymentRaw.cardBrand, str),
   };
 
+  // The merchant's address, from the header. Normalised here (state mapped,
+  // postcode validated, suburb title-cased, a contradictory state/postcode
+  // dropped whole) so no unvalidated address text ever exists inside an
+  // `Extraction`; `saveExtraction` applies the same rules again.
+  const addressRaw = (raw.supplierAddress ?? {}) as Record<string, unknown>;
+  const addressRead = {
+    line1: asField(addressRaw.line1, str),
+    city: asField(addressRaw.city, str),
+    state: asField(addressRaw.state, str),
+    postcode: asField(addressRaw.postcode, str),
+  };
+  const cleaned = addressFromFields(addressRead);
+  const keep = (part: keyof SupplierAddress): Field<string> =>
+    cleaned?.[part] != null
+      ? { value: cleaned[part], confidence: addressRead[part].confidence }
+      : { value: null, confidence: 0 };
+  const supplierAddress: SupplierAddress = {
+    line1: keep('line1'),
+    city: keep('city'),
+    state: keep('state'),
+    postcode: keep('postcode'),
+  };
+
   const lines: ExtractedLine[] = Array.isArray(raw.lines)
     ? (raw.lines as unknown[]).map((l) => {
         const o = (l ?? {}) as Record<string, unknown>;
@@ -251,6 +282,7 @@ export function parseExtraction(text: string): Extraction {
     currency,
     supplierName: asField(raw.supplierName, str),
     supplierAbn: asField(raw.supplierAbn, digits),
+    supplierAddress,
     buyerIdentified: asField(raw.buyerIdentified, bool),
     taxExclusiveAmount: asField(raw.taxExclusiveAmount, amount),
     taxAmount: asField(raw.taxAmount, amount),

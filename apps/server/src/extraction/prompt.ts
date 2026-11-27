@@ -36,6 +36,7 @@ Shape — every field is {"value": <value or null>, "confidence": <0..1>}:
  "currency":{"value":string|null,"confidence":n},
  "supplierName":{"value":string|null,"confidence":n},
  "supplierAbn":{"value":string|null,"confidence":n},
+ "supplierAddress":{"line1":{"value":string|null,"confidence":n},"city":{"value":string|null,"confidence":n},"state":{"value":string|null,"confidence":n},"postcode":{"value":string|null,"confidence":n}},
  "buyerIdentified":{"value":true|false,"confidence":n},
  "taxExclusiveAmount":{"value":string|null,"confidence":n},
  "taxAmount":{"value":string|null,"confidence":n},
@@ -93,10 +94,24 @@ RULES
     the total is low, and saying so is more useful than a confident guess.
 
 11. "notes.legible" is false if the image is too poor to extract from at all.
-    Put glare, blur, crop and crease problems in "imageIssues".`;
+    Put glare, blur, crop and crease problems in "imageIssues".
+
+12. SUPPLIER ADDRESS. "supplierAddress" is where the SELLER trades, taken only
+    from the HEADER at the top of the docket, next to the business name or ABN.
+    Read what is printed and nothing more:
+    - "line1" is the street line (for example "Shop 3/12 Pitt St", "245 Parramatta
+      Rd") — null if there is none, and never a phone number, e-mail or website.
+    - "city" is the suburb or town only, without the state or postcode.
+    - "state" is as printed ("NSW", "Vic", "Queensland"); "postcode" is the four
+      digits as printed, with no spaces.
+    NEVER use the customer's, buyer's, "bill to", "ship to" or delivery address.
+    NEVER read an address, name, card number or any other detail from below the
+    items and totals. NEVER work out a suburb from a postcode, a postcode from a
+    suburb, or a state from either: if a part is not printed, return null for
+    it. If the docket shows no merchant address at all, every part is null.`;
 
 /** Kept with the prompt: a change to either invalidates a stored run. */
-export const PROMPT_VERSION = '2026-09-29.1';
+export const PROMPT_VERSION = '2026-11-27.1';
 
 /**
  * The prompt for a workspace running a non-Australian tax rule set.

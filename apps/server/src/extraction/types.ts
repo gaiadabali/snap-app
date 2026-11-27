@@ -48,6 +48,29 @@ export type Payment = {
   cardBrand: Field<string>;
 };
 
+/**
+ * Where the merchant is: the address printed in the docket's HEADER beside the
+ * business name or ABN (plan task 9.5.h). Four narrow fields, never a free-text
+ * blob, so there is nowhere for a customer's address or a card line to land.
+ *
+ * Normalised at the ONE place raw model output becomes an `Extraction` —
+ * `parseExtraction` in `provider.ts`, via `merchant-address.ts` — and applied
+ * again at the write boundary (`repo.ts#saveExtraction`). So by the time a
+ * value is here it is already: `state` one of NSW/VIC/QLD/WA/SA/TAS/ACT/NT,
+ * `postcode` exactly four digits inside an Australian range and consistent with
+ * the state, `city` in title case. A part that failed any of those is null.
+ * Names match `parties.address_line1 / city / state / postcode` and the
+ * schema's `Party.address` (`line1`, `city`, `state`, `postcode`).
+ */
+export type SupplierAddress = {
+  /** Street line as printed; optional, and only kept alongside a suburb or postcode. */
+  line1: Field<string>;
+  /** Suburb or city. */
+  city: Field<string>;
+  state: Field<string>;
+  postcode: Field<string>;
+};
+
 export type Extraction = {
   schemaVersion: string;
   docType: Field<'tax_invoice' | 'receipt' | 'invoice' | 'statement' | 'unknown'>;
@@ -65,6 +88,8 @@ export type Extraction = {
   currency: Field<string>;
   supplierName: Field<string>;
   supplierAbn: Field<string>;
+  /** See `SupplierAddress`. Optional so fixtures built before it existed still type-check. */
+  supplierAddress?: SupplierAddress;
   /** Whether the buyer's identity or ABN appears — required at $1,000+. */
   buyerIdentified: Field<boolean>;
   taxExclusiveAmount: Field<string>;

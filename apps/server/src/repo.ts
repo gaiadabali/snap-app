@@ -18,6 +18,7 @@ import type { RulesStampRecord } from './taxrules/taxrules.repo.js';
 import type { ReceiptContent, ReceiptOriginal } from './yourtal/external-ref.js';
 import { queueReceiptReport } from './yourtal/outbox.repo.js';
 import type { ModelCall } from './extraction/call-cost.js';
+import { normaliseMerchantAddress } from './extraction/merchant-address.js';
 import { maskCardLast4, type ValidatedExtraction } from './extraction/types.js';
 import { enterTenant, enterTenantAsWorker, type TenantActor, type WorkerActor } from './tenant-entry.js';
 import { applyCarriedCategories, readFiledLines, requireTaxCategories, type FiledLine } from './documents/line-categories.js';
@@ -1720,12 +1721,50 @@ export async function saveExtraction(
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, ' ')
         .trim();
+      // Where the merchant trades (plan task 9.5.h). Re-normalised here, at the
+      // write boundary, for the same reason `maskCardLast4` is: a
+      // `ValidatedExtraction` can be built by hand, and "the model was told to"
+      // is not a control. Australian workspaces only — the rules in
+      // `merchant-address.ts` are Australian, and `taxRules == null` means
+      // Australia (see `AU_CONSUMPTION_TAX` above). Null when nothing usable
+      // was printed, in which case the four columns are written NULL and the
+      // fill-only-empty clause below leaves whatever the supplier already has.
+      const printed = e.supplierAddress;
+      const address =
+        taxRules == null || taxRules.country === 'AU'
+          ? normaliseMerchantAddress({
+              line1: printed?.line1.value,
+              city: printed?.city.value,
+              state: printed?.state.value,
+              postcode: printed?.postcode.value,
+            })
+          : null;
+      // FILL ONLY EMPTY. The supplier is shared by every capture with the same
+      // normalised name, so a chain's second branch must not overwrite the
+      // first, and a later worse read must never replace a good value (or one a
+      // person typed). Each part fills only when it is empty, AND only when the
+      // incoming read describes the same place as what is already stored — if
+      // the stored postcode or suburb differs, nothing is mixed in, so a row
+      // never ends up with one branch's street and another's postcode.
+      const samePlace = sql`(
+        (excluded.postcode is null or parties.postcode is null or parties.postcode = excluded.postcode)
+        and (excluded.state is null or parties.state is null or parties.state = excluded.state)
+        and (excluded.city is null or parties.city is null or lower(parties.city) = lower(excluded.city))
+      )`;
       const party = await tx.execute<{ id: string }>(sql`
-        insert into parties (id, tenant_id, legal_name, name_normalised, abn, kind)
+        insert into parties (id, tenant_id, legal_name, name_normalised, abn, kind,
+                             address_line1, city, state, postcode)
         values (${randomUUID()}, ${tenantId}, ${e.supplierName.value}, ${normalised},
-                ${e.supplierAbn.value}, 'supplier')
+                ${e.supplierAbn.value}, 'supplier',
+                ${address?.line1 ?? null}, ${address?.city ?? null},
+                ${address?.state ?? null}, ${address?.postcode ?? null})
         on conflict (tenant_id, name_normalised, kind)
-          do update set abn = coalesce(excluded.abn, parties.abn)
+          do update set
+            abn = coalesce(excluded.abn, parties.abn),
+            address_line1 = case when ${samePlace} then coalesce(nullif(parties.address_line1, ''), excluded.address_line1) else parties.address_line1 end,
+            city          = case when ${samePlace} then coalesce(nullif(parties.city, ''), excluded.city) else parties.city end,
+            state         = case when ${samePlace} then coalesce(nullif(parties.state, ''), excluded.state) else parties.state end,
+            postcode      = case when ${samePlace} then coalesce(nullif(parties.postcode, ''), excluded.postcode) else parties.postcode end
         returning id
       `);
       supplierId = party.rows[0]?.id ?? null;
