@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="%LANG_ISO_CODE%">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <!-- viewport-fit=cover: the page may run under the iPhone notch / home indicator.
+         react-native-safe-area-context reads env(safe-area-inset-*) on web, so every
+         screen's existing insets then keep content clear of them. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover" />
+    <title>%WEB_TITLE%</title>
+
+    <!--
+      Installable web app. This is the single-page template
+      Expo uses for `web.output: "single"`; `+html.tsx` is NOT read in this mode, so the
+      head lives here. Expo adds the script and favicon tags itself.
+
+      Chrome / Android install from the manifest. iOS Safari ignores most of it, so
+      "Add to Home Screen" needs the apple-* tags: touch icon, standalone flag, title.
+
+      There is deliberately NO service worker. Chrome no longer requires one to offer
+      "Install app", and a worker that cached the HTML or the API would pin stale deploys.
+    -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/pwa/apple-touch-icon-180.png" />
+    <!-- The app's own ground colour (theme/tokens.ts), per system scheme. -->
+    <meta name="theme-color" content="#F7F9FC" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#121820" media="(prefers-color-scheme: dark)" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="SnapApp" />
+
+    <!-- The `react-native-web` recommended style reset: https://necolas.github.io/react-native-web/docs/setup/#root-element -->
+    <style id="expo-reset">
+      /* These styles make the body full-height */
+      html,
+      body {
+        height: 100%;
+      }
+      /* These styles disable body scrolling if you are using <ScrollView> */
+      body {
+        overflow: hidden;
+      }
+      /* These styles make the root element full-height */
+      #root {
+        display: flex;
+        height: 100%;
+        flex: 1;
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- Use static rendering with Expo Router to support running without JavaScript. -->
+    <noscript>
+      You need to enable JavaScript to run this app.
+    </noscript>
+    <!-- The root element for your Expo app. -->
+    <div id="root"></div>
+  </body>
+</html>

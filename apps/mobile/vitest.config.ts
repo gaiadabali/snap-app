@@ -41,6 +41,7 @@ export default defineConfig({
     include: [
       'build-version.test.ts',
       'google-services.test.ts',
+      'pwa-shell.test.ts',
       'src/lib/**/*.test.ts',
       'src/fixtures/**/*.test.ts',
       'src/api/**/*.test.ts',
