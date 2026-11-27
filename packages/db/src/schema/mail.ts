@@ -29,3 +29,28 @@ export const mailSettings = pgTable('mail_settings', {
   importTenantId: uuid('import_tenant_id'),
   alerts: boolean('alerts').notNull().default(true),
 });
+
+/**
+ * Statements that arrived in the person's Spambank mailbox (migration 0062,
+ * BUILD.md §4.8): one row per offered attachment, the import's idempotency key
+ * and the "Imported from Spambank" list. The API only reads its own rows; the
+ * worker writes them after `asUser(person)`.
+ */
+export const mailStatementImports = pgTable('mail_statement_imports', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull(),
+  emailId: text('email_id').notNull(),
+  blobId: text('blob_id').notNull(),
+  fileName: text('file_name'),
+  receivedAt: timestamp('received_at', { withTimezone: true }),
+  /** The workspace the file went into; cleared if that workspace is erased. */
+  tenantId: uuid('tenant_id'),
+  /** The capture it became; cleared if that capture is erased. */
+  captureId: uuid('capture_id'),
+  /** pending | imported | duplicate | skipped | failed */
+  status: text('status').notNull().default('pending'),
+  detail: text('detail'),
+  ackedAt: timestamp('acked_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});

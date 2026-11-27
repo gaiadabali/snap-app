@@ -227,7 +227,7 @@ function pageStorageKey(tenantId: string, sha256Hex: string): string {
  * reproduce this exact computation over the demuxed pages or the uniqueness
  * constraint stops meaning "the same document".
  */
-function captureDedupHash(pages: readonly { sha256: string }[]): string {
+export function captureDedupHash(pages: readonly { sha256: string }[]): string {
   if (pages.length === 1) return pages[0]!.sha256.toLowerCase();
   const concatenated = pages.map((p) => p.sha256.toLowerCase()).join('');
   return createHash('sha256').update(concatenated, 'utf8').digest('hex');

@@ -4,6 +4,7 @@ import type {
   MailErrorCode as MailBridgeErrorCode,
   MailMailbox,
   MailSettingsView,
+  MailStatementImport,
   MailStatus,
 } from '@snap/api-contract';
 
@@ -12,7 +13,7 @@ import type {
  * `@snap/api-contract` (added by the bridge, T11). The names below are the ones the
  * screens already use; only the gate and the limits are defined here.
  */
-export type { MailStatus, MailBridgeErrorCode };
+export type { MailStatus, MailBridgeErrorCode, MailStatementImport };
 export type MailboxStatus = MailMailbox;
 export type MailboxState = MailMailbox['state'];
 export type MailSettings = MailSettingsView;

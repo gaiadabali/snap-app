@@ -8,6 +8,7 @@ import { sendAndRecord } from '../auth/mail-delivery.js';
 import { config } from '../config.js';
 import { getDb } from '../db.js';
 import { EVENT, verifySet, YOURTAL_EVENT_JOB, yourtalEventsSettings } from './events-verify.js';
+import { importMailedStatements } from '../mail/statements/import-mailed-statements.js';
 import { sendNewMailAlert } from '../push/mail-alert.js';
 import { endTeenInvite, teenInvitesConfigured } from '../teens/invite-api.js';
 
@@ -23,7 +24,10 @@ import { endTeenInvite, teenInvitesConfigured } from '../teens/invite-api.js';
  *                   id from the payload — with the members' notices queued in
  *                   the same transaction (erase_person returns them once).
  *                   For `spambank-mail`: the phone's new-mail notification
- *                   (push/mail-alert.ts, Spambank BUILD.md §4.9).
+ *                   (push/mail-alert.ts, Spambank BUILD.md §4.9). For
+ *                   `spambank-statement`: the mailed statement's files
+ *                   fetched and imported into the person's chosen workspace
+ *                   (mail/statements/, BUILD.md §4.8).
  *   storage_purge   queued by erase_workspace (0043): removes {STORAGE_DIR}/
  *                   {tenantId}/, only for a uuid, and only once that
  *                   workspace no longer exists.
@@ -156,6 +160,21 @@ async function handleEvent(db: Db, job: Job, log: Log): Promise<void> {
     const outcome = await sendNewMailAlert(db, { sub, iat, body }, log);
     log.log(
       `yourtal event ${jti} spambank-mail: ${outcome.state === 'sent' ? `${outcome.sent} notification(s) sent` : `dropped (${outcome.reason})`}`,
+    );
+    return;
+  }
+
+  if (type === EVENT.spambankStatement) {
+    // BUILD.md §4.8: each offered file fetched, imported as the person, and acknowledged.
+    // YourTal down mid-way throws (the job retries; `mail_statement_imports` makes the
+    // retry carry on where it stopped); every other outcome is recorded and done.
+    const outcome = await importMailedStatements(db, { sub, body }, log);
+    log.log(
+      `yourtal event ${jti} spambank-statement: ${
+        outcome.state === 'done'
+          ? `${outcome.counts.imported} imported, ${outcome.counts.duplicate} duplicate, ${outcome.counts.skipped} skipped, ${outcome.counts.failed} failed`
+          : `dropped (${outcome.reason})`
+      }`,
     );
     return;
   }

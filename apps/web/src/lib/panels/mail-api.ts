@@ -1,7 +1,7 @@
 import { MailError } from '@snap/mail-engine';
 import type { MailErrorCode, MailSession } from '@snap/mail-engine';
 
-import type { AppPasswordItem, MailSettings, MailStatus, NewAppPassword } from './mail-types';
+import type { AppPasswordItem, MailSettings, MailStatementImport, MailStatus, NewAppPassword } from './mail-types';
 
 /**
  * Browser-side calls to this site's own `/api/mail/*` (the BFF in `app/api/mail`).
@@ -87,5 +87,11 @@ export const mailApi = {
 
   revokeAppPassword: async (id: string): Promise<void> => {
     await request(`/api/mail/app-passwords/${encodeURIComponent(id)}`, { method: 'DELETE' });
+  },
+
+  /** Statements imported from this mailbox, newest first (Spambank T12). */
+  imports: async (): Promise<MailStatementImport[]> => {
+    const body = (await request('/api/mail/imports')).body as { items?: MailStatementImport[] } | undefined;
+    return body?.items ?? [];
   },
 };

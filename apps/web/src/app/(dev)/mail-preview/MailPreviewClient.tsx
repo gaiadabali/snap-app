@@ -34,6 +34,18 @@ function installPreviewApi(): void {
       settings = { ...settings, ...(body as Partial<typeof settings>) };
       return json(200, settings);
     }
+    if (url === '/api/mail/imports') {
+      const at = (d: string) => `2026-11-${d}T01:02:03.000Z`;
+      const ws = { id: 'w1', name: 'Personal' };
+      return json(200, {
+        items: [
+          { id: 'i1', fileName: 'statement-nov.csv', receivedAt: at('26'), status: 'imported', reason: 'statement', message: 'balance check pass', workspace: ws, documentId: 'd1', createdAt: at('26') },
+          { id: 'i2', fileName: 'card-oct.pdf', receivedAt: at('24'), status: 'imported', reason: 'queued', message: null, workspace: ws, documentId: null, createdAt: at('24') },
+          { id: 'i3', fileName: 'estatement.pdf', receivedAt: at('20'), status: 'skipped', reason: 'password_protected', message: null, workspace: ws, documentId: null, createdAt: at('20') },
+          { id: 'i4', fileName: 'statement-nov.csv', receivedAt: at('18'), status: 'duplicate', reason: 'already_captured', message: null, workspace: ws, documentId: 'd1', createdAt: at('18') },
+        ],
+      });
+    }
     if (url === '/api/mail/app-passwords' && method === 'GET') return json(200, { items: passwords });
     if (url === '/api/mail/app-passwords' && method === 'POST') {
       const made = { id: `ap${next++}`, name: String(body.name ?? ''), createdAt: new Date().toISOString() };

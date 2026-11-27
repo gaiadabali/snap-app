@@ -12,6 +12,7 @@ vi.mock('@/lib/panels/mail-bff', async (importOriginal) => {
 import { DELETE } from './app-passwords/[id]/route';
 import { POST as createPassword } from './app-passwords/route';
 import { POST as enable } from './enable/route';
+import { GET as imports } from './imports/route';
 import { POST as session } from './session/route';
 import { PATCH as patchSettings } from './settings/route';
 
@@ -114,5 +115,13 @@ describe('POST /api/mail/session and /enable', () => {
     const enableSpec = forward.mock.calls[1]?.[1] as { accept: (d: unknown) => boolean };
     expect(enableSpec.accept({ address: 'a@b.co' })).toBe(true);
     expect(enableSpec.accept({})).toBe(false);
+  });
+});
+
+describe('GET /api/mail/imports', () => {
+  it('forwards to the import list and nothing else', async () => {
+    await imports(new Request('http://localhost:3000/api/mail/imports?userId=someone-else'));
+    expect(forward).toHaveBeenCalledTimes(1);
+    expect(forward.mock.calls[0]?.[1]).toEqual({ method: 'GET', path: '/v1/mail/imports' });
   });
 });

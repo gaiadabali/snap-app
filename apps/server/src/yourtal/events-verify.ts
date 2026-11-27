@@ -22,6 +22,8 @@ export const EVENT = {
   becameAdult: 'urn:yourtal:event:became-adult',
   /** Spambank (spambank/BUILD.md §5.5): new mail in the person's Inbox, for the phone's notification. */
   spambankMail: 'urn:yourtal:event:spambank-mail',
+  /** Spambank (BUILD.md §4.8, §5.5): a statement arrived by mail; SnapApp fetches and imports its files (T12). */
+  spambankStatement: 'urn:yourtal:event:spambank-statement',
 } as const;
 
 /** The job the worker acts from (docs/29 D2: SnapApp's inbox is `jobs`, keyed by the SET's jti). */

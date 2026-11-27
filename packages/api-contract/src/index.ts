@@ -2474,6 +2474,44 @@ export interface MailAppPasswordCreated extends MailAppPassword {
   smtp: { host: string; port: number; security: 'ssl' };
 }
 
+/**
+ * Why a mailed statement ended as it did (`MailStatementImport.reason`).
+ * `imported`: `statement` (a CSV read into a statement), `queued` (a PDF being
+ * read; `documentId` appears once it is), `waiting_for_credits` (a PDF stored,
+ * read once credits are bought). `duplicate`: `already_captured`. `skipped`:
+ * `no_workspace`, `not_workspace_admin`, `unsupported_type`, `too_large`,
+ * `password_protected` (Stage 2 reads these), `too_many_pages` (over 40),
+ * `not_a_statement`, `no_credits`, `daily_limit`, `teen_space_unfunded`,
+ * `not_allowed`, `no_account`. `failed`: `csv_unreadable` (with `message`),
+ * `unreadable_pdf`, `not_a_pdf`, `empty`, `not_offered`, `yourtal_rejected`.
+ * New codes may appear: show a general sentence for one you do not know.
+ */
+export type MailStatementImportReason = string;
+
+/** One file from a statement mailed to the person's Spambank address (spambank/BUILD.md §4.8). */
+export interface MailStatementImport {
+  id: string;
+  /** The attachment's name, as mailed. */
+  fileName: string | null;
+  /** When the mail arrived. */
+  receivedAt: IsoDateTime | null;
+  /** `pending` only while the worker is on it. */
+  status: 'pending' | 'imported' | 'duplicate' | 'skipped' | 'failed';
+  reason: MailStatementImportReason | null;
+  /** The importer's own sentence, for `csv_unreadable` (and the page count for `too_many_pages`). */
+  message: string | null;
+  /** Where it went; null when none was chosen, or the person is no longer a member there. */
+  workspace: { id: string; name: string } | null;
+  /** The statement's document once there is one (in `workspace`). */
+  documentId: string | null;
+  createdAt: IsoDateTime;
+}
+
+/** `GET /v1/mail/imports`: the last 50, newest first. */
+export interface MailStatementImportList {
+  items: MailStatementImport[];
+}
+
 /** `POST /v1/devices/push-token`: the phone's Firebase Cloud Messaging registration token. */
 export interface RegisterPushTokenRequest {
   token: string;
