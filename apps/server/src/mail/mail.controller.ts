@@ -20,6 +20,7 @@ import type {
   MailErrorCode,
   MailSessionToken,
   MailSettingsView,
+  MailStatementImportList,
   MailStatus,
   RegisterPushTokenRequest,
   UnregisterPushTokenRequest,
@@ -30,6 +31,8 @@ import { RateLimiter } from '../auth/rate-limit.js';
 import { CurrentSession, CurrentUser, SessionGuard, type AuthUser, type CurrentSessionInfo } from '../common/auth.guard.js';
 import { ValidBody } from '../common/valid-body.decorator.js';
 import { mailAvailable } from './enabled.js';
+import { listImports } from './statements/imports.repo.js';
+import { reasonOf } from './statements/statement-event.js';
 import {
   deletePushToken,
   getMailSettings,
@@ -118,6 +121,7 @@ const APP_PASSWORD_ID = /^[A-Za-z0-9_-]{1,64}$/;
  *   GET    /v1/mail/app-passwords        the person's app passwords
  *   POST   /v1/mail/app-passwords        a new one (the secret is shown once)
  *   DELETE /v1/mail/app-passwords/:id    revoke one
+ *   GET    /v1/mail/imports              statements imported from the mailbox (T12)
  *
  * The mailbox lives at YourTal. Each call is made by SnapApp's server client
  * naming the person by their YourTal `sub`, which is read from THEIR OWN session
@@ -309,6 +313,33 @@ export class MailController {
     const sub = await this.subFor(user);
     const result = await yourtalAppPasswordRevoke(sub, id);
     if (!result.ok) throw this.failure('app-passwords/revoke', result);
+  }
+
+  @Get('imports')
+  @ApiOperation({
+    summary: 'Statements imported from Spambank: the last 50 mailed files and what became of each',
+    description:
+      'Read from SnapApp alone (no call to YourTal). The workspace is named, and the statement document linked, only where the person is still a member. See `MailStatementImportReason` for the reasons.',
+  })
+  async imports(@CurrentUser() user: AuthUser, @CurrentSession() _session: CurrentSessionInfo): Promise<MailStatementImportList> {
+    if (!mailAvailable()) throw refuse(HttpStatus.NOT_FOUND, 'mail_unavailable', 'Mail is not available.');
+    const rows = await listImports(user.userId);
+    return {
+      items: rows.map((r) => {
+        const { reason, message } = reasonOf(r.detail);
+        return {
+          id: r.id,
+          fileName: r.fileName,
+          receivedAt: r.receivedAt,
+          status: r.status,
+          reason,
+          message,
+          workspace: r.workspace,
+          documentId: r.documentId,
+          createdAt: r.createdAt,
+        };
+      }),
+    };
   }
 
   // ── helpers ────────────────────────────────────────────────────────────────

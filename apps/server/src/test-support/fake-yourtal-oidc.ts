@@ -103,6 +103,8 @@ export type FakeSpambank = {
   people: Map<string, FakeSpambankPerson>;
   /** Files `/attachments/fetch` serves, by `emailId/blobId`. */
   attachments: Map<string, { bytes: Buffer; type: string }>;
+  /** What `/statements/ack` was told, in order (T12). An offer it does not serve answers 404 `not_found`. */
+  acks: Array<{ emailId: string; blobId: string; outcome: string; detail: string | null }>;
   addPerson(sub: string, over?: Partial<FakeSpambankPerson>): FakeSpambankPerson;
 };
 
@@ -234,6 +236,7 @@ export async function startFakeYourTalOidc(): Promise<FakeYourTalOidc> {
       malformedSession: false,
       people: new Map(),
       attachments: new Map(),
+      acks: [],
       addPerson(sub, over = {}) {
         const person: FakeSpambankPerson = {
           sub,
@@ -570,6 +573,17 @@ export async function startFakeYourTalOidc(): Promise<FakeYourTalOidc> {
         res.setHeader('content-type', file.type);
         res.end(file.bytes);
         return;
+      }
+      case '/statements/ack': {
+        if (!fake.spambank.attachments.has(`${String(body.emailId)}/${String(body.blobId)}`)) return send(404, { code: 'not_found' });
+        if (!['imported', 'duplicate', 'failed', 'skipped'].includes(String(body.outcome))) return send(400, { code: 'invalid_request' });
+        fake.spambank.acks.push({
+          emailId: String(body.emailId),
+          blobId: String(body.blobId),
+          outcome: String(body.outcome),
+          detail: typeof body.detail === 'string' ? body.detail : null,
+        });
+        return send(204);
       }
       default:
         return send(404, { code: 'not_found' });

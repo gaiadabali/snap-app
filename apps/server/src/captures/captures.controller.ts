@@ -47,23 +47,20 @@ import { ValidBody } from '../common/valid-body.decorator.js';
 import { config } from '../config.js';
 import { resumeAfterCredits } from '../credits/credits.controller.js';
 import { QuotaExhaustedError } from '../credits/spend.js';
-import { countPdfPages, demuxPdf } from '../extraction/pdf.js';
+import { countPdfPages } from '../extraction/pdf.js';
 import {
   countExtractionsToday,
   createCapture,
   enqueueExtraction,
-  finalizeCapturePages,
   getCaptureMimeType,
   getCaptureProgress,
   isCaptureQueued,
   OnePagePerSnapError,
   listCapturePages,
-  markCaptureStored,
   recordCapturePage,
 } from '../repo.js';
-import { put as storagePut } from '../storage.js';
-import { importCsvStatement } from '../statements/csv-import.js';
 import { issueUploadToken, readUploadToken } from '../tokens.js';
+import { storeCsvCapture, storePdfCapture } from './capture-from-bytes.js';
 import { pageKey, putAtKey } from './page-storage.js';
 
 /**
@@ -487,23 +484,15 @@ export class CapturesController {
     if (isCsv) {
       // No page image, no `capture_pages` row, no queued extraction — §5.6
       // is explicit that mode (c) needs none of that ("Extraction needed:
-      // None"). The original bytes still go through the same L0 "originals"
-      // store a PDF's do, immediately above, for the same reason: the file
-      // is the legal record, and `documents.capture_id` needs a `captures`
-      // row whose `original_storage_key` actually resolves.
-      const original = storagePut(claim.tenantId, bytes);
-      await markCaptureStored(user.userId, claim.tenantId, claim.captureId, original.key);
-
-      const result = await importCsvStatement(user.userId, claim.tenantId, {
-        captureId: claim.captureId,
-        bytes,
-        financialAccountId,
-      });
+      // None"). The original is stored first, as for a PDF (the file is the
+      // legal record), then read into a statement — `storeCsvCapture`, shared
+      // with statements that arrive by mail (Spambank T12).
+      const { sha256, result } = await storeCsvCapture(user.userId, claim.tenantId, claim.captureId, bytes, financialAccountId);
       if (!result.ok) {
         throw new BadRequestException(result.reason);
       }
       return {
-        sha256: original.sha256,
+        sha256,
         byteSize: bytes.byteLength,
         // Not queued: nothing further runs. `false` here is accurate, not a
         // downgrade — a receipt's `true` means "a worker will finish this
@@ -561,47 +550,14 @@ export class CapturesController {
       }
       if (pageCount > 1) throw onePagePerSnap(pageCount);
 
-      const original = storagePut(claim.tenantId, bytes);
-      await markCaptureStored(user.userId, claim.tenantId, claim.captureId, original.key);
-
-      const rendered = await demuxPdf(bytes);
-      // In page order, for the capture-level dedup hash below.
-      const pageHashes: string[] = [];
-      for (let i = 0; i < rendered.length; i++) {
-        const page = rendered[i]!;
-        const sha256 = createHash('sha256').update(page.bytes).digest('hex');
-        pageHashes.push(sha256);
-        const storageKey = pageKey(claim.tenantId, sha256);
-        putAtKey(storageKey, page.bytes);
-        await recordCapturePage(user.userId, claim.tenantId, {
-          captureId: claim.captureId,
-          pageNumber: i + 1,
-          storageKey,
-          mimeType: page.mimeType,
-          byteSize: page.bytes.byteLength,
-          sha256,
-          width: page.width,
-          height: page.height,
-          source: page.source,
-        });
-      }
-
-      // The capture now has N pages where it declared one, so the two
-      // columns that describe the document as a whole are recomputed from the
-      // demuxed set. `original_sha256` matters most: it is what
-      // `captures_sha_unique` enforces, so leaving it as the hash of a single
-      // declared page would mean the same PDF uploaded twice no longer
-      // deduplicates while the constraint still claims it cannot happen.
-      //
-      // The PDF itself stays the L0 original — `original_storage_key` and its
-      // siblings are deliberately untouched by this call.
-      const finalized = await finalizeCapturePages(
-        user.userId,
-        claim.tenantId,
-        claim.captureId,
-        pageHashes.map((sha256) => ({ sha256 })),
-      );
-      if (!finalized.ok) {
+      // The original stored and pointed at, its pages rendered and recorded,
+      // and the capture's page count and dedup hash corrected to them
+      // (`storePdfCapture`, shared with statements that arrive by mail). The
+      // PDF itself stays the L0 original. `original_sha256` matters most: it
+      // is what `captures_sha_unique` enforces, so it is recomputed from the
+      // demuxed pages, or the same PDF uploaded twice would not deduplicate.
+      const stored = await storePdfCapture(user.userId, claim.tenantId, claim.captureId, bytes);
+      if (!stored.ok) {
         // Two captures that looked different on upload turn out to be the
         // same document once rendered. Both rows are left intact — merging
         // them spans documents, runs and possibly a posted transaction, which
@@ -610,7 +566,7 @@ export class CapturesController {
         // at registration time.
         throw new ConflictException({
           message: 'You already have this document. It was captured before under a different file.',
-          captureId: finalized.duplicateCaptureId,
+          captureId: stored.duplicateCaptureId,
         });
       }
 
@@ -621,10 +577,10 @@ export class CapturesController {
       await queueOnce(user.userId, claim.tenantId, claim.captureId);
 
       return {
-        sha256: original.sha256,
+        sha256: stored.sha256,
         byteSize: bytes.byteLength,
         queued: true,
-        pages: rendered.length,
+        pages: stored.pages,
       };
     }
 

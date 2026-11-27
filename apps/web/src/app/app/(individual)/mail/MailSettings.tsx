@@ -10,6 +10,7 @@ import { AppPasswords } from './AppPasswords';
 import { CopyButton } from './CopyButton';
 import { Notice } from './MailUi';
 import { useMailAccount } from './MailShell';
+import { StatementImports } from './StatementImports';
 
 function Section({ id, title, lede, children }: { id: string; title: string; lede?: string; children: ReactNode }) {
   return (
@@ -144,6 +145,7 @@ export function MailSettingsView() {
             <span className="text-[13px] text-[var(--color-ink-muted)]">Only workspaces you own or administer are listed.</span>
           </label>
         )}
+        <StatementImports />
       </Section>
 
       <Section id="settings-alerts" title="Alerts">

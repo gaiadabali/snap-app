@@ -600,6 +600,30 @@ allowing that client the `spambank` scope.
   `DEMO_ENV=staging` only) records the sends in-process instead; a production
   host asking for it is refused at boot like every simulator.
 
+### Spambank: statements that arrive by mail (Spambank ticket T12)
+
+When a person turns on "Import statements from this inbox" (Mail settings, a
+workspace they own or administer), YourTal sends a signed `spambank-statement`
+event for each statement mail that passes its checks. The **worker** fetches each
+offered PDF/CSV from YourTal (`/api/oidc-clients/spambank/attachments/fetch`),
+imports it as the person into that workspace with the existing statement import
+(CSV read at once and free; PDF one credit, up to 40 pages, queued for the
+statement reader), and reports the outcome (`/statements/ack`). Password-protected
+PDFs, PDFs that are not statements and PDFs over 40 pages are skipped before any
+capture or credit. `GET /v1/mail/imports` lists the last 50 for the Mail settings
+screen.
+
+- Nothing new to set: it uses the same YourTal server client, key file and
+  `SPAMBANK_ENABLED` as the bridge above, in the **worker**
+  (`YOURTAL_OIDC_ISSUER`, the mounted key file, `YOURTAL_OIDC_SERVER_CLIENT_ID`,
+  `YOURTAL_API_URL`). Without them the event is acknowledged and dropped
+  (`dropped (not_configured)` in the worker log).
+- Migration `0062_mail_statement_imports.sql` runs with the deploy (one
+  user-scoped table; the API reads its own rows, only the worker writes).
+- Check it took: forward a statement email to the test address; the worker log
+  shows `yourtal event <jti> spambank-statement: 1 imported, ...`, and YourTal's
+  `spambank.statement_offer.outcome` matches.
+
 ### YourTal scans voucher: merchant settings, turning it on, rollback (group plan 2.8)
 
 A person buys "50 SnapApp scans" in YourTal for 200 points and types the code
