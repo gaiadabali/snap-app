@@ -57,7 +57,7 @@ export const cases: EvalCase[] = [
   /* ---- knowledge ---- */
   {
     id: 'what-is-it',
-    turns: ['What is SnapApp?'],
+    turns: ['What is SnapApps?'],
     any: [/receipt|docket/i],
     all: [/every line|each line|line by line|line-by-line/i],
     none: [NO_MONEY],
@@ -140,7 +140,7 @@ export const cases: EvalCase[] = [
   },
   {
     id: 'bas-not-in-app',
-    turns: ['Can SnapApp generate my BAS report?'],
+    turns: ['Can SnapApps generate my BAS report?'],
     any: [/not (?:available|in the app|something)|isn't (?:available|in the app)|aren't available|no longer|not today|doesn't (?:do|produce|generate)|cannot|can't/i],
     none: [/yes,? (?:snap ?apps? )?(?:can|does)\b/i, NO_MONEY],
   },

@@ -383,7 +383,7 @@ describeIfDb('delete your account (8.3.a)', () => {
     expect((await admin.query(`select 1 from jobs where kind = 'erasure_notice' and payload->>'to' = $1`, [`p-${run}@example.test`])).rowCount).toBe(0);
     const { teenNotice } = await import('../yourtal/events-job.js');
     const text = teenNotice('teen_ended_parent_deleted', 'Pat', held.erase_after!.toISOString())!.text;
-    expect(text).toMatch(/deleted their SnapApp account/);
+    expect(text).toMatch(/deleted their SnapApps account/);
     expect(text).not.toMatch(/invite|comes back/i);
     expect(teenNotice('teen_ended_teen', 'Pat', held.erase_after!.toISOString())!.text).toMatch(/comes back/); // unchanged
 

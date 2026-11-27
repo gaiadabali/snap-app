@@ -86,7 +86,7 @@ const FAQS: ReadonlyArray<{ q: string; a: ReactNode }> = [
     a: (
       <>
         It shows the seller’s ABN, the words “tax invoice”, and the GST. At $1,000 or more it
-        also has to identify the buyer. SnapApp checks the ABN, the wording and the GST on every
+        also has to identify the buyer. SnapApps checks the ABN, the wording and the GST on every
         docket it reads, and suggests a fix when one falls short.
       </>
     ),
@@ -95,7 +95,7 @@ const FAQS: ReadonlyArray<{ q: string; a: ReactNode }> = [
     q: 'How long are receipts kept?',
     a: (
       <>
-        Five years, the ATO’s record-keeping period. SnapApp keeps the original photo as a true
+        Five years, the ATO’s record-keeping period. SnapApps keeps the original photo as a true
         copy, and any correction you make sits beside it rather than over it.
       </>
     ),

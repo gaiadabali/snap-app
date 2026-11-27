@@ -17,8 +17,8 @@ const manifest = JSON.parse(read('manifest.webmanifest')) as Record<string, unkn
 describe('web app manifest', () => {
   it('is a standalone app rooted at /', () => {
     expect(manifest).toMatchObject({
-      name: 'SnapApp',
-      short_name: 'SnapApp',
+      name: 'SnapApps',
+      short_name: 'SnapApps',
       start_url: '/',
       scope: '/',
       display: 'standalone',
@@ -52,7 +52,7 @@ describe('index.html head', () => {
     '<meta name="apple-mobile-web-app-capable" content="yes"',
     '<meta name="mobile-web-app-capable" content="yes"',
     '<meta name="apple-mobile-web-app-status-bar-style"',
-    '<meta name="apple-mobile-web-app-title" content="SnapApp"',
+    '<meta name="apple-mobile-web-app-title" content="SnapApps"',
     '<meta name="theme-color"',
     'viewport-fit=cover',
   ])('has %s', (needle) => {

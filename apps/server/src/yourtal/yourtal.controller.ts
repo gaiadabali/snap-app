@@ -178,7 +178,7 @@ export class YourtalLinkController {
         throw refuse(
           HttpStatus.CONFLICT,
           'linked_to_another_account',
-          'That YourTal account is already linked to another SnapApp account. Unlink it there first.',
+          'That YourTal account is already linked to another SnapApps account. Unlink it there first.',
         );
       }
       // Lost a race with another link request from this same account (two

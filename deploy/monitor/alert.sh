@@ -77,7 +77,7 @@ send_email() {
   [ -n "$to" ] || return 3
   [ -n "$url" ] || url=$(read_key "$deployenv" SMTP_URL)
   [ -n "$from" ] || from=$(read_key "$deployenv" MAIL_FROM)
-  from=${from:-SnapApp <no-reply@snapapp.gaiada.com>}
+  from=${from:-SnapApps <no-reply@snapapp.gaiada.com>}
 
   case $url in
     smtp://*|smtps://*) ;;

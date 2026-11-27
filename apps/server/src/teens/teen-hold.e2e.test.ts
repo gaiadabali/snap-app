@@ -261,12 +261,12 @@ describeIfDb('the teen hold and turning 18 — real database, real provider', ()
       const day = eraseAfter.toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
       const toParent = mailTo(parent.email);
       expect(toParent).toHaveLength(1);
-      expect(toParent[0]).toMatchObject({ subject: 'Tia’s access to SnapApp has ended' });
+      expect(toParent[0]).toMatchObject({ subject: 'Tia’s access to SnapApps has ended' });
       expect(toParent[0]!.text).toContain(`will be deleted on ${day}`);
-      expect(toParent[0]!.text).toContain('you can no longer see their SnapApp space');
+      expect(toParent[0]!.text).toContain('you can no longer see their SnapApps space');
       const toTeen = mailTo(teen.email);
       expect(toTeen).toHaveLength(1);
-      expect(toTeen[0]).toMatchObject({ subject: 'Your access to SnapApp has ended' });
+      expect(toTeen[0]).toMatchObject({ subject: 'Your access to SnapApps has ended' });
       expect(toTeen[0]!.text).toContain(`deleted on ${day}`);
       expect(toTeen[0]!.text).toContain('If Pat invites you again before then');
       // The payloads are emptied once sent.
@@ -321,8 +321,8 @@ describeIfDb('the teen hold and turning 18 — real database, real provider', ()
       await event(teen, 'urn:yourtal:event:access-ended', { reason: 'teen_removed', erase_data: true });
       expect(await drain()).toContain('teen space held for 30 days');
       expect((await http('GET', '/v1/goals', parentToken, space)).statusCode).toBeGreaterThanOrEqual(400);
-      expect(mailTo(parent.email).map((m) => m.subject)).toEqual(['Tia’s access to SnapApp has ended']);
-      expect(mailTo(teen.email).map((m) => m.subject)).toEqual(['Your access to SnapApp has ended']);
+      expect(mailTo(parent.email).map((m) => m.subject)).toEqual(['Tia’s access to SnapApps has ended']);
+      expect(mailTo(teen.email).map((m) => m.subject)).toEqual(['Your access to SnapApps has ended']);
 
       mkdirSync(join(storage, space, 'originals'), { recursive: true });
       writeFileSync(join(storage, space, 'originals', 'receipt.jpg'), 'x');
@@ -409,11 +409,11 @@ describeIfDb('the teen hold and turning 18 — real database, real provider', ()
       expect((await http('POST', '/v1/workspaces', token, undefined, { name: 'Side gig', kind: 'personal' })).statusCode).toBe(201);
 
       expect(mailTo(parent.email)).toEqual([
-        expect.objectContaining({ subject: 'Uma is 18 now', text: expect.stringContaining('Uma is 18 now, so you can no longer see their SnapApp space.') }),
+        expect.objectContaining({ subject: 'Uma is 18 now', text: expect.stringContaining('Uma is 18 now, so you can no longer see their SnapApps space.') }),
       ]);
       expect(mailTo(teen.email)).toEqual([
         expect.objectContaining({
-          subject: 'Your SnapApp space is now just yours',
+          subject: 'Your SnapApps space is now just yours',
           text: expect.stringContaining("You're 18 now, so this space is just yours. Pat can't see it any more"),
         }),
       ]);

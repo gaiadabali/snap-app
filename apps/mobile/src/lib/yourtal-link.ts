@@ -40,7 +40,7 @@ const LINK_MESSAGES: Record<LinkErrorCode, string> = {
   email_unverified: 'Confirm your email address first, then link YourTal.',
   already_linked: 'This account is already linked to YourTal.',
   linked_to_another_account:
-    'That YourTal account is already linked to another SnapApp account. Unlink it there first.',
+    'That YourTal account is already linked to another SnapApps account. Unlink it there first.',
   rate_limited: 'Too many tries. Wait a few minutes and try again.',
   yourtal_not_configured: "Linking YourTal isn't available right now. Try again later.",
   yourtal_unavailable: "YourTal isn't answering right now. Try again in a minute.",
@@ -132,7 +132,7 @@ export const LINK_COPY = {
   duplicateHint: 'A second photo of a receipt already reported earns nothing.',
   freeHint: "Scans on free credits don't earn YourTal points.",
   pausedTitle: 'Receipt points are paused.',
-  pausedBody: "Receipts you scan now won't earn YourTal points. They start again once SnapApp tops up.",
+  pausedBody: "Receipts you scan now won't earn YourTal points. They start again once SnapApps tops up.",
   rowPaused: 'Paused while points were topped up',
   pausedHint: "These were scanned while receipt points were paused. They won't earn later.",
   identityVerifyEmail: 'Verify your email in YourTal to earn points for receipts.',

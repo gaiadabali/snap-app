@@ -109,7 +109,7 @@ export default function MailSettingsScreen() {
 
         <Section
           title="Your address"
-          lede="Generated for you when you switched mail on. It is the same address in SnapApp, YourTal and Free Tax Returns."
+          lede="Generated for you when you switched mail on. It is the same address in SnapApps, YourTal and Free Tax Returns."
         >
           <Card style={{ gap: space.sm }}>
             <Text selectable testID="mail-address" style={{ color: p.ink, fontSize: 16, lineHeight: 22, fontWeight: '600' }}>
@@ -131,7 +131,7 @@ export default function MailSettingsScreen() {
           <Card padded={false} style={{ paddingHorizontal: space.lg, paddingVertical: space.md, gap: space.md, opacity: pending === 'statements' ? 0.7 : 1 }}>
             <Toggle
               label="Import statements from this inbox"
-              hint="When a bank or card statement (PDF or CSV) arrives here, SnapApp adds it to the workspace below. Only mail that passes the sender’s own authenticity checks is used, and it costs the same as an upload: CSV is free, a PDF uses one credit."
+              hint="When a bank or card statement (PDF or CSV) arrives here, SnapApps adds it to the workspace below. Only mail that passes the sender’s own authenticity checks is used, and it costs the same as an upload: CSV is free, a PDF uses one credit."
               value={settings.statements}
               onChange={(next) => {
                 if (eligible.length === 0 || pending !== null) return;
@@ -161,7 +161,7 @@ export default function MailSettingsScreen() {
           <Card padded={false} style={{ paddingHorizontal: space.lg, paddingVertical: space.md, gap: space.sm, opacity: pending === 'alerts' ? 0.7 : 1 }}>
             <Toggle
               label="Phone alerts for new mail"
-              hint="SnapApp tells you when new mail arrives. The alert says how many, never who from or what about."
+              hint="SnapApps tells you when new mail arrives. The alert says how many, never who from or what about."
               value={settings.alerts}
               onChange={(next) => {
                 if (pending === null) void setAlertsOn(next);

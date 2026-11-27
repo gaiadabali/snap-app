@@ -1,7 +1,7 @@
 {
-  "name": "SnapApp",
-  "short_name": "SnapApp",
-  "description": "Snap a receipt or tax invoice and SnapApp reads it for you.",
+  "name": "SnapApps",
+  "short_name": "SnapApps",
+  "description": "Snap a receipt or tax invoice and SnapApps reads it for you.",
   "id": "/",
   "start_url": "/",
   "scope": "/",

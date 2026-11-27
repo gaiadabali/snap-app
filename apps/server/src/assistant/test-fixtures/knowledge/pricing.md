@@ -4,7 +4,7 @@ url: /pricing
 kind: pricing
 ---
 
-SnapApp is paid per scan, with no subscription.
+SnapApps is paid per scan, with no subscription.
 
 ## How credits work
 

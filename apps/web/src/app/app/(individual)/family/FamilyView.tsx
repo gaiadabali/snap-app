@@ -57,17 +57,17 @@ export function FamilyView(props: FamilyViewProps) {
       ) : null}
 
       <Card>
-        <h2 className="text-[17px] font-semibold text-[var(--color-ink)]">Invite your teen to SnapApp</h2>
+        <h2 className="text-[17px] font-semibold text-[var(--color-ink)]">Invite your teen to SnapApps</h2>
         <p className="mt-2 text-[14px] text-[var(--color-ink-muted)]">
-          Your teen can use SnapApp to keep track of their own spending. They sign in with their own YourTal account:
+          Your teen can use SnapApps to keep track of their own spending. They sign in with their own YourTal account:
           the teen account you approved.
         </p>
         <ul className="mt-3 list-disc pl-5 text-[14px] text-[var(--color-ink-muted)]">
-          <li>You’ll be able to see everything in their SnapApp space: receipts, amounts and notes.</li>
+          <li>You’ll be able to see everything in their SnapApps space: receipts, amounts and notes.</li>
           <li>We’ll tell them that you can see it.</li>
           <li>They won’t earn YourTal points for receipts.</li>
           <li>Their scans use this workspace’s credits.</li>
-          <li>You can end their access at any time. Ending it deletes their SnapApp space after 30 days.</li>
+          <li>You can end their access at any time. Ending it deletes their SnapApps space after 30 days.</li>
         </ul>
         {created ? (
           <div className="mt-4 flex flex-col gap-2">
@@ -103,9 +103,9 @@ export function FamilyView(props: FamilyViewProps) {
               </p>
             ) : confirming === teen.workspaceId ? (
               <div className="mt-2 flex flex-col gap-3">
-                <p className="text-[15px] font-semibold text-[var(--color-ink)]">End {name}’s access to SnapApp?</p>
+                <p className="text-[15px] font-semibold text-[var(--color-ink)]">End {name}’s access to SnapApps?</p>
                 <p className="text-[14px] text-[var(--color-ink-muted)]">
-                  {name} won’t be able to sign in to SnapApp, and their SnapApp space will be deleted after 30 days,
+                  {name} won’t be able to sign in to SnapApps, and their SnapApps space will be deleted after 30 days,
                   including their receipts. Download anything you want to keep first.
                 </p>
                 <div className="flex gap-2">
@@ -120,7 +120,7 @@ export function FamilyView(props: FamilyViewProps) {
             ) : (
               <div className="mt-2 flex flex-col gap-3">
                 <p className="text-[14px] text-[var(--color-ink-muted)]">
-                  {name} joined SnapApp on {day(teen.joinedAt)}. Switch to their space to see it.
+                  {name} joined SnapApps on {day(teen.joinedAt)}. Switch to their space to see it.
                 </p>
                 <div>
                   <Button variant="secondary" onClick={() => props.onAskEnd(teen.workspaceId)} disabled={busy}>

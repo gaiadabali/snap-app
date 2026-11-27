@@ -6,7 +6,7 @@ kind: policy
 
 ## Five-year retention
 
-SnapApp keeps the original photo of every receipt as a true copy for five years, the period the ATO asks records to be kept.
+SnapApps keeps the original photo of every receipt as a true copy for five years, the period the ATO asks records to be kept.
 
 ## Export
 

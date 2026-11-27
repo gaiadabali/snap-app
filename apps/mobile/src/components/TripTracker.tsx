@@ -211,7 +211,7 @@ export function TripTracker({ onSaved }: { onSaved: () => void }) {
               <View style={{ gap: space.sm }}>
                 <Label>Before we ask for your location</Label>
                 <Body>
-                  SnapApp uses your phone&rsquo;s location to measure the distance of a work trip
+                  SnapApps uses your phone&rsquo;s location to measure the distance of a work trip
                   while you record it, so your logbook does not depend on an odometer reading.
                 </Body>
                 <Body>

@@ -51,16 +51,16 @@ export function FamilyPanel(props: FamilyPanelProps) {
       {error ? <Notice tone="risk">{error}</Notice> : null}
       <Card>
         <View style={{ gap: space.sm }}>
-          <Body strong>Invite your teen to SnapApp</Body>
+          <Body strong>Invite your teen to SnapApps</Body>
           <Small>
-            Your teen can use SnapApp to keep track of their own spending. They sign in with their own YourTal account:
+            Your teen can use SnapApps to keep track of their own spending. They sign in with their own YourTal account:
             the teen account you approved.
           </Small>
-          <Small>• You’ll be able to see everything in their SnapApp space: receipts, amounts and notes.</Small>
+          <Small>• You’ll be able to see everything in their SnapApps space: receipts, amounts and notes.</Small>
           <Small>• We’ll tell them that you can see it.</Small>
           <Small>• They won’t earn YourTal points for receipts.</Small>
           <Small>• Their scans use this workspace’s credits.</Small>
-          <Small>• You can end their access at any time. Ending it deletes their SnapApp space after 30 days.</Small>
+          <Small>• You can end their access at any time. Ending it deletes their SnapApps space after 30 days.</Small>
           {created ? (
             <>
               <Small>
@@ -91,9 +91,9 @@ export function FamilyPanel(props: FamilyPanelProps) {
                 </Small>
               ) : confirming === teen.workspaceId ? (
                 <>
-                  <Body strong>End {name}’s access to SnapApp?</Body>
+                  <Body strong>End {name}’s access to SnapApps?</Body>
                   <Small>
-                    {name} won’t be able to sign in to SnapApp, and their SnapApp space will be deleted after 30 days,
+                    {name} won’t be able to sign in to SnapApps, and their SnapApps space will be deleted after 30 days,
                     including their receipts. Download anything you want to keep first.
                   </Small>
                   <Button label="End access" tone="risk" busy={busy} onPress={() => props.onConfirmEnd(teen.workspaceId)} />
@@ -101,7 +101,7 @@ export function FamilyPanel(props: FamilyPanelProps) {
                 </>
               ) : (
                 <>
-                  <Small>{name} joined SnapApp on {day(teen.joinedAt)}. Switch to their space to see it.</Small>
+                  <Small>{name} joined SnapApps on {day(teen.joinedAt)}. Switch to their space to see it.</Small>
                   <Button label="End access" tone="outline" disabled={busy} onPress={() => props.onAskEnd(teen.workspaceId)} />
                   {props.godNotice && props.onGodConsent ? (
                     <GuardianConsentBox

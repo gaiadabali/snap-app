@@ -363,7 +363,7 @@ app.use((request: { ip?: string; url?: string }, response: import('http').Server
    * it.
    */
   const spec = new DocumentBuilder()
-    .setTitle('SnapApp API')
+    .setTitle('SnapApps API')
     .setDescription(
       'Capture, extraction and review. Every tenant-scoped read runs inside a membership-verified transaction; see packages/db withTenantAs.',
     )

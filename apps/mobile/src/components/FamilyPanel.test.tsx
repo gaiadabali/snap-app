@@ -40,7 +40,7 @@ function text(over: Partial<Omit<FamilyPanelProps, 'status'>> & { status?: Parti
 describe('FamilyPanel: a parent', () => {
   it('explains the invite and offers Create invite link', () => {
     const t = text();
-    expect(t).toContain('Invite your teen to SnapApp');
+    expect(t).toContain('Invite your teen to SnapApps');
     expect(t).toContain('the teen account you approved');
     expect(t).toContain('We’ll tell them that you can see it.');
     expect(t).toContain('They won’t earn YourTal points for receipts.');
@@ -66,11 +66,11 @@ describe('FamilyPanel: a parent', () => {
   });
 
   it('lists a teen, asks before ending access, and shows the hold after', () => {
-    expect(text({ status: { teens: [TEEN] } })).toContain('Tia joined SnapApp on 1 November 2026.');
+    expect(text({ status: { teens: [TEEN] } })).toContain('Tia joined SnapApps on 1 November 2026.');
     const confirm = text({ status: { teens: [TEEN] }, confirming: 'ws-teen' });
-    expect(confirm).toContain('End Tia’s access to SnapApp?');
+    expect(confirm).toContain('End Tia’s access to SnapApps?');
     expect(confirm).toContain('will be deleted after 30 days, including their receipts. Download anything you want to keep first.');
-    expect(text()).toContain('Ending it deletes their SnapApp space after 30 days.');
+    expect(text()).toContain('Ending it deletes their SnapApps space after 30 days.');
     const ended = text({ status: { teens: [{ ...TEEN, accessEndedAt: '2026-11-03T01:00:00.000Z' }] } });
     expect(ended).toContain('You can no longer see Tia’s space. It’s kept for 30 days, then deleted. Invite Tia again before then to bring it back.');
     expect(ended).not.toContain('End access');

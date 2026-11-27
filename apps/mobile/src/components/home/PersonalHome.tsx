@@ -161,7 +161,7 @@ export default function PersonalHome() {
             <View style={{ minWidth: 0, flex: 1 }}>
               <Text style={[type.tiny, { color: p.inkMuted }]}>{greeting()}</Text>
               <Text style={[type.bodyStrong, { color: p.ink }]} numberOfLines={1}>
-                {session?.user.displayName ?? 'SnapApp'}
+                {session?.user.displayName ?? 'SnapApps'}
               </Text>
             </View>
           </Pressable>

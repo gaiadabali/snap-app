@@ -159,7 +159,7 @@ export function AuthMethods({
               >
                 {mode === 'register' ? 'Create account with YourTal' : 'Continue with YourTal'}
               </a>
-              <p className="auth-method-note">One account for SnapApp, YourTal and our other apps.</p>
+              <p className="auth-method-note">One account for SnapApps, YourTal and our other apps.</p>
               {mode === 'register' ? <div className="auth-divider">or</div> : null}
             </>
           ) : null}

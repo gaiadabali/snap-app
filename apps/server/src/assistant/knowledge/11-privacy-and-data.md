@@ -6,7 +6,7 @@ kind: policy
 
 ## Where your data is stored
 
-Your account, your records and the original images of your receipts are stored on a server operated for SnapApp by Hostinger in Jakarta, Indonesia.
+Your account, your records and the original images of your receipts are stored on a server operated for SnapApps by Hostinger in Jakarta, Indonesia.
 
 ## How receipts are read
 
@@ -18,7 +18,7 @@ Both are disclosures of personal information outside Australia, and APP 8 of the
 
 When the Android app reads a receipt on the device itself, it uses Google's ML Kit text recogniser. Your photo and the text read from it stay on your phone, and ML Kit does not send the image or its result to Google. Google does receive usage and performance metrics about the recogniser, which describe how it ran, not what your receipt says. A device without Google Play services simply uses the server reading described above.
 
-## What SnapApp does not do
+## What SnapApps does not do
 
 It does not sell your data, and it does not use your financial data to sell you advertising. Full card numbers are not stored: a card number on a receipt is reduced to the last four digits and the card brand. GPS location in photo metadata is stripped from the copy used for processing and is never indexed.
 
@@ -31,7 +31,7 @@ The privacy policy is marked as a draft and is due a legal review.
 ## Frequently asked
 
 ### Where is my data stored?
-On a server in Jakarta, Indonesia, operated for SnapApp by Hostinger.
+On a server in Jakarta, Indonesia, operated for SnapApps by Hostinger.
 
 ### Does my receipt leave Australia?
 Yes. Your data is stored in Jakarta, and a copy of a receipt image is sent to OpenRouter in the United States to be read. Both are APP 8 disclosures. Sydney is planned.

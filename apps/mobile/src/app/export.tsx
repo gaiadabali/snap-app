@@ -162,7 +162,7 @@ export default function ExportScreen() {
         <View style={{ flexDirection: 'row', gap: space.sm, alignItems: 'flex-start' }}>
           <Icon name="shield" size={16} color={p.inkMuted} />
           <Small style={{ flex: 1 }}>
-            The file is written to this phone and handed to your share sheet. SnapApp does not
+            The file is written to this phone and handed to your share sheet. SnapApps does not
             email it anywhere on your behalf.
           </Small>
         </View>

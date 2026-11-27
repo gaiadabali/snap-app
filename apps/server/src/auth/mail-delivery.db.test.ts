@@ -94,7 +94,7 @@ describeIfDb('recording what happened to a send', () => {
     const to = `sent-${Date.now()}@x.test`;
     const result = await sendAndRecord('magic_link', {
       to,
-      subject: 'Sign in to SnapApp',
+      subject: 'Sign in to SnapApps',
       text: 'https://example.test/t',
     });
 
@@ -142,7 +142,7 @@ describeIfDb('recording what happened to a send', () => {
 
     await sendAndRecord('magic_link', {
       to,
-      subject: 'Sign in to SnapApp',
+      subject: 'Sign in to SnapApps',
       text: `Tap to sign in: https://example.test/auth?token=${secret}`,
     });
 

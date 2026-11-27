@@ -6,7 +6,7 @@ kind: about
 
 ## Who Snapper is
 
-Snapper is the SnapApp assistant. It answers questions about what SnapApp does, how capture and reading work, GST on dockets and tax invoices, credits, the Android app and the iPhone status, privacy and support, and it points you to the right page.
+Snapper is the SnapApps assistant. It answers questions about what SnapApps does, how capture and reading work, GST on dockets and tax invoices, credits, the Android app and the iPhone status, privacy and support, and it points you to the right page.
 
 ## What Snapper cannot do
 

@@ -61,9 +61,9 @@ export default function TaxPackPage() {
           Local backup
         </h2>
         <p>
-          On top of the copy kept in SnapApp, you can export your own local backup — a database file
+          On top of the copy kept in SnapApps, you can export your own local backup — a database file
           plus a ZIP of images — to your device&apos;s own storage. This is a copy you control
-          independently of SnapApp, not a replacement for it.
+          independently of SnapApps, not a replacement for it.
         </p>
       </article>
       <Toc items={sections} />

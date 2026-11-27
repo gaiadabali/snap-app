@@ -241,7 +241,7 @@ describeIfDb('YourTal security events (S2)', () => {
     expect(await userExists(M)).toBe(true);
     // The bookkeeper left behind is told, once.
     expect(mail.filter((m) => m.to === `m-${run}@s2.test`)).toEqual([
-      expect.objectContaining({ subject: 'A SnapApp workspace you belonged to has been deleted' }),
+      expect.objectContaining({ subject: 'A SnapApps workspace you belonged to has been deleted' }),
     ]);
     // ...and once sent, the job no longer holds the address.
     expect((await admin.query(`select count(*)::int as n from jobs where payload::text like $1`, [`%m-${run}@%`])).rows[0].n).toBe(0);

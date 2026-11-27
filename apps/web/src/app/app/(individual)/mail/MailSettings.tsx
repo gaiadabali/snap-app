@@ -87,7 +87,7 @@ export function MailSettingsView() {
         </div>
       ) : null}
 
-      <Section id="settings-address" title="Your address" lede="Generated for you when you switched mail on. It is the same address in SnapApp, YourTal and Free Tax Returns.">
+      <Section id="settings-address" title="Your address" lede="Generated for you when you switched mail on. It is the same address in SnapApps, YourTal and Free Tax Returns.">
         <div className="flex items-center gap-1">
           <span className="min-w-0 break-all font-mono text-[15px] text-[var(--color-ink)]">{account.address}</span>
           <CopyButton text={account.address} label="Copy your address" />
@@ -114,7 +114,7 @@ export function MailSettingsView() {
       <Section id="settings-statements" title="Statements">
         <SwitchRow
           label="Import statements from this inbox"
-          hint="When a bank or card statement (PDF or CSV) arrives here, SnapApp adds it to the workspace below. Only mail that passes the sender’s own authenticity checks is used, and it costs the same as an upload: CSV is free, a PDF uses one credit."
+          hint="When a bank or card statement (PDF or CSV) arrives here, SnapApps adds it to the workspace below. Only mail that passes the sender’s own authenticity checks is used, and it costs the same as an upload: CSV is free, a PDF uses one credit."
           checked={settings.statements}
           pending={pending === 'statements'}
           disabled={workspaces.length === 0}
@@ -151,7 +151,7 @@ export function MailSettingsView() {
       <Section id="settings-alerts" title="Alerts">
         <SwitchRow
           label="Phone alerts for new mail"
-          hint="SnapApp on Android tells you when new mail arrives. The alert says how many, never who from or what about."
+          hint="SnapApps on Android tells you when new mail arrives. The alert says how many, never who from or what about."
           checked={settings.alerts}
           pending={pending === 'alerts'}
           onChange={(next) => void save({ alerts: next }, 'alerts')}

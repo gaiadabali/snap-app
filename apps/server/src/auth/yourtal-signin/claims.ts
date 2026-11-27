@@ -42,16 +42,16 @@ export const REFUSALS = {
   yourtal_failed: [HttpStatus.UNAUTHORIZED, 'We couldn’t confirm your sign-in with YourTal. Please try again.'],
   region_not_supported: [
     HttpStatus.FORBIDDEN,
-    'SnapApp is for YourTal accounts in Australia and Indonesia, so you can’t use this account here.',
+    'SnapApps is for YourTal accounts in Australia and Indonesia, so you can’t use this account here.',
   ],
   yourtal_email_mismatch: [
     HttpStatus.CONFLICT,
-    'Your YourTal account uses a different email. Use the YourTal account with your SnapApp email, or change your SnapApp email first.',
+    'Your YourTal account uses a different email. Use the YourTal account with your SnapApps email, or change your SnapApps email first.',
   ],
   teen_invite_required: [
     HttpStatus.FORBIDDEN,
-    'You need an invite from your parent. To use SnapApp with a teen account, the parent or guardian ' +
-      'who approved your YourTal account needs to invite you from their SnapApp account.',
+    'You need an invite from your parent. To use SnapApps with a teen account, the parent or guardian ' +
+      'who approved your YourTal account needs to invite you from their SnapApps account.',
   ],
   teen_invite_expired: [
     HttpStatus.FORBIDDEN,
@@ -64,13 +64,13 @@ export const REFUSALS = {
   ],
   teen_access_ended: [
     HttpStatus.FORBIDDEN,
-    'Your access to SnapApp ended, so your SnapApp space is being deleted. You can use SnapApp again once ' +
+    'Your access to SnapApps ended, so your SnapApps space is being deleted. You can use SnapApps again once ' +
       'it has been deleted, within 30 days of your access ending.',
   ],
   teen_account_in_use: [
     HttpStatus.CONFLICT,
-    'This teen account is already used with other SnapApp workspaces, so it can’t join a parent’s invite. ' +
-      'Contact SnapApp support and we’ll sort it out.',
+    'This teen account is already used with other SnapApps workspaces, so it can’t join a parent’s invite. ' +
+      'Contact SnapApps support and we’ll sort it out.',
   ],
   email_unverified: [
     HttpStatus.FORBIDDEN,
@@ -78,19 +78,19 @@ export const REFUSALS = {
   ],
   staff_strong_auth_required: [
     HttpStatus.FORBIDDEN,
-    'SnapApp staff must sign in to YourTal with a passkey. Add a passkey to your YourTal account, ' +
+    'SnapApps staff must sign in to YourTal with a passkey. Add a passkey to your YourTal account, ' +
       'then sign in again using it.',
   ],
   staff_reauth_required: [
     HttpStatus.FORBIDDEN,
-    'For your security, SnapApp staff must have signed in to YourTal in the last 12 hours. ' +
-      'Sign out of YourTal, sign in there again, then come back to SnapApp.',
+    'For your security, SnapApps staff must have signed in to YourTal in the last 12 hours. ' +
+      'Sign out of YourTal, sign in there again, then come back to SnapApps.',
   ],
   account_review: [
     HttpStatus.CONFLICT,
-    'We can’t connect this YourTal account to SnapApp automatically, because its email address ' +
-      'belongs to a SnapApp account that is already set up differently. We’ve noted it for our ' +
-      'support team. Contact SnapApp support and we’ll sort it out.',
+    'We can’t connect this YourTal account to SnapApps automatically, because its email address ' +
+      'belongs to a SnapApps account that is already set up differently. We’ve noted it for our ' +
+      'support team. Contact SnapApps support and we’ll sort it out.',
   ],
   try_again: [HttpStatus.CONFLICT, 'Something changed while you were signing in. Please try again.'],
   rate_limited: [HttpStatus.TOO_MANY_REQUESTS, 'Too many attempts. Try again in a few minutes.'],

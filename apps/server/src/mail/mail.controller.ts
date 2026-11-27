@@ -319,7 +319,7 @@ export class MailController {
   @ApiOperation({
     summary: 'Statements imported from Spambank: the last 50 mailed files and what became of each',
     description:
-      'Read from SnapApp alone (no call to YourTal). The workspace is named, and the statement document linked, only where the person is still a member. See `MailStatementImportReason` for the reasons.',
+      'Read from SnapApps alone (no call to YourTal). The workspace is named, and the statement document linked, only where the person is still a member. See `MailStatementImportReason` for the reasons.',
   })
   async imports(@CurrentUser() user: AuthUser, @CurrentSession() _session: CurrentSessionInfo): Promise<MailStatementImportList> {
     if (!mailAvailable()) throw refuse(HttpStatus.NOT_FOUND, 'mail_unavailable', 'Mail is not available.');

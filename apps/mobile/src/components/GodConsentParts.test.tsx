@@ -16,7 +16,7 @@ import {
 // The two sentences exactly as the founder approved them (god/TASKS.md 9.1.d). The phone shows the
 // server's copy of them; this pins that the rendering keeps every word.
 const ADULT =
-  'I have read and accept the GOD Group Privacy Notice. I understand that my activity in YourTal, SnapApp and Free Tax Returns is combined into one profile, and that businesses receive reports about groups of people, never about me.';
+  'I have read and accept the GOD Group Privacy Notice. I understand that my activity in YourTal, SnapApps and Free Tax Returns is combined into one profile, and that businesses receive reports about groups of people, never about me.';
 const GUARDIAN =
   "I am this teen's parent or guardian. I have read the GOD Group Privacy Notice for teens and agree that my teen's activity may be combined and used, in groups of 20 or more, to give businesses insight about young people. No business receives anything about my teen individually.";
 
@@ -91,7 +91,7 @@ describe('GodConsentPromptView (an existing account, next sign-in)', () => {
     expect(t).toContain(ADULT);
     expect(t).toContain('Accept');
     expect(t).toContain('Not now');
-    expect(t).toContain('You can keep using SnapApp either way.');
+    expect(t).toContain('You can keep using SnapApps either way.');
     expect(t).toContain('We only ask again if the notice changes.');
   });
 

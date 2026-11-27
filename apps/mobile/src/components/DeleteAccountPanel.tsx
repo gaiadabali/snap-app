@@ -44,7 +44,7 @@ export function DeleteAccountPanel(props: DeleteAccountPanelProps) {
               <Body strong>What deleting does</Body>
             </View>
             <Small>
-              This can’t be undone. Your access to SnapApp ends straight away and we sign you out on every device. Your
+              This can’t be undone. Your access to SnapApps ends straight away and we sign you out on every device. Your
               space, including your receipts, is deleted within 30 days, and your parent is told. Export anything you
               want to keep first.
             </Small>
@@ -68,7 +68,7 @@ export function DeleteAccountPanel(props: DeleteAccountPanelProps) {
                 with its receipts and their original images, invoices, ledgers, statements, goals and credits. That
                 includes receipts you may still need to keep for the ATO’s five years, so export what you need first;
               </Small>
-              <Small>• your YourTal points history in SnapApp.</Small>
+              <Small>• your YourTal points history in SnapApps.</Small>
             </View>
           </Card>
 
@@ -103,7 +103,7 @@ export function DeleteAccountPanel(props: DeleteAccountPanelProps) {
               <Body strong>Your teen</Body>
             </View>
             <Small>
-              Deleting your account ends your teen’s access to SnapApp first. Their space, including their receipts, is
+              Deleting your account ends your teen’s access to SnapApps first. Their space, including their receipts, is
               deleted after 30 days, and we tell them.
             </Small>
           </View>
@@ -117,8 +117,8 @@ export function DeleteAccountPanel(props: DeleteAccountPanelProps) {
             <Body strong>Your YourTal account</Body>
           </View>
             <Small>
-              This deletes your SnapApp account only. Your YourTal account isn’t deleted, and YourTal keeps its own
-              records. To remove SnapApp from it, use Me, then Linked apps, in YourTal. If you sign in to SnapApp with
+              This deletes your SnapApps account only. Your YourTal account isn’t deleted, and YourTal keeps its own
+              records. To remove SnapApps from it, use Me, then Linked apps, in YourTal. If you sign in to SnapApps with
               YourTal again, you’ll start with a new, empty account.
             </Small>
           </View>

@@ -264,7 +264,7 @@ describeIfDb('sign-in safety — real HTTP, real database', () => {
       expect(Object.keys(a.headers).sort()).toEqual(Object.keys(b.headers).sort());
 
       expect(sent.map((m) => m.to)).toEqual([known]);
-      expect(sent[0]!.subject).toBe('Reset your SnapApp password');
+      expect(sent[0]!.subject).toBe('Reset your SnapApps password');
     });
 
     it('does not wait for the mail: a hung SMTP server cannot make a real account answer slower', async () => {
@@ -302,7 +302,7 @@ describeIfDb('sign-in safety — real HTTP, real database', () => {
       const body = res.json();
       expect(body.user.emailVerified).toBe(true);
       await settleMail();
-      expect(sent.some((m) => m.to === email && m.subject === 'Your SnapApp password was changed')).toBe(true);
+      expect(sent.some((m) => m.to === email && m.subject === 'Your SnapApps password was changed')).toBe(true);
 
       // Every earlier session is gone; the fresh one works.
       expect((await session(victim.token)).statusCode).toBe(401);
@@ -472,7 +472,7 @@ describeIfDb('sign-in safety — real HTTP, real database', () => {
       );
       expect(ok.statusCode).toBe(200);
       await settleMail();
-      expect(sent.some((m) => m.to === email && m.subject === 'Your SnapApp password was changed')).toBe(true);
+      expect(sent.some((m) => m.to === email && m.subject === 'Your SnapApps password was changed')).toBe(true);
 
       expect((await session(here.token)).statusCode).toBe(200);
       expect((await session(there.token)).statusCode).toBe(401);

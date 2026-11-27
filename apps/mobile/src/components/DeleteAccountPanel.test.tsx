@@ -44,7 +44,7 @@ describe('DeleteAccountPanel', () => {
     expect(teen).not.toContain('What stays');
     expect(teen).not.toContain('start with a new, empty account');
     const parent = text({ teenRole: 'parent' });
-    expect(parent).toContain('ends your teen’s access to SnapApp first');
+    expect(parent).toContain('ends your teen’s access to SnapApps first');
     expect(parent).toContain('deleted after 30 days');
   });
 

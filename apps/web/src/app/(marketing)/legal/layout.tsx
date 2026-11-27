@@ -4,7 +4,7 @@ import { LegalNav } from './_components/LegalNav';
 import './legal.css';
 
 export const metadata: Metadata = {
-  title: { default: 'Legal', template: '%s · SnapApp' },
+  title: { default: 'Legal', template: '%s · SnapApps' },
 };
 
 /**
@@ -22,7 +22,7 @@ export default function LegalLayout({ children }: { children: React.ReactNode })
       <LegalNav />
 
       <div role="note" className="legal-draft">
-        <strong>Draft — not yet reviewed.</strong> This page is drafted from SnapApp&apos;s own
+        <strong>Draft — not yet reviewed.</strong> This page is drafted from SnapApps&apos; own
         internal engineering and product records. It has not been reviewed or approved by a
         qualified Australian legal practitioner and must not be relied on, published, or presented
         to a customer as final until that review is complete.

@@ -273,14 +273,14 @@ export async function startStripeSimulator(
       session.amountTotal === null
         ? ''
         : `${(session.currency ?? 'aud').toUpperCase()} ${(session.amountTotal / 100).toFixed(2)}`;
-    const head = `<h1>${esc(session.productName ?? 'SnapApp')}</h1><p class="sub">${esc(amount)}</p>`;
+    const head = `<h1>${esc(session.productName ?? 'SnapApps')}</h1><p class="sub">${esc(amount)}</p>`;
     let body: string;
     if (session.refunded) {
       body = `${head}<p>Refunded. The scans this bought have been taken back.</p>`;
     } else if (session.paid) {
       body =
         `${head}<p>Paid.</p>` +
-        (session.successUrl ? `<p><a href="${esc(session.successUrl)}">Back to SnapApp</a></p>` : '') +
+        (session.successUrl ? `<p><a href="${esc(session.successUrl)}">Back to SnapApps</a></p>` : '') +
         `<form method="post"><input type="hidden" name="op" value="refund">` +
         `<button class="secondary" type="submit">Refund this payment</button></form>`;
     } else {

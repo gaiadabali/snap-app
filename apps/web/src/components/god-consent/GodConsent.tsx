@@ -45,7 +45,7 @@ export function GodConsentPromptView({
         </span>
       </label>
       <p className="mt-2 text-[var(--color-ink-muted)]">
-        You can keep using SnapApp either way. If you choose Not now, your activity stays out of it.
+        You can keep using SnapApps either way. If you choose Not now, your activity stays out of it.
       </p>
       {error ? (
         <p role="alert" className="mt-2 font-semibold">
@@ -124,7 +124,7 @@ export function GodWithdrawView({
       <h2 className="text-[16px] font-bold text-[var(--color-ink)]">Your data and GOD</h2>
       {done ? (
         <p role="status" className="mt-1 text-[var(--color-ink)]">
-          Done. We have recorded your request and will stop combining your data with GOD. Your SnapApp account and its data
+          Done. We have recorded your request and will stop combining your data with GOD. Your SnapApps account and its data
           are unchanged.
         </p>
       ) : (

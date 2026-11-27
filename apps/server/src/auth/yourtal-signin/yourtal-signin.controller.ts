@@ -219,7 +219,7 @@ export class YourTalSignInController {
   @Post('finish')
   @HttpCode(200)
   @ApiOperation({
-    summary: 'Finish Sign in with YourTal and open a SnapApp session',
+    summary: 'Finish Sign in with YourTal and open a SnapApps session',
     description:
       'Takes the flow (once), checks state and iss, redeems the code, verifies the ID token, re-checks ' +
       'region and age band, then finds, links or creates the account and answers like every sign-in. ' +
