@@ -7,7 +7,7 @@
  * model says — add it here when the page ships.
  */
 
-export const SITE_URL = 'https://snapapp.gaiada.com';
+export const SITE_URL = 'https://snapapps.gaiada.com';
 
 export const SITE_PAGES: Readonly<Record<string, string>> = Object.freeze({
   '/': 'SnapApps',
@@ -33,8 +33,8 @@ export const SITE_PAGES: Readonly<Record<string, string>> = Object.freeze({
 export const ALLOWED_PATHS: ReadonlySet<string> = new Set(Object.keys(SITE_PAGES));
 
 /** Absolute URLs on these hosts are this site (scheme and www optional). */
-// The pre-2026-11-24 host stays recognised: old links in saved answers still mean this site.
-export const SITE_HOSTS = /^(?:https?:\/\/)?(?:www\.)?(?:snapapp\.gaiada\.com|snap-apps\.gaiada\.com|snapapps\.com\.au)(?=[/?#]|$)/i;
+// The older hosts stay recognised (snapapp.gaiada.com until 2026-11-27, snap-apps.gaiada.com before 2026-11-24): old links in saved answers still mean this site.
+export const SITE_HOSTS = /^(?:https?:\/\/)?(?:www\.)?(?:snapapps\.gaiada\.com|snapapp\.gaiada\.com|snap-apps\.gaiada\.com|snapapps\.com\.au)(?=[/?#]|$)/i;
 
 /** Where each call to action points. */
 export const CTA_PATHS = Object.freeze({ app: '/download', start: '/register', human: '/support' });

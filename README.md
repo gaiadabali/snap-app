@@ -10,7 +10,7 @@ right ATO label already attached.
 Not a receipt scanner. The distinction is the product: a scanner gives you a
 picture and a total, and leaves the tax treatment to you.
 
-**Live (staging):** <https://snapapp.gaiada.com> · API
+**Live (staging):** <https://snapapps.gaiada.com> · API
 `snap-apps-api.gaiada.com` · the phone app in a browser
 `app.snapapps.gaiada.com`
 

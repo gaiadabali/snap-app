@@ -149,7 +149,7 @@ export function createLlm({
                   Authorization: `Bearer ${apiKey}`,
                   'Content-Type': 'application/json',
                   Accept: 'text/event-stream',
-                  'HTTP-Referer': 'https://snapapp.gaiada.com',
+                  'HTTP-Referer': 'https://snapapps.gaiada.com',
                   'X-Title': 'SnapApp',
                 },
                 body: JSON.stringify({

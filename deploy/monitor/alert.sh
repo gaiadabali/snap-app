@@ -322,7 +322,7 @@ SQL
   fi
 
   # 2c. The public sites answer: GET each URL, FAIL on anything but 2xx/3xx.
-  # Covers the apps that uptime.sh (snapapp.gaiada.com only) does not.
+  # Covers the apps that uptime.sh (snapapps.gaiada.com only) does not.
   # UPTIME_CHECK=off skips.
   if [ "${UPTIME_CHECK:-on}" != off ]; then
     for url in https://freetaxreturns.com.au/api/health https://snap-apps-api.gaiada.com/v1/ready https://yourtal.gaiada.com/; do
