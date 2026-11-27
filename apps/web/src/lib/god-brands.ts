@@ -42,7 +42,7 @@ export const GOD_BRANDS: GodBrandList = {
       name: 'YourTal',
       purpose: 'Watch, earn and spend locally',
       url: 'https://yourtal.gaiada.com',
-      appUrl: 'https://yourtal.gaiada.com',
+      appUrl: 'https://member.yourtal.gaiada.com',
       adultsOnly: false,
     },
     {
@@ -65,7 +65,7 @@ export const GOD_BRANDS: GodBrandList = {
       key: 'spambank',
       name: 'Spambank',
       purpose: 'A spam-free address for sign-ups',
-      url: 'https://god.gaiada.com/brands/spambank/',
+      url: 'https://spambank.gaiada.com',
       appUrl: null,
       inApp: 'mail',
       adultsOnly: true,

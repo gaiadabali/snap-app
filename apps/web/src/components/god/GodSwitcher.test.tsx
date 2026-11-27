@@ -25,7 +25,7 @@ describe('GodSwitcherPanel', () => {
     const m = panel(true);
     expect(m).toContain('role="dialog"');
     expect(m).toContain('aria-label="GOD apps"');
-    expect(m).toContain('href="https://yourtal.gaiada.com"');
+    expect(m).toContain('href="https://member.yourtal.gaiada.com"');
     expect(m).toContain('href="https://freetaxreturns.com.au"');
     expect(m).toContain('Watch, earn and spend locally');
     expect(m).toContain('Your free deduction worksheet');
