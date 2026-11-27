@@ -37,7 +37,6 @@ const words = (markup: string) =>
   markup
     .replace(/<[^>]+>/g, '')
     .replace(/&#x27;/g, "'")
-    .replace(/&amp;/g, '&')
     .replace(/\s+/g, ' ');
 
 describe('NoticeText', () => {

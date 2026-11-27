@@ -26,8 +26,7 @@ const NOTICE: GodConsentState['notice'] = {
 const words = (markup: string) =>
   markup
     .replace(/<[^>]+>/g, '')
-    .replace(/&#x27;/g, "'")
-    .replace(/&amp;/g, '&');
+    .replace(/&#x27;/g, "'");
 
 describe('NoticeSentence', () => {
   it('keeps the sentence verbatim and links only the notice name', () => {
