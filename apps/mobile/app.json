@@ -21,7 +21,8 @@
     "android": {
       "package": "au.com.snapapps.app",
       "permissions": [
-        "android.permission.CAMERA"
+        "android.permission.CAMERA",
+        "android.permission.POST_NOTIFICATIONS"
       ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
@@ -56,7 +57,14 @@
           "imageWidth": 180
         }
       ],
-      "expo-sharing"
+      "expo-sharing",
+      [
+        "expo-notifications",
+        {
+          "color": "#1878D8",
+          "defaultChannel": "mail"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

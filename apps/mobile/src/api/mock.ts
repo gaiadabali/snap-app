@@ -9,6 +9,8 @@ import type {
   UpdateDocumentRequest,
 } from '@snap/api-contract';
 
+import { MEMORY_ADDRESS } from '@snap/mail-engine/testing';
+
 import { DEMO } from '@/fixtures/demo';
 import { gstFromInclusive } from '@/lib/money';
 
@@ -61,6 +63,13 @@ import type {
   FamilyStatus,
   TeenInviteCreated,
   YourtalVoucherRedemption,
+  MailAppPassword,
+  MailAppPasswordCreated,
+  MailEnableResult,
+  MailSessionToken,
+  MailSettingsView,
+  MailStatus,
+  UpdateMailSettingsRequest,
   RedeemYourtalVoucherResult,
   Recurring,
   SalesSummary,
@@ -345,6 +354,14 @@ const seedYourtalLink = (): YourtalLinkStatus => ({
   identityCheck: { required: false, missing: [] },
 });
 let yourtalLink: YourtalLinkStatus = seedYourtalLink();
+/**
+ * Spambank mail in the demo: switched on, so the Mail screens can be looked at on fixtures.
+ * The screens read the mail itself from the engine's in-memory client (never this class),
+ * so only the status, the settings and the app passwords live here. Not persisted.
+ */
+const seedMailSettings = (): MailSettingsView => ({ statements: false, workspaceId: null, alerts: true });
+let mailSettings: MailSettingsView = seedMailSettings();
+let mailAppPasswords: MailAppPassword[] = [];
 /** Voucher history for the demo workspace; not persisted, like the link. */
 let voucherRedemptions: YourtalVoucherRedemption[] = [];
 
@@ -484,6 +501,8 @@ export async function resetDemoData(): Promise<void> {
   creditBalance = 7;
   creditPurchases = seedCreditPurchases();
   yourtalLink = seedYourtalLink();
+  mailSettings = seedMailSettings();
+  mailAppPasswords = [];
   voucherRedemptions = [];
   WHO = 'usr_kate';
   signedIn = false;
@@ -2159,6 +2178,79 @@ export class MockApi implements SnapApi {
     await settle(300);
     yourtalLink = seedYourtalLink();
     return yourtalLink;
+  }
+
+  /* ── Spambank mail (demo) ───────────────────────────────────────────── */
+
+  async getMailStatus(): Promise<MailStatus> {
+    await settle(150);
+    return {
+      available: true,
+      linked: true,
+      mailbox: {
+        state: 'on',
+        address: MEMORY_ADDRESS,
+        quota: { limitBytes: 2_147_483_648, usedBytes: 84_000_000 },
+        createdAt: '2026-11-20T02:00:00.000Z',
+      },
+      settings: { ...mailSettings },
+    };
+  }
+
+  async enableMail(): Promise<MailEnableResult> {
+    await settle(300);
+    return { state: 'on', address: MEMORY_ADDRESS, created: false };
+  }
+
+  async createMailSession(): Promise<MailSessionToken> {
+    // The demo reads mail from the in-memory client and never asks for a token.
+    throw new ApiError(404, 'Mail is not available in the demo.', 'mail_unavailable');
+  }
+
+  async updateMailSettings(patch: UpdateMailSettingsRequest): Promise<MailSettingsView> {
+    await settle(150);
+    mailSettings = {
+      statements: patch.statements ?? mailSettings.statements,
+      workspaceId: patch.workspaceId === undefined ? mailSettings.workspaceId : patch.workspaceId,
+      alerts: patch.alerts ?? mailSettings.alerts,
+    };
+    return { ...mailSettings };
+  }
+
+  async listMailAppPasswords(): Promise<MailAppPassword[]> {
+    await settle(150);
+    return mailAppPasswords.map((p) => ({ ...p }));
+  }
+
+  async createMailAppPassword(name: string): Promise<MailAppPasswordCreated> {
+    await settle(250);
+    if (mailAppPasswords.length >= 5) {
+      throw new ApiError(409, 'You can have up to 5 app passwords. Revoke one to make another.', 'limit_reached');
+    }
+    const made: MailAppPasswordCreated = {
+      id: `ap_${mailAppPasswords.length + 1}`,
+      name,
+      createdAt: new Date().toISOString(),
+      secret: 'demo-0000-demo-0000',
+      username: MEMORY_ADDRESS,
+      imap: { host: 'mail.yourtal.gaiada.com', port: 993, security: 'ssl' },
+      smtp: { host: 'mail.yourtal.gaiada.com', port: 465, security: 'ssl' },
+    };
+    mailAppPasswords = [...mailAppPasswords, { id: made.id, name: made.name, createdAt: made.createdAt }];
+    return made;
+  }
+
+  async revokeMailAppPassword(id: string): Promise<void> {
+    await settle(150);
+    mailAppPasswords = mailAppPasswords.filter((p) => p.id !== id);
+  }
+
+  async registerPushToken(_token: string): Promise<void> {
+    await settle(50);
+  }
+
+  async unregisterPushToken(_token: string): Promise<void> {
+    await settle(50);
   }
 
   /* ── Wallet, usage & preferences (2026-09-19 redesign) ──────────

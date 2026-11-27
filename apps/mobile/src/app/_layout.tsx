@@ -9,6 +9,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AuthReturnPage } from '@/components/AuthReturnPage';
 import { NavFrame } from '@/components/BottomNav';
+import { MailAlertsHost } from '@/components/mail/MailAlertsHost';
 import { UpdateGate } from '@/components/UpdateGate';
 import { ThemeProvider, usePalette, useTheme } from '@/theme';
 import { face, useAppFonts } from '@/theme/text';
@@ -157,8 +158,13 @@ function RootChrome() {
           <Stack.Screen name="export" options={{ headerShown: false }} />
           <Stack.Screen name="goal/[id]" options={{ headerShown: false }} />
           <Stack.Screen name="delete-account" options={{ headerShown: false }} />
+          {/* Spambank mail. Its own layout gates it and draws every screen's header. */}
+          <Stack.Screen name="mail" options={{ headerShown: false }} />
         </Stack>
         </NavFrame>
+        {/* New-mail notifications: a tap opens Mail. After the navigator, so it can be navigated.
+            Nothing is asked of the person here. */}
+        <MailAlertsHost />
           </View>
         </WorkspaceProvider>
       </SessionGate>

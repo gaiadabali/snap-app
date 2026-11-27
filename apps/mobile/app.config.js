@@ -12,10 +12,17 @@
  * Both `deploy/build-apk.sh` (expo prebuild) and EAS read this file, so there
  * is one place the number comes from. The rules and refusals are in
  * `build-version.cjs`, which has the tests.
+ *
+ * It also decides whether the build carries Firebase. New-mail alerts arrive by Firebase
+ * Cloud Messaging and need the project's `google-services.json`, which is never committed:
+ * a build supplies it through `GOOGLE_SERVICES_FILE` (see `google-services.cjs`). Without it
+ * the build still succeeds and the app runs, with notifications off.
  */
 const { execFileSync } = require('node:child_process');
+const { existsSync } = require('node:fs');
 
 const { computeBuild } = require('./build-version.cjs');
+const { googleServicesFile } = require('./google-services.cjs');
 
 function git(args) {
   try {
@@ -42,12 +49,17 @@ module.exports = ({ config }) => {
     }),
   });
 
+  const googleServices = googleServicesFile(process.env.GOOGLE_SERVICES_FILE, __dirname, existsSync);
+
   return {
     ...config,
     version,
     android: {
       ...config.android,
       versionCode,
+      // Firebase, for new-mail alerts. Absent: no `googleServicesFile` key at all, so Expo
+      // adds no Google services plugin and the build is exactly what it was before.
+      ...(googleServices ? { googleServicesFile: googleServices } : {}),
       // Google Play Billing (8.3.b) is only for the Play build; expo-iap's
       // manifest would otherwise give the website APK the billing permission.
       blockedPermissions:

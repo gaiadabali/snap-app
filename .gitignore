@@ -75,3 +75,8 @@ apps/server/bench/corpus/generated/*.png
 # manifest records `source_row` per document, so any image can be re-fetched
 # and re-redacted from the dataset itself.
 apps/server/bench/corpus/tierp/*.png
+
+# Firebase project config for the Android app (new-mail alerts). It names the project's
+# API key, so it is supplied at build time through GOOGLE_SERVICES_FILE and never
+# committed (apps/mobile/google-services.cjs).
+google-services.json

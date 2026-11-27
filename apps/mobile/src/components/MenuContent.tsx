@@ -4,8 +4,10 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Icon, type IconName } from '@/components/Icon';
 import { Body, Chip, SectionHeader, Small } from '@/components/ui';
 import { Raised } from '@/components/rich';
+import { useMailStatus } from '@/components/mail/useMailStatus';
 import { useYourtalStatus } from '@/components/useYourtalStatus';
 import { BUSINESS_FEATURES_ENABLED } from '@/config';
+import { mailEntryListed } from '@/lib/mail-gate';
 import { radius, space, usePalette } from '@/theme';
 import { WorkspaceSwitch, useWorkspace } from '@/workspace';
 
@@ -153,17 +155,39 @@ function withoutUnavailable(groups: Group[], yourtalAvailable: boolean): Group[]
     .filter((g) => g.entries.length > 0);
 }
 
+/**
+ * Spambank mail. Listed first in the account group, only while the server offers it to this
+ * person (`mailEntryListed`: switched on here, not a teen's space, not refused).
+ */
+const MAIL_ENTRY: Entry = {
+  label: 'Mail',
+  hint: 'Your Spambank inbox',
+  icon: 'mail',
+  hue: '#1878D8',
+  href: '/mail',
+};
+const MAIL_GROUP_TITLES = ['Your account', 'Workspace'];
+
+function withMail(groups: Group[], listed: boolean): Group[] {
+  if (!listed) return groups;
+  return groups.map((g) => (MAIL_GROUP_TITLES.includes(g.title) ? { ...g, entries: [MAIL_ENTRY, ...g.entries] } : g));
+}
+
 export function MenuContent({ onNavigate }: { onNavigate?: () => void }) {
   const p = usePalette();
   const router = useRouter();
-  const { isBusiness } = useWorkspace();
+  const { isBusiness, active } = useWorkspace();
   // The one place this flag is checked to pick a menu: everywhere else reads
   // `isBusiness`, which the workspace provider already keeps honest — a
   // personal-only build never has a business workspace to be active.
   const yourtal = useYourtalStatus();
-  const groups = withoutUnavailable(
-    BUSINESS_FEATURES_ENABLED && isBusiness ? BUSINESS_GROUPS : PERSONAL_GROUPS,
-    yourtal?.available === true,
+  const { status: mailStatus } = useMailStatus();
+  const groups = withMail(
+    withoutUnavailable(
+      BUSINESS_FEATURES_ENABLED && isBusiness ? BUSINESS_GROUPS : PERSONAL_GROUPS,
+      yourtal?.available === true,
+    ),
+    mailEntryListed(mailStatus, active.teenSpace),
   );
 
   return (
