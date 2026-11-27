@@ -12,7 +12,7 @@ import { onboardingBudgets } from '@/lib/onboarding-budget';
 import { defaultCountry } from '@/lib/default-country';
 import { peekPendingCountry, peekPendingCurrency, takePendingCountry } from '@/lib/pending-country';
 import { CountryPicker } from '@/components/CountryPicker';
-import { GodNoticeBox } from '@/components/GodConsent';
+import { GodNoticeBox } from '@/components/GodConsentParts';
 import { Icon, type IconName } from '@/components/Icon';
 import { GradientHero } from '@/components/rich';
 import {

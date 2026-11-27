@@ -30,6 +30,9 @@ describeIfDb('GOD group consent (migration 0062)', () => {
   const tenants: string[] = [];
 
   async function user(): Promise<string> {
+    // Fixtures are made as the owner: an earlier test may have left an application role set.
+    await c.query('RESET ROLE');
+    await c.query(`SELECT set_config('app.user_id','',false)`);
     const id = randomUUID();
     users.push(id);
     await c.query(`INSERT INTO users (id, subject, email, display_name) VALUES ($1, $2, $3, 'x')`, [

@@ -11,7 +11,7 @@ import {
   GUARDIAN_LINK_TEXT,
   ADULT_LINK_TEXT,
   NoticeText,
-} from './GodConsent';
+} from './GodConsentParts';
 
 // The two sentences exactly as the founder approved them (god/TASKS.md 9.1.d). The phone shows the
 // server's copy of them; this pins that the rendering keeps every word.

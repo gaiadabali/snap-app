@@ -1,7 +1,7 @@
 import type { FamilyStatus, GodConsentState, TeenInviteCreated } from '@snap/api-contract';
 import { View } from 'react-native';
 
-import { GuardianConsentBox } from '@/components/GodConsent';
+import { GuardianConsentBox } from '@/components/GodConsentParts';
 import { Body, Button, Card, Notice, Small } from '@/components/ui';
 import { space } from '@/theme';
 
