@@ -111,3 +111,18 @@ describe('the password-protected fixture', () => {
     expect(isPasswordError(error)).toBe(true);
   });
 });
+
+describe('the statement PDF fixture', () => {
+  it('reads as a 3-page statement to the existing classifier, and renders 3 pages', async () => {
+    const { extractPdfText, demuxPdf } = await import('../../extraction/pdf.js');
+    const { classifyExtractedText } = await import('../../extraction/classify.js');
+    const { statementPdf } = await import('./fixtures/statement-pdf.js');
+    const bytes = statementPdf(3, 'fixture');
+    const pages = await extractPdfText(bytes);
+    expect(pages).toHaveLength(3);
+    const verdict = classifyExtractedText(pages);
+    expect(verdict.kind).toBe('statement');
+    expect(verdict.signals).toEqual(expect.arrayContaining(['statement_heading', 'balance_pair', 'account_number']));
+    expect(await demuxPdf(bytes)).toHaveLength(3);
+  });
+});
