@@ -1,9 +1,9 @@
 /**
- * One-off backfill for plan task 9.5.h: the merchant address of receipts scanned
- * BEFORE the extraction learned to read it.
+ * One-off backfill for plan tasks 9.5.h and 9.5.i: the merchant address of
+ * receipts scanned BEFORE the extraction learned to read it, on each RECEIPT
+ * (`documents.merchant_*`) and, as before, on its supplier (`parties`).
  *
- *   pnpm exec tsx scripts/backfill-merchant-address.ts \
- *       --tenant <uuid> [--tenant <uuid> ...] [--limit 1000] [--apply]
+ *   pnpm exec tsx scripts/backfill-merchant-address.ts  *       --tenant <uuid> [--tenant <uuid> ...] [--limit 1000] [--apply]
  *
  * DRY RUN BY DEFAULT: without `--apply` nothing is written; it prints what it
  * WOULD fill. Run the dry run first and read the numbers.
@@ -16,15 +16,23 @@
  * a "SUBURB STATE 2000" line deterministically (`merchant-address.ts`). A
  * receipt with no stored layout, or no such line in its header, is left alone.
  *
- * What it writes. `parties.address_line1 / city / state / postcode`, and only
- * for a supplier that has NONE of the four today (a strictly empty address).
+ * What it writes (all of it in `merchant-backfill.repo.ts`):
+ *   - `documents.merchant_line1 / city / state / postcode` for a receipt whose
+ *     four are ALL empty: the address read from that receipt's OWN layout, so
+ *     two branches of one chain get two different places (migration 0061).
+ *   - `parties.address_line1 / city / state / postcode` for a supplier whose
+ *     four are ALL empty: the newest of its receipts that parses (unchanged
+ *     from 9.5.h).
  * So it is idempotent (a second run finds nothing to do), never overwrites a
  * value a scan or a person already stored, and never fills half an address
- * beside someone else's. The most recent receipt that parses wins per supplier.
+ * beside someone else's.
+ *
+ * Run it AFTER migration 0061 is applied (it reads and writes the new columns).
  *
  * Privacy. Only the four normalised merchant fields are stored. The OCR text
  * is read in memory and never printed or persisted; the report shows counts and
- * the suburb/state/postcode of each supplier that would be filled.
+ * the document or supplier id with the suburb/state/postcode of each row that
+ * would be filled.
  *
  * Must run where the object storage is mounted: the worker container on
  * helios (`docker exec`), with the worker's database login (an `app_worker`,
@@ -34,13 +42,8 @@
  */
 import 'reflect-metadata';
 
-import { sql } from 'drizzle-orm';
-
-import type { Document } from '@snap/api-contract/docdom';
-
 import { closeDb, useWorkerConnection } from '../src/db.js';
-import { addressFromLayout } from '../src/extraction/merchant-backfill.js';
-import { get } from '../src/storage.js';
+import { backfillMerchantLocations } from '../src/extraction/merchant-backfill.repo.js';
 import { enterTenantAsWorker, workerActor } from '../src/tenant-entry.js';
 
 useWorkerConnection();
@@ -64,84 +67,30 @@ if (!workerId) {
 }
 const worker = workerActor(workerId);
 
-let seen = 0;
-let filled = 0;
+let receiptsConsidered = 0;
+let receiptsFilled = 0;
+let suppliersFilled = 0;
 let noLayout = 0;
 let noAddress = 0;
 
 for (const tenantId of tenants) {
   await enterTenantAsWorker(worker, tenantId, async (tx) => {
-    const t = await tx.execute<{ country: string }>(
-      sql`select country::text as country from tenants where id = ${tenantId}`,
-    );
-    if (t.rows[0]?.country !== 'AU') {
+    const r = await backfillMerchantLocations(tx, tenantId, { apply, limit, log: console.log });
+    if (r.skipped) {
       console.log(`tenant ${tenantId}: not an Australian workspace, skipped`);
       return;
     }
-    // One row per (supplier with an entirely empty address, a receipt of theirs),
-    // newest receipt first, with that receipt's latest stored layout if any.
-    const rows = await tx.execute<{ supplier_id: string; storage_key: string | null }>(sql`
-      select d.supplier_id, l.storage_key
-        from documents d
-        join parties p on p.id = d.supplier_id and p.kind = 'supplier'
-        left join lateral (
-          select storage_key from document_layouts
-           where capture_id = d.capture_id order by created_at desc limit 1
-        ) l on true
-       where d.tenant_id = ${tenantId}
-         and d.deleted_at is null
-         and coalesce(p.address_line1, '') = '' and coalesce(p.city, '') = ''
-         and coalesce(p.state, '') = '' and coalesce(p.postcode, '') = ''
-       order by d.created_at desc
-       limit ${limit}
-    `);
-
-    const done = new Set<string>();
-    const considered = new Set<string>();
-    for (const row of rows.rows) {
-      if (done.has(row.supplier_id)) continue;
-      considered.add(row.supplier_id);
-      if (!row.storage_key) {
-        noLayout++;
-        continue;
-      }
-      let address;
-      try {
-        address = addressFromLayout(JSON.parse(get(row.storage_key).toString('utf8')) as Document);
-      } catch {
-        noLayout++; // a missing or unreadable file is treated as no layout, never fatal
-        continue;
-      }
-      if (!address) {
-        noAddress++;
-        continue;
-      }
-      done.add(row.supplier_id);
-      filled++;
-      console.log(
-        `${apply ? 'fill' : 'would fill'} supplier ${row.supplier_id}: ` +
-          `${address.city ?? '-'} ${address.state ?? '-'} ${address.postcode ?? '-'}${address.line1 ? ' (+street)' : ''}`,
-      );
-      if (apply) {
-        // The WHERE repeats the emptiness test, so a value stored between the
-        // read above and this write is never overwritten.
-        await tx.execute(sql`
-          update parties
-             set address_line1 = ${address.line1}, city = ${address.city},
-                 state = ${address.state}, postcode = ${address.postcode}
-           where id = ${row.supplier_id}
-             and coalesce(address_line1, '') = '' and coalesce(city, '') = ''
-             and coalesce(state, '') = '' and coalesce(postcode, '') = ''
-        `);
-      }
-    }
-    seen += considered.size;
+    receiptsConsidered += r.receiptsConsidered;
+    receiptsFilled += r.receiptsFilled;
+    suppliersFilled += r.suppliersFilled;
+    noLayout += r.noLayout;
+    noAddress += r.noAddress;
   });
 }
 
 console.log(
-  `${apply ? 'APPLIED' : 'DRY RUN (nothing written)'}: ${seen} supplier(s) with an empty address considered, ` +
-    `${filled} ${apply ? 'filled' : 'fillable'}; receipts skipped: ${noLayout} with no readable stored layout, ` +
-    `${noAddress} with no header address.`,
+  `${apply ? 'APPLIED' : 'DRY RUN (nothing written)'}: ${receiptsConsidered} receipt(s) with an empty receipt or supplier address considered; ` +
+    `${receiptsFilled} receipt(s) ${apply ? 'filled' : 'fillable'}, ${suppliersFilled} supplier(s) ${apply ? 'filled' : 'fillable'}; ` +
+    `skipped: ${noLayout} with no readable stored layout, ${noAddress} with no header address.`,
 );
 await closeDb();
