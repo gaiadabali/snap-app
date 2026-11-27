@@ -13,7 +13,7 @@ fail=0
 for url in \
   https://snapapp.gaiada.com \
   https://snap-apps-api.gaiada.com/v1/ready \
-  https://snapapp.app.gaiada.com; do
+  https://app.snapapps.gaiada.com; do
   body=$(curl -fsS --max-time 15 "$url" 2>&1) || { echo "FAILED unreachable: $url"; fail=1; continue; }
   case "$url" in
     *"/v1/ready"*)

@@ -317,6 +317,8 @@ const schema = z.object({
       z
         .enum(
           [
+            'https://app.snapapps.gaiada.com/oauth/yourtal',
+            // The PWA's host before 2026-11-27, kept so a server whose .env still names it boots.
             'https://snapapp.app.gaiada.com/oauth/yourtal',
             // `expo start --web` on a developer's machine; refused in production below.
             'http://localhost:8081/oauth/yourtal',

@@ -12,7 +12,7 @@ picture and a total, and leaves the tax treatment to you.
 
 **Live (staging):** <https://snapapp.gaiada.com> · API
 `snap-apps-api.gaiada.com` · the phone app in a browser
-`snapapp.app.gaiada.com`
+`app.snapapps.gaiada.com`
 
 ---
 

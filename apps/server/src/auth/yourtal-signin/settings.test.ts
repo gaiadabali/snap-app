@@ -108,15 +108,20 @@ describe('Sign in with YourTal settings', () => {
     expect(oidc.isClientConfigured('mobile', 'web')).toBe(false);
     expect(oidc.isClientConfigured('mobile', 'native')).toBe(true);
 
-    vi.stubEnv('YOURTAL_OIDC_MOBILE_WEB_REDIRECT_URI', 'https://snapapp.app.gaiada.com/oauth/yourtal');
+    vi.stubEnv('YOURTAL_OIDC_MOBILE_WEB_REDIRECT_URI', 'https://app.snapapps.gaiada.com/oauth/yourtal');
     ({ settings, oidc } = await load());
     expect(settings.yourtalSignInSettings()?.mobile).toEqual({
       kind: 'mobile',
       clientId: 'snapapp-staging-mobile',
       redirectUri: 'au.com.snapapps.app:/oauth/yourtal',
-      webRedirectUri: 'https://snapapp.app.gaiada.com/oauth/yourtal',
+      webRedirectUri: 'https://app.snapapps.gaiada.com/oauth/yourtal',
     });
     expect(oidc.isClientConfigured('mobile', 'web')).toBe(true);
+
+    // The pre-move host still boots, so the server can roll out before its .env changes.
+    vi.stubEnv('YOURTAL_OIDC_MOBILE_WEB_REDIRECT_URI', 'https://snapapp.app.gaiada.com/oauth/yourtal');
+    ({ settings } = await load());
+    expect(settings.yourtalSignInSettings()?.mobile?.webRedirectUri).toBe('https://snapapp.app.gaiada.com/oauth/yourtal');
   });
 
   it('refuses any other PWA return page at boot, and http in production', async () => {
