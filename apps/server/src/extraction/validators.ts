@@ -1,5 +1,6 @@
 import { money } from '@snap/db';
 import { formatLocalAmount, periodOf, taxFromInclusive, type TaxRules } from '@snap/tax-rules';
+import { isoFromPrinted } from './printed-date.js';
 
 import type {
   ComplianceFailure,
@@ -167,6 +168,21 @@ export function ambiguousDateOrder(iso: string | null): { alternative: string } 
   // unambiguous, which is most of the month.
   if (m < 1 || m > 12 || d < 1 || d > 12 || m === d) return null;
   return { alternative: `${year}-${day}-${month}` };
+}
+
+/**
+ * True when the workspace's own day/month order settled this date: the locale
+ * is day-first, the document printed a numeric date, and the ISO date is
+ * exactly what that rule makes of the printed text. No rule set means
+ * Australia, which prints day first.
+ */
+function decidedByDayFirstLocale(extraction: Extraction, rules?: TaxRules | null): boolean {
+  const order = rules?.documentRules.dateOrder ?? 'day_first';
+  if (order !== 'day_first') return false;
+  const printed = extraction.issueDatePrinted?.value;
+  if (!printed) return false;
+  const decided = isoFromPrinted(printed, order);
+  return decided !== null && decided === extraction.issueDate.value;
 }
 
 /**
@@ -534,7 +550,14 @@ export function validate(
 
   /* ── 5a. Day/month ambiguity ───────────────────────────────────────── */
   if (!dateIssue) {
-    const ambiguous = ambiguousDateOrder(extraction.issueDate.value);
+    // A day-first workspace (Australia, Indonesia) has already DECIDED a
+    // numeric printed date: reconcileIssueDate read 06/09/2026 as 6 September
+    // by the country rule, so there is nothing left to ask the user. Only a
+    // locale that cannot decide (month-first) or a date with no printed text
+    // to check keeps the flag. Task 10.7.e.
+    const ambiguous = decidedByDayFirstLocale(extraction, rules)
+      ? null
+      : ambiguousDateOrder(extraction.issueDate.value);
     // Only worth asking about when the answer CHANGES something. Both numbers
     // are 12 or less on roughly two receipts in five, and stopping that many
     // documents to confirm a date would train people to tap through the
