@@ -268,7 +268,7 @@ export default function SettingsScreen() {
               <Card>
                 <Body>
                   Records are kept for {Math.round(plan.retentionMonths / 12)} years, which is what
-                  the ATO requires of business records. Originals are stored in Australia.
+                  the ATO requires of business records. Originals are stored on a server in Indonesia.
                 </Body>
               </Card>
               <GodWithdrawCard />
