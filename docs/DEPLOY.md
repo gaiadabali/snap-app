@@ -751,7 +751,7 @@ Three addresses:
 |---|---|---|---|
 | `snapapp.gaiada.com` | Website + individual / business / admin panels | Browsers | 3300 |
 | `snap-apps-api.gaiada.com` | The API | Website (server-side), the browser app, the phone app | 3301 |
-| `snapapp.app.gaiada.com` | **The mobile app, exported for the browser** | Reviewers, before anyone installs anything | 3302 |
+| `app.snapapps.gaiada.com` (was `snapapp.app.gaiada.com` until 2026-11-27) | **The mobile app, exported for the browser** | Reviewers, before anyone installs anything | 3302 |
 
 The third exists because the dev review looks at the app in a browser rather
 than on a phone. Expo exports the same React Native source as a web bundle, so
@@ -762,7 +762,7 @@ covers that path.
 
 **The browser build is subject to CORS and the phone build is not.** A native
 app is not governed by the same-origin policy at all; a web bundle is. So
-`CORS_ORIGINS` must name `https://snapapp.app.gaiada.com` as well as the
+`CORS_ORIGINS` must name `https://app.snapapps.gaiada.com` as well as the
 website, or every request the app makes fails at preflight and surfaces as a
 network error indistinguishable from being offline. That precise failure has
 already cost this project a day once, when a missing header on the allow-list
@@ -794,7 +794,7 @@ hPanel. The three A records point at helios:
 ```
 snapapp.gaiada.com        A   187.77.116.133
 snap-apps-api.gaiada.com  A   187.77.116.133
-snapapp.app.gaiada.com    A   187.77.116.133
+app.snapapps.gaiada.com   A   187.77.116.133
 ```
 
 On delphi the same three sites were CloudPanel reverse-proxy sites

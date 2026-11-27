@@ -1,7 +1,7 @@
 import { isYourtalReturn } from './yourtal-signin';
 
 /**
- * The browser build's end of Sign in with YourTal (the PWA, snapapp.app.gaiada.com).
+ * The browser build's end of Sign in with YourTal (the PWA, app.snapapps.gaiada.com).
  *
  * In a browser, `openAuthSessionAsync` opens YourTal in a popup and waits for that popup
  * to post the return URL back. YourTal returns the popup to this app's own page,

@@ -212,7 +212,7 @@ export async function startFakeYourTalOidc(): Promise<FakeYourTalOidc> {
     webRedirectUri: 'https://snap-apps.test/auth/yourtal/callback',
     mobileRedirectUri: 'au.com.snapapps.app:/oauth/yourtal',
     // One of config.ts's allowed values; nothing is fetched from it.
-    mobileWebRedirectUri: 'https://snapapp.app.gaiada.com/oauth/yourtal',
+    mobileWebRedirectUri: 'https://app.snapapps.gaiada.com/oauth/yourtal',
     webPrivateJwk,
     nextSignIn: null,
     lastAuthorizationParams: null,

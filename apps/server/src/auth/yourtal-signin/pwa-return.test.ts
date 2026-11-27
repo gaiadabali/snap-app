@@ -104,7 +104,7 @@ describe('redirectUriFor and platformOfState', () => {
     const mobile = { kind: 'mobile' as const, clientId: 'm', redirectUri: 'au.com.snapapps.app:/oauth/yourtal' };
     expect(redirectUriFor(mobile, 'native')).toBe(mobile.redirectUri);
     expect(redirectUriFor(mobile, 'web')).toBeNull();
-    const withPwa = { ...mobile, webRedirectUri: 'https://snapapp.app.gaiada.com/oauth/yourtal' };
+    const withPwa = { ...mobile, webRedirectUri: 'https://app.snapapps.gaiada.com/oauth/yourtal' };
     expect(redirectUriFor(withPwa, 'web')).toBe(withPwa.webRedirectUri);
     const web = { kind: 'web' as const, clientId: 'w', redirectUri: 'https://snapapp.gaiada.com/auth/yourtal/callback' };
     expect(redirectUriFor(web, 'web')).toBe(web.redirectUri);
