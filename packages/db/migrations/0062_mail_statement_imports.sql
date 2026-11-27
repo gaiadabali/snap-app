@@ -43,7 +43,8 @@
 -- person's history, pointing at nothing. Erasing the person removes the rows
 -- (user_id ON DELETE CASCADE). erase_workspace's spill guard (0043) covers
 -- capture_id -> captures, a foreign key between two tables with tenant_id,
--- and the two always name the same workspace.
+-- and the two always name the same workspace; its owner (app_erasure) reads
+-- this table for that check, as 0043 granted it every such table then.
 --
 -- ADD-ONLY: one new table, its index, policies and grants.
 -- ---------------------------------------------------------------------------
@@ -99,6 +100,9 @@ REVOKE ALL ON mail_statement_imports FROM app_readonly;
 REVOKE ALL ON mail_statement_imports FROM app_worker;
 GRANT SELECT         ON mail_statement_imports TO app_rw;
 GRANT INSERT, UPDATE ON mail_statement_imports TO app_worker;
+-- erase_workspace's spill guard (0043) reads every table with a tenant_id
+-- foreign key into another such table; 0043 granted the ones that existed.
+GRANT SELECT         ON mail_statement_imports TO app_erasure;
 
 -- ── Self-check ───────────────────────────────────────────────────────────────
 DO $$
