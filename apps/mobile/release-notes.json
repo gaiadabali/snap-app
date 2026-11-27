@@ -1,5 +1,10 @@
 [
   {
+    "id": "spambank-mail",
+    "date": "2026-11-27",
+    "notes": "Your own Spambank inbox is now in the app. Open Mail from the menu, switch it on to get your own address, then read, write, search and sort your email without leaving SnapApp. Marketing mail is filed into Spam and Junk, and Unsubscribe stops a sender in one tap. Turn on alerts in Mail settings and your phone tells you when new mail arrives, without saying who it is from."
+  },
+  {
     "id": "export-year-follows-tax-year",
     "date": "2026-11-26",
     "notes": "Year in Analytics and Export receipts now follows your tax year. In an Australian workspace it runs from 1 July to today, labelled like 2026-27 financial year, so an export lines up with your tax return. Indonesian workspaces keep the calendar year."

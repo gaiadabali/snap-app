@@ -111,6 +111,13 @@ import type {
   RedeemYourtalVoucherResult,
   FtrSendContents,
   FtrSendFinished,
+  MailAppPassword,
+  MailAppPasswordCreated,
+  MailEnableResult,
+  MailSessionToken,
+  MailSettingsView,
+  MailStatus,
+  UpdateMailSettingsRequest,
 } from '@snap/api-contract';
 
 /**
@@ -462,6 +469,31 @@ export interface SnapApi {
     state: string;
     iss: string;
   }): Promise<Session>;
+  /**
+   * Spambank mail (spambank/BUILD.md §5.6). Every call is USER-scoped (no workspace header)
+   * and is never queued offline: a switch-on, a secret shown once or a mail token replayed
+   * later is a wrong message. Errors are `ApiError` with the bridge's `code`
+   * (`yourtal_not_linked`, `not_enabled`, `not_allowed`, `rate_limited`, ...).
+   *
+   * `getMailStatus` answers 200 with `linked: false` for a person who did not sign in with
+   * YourTal; only the other routes answer 409 `yourtal_not_linked`.
+   */
+  getMailStatus(): Promise<MailStatus>;
+  /** `POST /v1/mail/enable`: 201 for a new mailbox, 200 when it already existed. */
+  enableMail(): Promise<MailEnableResult>;
+  /** `POST /v1/mail/session`: a 30-minute mail token. The engine calls this, never a screen. */
+  createMailSession(): Promise<MailSessionToken>;
+  /** `PATCH /v1/mail/settings`: answers the settings as they now are. */
+  updateMailSettings(patch: UpdateMailSettingsRequest): Promise<MailSettingsView>;
+  listMailAppPasswords(): Promise<MailAppPassword[]>;
+  /** The secret in the answer is shown once; it is never stored or logged here. */
+  createMailAppPassword(name: string): Promise<MailAppPasswordCreated>;
+  revokeMailAppPassword(id: string): Promise<void>;
+  /** `POST /v1/devices/push-token`: this phone's Firebase registration token, for new-mail alerts. */
+  registerPushToken(token: string): Promise<void>;
+  /** `DELETE /v1/devices/push-token`: on sign-out, or when alerts are turned off on this phone. */
+  unregisterPushToken(token: string): Promise<void>;
+
   /** `POST /v1/yourtal/link` — the one-time code from YourTal. Throws `ApiError` with `code`. */
   linkYourtal(code: string): Promise<YourtalLinkStatus>;
   /** `DELETE /v1/yourtal/link`. */

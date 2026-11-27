@@ -434,6 +434,27 @@ testers must uninstall once when it changes. It is not implemented.
    `https://snap-apps-api.gaiada.com` and `gaiadabali/snap-app`; set them in a
    systemd drop-in only if either changes.
 
+### New-mail notifications and Firebase (Spambank, 2026-11)
+
+New-mail alerts reach the phone through Firebase Cloud Messaging (`spambank/BUILD.md`
+B9, §4.9). An APK can receive them only when it carries the Firebase project's
+`google-services.json`. That file names the project's API key, so it is **never
+committed** (`.gitignore` lists it). A build is given it at build time:
+
+- **CI:** the repository secret `GOOGLE_SERVICES_JSON_B64` (the file, base64-encoded:
+  `base64 -w0 google-services.json`). The Build step restores it to a temporary file,
+  points `GOOGLE_SERVICES_FILE` at it and deletes it afterwards.
+- **By hand:** `GOOGLE_SERVICES_FILE=/path/to/google-services.json deploy/build-apk.sh`.
+- **EAS:** an EAS file secret exposed as the `GOOGLE_SERVICES_FILE` environment variable.
+
+`apps/mobile/app.config.js` reads the variable (`google-services.cjs`, with tests). **Without
+it the build still succeeds and the app runs; notifications are simply off**: the Mail
+settings screen says alerts are not available in this version, and nothing is registered.
+A variable that is set but names a missing file fails the build, so a typo cannot quietly
+ship an APK without alerts. The server half (the service-account key, `FCM_PROJECT_ID`) is
+in `spambank/BUILD.md` §10; the release note for an APK built without Firebase must not
+promise alerts.
+
 ## 9. Google Play (decided by the owner, 2026-10-21)
 
 Group plan 0.12. Nothing below is set up yet; this is what the Play work

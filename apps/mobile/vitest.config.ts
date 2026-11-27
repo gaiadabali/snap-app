@@ -40,6 +40,7 @@ export default defineConfig({
     // arithmetic that every screen depends on, so it is checked, not trusted.
     include: [
       'build-version.test.ts',
+      'google-services.test.ts',
       'src/lib/**/*.test.ts',
       'src/fixtures/**/*.test.ts',
       'src/api/**/*.test.ts',

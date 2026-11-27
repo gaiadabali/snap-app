@@ -74,7 +74,15 @@ import type {
   UpdateDocumentRequest,
   Workspace,
   WorkspaceSummary,
-  DeviceReading,} from './types';
+  DeviceReading,
+  MailAppPassword,
+  MailAppPasswordCreated,
+  MailEnableResult,
+  MailSessionToken,
+  MailSettingsView,
+  MailStatus,
+  UpdateMailSettingsRequest,
+} from './types';
 
 /**
  * The real backend.
@@ -1287,6 +1295,69 @@ export class HttpApi implements SnapApi {
        minutes, so a copy replayed later is a dead code and a wrong message. */
     return this.request<YourtalLinkStatus>('POST', '/v1/yourtal/link', {
       body: { code },
+      workspaceId: null,
+      queue: false,
+    });
+  }
+
+  /* ── Spambank mail (spambank/BUILD.md §5.6) ─────────────────────────────
+     All USER-scoped (`workspaceId: null`) and none queued offline: a mailbox
+     switched on, an app password's one-time secret or a 30-minute mail token
+     replayed later is the wrong message at the wrong time. The bridge answers
+     errors as `{ error, message }`, which `request` already turns into
+     `ApiError.code` and a sentence. */
+
+  getMailStatus(): Promise<MailStatus> {
+    return this.get<MailStatus>('/v1/mail/status', null);
+  }
+
+  enableMail(): Promise<MailEnableResult> {
+    return this.request<MailEnableResult>('POST', '/v1/mail/enable', { workspaceId: null, queue: false });
+  }
+
+  createMailSession(): Promise<MailSessionToken> {
+    return this.request<MailSessionToken>('POST', '/v1/mail/session', { workspaceId: null, queue: false });
+  }
+
+  updateMailSettings(patch: UpdateMailSettingsRequest): Promise<MailSettingsView> {
+    return this.request<MailSettingsView>('PATCH', '/v1/mail/settings', {
+      body: patch,
+      workspaceId: null,
+      queue: false,
+    });
+  }
+
+  async listMailAppPasswords(): Promise<MailAppPassword[]> {
+    const body = await this.get<{ items?: MailAppPassword[] }>('/v1/mail/app-passwords', null);
+    return body.items ?? [];
+  }
+
+  createMailAppPassword(name: string): Promise<MailAppPasswordCreated> {
+    return this.request<MailAppPasswordCreated>('POST', '/v1/mail/app-passwords', {
+      body: { name },
+      workspaceId: null,
+      queue: false,
+    });
+  }
+
+  async revokeMailAppPassword(id: string): Promise<void> {
+    await this.request('DELETE', `/v1/mail/app-passwords/${encodeURIComponent(id)}`, {
+      workspaceId: null,
+      queue: false,
+    });
+  }
+
+  async registerPushToken(token: string): Promise<void> {
+    await this.request('POST', '/v1/devices/push-token', {
+      body: { token, platform: 'android' },
+      workspaceId: null,
+      queue: false,
+    });
+  }
+
+  async unregisterPushToken(token: string): Promise<void> {
+    await this.request('DELETE', '/v1/devices/push-token', {
+      body: { token },
       workspaceId: null,
       queue: false,
     });

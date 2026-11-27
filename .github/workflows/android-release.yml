@@ -205,6 +205,10 @@ jobs:
         env:
           KEYSTORE_B64: ${{ secrets.ANDROID_RELEASE_KEYSTORE_B64 }}
           SNAP_RELEASE_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_RELEASE_KEYSTORE_PASSWORD }}
+          # Firebase, for new-mail notifications (Spambank, spambank/BUILD.md B9). The Firebase
+          # project's google-services.json, base64-encoded, as a repository secret. OPTIONAL:
+          # without it the APK builds and runs exactly as before, with notifications off.
+          GOOGLE_SERVICES_JSON_B64: ${{ secrets.GOOGLE_SERVICES_JSON_B64 }}
         run: |
           case "$API_URL" in
             https://*) ;;
@@ -214,8 +218,17 @@ jobs:
           [ -n "$KEYSTORE_B64" ] || { echo "::error::ANDROID_RELEASE_KEYSTORE_B64 secret is missing"; exit 1; }
           export SNAP_RELEASE_KEYSTORE="$RUNNER_TEMP/snap-release.p12"
           (umask 077; printf '%s' "$KEYSTORE_B64" | base64 -d > "$SNAP_RELEASE_KEYSTORE")
+          # Firebase config, restored the same way; apps/mobile/app.config.js reads GOOGLE_SERVICES_FILE.
+          if [ -n "$GOOGLE_SERVICES_JSON_B64" ]; then
+            export GOOGLE_SERVICES_FILE="$RUNNER_TEMP/google-services.json"
+            (umask 077; printf '%s' "$GOOGLE_SERVICES_JSON_B64" | base64 -d > "$GOOGLE_SERVICES_FILE")
+            echo "Firebase config restored: this APK carries new-mail notifications."
+          else
+            echo "::notice::GOOGLE_SERVICES_JSON_B64 is not set, so this APK is built without Firebase and has no new-mail notifications."
+          fi
           deploy/build-apk.sh "$API_URL"
           rm -f "$SNAP_RELEASE_KEYSTORE"
+          [ -z "${GOOGLE_SERVICES_FILE:-}" ] || rm -f "$GOOGLE_SERVICES_FILE"
 
       - name: Check what was built
         id: apk

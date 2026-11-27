@@ -3,6 +3,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { api, onSessionEnded, restoreAuthToken, type Session } from '@/api';
 import { Onboarding } from '@/components/Onboarding';
 import { SessionLoading, SignIn } from '@/components/SignIn';
+import { disableMailAlerts } from '@/lib/push';
 
 /**
  * The gate in front of the app.
@@ -88,6 +89,9 @@ export function SessionGate({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
+    // This phone stops getting new-mail alerts for the account it is leaving. Best effort and
+    // before the session ends (it needs it); never allowed to hold the sign-out up.
+    await disableMailAlerts().catch(() => undefined);
     await api().signOut();
     setSession(null);
   }, []);

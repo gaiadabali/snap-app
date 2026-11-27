@@ -27,6 +27,12 @@
 #                            app.config.js; without it the app never offers or
 #                            requires an update.
 #
+# GOOGLE_SERVICES_FILE (optional) is the path to the Firebase project's google-services.json,
+# which new-mail notifications need (apps/mobile/google-services.cjs). It is never committed. Without
+# it the APK builds and runs as before, with notifications off:
+#
+#   GOOGLE_SERVICES_FILE=/path/to/google-services.json deploy/build-apk.sh
+#
 # arm64-v8a only. Building all four ABIs in RelWithDebInfo drove the load
 # average past 100 on an 8-core box for no benefit: every Android phone worth
 # testing on is arm64, and armeabi-v7a is 32-bit hardware from before 2015. A
